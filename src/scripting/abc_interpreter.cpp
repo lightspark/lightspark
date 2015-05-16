@@ -36,7 +36,7 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	return ret;
 }
 
-ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context* context)
+ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context* context, ASObject* caller)
 {
 	method_info* mi=function->mi;
 
@@ -868,7 +868,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x57:
 			{
 				//newactivation
-				context->runtime_stack_push(newActivation(context, mi));
+				context->runtime_stack_push(newActivation(context, mi,caller));
 				break;
 			}
 			case 0x58:
@@ -1114,9 +1114,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//convert_o
 				ASObject* val=context->runtime_stack_pop();
 				if (val->is<Null>())
+				{
+					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
+				}
 				if (val->is<Undefined>())
+				{
+					LOG(LOG_ERROR,"trying to call convert_o on undefined");
 					throwError<TypeError>(kConvertUndefinedToObjectError);
+				}
 					
 				context->runtime_stack_push(val);
 				break;

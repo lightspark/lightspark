@@ -40,7 +40,7 @@ struct OpcodeData
 	};
 };
 
-ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_context* context)
+ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller)
 {
 	method_info* mi=function->mi;
 
@@ -750,7 +750,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x57:
 			{
 				//newactivation
-				context->runtime_stack_push(newActivation(context, mi));
+				context->runtime_stack_push(newActivation(context, mi,caller));
 				break;
 			}
 			case 0x58:
@@ -993,9 +993,15 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//convert_o
 				ASObject* val=context->runtime_stack_pop();
 				if (val->is<Null>())
+				{
+					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
+				}
 				if (val->is<Undefined>())
+				{
+					LOG(LOG_ERROR,"trying to call convert_o on undefined");
 					throwError<TypeError>(kConvertUndefinedToObjectError);
+				}
 					
 				context->runtime_stack_push(val);
 				break;

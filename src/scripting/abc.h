@@ -390,7 +390,7 @@ private:
 	static number_t subtract_io(int32_t, ASObject*);
 	static number_t subtract_do(number_t, ASObject*);
 	static void popScope(call_context* th);
-	static ASObject* newActivation(call_context* th, method_info*);
+	static ASObject* newActivation(call_context* th, method_info* mi, ASObject* caller);
 	static ASObject* coerce_s(ASObject*);
 	static ASObject* checkfilter(ASObject*);
 	static void coerce_a();
@@ -482,8 +482,8 @@ public:
 	void start() DLL_PUBLIC;
 	void finalize();
 	static void Run(ABCVm* th);
-	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context);
-	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context);
+	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context, ASObject *caller);
+	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller);
 	static void optimizeFunction(SyntheticFunction* function);
 	static void verifyBranch(std::set<uint32_t>& pendingBlock,std::map<uint32_t,BasicBlock>& basicBlocks,
 			int oldStart, int here, int offset, int code_len);

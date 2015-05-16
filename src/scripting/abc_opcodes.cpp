@@ -53,7 +53,7 @@ int32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 
 void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
-	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj->toDebugString()<<" " << value->toString());
+	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj<<" "<<obj->toDebugString()<<" " << value->toString()<<" "<<value);
 
 	//Do not allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
@@ -207,7 +207,7 @@ int32_t ABCVm::pushShort(intptr_t n)
 
 void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 {
-	LOG(LOG_CALLS,"setSlot " << n);
+	LOG(LOG_CALLS,"setSlot " << n << " "<< obj<<" " <<obj->toDebugString() << " "<< value->toDebugString()<<" "<<value);
 	obj->setSlot(n,value);
 	obj->decRef();
 }
@@ -290,9 +290,15 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	checkDeclaredTraits(obj);
 
 	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
 		throwError<TypeError>(kConvertNullToObjectError);
+	}
 	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"trying to call property on undefined:"<<*name);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
 
 	//We should skip the special implementation of get
 	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
@@ -635,7 +641,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	if (f->is<SyntheticFunction>())
 	{
 		SyntheticFunction* sf=f->as<SyntheticFunction>();
-		if (sf->mi->body)
+		if (sf->mi->body && !sf->mi->needsActivation())
 		{
 			LOG(LOG_CALLS,_("Building method traits"));
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
@@ -1518,9 +1524,15 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 
 	ASObject* obj=th->runtime_stack_pop();
 	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"trying to call super on null:"<<*name);
 		throwError<TypeError>(kConvertNullToObjectError);
+	}
 	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"trying to call super on undefined:"<<*name);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
 
 	assert_and_throw(th->inClass);
 	assert_and_throw(th->inClass->super);
@@ -1570,10 +1582,12 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		case T_STRING:
 			obj->decRef();
 			type->decRef();
+			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<obj->toDebugString());
 			throwError<TypeError>(kConvertNullToObjectError);
 		case T_UNDEFINED:
 			obj->decRef();
 			type->decRef();
+			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<obj->toDebugString());
 			throwError<TypeError>(kConvertUndefinedToObjectError);
 		case T_CLASS:
 			break;
@@ -1652,7 +1666,8 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	{
 		obj->decRef();
 		type->decRef();
-		throwError<TypeError>(kConvertNullToObjectError);
+		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<obj->toDebugString());
+		throwError<TypeError>(kClassNotFoundError);
 	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
@@ -2215,17 +2230,24 @@ void ABCVm::swap()
 	LOG(LOG_CALLS,_("swap"));
 }
 
-ASObject* ABCVm::newActivation(call_context* th,method_info* info)
+ASObject* ABCVm::newActivation(call_context* th, method_info* mi, ASObject* caller)
 {
 	LOG(LOG_CALLS,"newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
-	ASObject* act=Class<ASObject>::getInstanceS();
+	ASObject* act= NULL;
+	if (caller != NULL && caller->is<Function_object>())
+	{
+		act = new_functionObject(caller->as<Function_object>()->functionPrototype);
+		act->incRef();
+	}
+	else
+		act = Class<ASObject>::getInstanceS();
 #ifndef NDEBUG
 	act->initialized=false;
 #endif
-	for(unsigned int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i],false);
+	for(unsigned int i=0;i<mi->body->trait_count;i++)
+		th->context->buildTrait(act,&mi->body->traits[i],false);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif

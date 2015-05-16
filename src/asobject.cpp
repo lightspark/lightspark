@@ -706,7 +706,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		if(obj)
 		{
 			//Initializing an already existing variable
-			LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized");
+			LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized, type:"<<*typemname);
 			if (o != NULL)
 				o->decRef();
 			return;
@@ -904,7 +904,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			if (type == Type::anyType)
 			{
 				// type could not be found, so it's stored as an uninitialized variable
-				LOG(LOG_CALLS,"add uninitialized var:"<<mname);
+				LOG(LOG_CALLS,"add uninitialized var:"<<mname<<" "<<*typemname);
 				uninitializedVar v;
 				mainObj->incRef();
 				v.mainObj = mainObj;
@@ -990,12 +990,22 @@ ASFUNCTIONBODY(ASObject,_toString)
 
 ASFUNCTIONBODY(ASObject,_toLocaleString)
 {
-	if (!obj->has_toString())
-		throwError<TypeError>(kCallNotFoundError, "toString", obj->getClassName());
-
-	_R<ASObject> res = obj->call_toString();
-	res->incRef();
-	return res.getPtr();
+	multiname toStringName(NULL);
+	toStringName.name_type=multiname::NAME_STRING;
+	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
+	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toStringName.isAttribute = false;
+	if (obj->hasPropertyByMultiname(toStringName, true, false))
+	{
+		_NR<ASObject> o=obj->getVariableByMultiname(toStringName,SKIP_IMPL);
+		assert_and_throw(o->is<IFunction>());
+		IFunction* f=o->as<IFunction>();
+		
+		obj->incRef();
+		ASObject *ret=f->call(obj,NULL,0);
+		return ret;
+	}
+	return _toString(obj,args,argslen);
 }
 
 ASFUNCTIONBODY(ASObject,hasOwnProperty)
@@ -1177,11 +1187,11 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		ASObject* target=this;
 		if(target->classdef)
 		{
-			LOG(LOG_CALLS,_("Calling the getter on type ") << target->classdef->class_name);
+			LOG(LOG_CALLS,_("Calling the getter on type ") << target->classdef->class_name<< " for "<<name);
 		}
 		else
 		{
-			LOG(LOG_CALLS,_("Calling the getter"));
+			LOG(LOG_CALLS,_("Calling the getter")<< " for "<<name);
 		}
 		IFunction* getter=obj->getter;
 		target->incRef();

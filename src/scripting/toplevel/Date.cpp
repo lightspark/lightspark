@@ -158,6 +158,7 @@ void Date::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toTimeString","",Class<IFunction>::getFunction(toTimeString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleTimeString","",Class<IFunction>::getFunction(toLocaleTimeString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleDateString","",Class<IFunction>::getFunction(toLocaleDateString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(toLocaleString),DYNAMIC_TRAIT);
 }
 
 void Date::buildTraits(ASObject* o)

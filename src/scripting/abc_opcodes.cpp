@@ -55,6 +55,16 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj<<" "<<obj->toDebugString()<<" " << value->toString()<<" "<<value);
 
+	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
 	//Do not allow to set contant traits
 	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
 	obj->decRef();
@@ -63,7 +73,16 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,_("setProperty_i ") << *name << ' ' <<obj);
-
+	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"calling setProperty_i on null:" << *name << ' ' << obj->toDebugString()<<" " << value);
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"calling setProperty_i on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value);
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
 	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
 }
@@ -1654,20 +1673,12 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,_("asTypelate"));
 
-	//HACK: until we have implemented all flash classes
-	if(type->is<Undefined>())
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"asTypelate with undefined");
-		type->decRef();
-		return obj;
-	}
-
 	if(!type->is<Class_base>())
 	{
 		obj->decRef();
 		type->decRef();
 		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<obj->toDebugString());
-		throwError<TypeError>(kClassNotFoundError);
+		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
@@ -2321,24 +2332,12 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 	}
 	else
 	{
+		LOG(LOG_ERROR,"trying to call an object as a function:"<<f->toDebugString() <<" on "<<obj->toDebugString());
 		obj->decRef();
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
-		//HACK: Until we have implemented the whole flash api
-		//we silently ignore calling undefined functions
-		if(f->is<Undefined>())
-		{
-			LOG(LOG_NOT_IMPLEMENTED,"calling undefined function:"<<obj->toDebugString());
-			if(keepReturn)
-				th->runtime_stack_push(f);
-			else
-				f->decRef();
-		}
-		else
-		{
-			f->decRef();
-			throwError<TypeError>(kCallOfNonFunctionError, "Object");
-		}
+		f->decRef();
+		throwError<TypeError>(kCallOfNonFunctionError, "Object");
 	}
 	LOG(LOG_CALLS,_("End of call ") << m << ' ' << f);
 }

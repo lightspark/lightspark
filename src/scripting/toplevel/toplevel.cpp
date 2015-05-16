@@ -116,6 +116,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 
 void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
+	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<o->toDebugString());
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
@@ -448,7 +449,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 				if(codeStatus == method_body_info::OPTIMIZED && getSys()->useFastInterpreter)
 				{
 					//This is a mildy hot function, execute it using the fast interpreter
-					ret=ABCVm::executeFunctionFast(this,&cc);
+					ret=ABCVm::executeFunctionFast(this,&cc,obj);
 				}
 				else
 				{
@@ -456,7 +457,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;
 					//This is not a hot function, execute it using the interpreter
-					ret=ABCVm::executeFunction(this,&cc);
+					ret=ABCVm::executeFunction(this,&cc,obj);
 					//Restore the previous codeStatus
 					mi->body->codeStatus = oldCodeStatus;
 				}
@@ -632,12 +633,14 @@ TRISTATE Null::isLess(ASObject* r)
 
 int32_t Null::getVariableByMultiname_i(const multiname& name)
 {
+	LOG(LOG_ERROR,"trying to get variable on null:"<<name);
 	throwError<TypeError>(kConvertNullToObjectError);
 	return 0;
 }
 
 _NR<ASObject> Null::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
+	LOG(LOG_ERROR,"trying to get variable on null:"<<name);
 	throwError<TypeError>(kConvertNullToObjectError);
 	return NullRef;
 }
@@ -657,6 +660,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 void Null::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	o->decRef();
+	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<o->toDebugString());
 	throwError<TypeError>(kConvertNullToObjectError);
 }
 

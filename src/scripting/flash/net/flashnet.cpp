@@ -624,7 +624,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("AMF0","",abstract_i(AMF0),DECLARED_TRAIT);
 	c->setVariableByQName("AMF3","",abstract_i(AMF3),DECLARED_TRAIT);
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT),DECLARED_TRAIT);
-};
+}
 
 NetConnection::NetConnection(Class_base* c):
 	EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0),
@@ -647,7 +647,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_getProxyType),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(_setProxyType),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 }
 

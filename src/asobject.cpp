@@ -92,6 +92,17 @@ void ASObject::applyProxyProperty(multiname &name)
 		name.ns.push_back(this->proxyMultiName->ns[i]);
 	}
 }
+
+void ASObject::dumpVariables()
+{
+	LOG(LOG_INFO,"variables:");
+	Variables.dumpVariables();
+	if (this->is<Class_base>())
+	{
+		LOG(LOG_INFO,"borrowed variables:");
+		this->as<Class_base>()->borrowedVariables.dumpVariables();
+	}
+}
 tiny_string ASObject::toString()
 {
 	check();
@@ -651,6 +662,9 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed)
 		{
+			const Type* type = Type::getTypeFromMultiname(&name,getVm()->currentCallContext->context);
+			if (type)
+				throwError<ReferenceError>(kConstWriteError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(), cls->getQualifiedClassName());
 		}
 
@@ -935,7 +949,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 					v.traitKind = traitKind;
 					v.typemname = typemname;
 					context->addUninitializedVar(v);
-					obj = getSys()->getUndefinedRef();
+					obj = getSys()->getNullRef();
 					obj = type->coerce(obj);
 				}
 				else
@@ -1168,15 +1182,12 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	if(!obj)
 		return NullRef;
 	if (this->is<Class_base>() && 
-			(!obj->var || 
-			 (obj->var->getObjectType() != T_UNDEFINED && 
-			  obj->var->getObjectType() != T_NULL && 
-			  obj->var->getObjectType() != T_FUNCTION )))
+			(!obj->var || !obj->var->isConstructed() ||
+			 obj->var->getObjectType() == T_UNDEFINED ||
+			 obj->var->getObjectType() == T_NULL))
 	{
 		LOG(LOG_CALLS,"accessing class:"<<name<<" "<< this->as<Class_base>()->getQualifiedClassName()<<" "<<nskind);
 		if (obj->kind == INSTANCE_TRAIT &&
-				nskind != NAMESPACE && 
-				nskind != PACKAGE_INTERNAL_NAMESPACE && 
 				nskind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedName());
 	}
@@ -1299,8 +1310,10 @@ void variables_map::dumpVariables()
 		switch(it->second.kind)
 		{
 			case DECLARED_TRAIT:
-			case CONSTANT_TRAIT:
 				kind="Declared: ";
+				break;
+			case CONSTANT_TRAIT:
+				kind="Constant: ";
 				break;
 			case INSTANCE_TRAIT:
 				kind="Declared (instance)";

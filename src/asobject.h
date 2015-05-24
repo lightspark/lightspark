@@ -496,7 +496,7 @@ public:
 	/* applies proxy namespace settings to name for internal usage */
 	void applyProxyProperty(multiname &name); 
 	
-	void dumpVariables() { Variables.dumpVariables(); }
+	void dumpVariables();
 	
 	void setConstructIndicator() { constructIndicator = true; }
 };

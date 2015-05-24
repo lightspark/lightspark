@@ -1478,7 +1478,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
-			throwError<ReferenceError>(kUndefinedVarError);
+			throwError<ReferenceError>(kUndefinedVarError,name->normalizedName());
 			return getSys()->getUndefinedRef();
 		}
 	}
@@ -2132,8 +2132,8 @@ void ABCVm::newClass(call_context* th, int n)
 	instance_info* cur=&th->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
-		int kind=cur->traits[i].kind&0xf;
-		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+		//int kind=cur->traits[i].kind&0xf;
+		//if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
 			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 

@@ -104,10 +104,13 @@ public:
 
 class SharedObject: public EventDispatcher
 {
+private:
+	static std::map<tiny_string, SharedObject* > sharedobjectmap;
 public:
 	SharedObject(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(getLocal);
+	ASFUNCTION(flush);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
 };
 
@@ -371,6 +374,7 @@ public:
 	ASPROPERTY_GETTER(bool,isSupported);
 	ASFUNCTION(allowDomain);
 	ASFUNCTION(allowInsecureDomain);
+	ASFUNCTION(send);
 };
 
 class NetGroup: public EventDispatcher

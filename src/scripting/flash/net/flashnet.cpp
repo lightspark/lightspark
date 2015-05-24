@@ -596,6 +596,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 	c->setVariableByQName("PENDING","",Class<ASString>::getInstanceS("pending"),DECLARED_TRAIT);
 }
 
+std::map<tiny_string, SharedObject* > SharedObject::sharedobjectmap;
 SharedObject::SharedObject(Class_base* c):EventDispatcher(c)
 {
 	data=_MR(new_asobject());
@@ -603,10 +604,9 @@ SharedObject::SharedObject(Class_base* c):EventDispatcher(c)
 
 void SharedObject::sinit(Class_base* c)
 {
-	// TODO: Use _constructorNotInstantiatable after getLocal is
-	// implemented
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(flush),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,data);
 }
 
@@ -614,8 +614,36 @@ ASFUNCTIONBODY_GETTER(SharedObject,data);
 
 ASFUNCTIONBODY(SharedObject,getLocal)
 {
-	//TODO: Implement this
-	return Class<SharedObject>::getInstanceS();
+	tiny_string name;
+	tiny_string localPath;
+	bool secure;
+	ARG_UNPACK(name) (localPath,"") (secure,false);
+	
+	if (name=="")
+		throwError<ASError>(0,"invalid name");
+	if (localPath != "" || secure)
+		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameters 'localPath' and 'secure' are ignored");
+
+
+	std::map<tiny_string, SharedObject* >::iterator it = sharedobjectmap.find(name);
+	LOG(LOG_INFO,"SharedObject.getLocal:"<<name << " "<<localPath<<" " << (it == sharedobjectmap.end()));
+	if (it == sharedobjectmap.end())
+	{
+		sharedobjectmap.insert(make_pair(name,Class<SharedObject>::getInstanceS()));
+		it = sharedobjectmap.find(name);
+	}
+	else
+	{
+		LOG(LOG_INFO,"SharedObject.getLocal dump:"<<name << " "<<localPath);
+		it->second->data->dumpVariables();
+	}
+	
+	return it->second;
+}
+ASFUNCTIONBODY(SharedObject,flush)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
+	return NULL;
 }
 
 void ObjectEncoding::sinit(Class_base* c)
@@ -1993,6 +2021,7 @@ void LocalConnection::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(send),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,isSupported);
 }
 ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
@@ -2012,9 +2041,14 @@ ASFUNCTIONBODY(LocalConnection, allowDomain)
 }
 ASFUNCTIONBODY(LocalConnection, allowInsecureDomain)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowInsecureDomain is not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, send)
+{
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::send is not implemented");
 	return NULL;
 }
 

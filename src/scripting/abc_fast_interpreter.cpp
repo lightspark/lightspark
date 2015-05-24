@@ -841,9 +841,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG(LOG_CALLS, _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				assert_and_throw(obj);
-				if(context->locals[i])
-					context->locals[i]->decRef();
-				context->locals[i]=obj;
+				if ((int)i != context->argarrayposition)
+				{
+					if(context->locals[i])
+						context->locals[i]->decRef();
+					context->locals[i]=obj;
+				}
 				break;
 			}
 			case 0x64:
@@ -1442,9 +1445,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				int i=opcode&3;
 				LOG(LOG_CALLS, "setLocal " << i );
 				ASObject* obj=context->runtime_stack_pop();
-				if(context->locals[i])
-					context->locals[i]->decRef();
-				context->locals[i]=obj;
+				if ((int)i != context->argarrayposition)
+				{
+					if(context->locals[i])
+						context->locals[i]->decRef();
+					context->locals[i]=obj;
+				}
 				break;
 			}
 			case 0xf2:

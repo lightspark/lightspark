@@ -219,12 +219,7 @@ public:
 	 */
 	virtual ASObject* coerce(ASObject* o) const;
 
-	void setSuper(_R<Class_base> super_)
-	{
-		assert(!super);
-		super = super_;
-		copyBorrowedTraitsFromSuper();
-	}
+	void setSuper(_R<Class_base> super_);
 	const variable* findBorrowedGettable(const multiname& name, NS_KIND &nskind) const DLL_LOCAL;
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	variable* findSettableInPrototype(const multiname& name) DLL_LOCAL;

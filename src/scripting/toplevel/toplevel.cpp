@@ -413,9 +413,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			cc.locals[i+1]=getSys()->getUndefinedRef();
 		}
 	}
-
-	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
-	if(mi->needsRest()) //TODO
+	cc.argarrayposition = -1;
+	if(mi->needsArgs())
+	{
+		assert_and_throw(cc.locals_size>args_len+1);
+		cc.locals[args_len+1]=argumentsArray;
+		cc.argarrayposition=args_len+1;
+	}
+	else if(mi->needsRest()|| passedToRest > 0) // it seems that Adobe allows additional parameters without setting "needsRest"
 	{
 		assert_and_throw(argumentsArray==NULL);
 		Array* rest=Class<Array>::getInstanceS();
@@ -426,11 +431,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 		assert_and_throw(cc.locals_size>args_len+1);
 		cc.locals[args_len+1]=rest;
-	}
-	else if(mi->needsArgs())
-	{
-		assert_and_throw(cc.locals_size>args_len+1);
-		cc.locals[args_len+1]=argumentsArray;
+		cc.argarrayposition= args_len+1;
 	}
 	//Parameters are ready
 
@@ -825,6 +826,13 @@ ASObject* Class_base::coerce(ASObject* o) const
 	if(!o->getClass() || !o->getClass()->isSubClass(this))
 		throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
 	return o;
+}
+
+void Class_base::setSuper(Ref<Class_base> super_)
+{
+	assert(!super);
+	super = super_;
+	copyBorrowedTraitsFromSuper();
 }
 
 ASFUNCTIONBODY(Class_base,_toString)

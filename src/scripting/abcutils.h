@@ -53,6 +53,7 @@ struct call_context
 	ABCContext* context;
 	uint32_t locals_size;
 	uint32_t max_stack;
+	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	std::vector<scope_entry> scope_stack;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
@@ -91,5 +92,5 @@ struct call_context
 	}
 };
 
-};
+}
 #endif /* SCRIPTING_ABCUTILS_H */

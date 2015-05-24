@@ -1402,6 +1402,29 @@ void call_context::runtime_stack_clear()
 	while(stack_index > 0)
 		stack[--stack_index]->decRef();
 }
+void call_context::runtime_stack_push(ASObject* s)
+{
+  if(stack_index>=max_stack)
+	throwError<ASError>(kStackOverflowError);
+  stack[stack_index++]=s;
+}
+ASObject* call_context::runtime_stack_pop()
+{
+  if(stack_index==0)
+	throwError<ASError>(kStackUnderflowError);
+  
+  ASObject* ret=stack[--stack_index];
+  return ret;
+}
+ASObject* call_context::runtime_stack_peek()
+{
+  if(stack_index==0)
+  {
+	LOG(LOG_ERROR,_("Empty stack"));
+	return NULL;
+  }
+  return stack[stack_index-1];
+}
 
 call_context::~call_context()
 {

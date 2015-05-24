@@ -67,29 +67,9 @@ struct call_context
 	int initialScopeStack;
 	~call_context();
 	void runtime_stack_clear();
-	void runtime_stack_push(ASObject* s)
-	{
-		if(stack_index>=max_stack)
-			throw RunTimeException("Stack overflow");
-		stack[stack_index++]=s;
-	}
-	ASObject* runtime_stack_pop()
-	{
-		if(stack_index==0)
-			throw RunTimeException("Empty stack");
-
-		ASObject* ret=stack[--stack_index];
-		return ret;
-	}
-	ASObject* runtime_stack_peek()
-	{
-		if(stack_index==0)
-		{
-			LOG(LOG_ERROR,_("Empty stack"));
-			return NULL;
-		}
-		return stack[stack_index-1];
-	}
+	void runtime_stack_push(ASObject* s);
+	ASObject* runtime_stack_pop();
+	ASObject* runtime_stack_peek();
 };
 
 }

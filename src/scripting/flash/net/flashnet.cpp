@@ -626,18 +626,12 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 
 
 	std::map<tiny_string, SharedObject* >::iterator it = sharedobjectmap.find(name);
-	LOG(LOG_INFO,"SharedObject.getLocal:"<<name << " "<<localPath<<" " << (it == sharedobjectmap.end()));
 	if (it == sharedobjectmap.end())
 	{
 		sharedobjectmap.insert(make_pair(name,Class<SharedObject>::getInstanceS()));
 		it = sharedobjectmap.find(name);
 	}
-	else
-	{
-		LOG(LOG_INFO,"SharedObject.getLocal dump:"<<name << " "<<localPath);
-		it->second->data->dumpVariables();
-	}
-	
+	it->second->incRef();
 	return it->second;
 }
 ASFUNCTIONBODY(SharedObject,flush)

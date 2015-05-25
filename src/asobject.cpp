@@ -1079,6 +1079,9 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 			return abstract_b(index < (unsigned int)a->size());
 		}
 	}
+	variable* v = obj->Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	if (v)
+		return abstract_b(v->isenumerable);
 	if (obj->hasPropertyByMultiname(name,true,false))
 		return abstract_b(true);
 	return abstract_b(false);
@@ -1093,10 +1096,14 @@ ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute=false;
-	variable* v =obj->Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	obj->setIsEnumerable(name, isEnum);
+	return NULL;
+}
+void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
+{
+	variable* v = Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if (v)
 		v->isenumerable = isEnum;
-	return NULL;
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

@@ -499,6 +499,8 @@ public:
 	void dumpVariables();
 	
 	void setConstructIndicator() { constructIndicator = true; }
+	
+	void setIsEnumerable(const multiname& name, bool isEnum);
 };
 
 class Number;

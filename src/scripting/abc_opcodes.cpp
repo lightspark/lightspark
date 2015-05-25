@@ -2108,6 +2108,17 @@ void ABCVm::newClass(call_context* th, int n)
 		Class_base* base = baseClass->as<Class_base>();
 		assert(!base->isFinal);
 		ret->setSuper(_MR(base));
+		i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
+		while (i != th->context->root->applicationDomain->classesBeingDefined.cend())
+		{
+			if(i->second == base)
+			{
+				th->context->root->applicationDomain->classesSuperNotFilled.push_back(ret);
+				break;
+			}
+			i++;
+		}
+		
 	}
 
 	//Add protected namespace if needed
@@ -2231,6 +2242,17 @@ void ABCVm::newClass(call_context* th, int n)
 	th->runtime_stack_push(ret);
 	cinit->decRef();
 
+	auto j = th->context->root->applicationDomain->classesSuperNotFilled.cbegin();
+	while (j != th->context->root->applicationDomain->classesSuperNotFilled.cend())
+	{
+		if((*j)->super == ret)
+		{
+			(*j)->copyBorrowedTraitsFromSuper();
+			th->context->root->applicationDomain->classesSuperNotFilled.remove(ret);
+			break;
+		}
+		j++;
+	}
 	//Remove the class to the ones being currently defined in this context
 	th->context->root->applicationDomain->classesBeingDefined.erase(mname);
 }

@@ -62,6 +62,9 @@ public:
 	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize();
 	std::map<const multiname*, Class_base*> classesBeingDefined;
+	
+	// list of classes where super class is not defined yet 
+	std::list<Class_base*> classesSuperNotFilled;
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

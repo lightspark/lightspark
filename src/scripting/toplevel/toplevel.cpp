@@ -771,7 +771,7 @@ Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),prote
  */
 void Class_base::copyBorrowedTraitsFromSuper()
 {
-	assert(borrowedVariables.Variables.empty());
+	//assert(borrowedVariables.Variables.empty());
 	variables_map::var_iterator i = super->borrowedVariables.Variables.begin();
 	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{

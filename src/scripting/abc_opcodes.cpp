@@ -1326,18 +1326,29 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	assert_and_throw(th->inClass);
-	assert_and_throw(th->inClass->super);
-	assert_and_throw(obj->getClass());
-	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
-
-	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,th->inClass->super.getPtr());
-	name->resetNameIfObject();
-	if(ret.isNull())
+	if(obj->is<Null>())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"getSuper: " << name->normalizedName() << " not found on " << obj->toDebugString());
-		ret = _MNR(getSys()->getUndefinedRef());
+		LOG(LOG_ERROR,"calling getSuper on null:" << *name << ' ' << obj->toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
 	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"calling getSuper on undefined:" << *name << ' ' << obj->toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Class_base* cls = NULL;
+	if (th->inClass && !th->inClass->super.isNull())
+		cls = th->inClass->super.getPtr();
+	else if (obj->getClass() && !obj->getClass()->super.isNull())
+		cls = obj->getClass()->super.getPtr();
+	assert_and_throw(cls);
+
+	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,cls);
+	if (ret.isNull())
+		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedName());
+
+	name->resetNameIfObject();
 
 	obj->decRef();
 	ret->incRef();

@@ -2120,6 +2120,8 @@ ASFUNCTIONBODY(lightspark,escape)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
+	if (argslen > 0 && args[0]->is<Undefined>())
+		return Class<ASString>::getInstanceS("null");
 	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
 }
 
@@ -2127,6 +2129,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
+	if (argslen > 0 && args[0]->is<Undefined>())
+		return Class<ASString>::getInstanceS("null");
 	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
 }
 

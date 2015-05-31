@@ -261,13 +261,13 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("print","",_MR(Class<IFunction>::getFunction(print)));
 	builtin->registerBuiltin("trace","",_MR(Class<IFunction>::getFunction(trace)));
 	builtin->registerBuiltin("parseInt","",_MR(Class<IFunction>::getFunction(parseInt,2)));
-	builtin->registerBuiltin("parseFloat","",_MR(Class<IFunction>::getFunction(parseFloat)));
+	builtin->registerBuiltin("parseFloat","",_MR(Class<IFunction>::getFunction(parseFloat,1)));
 	builtin->registerBuiltin("encodeURI","",_MR(Class<IFunction>::getFunction(encodeURI)));
 	builtin->registerBuiltin("decodeURI","",_MR(Class<IFunction>::getFunction(decodeURI)));
 	builtin->registerBuiltin("encodeURIComponent","",_MR(Class<IFunction>::getFunction(encodeURIComponent)));
 	builtin->registerBuiltin("decodeURIComponent","",_MR(Class<IFunction>::getFunction(decodeURIComponent)));
-	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(escape)));
-	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(unescape)));
+	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(escape,1)));
+	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(unescape,1)));
 	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(ASObject::_toString)));
 
 	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef());
@@ -502,8 +502,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef());
 	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef());
 
-	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN)));
-	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite)));
+	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN,1)));
+	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite,1)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
 

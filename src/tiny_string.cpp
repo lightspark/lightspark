@@ -508,7 +508,6 @@ tiny_string tiny_string::lowercase() const
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
-		assert(pend-p >= 6);
 		gunichar c = g_unichar_tolower(*it);
 		gint n = g_unichar_to_utf8(c, p);
 		p += n;
@@ -530,7 +529,6 @@ tiny_string tiny_string::uppercase() const
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
-		assert(pend-p >= 6);
 		gunichar c = g_unichar_toupper(*it);
 		gint n = g_unichar_to_utf8(c, p);
 		p += n;

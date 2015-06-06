@@ -984,16 +984,16 @@ ASFUNCTIONBODY(ASObject,generator)
 ASFUNCTIONBODY(ASObject,_toString)
 {
 	tiny_string ret;
-	if(obj->getClass())
-	{
-		ret="[object ";
-		ret+=obj->getClass()->class_name.name;
-		ret+="]";
-	}
-	else if (obj->is<Class_base>())
+	if (obj->is<Class_base>())
 	{
 		ret="[object ";
 		ret+=static_cast<Class_base*>(obj)->class_name.name;
+		ret+="]";
+	}
+	else if(obj->getClass())
+	{
+		ret="[object ";
+		ret+=obj->getClass()->class_name.name;
 		ret+="]";
 	}
 	else

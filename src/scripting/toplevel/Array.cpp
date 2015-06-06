@@ -345,17 +345,25 @@ ASFUNCTIONBODY(Array,forEach)
 		return NULL;
 	ASObject* params[3];
 
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
-	for(;it != th->data.end();++it)
+	uint32_t s = th->size();
+	for (uint32_t i=0; i < s; i++ )
 	{
-		if (it->second.type==DATA_OBJECT)
+		if (th->data.count(i))
 		{
-			params[0] = it->second.data;
-			it->second.data->incRef();
+			const data_slot& slot=th->data[i];
+			if(slot.type==DATA_INT)
+				params[0]=abstract_i(slot.data_i);
+			else if(slot.type==DATA_OBJECT && slot.data)
+			{
+				params[0]=slot.data;
+				params[0]->incRef();
+			}
+			else
+				params[0]=getSys()->getUndefinedRef();
 		}
 		else
-			params[0] =abstract_d(it->second.data_i);
-		params[1] = abstract_i(it->first);
+			continue;
+		params[1] = abstract_i(i);
 		params[2] = th;
 		th->incRef();
 
@@ -1279,6 +1287,8 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 {
+	if(name.isEmpty())
+		return false;
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	assert_and_throw(name.ns.size()!=0);
@@ -1315,7 +1325,11 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	assert_and_throw(implEnable);
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,allowConst);
+	{
+		ASObject::setVariableByMultiname(name,o,allowConst);
+//		setIsEnumerable(name,false);
+		return;
+	}
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,

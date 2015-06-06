@@ -2443,6 +2443,8 @@ _NR<ASObject> FunctionPrototype::getVariableByMultiname(const multiname& name, G
 
 Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), functionPrototype(p)
 {
+	traitsInitialized = true;
+	constructIndicator = true;
 }
 
 void Function_object::finalize()

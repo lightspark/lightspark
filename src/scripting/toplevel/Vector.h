@@ -63,7 +63,7 @@ public:
 	bool sameType(const QName& classname) const;
 
 	//Overloads
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);

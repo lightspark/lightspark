@@ -848,21 +848,24 @@ ASFUNCTIONBODY(Vector,unshift)
 	Vector* th=static_cast<Vector*>(obj);
 	if (th->fixed)
 		throwError<RangeError>(kVectorFixedError);
-	th->vec.resize(th->size()+argslen, NULL);
-	for(uint32_t i=th->size();i> 0;i--)
+	if (argslen > 0)
 	{
-		if (th->vec[i-1])
+		th->vec.resize(th->size()+argslen, NULL);
+		for(uint32_t i=th->size();i> 0;i--)
 		{
-			th->vec[(i-1)+argslen]=th->vec[i-1];
-			th->vec[i-1] = NULL;
+			if (th->vec[i-1])
+			{
+				th->vec[(i-1)+argslen]=th->vec[i-1];
+				th->vec[i-1] = NULL;
+			}
+			
 		}
 		
-	}
-
-	for(uint32_t i=0;i<argslen;i++)
-	{
-		args[i]->incRef();
-		th->vec[i] = th->vec_type->coerce(args[i]);
+		for(uint32_t i=0;i<argslen;i++)
+		{
+			args[i]->incRef();
+			th->vec[i] = th->vec_type->coerce(args[i]);
+		}
 	}
 	return abstract_i(th->size());
 }
@@ -1014,7 +1017,7 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_AL
 	}
 }
 
-tiny_string Vector::toString(bool debugMsg)
+tiny_string Vector::toString()
 {
 	//TODO: test
 	tiny_string t;

@@ -452,6 +452,8 @@ public:
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
 		if(sf==NULL)
 			return false;
+		if (closure_this.isNull())
+			return this == r;
 		return (mi==sf->mi) && (closure_this==sf->closure_this);
 	}
 	void acquireScope(const std::vector<scope_entry>& scope)

@@ -631,7 +631,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		//looking for a settable even if a super class sets
 		//has_getter to true.
 		obj=cls->findBorrowedSettable(name,&has_getter);
-		if(obj && cls->isFinal && !obj->setter)
+		if(obj && (cls->isFinal || cls->isSealed) && !obj->setter)
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
 		}

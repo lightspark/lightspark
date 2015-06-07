@@ -439,6 +439,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	{
 		if (obj->getClass() && obj->getClass()->isSealed)
 			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+		if (name->isEmpty())
+			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedName(), obj->getClassName());
 		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && obj->getClassName() != "Object")
 			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = getSys()->getUndefinedRef();
@@ -712,7 +714,7 @@ void ABCVm::construct(call_context* th, int m)
 			ret=o_class->getInstance(true,args,m);
 			break;
 		}
-
+/*
 		case T_OBJECT:
 		{
 			Class_base* o_class=static_cast<Class_base*>(obj->getClass());
@@ -720,7 +722,7 @@ void ABCVm::construct(call_context* th, int m)
 			ret=o_class->getInstance(true,args,m);
 			break;
 		}
-
+*/
 		case T_FUNCTION:
 		{
 			ret = constructFunction(th, obj->as<IFunction>(), args, m);
@@ -1892,10 +1894,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	ASObject* obj=th->runtime_stack_pop();
 	LOG(LOG_CALLS,"getDescendants " << *name << " " <<name->isAttribute<< " "<<obj->getClassName());
-	//The name must be a QName
-	assert_and_throw(name->name_type==multiname::NAME_STRING);
 	XML::XMLVector ret;
-	//TODO: support multiname and namespaces
 	XMLList* targetobject = NULL;
 	if(obj->getClass()==Class<XML>::getClass())
 	{
@@ -1908,7 +1907,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			if (ns_uri.empty() && name->ns.size() == 1)
 				ns_uri="*";
 		}
-		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), ns_uri,name->isAttribute, ret);
+		xmlObj->getDescendantsByQName(name->normalizedName(), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass())
 	{
@@ -1921,7 +1920,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 				ns_uri="*";
 		}
 		targetobject = xmlObj;
-		xmlObj->getDescendantsByQName(getSys()->getStringFromUniqueId(name->name_s_id), ns_uri,name->isAttribute, ret);
+		xmlObj->getDescendantsByQName(name->normalizedName(), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
 	{
@@ -1942,7 +1941,6 @@ void ABCVm::getDescendants(call_context* th, int n)
 			ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
 			namearg->setProxyProperty(*name);
 			proxyArgs[1]=namearg;
-			LOG(LOG_ERROR,"Proxy::getDescend:"<<namearg->toDebugString()<<*name);
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,_("Proxy::callProperty"));
@@ -2376,7 +2374,12 @@ void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** ar
 
 bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS,_("deleteProperty ") << *name);
+	LOG(LOG_CALLS,_("deleteProperty ") << *name<<" "<<obj->toDebugString());
+	if (name->name_type == multiname::NAME_OBJECT && name->name_o)
+	{
+		if (name->name_o->is<XMLList>())
+			throwError<TypeError>(kDeleteTypeError,name->name_o->getClassName());
+	}
 	bool ret = obj->deleteVariableByMultiname(*name);
 
 	obj->decRef();

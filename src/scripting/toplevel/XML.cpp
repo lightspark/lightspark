@@ -69,7 +69,7 @@ void XML::finalize()
 
 void XML::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	setDefaultXMLSettings();
 
 	c->setDeclaredMethodByQName("ignoreComments","",Class<IFunction>::getFunction(_getIgnoreComments),GETTER_METHOD,false);
@@ -1226,7 +1226,7 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 	defns += getVm()->getDefaultXMLNamespace();
 	defns += "|";
 	tiny_string normalizedName= "";
-	if (!name.isEmpty()) normalizedName= name.normalizedName();
+	normalizedName= name.normalizedName();
 	if (normalizedName.startsWith("@"))
 		normalizedName = normalizedName.substr(1,normalizedName.end());
 	tiny_string namespace_uri="|";
@@ -1328,12 +1328,26 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	}
 	else
 	{
-		const XMLVector& ret=getValuesByMultiname(childrenlist,name);
-		if(ret.empty() && (opt & XML_STRICT)!=0)
-			return NullRef;
-
-		_R<XMLList> ch =_MNR(Class<XMLList>::getInstanceS(ret,this->getChildrenlist(),name));
-		return ch;
+		if (normalizedName == "*")
+		{
+			XMLVector ret;
+			childrenImpl(ret, "*");
+			multiname mname(NULL);
+			mname.name_s_id=getSys()->getUniqueStringId("*");
+			mname.name_type=multiname::NAME_STRING;
+			mname.ns.push_back(nsNameAndKind("",NAMESPACE));
+			XMLList* retObj=Class<XMLList>::getInstanceS(ret,this->getChildrenlist(),mname);
+			return _MNR(retObj);
+		}
+		else
+		{
+			const XMLVector& ret=getValuesByMultiname(childrenlist,name);
+			if(ret.empty() && (opt & XML_STRICT)!=0)
+				return NullRef;
+			
+			_R<XMLList> ch =_MNR(Class<XMLList>::getInstanceS(ret,this->getChildrenlist(),name));
+			return ch;
+		}
 	}
 }
 
@@ -1372,42 +1386,37 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	
 	if(isAttr)
 	{
-		bool found = false;
-		for (XMLList::XMLListVector::iterator it = attributelist->nodes.begin(); it != attributelist->nodes.end(); it++)
+		tiny_string nodeval;
+		if(o->is<XMLList>())
 		{
-			_R<XML> attr = *it;
-			if (attr->nodenamespace_uri == ns_uri && (attr->nodename == buf || (*buf==0)))
+			_NR<XMLList> x = _NR<XMLList>(o->as<XMLList>());
+			for (auto it2 = x->nodes.begin(); it2 != x->nodes.end(); it2++)
 			{
-				if(o->is<XMLList>())
-				{
-					_NR<XMLList> x = _NR<XMLList>(o->as<XMLList>());
-					for (auto it = x->nodes.begin(); it != x->nodes.end(); it++)
-					{
-						if (!found)
-							attr->nodevalue = (*it)->toString();
-						else
-						{
-							attr->nodevalue += " ";
-							attr->nodevalue += (*it)->toString();
-						}
-						found = true;
-					}
-				}
-				else
-				{
-					if (!found)
-						attr->nodevalue = o->toString();
-					else
-					{
-						attr->nodevalue += " ";
-						attr->nodevalue += o->toString();
-					}
-					found = true;
-				}
-				
+				if (nodeval != "")
+					nodeval += " ";
+				nodeval += (*it2)->toString();
 			}
 		}
-		if (!found && !normalizedName.empty())
+		else
+		{
+			nodeval = o->toString();
+		}
+		_NR<XML> a;
+		XMLList::XMLListVector::iterator it = attributelist->nodes.begin();
+		while (it != attributelist->nodes.end())
+		{
+			_R<XML> attr = *it;
+			XMLList::XMLListVector::iterator ittmp = it;
+			it++;
+			if (attr->nodenamespace_uri == ns_uri && (attr->nodename == buf || (*buf=='*')|| (*buf==0)))
+			{
+				if (!a.isNull())
+					it=attributelist->nodes.erase(ittmp);
+				a = *ittmp;
+				a->nodevalue = nodeval;
+			}
+		}
+		if (a.isNull() && !((*buf=='*')|| (*buf==0)))
 		{
 			_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
 			this->incRef();
@@ -1416,7 +1425,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 			tmp->nodename = buf;
 			tmp->nodenamespace_uri = ns_uri;
 			tmp->nodenamespace_prefix = ns_prefix;
-			tmp->nodevalue = o->toString();
+			tmp->nodevalue = nodeval;
 			tmp->constructed = true;
 			attributelist->nodes.push_back(tmp);
 		}
@@ -1545,6 +1554,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	}
 
 	bool isAttr=name.isAttribute;
+	unsigned int index=0;
 	const tiny_string normalizedName=name.normalizedName();
 	const char *buf=normalizedName.raw_buf();
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
@@ -1561,6 +1571,12 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 			if (attr->nodenamespace_uri == ns_uri && attr->nodename == buf)
 				return true;
 		}
+	}
+	else if(XML::isValidMultiname(name,index))
+	{
+		// If the multiname is a valid array property, the XML
+		// object is treated as a single-item XMLList.
+		return(index==0);
 	}
 	else
 	{

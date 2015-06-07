@@ -93,7 +93,7 @@ void XMLList::finalize()
 
 void XMLList::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(attribute),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(attributes),NORMAL_METHOD,true);
@@ -630,10 +630,10 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		for (uint32_t i = 0; i < nodes.size(); i++)
 		{
 			_R<XML> child= nodes[i];
-			bool nameMatches = (normalizedName=="" || normalizedName==child->nodename);
+			bool nameMatches = (normalizedName=="" || normalizedName==child->nodename  || normalizedName=="*");
 			bool nsMatches = (namespace_uri=="" || 
 							  (child->nodenamespace_uri == namespace_uri));
-			
+
 			if(nameMatches && nsMatches)
 			{
 				retnodes.push_back(child);
@@ -748,7 +748,7 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 			tmpprop = tmplist->targetproperty;
 			tmplist = tmplist->targetobject;
 		}
-		if (tmplist && !tmpprop.isEmpty())
+		if (tmplist)
 		{
 			tmplist->getTargetVariables(tmpprop,retnodes);
 		}
@@ -770,6 +770,8 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 	{
 		if (tmplist)
 		{
+			if (tmplist->nodes.size() > 1)
+				throwError<TypeError>(kXMLAssigmentOneItemLists);
 			if (!tmpprop.isEmpty())
 			{
 				XML* tmp = Class<XML>::getInstanceS();
@@ -810,7 +812,7 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 	}
 	else
 	{
-		// do nothing, see ECMA-357, Section 9.2.1.2
+		throwError<TypeError>(kXMLAssigmentOneItemLists);
 	}
 }
 

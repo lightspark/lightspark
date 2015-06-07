@@ -724,9 +724,11 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x0D: //QNameA
 			{
 				ret->ns.push_back(nsNameAndKind(this, m->ns));
-
-				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
-				ret->name_type=multiname::NAME_STRING;
+				if (m->name)
+				{
+					ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
+					ret->name_type=multiname::NAME_STRING;
+				}
 				break;
 			}
 			case 0x09: //Multiname
@@ -740,8 +742,11 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
-				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
-				ret->name_type=multiname::NAME_STRING;
+				if (m->name)
+				{
+					ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
+					ret->name_type=multiname::NAME_STRING;
+				}
 				break;
 			}
 			case 0x1b: //MultinameL
@@ -1555,7 +1560,7 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
-
+	
 	g->incRef();
 	entry->addToScope(scope_entry(_MR(g),false));
 

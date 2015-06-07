@@ -69,7 +69,7 @@ tiny_string multiname::normalizedName() const
 		case multiname::NAME_STRING:
 			return getSys()->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
-			return name_o->toString();
+			return name_o ? name_o->toString() : "*";
 		default:
 			assert("Unexpected name kind" && false);
 			//Should never reach this

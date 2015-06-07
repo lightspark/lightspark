@@ -313,7 +313,7 @@ _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 			return ret;
 	}
 
-	throw Class<TypeError>::getInstanceS();
+	throwError<TypeError>(kConvertToPrimitiveError,this->getClassName());
 	return _MR((ASObject*)NULL);
 }
 
@@ -851,6 +851,8 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 
 const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds, NS_KIND &nskind) const
 {
+	if (mname.isEmpty())
+		return NULL;
 	uint32_t name=mname.normalizedNameId();
 	assert(!mname.ns.empty());
 
@@ -933,7 +935,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString())
 			{
 				// avoid recursive construction
-				obj = getSys()->getNullRef();
+				//obj = getSys()->getNullRef();
+				obj = getSys()->getUndefinedRef();
 			}
 			else if (type != Class_object::getClass() &&
 					dynamic_cast<const Class_base*>(type))

@@ -1638,6 +1638,54 @@ tiny_string ASQName::toString()
 	return s + local_name;
 }
 
+uint32_t ASQName::nextNameIndex(uint32_t cur_index)
+{
+	assert_and_throw(implEnable);
+	if(cur_index<2)
+		return cur_index+1;
+	else
+	{
+		//Fall back on object properties
+		uint32_t ret=ASObject::nextNameIndex(cur_index-2);
+		if(ret==0)
+			return 0;
+		else
+			return ret+2;
+
+	}
+}
+
+_R<ASObject> ASQName::nextName(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	switch(index)
+	{
+		case 1:
+			return _MR(Class<ASString>::getInstanceS("uri"));
+		case 2:
+			return _MR(Class<ASString>::getInstanceS("localName"));
+		default:
+			return ASObject::nextName(index-2);
+	}
+}
+
+_R<ASObject> ASQName::nextValue(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	switch(index)
+	{
+		case 1:
+			if (uri_is_null)
+				return _MR(getSys()->getNullRef());
+			else
+				return _MR(Class<ASString>::getInstanceS(this->uri));
+		case 2:
+			return _MR(Class<ASString>::getInstanceS(this->local_name));
+		default:
+			return ASObject::nextName(index-2);
+	}
+}
+
 Namespace::Namespace(Class_base* c):ASObject(c),nskind(NAMESPACE)
 {
 	type=T_NAMESPACE;
@@ -1911,6 +1959,53 @@ bool Namespace::isEqual(ASObject* o)
 	return ASObject::isEqual(o);
 }
 
+uint32_t Namespace::nextNameIndex(uint32_t cur_index)
+{
+	assert_and_throw(implEnable);
+	if(cur_index<2)
+		return cur_index+1;
+	else
+	{
+		//Fall back on object properties
+		uint32_t ret=ASObject::nextNameIndex(cur_index-2);
+		if(ret==0)
+			return 0;
+		else
+			return ret+2;
+
+	}
+}
+
+_R<ASObject> Namespace::nextName(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	switch(index)
+	{
+		case 1:
+			return _MR(Class<ASString>::getInstanceS("uri"));
+		case 2:
+			return _MR(Class<ASString>::getInstanceS("prefix"));
+		default:
+			return ASObject::nextName(index-2);
+	}
+}
+
+_R<ASObject> Namespace::nextValue(uint32_t index)
+{
+	assert_and_throw(implEnable);
+	switch(index)
+	{
+		case 1:
+			return _MR(Class<ASString>::getInstanceS(this->uri));
+		case 2:
+			if(prefix_is_undefined)
+				return _MR(getSys()->getUndefinedRef());
+			else
+				return _MR(Class<ASString>::getInstanceS(this->prefix));
+		default:
+			return ASObject::nextName(index-2);
+	}
+}
 
 ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 {

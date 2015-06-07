@@ -568,7 +568,12 @@ public:
 	tiny_string getURI() const { return uri; }
 	tiny_string getLocalName() const { return local_name; }
 	bool isEqual(ASObject* o);
+
 	tiny_string toString();
+
+	uint32_t nextNameIndex(uint32_t cur_index);
+	_R<ASObject> nextName(uint32_t index);
+	_R<ASObject> nextValue(uint32_t index);
 };
 
 class Namespace: public ASObject
@@ -598,6 +603,10 @@ public:
 	bool isEqual(ASObject* o);
 	tiny_string getURI() { return uri; }
 	tiny_string getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
+
+	uint32_t nextNameIndex(uint32_t cur_index);
+	_R<ASObject> nextName(uint32_t index);
+	_R<ASObject> nextValue(uint32_t index);
 };
 
 

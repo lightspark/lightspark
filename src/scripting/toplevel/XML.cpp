@@ -1453,12 +1453,31 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 				}
 				else if(o->is<XML>())
 				{
-					_NR<XML> tmp = _MR<XML>(o->as<XML>());
-					tmp->parentNode = _MR<XML>(this);
-					tmp->incRef();
+					if (o->as<XML>()->getNodeKind() == XML_TEXT_NODE)
+					{
+						_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
+						tmp->parentNode = tmpnode;
+						tmp->incRef();
+						tmp->nodetype = XML_TEXT_NODE;
+						tmp->nodename = "text";
+						tmp->nodenamespace_uri = "";
+						tmp->nodenamespace_prefix = "";
+						tmp->nodevalue = o->toString();
+						tmp->constructed = true;
+						tmpnode->childrenlist->clear();
+						tmpnode->childrenlist->append(tmp);
+						if (!found)
+							tmpnodes.push_back(tmpnode);
+					}
+					else
+					{
+						_NR<XML> tmp = _MR<XML>(o->as<XML>());
+						tmp->parentNode = _MR<XML>(this);
+						tmp->incRef();
+						if (!found)
+							tmpnodes.push_back(tmp);
+					}
 					
-					if (!found)
-						tmpnodes.push_back(tmp);
 				}
 				else
 				{

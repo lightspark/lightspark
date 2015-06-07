@@ -941,14 +941,19 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	if (idx >= nodes.size())
 		return;
 
-	if (nodes[idx]->getNodeKind() == XML_ATTRIBUTE_NODE || nodes[idx]->getNodeKind() == XML_TEXT_NODE)
+	if (nodes[idx]->getNodeKind() == XML_ATTRIBUTE_NODE)
 	{
 		if (targetobject)
 			targetobject->setVariableByMultiname(targetproperty,o,allowConst);
 		nodes[idx]->setTextContent(o->toString());
 	}
-	else if (o->is<XMLList>())
+	if (o->is<XMLList>())
 	{
+		if (o->as<XMLList>()->nodes.size() == 1)
+		{
+			replace(idx,o->as<XMLList>()->nodes[0].getPtr(),retnodes,allowConst);
+			return;
+		}
 		if (targetobject)
 		{
 			for (uint32_t i = 0; i < targetobject->nodes.size(); i++)
@@ -988,8 +993,25 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			m.ns.push_back(nsNameAndKind("",NAMESPACE));
 			targetobject->setVariableByMultiname(m,o,allowConst);
 		}
-		o->incRef();
-		nodes[idx] = _MR(o->as<XML>());
+		if (o->as<XML>()->getNodeKind() == XML_TEXT_NODE)
+		{
+			nodes[idx]->childrenlist->clear();
+			_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
+			nodes[idx]->incRef();
+			tmp->parentNode = nodes[idx];
+			tmp->nodetype = XML_TEXT_NODE;
+			tmp->nodename = "text";
+			tmp->nodenamespace_uri = "";
+			tmp->nodenamespace_prefix = "";
+			tmp->nodevalue = o->toString();
+			tmp->constructed = true;
+			nodes[idx]->childrenlist->append(tmp);
+		}
+		else
+		{
+			o->incRef();
+			nodes[idx] = _MR(o->as<XML>());
+		}
 	}
 	else
 	{

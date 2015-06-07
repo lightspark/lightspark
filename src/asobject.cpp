@@ -566,6 +566,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 		// fixed properties cannot be deleted
 		if (hasPropertyByMultiname(name,true,true))
 			return false;
+
 		//unknown variables must return true
 		return true;
 	}
@@ -941,7 +942,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			else if (type != Class_object::getClass() &&
 					dynamic_cast<const Class_base*>(type))
 			{
-				if (!((Class_base*)type)->super)
+				//if (!((Class_base*)type)->super)
 				{
 					// super type could not be found, so the class is stored as an uninitialized variable
 					LOG(LOG_CALLS,"add uninitialized class var:"<<mname);
@@ -955,8 +956,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 					obj = getSys()->getNullRef();
 					obj = type->coerce(obj);
 				}
-				else
-					obj = ((Class_base*)type)->getInstance(false,NULL,0);
+				//else
+				//	obj = ((Class_base*)type)->getInstance(false,NULL,0);
 			}
 			else
 			{

@@ -394,6 +394,10 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
 		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
+		if (obj->hasPropertyByMultiname(*name,true,true))
+			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+		if (obj->getClass() && obj->getClass()->isSealed)
+			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
 		throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
 
 		if(keepReturn)
@@ -441,6 +445,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
 		if (name->isEmpty())
 			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedName(), obj->getClassName());
+		if (obj->is<Undefined>())
+			throwError<TypeError>(kConvertUndefinedToObjectError);
 		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && obj->getClassName() != "Object")
 			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
 		ret = getSys()->getUndefinedRef();

@@ -42,9 +42,9 @@ curClass = ""
 isConst = False
 
 toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.html", "Date.html", "DefinitionError.html", "Error.html",
-                  "EvalError.html", "Function.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
+                  "EvalError.html", "Function.html", "int.html", "JSON.html", "Math.html", "Namespace.html", "Number.html", "Object.html", "QName.html", "RangeError.html",
                   "ReferenceError.html", "RegExp.html", "SecurityError.html", "String.html", "SyntaxError.html",
-                  "TypeError.html", "URIError.html", "Vector.html", "VerifyError.html", "XML.html", "XMLList.html" ]
+                  "TypeError.html", "uint.html", "URIError.html", "Vector.html", "VerifyError.html", "XML.html", "XMLList.html" ]
 
 regclass = re.compile(r'<title>([a-zA-Z0-9\.]*)')
 regconst = re.compile(r'Public Constants')

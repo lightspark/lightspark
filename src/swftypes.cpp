@@ -94,6 +94,25 @@ uint32_t multiname::normalizedNameId() const
 	}
 }
 
+tiny_string multiname::normalizedNameUnresolved() const
+{
+	switch(name_type)
+	{
+		case multiname::NAME_INT:
+			return Integer::toString(name_i);
+		case multiname::NAME_NUMBER:
+			return Number::toString(name_d);
+		case multiname::NAME_STRING:
+			return getSys()->getStringFromUniqueId(name_s_id);
+		case multiname::NAME_OBJECT:
+			return name_o ? name_o->getClassName() : "*";
+		default:
+			assert("Unexpected name kind" && false);
+			//Should never reach this
+			return "";
+	}
+}
+
 void multiname::setName(ASObject* n)
 {
 	if (name_type==NAME_OBJECT && name_o!=NULL) {

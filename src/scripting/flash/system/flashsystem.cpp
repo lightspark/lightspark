@@ -295,7 +295,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	ASObject* target;
 	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o == NULL)
-		throwError<ReferenceError>(kClassNotFoundError,name.normalizedName());
+		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved());
 
 	//TODO: specs says that also namespaces and function may be returned
 	assert_and_throw(o->getObjectType()==T_CLASS);
@@ -535,8 +535,9 @@ ASFUNCTIONBODY(Security, allowInsecureDomain)
 
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
-	LOG(LOG_INFO, "Loading policy file: " << getSys()->mainClip->getOrigin().goToURL(args[0]->toString()));
-	getSys()->securityManager->addPolicyFile(getSys()->mainClip->getOrigin().goToURL(args[0]->toString()));
+	tiny_string url = args[0]->toString();
+	LOG(LOG_INFO, "Loading policy file: " << getSys()->mainClip->getOrigin().goToURL(url));
+	getSys()->securityManager->addPolicyFile(getSys()->mainClip->getOrigin().goToURL(url));
 	assert_and_throw(argslen == 1);
 	return NULL;
 }

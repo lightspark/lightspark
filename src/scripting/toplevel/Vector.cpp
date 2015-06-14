@@ -164,7 +164,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 	}
 	else
 	{
-		throwError<ArgumentError>(kCheckTypeFailedError, args[0]->toString(), "Vector");
+		throwError<ArgumentError>(kCheckTypeFailedError, args[0]->getClassName(), "Vector");
 	}
 
 	return NULL;
@@ -1076,7 +1076,7 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))
-		throwError<RangeError>(kOutOfRangeError, name.normalizedName(), "?");
+		throwError<RangeError>(kOutOfRangeError, name.normalizedNameUnresolved(), "?");
 
 	return validIndex;
 }

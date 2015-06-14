@@ -370,6 +370,13 @@ struct multiname: public memory_reporter
 	 * 	Return a string id whatever is the name type
 	 */
 	uint32_t normalizedNameId() const;
+	/*
+		Returns a string name whatever is the name type, but does not resolve NAME_OBJECT names
+		this should be used for exception or debug messages to avoid calling 
+		overridden toString property of the object
+	*/
+	tiny_string normalizedNameUnresolved() const;
+
 	tiny_string qualifiedString() const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);

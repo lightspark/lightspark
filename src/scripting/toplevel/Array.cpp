@@ -1277,6 +1277,8 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 {
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	if (!isConstructed())
+		return false;
 
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
@@ -1333,7 +1335,7 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,
-					   name.normalizedName(),
+					   name.normalizedNameUnresolved(),
 					   getClass()->getQualifiedClassName());
 	if (index==0xFFFFFFFF)
 		return;

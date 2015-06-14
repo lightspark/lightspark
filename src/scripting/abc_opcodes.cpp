@@ -53,16 +53,16 @@ int32_t ABCVm::bitAnd_oi(ASObject* val1, int32_t val2)
 
 void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
-	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj<<" "<<obj->toDebugString()<<" " << value->toString()<<" "<<value);
+	LOG(LOG_CALLS,_("setProperty ") << *name << ' ' << obj<<" "<<obj->toDebugString()<<" " <<value);
 
 	if(obj->is<Null>())
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toString());
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (obj->is<Undefined>())
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toString());
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	//Do not allow to set contant traits
@@ -442,13 +442,13 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(prop.isNull())
 	{
 		if (obj->getClass() && obj->getClass()->isSealed)
-			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+			throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(), obj->getClass()->getQualifiedClassName());
 		if (name->isEmpty())
-			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedName(), obj->getClassName());
+			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(), obj->getClassName());
 		if (obj->is<Undefined>())
 			throwError<TypeError>(kConvertUndefinedToObjectError);
 		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && obj->getClassName() != "Object")
-			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedName() << " not found on " << obj->toDebugString());
+			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved() << " not found on " << obj->toDebugString());
 		ret = getSys()->getUndefinedRef();
 	}
 	else
@@ -1354,7 +1354,7 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	_NR<ASObject> ret = obj->getVariableByMultiname(*name,ASObject::NONE,cls);
 	if (ret.isNull())
-		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedName());
+		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedNameUnresolved());
 
 	name->resetNameIfObject();
 
@@ -1497,7 +1497,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
-			throwError<ReferenceError>(kUndefinedVarError,name->normalizedName());
+			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved());
 			return getSys()->getUndefinedRef();
 		}
 	}
@@ -1818,7 +1818,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
 		obj->decRef();
-		throwError<ReferenceError>(kUndefinedVarError, name->normalizedName());
+		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved());
 	}
 
 	name->resetNameIfObject();

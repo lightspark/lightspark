@@ -343,7 +343,7 @@ _R<ASObject> ASObject::call_valueOf()
 
 	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	if (!o->is<IFunction>())
-		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedName());
+		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved());
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
@@ -623,7 +623,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		throwError<ReferenceError>(kConstWriteError, name.normalizedName(), classdef->as<Class_base>()->getQualifiedClassName());
+		throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), classdef->as<Class_base>()->getQualifiedClassName());
 	}
 	if(!obj && cls)
 	{
@@ -634,7 +634,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && (cls->isFinal || cls->isSealed) && !obj->setter)
 		{
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
 
@@ -649,7 +649,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		    ((protoObj->var && protoObj->var->is<Function>()) ||
 		     protoObj->setter))
 		{
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
 
@@ -657,7 +657,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			throwError<ReferenceError>(kConstWriteError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
 		}
 
 		// Properties can not be added to a sealed class
@@ -665,8 +665,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		{
 			const Type* type = Type::getTypeFromMultiname(&name,getVm()->currentCallContext->context);
 			if (type)
-				throwError<ReferenceError>(kConstWriteError, name.normalizedName(), cls ? cls->getQualifiedClassName() : "");
-			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(), cls->getQualifiedClassName());
+				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(), cls->getQualifiedClassName());
 		}
 
 		//Create a new dynamic variable
@@ -838,8 +838,8 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 		return NULL;
 	if(createKind == DYNAMIC_TRAIT)
 	{
-		if(!mname.ns.begin()->hasEmptyName())
-			throwError<ReferenceError>(kWriteSealedError, mname.normalizedName(), "" /* TODO: class name */);
+		//if(!mname.ns.begin()->hasEmptyName())
+		//	throwError<ReferenceError>(kWriteSealedError, mname.normalizedName(), "" /* TODO: class name */);
 		var_iterator inserted=Variables.insert(
 			make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
 		return &inserted->second;
@@ -856,7 +856,7 @@ const variable* variables_map::findObjVar(const multiname& mname, uint32_t trait
 		return NULL;
 	uint32_t name=mname.normalizedNameId();
 	assert(!mname.ns.empty());
-
+	
 	const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
 	auto nsIt=mname.ns.begin();
 
@@ -928,7 +928,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				v.mname = &mname;
 				v.traitKind = traitKind;
 				v.typemname = typemname;
-				context->addUninitializedVar(v);
+				//context->addUninitializedVar(v);
 				obj = getSys()->getUndefinedRef();
 				obj = type->coerce(obj);
 			}
@@ -952,8 +952,9 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 					v.mname = &mname;
 					v.traitKind = traitKind;
 					v.typemname = typemname;
-					context->addUninitializedVar(v);
-					obj = getSys()->getNullRef();
+					//context->addUninitializedVar(v);
+					obj = getSys()->getUndefinedRef();
+					//obj = getSys()->getNullRef();
 					obj = type->coerce(obj);
 				}
 				//else
@@ -1200,7 +1201,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		LOG(LOG_CALLS,"accessing class:"<<name<<" "<< this->as<Class_base>()->getQualifiedClassName()<<" "<<nskind);
 		if (obj->kind == INSTANCE_TRAIT &&
 				nskind != STATIC_PROTECTED_NAMESPACE)
-			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedName());
+			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved());
 	}
 
 	if(obj->getter)
@@ -1863,7 +1864,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)
 		throwError<ReferenceError>(kConstWriteError,
-					   prototypeName.normalizedName(),
+					   prototypeName.normalizedNameUnresolved(),
 					   classdef ? classdef->as<Class_base>()->getQualifiedClassName() : "");
 	if(!ret)
 		ret = Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);

@@ -663,9 +663,12 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed)
 		{
-			const Type* type = Type::getTypeFromMultiname(&name,getVm()->currentCallContext->context);
-			if (type)
-				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			if (getVm()->currentCallContext)
+			{
+				const Type* type = Type::getTypeFromMultiname(&name,getVm()->currentCallContext->context);
+				if (type)
+					throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			}
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(), cls->getQualifiedClassName());
 		}
 

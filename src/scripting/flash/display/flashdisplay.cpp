@@ -952,7 +952,8 @@ void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
 		FrameLabel_data& fl = *j;
 		if(fl.frame == frame)
 		{
-			assert_and_throw(fl.name == label);
+			LOG(LOG_INFO,"existing frame label found:"<<fl.name<<", new value:"<<label);
+			fl.name = label;
 			return;
 		}
 		else if(fl.frame > frame)

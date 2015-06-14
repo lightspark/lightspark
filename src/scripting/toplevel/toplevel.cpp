@@ -54,11 +54,15 @@ Void* const Type::voidType = new Void();
 
 Null::Null():ASObject((Class_base*)(NULL))
 {
+	traitsInitialized = true;
+	constructIndicator = true;
 	type=T_NULL;
 }
 
 Undefined::Undefined():ASObject((Class_base*)(NULL))
 {
+	traitsInitialized = true;
+	constructIndicator = true;
 	type=T_UNDEFINED;
 }
 
@@ -808,7 +812,12 @@ void Class_base::initStandardProps()
 
 ASObject* Class_base::coerce(ASObject* o) const
 {
-	if(o->is<Null>() || o->is<Undefined>())
+	if (o->is<Undefined>())
+	{
+		o->decRef();
+		return getSys()->getNullRef();
+	}
+	if(o->is<Null>())
 		return o;
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */

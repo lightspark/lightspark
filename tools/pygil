@@ -13,7 +13,7 @@ import pickle
 
 #These regexp are used for finding important pieces in the source
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
-rconstructor = re.compile('[^/]*ASFUNCTIONBODY\([^,]*, *\_constructor\)')
+rconstructor = re.compile('[^/]*ASFUNCTIONBODY\( *([^,]*), *\_constructor\)')
 #looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef());
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(\)\)')
 rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(\)\)\)')
@@ -24,11 +24,11 @@ rstupclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *C
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
 rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,(\w\),)* *NORMAL_METHOD, *([^ ]*)')
+rmet2 = re.compile('[^/]*->prototype->setVariableByQName\( *"([^"]*)", *([^,]*),[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
-#Constant names do not contain lower-case letters
-rconst = re.compile('[^/]*->setVariableByQName\("([A-Z_0-9]*)",.*_TRAIT');
+rconst = re.compile('[^/]*->setVariableByQName\("([A-Za-z_0-9]*)",.*[A-Z]*\_TRAIT');
 rcomment = re.compile('[ \t]*/')
 
 def getFullname(cls,name):
@@ -51,6 +51,7 @@ stubclasses = set([])
 warnNotRegistered = set([])
 internalToExternal = {}
 curClass = ""
+curClassConstructor = ""
 
 #1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
 f = open('../src/scripting/abc.cpp','r')
@@ -109,7 +110,12 @@ for line in ptmp.split(";"):
 	m = rconstructor.match(line)
 	if m:
 		#the constructor is named after the class
-		methods.add((curClass,curClass[curClass.rfind('.')+1:]))
+		curClassConstructor = m.group(1)
+		if curClassConstructor not in internalToExternal:
+			warnNotRegistered.add(curClassConstructor)
+		else:
+			curClassConstructor = internalToExternal[curClassConstructor]
+		methods.add((curClassConstructor,curClassConstructor[curClassConstructor.rfind('.')+1:]))
 		continue
 	m = rget.match(line)
 	if m:
@@ -133,6 +139,10 @@ for line in ptmp.split(";"):
 		setters.add((curClass, m.group(1)))
 		continue
 	m = rmet.match(line)
+	if m:
+		methods.add((curClass, m.group(1)))
+		continue
+	m = rmet2.match(line)
 	if m:
 		methods.add((curClass, m.group(1)))
 		continue

@@ -157,10 +157,18 @@ public:
 
 class StageVideo : public EventDispatcher
 {
+private:
+	mutable Mutex mutex;
+	mutable uint32_t videoWidth, videoHeight;
+	_NR<NetStream> netStream;
 public:
-	StageVideo(Class_base* c):EventDispatcher(c){}
+	StageVideo(Class_base* c):EventDispatcher(c),videoWidth(0),videoHeight(0){}
+	void finalize();
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getVideoWidth);
+	ASFUNCTION(_getVideoHeight);
+	ASFUNCTION(attachNetStream);
 };
 
 class StageVideoAvailability : public ASObject

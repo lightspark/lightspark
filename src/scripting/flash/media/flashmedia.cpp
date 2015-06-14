@@ -593,12 +593,50 @@ void SoundChannel::threadAbort()
 
 void StageVideo::sinit(Class_base *c)
 {
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
+	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
 }
 
-ASFUNCTIONBODY(StageVideo,_constructor)
+
+void StageVideo::finalize()
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	netStream.reset();
+}
+
+ASFUNCTIONBODY(StageVideo,_getVideoWidth)
+{
+	StageVideo* th=Class<StageVideo>::cast(obj);
+	return abstract_i(th->videoWidth);
+}
+
+ASFUNCTIONBODY(StageVideo,_getVideoHeight)
+{
+	StageVideo* th=Class<StageVideo>::cast(obj);
+	return abstract_i(th->videoHeight);
+}
+
+ASFUNCTIONBODY(StageVideo,attachNetStream)
+{
+	StageVideo* th=Class<StageVideo>::cast(obj);
+	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED) //Drop the connection
+	{
+		Mutex::Lock l(th->mutex);
+		th->netStream=NullRef;
+		return NULL;
+	}
+
+	//Validate the parameter
+	if(!args[0]->getClass()->isSubClass(Class<NetStream>::getClass()))
+		throw RunTimeException("Type mismatch in StageVideo::attachNetStream");
+
+	//Acquire the netStream
+	args[0]->incRef();
+
+	Mutex::Lock l(th->mutex);
+	th->netStream=_MR(Class<NetStream>::cast(args[0]));
 	return NULL;
 }
 

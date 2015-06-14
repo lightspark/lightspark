@@ -104,6 +104,8 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(stopPropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(stopImmediatePropagation),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
 	REGISTER_GETTER(c,target);
 	REGISTER_GETTER(c,type);
@@ -183,6 +185,19 @@ ASFUNCTIONBODY(Event,clone)
 {
 	Event* th=static_cast<Event*>(obj);
 	return th->cloneImpl();
+}
+
+ASFUNCTIONBODY(Event,stopPropagation)
+{
+	Event* th=static_cast<Event*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(Event,stopImmediatePropagation)
+{
+	Event* th=static_cast<Event*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented");
+	return NULL;
 }
 
 void EventPhase::sinit(Class_base* c)
@@ -299,7 +314,7 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(updateAfterEvent),NORMAL_METHOD,true);
 
-	REGISTER_GETTER(c,relatedObject);
+	REGISTER_GETTER_SETTER(c,relatedObject);
 	REGISTER_GETTER(c,stageX);
 	REGISTER_GETTER(c,stageY);
 	REGISTER_GETTER_SETTER(c,localX);
@@ -345,7 +360,7 @@ ASFUNCTIONBODY(MouseEvent,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY_GETTER(MouseEvent,relatedObject);
+ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,relatedObject);
 ASFUNCTIONBODY_GETTER(MouseEvent,localX);
 ASFUNCTIONBODY_GETTER(MouseEvent,localY);
 ASFUNCTIONBODY_GETTER(MouseEvent,stageX);

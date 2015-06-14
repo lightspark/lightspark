@@ -65,6 +65,8 @@ public:
 	//and the handling is serialized
 	ASPROPERTY_GETTER(_NR<ASObject>,target);
 	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
+	ASFUNCTION(stopPropagation);
+	ASFUNCTION(stopImmediatePropagation);
 private:
 	/*
 	 * To be implemented by each derived class to allow redispatching
@@ -285,7 +287,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(shiftKey);
 	ASPROPERTY_GETTER(number_t,stageX);
 	ASPROPERTY_GETTER(number_t,stageY);
-	ASPROPERTY_GETTER(_NR<InteractiveObject>,relatedObject);
+	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,relatedObject);
 	ASFUNCTION(updateAfterEvent);
 };
 

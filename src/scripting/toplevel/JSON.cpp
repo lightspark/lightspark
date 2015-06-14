@@ -73,8 +73,6 @@ ASFUNCTIONBODY(JSON,_stringify)
 {
 	_NR<ASObject> value;
 	ARG_UNPACK(value);
-	if (value->has_toJSON())
-		return Class<ASString>::getInstanceS(value->call_toJSON());
 	std::vector<ASObject *> path;
 	tiny_string filter;
 	IFunction* replacer = NULL;

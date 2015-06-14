@@ -114,7 +114,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,"Proxy::getProperty "<< name.normalizedName() << " " << this->toDebugString());
+	LOG(LOG_CALLS,"Proxy::getProperty "<< name.normalizedNameUnresolved() << " " << this->toDebugString());
 	incRef();
 	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
 	implEnable=true;
@@ -129,7 +129,8 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	if(asobject_has_property || !implEnable)
 		return asobject_has_property;
-
+	if (!isConstructed())
+		return false;
 	//Check if there is a custom hasProperty defined, skipping implementation to avoid recursive calls
 	multiname hasPropertyName(NULL);
 	hasPropertyName.name_type=multiname::NAME_STRING;

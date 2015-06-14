@@ -984,6 +984,8 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 {
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	if (!isConstructed())
+		return false;
 
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))

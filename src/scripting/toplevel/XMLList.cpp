@@ -716,6 +716,8 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 {
 	if(considerDynamic==false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	if (!isConstructed())
+		return false;
 
 	unsigned int index=0;
 	if(XML::isValidMultiname(name,index))

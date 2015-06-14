@@ -229,7 +229,13 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(considerDynamic==false)
+	{
+		if(name.name_type==multiname::NAME_OBJECT)
+			return false;
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	}
+	if (!isConstructed())
+		return false;
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{

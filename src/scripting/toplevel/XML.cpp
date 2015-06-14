@@ -1554,6 +1554,8 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 {
 	if(considerDynamic == false)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	if (!isConstructed())
+		return false;
 
 	//Only the first namespace is used, is this right?
 	tiny_string ns_uri;
@@ -1696,7 +1698,7 @@ bool XML::isValidMultiname(const multiname& name, uint32_t& index)
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))
-		throwError<RangeError>(kOutOfRangeError, name.normalizedName(), "?");
+		throwError<RangeError>(kOutOfRangeError, name.normalizedNameUnresolved(), "?");
 
 	return validIndex;
 }

@@ -56,7 +56,7 @@ private:
 	MATRIX Matrix;
 	number_t tx,ty;
 	number_t rotation;
-	number_t sx,sy;
+	number_t sx,sy,sz;
 	float alpha;
 	tiny_string blendMode;
 public:
@@ -175,6 +175,7 @@ public:
 	void setY(number_t y);
 	void setScaleX(number_t val);
 	void setScaleY(number_t val);
+	void setScaleZ(number_t val);
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();
@@ -195,6 +196,8 @@ public:
 	ASFUNCTION(_setScaleX);
 	ASFUNCTION(_getScaleY);
 	ASFUNCTION(_setScaleY);
+	ASFUNCTION(_getScaleZ);
+	ASFUNCTION(_setScaleZ);
 	ASFUNCTION(_getLoaderInfo);
 	ASFUNCTION(_getBounds);
 	ASFUNCTION(_getWidth);

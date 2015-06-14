@@ -126,6 +126,8 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(_getScaleZ),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(_setScaleZ),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_getY),GETTER_METHOD,true);
@@ -525,6 +527,36 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 	return NULL;
 }
 
+ASFUNCTIONBODY(DisplayObject,_getScaleZ)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_d(th->sz);
+}
+
+void DisplayObject::setScaleZ(number_t val)
+{
+	//Apply the difference
+	if(sz!=val)
+	{
+		sz=val;
+		if(onStage)
+			requestInvalidation(getSys());
+	}
+}
+
+ASFUNCTIONBODY(DisplayObject,_setScaleZ)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"DisplayObject.scaleZ is set, but not used anywhere");
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen==1);
+	number_t val=args[0]->toNumber();
+	//Stop using the legacy matrix
+	if(th->useLegacyMatrix)
+		th->useLegacyMatrix=false;
+	th->setScaleZ(val);
+	return NULL;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
@@ -829,7 +861,10 @@ number_t DisplayObject::computeWidth()
 _NR<RootMovieClip> DisplayObject::getRoot()
 {
 	if(parent.isNull())
+	{
+		LOG(LOG_ERROR,"DisplayObject has no root:"<<this->toDebugString());
 		return NullRef;
+	}
 
 	return parent->getRoot();
 }

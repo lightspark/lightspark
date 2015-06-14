@@ -257,6 +257,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
+	ASFUNCTION(updateAfterEvent);
 };
 
 class MouseEvent: public Event

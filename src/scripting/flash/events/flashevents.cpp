@@ -275,6 +275,12 @@ void TimerEvent::sinit(Class_base* c)
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"),DECLARED_TRAIT);
 	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(updateAfterEvent),NORMAL_METHOD,true);
+}
+ASFUNCTIONBODY(TimerEvent,updateAfterEvent)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"TimerEvent::updateAfterEvent not implemented");
+	return NULL;
 }
 
 void MouseEvent::sinit(Class_base* c)

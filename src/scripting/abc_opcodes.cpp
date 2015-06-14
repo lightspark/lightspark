@@ -1192,6 +1192,10 @@ bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 			case T_INTEGER:
 			case T_UINTEGER:
 				break;
+			case T_NULL:
+				if (!obj2->isConstructed() && !obj2->is<Class_base>())
+					return true;
+				return false;
 			default:
 				return false;
 		}
@@ -1201,6 +1205,10 @@ bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 			case T_INTEGER:
 			case T_UINTEGER:
 				break;
+			case T_NULL:
+				if (!obj1->isConstructed() && !obj1->is<Class_base>())
+					return true;
+				return false;
 			default:
 				return false;
 		}

@@ -56,7 +56,7 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
@@ -229,6 +229,11 @@ uint64_t ByteArray::endianOut(uint64_t value)
 uint32_t ByteArray::getPosition() const
 {
 	return position;
+}
+
+ASFUNCTIONBODY(ByteArray,_constructor)
+{
+	return NULL;
 }
 
 ASFUNCTIONBODY(ByteArray,_getPosition)

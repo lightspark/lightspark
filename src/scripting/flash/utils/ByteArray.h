@@ -71,6 +71,7 @@ public:
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
 	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
 	
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getBytesAvailable);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_setLength);

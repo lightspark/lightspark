@@ -135,10 +135,10 @@ void IFunction::sinit(Class_base* c)
 {
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
 
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(IFunction::_call,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(IFunction::apply,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),NORMAL_METHOD,false);
 }

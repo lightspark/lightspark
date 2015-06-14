@@ -571,6 +571,7 @@ void System::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
 }
 
 
@@ -578,6 +579,11 @@ ASFUNCTIONBODY(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
 	return abstract_d(1024);
+}
+ASFUNCTIONBODY(System,disposeXML)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "System.disposeXML not implemented");
+	return NULL;
 }
 
 ASWorker::ASWorker(Class_base* c):

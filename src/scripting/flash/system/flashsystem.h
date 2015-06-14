@@ -157,6 +157,7 @@ public:
 	System(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(totalMemory);
+	ASFUNCTION(disposeXML);
 };
 class ASWorker: public EventDispatcher
 {

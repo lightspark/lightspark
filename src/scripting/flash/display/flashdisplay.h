@@ -250,6 +250,7 @@ public:
 	ASPROPERTY_GETTER(uint32_t,swfVersion);
 	ASPROPERTY_GETTER(bool, childAllowsParent);
 	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
+	ASPROPERTY_GETTER(bool,parentAllowsChild);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);
 	void finalize();

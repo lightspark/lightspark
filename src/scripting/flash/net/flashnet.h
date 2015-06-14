@@ -375,6 +375,9 @@ public:
 	ASFUNCTION(allowDomain);
 	ASFUNCTION(allowInsecureDomain);
 	ASFUNCTION(send);
+	ASFUNCTION(connect);
+	ASFUNCTION(close);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,client);
 };
 
 class NetGroup: public EventDispatcher

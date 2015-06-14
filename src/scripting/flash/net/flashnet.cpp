@@ -2006,7 +2006,7 @@ ASFUNCTIONBODY(Responder, onResult)
 }
 
 LocalConnection::LocalConnection(Class_base* c):
-	EventDispatcher(c),isSupported(false)
+	EventDispatcher(c),isSupported(false),client(NULL)
 {
 }
 
@@ -2016,14 +2016,20 @@ void LocalConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(send),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,isSupported);
+	REGISTER_GETTER_SETTER(c,client);
 }
 ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
+ASFUNCTIONBODY_GETTER_SETTER(LocalConnection, client);
 
 ASFUNCTIONBODY(LocalConnection, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	th->incRef();
+	th->client = _NR<LocalConnection>(th);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
 	return NULL;
 }
@@ -2043,6 +2049,18 @@ ASFUNCTIONBODY(LocalConnection, send)
 {
 	LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::send is not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, connect)
+{
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::connect is not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, close)
+{
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::close is not implemented");
 	return NULL;
 }
 

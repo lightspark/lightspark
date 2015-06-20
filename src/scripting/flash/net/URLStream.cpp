@@ -112,10 +112,13 @@ void URLStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("readUnsignedShort","",Class<IFunction>::getFunction(readUnsignedShort),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(readUTF),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(readUTFBytes),NORMAL_METHOD,true);
+	REGISTER_GETTER(c,connected);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
 	IDataInput::linkTraits(c);
 }
+
+ASFUNCTIONBODY_GETTER(URLStream,connected);
 
 void URLStream::buildTraits(ASObject* o)
 {
@@ -170,6 +173,7 @@ ASFUNCTIONBODY(URLStream,load)
 	URLStreamThread *job=new URLStreamThread(urlRequest, _MR(th), th->data);
 	getSys()->addJob(job);
 	th->job=job;
+	th->connected = true;
 	return NULL;
 }
 
@@ -179,6 +183,7 @@ ASFUNCTIONBODY(URLStream,close)
  	SpinlockLocker l(th->spinlock);
 	if(th->job)
 		th->job->threadAbort();
+	th->connected = false;
 
 	return NULL;
 }

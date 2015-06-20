@@ -93,7 +93,7 @@ void ASObject::applyProxyProperty(multiname &name)
 	}
 }
 
-void ASObject::dumpVariables()
+void ASObject::dumpVariables() const
 {
 	LOG(LOG_INFO,"variables:");
 	Variables.dumpVariables();
@@ -1313,10 +1313,10 @@ void variables_map::check() const
 #endif
 }
 
-void variables_map::dumpVariables()
+void variables_map::dumpVariables() const
 {
-	var_iterator it=Variables.begin();
-	for(;it!=Variables.end();++it)
+	const_var_iterator it=Variables.cbegin();
+	for(;it!=Variables.cend();++it)
 	{
 		const char* kind;
 		switch(it->second.kind)

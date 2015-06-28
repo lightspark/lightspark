@@ -1211,7 +1211,7 @@ ASObject *Class_base::describeType() const
 	xmlpp::Element* factory=root->add_child("factory");
 	factory->set_attribute("type", getQualifiedClassName().raw_buf());
 	describeInstance(factory);
-	
+
 	return Class<XML>::getInstanceS(root);
 }
 
@@ -1242,6 +1242,14 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 
 	// variables, methods, accessors
 	c=this;
+	if (c->class_index<0)
+	{
+		// builtin class
+		LOG(LOG_NOT_IMPLEMENTED, "describeType for builtin classes not completely implemented:"<<this->class_name);
+		std::map<tiny_string, xmlpp::Element*> instanceNodes;
+		describeVariables(root,c,instanceNodes,Variables);
+		describeVariables(root,c,instanceNodes,borrowedVariables);
+	}
 	while(c && c->class_index>=0)
 	{
 		c->describeTraits(root, c->context->instances[c->class_index].traits);
@@ -1249,6 +1257,48 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	}
 }
 
+void Class_base::describeVariables(xmlpp::Element* root,const Class_base* c, std::map<tiny_string, xmlpp::Element*>& instanceNodes, const variables_map& map) const
+{
+	variables_map::const_var_iterator it=map.Variables.cbegin();
+	for(;it!=map.Variables.cend();++it)
+	{
+		const char* nodename;
+		const char* access = NULL;
+		switch (it->second.kind)
+		{
+			case CONSTANT_TRAIT:
+				nodename = "constant";
+				break;
+			case DECLARED_TRAIT:
+			case INSTANCE_TRAIT:
+				if (it->second.var)
+					nodename="method";
+				else
+				{
+					nodename="accessor";
+					if (it->second.getter && it->second.setter)
+						access = "readwrite";
+					else if (it->second.getter)
+						access = "readonly";
+					else if (it->second.setter)
+						access = "writeonly";
+				}
+				break;
+			default:
+				continue;
+		}
+		tiny_string name = getSys()->getStringFromUniqueId(it->first.nameId);
+		auto existing=instanceNodes.find(name);
+		if(existing != instanceNodes.cend())
+			continue;
+		
+		xmlpp::Element* node=root->add_child(nodename);
+		instanceNodes[name] = node;
+		node->set_attribute("name", name.raw_buf());
+		if (access)
+			node->set_attribute("access", access);
+	}
+}
 void Class_base::describeTraits(xmlpp::Element* root,
 				std::vector<traits_info>& traits) const
 {

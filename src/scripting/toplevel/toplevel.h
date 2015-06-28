@@ -152,6 +152,7 @@ private:
 	IFunction* constructor;
 	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
 	void describeMetadata(xmlpp::Element* node, const traits_info& trait) const;
+	void describeVariables(xmlpp::Element *root,const Class_base* c, std::map<tiny_string, xmlpp::Element*>& instanceNodes, const variables_map& map) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;

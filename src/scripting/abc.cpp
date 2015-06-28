@@ -94,6 +94,7 @@
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h"
 #include "scripting/flash/net/XMLSocket.h"
+#include "scripting/flash/net/NetStreamInfo.h"
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/printing/flashprinting.h"
@@ -441,6 +442,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef());
 	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
 	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef());
+	builtin->registerBuiltin("NetStreamInfo","flash.net",Class<NetStreamInfo>::getRef());
 	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
 	builtin->registerBuiltin("NetStreamPlayTransitions","flash.net",Class<NetStreamPlayTransitions>::getRef());
 	builtin->registerBuiltin("URLLoader","flash.net",Class<URLLoader>::getRef());
@@ -2152,7 +2154,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
-				m->profName=prot->class_name.name+"::"+mname->qualifiedString();
+				m->profName=obj->getClassName()+"::"+mname->qualifiedString();
 				m->validProfName=true;
 			}
 #endif

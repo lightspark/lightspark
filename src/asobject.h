@@ -72,6 +72,18 @@
 		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
 	}
 
+#define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
+	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	{ \
+		if(!obj->is<c>()) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		c* th = obj->as<c>(); \
+		if(argslen != 0) \
+			throw Class<ArgumentError>::getInstanceS("Arguments provided in getter"); \
+		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " is not implemented"); \
+		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
+	}
+
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \

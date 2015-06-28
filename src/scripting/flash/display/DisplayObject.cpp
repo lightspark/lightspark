@@ -620,9 +620,10 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert_and_throw(argslen==1);
 
-	if(args[0]->is<Undefined>())
+	if(args[0]->is<Undefined>() || args[0]->is<Null>())
 		return Class<Rectangle>::getInstanceS();
-
+	if (!args[0]->is<DisplayObject>())
+		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<args[0]->toDebugString());
 	assert_and_throw(args[0]->is<DisplayObject>());
 	DisplayObject* target=Class<DisplayObject>::cast(args[0]);
 	//Compute the transformation matrix
@@ -861,10 +862,7 @@ number_t DisplayObject::computeWidth()
 _NR<RootMovieClip> DisplayObject::getRoot()
 {
 	if(parent.isNull())
-	{
-		LOG(LOG_ERROR,"DisplayObject has no root:"<<this->toDebugString());
 		return NullRef;
-	}
 
 	return parent->getRoot();
 }

@@ -575,6 +575,10 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URLInfo& url,
 		bool loadPendingPolicies)
 {
+	//This check doesn't apply to data generation mode
+	if(url.isEmpty())
+		return ALLOWED;
+
 	//This check doesn't apply to local files
 	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
 		return ALLOWED;
@@ -582,6 +586,8 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	//Streaming from RTMP is always allowed (see
 	//http://forums.adobe.com/thread/422391)
 	if(url.isRTMP())
+		return ALLOWED;
+	if(url.isValid())
 		return ALLOWED;
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
@@ -671,6 +677,9 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSocketConnection(cons
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo& url,
 		const tiny_string& header, bool loadPendingPolicies)
 {
+	//This check doesn't apply to data generation mode
+	if (url.isEmpty())
+		return ALLOWED;
 	//This check doesn't apply to local files
 	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
 		return ALLOWED;

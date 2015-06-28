@@ -33,8 +33,18 @@ using namespace std;
 using namespace lightspark;
 
 URLStreamThread::URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes)
-  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes),streambuffer(NULL)
 {
+}
+void URLStreamThread::setBytesLoaded(uint32_t b)
+{
+	uint32_t curlen = data->getLength();
+	if(b>curlen && streambuffer)
+	{
+		data->append(streambuffer,b - curlen);
+		loader->incRef();
+		getVm()->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(b,0)));
+	}
 }
 
 void URLStreamThread::execute()
@@ -44,16 +54,19 @@ void URLStreamThread::execute()
 	//TODO: support httpStatus, progress events
 
 	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
-	if(!createDownloader(cache, loader))
+	if(!createDownloader(cache, loader,this))
 		return;
 
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("open")));
+		streambuffer = cache->createReader();
 		cache->waitForTermination();
 		if(!downloader->hasFailed() && !threadAborting)
 		{
+			/*
 			std::streambuf *sbuf = cache->createReader();
 			istream s(sbuf);
 			uint8_t* buf=new uint8_t[downloader->getLength()];
@@ -62,8 +75,9 @@ void URLStreamThread::execute()
 			//TODO: test binary data format
 			data->acquireBuffer(buf,downloader->getLength());
 			//The buffers must not be deleted, it's now handled by the ByteArray instance
-			success=true;
 			delete sbuf;
+			*/
+			success=true;
 		}
 	}
 
@@ -71,11 +85,13 @@ void URLStreamThread::execute()
 	if(success && !threadAborting)
 	{
 		//Send a complete event for this object
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("complete")));
 	}
 	else if(!success && !threadAborting)
 	{
 		//Notify an error during loading
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 

@@ -527,7 +527,13 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 	//Return the length of the serialized object
 
 	//TODO: support AMF0
-	assert_and_throw(objectEncoding==ObjectEncoding::AMF3);
+	
+	if (objectEncoding==ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"ByteArray.writeObject: writing AMF0 objects not implemented");
+		//return 0;
+	}
+	//assert_and_throw(objectEncoding==ObjectEncoding::AMF3);
 	//TODO: support custom serialization
 	map<tiny_string, uint32_t> stringMap;
 	map<const ASObject*, uint32_t> objMap;
@@ -1001,9 +1007,8 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 
 _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if((opt & ASObject::SKIP_IMPL)!=0 || !Array::isValidMultiname(name,index))
+	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
 	if(index<len)
@@ -1155,6 +1160,16 @@ void ByteArray::writeXMLString(std::map<const ASObject*, uint32_t>& objMap,
 		position+=xmlstr.numBytes();
 	}
 }
+void ByteArray::append(streambuf *data, int length)
+{
+	lock();
+	int oldlen = len;
+	getBuffer(len+length,true);
+	istream s(data);
+	s.read((char*)bytes+oldlen,length);
+	unlock();
+}
+
 
 void ByteArray::compress_zlib()
 {

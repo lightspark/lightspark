@@ -202,6 +202,7 @@ public:
 class LocalDownloader: public ThreadedDownloader
 {
 private:
+	bool dataGenerationMode;
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
@@ -211,7 +212,7 @@ private:
 	//Size of the reading buffer
 	static const size_t bufSize = 8192;
 public:
-	LocalDownloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o);
+	LocalDownloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o, bool dataGeneration = false);
 };
 
 class IDownloaderThreadListener

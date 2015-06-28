@@ -28,6 +28,7 @@
 #include "timer.h"
 #include "backends/decoder.h"
 #include "backends/interfaces/audio/IAudioPlugin.h"
+#include "NetStreamInfo.h"
 
 namespace lightspark
 {
@@ -248,7 +249,11 @@ private:
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	AudioStream *audioStream;
+	// only used when in DataGenerationMode
+	FileStreamCache* datagenerationfile;
+	bool datagenerationthreadstarted;
 	Mutex mutex;
+	Mutex countermutex;
 	//IThreadJob interface for long jobs
 	void execute();
 	void threadAbort();
@@ -268,6 +273,11 @@ private:
 	bool checkPolicyFile;
 	bool rawAccessAllowed;
 
+	uint32_t framesdecoded;
+	uint32_t prevstreamtime;
+	number_t playbackBytesPerSecond;
+	
+	
 	ASObject *createMetaDataObject(StreamDecoder* streamDecoder);
 	ASObject *createPlayStatusObject(const tiny_string& code);
 	void sendClientNotification(const tiny_string& name, ASObject *args);
@@ -295,6 +305,7 @@ public:
 	ASFUNCTION(attach);
 	ASFUNCTION(appendBytes);
 	ASFUNCTION(appendBytesAction);
+	ASFUNCTION(_getInfo);
 	ASPROPERTY_GETTER(number_t, backBufferLength);
 	ASPROPERTY_GETTER_SETTER(number_t, backBufferTime);
 	ASPROPERTY_GETTER(number_t, bufferLength);

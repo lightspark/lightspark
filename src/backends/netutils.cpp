@@ -172,7 +172,13 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, _R<StreamCac
 	LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
 			<< "'" << (cached ? _(" - cached") : ""));
 	ThreadedDownloader* downloader;
-	if(url.getProtocol() == "file")
+	// empty URL means data is generated from calls to NetStream::appendBytes
+	if(url.isEmpty())
+	{
+		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: Data generation mode"));
+		downloader=new LocalDownloader(url.getPath(), cache, owner,true);
+	}
+	else if(url.getProtocol() == "file")
 	{
 		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: local file"));
 		downloader=new LocalDownloader(url.getPath(), cache, owner);
@@ -701,8 +707,8 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
  * \param[in] _url The URL for the Downloader.
  * \param[in] _cached Whether or not to cache this download.
  */
-LocalDownloader::LocalDownloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o):
-	ThreadedDownloader(_url, _cache, o)
+LocalDownloader::LocalDownloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadable* o, bool dataGeneration):
+	ThreadedDownloader(_url, _cache, o),dataGenerationMode(dataGeneration)
 {
 }
 
@@ -724,7 +730,7 @@ void LocalDownloader::threadAbort()
  */
 void LocalDownloader::execute()
 {
-	if(url.empty())
+	if(url.empty() && !dataGenerationMode)
 	{
 		setFailed();
 		return;
@@ -788,7 +794,8 @@ void LocalDownloader::execute()
 		}
 	}
 	//Notify the downloader no more data should be expected
-	setFinished();
+	if(!dataGenerationMode)
+		setFinished();
 }
 
 DownloaderThreadBase::DownloaderThreadBase(_NR<URLRequest> request, IDownloaderThreadListener* _listener): listener(_listener), downloader(NULL)

@@ -68,6 +68,8 @@ public:
 	uint32_t getPosition() const;
 	void setPosition(uint32_t p);
 	
+	void append(std::streambuf* data, int length);
+
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
 	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
 	

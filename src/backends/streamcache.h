@@ -178,7 +178,7 @@ private:
 	void openExistingCache(const tiny_string& filename, bool forWriting=true) DLL_LOCAL;
 
 	// Block until the cache file is opened by the writer stream
-	void waitForCache() DLL_LOCAL;
+	bool waitForCache() DLL_LOCAL;
 
 	virtual void handleAppend(const unsigned char* buffer, size_t length) DLL_LOCAL;
 
@@ -190,8 +190,9 @@ public:
 
 	// Use an existing file as cache. Must be called before append().
 	void useExistingFile(const tiny_string& filename);
+	void openForWriting();
 };
 
-};
+}
 
 #endif // BACKENDS_STREAMCACHE_H

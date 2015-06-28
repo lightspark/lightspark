@@ -32,14 +32,17 @@ namespace lightspark
 
 class URLStream;
 
-class URLStreamThread : public DownloaderThreadBase
+class URLStreamThread : public DownloaderThreadBase, public ILoadable
 {
 private:
 	_R<URLStream> loader;
 	_R<ByteArray> data;
+	std::streambuf *streambuffer;
 	void execute();
 public:
 	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);
+	void setBytesTotal(uint32_t b) { (void)b; }
+	void setBytesLoaded(uint32_t b);
 };
 
 class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener

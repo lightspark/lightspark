@@ -85,7 +85,7 @@ public:
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
+	VideoDecoder():frameRate(0),framesdecoded(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
 	virtual ~VideoDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -100,6 +100,7 @@ public:
 		return frameHeight;
 	}
 	double frameRate;
+	uint32_t framesdecoded;
 	/*
 		Useful to avoid destruction of the object while a pending upload is waiting
 	*/

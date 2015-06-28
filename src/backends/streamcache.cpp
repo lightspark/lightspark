@@ -437,22 +437,31 @@ void FileStreamCache::useExistingFile(const tiny_string& filename)
 	markFinished();
 }
 
-void FileStreamCache::waitForCache()
+void FileStreamCache::openForWriting()
 {
 	if (cache.is_open())
 		return;
+	openCache();
+}
+
+bool FileStreamCache::waitForCache()
+{
+	if (cache.is_open())
+		return true;
 
 	// Cache file will be opened when the first byte is received
 	waitForData(0);
 
-	// Check if the stream was terminated before anything was written
-	if (!cache.is_open())
-		throw RunTimeException(_("FileStreamCache::waitForCache: cache file is not open"));
+	return cache.is_open();
 }
 
 std::streambuf *FileStreamCache::createReader()
 {
-	waitForCache();
+	if (!waitForCache())
+	{
+		LOG(LOG_ERROR,"could not open cache file");
+		return NULL;
+	}
 
 	incRef();
 	FileStreamCache::Reader *fbuf = new FileStreamCache::Reader(_MR(this));
@@ -460,7 +469,7 @@ std::streambuf *FileStreamCache::createReader()
 	if (!fbuf->is_open())
 	{
 		delete fbuf;
-		throw RunTimeException(_("FileStreamCache::createReader: opening cache file for reading failed"));
+		return NULL;
 	}
 	return fbuf;
 }

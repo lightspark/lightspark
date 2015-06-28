@@ -805,7 +805,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 	stream.read((char*)probeData.buf,8192);
 	int read=stream.gcount();
 	if(read!=8192)
-		LOG(LOG_ERROR,_("Not sufficient data is available from the stream"));
+		LOG(LOG_ERROR,"Not sufficient data is available from the stream:"<<read);
 	probeData.buf_size=read;
 
 	stream.seekg(0);
@@ -911,7 +911,10 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	else 
 	{
 		if (customVideoDecoder)
+		{
 			customVideoDecoder->decodePacket(&pkt, mtime);
+			customVideoDecoder->framesdecoded++;
+		}
 	}
 	av_free_packet(&pkt);
 	return true;

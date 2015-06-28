@@ -84,6 +84,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(colorTransform),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(compare),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(applyFilter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(noise),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
@@ -849,5 +850,17 @@ ASFUNCTIONBODY(BitmapData,applyFilter)
 	_NR<BitmapFilter> filter;
 	ARG_UNPACK (sourceBitmapData)(sourceRect)(destPoint)(filter);
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(BitmapData,noise)
+{
+	BitmapData* th = obj->as<BitmapData>();
+	int randomSeed;
+	uint low;
+	uint high;
+	uint channelOptions;
+	bool grayScale;
+	ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false);
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.noise not implemented");
 	return NULL;
 }

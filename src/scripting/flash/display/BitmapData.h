@@ -84,6 +84,7 @@ public:
 	ASFUNCTION(colorTransform);
 	ASFUNCTION(compare);
 	ASFUNCTION(applyFilter);
+	ASFUNCTION(noise);
 };
 
 };

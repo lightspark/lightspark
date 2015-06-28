@@ -94,6 +94,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/URLRequestHeader.cpp
   scripting/flash/net/URLStream.cpp
   scripting/flash/net/XMLSocket.cpp
+  scripting/flash/net/NetStreamInfo.cpp
   scripting/flash/net/NetStreamPlayOptions.cpp
   scripting/flash/net/NetStreamPlayTransitions.cpp
   scripting/flash/printing/flashprinting.cpp

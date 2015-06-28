@@ -51,6 +51,7 @@
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h"
 #include "scripting/flash/net/XMLSocket.h"
+#include "scripting/flash/net/NetStreamInfo.h"
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/printing/flashprinting.h"

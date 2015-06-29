@@ -161,6 +161,7 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
+	TimerThread* frameTimerThread;
 	Semaphore terminated;
 	float renderRate;
 	bool error;
@@ -348,6 +349,7 @@ public:
 	//Interfaces to the internal thread pool and timer thread
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
+	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
 

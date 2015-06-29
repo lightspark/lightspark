@@ -236,6 +236,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+	frameTimerThread=new TimerThread(this);
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
 	intervalManager=new IntervalManager();
@@ -376,6 +377,7 @@ void SystemState::parseParametersFromFile(const char* f)
 		getline(i,value);
 
 		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value),DYNAMIC_TRAIT);
+		//cout << name << ' ' << value << endl;
 	}
 	setParameters(ret);
 	i.close();
@@ -421,6 +423,7 @@ void SystemState::stopEngines()
 	if(threadPool)
 		threadPool->forceStop();
 	timerThread->wait();
+	frameTimerThread->wait();
 	/* first shutdown the vm, because it can use all the others */
 	if(currentVm)
 		currentVm->shutdown();
@@ -441,7 +444,7 @@ void SystemState::stopEngines()
 #ifdef PROFILING_SUPPORT
 void SystemState::saveProfilingInformation()
 {
-	if(profOut.len())
+	if(profOut.numBytes())
 	{
 		ofstream f(profOut.raw_buf());
 		f << "events: Time" << endl;
@@ -617,7 +620,9 @@ void SystemState::destroy()
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
 	delete timerThread;
 	timerThread=NULL;
-
+	delete frameTimerThread;
+	frameTimerThread= NULL;
+	
 	delete renderThread;
 	renderThread=NULL;
 	delete inputThread;
@@ -654,6 +659,7 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 		error=true;
 		errorCause=c;
 		timerThread->stop();
+		frameTimerThread->stop();
 		//Disable timed rendering
 		removeJob(renderThread);
 		renderThread->draw(true);
@@ -996,6 +1002,11 @@ void SystemState::addJob(IThreadJob* j)
 void SystemState::addTick(uint32_t tickTime, ITickJob* job)
 {
 	timerThread->addTick(tickTime,job);
+}
+
+void SystemState::addFrameTick(uint32_t tickTime, ITickJob* job)
+{
+	frameTimerThread->addTick(tickTime,job);
 }
 
 void SystemState::addWait(uint32_t waitTime, ITickJob* job)
@@ -1584,7 +1595,7 @@ void RootMovieClip::commitFrame(bool another)
 		if(this==sys->mainClip)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
-			sys->addTick(1000/frameRate,sys);
+			sys->addFrameTick(1000/frameRate,sys);
 		}
 		else
 		{

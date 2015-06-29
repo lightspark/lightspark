@@ -66,6 +66,11 @@ NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, _R<StreamCache> cache, lightspark::ILoadable* owner)
 {
+	// empty URL means data is generated from calls to NetStream::appendBytes
+	if(!url.isValid() && url.getInvalidReason() == URLInfo::IS_EMPTY)
+	{
+		return StandaloneDownloadManager::download(url, cache, owner);
+	}
 	// Handle RTMP requests internally, not through NPAPI
 	if(url.isRTMP())
 	{
@@ -210,7 +215,10 @@ void NPDownloader::dlStartCallback(void* t)
 		e=NPN_PostURLNotify(th->instance, th->url.raw_buf(), NULL, tmpData.size(), (const char*)&tmpData[0], false, th);
 	}
 	if(e!=NPERR_NO_ERROR)
+	{
+		LOG(LOG_ERROR,"download failed for " << th->url << " code:"<<e);
 		th->setFailed(); //No need to crash, we can just mark the download failed
+	}
 }
 
 char* NPP_GetMIMEDescription(void)
@@ -361,7 +369,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		//basedir is a qualified URL or a path relative to the HTML page
 		URLInfo page(getPageURL());
 		m_sys->mainClip->setBaseURL(page.goToURL(baseURL).getURL());
-		
+
 		m_sys->downloadManager=new NPDownloadManager(mInstance);
 	}
 	else

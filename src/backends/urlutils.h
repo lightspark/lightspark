@@ -70,6 +70,7 @@ public:
 	URLInfo(const tiny_string& u);
 	~URLInfo() {};
 	bool isValid() const { return valid; }
+	bool isEmpty() const { return !valid && invalidReason == IS_EMPTY; }
 	INVALID_REASON getInvalidReason() const { return invalidReason; };
 
 	//Remove extraneous slashes, .. and . from URLs

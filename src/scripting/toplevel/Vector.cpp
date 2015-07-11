@@ -963,9 +963,17 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,opt);
+	if(!Vector::isValidMultiname(name,index) || index == UINT32_MAX)
+	{
+		if (name.name_type == multiname::NAME_INT ||
+				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
+			throwError<RangeError>(kOutOfRangeError,Integer::toString(name.name_i),Integer::toString(vec.size()));
 
+		_NR<ASObject> ret = ASObject::getVariableByMultiname(name,opt);
+		if (ret.isNull()) 
+			throwError<ReferenceError>(kReadSealedError, name.normalizedName(), this->getClass()->getQualifiedClassName());
+		return ret;
+	}
 	if(index < vec.size())
 	{
 		if (vec[index])
@@ -994,7 +1002,15 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_AL
 
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(name,index))
+	{
+		if (name.name_type == multiname::NAME_INT ||
+				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
+			throwError<RangeError>(kOutOfRangeError,name.normalizedName(),Integer::toString(vec.size()));
+		
+		if (!ASObject::hasPropertyByMultiname(name,false,true))
+			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(), this->getClass()->getQualifiedClassName());
 		return ASObject::setVariableByMultiname(name, o, allowConst);
+	}
 	ASObject* o2 = this->vec_type->coerce(o);
 	  
 	if(index < vec.size())
@@ -1073,10 +1089,6 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 		return false;
 
 	bool validIndex=name.toUInt(index, true);
-	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
-	// because they can still be valid built-in property names.
-	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))
-		throwError<RangeError>(kOutOfRangeError, name.normalizedNameUnresolved(), "?");
 
 	return validIndex;
 }

@@ -59,6 +59,7 @@
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/utils/CompressionAlgorithm.h"
 #include "scripting/flash/utils/Dictionary.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
@@ -76,6 +77,7 @@
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
+#include "scripting/avmplus/avmplus.h"
 
 using namespace lightspark;
 

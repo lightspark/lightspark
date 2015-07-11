@@ -105,6 +105,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp
   scripting/flash/utils/ByteArray.cpp
+  scripting/flash/utils/CompressionAlgorithm.cpp
   scripting/flash/utils/Dictionary.cpp
   scripting/flash/utils/Proxy.cpp
   scripting/flash/utils/Timer.cpp
@@ -132,6 +133,7 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/XMLList.cpp
   scripting/class.cpp
   scripting/toplevel/toplevel.cpp
+  scripting/avmplus/avmplus.cpp
   platforms/engineutils.cpp)
 IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)

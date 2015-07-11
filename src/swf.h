@@ -263,7 +263,7 @@ public:
 	bool showProfilingData;
 	bool standalone;
 	//Flash for execution mode
-	enum FLASH_MODE { FLASH=0, AIR };
+	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
 	const FLASH_MODE flashMode;
 	
 	// Error types used to decide when to exit, extend as a bitmap

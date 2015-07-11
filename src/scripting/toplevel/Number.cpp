@@ -20,6 +20,7 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Math.h"
 #include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
@@ -276,6 +277,38 @@ void Number::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(Number::toExponential, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(Number::toPrecision, 1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
+
+	// if needed add AVMPLUS definitions
+	if(getSys()->flashMode==SystemState::AVMPLUS)
+	{
+		c->setVariableByQName("E","",abstract_d(2.71828182845905),CONSTANT_TRAIT);
+		c->setVariableByQName("LN10","",abstract_d(2.302585092994046),CONSTANT_TRAIT);
+		c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),CONSTANT_TRAIT);
+		c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),CONSTANT_TRAIT);
+		c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),CONSTANT_TRAIT);
+		c->setVariableByQName("PI","",abstract_d(3.141592653589793),CONSTANT_TRAIT);
+		c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),CONSTANT_TRAIT);
+		c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),CONSTANT_TRAIT);
+		
+		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(Math::abs,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(Math::acos,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(Math::asin,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(Math::atan,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(Math::atan2,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(Math::ceil,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(Math::cos,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(Math::exp,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(Math::floor,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(Math::log,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(Math::_max,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(Math::_min,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(Math::pow,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(Math::random),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(Math::round,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(Math::sin,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(Math::sqrt,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(Math::tan,1),NORMAL_METHOD,false);
+	}
 }
 
 ASFUNCTIONBODY(Number,_constructor)
@@ -497,11 +530,5 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	out->writeByte(double_marker);
-	//We have to write the double in network byte order (big endian)
-	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
-	uint64_t bigEndianVal=GINT64_FROM_BE(*tmpPtr);
-	uint8_t* bigEndianPtr=reinterpret_cast<uint8_t*>(&bigEndianVal);
-
-	for(uint32_t i=0;i<8;i++)
-		out->writeByte(bigEndianPtr[i]);
+	out->serializeDouble(val);
 }

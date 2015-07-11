@@ -147,6 +147,8 @@ int main(int argc, char* argv[])
 		}
 		else if(strcmp(argv[i],"--air")==0)
 			flashMode=SystemState::AIR;
+		else if(strcmp(argv[i],"--avmplus")==0)
+			flashMode=SystemState::AVMPLUS;
 		else if(strcmp(argv[i],"-ni")==0 || strcmp(argv[i],"--disable-interpreter")==0)
 			useInterpreter=false;
 		else if(strcmp(argv[i],"-fi")==0 || strcmp(argv[i],"--enable-fast-interpreter")==0)
@@ -242,7 +244,7 @@ int main(int argc, char* argv[])
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
 			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi] [--enable-jit|-j]" <<
 			" [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
-			" [--exit-on-error] [--HTTP-cookies cookie] [--air]" <<
+			" [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
 #endif

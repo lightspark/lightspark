@@ -101,6 +101,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/utils/CompressionAlgorithm.h"
 #include "scripting/flash/utils/Dictionary.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
@@ -116,6 +117,7 @@
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
+#include "scripting/avmplus/avmplus.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -376,6 +378,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("Endian","flash.utils",Class<Endian>::getRef());
 	builtin->registerBuiltin("ByteArray","flash.utils",Class<ByteArray>::getRef());
+	builtin->registerBuiltin("CompressionAlgorithm","flash.utils",Class<CompressionAlgorithm>::getRef());
 	builtin->registerBuiltin("Dictionary","flash.utils",Class<Dictionary>::getRef());
 	builtin->registerBuiltin("Proxy","flash.utils",Class<Proxy>::getRef());
 	builtin->registerBuiltin("Timer","flash.utils",Class<Timer>::getRef());
@@ -508,7 +511,6 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite,1)));
 	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
 
-
 	//If needed add AIR definitions
 	if(getSys()->flashMode==SystemState::AIR)
 	{
@@ -517,6 +519,21 @@ void ABCVm::registerClasses()
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef());
 
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef());
+	}
+
+	// if needed add AVMPLUS definitions
+	if(getSys()->flashMode==SystemState::AVMPLUS)
+	{
+		builtin->registerBuiltin("getQualifiedClassName","avmplus",_MR(Class<IFunction>::getFunction(getQualifiedClassName)));
+		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(Class<IFunction>::getFunction(getQualifiedSuperclassName)));
+		builtin->registerBuiltin("getTimer","",_MR(Class<IFunction>::getFunction(getTimer)));
+		builtin->registerBuiltin("FLASH10_FLAGS","avmplus",_MR(abstract_ui(0x7FF)));
+		builtin->registerBuiltin("describeType","avmplus",_MR(Class<IFunction>::getFunction(describeType)));
+
+		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef());
+		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef());
+		builtin->registerBuiltin("File","avmplus",Class<avmplusFile>::getRef());
+		builtin->registerBuiltin("AbstractBase","avmshell",Class<ASObject>::getRef());
 	}
 
 	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());
@@ -1387,7 +1404,7 @@ void ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 	derived_class_tmp->bindToTag(t);
 }
 
-inline method_info* ABCContext::get_method(unsigned int m)
+method_info* ABCContext::get_method(unsigned int m)
 {
 	if(m<method_count)
 		return &methods[m];
@@ -2038,7 +2055,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 {
 	multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
+	assert_and_throw(mname->name_type==multiname::NAME_STRING);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 

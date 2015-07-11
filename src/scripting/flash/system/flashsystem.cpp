@@ -63,7 +63,15 @@ void Capabilities::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Capabilities,_getPlayerType)
 {
-	return Class<ASString>::getInstanceS("PlugIn");
+	switch (getSys()->flashMode)
+	{
+		case SystemState::AVMPLUS:
+			return Class<ASString>::getInstanceS("AVMPlus");
+		case SystemState::AIR:
+			return Class<ASString>::getInstanceS("Desktop");
+		default:
+			return Class<ASString>::getInstanceS("PlugIn");
+	}
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)
@@ -110,7 +118,7 @@ ASFUNCTIONBODY(Capabilities,_getVersion)
 ASFUNCTIONBODY(Capabilities,_getServerString)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Capabilities: not all capabilities are reported in ServerString");
-	tiny_string res = "A=t&SA=t&SV=t&MP3=t&OS=Linux&PT=PlugIn&L=en&TLS=t";
+	tiny_string res = "A=t&SA=t&SV=t&MP3=t&OS=Linux&PT=PlugIn&L=en&TLS=t&DD=t";
 	res +="&V=";
 	res += EMULATED_VERSION;
 	res +="&M=";
@@ -596,10 +604,16 @@ void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(_getCurrent),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(getSharedProperty),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY(ASWorker,_getCurrent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
+	return Class<ASObject>::getInstanceS();
+}
+ASFUNCTIONBODY(ASWorker,getSharedProperty)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Worker.getSharedProperty not implemented");
 	return Class<ASObject>::getInstanceS();
 }
 

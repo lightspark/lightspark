@@ -273,6 +273,7 @@ REGISTER_CLASS_NAME(TextLineValidity,"flash.text.engine")
 
 //Utils
 REGISTER_CLASS_NAME(ByteArray,"flash.utils")
+REGISTER_CLASS_NAME(CompressionAlgorithm,"flash.utils")
 REGISTER_CLASS_NAME(Dictionary,"flash.utils")
 REGISTER_CLASS_NAME(Endian,"flash.utils")
 REGISTER_CLASS_NAME(IDataInput,"flash.utils")
@@ -293,4 +294,10 @@ REGISTER_CLASS_NAME(ContextMenuBuiltInItems,"flash.ui")
 //XML
 REGISTER_CLASS_NAME(XMLDocument,"flash.xml")
 REGISTER_CLASS_NAME(XMLNode,"flash.xml")
+
+//avmplus
+REGISTER_CLASS_NAME(avmplusFile,"avmplus")
+REGISTER_CLASS_NAME(avmplusSystem,"avmplus")
+REGISTER_CLASS_NAME(avmplusDomain,"avmplus")
+
 

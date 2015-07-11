@@ -94,7 +94,7 @@ function linkTamarinTest() {
         mkdir -p $CUR/tamarin-SWF/$(dirname $1)
         OUTPUT_SWF="$CUR/tamarin-SWF/${1/%ab[cs]/swf}"
 
-        COMMON="Assert.abc Utils.abc"
+        COMMON="Assert.abc Utils.abc $CUR/tamarin/test/acceptance/generated/intrinsics.abc"
         ABS_SUPPORT=$(if [[ -f ${1/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi)
         TEST_SUPPORT=$(if [[ -d ${1/%.abc/} ]]; then echo $(ls ${1/%.abc/}/*.abc 2> /dev/null); fi)
         sortSupportClasses
@@ -109,13 +109,13 @@ function linkTamarinTest() {
 # Exclude testcases that need imports from shell_toplevel (avmplus,
 # avmshell packages) until versioned identifiers are supported.
 function shouldExcludeTest() {
-    local asfile=${1/ab[cs]/as}
-    grep --quiet --no-messages "import avmplus\|import avmshell" "$asfile"
-    if [[ $? -eq 0 ]]; then
-	return 1
-    else
+#    local asfile=${1/ab[cs]/as}
+#    grep --quiet --no-messages "import avmplus\|import avmshell" "$asfile"
+#    if [[ $? -eq 0 ]]; then
+#	return 1
+#    else
 	return 0
-    fi
+#    fi
 }
 
 export -f linkTamarinTest sortSupportClasses shouldExcludeTest
@@ -128,7 +128,7 @@ fi
 # incompatible with previous version of this script. Use Assert.as, a
 # file introduced in that commit, to detect the new test setup.
 if [[ -f $TAMARIN/test/acceptance/Assert.as ]]; then
-    makeTamarin2;
+    makeTamarin2 $1;
 else
-    makeTamarin1;
+    makeTamarin1 $1;
 fi

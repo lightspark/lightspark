@@ -19,7 +19,7 @@
 lightspark \- a free Flash player
 .SH SYNOPSIS
 .B lightspark 
-[\-\-url|\-u http://loader.url/file.swf] [\-\-air] [\-\-disable-interpreter|\-ni] [\-\-enable-fast-interpreter|\-fi] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] [\-\-profiling-output|\-o] [\-\-security-sandbox|\-s <sandbox type>] [\-\-exit-on-error] [\-\-HTTP-cookies <cookie>] [\-\-version|\-v] file.swf
+[\-\-url|\-u http://loader.url/file.swf] [\-\-air] [\-\-avmplus] [\-\-disable-interpreter|\-ni] [\-\-enable-fast-interpreter|\-fi] [\-\-enable\-jit|\-j] [\-\-log\-level|\-l 0-4] [\-\-parameters\-file|\-p params-file] [\-\-profiling-output|\-o] [\-\-security-sandbox|\-s <sandbox type>] [\-\-exit-on-error] [\-\-HTTP-cookies <cookie>] [\-\-version|\-v] file.swf
 .SH DESCRIPTION
 .B Lightspark
 is a free, modern Flash Player implementation, this documents the options accepted by the standalone version of the program.
@@ -76,6 +76,10 @@ Set cookie to be used in HTTP requests.
 \fB\-\-air\fP
 .IP
 Run as an AIR application: grant permission to access both local files and network, and enable AIR APIs.
+.HP
+\fB\-\-avmplus\fP
+.IP
+Run as an application with avmplus package: grant permission to access both local files and network, and enable avmplus APIs.
 .HP
 \fB\-\-version\fP, \fB\-v\fP
 .IP

@@ -126,7 +126,8 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 	else
 		c=static_cast<Class_base*>(target)->super.getPtr();
 
-	assert_and_throw(c);
+	if (!c)
+		return getSys()->getNullRef();
 
 	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
 }
@@ -162,7 +163,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 ASFUNCTIONBODY(lightspark,describeType)
 {
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen>=1);
 	return args[0]->describeType();
 }
 

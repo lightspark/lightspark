@@ -673,14 +673,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//lf32
 				LOG(LOG_CALLS, "lf32");
-				loadNumber(context);
+				loadFloat(context);
 				break;
 			}
 			case 0x39:
 			{
 				//lf32
 				LOG(LOG_CALLS, "lf64");
-				loadNumber(context);
+				loadDouble(context);
 				break;
 			}
 			case 0x3a:
@@ -708,14 +708,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//sf32
 				LOG(LOG_CALLS, "sf32");
-				storeNumber(context);
+				storeFloat(context);
 				break;
 			}
 			case 0x3e:
 			{
 				//sf32
 				LOG(LOG_CALLS, "sf64");
-				storeNumber(context);
+				storeDouble(context);
 				break;
 			}
 			case 0x40:
@@ -746,6 +746,21 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				u30 t;
 				code >> t;
 				construct(context,t);
+				break;
+			}
+			case 0x44:
+			{
+				//callstatic
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+				callStatic(context,t,t2,&called_mi,true);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 				break;
 			}
 			case 0x45:
@@ -839,6 +854,36 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
 					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+				break;
+			}
+			case 0x50:
+			{
+				//sxi1
+				LOG(LOG_CALLS, "sxi1");
+				ASObject* arg1=context->runtime_stack_pop();
+				int32_t ret=arg1->toUInt() >>31;
+				arg1->decRef();
+				context->runtime_stack_push(abstract_i(ret));
+				break;
+			}
+			case 0x51:
+			{
+				//sxi8
+				LOG(LOG_CALLS, "sxi8");
+				ASObject* arg1=context->runtime_stack_pop();
+				int32_t ret=(int8_t)arg1->toUInt();
+				arg1->decRef();
+				context->runtime_stack_push(abstract_i(ret));
+				break;
+			}
+			case 0x52:
+			{
+				//sxi16
+				LOG(LOG_CALLS, "sxi16");
+				ASObject* arg1=context->runtime_stack_pop();
+				int32_t ret=(int16_t)arg1->toUInt();
+				arg1->decRef();
+				context->runtime_stack_push(abstract_i(ret));
 				break;
 			}
 			case 0x53:
@@ -962,7 +1007,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				LOG(LOG_CALLS, _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				assert_and_throw(obj);
-				if ((int)i != context->argarrayposition)
+				if ((int)i != context->argarrayposition || obj->is<Array>())
 				{
 					if(context->locals[i])
 						context->locals[i]->decRef();
@@ -1005,8 +1050,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				u30 t;
 				code >> t;
 				ASObject* value=context->runtime_stack_pop();
-			        multiname* name=context->context->getMultiname(t,context);
-			        ASObject* obj=context->runtime_stack_pop();
+				multiname* name=context->context->getMultiname(t,context);
+				ASObject* obj=context->runtime_stack_pop();
 				initProperty(obj,value,name);
 				name->resetNameIfObject();
 				break;
@@ -1554,7 +1599,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				int i=opcode&3;
 				LOG(LOG_CALLS, _("setLocal ") << i);
 				ASObject* obj=context->runtime_stack_pop();
-				if ((int)i != context->argarrayposition)
+				if ((int)i != context->argarrayposition || obj->is<Array>())
 				{
 					if(context->locals[i])
 						context->locals[i]->decRef();

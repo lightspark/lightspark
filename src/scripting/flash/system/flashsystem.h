@@ -88,10 +88,10 @@ public:
 	T readFromDomainMemory(uint32_t addr) const
 	{
 		if(domainMemory.isNull())
-			throw RunTimeException("No memory domain is set");
+			return 0;
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
-			throw RunTimeException("Memory domain access is out of bounds");
+			throwError<RangeError>(kInvalidRangeError);
 		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
 		return *reinterpret_cast<T*>(buf+addr);
 	}
@@ -99,10 +99,10 @@ public:
 	void writeToDomainMemory(uint32_t addr, T val)
 	{
 		if(domainMemory.isNull())
-			throw RunTimeException("No memory domain is set");
+			return;
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
-			throw RunTimeException("Memory domain access is out of bounds");
+			throwError<RangeError>(kInvalidRangeError);
 		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
 		*reinterpret_cast<T*>(buf+addr)=val;
 	}
@@ -165,6 +165,7 @@ public:
 	ASWorker(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(_getCurrent);
+	ASFUNCTION(getSharedProperty);
 };
 
 }

@@ -256,28 +256,49 @@ private:
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
-
-	static void loadNumber(call_context* th)
+	static void loadFloat(call_context* th)
 	{
 		ASObject* arg1=th->runtime_stack_pop();
-		number_t addr=arg1->toNumber();
+		float addr=arg1->toNumber();
 		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		number_t ret=appDomain->readFromDomainMemory<number_t>(addr);
+		number_t ret=appDomain->readFromDomainMemory<float>(addr);
 		th->runtime_stack_push(abstract_d(ret));
 	}
-	static void storeNumber(call_context* th)
+
+	static void loadDouble(call_context* th)
+	{
+		ASObject* arg1=th->runtime_stack_pop();
+		double addr=arg1->toNumber();
+		arg1->decRef();
+		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+		number_t ret=appDomain->readFromDomainMemory<double>(addr);
+		th->runtime_stack_push(abstract_d(ret));
+	}
+	static void storeFloat(call_context* th)
 	{
 		ASObject* arg1=th->runtime_stack_pop();
 		ASObject* arg2=th->runtime_stack_pop();
 		number_t addr=arg1->toNumber();
 		arg1->decRef();
-		number_t val=arg2->toNumber();
+		float val=(float)arg2->toNumber();
 		arg2->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		appDomain->writeToDomainMemory<number_t>(addr, val);
+		appDomain->writeToDomainMemory<float>(addr, val);
+	}
+	static void storeDouble(call_context* th)
+	{
+		ASObject* arg1=th->runtime_stack_pop();
+		ASObject* arg2=th->runtime_stack_pop();
+		number_t addr=arg1->toNumber();
+		arg1->decRef();
+		double val=arg2->toNumber();
+		arg2->decRef();
+		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+		appDomain->writeToDomainMemory<double>(addr, val);
 	}
 
+	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);

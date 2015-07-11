@@ -398,7 +398,10 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
 		if (obj->getClass() && obj->getClass()->isSealed)
 			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
-		throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
+		if (obj->is<Class_base>())
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->as<Class_base>()->class_name.getQualifiedName());
+		else
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
 
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
@@ -433,7 +436,7 @@ int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj << ' '<<obj->isInitialized());
+	LOG(LOG_CALLS, _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	checkDeclaredTraits(obj);
 		
 	_NR<ASObject> prop=obj->getVariableByMultiname(*name);
@@ -447,8 +450,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(), obj->getClassName());
 		if (obj->is<Undefined>())
 			throwError<TypeError>(kConvertUndefinedToObjectError);
-		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && obj->getClassName() != "Object")
-			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved() << " not found on " << obj->toDebugString());
+		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved() << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 		ret = getSys()->getUndefinedRef();
 	}
 	else
@@ -1558,6 +1561,44 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 	obj->decRef();
 }
 
+void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
+{
+	ASObject** args=g_newa(ASObject*, m);
+	for(int i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
+
+	ASObject* obj=th->runtime_stack_pop();
+	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"trying to callStatic on null");
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"trying to callStatic on undefined");
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	method_info* mi = th->context->get_method(n);
+	assert_and_throw(mi);
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(mi);
+
+	if(f)
+	{
+		f->incRef();
+		callImpl(th, f, obj, args, m, called_mi, keepReturn);
+	}
+	else
+	{
+		obj->decRef();
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
+		throwError<ReferenceError>(kCallNotFoundError, "?", obj->getClassName());
+		if(keepReturn)
+			th->runtime_stack_push(getSys()->getUndefinedRef());
+	}
+	LOG(LOG_CALLS,"End of callStatic ");
+}
+
 void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
 	ASObject** args=g_newa(ASObject*, m);
@@ -1785,6 +1826,9 @@ bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, _("in") );
+	if(val2->is<Null>())
+		throwError<TypeError>(kConvertNullToObjectError);
+
 	multiname name(NULL);
 	name.name_type=multiname::NAME_OBJECT;
 	//Acquire the reference
@@ -1826,6 +1870,11 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
 		obj->decRef();
+		if (obj->is<Undefined>())
+			throwError<TypeError>(kConvertUndefinedToObjectError);
+		if (obj->isPrimitive())
+			throwError<TypeError>(kConstructOfNonFunctionError);
+		
 		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved());
 	}
 
@@ -2177,7 +2226,7 @@ void ABCVm::newClass(call_context* th, int n)
 #ifdef PROFILING_SUPPORT
 		if(!constructor->validProfName)
 		{
-			constructor->profName=mname->name_s+"::__CONSTRUCTOR__";
+			constructor->profName=mname->normalizedName()+"::__CONSTRUCTOR__";
 			constructor->validProfName=true;
 		}
 #endif
@@ -2482,9 +2531,6 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
  */
 bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 {
-	if(value->is<Null>())
-		return false;
-
 	if(type->is<IFunction>())
 	{
 		IFunction* t=static_cast<IFunction*>(type);
@@ -2503,6 +2549,10 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 
 	if(!type->is<Class_base>())
 		throwError<TypeError>(kCantUseInstanceofOnNonObjectError);
+
+	if(value->is<Null>())
+		return false;
+
 
 	if(value->is<Class_base>())
 		// Classes are instance of Class and Object but not

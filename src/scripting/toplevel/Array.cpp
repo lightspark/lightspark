@@ -1220,34 +1220,41 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	uint32_t index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,opt);
-	if(index<size())
+	if(index<size() && data.count(index))
 	{
 		ASObject* ret=NULL;
-		if (!data.count(index))
-			ret = getSys()->getUndefinedRef();
-		else
+		data_slot sl = data[index];
+		switch(sl.type)
 		{
-			data_slot sl = data[index];
-			switch(sl.type)
-			{
-				case DATA_OBJECT:
-					ret=sl.data;
-					if(ret==NULL)
-					{
-						ret=getSys()->getUndefinedRef();
-						sl.data=ret;
-					}
-					ret->incRef();
-					break;
-				case DATA_INT:
-					ret=abstract_d(sl.data_i);
-					break;
-			}
+			case DATA_OBJECT:
+				ret=sl.data;
+				if(ret==NULL)
+				{
+					ret=getSys()->getUndefinedRef();
+					sl.data=ret;
+				}
+				ret->incRef();
+				break;
+			case DATA_INT:
+				ret=abstract_d(sl.data_i);
+				break;
 		}
 		return _MNR(ret);
 	}
-	else
-		return NullRef;
+	_NR<ASObject> ret;
+	//Check prototype chain
+	Prototype* proto = this->getClass()->prototype.getPtr();
+	while(proto)
+	{
+		ret = proto->getObj()->getVariableByMultiname(name, opt);
+		if(!ret.isNull())
+			return ret;
+		proto = proto->prevPrototype.getPtr();
+	}
+	if(index<size())
+		return _MNR(getSys()->getUndefinedRef());
+	
+	return NullRef;
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, int32_t value)

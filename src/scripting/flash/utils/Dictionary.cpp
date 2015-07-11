@@ -43,7 +43,7 @@ void Dictionary::finalize()
 void Dictionary::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),DYNAMIC_TRAIT);
 }
 
 void Dictionary::buildTraits(ASObject* o)

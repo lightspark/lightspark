@@ -384,7 +384,7 @@ _R<ASObject> ASObject::call_toString()
 	return _MR(ret);
 }
 
-tiny_string ASObject::call_toJSON(bool& ok)
+tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
 {
 	tiny_string res;
 	ok = false;
@@ -412,7 +412,7 @@ tiny_string ASObject::call_toJSON(bool& ok)
 		res += "\"";
 	}
 	else 
-		res = ret->toString();
+		res = ret->toJSON(path,replacer,spaces,filter);
 	ok = true;
 	return res;
 }
@@ -1695,7 +1695,7 @@ ASObject *ASObject::describeType() const
 tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
 {
 	bool ok;
-	tiny_string res = call_toJSON(ok);
+	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
 	if (ok)
 		return res;
 

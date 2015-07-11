@@ -1093,6 +1093,59 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	return validIndex;
 }
 
+tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces, const tiny_string &filter)
+{
+	bool ok;
+	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
+	if (ok)
+		return res;
+
+	res += "[";
+	// check for cylic reference
+	if (std::find(path.begin(),path.end(), this) != path.end())
+		throwError<TypeError>(kJSONCyclicStructure);
+	path.push_back(this);
+	bool bfirst = true;
+	tiny_string newline = (spaces.empty() ? "" : "\n");
+	for (uint i =0;  i < vec.size(); i++)
+	{
+		tiny_string subres;
+		ASObject* o = vec[i];
+		if (!o)
+			o = getSys()->getNullRef();
+		if (replacer != NULL)
+		{
+			ASObject* params[2];
+			
+			params[0] = Class<Number>::getInstanceS(i);
+			params[0]->incRef();
+			params[1] = o;
+			params[1]->incRef();
+			ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+			if (funcret)
+				subres = funcret->toJSON(path,NULL,spaces,filter);
+		}
+		else
+		{
+			subres = o->toJSON(path,replacer,spaces,filter);
+		}
+		if (!subres.empty())
+		{
+			if (!bfirst)
+				res += ",";
+			res += newline+spaces;
+			
+			bfirst = false;
+			res += subres;
+		}
+		path.push_back(o);
+	}
+	if (!bfirst)
+		res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
+	res += "]";
+	return res;
+}
+
 ASObject* Vector::at(unsigned int index, ASObject *defaultValue) const
 {
 	if (index < vec.size())

@@ -42,6 +42,7 @@ Date::~Date()
 void Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
+	c->prototype->isSealed=true;
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),NORMAL_METHOD,true);
@@ -78,7 +79,6 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setTime",AS3,Class<IFunction>::getFunction(setTime,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC,7),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toUTCString",AS3,Class<IFunction>::getFunction(toUTCString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toDateString",AS3,Class<IFunction>::getFunction(toDateString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toTimeString",AS3,Class<IFunction>::getFunction(toTimeString),NORMAL_METHOD,true);
@@ -161,6 +161,7 @@ void Date::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toLocaleTimeString","",Class<IFunction>::getFunction(toLocaleTimeString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleDateString","",Class<IFunction>::getFunction(toLocaleDateString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(toLocaleString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 }
 
 void Date::buildTraits(ASObject* o)

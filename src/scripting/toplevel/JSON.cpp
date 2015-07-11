@@ -555,6 +555,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 	name.ns.push_back(nsNameAndKind("",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
+	bool needdata = false;
 	while (!done && pos < len)
 	{
 		while (jsonstring.charAt(pos) == ' ' ||
@@ -572,14 +573,16 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 				break;
 			case ',':
 				name.name_i++;
+				needdata = true;
 				pos++;
 				break;
 			default:
 				pos = parse(jsonstring,pos,&subobj,name, reviver);
+				needdata = false;
 				break;
 		}
 	}
-	if (!done)
+	if (!done || needdata)
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 
 	return pos;

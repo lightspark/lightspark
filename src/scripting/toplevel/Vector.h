@@ -69,6 +69,8 @@ public:
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(const multiname& name, uint32_t& index);
 
+	tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
+
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);

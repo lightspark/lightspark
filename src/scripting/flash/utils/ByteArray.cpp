@@ -105,7 +105,7 @@ void ByteArray::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,shareable);
 	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",Class<IFunction>::getFunction(atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",Class<IFunction>::getFunction(atomicCompareAndSwapLength),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),DYNAMIC_TRAIT);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
 	IDataInput::linkTraits(c);
@@ -1481,7 +1481,7 @@ void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		uint32_t value = (len << 1) | 1;
 		out->writeU29(value);
 		// TODO faster implementation
-		for (int i = 0; i < len; i++)
+		for (uint i = 0; i < len; i++)
 			out->writeByte(this->bytes[i]);
 	}
 }

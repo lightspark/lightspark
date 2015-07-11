@@ -508,7 +508,14 @@ tiny_string tiny_string::lowercase() const
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
-		gunichar c = g_unichar_tolower(*it);
+		gunichar c;
+		// Adobe player handles some Georgian chars not like glib does
+		if ( *it >= 0x10A0 && *it <= 0x10C5 )
+			c = *it + 48;
+		else if (*it == 0x10C7 || *it == 0x10CD)
+			c = *it;
+		else
+			c = g_unichar_tolower(*it);
 		gint n = g_unichar_to_utf8(c, p);
 		p += n;
 		len += n;

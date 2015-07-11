@@ -329,6 +329,8 @@ ASFUNCTIONBODY(Array,_setLength)
 	uint32_t newLen;
 	ARG_UNPACK(newLen);
 	Array* th=static_cast<Array*>(obj);
+	if (th->getClass() && th->getClass()->isSealed)
+		return NULL;
 	//If newLen is equal to size do nothing
 	if(newLen==th->size())
 		return NULL;
@@ -408,12 +410,12 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	int ret=-1;
 
 	if(argslen == 1 && th->data.empty())
-		return abstract_d(0);
+		return abstract_d(-1);
 
 	size_t i = th->size()-1;
 
 	if(argslen == 2 && std::isnan(args[1]->toNumber()))
-		return abstract_i(0);
+		return abstract_i(-1);
 
 	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
@@ -1007,6 +1009,9 @@ ASFUNCTIONBODY(Array,unshift)
 		return getSys()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
+	// Derived classes may be sealed!
+	if (th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kWriteSealedError,"unshift",th->getClass()->getQualifiedClassName());
 	if (argslen > 0)
 	{
 		th->resize(th->size()+argslen);
@@ -1374,6 +1379,8 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return ASObject::deleteVariableByMultiname(name);
+	if (getClass() && getClass()->isSealed)
+		return false;
 
 	if(index>=size())
 		return true;
@@ -1617,7 +1624,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string& spaces,const tiny_string& filter)
 {
 	bool ok;
-	tiny_string res = call_toJSON(ok);
+	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
 	if (ok)
 		return res;
 
@@ -1713,5 +1720,14 @@ void Array::set(unsigned int index, _R<ASObject> o)
 	}
 	else
 		outofbounds(index);
+}
+
+void Array::push(Ref<ASObject> o)
+{
+	// Derived classes may be sealed!
+	if (getClass() && getClass()->isSealed)
+		throwError<ReferenceError>(kWriteSealedError,"push",getClass()->getQualifiedClassName());
+	currentsize++;
+	set(currentsize-1,o);
 }
 

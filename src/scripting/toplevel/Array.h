@@ -132,11 +132,7 @@ public:
 	{
 		return currentsize;
 	}
-	void push(_R<ASObject> o)
-	{
-		currentsize++;
-		set(currentsize-1,o);
-	}
+	void push(_R<ASObject> o);
 	void resize(uint64_t n);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);

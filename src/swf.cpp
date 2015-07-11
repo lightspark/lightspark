@@ -205,6 +205,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	cookiesFileName = NULL;
 
 	setTLSSys(this);
+	// it seems Adobe ignores any locale date settings
+	setlocale(LC_TIME, "en_US");
 
 	mainThread = Thread::self();
 

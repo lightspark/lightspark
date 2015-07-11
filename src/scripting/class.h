@@ -381,7 +381,7 @@ public:
 			o->decRef();
 			return getSys()->getNullRef();
 		}
-		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this->class_name)) || 
+		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this)) || 
 				 o->is<Null>())
 		{
 			// Vector.<x> can be coerced to Vector.<y>

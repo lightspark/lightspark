@@ -398,11 +398,13 @@ void URLLoaderThread::execute()
 	{
 		//Send a complete event for this object
 		loader->setData(data);
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("complete")));
 	}
 	else if(!success && !threadAborting)
 	{
 		//Notify an error during loading
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
 	}
 
@@ -1538,8 +1540,11 @@ void NetStream::execute()
 						}
 						if (frameRate)
 						{
-							this->bufferLength = (framesdecoded / frameRate) - (streamTime-prevstreamtime)/1000.0;
 							this->playbackBytesPerSecond = s.tellg() / (framesdecoded / frameRate);
+							// TODO this overrides the real number of decoded frames
+							// otherwise on slow computers we never get the buffer filled
+							framesdecoded = (this->getReceivedLength() / this->playbackBytesPerSecond) *  frameRate;
+							this->bufferLength = (framesdecoded / frameRate) - (streamTime-prevstreamtime)/1000.0;
 						}
 						countermutex.unlock();
 					}

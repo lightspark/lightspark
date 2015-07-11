@@ -60,7 +60,7 @@ public:
 	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
-	bool sameType(const QName& classname) const;
+	bool sameType(const Class_base* cls) const;
 
 	//Overloads
 	tiny_string toString();
@@ -88,6 +88,7 @@ public:
 	//Appends an object to the Vector. o is coerced to vec_type.
 	//Takes ownership of o.
 	void append(ASObject *o);
+	void setFixed(bool v) { fixed = v; }
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
@@ -116,6 +117,11 @@ public:
 	ASFUNCTION(slice);
 	ASFUNCTION(every);
 	ASFUNCTION(some);
+
+	//Serialization interface
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap);
 };
 
 }

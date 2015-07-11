@@ -53,7 +53,9 @@ public:
 	ASFUNCTION(_toFixed);
 	ASFUNCTION(_toPrecision);
 	std::string toDebugString() { return toString()+"ui"; }
-	//CHECK: should this have a special serialization?
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap);
 };
 
 }

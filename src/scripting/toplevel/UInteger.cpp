@@ -18,8 +18,10 @@
 **************************************************************************/
 
 #include <cmath>
+#include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
 using namespace lightspark;
@@ -203,4 +205,21 @@ ASFUNCTIONBODY(UInteger,_toPrecision)
 	int precision;
 	ARG_UNPACK (precision);
 	return Class<ASString>::getInstanceS(Number::toPrecisionString(th->val, precision));
+}
+
+void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap)
+{
+	if(val>=0x40000000)
+	{
+		// write as double
+		out->writeByte(double_marker);
+		out->serializeDouble(val);
+	}
+	else
+	{
+		out->writeByte(integer_marker);
+		out->writeU29((uint32_t)val);
+	}
 }

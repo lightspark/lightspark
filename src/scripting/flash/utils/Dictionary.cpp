@@ -52,6 +52,10 @@ void Dictionary::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Dictionary,_constructor)
 {
+	bool weak = false;
+	ARG_UNPACK(weak, false);
+	if (weak)
+		LOG(LOG_NOT_IMPLEMENTED,"Dictionary:weak keys not implemented");
 	return NULL;
 }
 
@@ -346,5 +350,44 @@ tiny_string Dictionary::toString()
 	retstr << "}";
 
 	return retstr.str();
+}
+
+
+void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap)
+{
+	assert_and_throw(objMap.find(this)==objMap.end());
+	out->writeByte(dictionary_marker);
+	//Check if the dictionary has been already serialized
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the dictionary to the map
+		objMap.insert(make_pair(this, objMap.size()));
+
+		uint32_t count = 0;
+		uint32_t tmp;
+		while ((tmp = nextNameIndex(count)) != 0)
+		{
+			count = tmp;
+		}
+		assert_and_throw(count<0x20000000);
+		uint32_t value = (count << 1) | 1;
+		out->writeU29(value);
+		out->writeByte(0x00); // TODO handle weak keys
+		
+		tmp = 0;
+		while ((tmp = nextNameIndex(tmp)) != 0)
+		{
+			nextName(tmp)->serialize(out, stringMap, objMap, traitsMap);
+			nextValue(tmp)->serialize(out, stringMap, objMap, traitsMap);
+		}
+	}
 }
 

@@ -38,7 +38,6 @@ private:
 	number_t getMsSinceEpoch();
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
 	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
-	void MakeDateFromMilliseconds(int64_t ms);
 	static number_t parse(tiny_string str);
 public:
 	Date(Class_base* c);
@@ -105,6 +104,7 @@ public:
 	ASFUNCTION(toLocaleDateString);
 	ASFUNCTION(toLocaleTimeString);
 
+	void MakeDateFromMilliseconds(int64_t ms);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString();

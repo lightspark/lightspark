@@ -120,10 +120,10 @@ void Vector::setTypes(const std::vector<const Type *> &types)
 	if(types.size() == 1)
 		vec_type = types[0];
 }
-bool Vector::sameType(const QName& classname) const
+bool Vector::sameType(const Class_base *cls) const
 {
 	tiny_string clsname = this->getClass()->getQualifiedClassName();
-	return (clsname.startsWith(classname.getQualifiedName().raw_buf()));
+	return (clsname.startsWith(cls->class_name.getQualifiedName().raw_buf()));
 }
 
 ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen)
@@ -1087,4 +1087,62 @@ ASObject* Vector::at(unsigned int index, ASObject *defaultValue) const
 		return vec.at(index);
 	else
 		return defaultValue;
+}
+
+void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap)
+{
+	uint8_t marker = 0;
+	if (vec_type == Class<Integer>::getClass())
+		marker = vector_int_marker;
+	else if (vec_type == Class<UInteger>::getClass())
+		marker = vector_uint_marker;
+	else if (vec_type == Class<Number>::getClass())
+		marker = vector_double_marker;
+	else
+		marker = vector_object_marker;
+	out->writeByte(marker);
+	//Check if the vector has been already serialized
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the Vector to the map
+		objMap.insert(make_pair(this, objMap.size()));
+
+		uint32_t count = size();
+		assert_and_throw(count<0x20000000);
+		uint32_t value = (count << 1) | 1;
+		out->writeU29(value);
+		out->writeByte(fixed ? 0x01 : 0x00);
+		if (marker == vector_object_marker)
+		{
+			out->writeStringVR(stringMap,vec_type->getName());
+		}
+		for(uint32_t i=0;i<count;i++)
+		{
+			if (!vec[i])
+				continue;
+			switch (marker)
+			{
+				case vector_int_marker:
+					out->writeUnsignedInt(out->endianIn((uint32_t)vec[i]->toInt()));
+					break;
+				case vector_uint_marker:
+					out->writeUnsignedInt(out->endianIn(vec[i]->toUInt()));
+					break;
+				case vector_double_marker:
+					out->serializeDouble(vec[i]->toNumber());
+					break;
+				case vector_object_marker:
+					vec[i]->serialize(out, stringMap, objMap, traitsMap);
+					break;
+			}
+		}
+	}
 }

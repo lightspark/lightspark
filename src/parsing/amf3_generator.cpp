@@ -17,16 +17,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abc.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Date.h"
 #include "scripting/class.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "toplevel/XML.h"
 #include <iostream>
 #include <fstream>
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/utils/Dictionary.h"
 
 using namespace std;
 using namespace lightspark;
@@ -63,6 +66,26 @@ _R<ASObject> Amf3Deserializer::parseDouble() const
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
 	return _MR(abstract_d(tmp.val));
+}
+
+_R<ASObject> Amf3Deserializer::parseDate() const
+{
+	union
+	{
+		uint64_t dummy;
+		double val;
+	} tmp;
+	uint8_t* tmpPtr=reinterpret_cast<uint8_t*>(&tmp.dummy);
+
+	for(uint32_t i=0;i<8;i++)
+	{
+		if(!input->readByte(tmpPtr[i]))
+			throw ParseException("Not enough data to parse date");
+	}
+	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
+	Date* dt = Class<Date>::getInstanceS();
+	dt->MakeDateFromMilliseconds((int64_t)tmp.val);
+	return _MR(dt);
 }
 
 tiny_string Amf3Deserializer::parseStringVR(std::vector<tiny_string>& stringMap) const
@@ -134,6 +157,190 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 	{
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
 		ret->push(value);
+	}
+	return ret;
+}
+
+_R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	uint32_t vectorRef;
+	if(!input->readU29(vectorRef))
+		throw ParseException("Not enough data to parse AMF3 vector");
+	
+	if((vectorRef&0x01)==0)
+	{
+		//Just a reference
+		if(objMap.size() <= (vectorRef >> 1))
+			throw ParseException("Invalid object reference in AMF3 data");
+		ASObject* ret=objMap[vectorRef >> 1];
+		ret->incRef();
+		return _MR(ret);
+	}
+
+	uint8_t b;
+	if (!input->readByte(b))
+		throw ParseException("Not enough data to parse AMF3 vector");
+	const Type* type =NULL;
+	switch (marker)
+	{
+		case vector_int_marker:
+			type = Class<Integer>::getClass();
+			break;
+		case vector_uint_marker:
+			type = Class<UInteger>::getClass();
+			break;
+		case vector_double_marker:
+			type = Class<Number>::getClass();
+			break;
+		case vector_object_marker:
+		{
+			tiny_string vectypename;
+			vectypename = parseStringVR(stringMap);
+			multiname m(NULL);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=getSys()->getUniqueStringId(vectypename);
+			m.ns.push_back(nsNameAndKind("",NAMESPACE));
+			m.isAttribute = false;
+			type = Type::getTypeFromMultiname(&m,getVm()->currentCallContext->context);
+			if (type == NULL)
+			{
+				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);
+				type = Class<ASObject>::getClass();
+			}
+			break;
+		}
+		default:
+			LOG(LOG_ERROR,"invalid marker during deserialization of vector:"<<marker);
+			throw ParseException("invalid marker in AMF3 vector");
+			
+	}
+	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(type));
+	//Add object to the map
+	objMap.push_back(ret.getPtr());
+
+	
+	int32_t count = vectorRef >> 1;
+
+	for(int32_t i=0;i<count;i++)
+	{
+		switch (marker)
+		{
+			case vector_int_marker:
+			{
+				uint32_t value = 0;
+				if (!input->readUnsignedInt(value))
+					throw ParseException("Not enough data to parse AMF3 vector");
+				ret->append(abstract_i(value));
+				break;
+			}
+			case vector_uint_marker:
+			{
+				uint32_t value = 0;
+				if (!input->readUnsignedInt(value))
+					throw ParseException("Not enough data to parse AMF3 vector");
+				ret->append(abstract_ui(value));
+				break;
+			}
+			case vector_double_marker:
+			{
+				_R<ASObject> v = parseDouble();
+				v->incRef();
+				ret->append(v.getPtr());
+				break;
+			}
+			case vector_object_marker:
+			{
+				_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+				value->incRef();
+				ret->append(value.getPtr());
+				break;
+			}
+		}
+	}
+	// set fixed at last to avoid rangeError
+	ret->setFixed(b == 0x01);
+	return ret;
+}
+
+
+_R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	uint32_t dictRef;
+	if(!input->readU29(dictRef))
+		throw ParseException("Not enough data to parse AMF3 dictionary");
+	
+	if((dictRef&0x01)==0)
+	{
+		//Just a reference
+		if(objMap.size() <= (dictRef >> 1))
+			throw ParseException("Invalid object reference in AMF3 data");
+		ASObject* ret=objMap[dictRef >> 1];
+		ret->incRef();
+		return _MR(ret);
+	}
+
+	uint8_t weakkeys;
+	if (!input->readByte(weakkeys))
+		throw ParseException("Not enough data to parse AMF3 vector");
+	if (weakkeys)
+		LOG(LOG_NOT_IMPLEMENTED,"handling of weak keys in Dictionary");
+	_R<Dictionary> ret=_MR(Class<Dictionary>::getInstanceS());
+	//Add object to the map
+	objMap.push_back(ret.getPtr());
+
+	
+	int32_t count = dictRef >> 1;
+
+	for(int32_t i=0;i<count;i++)
+	{
+		_R<ASObject> key=parseValue(stringMap, objMap, traitsMap);
+		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+		multiname name(NULL);
+		name.name_type=multiname::NAME_OBJECT;
+		name.name_o = key.getPtr();
+		name.ns.push_back(nsNameAndKind("",NAMESPACE));
+		key->incRef();
+		value->incRef();
+		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED);
+	}
+	return ret;
+}
+
+_R<ASObject> Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	uint32_t bytearrayRef;
+	if(!input->readU29(bytearrayRef))
+		throw ParseException("Not enough data to parse AMF3 bytearray");
+	
+	if((bytearrayRef&0x01)==0)
+	{
+		//Just a reference
+		if(objMap.size() <= (bytearrayRef >> 1))
+			throw ParseException("Invalid object reference in AMF3 data");
+		ASObject* ret=objMap[bytearrayRef >> 1];
+		ret->incRef();
+		return _MR(ret);
+	}
+
+	_R<ByteArray> ret=_MR(Class<ByteArray>::getInstanceS());
+	//Add object to the map
+	objMap.push_back(ret.getPtr());
+
+	
+	int32_t count = bytearrayRef >> 1;
+
+	for(int32_t i=0;i<count;i++)
+	{
+		uint8_t b;
+		if (!input->readByte(b))
+			throw ParseException("Not enough data to parse AMF3 bytearray");
+		ret->writeByte(b);
 	}
 	return ret;
 }
@@ -299,6 +506,8 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 				return parseInteger();
 			case double_marker:
 				return parseDouble();
+			case date_marker:
+				return parseDate();
 			case string_marker:
 				return _MR(Class<ASString>::getInstanceS(parseStringVR(stringMap)));
 			case xml_doc_marker:
@@ -309,6 +518,15 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 				return parseObject(stringMap, objMap, traitsMap);
 			case xml_marker:
 				return parseXML(objMap, false);
+			case byte_array_marker:
+				return parseByteArray(stringMap, objMap, traitsMap);
+			case vector_int_marker:
+			case vector_uint_marker:
+			case vector_double_marker:
+			case vector_object_marker:
+				return parseVector(marker, stringMap, objMap, traitsMap);
+			case dictionary_marker:
+				return parseDictionary(stringMap, objMap, traitsMap);
 			default:
 				LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);
 				throw UnsupportedException("Unsupported marker");

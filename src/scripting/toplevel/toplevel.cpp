@@ -108,7 +108,7 @@ int Undefined::toInt()
 
 ASObject *Undefined::describeType() const
 {
-	return getSys()->getUndefinedRef();
+	return ASObject::describeType();
 }
 
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -280,7 +280,9 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 {
 	const uint32_t opt_hit_threshold=1;
 	const uint32_t jit_hit_threshold=20;
-	assert_and_throw(mi->body);
+	if (!mi->body)
+		return getSys()->getUndefinedRef();
+
 	const uint16_t hit_count = mi->body->hit_count;
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 
@@ -2166,6 +2168,7 @@ void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 {
 	o->incRef();
 	setVariableByQName(name,nsNameAndKind(ns,NAMESPACE),o.getPtr(),DECLARED_TRAIT);
+	//setVariableByQName(name,nsNameAndKind(ns,PACKAGE_NAMESPACE),o.getPtr(),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(lightspark,eval)

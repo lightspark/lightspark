@@ -46,8 +46,14 @@ enum markers_type
 	xml_doc_marker = 0x7,
 	date_marker = 0x8,
 	array_marker = 0x9,
-	object_marker = 0xa,
-	xml_marker = 0xb
+	object_marker = 0xA,
+	xml_marker = 0xB,
+	byte_array_marker = 0x0C,
+	vector_int_marker = 0x0D,
+	vector_uint_marker = 0x0E,
+	vector_double_marker = 0x0F,
+	vector_object_marker = 0x10,
+	dictionary_marker = 0x11
 };
 
 enum amf0_markers_type
@@ -93,11 +99,21 @@ private:
 	_R<ASObject> parseArray(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
+	_R<ASObject> parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
+	_R<ASObject> parseDictionary(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
+	_R<ASObject> parseByteArray(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseInteger() const;
 	_R<ASObject> parseDouble() const;
+	_R<ASObject> parseDate() const;
 	_R<ASObject> parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const;
 
 

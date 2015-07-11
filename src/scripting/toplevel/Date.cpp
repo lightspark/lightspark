@@ -17,9 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "parsing/amf3_generator.h"
 #include "scripting/toplevel/Date.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "compat.h"
 
 using namespace std;
@@ -878,7 +880,17 @@ ASFUNCTIONBODY(Date,toTimeString)
 ASFUNCTIONBODY(Date,toLocaleString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString());
+	if (!th->datetime)
+		return Class<ASString>::getInstanceS("");
+	tiny_string res = th->toString_priv(false,"%a %b %e");
+	gchar* fs = g_date_time_format(th->datetime, " %I:%M:%S");
+	res += fs;
+	if (g_date_time_get_hour(th->datetime) > 12)
+		res += " PM";
+	else
+		res += " AM";
+	g_free(fs);
+	return Class<ASString>::getInstanceS(res);
 }
 ASFUNCTIONBODY(Date,toLocaleDateString)
 {
@@ -1120,6 +1132,20 @@ void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	throw UnsupportedException("Date::serialize not implemented");
+	number_t val = getMsSinceEpoch();
+	out->writeByte(date_marker);
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the Date to the map
+		objMap.insert(make_pair(this, objMap.size()));
+		// write milliseconds since 1970 as double
+		out->serializeDouble(val);
+	}
 }
 

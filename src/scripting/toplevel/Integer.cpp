@@ -214,11 +214,17 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	out->writeByte(integer_marker);
-	//TODO: check behaviour for negative value
 	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
-		throw AssertionException("Range exception in Integer::serialize");
-	out->writeU29((uint32_t)val);
+	{
+		// write as double
+		out->writeByte(double_marker);
+		out->serializeDouble(val);
+	}
+	else
+	{
+		out->writeByte(integer_marker);
+		out->writeU29((uint32_t)val);
+	}
 }
 
 bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix)

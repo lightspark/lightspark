@@ -384,34 +384,27 @@ _R<ASObject> ASObject::call_toString()
 	return _MR(ret);
 }
 
-bool ASObject::has_toJSON()
+tiny_string ASObject::call_toJSON(bool& ok)
 {
+	tiny_string res;
+	ok = false;
 	multiname toJSONName(NULL);
 	toJSONName.name_type=multiname::NAME_STRING;
 	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
 	toJSONName.ns.push_back(nsNameAndKind("",NAMESPACE));
 	toJSONName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
 	toJSONName.isAttribute = false;
-	return ASObject::hasPropertyByMultiname(toJSONName, true, true);
-}
-
-tiny_string ASObject::call_toJSON()
-{
-	multiname toJSONName(NULL);
-	toJSONName.name_type=multiname::NAME_STRING;
-	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
-	toJSONName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	toJSONName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
-	toJSONName.isAttribute = false;
-	assert(ASObject::hasPropertyByMultiname(toJSONName, true, true));
+	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
+		return res;
 
 	_NR<ASObject> o=getVariableByMultiname(toJSONName,SKIP_IMPL);
-	assert_and_throw(o->is<IFunction>());
+	if (!o->is<IFunction>())
+		return res;
+
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
 	ASObject *ret=f->call(this,NULL,0);
-	tiny_string res;
 	if (ret->is<ASString>())
 	{
 		res += "\"";
@@ -420,7 +413,7 @@ tiny_string ASObject::call_toJSON()
 	}
 	else 
 		res = ret->toString();
-	
+	ok = true;
 	return res;
 }
 
@@ -1701,13 +1694,12 @@ ASObject *ASObject::describeType() const
 
 tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
 {
-	if (has_toJSON())
-	{
-		return call_toJSON();
-	}
+	bool ok;
+	tiny_string res = call_toJSON(ok);
+	if (ok)
+		return res;
 
 	tiny_string newline = (spaces.empty() ? "" : "\n");
-	tiny_string res;
 	if (this->isPrimitive())
 	{
 		switch(this->type)
@@ -1759,6 +1751,17 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 			case T_UNDEFINED:
 				res += "null";
 				break;
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+			{
+				tiny_string s = this->toString();
+				if (s == "Infinity" || s == "-Infinity" || s == "NaN")
+					res += "null";
+				else
+					res += s;
+				break;
+			}
 			default:
 				res += this->toString();
 				break;

@@ -1587,13 +1587,21 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		for(uint32_t i=0;i<denseCount;i++)
 		{
 			if (!data.count(i))
-				throw UnsupportedException("undefined not supported in Array::serialize");
-			switch(data.at(i).type)
 			{
-				case DATA_INT:
-					throw UnsupportedException("int not supported in Array::serialize");
-				case DATA_OBJECT:
-					data.at(i).data->serialize(out, stringMap, objMap, traitsMap);
+				out->writeByte(null_marker);
+			}
+			else
+			{
+				switch(data.at(i).type)
+				{
+					case DATA_INT:
+						out->writeByte(double_marker);
+						out->serializeDouble(data.at(i).data_i);
+						break;
+					case DATA_OBJECT:
+						data.at(i).data->serialize(out, stringMap, objMap, traitsMap);
+						break;
+				}
 			}
 		}
 	}
@@ -1601,12 +1609,12 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 
 tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string& spaces,const tiny_string& filter)
 {
-	if (has_toJSON())
-	{
-		return call_toJSON();
-	}
+	bool ok;
+	tiny_string res = call_toJSON(ok);
+	if (ok)
+		return res;
 
-	tiny_string res = "[";
+	res += "[";
 	std::map<uint32_t,data_slot>::iterator it;
 	// check for cylic reference
 	if (std::find(path.begin(),path.end(), this) != path.end())
@@ -1616,34 +1624,42 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	for (it=data.begin() ; it != data.end(); ++it)
 	{
-		if(it->second.type==DATA_OBJECT && it->second.data)
+		tiny_string subres;
+		ASObject* o = it->second.type==DATA_OBJECT ? it->second.data : abstract_i(it->second.data_i);
+		if (replacer != NULL)
 		{
-			tiny_string subres;
-			if (replacer != NULL)
+			ASObject* params[2];
+			
+			params[0] = Class<Number>::getInstanceS(it->first);
+			params[0]->incRef();
+			params[1] = o;
+			params[1]->incRef();
+			ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+			if (funcret)
+				subres = funcret->toJSON(path,NULL,spaces,filter);
+		}
+		else
+		{
+			if(it->second.type==DATA_OBJECT)
 			{
-				ASObject* params[2];
-				
-				params[0] = Class<Number>::getInstanceS(it->first);
-				params[0]->incRef();
-				params[1] = it->second.data;
-				params[1]->incRef();
-				ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
-				if (funcret)
-					subres = funcret->toJSON(path,NULL,spaces,filter);
+				if (it->second.data)
+					subres = it->second.data->toJSON(path,replacer,spaces,filter);
+				else
+					continue;
 			}
 			else
-				subres = it->second.data->toJSON(path,replacer,spaces,filter);
-			if (!subres.empty())
-			{
-				if (!bfirst)
-					res += ",";
-				res += newline+spaces;
-
-				bfirst = false;
-				res += subres;
-			}
-			path.push_back(it->second.data);
+				subres = o->toString();
 		}
+		if (!subres.empty())
+		{
+			if (!bfirst)
+				res += ",";
+			res += newline+spaces;
+			
+			bfirst = false;
+			res += subres;
+		}
+		path.push_back(o);
 	}
 	if (!bfirst)
 		res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);

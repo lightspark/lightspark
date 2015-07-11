@@ -451,8 +451,7 @@ public:
 	_R<ASObject> call_valueOf();
 	bool has_toString();
 	_R<ASObject> call_toString();
-	bool has_toJSON();
-	tiny_string call_toJSON();
+	tiny_string call_toJSON(bool &ok);
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */
 	virtual tiny_string getClassName() const;

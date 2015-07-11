@@ -228,6 +228,9 @@ ASFUNCTIONBODY(Math,pow)
 
 ASFUNCTIONBODY(Math,random)
 {
+	if(argslen > 0)
+		throwError<ArgumentError>(kWrongArgumentCountError, "object", "", "");
+
 	number_t ret=rand();
 	ret/=(number_t(1.)+RAND_MAX);
 	return abstract_d(ret);

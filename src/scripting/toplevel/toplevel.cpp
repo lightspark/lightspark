@@ -2551,6 +2551,13 @@ _NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET
 	return prevPrototype->getObj()->getVariableByMultiname(name, opt);
 }
 
+void ObjectPrototype::setVariableByMultiname(const multiname &name, ASObject *o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
+		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), "");
+	ASObject::setVariableByMultiname(name, o, allowConst);
+}
+
 
 ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c),_length(length)
 {

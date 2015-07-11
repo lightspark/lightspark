@@ -84,6 +84,7 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("pauseForGCIfCollectionImminent","",Class<IFunction>::getFunction(pauseForGCIfCollectionImminent),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("getRunmode","",Class<IFunction>::getFunction(getRunmode),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(isDebugger),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("isGlobal","",Class<IFunction>::getFunction(isGlobal),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("freeMemory","",Class<IFunction>::getFunction(_freeMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(_totalMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("privateMemory","",Class<IFunction>::getFunction(_privateMemory),GETTER_METHOD,false);
@@ -92,6 +93,7 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(write),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("exit","",Class<IFunction>::getFunction(exit),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("trace","",Class<IFunction>::getFunction(lightspark::trace),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("canonicalizeNumber","",Class<IFunction>::getFunction(canonicalizeNumber),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY(avmplusSystem,getFeatures)
@@ -133,6 +135,11 @@ ASFUNCTIONBODY(avmplusSystem,isDebugger)
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
 	return abstract_b(false);
 }
+ASFUNCTIONBODY(avmplusSystem,isGlobal)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
+	return abstract_b(false);
+}
 ASFUNCTIONBODY(avmplusSystem,_freeMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.freeMemory is unimplemented."));
@@ -168,6 +175,14 @@ ASFUNCTIONBODY(avmplusSystem,exit)
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exit is unimplemented."));
 	return NULL;
 }
+ASFUNCTIONBODY(avmplusSystem,canonicalizeNumber)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.canonicalizeNumber is unimplemented."));
+	_NR<ASObject> o;
+	ARG_UNPACK(o);
+	o->incRef();
+	return o.getPtr();
+}
 
 avmplusDomain::avmplusDomain(Class_base* c):
 	ApplicationDomain(c)
@@ -181,6 +196,7 @@ void avmplusDomain::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(_getMinDomainMemoryLength),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getClass","",Class<IFunction>::getFunction(getClass),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY(avmplusDomain,_constructor)
@@ -192,6 +208,12 @@ ASFUNCTIONBODY(avmplusDomain,_constructor)
 ASFUNCTIONBODY(avmplusDomain,load)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.load is unimplemented."));
+	throwError<VerifyError>(kIllegalOpcodeError,"","","");
+	return NULL;
+}
+ASFUNCTIONBODY(avmplusDomain,loadBytes)
+{
+	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.loadBytes is unimplemented."));
 	return NULL;
 }
 ASFUNCTIONBODY(avmplusDomain,getClass)

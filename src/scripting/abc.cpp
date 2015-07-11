@@ -533,7 +533,18 @@ void ABCVm::registerClasses()
 		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef());
 		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef());
 		builtin->registerBuiltin("File","avmplus",Class<avmplusFile>::getRef());
+
 		builtin->registerBuiltin("AbstractBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("AbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("NativeBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("NativeBaseAS3","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("NativeSubclassOfAbstractBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("NativeSubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("NativeSubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("RestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("SubclassOfAbstractBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("SubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("SubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef());
 	}
 
 	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());

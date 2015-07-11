@@ -50,6 +50,7 @@ public:
 	ASFUNCTION(pauseForGCIfCollectionImminent);
 	ASFUNCTION(getRunmode);
 	ASFUNCTION(isDebugger);
+	ASFUNCTION(isGlobal);
 	ASFUNCTION(_freeMemory);
 	ASFUNCTION(_totalMemory);
 	ASFUNCTION(_privateMemory);
@@ -57,6 +58,7 @@ public:
 	ASFUNCTION(exec);
 	ASFUNCTION(write);
 	ASFUNCTION(exit);
+	ASFUNCTION(canonicalizeNumber);
 };
 
 class avmplusDomain : public ApplicationDomain
@@ -66,6 +68,7 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
+	ASFUNCTION(loadBytes);
 	ASFUNCTION(getClass);
 };
 

@@ -68,6 +68,8 @@ URLInfo::URLInfo(const tiny_string& u)
 	std::string str = std::string(url.raw_buf());
 
 	valid = false;
+	if (u.empty())
+		return;
 
 	//Check for :// marking that there is a protocol in this url
 	size_t colonPos = str.find("://");
@@ -513,14 +515,27 @@ tiny_string URLInfo::decode(const std::string& u, ENCODING type)
 				   isxdigit(u[i+2]) && isxdigit(u[i+3]) &&
 				   isxdigit(u[i+4]) && isxdigit(u[i+5]))
 				{
-					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+2, 4).c_str(), NULL, 16));
-					str.append(s.raw_buf());
+					uint32_t c = (uint32_t)strtoul(u.substr(i+2, 4).c_str(), NULL, 16);
+					if (c == 0)
+						str.push_back(c);
+					else
+					{
+						tiny_string s=tiny_string::fromChar(c);
+						str.append(s.raw_buf());
+					}
 					i += 5;
+					
 				}
 				else if(isxdigit(u[i+1]) && isxdigit(u[i+2]))
 				{
-					tiny_string s=tiny_string::fromChar((uint32_t)strtoul(u.substr(i+1, 2).c_str(), NULL, 16));
-					str.append(s.raw_buf());
+					uint32_t c = (uint32_t)strtoul(u.substr(i+1, 2).c_str(), NULL, 16);
+					if (c == 0)
+						str.push_back(c);
+					else
+					{
+						tiny_string s=tiny_string::fromChar(c);
+						str.append(s.raw_buf());
+					}
 					i += 2;
 				}
 				else

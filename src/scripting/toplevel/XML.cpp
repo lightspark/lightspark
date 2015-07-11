@@ -127,6 +127,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,Class<IFunction>::getFunction(_propertyIsEnumerable),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(_hasOwnProperty),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("prependChild",AS3,Class<IFunction>::getFunction(_prependChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replace",AS3,Class<IFunction>::getFunction(_replace),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(XML,generator)
@@ -326,6 +327,15 @@ void XML::appendChild(_R<XML> newChild)
 {
 	if (newChild->constructed)
 	{
+		if (this == newChild.getPtr())
+			throwError<TypeError>(kXMLIllegalCyclicalLoop);
+		_NR<XML> node = this->parentNode;
+		while (!node.isNull())
+		{
+			if (node == newChild)
+				throwError<TypeError>(kXMLIllegalCyclicalLoop);
+			node = node->parentNode;
+		}
 		this->incRef();
 		newChild->parentNode = _NR<XML>(this);
 		childrenlist->append(newChild);
@@ -2194,6 +2204,11 @@ tiny_string XML::toString_priv()
 	{
 		ret=nodevalue;
 	}
+	else if (getNodeKind() == XML_COMMENT_NODE ||
+			 getNodeKind() == XML_PI_NODE)
+	{
+		ret="";
+	}
 	else if (hasSimpleContent())
 	{
 		auto it = childrenlist->nodes.begin();
@@ -2214,41 +2229,7 @@ tiny_string XML::toString_priv()
 
 const tiny_string XML::encodeToXML(const tiny_string value, bool bIsAttribute)
 {
-
-	tiny_string res;
-	auto it = value.begin();
-	while (it != value.end())
-	{
-		switch (*it)
-		{
-			case '<':
-				res += "&lt;";
-				break;
-			case '>':
-				res += bIsAttribute ? ">" : "&gt;";
-				break;
-			case '&':
-				res += "&amp;";
-				break;
-			case '\"':
-				res += bIsAttribute ? "&quot;" : "\"";
-				break;
-			case '\r':
-				res += bIsAttribute ? "&#xD;" : "\r";
-				break;
-			case '\n':
-				res += bIsAttribute ? "&#xA;" : "\n";
-				break;
-			case '\t':
-				res += bIsAttribute ? "&#x9;" : "\t";
-				break;
-			default:
-				res += *it;
-				break;
-		}
-		it++;
-	}
-	return res;
+	return XMLBase::encodeToXML(value,bIsAttribute);
 }
 
 bool XML::getPrettyPrinting()
@@ -2479,7 +2460,7 @@ ASFUNCTIONBODY(XML,_prependChild)
 	else if(args[0]->getClass()==Class<XMLList>::getClass())
 	{
 		XMLList* list=Class<XMLList>::cast(args[0]);
-		list->appendNodesTo(th);
+		list->prependNodesTo(th);
 		th->incRef();
 		return th;
 	}
@@ -2491,7 +2472,7 @@ ASFUNCTIONBODY(XML,_prependChild)
 		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
 	}
 
-	th->appendChild(arg);
+	th->prependChild(arg);
 	th->incRef();
 	return th;
 }
@@ -2499,10 +2480,90 @@ void XML::prependChild(_R<XML> newChild)
 {
 	if (newChild->constructed)
 	{
+		if (this == newChild.getPtr())
+			throwError<TypeError>(kXMLIllegalCyclicalLoop);
+		_NR<XML> node = this->parentNode;
+		while (!node.isNull())
+		{
+			if (node == newChild)
+				throwError<TypeError>(kXMLIllegalCyclicalLoop);
+			node = node->parentNode;
+		}
 		this->incRef();
 		newChild->parentNode = _NR<XML>(this);
-		childrenlist->append(newChild);
+		childrenlist->prepend(newChild);
 	}
 	else
 		newChild->decRef();
+}
+
+ASFUNCTIONBODY(XML,_replace)
+{
+	XML* th=Class<XML>::cast(obj);
+	_NR<ASObject> propertyName;
+	_NR<ASObject> value;
+	ARG_UNPACK(propertyName) (value);
+
+	multiname name(NULL);
+	name.name_type=multiname::NAME_STRING;
+	if (propertyName->is<ASQName>())
+	{
+		name.name_s_id=getSys()->getUniqueStringId(propertyName->as<ASQName>()->getLocalName());
+		name.ns.push_back(nsNameAndKind(propertyName->as<ASQName>()->getURI(),NAMESPACE));
+	}
+	else if (propertyName->toString() == "*")
+	{
+		if (value->is<XMLList>())
+		{
+			th->childrenlist->decRef();
+			value->incRef();
+			th->childrenlist = _NR<XMLList>(value->as<XMLList>());
+		}
+		else if (value->is<XML>())
+		{
+			th->childrenlist->clear();
+			value->incRef();
+			th->childrenlist->append(_R<XML>(value->as<XML>()));
+		}
+		else
+		{
+			XML* x = Class<XML>::getInstanceS(value->toString());
+			x->incRef();
+			th->childrenlist->clear();
+			th->childrenlist->append(_R<XML>(x));
+		}
+		th->incRef();
+		return th;
+	}
+	else
+	{
+		name.name_s_id=getSys()->getUniqueStringId(propertyName->toString());
+		name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	}
+	uint32_t index=0;
+	if(XML::isValidMultiname(name,index))
+	{
+		th->childrenlist->setVariableByMultiname(name,value.getPtr(),CONST_NOT_ALLOWED);
+	}	
+	else if (th->hasPropertyByMultiname(name,true,false))
+	{
+		if (value->is<XMLList>())
+		{
+			th->deleteVariableByMultiname(name);
+			th->setVariableByMultiname(name,value.getPtr(),CONST_NOT_ALLOWED);
+		}
+		else if (value->is<XML>())
+		{
+			th->deleteVariableByMultiname(name);
+			th->setVariableByMultiname(name,value.getPtr(),CONST_NOT_ALLOWED);
+		}
+		else
+		{
+			XML* x = Class<XML>::getInstanceS(value->toString());
+			th->deleteVariableByMultiname(name);
+			th->setVariableByMultiname(name,x,CONST_NOT_ALLOWED);
+		}
+	}
+	th->incRef();
+	return th;
 }

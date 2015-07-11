@@ -115,6 +115,7 @@ public:
 	_R<ASObject> nextValue(uint32_t index);
 	_R<XML> reduceToXML() const;
 	void appendNodesTo(XML *dest) const;
+	void prependNodesTo(XML *dest) const;
 	void normalize();
 	void clear();
 	XMLList* getTargetObject() { return targetobject; }

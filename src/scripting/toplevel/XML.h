@@ -134,6 +134,7 @@ public:
 	ASFUNCTION(_propertyIsEnumerable);
 	ASFUNCTION(_hasOwnProperty);
 	ASFUNCTION(_prependChild);
+	ASFUNCTION(_replace);
 
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);

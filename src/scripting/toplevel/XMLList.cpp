@@ -127,9 +127,8 @@ void XMLList::sinit(Class_base* c)
 	REGISTER_XML_DELEGATE2(namespace,_namespace);
 	REGISTER_XML_DELEGATE(namespaceDeclarations);
 	REGISTER_XML_DELEGATE(nodeKind);
-	REGISTER_XML_DELEGATE2(prependChild,_appendChild);
+	REGISTER_XML_DELEGATE2(prependChild,_prependChild);
 	REGISTER_XML_DELEGATE(removeNamespace);
-	//REGISTER_XML_DELEGATE(replace);
 	REGISTER_XML_DELEGATE2(setChildren,_setChildren);
 	REGISTER_XML_DELEGATE2(setLocalName,_setLocalName);
 	REGISTER_XML_DELEGATE2(setName,_setName);
@@ -149,7 +148,6 @@ ASFUNCTIONBODY_XML_DELEGATE(namespaceDeclarations);
 ASFUNCTIONBODY_XML_DELEGATE(nodeKind);
 ASFUNCTIONBODY_XML_DELEGATE(_prependChild);
 ASFUNCTIONBODY_XML_DELEGATE(removeNamespace);
-//ASFUNCTIONBODY_XML_DELEGATE(replace);
 ASFUNCTIONBODY_XML_DELEGATE(_setChildren);
 ASFUNCTIONBODY_XML_DELEGATE(_setLocalName);
 ASFUNCTIONBODY_XML_DELEGATE(_setName);
@@ -1168,6 +1166,18 @@ void XMLList::appendNodesTo(XML *dest) const
 	{
 		ASObject *arg0=it->getPtr();
 		ASObject *ret=XML::_appendChild(dest, &arg0, 1);
+		if(ret)
+			ret->decRef();
+	}
+}
+
+void XMLList::prependNodesTo(XML *dest) const
+{
+	std::vector<_R<XML>, reporter_allocator<_R<XML>>>::const_reverse_iterator it;
+	for (it=nodes.rbegin(); it!=nodes.rend(); ++it)
+	{
+		ASObject *arg0=it->getPtr();
+		ASObject *ret=XML::_prependChild(dest, &arg0, 1);
 		if(ret)
 			ret->decRef();
 	}

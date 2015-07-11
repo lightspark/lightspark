@@ -60,16 +60,17 @@ protected:
 				     bool ignoreEmptyTextnodes,
 				     bool *hasParent,
 				     const std::string& default_ns=std::string());
-	void addDefaultNamespace(xmlpp::Element *root, const std::string& default_ns);
+	void addDefaultNamespace(xmlpp::Node *root, const std::string& default_ns);
 	void addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns);
 	// Set the root to be a copy of src. If src is a text node,
 	// create a new element node with the same content.
 	xmlpp::Node* buildCopy(const xmlpp::Node* node, bool *hasParent);
 	static std::string quirkCData(const std::string& str);
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
-	void removeWhitespaceNodes(xmlpp::Element *node);
+	void removeWhitespaceNodes(xmlpp::Node *node);
 	tiny_string removeWhitespace(tiny_string val);
 public:
+	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
 	static std::string parserQuirks(const std::string& str);
 };
 

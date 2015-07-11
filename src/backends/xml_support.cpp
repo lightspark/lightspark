@@ -61,7 +61,7 @@ void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_typ
 	if(!context_->wellFormed)
 		LOG(LOG_ERROR, "XML data not well formed!");
 
-	if (context_->myDoc)
+	if (context_->wellFormed && context_->myDoc)
 		doc_ = new RecoveryDocument(context_->myDoc);
 	// This is to indicate to release_underlying that we took the
 	// ownership on the doc.
@@ -86,13 +86,17 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 	}
 	catch(const exception& e)
 	{
+		LOG(LOG_ERROR,"xml error: "<<e.what());
 	}
 	xmlpp::Document* doc=parser.get_document();
 	if(doc)
 	{
+		xmlpp::Node *root = NULL;
 		if (!doc->get_root_node())
 		{
-			buf = removeWhitespace(str)+"<parent></parent>";
+			buf="<parent>";
+			buf += str;
+			buf += "</parent>";
 			try
 			{
 				parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
@@ -101,11 +105,33 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 			{
 			}
 			doc=parser.get_document();
+			if (doc && doc->get_root_node())
+			{
+				root = doc->get_root_node()->get_first_child();
+			}
+		}
+		if (!doc || !doc->get_root_node())
+		{
+			try
+			{
+				buf="<parent>";
+				buf += XMLBase::encodeToXML(str,false);
+				buf += "</parent>";
+				parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
+			}
+			catch(const exception& e)
+			{
+			}
+			doc=parser.get_document();
+			if (doc && doc->get_root_node())
+			{
+				root = doc->get_root_node()->get_first_child();
+			}
 		}
 		if (doc && doc->get_root_node())
 		{
 			*hasParent = true;
-			xmlpp::Element *root = doc->get_root_node();
+			if (root==NULL) root = doc->get_root_node();
 			// It would be better to remove empty nodes during
 			// parsing, but xmlpp doesn't offer an interface.
 			if (ignoreEmptyTextNodes)
@@ -116,6 +142,7 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 	}
 	//If everything fails, create a fake document and add a single text string child
 	// see 10.3.1 in ECMA 357
+	
 	if (default_ns.empty())
 		buf="<parent></parent>";
 	else
@@ -125,8 +152,46 @@ xmlpp::Node* XMLBase::buildFromString(const string& str,
 	*hasParent = false;
 	return parser.get_document()->get_root_node()->add_child_text(str);
 }
+const tiny_string XMLBase::encodeToXML(const tiny_string value, bool bIsAttribute)
+{
 
-void XMLBase::addDefaultNamespace(xmlpp::Element *root, const string& default_ns)
+	tiny_string res;
+	auto it = value.begin();
+	while (it != value.end())
+	{
+		switch (*it)
+		{
+			case '<':
+				res += "&lt;";
+				break;
+			case '>':
+				res += bIsAttribute ? ">" : "&gt;";
+				break;
+			case '&':
+				res += "&amp;";
+				break;
+			case '\"':
+				res += bIsAttribute ? "&quot;" : "\"";
+				break;
+			case '\r':
+				res += bIsAttribute ? "&#xD;" : "\r";
+				break;
+			case '\n':
+				res += bIsAttribute ? "&#xA;" : "\n";
+				break;
+			case '\t':
+				res += bIsAttribute ? "&#x9;" : "\t";
+				break;
+			default:
+				res += *it;
+				break;
+		}
+		it++;
+	}
+	return res;
+}
+
+void XMLBase::addDefaultNamespace(xmlpp::Node *root, const string& default_ns)
 {
 	if(default_ns.empty() || !root->get_namespace_uri().empty())
 		return;
@@ -190,10 +255,10 @@ string XMLBase::parserQuirks(const string& str)
 string XMLBase::quirkCData(const string& str) {
 	//if this is a CDATA node replace CDATA tags to make it look like a text-node
 	//for compatibility with the Adobe player
-	if (str.compare(0, 9, "<![CDATA[") == 0) {
-		return "<a>"+str.substr(9, str.size()-12)+"</a>";
-	}
-	else
+	//if (str.compare(0, 9, "<![CDATA[") == 0) {
+	//	return "<a>"+str.substr(9, str.size()-12)+"</a>";
+	//}
+	//else
 		return str;
 }
 
@@ -219,7 +284,7 @@ string XMLBase::quirkXMLDeclarationInMiddle(const string& str) {
 	return buf;
 }
 
-void XMLBase::removeWhitespaceNodes(xmlpp::Element *node)
+void XMLBase::removeWhitespaceNodes(xmlpp::Node *node)
 {
 	xmlpp::Node::NodeList children = node->get_children();
 	xmlpp::Node::NodeList::iterator it;

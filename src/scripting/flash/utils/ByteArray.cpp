@@ -131,7 +131,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 	// the flash documentation doesn't tell how large ByteArrays are allowed to be
 	// so we simply don't allow bytearrays larger than 1GiB
 	// maybe we should set this smaller
-	if (size > 0x4000000) 
+	if (size > 0x40000000) 
 		throwError<ASError>(kOutOfMemoryError);
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
@@ -420,9 +420,21 @@ bool ByteArray::readUTF(tiny_string& ret)
 		return false;
 	if(len < (position+stringLen))
 		return false;
-	//Very inefficient copy
-	//TODO: optmize
-	ret=string((char*)bytes+position, (size_t)stringLen);
+	// check for BOM
+	if (len > position+3)
+	{
+		if (bytes[position] == 0xef &&
+			bytes[position+1] == 0xbb &&
+			bytes[position+2] == 0xbf)
+		{
+			position += 3;
+			stringLen -= stringLen > 3 ? 3 : 0;
+		}
+	}
+	char buf[stringLen+1];
+	buf[stringLen]=0;
+	strncpy(buf,(char*)bytes+position,(size_t)stringLen);
+	ret=buf;
 	position+=stringLen;
 	return true;
 }
@@ -454,11 +466,25 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
+	// check for BOM
+	if (th->len > th->position+3)
+	{
+		if (th->bytes[th->position] == 0xef &&
+			th->bytes[th->position+1] == 0xbb &&
+			th->bytes[th->position+2] == 0xbf)
+		{
+			th->position += 3;
+			length -=  length > 3 ? 3 : 0;
+		}
+	}
 
 	uint8_t *bufStart=th->bytes+th->position;
+	char buf[length+1];
+	buf[length]=0;
+	strncpy(buf,(char*)bufStart,(size_t)length);
 	th->position+=length;
 	th->unlock();
-	return Class<ASString>::getInstanceS((char *)bufStart,length);
+	return Class<ASString>::getInstanceS((char *)buf,strlen(buf));
 }
 
 void ByteArray::writeUTF(const tiny_string& str)
@@ -987,8 +1013,16 @@ ASFUNCTIONBODY(ByteArray,readObject)
 ASFUNCTIONBODY(ByteArray,_toString)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	//TODO: check for Byte Order Mark
-	return Class<ASString>::getInstanceS((char*)th->bytes,th->len);
+	//check for Byte Order Mark
+	int start = 0;
+	if (th->len > 3)
+	{
+		if (th->bytes[0] == 0xef &&
+			th->bytes[1] == 0xbb &&
+			th->bytes[2] == 0xbf)
+			start = 3;
+	}
+	return Class<ASString>::getInstanceS((char*)th->bytes+start,th->len-start);
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
@@ -1099,6 +1133,18 @@ void ByteArray::writeU29(uint32_t val)
 
 		writeByte(b);
 	}
+}
+
+void ByteArray::serializeDouble(number_t val)
+{
+	//We have to write the double in network byte order (big endian)
+	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
+	uint64_t bigEndianVal=GINT64_FROM_BE(*tmpPtr);
+	uint8_t* bigEndianPtr=reinterpret_cast<uint8_t*>(&bigEndianVal);
+		
+	for(uint32_t i=0;i<8;i++)
+		writeByte(bigEndianPtr[i]);
+	
 }
 
 void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_string& s)
@@ -1411,4 +1457,31 @@ ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapLength)
 ASFUNCTIONBODY(ByteArray,_toJSON)
 {
 	return Class<ASString>::getInstanceS("ByteArray");
+}
+
+void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap)
+{
+	assert_and_throw(objMap.find(this)==objMap.end());
+	out->writeByte(byte_array_marker);
+	//Check if the bytearray has been already serialized
+	auto it=objMap.find(this);
+	if(it!=objMap.end())
+	{
+		//The least significant bit is 0 to signal a reference
+		out->writeU29(it->second << 1);
+	}
+	else
+	{
+		//Add the dictionary to the map
+		objMap.insert(make_pair(this, objMap.size()));
+
+		assert_and_throw(len<0x20000000);
+		uint32_t value = (len << 1) | 1;
+		out->writeU29(value);
+		// TODO faster implementation
+		for (int i = 0; i < len; i++)
+			out->writeByte(this->bytes[i]);
+	}
 }

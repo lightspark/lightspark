@@ -46,7 +46,6 @@ protected:
 	Mutex mutex;
 	void lock();
 	void unlock();
-	void setLength(uint32_t newLen);
 public:
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
@@ -65,6 +64,10 @@ public:
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
 	void writeXMLString(std::map<const ASObject*, uint32_t>& objMap, ASObject *xml, const tiny_string& s);
 	void writeU29(uint32_t val);
+
+	void serializeDouble(number_t val);
+
+	void setLength(uint32_t newLen);
 	uint32_t getPosition() const;
 	void setPosition(uint32_t p);
 	
@@ -152,6 +155,10 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap);
 };
 
 }

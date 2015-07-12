@@ -2,6 +2,10 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement several missing opcodes
+	* fix serialization
+	* implement data generation mode
+	* support for avmplus classes (mostly stubs)
 	* Support LLVM up to version 3.6
 	* fix event dispatcher handling
 	* several fixes for object initialization

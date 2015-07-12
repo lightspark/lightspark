@@ -803,7 +803,7 @@ void Class_base::initStandardProps()
 	
 	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 	incRef();
-	prototype->setVariableByQName("constructor","",this,DYNAMIC_TRAIT);
+	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
 
 	if(super)
 		prototype->prevPrototype=super->prototype;
@@ -2109,7 +2109,7 @@ Class<IFunction>* Class<IFunction>::getClass()
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
 		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
 		ret->incRef();
-		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DYNAMIC_TRAIT);
+		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 		ret->prototype->getObj()->setConstructIndicator();
 		ret->incRef();
 		*retAddr = ret;

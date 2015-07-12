@@ -683,7 +683,7 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 #endif
 
 	f->incRef();
-	ret->setVariableByQName("constructor","",f,DYNAMIC_TRAIT);
+	ret->setVariableByQName("constructor","",f,DECLARED_TRAIT);
 
 	ret->incRef();
 

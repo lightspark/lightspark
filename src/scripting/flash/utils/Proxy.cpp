@@ -38,10 +38,20 @@ using namespace lightspark;
 void Proxy::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject,CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("isAttribute","",Class<IFunction>::getFunction(_isAttribute),NORMAL_METHOD,true);
 }
 
 void Proxy::buildTraits(ASObject* o)
 {
+}
+ASFUNCTIONBODY(Proxy,_isAttribute)
+{
+	_NR<ASObject> name;
+	ARG_UNPACK(name);
+	multiname mname(NULL);
+	name->applyProxyProperty(mname);
+	LOG(LOG_ERROR,"isAttr:"<<mname.isAttribute);
+	return abstract_b(mname.isAttribute);
 }
 
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)

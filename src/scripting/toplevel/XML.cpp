@@ -289,7 +289,7 @@ ASFUNCTIONBODY(XML,descendants)
 	XMLVector ret;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),"",mname.isAttribute,ret);
+	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].getImpl().name : "",mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(ret,th->getChildrenlist(),multiname(NULL));
 }
 

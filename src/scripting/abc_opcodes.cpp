@@ -1989,7 +1989,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	{
 		multiname callPropertyName(NULL);
 		callPropertyName.name_type=multiname::NAME_STRING;
-		callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
+		callPropertyName.name_s_id=getSys()->getUniqueStringId("getDescendants");
 		callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
 		_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 		
@@ -1999,17 +1999,16 @@ void ABCVm::getDescendants(call_context* th, int n)
 			
 			IFunction* f=static_cast<IFunction*>(o.getPtr());
 			//Create a new array
-			ASObject** proxyArgs=g_newa(ASObject*, 2);
-			proxyArgs[0]=Class<ASString>::getInstanceS("descendants");
+			ASObject** proxyArgs=g_newa(ASObject*, 1);
 			ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
 			namearg->setProxyProperty(*name);
-			proxyArgs[1]=namearg;
+			proxyArgs[0]=namearg;
 
 			//We now suppress special handling
-			LOG(LOG_CALLS,_("Proxy::callProperty"));
+			LOG(LOG_CALLS,_("Proxy::getDescendants"));
 			f->incRef();
 			obj->incRef();
-			ASObject* ret=f->call(obj,proxyArgs,2);
+			ASObject* ret=f->call(obj,proxyArgs,1);
 			f->decRef();
 			th->runtime_stack_push(ret);
 			

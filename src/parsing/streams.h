@@ -84,7 +84,6 @@ class bytes_buf:public std::streambuf
 {
 private:
 	const uint8_t* buf;
-	int offset;
 	int len;
 public:
 	bytes_buf(const uint8_t* b, int l);

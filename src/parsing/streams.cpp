@@ -112,7 +112,7 @@ int zlib_filter::fillBuffer()
 	return sizeof(buffer) - strm.avail_out;
 }
 
-bytes_buf::bytes_buf(const uint8_t* b, int l):buf(b),offset(0),len(l)
+bytes_buf::bytes_buf(const uint8_t* b, int l):buf(b),len(l)
 {
 	setg((char*)buf,(char*)buf,(char*)buf+len);
 }

@@ -755,9 +755,8 @@ class TagFactory
 private:
 	std::istream& f;
 	bool firstTag;
-	bool topLevel;
 public:
-	TagFactory(std::istream& in, bool t):f(in),firstTag(true),topLevel(t){}
+	TagFactory(std::istream& in):f(in),firstTag(true){}
 	/**
 	 * The RootMovieClip that is the owner of the content.
 	 * It is needed to solve references to other tags during construction
@@ -765,6 +764,6 @@ public:
 	Tag* readTag(RootMovieClip* root);
 };
 
-};
+}
 
 #endif /* PARSING_TAGS_H */

@@ -27,7 +27,7 @@
 using namespace lightspark;
 using namespace std;
 
-TimerThread::TimerThread(SystemState* s):m_sys(s),inExecution(NULL),stopped(false),joined(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
 {
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
 	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker));

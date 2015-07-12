@@ -680,10 +680,9 @@ public:
 class FB
 {
 	int32_t buf;
-	int size;
 public:
-	FB():buf(0),size(0){}
-	FB(int s,BitStream& stream):size(s)
+	FB():buf(0){}
+	FB(int s,BitStream& stream)
 	{
 		if(s>32)
 			LOG(LOG_ERROR,_("Fixed point bit field wider than 32 bit not supported"));

@@ -1372,7 +1372,7 @@ void ParseThread::parseSWF(UI8 ver)
 			return; /* no more parsing necessary, handled by fallback */
 		}
 
-		TagFactory factory(f, true);
+		TagFactory factory(f);
 		Tag* tag=factory.readTag(root);
 
 		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);

@@ -361,7 +361,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
 	//Create a non top level TagFactory
-	TagFactory factory(in, false);
+	TagFactory factory(in);
 	Tag* tag;
 	bool done=false;
 	bool empty=true;

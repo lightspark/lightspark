@@ -109,10 +109,13 @@ private:
 	void createBuffer(uint32_t s);
 	void resizeBuffer(uint32_t s);
 	void resetToStatic();
+	void init();
+	bool isASCII:1;
+	bool hasNull:1;
 public:
 	static const uint32_t npos = (uint32_t)(-1);
 
-	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),type(STATIC){buf[0]=0;}
+	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),type(STATIC),isASCII(true),hasNull(false){buf[0]=0;}
 	/* construct from utf character */
 	static tiny_string fromChar(uint32_t c);
 	tiny_string(const char* s,bool copy=false);

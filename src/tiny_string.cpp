@@ -32,6 +32,7 @@ tiny_string::tiny_string(const Glib::ustring& r):buf(_buf_static),stringSize(r.b
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,r.c_str(),stringSize);
+	init();
 }
 
 tiny_string::tiny_string(std::istream& in, int len):buf(_buf_static),stringSize(len+1),type(STATIC)
@@ -40,6 +41,7 @@ tiny_string::tiny_string(std::istream& in, int len):buf(_buf_static),stringSize(
 		createBuffer(stringSize);
 	in.read(buf,len);
 	buf[len]='\0';
+	init();
 }
 
 tiny_string::tiny_string(const char* s,bool copy):_buf_static(),buf(_buf_static),type(READONLY)
@@ -51,6 +53,7 @@ tiny_string::tiny_string(const char* s,bool copy):_buf_static(),buf(_buf_static)
 		stringSize=strlen(s)+1;
 		buf=(char*)s; //This is an unsafe conversion, we have to take care of the RO data
 	}
+	init();
 }
 
 tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),stringSize(r.stringSize),type(STATIC)
@@ -60,11 +63,15 @@ tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),st
 	{
 		type=READONLY;
 		buf=r.buf;
+		this->isASCII = r.isASCII;
+		this->hasNull = r.hasNull;
 		return;
 	}
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,r.buf,stringSize);
+	this->isASCII = r.isASCII;
+	this->hasNull = r.hasNull;
 }
 
 tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),stringSize(r.size()+1),type(STATIC)
@@ -72,6 +79,7 @@ tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),st
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,r.c_str(),stringSize);
+	init();
 }
 
 tiny_string::~tiny_string()
@@ -95,6 +103,8 @@ tiny_string& tiny_string::operator=(const tiny_string& s)
 			createBuffer(stringSize);
 		memcpy(buf,s.buf,stringSize);
 	}
+	this->isASCII = s.isASCII;
+	this->hasNull = s.hasNull;
 	return *this;
 }
 
@@ -105,12 +115,14 @@ tiny_string& tiny_string::operator=(const std::string& s)
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,s.c_str(),stringSize);
+	init();
 	return *this;
 }
 
 tiny_string& tiny_string::operator=(const char* s)
 {
 	makePrivateCopy(s);
+	init();
 	return *this;
 }
 
@@ -121,6 +133,7 @@ tiny_string& tiny_string::operator=(const Glib::ustring& r)
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,r.c_str(),stringSize);
+	init();
 	return *this;
 }
 
@@ -170,6 +183,7 @@ tiny_string& tiny_string::operator+=(const char* s)
 	//also copy \0 at the end
 	memcpy(buf+stringSize-1,s,addedLen+1);
 	stringSize=newStringSize;
+	init();
 	return *this;
 }
 
@@ -192,6 +206,10 @@ tiny_string& tiny_string::operator+=(const tiny_string& r)
 	//start position is where the \0 was
 	memcpy(buf+stringSize-1,r.buf,r.stringSize);
 	stringSize=newStringSize;
+	if (this->isASCII)
+		this->isASCII = r.isASCII;
+	if (!this->hasNull)
+		this->hasNull = r.hasNull;
 	return *this;
 }
 
@@ -268,12 +286,15 @@ bool tiny_string::operator!=(const tiny_string& r) const
 
 bool tiny_string::operator==(const char* r) const
 {
-	return strcmp(buf,r)==0;
+	if(!r) return false;
+	unsigned len = strlen(r);
+	if(len!=stringSize-1) return false;
+	return memcmp(buf,r,len)==0;
 }
 
 bool tiny_string::operator==(const xmlChar* r) const
 {
-	return strcmp(buf,reinterpret_cast<const char*>(r))==0;
+	return *this==reinterpret_cast<const char*>(r);
 }
 
 bool tiny_string::operator!=(const char* r) const
@@ -300,6 +321,10 @@ uint32_t tiny_string::numBytes() const
 /* returns the length in utf-8 characters, not counting the trailing \0 */
 uint32_t tiny_string::numChars() const
 {
+	if (isASCII)
+		return stringSize-1;
+	if (!hasNull)
+		return g_utf8_strlen(buf,stringSize-1);
 	//we cannot use g_utf8_strlen, as we may have '\0' inside our string
 	uint32_t len = 0;
 	char* end = buf+numBytes();
@@ -343,6 +368,8 @@ bool tiny_string::endsWith(const char* o) const
 /* idx is an index of utf-8 characters */
 uint32_t tiny_string::charAt(uint32_t idx) const
 {
+	if (isASCII)
+		return buf[idx];
 	return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
 }
 
@@ -413,6 +440,20 @@ void tiny_string::resetToStatic()
 	_buf_static[0] = '\0';
 	buf=_buf_static;
 	type=STATIC;
+	init();
+}
+
+void tiny_string::init()
+{
+	isASCII = true;
+	hasNull = false;
+	for (uint i = 0; i < stringSize-1; i++)
+	{
+		if (buf[i] & 0x80)
+			isASCII = false;
+		if (buf[i] == 0)
+			hasNull = true;
+	}
 }
 
 tiny_string tiny_string::fromChar(uint32_t c)
@@ -422,15 +463,19 @@ tiny_string tiny_string::fromChar(uint32_t c)
 	ret.type = STATIC;
 	ret.stringSize = g_unichar_to_utf8(c,ret.buf) + 1;
 	ret.buf[ret.stringSize-1] = '\0';
+	ret.isASCII = c<0x80;
+	ret.hasNull = c == 0;
 	return ret;
 }
 
 tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string& o )
 {
 	assert(pos1 <= numChars());
-	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
 	if(pos1 + n1 > numChars())
 		n1 = numChars()-pos1;
+	if (isASCII)
+		return replace_bytes(pos1, n1, o);
+	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
 	uint32_t byteend = g_utf8_offset_to_pointer(buf,pos1+n1)-buf;
 	return replace_bytes(bytestart, byteend-bytestart, o);
 }
@@ -439,6 +484,7 @@ tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, co
 {
 	//TODO avoid copy into std::string
 	*this = std::string(*this).replace(bytestart,bytenum,std::string(o));
+	this->init();
 	return *this;
 }
 
@@ -451,6 +497,8 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 	memcpy(ret.buf,buf+start,len);
 	ret.buf[len]=0;
 	ret.stringSize = len+1;
+	if (!this->isASCII || this->hasNull)
+		ret.init();
 	return ret;
 }
 
@@ -459,6 +507,8 @@ tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
 	assert_and_throw(start <= numChars());
 	if(start+len > numChars())
 		len = numChars()-start;
+	if (isASCII)
+		return substr_bytes(start, len);
 	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
 	uint32_t byteend = g_utf8_offset_to_pointer(buf,start+len) - buf;
 	return substr_bytes(bytestart, byteend-bytestart);
@@ -466,6 +516,8 @@ tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
 
 tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
 {
+	if (isASCII)
+		return substr_bytes(start, (end.buf_ptr - buf)-start);
 	assert_and_throw(start < numChars());
 	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
 	uint32_t byteend = end.buf_ptr - buf;
@@ -479,12 +531,13 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 	tiny_string delimiterstring = tiny_string::fromChar(delimiter);
 
 	pos = 0;
-	while (pos < numChars())
+	uint len = numChars();
+	while (pos < len)
 	{
 		end = find(delimiterstring, pos);
 		if (end == tiny_string::npos)
 		{
-			res.push_back(substr(pos, numChars()-pos));
+			res.push_back(substr(pos, len-pos));
 			break;
 		}
 		else
@@ -493,7 +546,7 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 			pos = end+1;
 		}
 	}
-
+	
 	return res;
 }
 
@@ -522,6 +575,7 @@ tiny_string tiny_string::lowercase() const
 	}
 	*p = '\0';
 	ret.stringSize = len+1;
+	ret.init();
 	return ret;
 }
 
@@ -543,6 +597,7 @@ tiny_string tiny_string::uppercase() const
 	}
 	*p = '\0';
 	ret.stringSize = len+1;
+	ret.init();
 	return ret;
 }
 
@@ -562,6 +617,8 @@ uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 {
 	if (bytepos >= numBytes())
 		return numChars();
+	if (isASCII)
+		return bytepos;
 
 	return g_utf8_pointer_to_offset(raw_buf(), raw_buf() + bytepos);
 }

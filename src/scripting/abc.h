@@ -35,7 +35,13 @@
 
 namespace llvm {
 	class ExecutionEngine;
+#ifdef LLVM_36
+namespace legacy {
 	class FunctionPassManager;
+}
+#else
+	class FunctionPassManager;
+#endif
 	class FunctionType;
 	class Function;
 	class Module;
@@ -487,7 +493,11 @@ public:
 	MemoryAccount* vmDataMemory;
 
 	llvm::ExecutionEngine* ex;
+#ifdef LLVM_36
+	llvm::legacy::FunctionPassManager* FPM;
+#else
 	llvm::FunctionPassManager* FPM;
+#endif
 	llvm::LLVMContext& llvm_context();
 
 	ABCVm(SystemState* s, MemoryAccount* m) DLL_PUBLIC;

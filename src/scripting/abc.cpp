@@ -26,8 +26,10 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #ifndef LLVM_36
 #include <llvm/ExecutionEngine/JIT.h>
-#endif
+#include "llvm/IR/LegacyPassManager.h"
+#else
 #include <llvm/PassManager.h>
+#endif
 #ifdef HAVE_IR_DATALAYOUT_H
 #  include <llvm/IR/Module.h>
 #  include <llvm/IR/LLVMContext.h>

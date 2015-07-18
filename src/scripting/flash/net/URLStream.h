@@ -38,6 +38,7 @@ private:
 	_R<URLStream> loader;
 	_R<ByteArray> data;
 	std::streambuf *streambuffer;
+	uint64_t timestamp_last_progress;
 	void execute();
 public:
 	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);

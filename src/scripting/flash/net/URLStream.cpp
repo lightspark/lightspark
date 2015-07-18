@@ -33,7 +33,7 @@ using namespace std;
 using namespace lightspark;
 
 URLStreamThread::URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes)
-  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes),streambuffer(NULL)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes),streambuffer(NULL),timestamp_last_progress(0)
 {
 }
 void URLStreamThread::setBytesLoaded(uint32_t b)
@@ -42,16 +42,22 @@ void URLStreamThread::setBytesLoaded(uint32_t b)
 	if(b>curlen && streambuffer)
 	{
 		data->append(streambuffer,b - curlen);
-		loader->incRef();
-		getVm()->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(b,0)));
+		uint64_t cur=compat_get_thread_cputime_us();
+		if (cur > timestamp_last_progress+ 40*1000)
+		{
+			timestamp_last_progress = cur;
+			loader->incRef();
+			getVm()->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(b,0)));
+		}
 	}
 }
 
 void URLStreamThread::execute()
 {
+	timestamp_last_progress = compat_get_thread_cputime_us();
 	assert(!downloader);
 
-	//TODO: support httpStatus, progress events
+	//TODO: support httpStatus
 
 	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
 	if(!createDownloader(cache, loader,this))

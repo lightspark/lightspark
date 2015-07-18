@@ -1508,6 +1508,19 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
+			for(it=th->scope_stack.rbegin();it!=th->scope_stack.rend();++it)
+			{
+				_R<ASObject> r = it->object;
+				if (!r->is<Class_base>())
+					continue;
+				NS_KIND nskind;
+				if (r->as<Class_base>()->findBorrowedGettable(*name,nskind))
+				{
+					if (!r->as<Class_base>()->isSealed)
+						break;
+					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved());
+				}
+			}
 			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved());
 			return getSys()->getUndefinedRef();
 		}
@@ -1660,12 +1673,16 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	Class_base* c=NULL;
 	switch (type->getObjectType())
 	{
-		case T_NULL:
 		case T_INTEGER:
 		case T_UINTEGER:
 		case T_NUMBER:
 		case T_OBJECT:
 		case T_STRING:
+			obj->decRef();
+			type->decRef();
+			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<obj->toDebugString());
+			throwError<TypeError>(kIsTypeMustBeClassError);
+		case T_NULL:
 			obj->decRef();
 			type->decRef();
 			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<obj->toDebugString());

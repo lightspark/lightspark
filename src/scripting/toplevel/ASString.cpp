@@ -134,7 +134,7 @@ ASFUNCTIONBODY(ASString,search)
 	if(argslen == 0 || args[0]->getObjectType() == T_UNDEFINED)
 		return abstract_i(-1);
 
-	int options=PCRE_UTF8|PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
+	int options=PCRE_UTF8|PCRE_NEWLINE_ANY;//|PCRE_JAVASCRIPT_COMPAT;
 	tiny_string restr;
 	if(args[0]->getClass() && args[0]->getClass()==Class<RegExp>::getClass())
 	{
@@ -252,7 +252,10 @@ ASFUNCTIONBODY(ASString,_toString)
 	if(Class<ASString>::getClass()->prototype->getObj() == obj)
 		return Class<ASString>::getInstanceS("");
 	if(!obj->is<ASString>())
+	{
+		LOG(LOG_ERROR,"String.toString is not generic:"<<obj->toDebugString());
 		throw Class<TypeError>::getInstanceS("String.toString is not generic");
+	}
 	assert_and_throw(argslen==0);
 
 	//As ASStrings are immutable, we can just return ourself
@@ -366,22 +369,23 @@ ASFUNCTIONBODY(ASString,split)
 			return ret;
 		}
 		unsigned int start=0;
+		unsigned int len = data.numChars();
 		do
 		{
 			int match=data.find(del,start);
 			if(del.empty())
 				match++;
 			if(match==-1)
-				match=data.numChars();
+				match= len;
 			ASString* s=Class<ASString>::getInstanceS(data.substr(start,(match-start)));
 			if (ret->size() >= limit)
 				break;
 			ret->push(_MR(s));
 			start=match+del.numChars();
-			if (start == data.numChars())
+			if (start == len)
 				ret->push(_MR(Class<ASString>::getInstanceS("")));
 		}
-		while(start<data.numChars() && ret->size() < limit);
+		while(start<len && ret->size() < limit);
 	}
 
 	return ret;

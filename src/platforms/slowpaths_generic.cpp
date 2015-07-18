@@ -22,13 +22,14 @@
 
 void lightspark::fastYUV420ChannelsToYUV0Buffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height)
 {
+	uint32_t texw= (width+15)&0xfffffff0;
 	for(uint32_t i=0;i<height;i++)
 	{
 		for(uint32_t j=0;j<width;j++)
 		{
-			uint32_t pixelCoordFull=i*width+j;
+			uint32_t pixelCoordFull=i*texw+j;
 			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
-			out[pixelCoordFull*4+0]=y[pixelCoordFull];
+			out[pixelCoordFull*4+0]=y[i*width+j];
 			out[pixelCoordFull*4+1]=u[pixelCoordHalf];
 			out[pixelCoordFull*4+2]=v[pixelCoordHalf];
 			out[pixelCoordFull*4+3]=0xff;

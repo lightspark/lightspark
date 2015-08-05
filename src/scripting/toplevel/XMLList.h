@@ -21,8 +21,6 @@
 #define SCRIPTING_TOPLEVEL_XMLLIST_H 1
 #include "asobject.h"
 #include "scripting/toplevel/XML.h"
-#include <libxml/tree.h>
-#include <libxml++/parsers/domparser.h>
 
 namespace lightspark
 {
@@ -38,7 +36,7 @@ private:
 	multiname targetproperty;
 
 	tiny_string toString_priv();
-	void buildFromString(const std::string& str);
+	void buildFromString(const tiny_string& str);
 	std::string extractXMLDeclaration(const std::string& xml, std::string& xmldecl_out);
 	void appendSingleNode(ASObject *x);
 	void replace(unsigned int i, ASObject *x, const XML::XMLVector& retnodes, CONST_ALLOWED_FLAG allowConst);

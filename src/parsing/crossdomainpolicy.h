@@ -20,12 +20,10 @@
 #ifndef PARSING_CROSSDOMAINPOLICY_H
 #define PARSING_CROSSDOMAINPOLICY_H 1
 
-#include <libxml++/libxml++.h>
-#include <libxml++/parsers/textreader.h>
-
 #include "compat.h"
 #include <string>
 #include "swftypes.h"
+#include <3rdparty/pugixml/src/pugixml.hpp>
 
 namespace lightspark
 {
@@ -35,10 +33,12 @@ namespace lightspark
 		enum POLICYFILETYPE { URL, SOCKET };
 		enum POLICYFILESUBTYPE { NONE, HTTP, HTTPS, FTP };
 	private:
-		xmlpp::TextReader xml;
+		pugi::xml_document xml;
+		pugi::xml_node currentnode;
 		POLICYFILETYPE type;
 		POLICYFILESUBTYPE subtype;
 		bool master;
+		bool first;
 
 		//Ease-of-use variables
 		int depth;

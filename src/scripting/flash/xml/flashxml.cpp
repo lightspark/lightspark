@@ -16,8 +16,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
-#include <libxml/tree.h>
-#include <libxml++/nodes/textnode.h>
 
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/flash/utils/ByteArray.h"
@@ -29,7 +27,7 @@
 using namespace std;
 using namespace lightspark;
 
-XMLNode::XMLNode(Class_base* c, _R<XMLDocument> _r, xmlpp::Node* _n):ASObject(c),root(_r),node(_n)
+XMLNode::XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n):ASObject(c),root(_r),node(_n)
 {
 }
 
@@ -81,13 +79,11 @@ ASFUNCTIONBODY(XMLNode,firstChild)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
-	//We assume NULL node is like empty node
-	if(th->node==NULL || th->node->cobj()->type==XML_TEXT_NODE)
+	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
 		return getSys()->getNullRef();
-	const xmlpp::Node::NodeList& children=th->node->get_children();
-	if(children.empty())
+	pugi::xml_node newNode =th->node.first_child();
+	if(newNode.type() == pugi::node_null)
 		return getSys()->getNullRef();
-	xmlpp::Node* newNode=children.front();
 	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
 }
@@ -96,13 +92,11 @@ ASFUNCTIONBODY(XMLNode,lastChild)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
-	//We assume NULL node is like empty node
-	if(th->node==NULL || th->node->cobj()->type==XML_TEXT_NODE)
+	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
 		return getSys()->getNullRef();
-	const xmlpp::Node::NodeList& children=th->node->get_children();
-	if(children.empty())
+	pugi::xml_node newNode =th->node.last_child();
+	if(newNode.type() == pugi::node_null)
 		return getSys()->getNullRef();
-	xmlpp::Node* newNode=children.back();
 	assert_and_throw(!th->root.isNull());
 	return Class<XMLNode>::getInstanceS(th->root,newNode);
 }
@@ -112,14 +106,13 @@ ASFUNCTIONBODY(XMLNode,childNodes)
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	Array* ret = Class<Array>::getInstanceS();
 	assert_and_throw(argslen==0);
-	if(th->node==NULL) //We assume NULL node is like empty node
+	if(th->node.type()==pugi::node_null)
 		return ret;
 	assert_and_throw(!th->root.isNull());
-	const xmlpp::Node::NodeList& children=th->node->get_children();
-	xmlpp::Node::NodeList::const_iterator it = children.begin();
-	for(;it!=children.end();++it)
+	auto it = th->node.begin();
+	for(;it!=th->node.end();++it)
 	{
-		if((*it)->cobj()->type!=XML_TEXT_NODE) {
+		if(it->type()!=pugi::node_pcdata) {
 			ret->push(_MR(Class<XMLNode>::getInstanceS(th->root, *it)));
 		}
 	}
@@ -132,43 +125,28 @@ ASFUNCTIONBODY(XMLNode,attributes)
 	XMLNode* th=Class<XMLNode>::cast(obj);
 	assert_and_throw(argslen==0);
 	ASObject* ret=Class<ASObject>::getInstanceS();
-	if(th->node==NULL) //We assume NULL node is like empty node
+	if(th->node.type()==pugi::node_null)
 		return ret;
-	//Needed dynamic cast, we want the type check
-	xmlpp::Element* elem=dynamic_cast<xmlpp::Element*>(th->node);
-	if(elem==NULL)
-		return ret;
-	const xmlpp::Element::AttributeList& list=elem->get_attributes();
-	xmlpp::Element::AttributeList::const_iterator it=list.begin();
-	for(;it!=list.end();++it)
+	auto it=th->node.attributes_begin();
+	for(;it!=th->node.attributes_end();++it)
 	{
-		tiny_string attrName((*it)->get_name().c_str(),true);
-		const tiny_string nsName((*it)->get_namespace_prefix().c_str(),true);
-		if(nsName!="")
-			attrName=nsName+":"+attrName;
-		ASString* attrValue=Class<ASString>::getInstanceS((*it)->get_value().c_str());
+		tiny_string attrName = it->name();
+		ASString* attrValue=Class<ASString>::getInstanceS(it->value());
 		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
 
-xmlpp::Node *XMLNode::getParentNode()
+pugi::xml_node XMLNode::getParentNode()
 {
-	if (!node)
-		return NULL;
-
-	xmlpp::Node *parent = node->get_parent();
-	if (parent)
-		return parent;
-	else
-		return NULL;
+	return node.parent();
 }
 
 ASFUNCTIONBODY(XMLNode,parentNode)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	xmlpp::Node *parent = th->getParentNode();
-	if (parent)
+	pugi::xml_node parent = th->getParentNode();
+	if (parent.type()!=pugi::node_null)
 		return Class<XMLNode>::getInstanceS(th->root, parent);
 	else
 		return getSys()->getNullRef();
@@ -177,11 +155,11 @@ ASFUNCTIONBODY(XMLNode,parentNode)
 ASFUNCTIONBODY(XMLNode,nextSibling)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	if(th->node==NULL)
+	if(th->node.type()==pugi::node_null)
 		return getSys()->getNullRef();
 
-	xmlpp::Node *sibling = th->node->get_next_sibling();
-	if (sibling)
+	pugi::xml_node sibling = th->node.next_sibling();
+	if (sibling.type()!=pugi::node_null)
 		return Class<XMLNode>::getInstanceS(th->root, sibling);
 	else
 		return getSys()->getNullRef();
@@ -190,11 +168,11 @@ ASFUNCTIONBODY(XMLNode,nextSibling)
 ASFUNCTIONBODY(XMLNode,previousSibling)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	if(th->node==NULL)
+	if(th->node.type()==pugi::node_null)
 		return getSys()->getNullRef();
 
-	xmlpp::Node *sibling = th->node->get_previous_sibling();
-	if (sibling)
+	pugi::xml_node sibling = th->node.previous_sibling();
+	if (sibling.type()!=pugi::node_null)
 		return Class<XMLNode>::getInstanceS(th->root, sibling);
 	else
 		return getSys()->getNullRef();
@@ -203,21 +181,42 @@ ASFUNCTIONBODY(XMLNode,previousSibling)
 ASFUNCTIONBODY(XMLNode,_getNodeType)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	return abstract_i(th->node->cobj()->type);
+	int t = 0;
+	switch (th->node.type())
+	{
+		case pugi::node_element:
+			t = 1;
+			break;
+		case pugi::node_pcdata:
+			t = 3;
+			break;
+		case pugi::node_declaration: 
+			t = 5;
+			break;
+		case pugi::node_pi:
+			t = 9;
+			break;
+		case pugi::node_document:
+			t = 11;
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
+			break;
+	}
+	return abstract_i(t);
 }
 
 ASFUNCTIONBODY(XMLNode,_getNodeName)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	return Class<ASString>::getInstanceS((const char*)th->node->cobj()->name);
+	return Class<ASString>::getInstanceS(th->node.name());
 }
 
 ASFUNCTIONBODY(XMLNode,_getNodeValue)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	xmlpp::TextNode* textnode=dynamic_cast<xmlpp::TextNode*>(th->node);
-	if(textnode)
-		return Class<ASString>::getInstanceS(textnode->get_content());
+	if(th->node.type() == pugi::node_pcdata)
+		return Class<ASString>::getInstanceS(th->node.value());
 	else
 		return getSys()->getNullRef();
 }
@@ -233,21 +232,14 @@ tiny_string XMLNode::toString()
 	return toString_priv(node);
 }
 
-tiny_string XMLNode::toString_priv(xmlpp::Node *outputNode)
+tiny_string XMLNode::toString_priv(pugi::xml_node outputNode)
 {
-	if(outputNode==NULL)
+	if(outputNode.type() == pugi::node_null)
 		return "";
 
-	xmlNodePtr cNode=outputNode->cobj();
-	xmlDocPtr xmlDoc=cNode->doc;
-	xmlBufferPtr xmlBuffer=xmlBufferCreateSize(4096);
-	int success=xmlNodeDump(xmlBuffer, xmlDoc, cNode, 0, 0);
-	if (!success)
-		throw RunTimeException("Error in XMLNode::toString_priv");
-
-	tiny_string ret=tiny_string((char*)xmlBuffer->content,true);
-	xmlBufferFree(xmlBuffer);
-
+	ostringstream buf;
+	outputNode.print(buf);
+	tiny_string ret = tiny_string(buf.str());
 	return ret;
 }
 
@@ -297,8 +289,10 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 
 void XMLDocument::parseXMLImpl(const string& str)
 {
-	bool hasParent;
-	rootNode=buildFromString(str, ignoreWhite,&hasParent);
+	unsigned int parsemode = pugi::parse_full |pugi::parse_fragment;
+	if (!ignoreWhite) parsemode |= pugi::parse_ws_pcdata;
+
+	rootNode=buildFromString(str, parsemode);
 }
 
 ASFUNCTIONBODY(XMLDocument,_toString)
@@ -328,7 +322,7 @@ ASFUNCTIONBODY(XMLDocument,firstChild)
 	XMLDocument* th=Class<XMLDocument>::cast(obj);
 	assert_and_throw(argslen==0);
 	assert(th->node==NULL);
-	xmlpp::Node* newNode=th->rootNode;
+	pugi::xml_node newNode=th->rootNode;
 	th->incRef();
 	return Class<XMLNode>::getInstanceS(_MR(th),newNode);
 }

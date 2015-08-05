@@ -25,10 +25,6 @@
 #include "scripting/argconv.h"
 #include "abc.h"
 #include "parsing/amf3_generator.h"
-#include <libxml/tree.h>
-#include <libxml++/parsers/domparser.h>
-#include <libxml++/nodes/textnode.h>
-#include <libxml++/nodes/entityreference.h>
 
 using namespace std;
 using namespace lightspark;
@@ -48,18 +44,23 @@ void setDefaultXMLSettings()
 	prettyPrinting = true;
 }
 
-XML::XML(Class_base* c):ASObject(c),parentNode(0),nodetype((xmlElementType)0),constructed(false), hasParentNode(false)
+XML::XML(Class_base* c):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
 }
 
-XML::XML(Class_base* c, const std::string &str):ASObject(c),parentNode(0),nodetype((xmlElementType)0),constructed(false)
+XML::XML(Class_base* c, const std::string &str):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
-	createTree(buildFromString(str, false,&hasParentNode));
+	createTree(buildFromString(str, getParseMode()),false);
 }
 
-XML::XML(Class_base* c,xmlpp::Node* _n):ASObject(c),parentNode(0),nodetype((xmlElementType)0),constructed(false)
+XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
-	createTree(_n);
+	if (parent)
+	{
+		parent->incRef();
+		parentNode = _NR<XML>(parent);
+	}
+	createTree(_n,fromXMLList);
 }
 
 void XML::finalize()
@@ -180,7 +181,7 @@ ASFUNCTIONBODY(XML,_constructor)
 	   args[0]->is<Null>() || 
 	   args[0]->is<Undefined>())
 	{
-		th->createTree(th->buildFromString("", false,&th->hasParentNode));
+		th->createTree(th->buildFromString("", getParseMode()),false);
 	}
 	else if(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()))
 	{
@@ -189,8 +190,8 @@ ASFUNCTIONBODY(XML,_constructor)
 		ByteArray* ba=Class<ByteArray>::cast(args[0]);
 		uint32_t len=ba->getLength();
 		const uint8_t* str=ba->getBuffer(len, false);
-		th->createTree(th->buildFromString(std::string((const char*)str,len), false,&th->hasParentNode,
-					     getVm()->getDefaultXMLNamespace()));
+		th->createTree(th->buildFromString(std::string((const char*)str,len), getParseMode(),
+					     getVm()->getDefaultXMLNamespace()),false);
 	}
 	else if(args[0]->is<ASString>() ||
 		args[0]->is<Number>() ||
@@ -200,25 +201,26 @@ ASFUNCTIONBODY(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->createTree(th->buildFromString(args[0]->toString(), false,&th->hasParentNode,
-					     getVm()->getDefaultXMLNamespace()));
+		th->createTree(th->buildFromString(args[0]->toString(), getParseMode(),
+					     getVm()->getDefaultXMLNamespace()),false);
 	}
 	else if(args[0]->is<XML>())
 	{
-		th->createTree(th->buildFromString(args[0]->as<XML>()->toXMLString_internal(), false,&th->hasParentNode,
-					     getVm()->getDefaultXMLNamespace()));
+		th->createTree(th->buildFromString(args[0]->as<XML>()->toXMLString_internal(), getParseMode(),
+					     getVm()->getDefaultXMLNamespace()),false);
 	}
 	else if(args[0]->is<XMLList>())
 	{
 		XMLList *list=args[0]->as<XMLList>();
 		_R<XML> reduced=list->reduceToXML();
-		th->createTree(th->buildFromString(reduced->toXMLString_internal(), false,&th->hasParentNode));
+		th->createTree(th->buildFromString(reduced->toXMLString_internal(), getParseMode()),false);
 	}
 	else
 	{
-		th->createTree(th->buildFromString(args[0]->toString(), false,&th->hasParentNode,
-					     getVm()->getDefaultXMLNamespace()));
+		th->createTree(th->buildFromString(args[0]->toString(), getParseMode(),
+					     getVm()->getDefaultXMLNamespace()),false);
 	}
+
 	return NULL;
 }
 
@@ -230,18 +232,19 @@ ASFUNCTIONBODY(XML,nodeKind)
 }
 const char *XML::nodekindString()
 {
+	if (isAttribute)
+		return "attribute";
 	switch(nodetype)
 	{
-		case XML_ATTRIBUTE_NODE:
-			return "attribute";
-		case XML_ELEMENT_NODE:
+		case pugi::node_element:
 			return "element";
-		case XML_CDATA_SECTION_NODE:
-		case XML_TEXT_NODE:
+		case pugi::node_cdata:
+		case pugi::node_pcdata:
+		case pugi::node_null:
 			return "text";
-		case XML_COMMENT_NODE:
+		case pugi::node_comment:
 			return "comment";
-		case XML_PI_NODE:
+		case pugi::node_pi:
 			return "processing-instruction";
 		default:
 		{
@@ -260,7 +263,7 @@ ASFUNCTIONBODY(XML,localName)
 {
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
-	if(th->nodetype==XML_TEXT_NODE || th->nodetype==XML_COMMENT_NODE)
+	if(!th->isAttribute && (th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment || th->nodetype==pugi::node_null))
 		return getSys()->getNullRef();
 	else
 		return Class<ASString>::getInstanceS(th->nodename);
@@ -271,7 +274,7 @@ ASFUNCTIONBODY(XML,name)
 	XML* th=Class<XML>::cast(obj);
 	assert_and_throw(argslen==0);
 	//TODO: add namespace
-	if(th->nodetype==XML_TEXT_NODE || th->nodetype==XML_COMMENT_NODE)
+	if(!th->isAttribute && (th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment || th->nodetype==pugi::node_null))
 		return getSys()->getNullRef();
 	else
 	{
@@ -315,7 +318,9 @@ ASFUNCTIONBODY(XML,_appendChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
+		arg=_MR(Class<XML>::getInstanceS("dummy"));
+		//avoid interpretation of the argument, just set it as text node
+		arg->setTextContent(args[0]->toString());
 	}
 
 	th->appendChild(arg);
@@ -414,213 +419,242 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 				break;
 		}
 	}
-	switch (nodetype)
+	if (isAttribute)
+		res += encodeToXML(nodevalue,true);
+	else
 	{
-		case XML_TEXT_NODE:
-			res = indent;
-			res += encodeToXML(nodevalue,false);
-			break;
-		case XML_ATTRIBUTE_NODE:
-			res += nodevalue;
-			break;
-		case XML_COMMENT_NODE:
-			res = indent;
-			res += "<!--";
-			res += nodevalue;
-			res += "-->";
-			break;
-		case XML_PI_NODE:
-			if (ignoreProcessingInstructions)
-				break;
-			res = indent;
-			res += "<?";
-			res +=this->nodename;
-			res += " ";
-			res += nodevalue;
-			res += "?>";
-			break;
-		case XML_ELEMENT_NODE:
+	/*
+		if (!ignoreProcessingInstructions && !procinstlist.isNull())
 		{
-			tiny_string curprefix = this->nodenamespace_prefix;
-			res = indent;
-			res += "<";
-			if (this->nodenamespace_prefix.empty())
+
+			for (uint32_t i = 0; i < procinstlist->nodes.size(); i++)
 			{
-				if (defaultnsprefix != "")
+				_R<XML> child= procinstlist->nodes[i];
+				res += child->toXMLString_internal(pretty,defaultnsprefix,indent,false);
+			LOG(LOG_INFO,"printpi:"<<res);
+				if (pretty && prettyPrinting)
+					res += "\n";
+			}
+		}
+		*/
+		switch (nodetype)
+		{
+			case pugi::node_pcdata:
+				res += indent;
+				res += encodeToXML(nodevalue,false);
+				break;
+			case pugi::node_comment:
+				res += indent;
+				res += "<!--";
+				res += nodevalue;
+				res += "-->";
+				break;
+			case pugi::node_declaration:
+			case pugi::node_pi:
+				if (ignoreProcessingInstructions)
+					break;
+				res += indent;
+				res += "<?";
+				res +=this->nodename;
+				res += " ";
+				res += nodevalue;
+				res += "?>";
+				break;
+			case pugi::node_element:
+			{
+				tiny_string curprefix = this->nodenamespace_prefix;
+				res += indent;
+				res += "<";
+				if (this->nodenamespace_prefix.empty())
 				{
-					res += defaultnsprefix;
-					res += ":";
-					curprefix = defaultnsprefix;
-				}
-			}
-			else
-			{
-				res += this->nodenamespace_prefix;
-				res += ":";
-			}
-			res +=this->nodename;
-			for (uint32_t i = 0; i < this->namespacedefs.size(); i++)
-			{
-				bool b;
-				_R<Namespace> tmpns = this->namespacedefs[i];
-				tiny_string tmpprefix = tmpns->getPrefix(b);
-				if(tmpprefix == "" || tmpprefix==this->nodenamespace_prefix || seen_prefix.find(tmpprefix)!=seen_prefix.end())
-					continue;
-				seen_prefix.insert(tmpprefix);
-				res += " xmlns:";
-				res += tmpprefix;
-				res += "=\"";
-				res += tmpns->getURI();
-				res += "\"";
-			}
-			if (this->parentNode)
-			{
-				if (bfirst)
-				{
-					XML* tmp = this->parentNode.getPtr();
-					while(tmp)
+					if (defaultnsprefix != "")
 					{
-						for (uint32_t i = 0; i < tmp->namespacedefs.size(); i++)
-						{
-							bool b;
-							_R<Namespace> tmpns = tmp->namespacedefs[i];
-							tiny_string tmpprefix = tmpns->getPrefix(b);
-							if(tmpprefix != "" && seen_prefix.find(tmpprefix)==seen_prefix.end())
-							{
-								seen_prefix.insert(tmpprefix);
-								res += " xmlns:";
-								res += tmpprefix;
-								res += "=\"";
-								res += tmpns->getURI();
-								res += "\"";
-							}
-						}
-						if (tmp->parentNode)
-							tmp = tmp->parentNode.getPtr();
-						else
-							break;
+						res += defaultnsprefix;
+						res += ":";
+						curprefix = defaultnsprefix;
 					}
-				}
-				else if (!curprefix.empty())
-				{
-					XML* tmp = this->parentNode.getPtr();
-					bool bfound = false;
-					while(tmp)
-					{
-						for (uint32_t i = 0; i < tmp->namespacedefs.size(); i++)
-						{
-							bool b;
-							_R<Namespace> tmpns = tmp->namespacedefs[i];
-							tiny_string tmpprefix = tmpns->getPrefix(b);
-							if(tmpprefix == curprefix)
-							{
-								seen_prefix.insert(tmpprefix);
-								bfound = true;
-								break;
-							}
-						}
-						if (!bfound && tmp->parentNode)
-							tmp = tmp->parentNode.getPtr();
-						else
-							break;
-					}
-				}
-			}
-			if (!this->nodenamespace_uri.empty() && 
-					((this->nodenamespace_prefix.empty() && defaultnsprefix == "") ||
-					 (!this->nodenamespace_prefix.empty() && seen_prefix.find(this->nodenamespace_prefix)==seen_prefix.end())))
-			{
-				if (!this->nodenamespace_prefix.empty())
-				{
-					seen_prefix.insert(this->nodenamespace_prefix);
-					res += " xmlns:";
-					res += this->nodenamespace_prefix;
 				}
 				else
-					res += " xmlns";
-				res += "=\"";
-				res += this->nodenamespace_uri;
-				res += "\"";
-			}
-			else if (defaultnsprefix != "" && seen_prefix.find(defaultnsprefix)==seen_prefix.end())
-			{
-				seen_prefix.insert(defaultnsprefix);
-				res += " xmlns:";
-				res += defaultnsprefix;
-				res += "=\"";
-				res += getVm()->getDefaultXMLNamespace();
-				res += "\"";
-			}
-			for (XMLList::XMLListVector::const_iterator it = attributelist->nodes.begin(); it != attributelist->nodes.end(); it++)
-			{
-				_R<XML> attr = *it;
-				res += " ";
-				if (attr->nodenamespace_prefix != "")
 				{
-					res += attr->nodenamespace_prefix;
+					res += this->nodenamespace_prefix;
 					res += ":";
 				}
-				res += attr->nodename;
-				res += "=\"";
-				res += encodeToXML(attr->nodevalue,true);
-				res += "\"";
-			}
-			if (childrenlist->nodes.size() == 0)
-			{
-				res += "/>";
+				res +=this->nodename;
+				for (uint32_t i = 0; i < this->namespacedefs.size(); i++)
+				{
+					bool b;
+					_R<Namespace> tmpns = this->namespacedefs[i];
+					tiny_string tmpprefix = tmpns->getPrefix(b);
+					/*
+					if(tmpprefix == "")
+					{
+						seen_prefix.insert(tmpprefix);
+						res += " xmlns";
+						res += "=\"";
+						res += tmpns->getURI();
+						res += "\"";
+					}
+					*/
+					if(tmpprefix == "" || tmpprefix==this->nodenamespace_prefix || seen_prefix.find(tmpprefix)!=seen_prefix.end())
+						continue;
+					seen_prefix.insert(tmpprefix);
+					res += " xmlns:";
+					res += tmpprefix;
+					res += "=\"";
+					res += tmpns->getURI();
+					res += "\"";
+				}
+				if (this->parentNode)
+				{
+					if (bfirst)
+					{
+						XML* tmp = this->parentNode.getPtr();
+						while(tmp)
+						{
+							for (uint32_t i = 0; i < tmp->namespacedefs.size(); i++)
+							{
+								bool b;
+								_R<Namespace> tmpns = tmp->namespacedefs[i];
+								tiny_string tmpprefix = tmpns->getPrefix(b);
+								if(tmpprefix != "" && seen_prefix.find(tmpprefix)==seen_prefix.end())
+								{
+									seen_prefix.insert(tmpprefix);
+									res += " xmlns:";
+									res += tmpprefix;
+									res += "=\"";
+									res += tmpns->getURI();
+									res += "\"";
+								}
+							}
+							if (tmp->parentNode)
+								tmp = tmp->parentNode.getPtr();
+							else
+								break;
+						}
+					}
+					else if (!curprefix.empty())
+					{
+						XML* tmp = this->parentNode.getPtr();
+						bool bfound = false;
+						while(tmp)
+						{
+							for (uint32_t i = 0; i < tmp->namespacedefs.size(); i++)
+							{
+								bool b;
+								_R<Namespace> tmpns = tmp->namespacedefs[i];
+								tiny_string tmpprefix = tmpns->getPrefix(b);
+								if(tmpprefix == curprefix)
+								{
+									seen_prefix.insert(tmpprefix);
+									bfound = true;
+									break;
+								}
+							}
+							if (!bfound && tmp->parentNode)
+								tmp = tmp->parentNode.getPtr();
+							else
+								break;
+						}
+					}
+				}
+				if (!this->nodenamespace_uri.empty() && 
+						((this->nodenamespace_prefix.empty() && defaultnsprefix == "") ||
+						 (!this->nodenamespace_prefix.empty() && seen_prefix.find(this->nodenamespace_prefix)==seen_prefix.end())))
+				{
+					if (!this->nodenamespace_prefix.empty())
+					{
+						seen_prefix.insert(this->nodenamespace_prefix);
+						res += " xmlns:";
+						res += this->nodenamespace_prefix;
+					}
+					else
+						res += " xmlns";
+					res += "=\"";
+					res += this->nodenamespace_uri;
+					res += "\"";
+				}
+				else if (defaultnsprefix != "" && seen_prefix.find(defaultnsprefix)==seen_prefix.end())
+				{
+					seen_prefix.insert(defaultnsprefix);
+					res += " xmlns:";
+					res += defaultnsprefix;
+					res += "=\"";
+					res += getVm()->getDefaultXMLNamespace();
+					res += "\"";
+				}
+				for (XMLList::XMLListVector::const_iterator it = attributelist->nodes.begin(); it != attributelist->nodes.end(); it++)
+				{
+					_R<XML> attr = *it;
+					res += " ";
+					if (attr->nodenamespace_prefix != "")
+					{
+						res += attr->nodenamespace_prefix;
+						res += ":";
+					}
+					res += attr->nodename;
+					res += "=\"";
+					res += encodeToXML(attr->nodevalue,true);
+					res += "\"";
+				}
+				if (childrenlist->nodes.size() == 0)
+				{
+					res += "/>";
+					break;
+				}
+				res += ">";
+				tiny_string newindent;
+				bool bindent = (pretty && prettyPrinting && prettyIndent >=0 && 
+								(childrenlist->nodes.size() >1 || 
+								 (!childrenlist->nodes[0]->procinstlist.isNull()) ||
+								 (childrenlist->nodes[0]->nodetype != pugi::node_pcdata && childrenlist->nodes[0]->nodetype != pugi::node_cdata)));
+				if (bindent)
+				{
+					newindent = indent;
+					for (int32_t j = 0; j < prettyIndent; j++)
+					{
+						newindent += " ";
+					}
+				}
+				for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
+				{
+					_R<XML> child= childrenlist->nodes[i];
+					tiny_string tmpres = child->toXMLString_internal(pretty,defaultnsprefix,newindent.raw_buf(),false);
+					if (bindent && !tmpres.empty())
+						res += "\n";
+					res += tmpres;
+				}
+				if (bindent)
+				{
+					res += "\n";
+					res += indent;
+				}
+				res += "</";
+				if (this->nodenamespace_prefix.empty())
+				{
+					if (defaultnsprefix != "")
+					{
+						res += defaultnsprefix;
+						res += ":";
+					}
+				}
+				else
+				{
+					res += this->nodenamespace_prefix;
+					res += ":";
+				}
+				res += this->nodename;
+				res += ">";
 				break;
 			}
-			res += ">";
-			tiny_string newindent;
-			bool bindent = (pretty && prettyPrinting && prettyIndent >=0 && 
-							(childrenlist->nodes.size() >1 || 
-							(childrenlist->nodes[0]->nodetype != XML_TEXT_NODE && childrenlist->nodes[0]->nodetype != XML_CDATA_SECTION_NODE)));
-			if (bindent)
-			{
-				newindent = indent;
-				for (int32_t j = 0; j < prettyIndent; j++)
-				{
-					newindent += " ";
-				}
-			}
-			for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
-			{
-				if (bindent)
-					res += "\n";
-				_R<XML> child= childrenlist->nodes[i];
-				res += child->toXMLString_internal(pretty,defaultnsprefix,newindent.raw_buf(),false);
-			}
-			if (bindent)
-			{
-				res += "\n";
-				res += indent;
-			}
-			res += "</";
-			if (this->nodenamespace_prefix.empty())
-			{
-				if (defaultnsprefix != "")
-				{
-					res += defaultnsprefix;
-					res += ":";
-				}
-			}
-			else
-			{
-				res += this->nodenamespace_prefix;
-				res += ":";
-			}
-			res += this->nodename;
-			res += ">";
-			break;
+			case pugi::node_cdata:
+				res += "<![CDATA[";
+				res += nodevalue;
+				res += "]]>";
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"XML::toXMLString unhandled nodetype:"<<nodetype);
+				break;
 		}
-		case XML_CDATA_SECTION_NODE:
-			res += "<![CDATA[";
-			res += nodevalue;
-			res += "]]>";
-			break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,"XML::toXMLString unhandled nodetype:"<<nodetype);
-			break;
 	}
 	return res;
 }
@@ -686,6 +720,7 @@ ASFUNCTIONBODY(XML,children)
 	mname.name_s_id=getSys()->getUniqueStringId("*");
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.push_back(nsNameAndKind("",NAMESPACE));
+	LOG(LOG_ERROR,"children:"<<th->toXMLString_internal());
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret,th->getChildrenlist(),mname);
 	return retObj;
 }
@@ -729,8 +764,8 @@ void XML::getText(XMLVector& ret)
 	for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
 	{
 		_R<XML> child= childrenlist->nodes[i];
-		if (child->getNodeKind() == XML_TEXT_NODE  ||
-			child->getNodeKind() == XML_CDATA_SECTION_NODE)
+		if (child->getNodeKind() == pugi::node_pcdata  ||
+			child->getNodeKind() == pugi::node_cdata)
 		{
 			child->incRef();
 			ret.push_back( child );
@@ -765,7 +800,7 @@ void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
 	for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
 	{
 		_R<XML> child= childrenlist->nodes[i];
-		if(child->nodetype==XML_ELEMENT_NODE && (name.empty() || name == child->nodename))
+		if(child->nodetype==pugi::node_element && (name.empty() || name == child->nodename))
 		{
 			child->incRef();
 			foundElements.push_back( child );
@@ -873,10 +908,10 @@ ASFUNCTIONBODY(XML,_namespace)
 	tiny_string prefix;
 	ARG_UNPACK(prefix, "");
 
-	xmlElementType nodetype=th->nodetype;
+	pugi::xml_node_type nodetype=th->nodetype;
 	if(prefix.empty() && 
-	   nodetype!=XML_ELEMENT_NODE && 
-	   nodetype!=XML_ATTRIBUTE_NODE)
+	   nodetype!=pugi::node_element && 
+	   !th->isAttribute)
 	{
 		return getSys()->getNullRef();
 	}
@@ -901,8 +936,7 @@ ASFUNCTIONBODY(XML,_setLocalName)
 	_NR<ASObject> newName;
 	ARG_UNPACK(newName);
 
-	xmlElementType nodetype=th->nodetype;
-	if(nodetype==XML_TEXT_NODE || nodetype==XML_COMMENT_NODE)
+	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
 		return NULL;
 
 	tiny_string new_name;
@@ -935,7 +969,7 @@ ASFUNCTIONBODY(XML,_setName)
 	_NR<ASObject> newName;
 	ARG_UNPACK(newName);
 
-	if(th->nodetype==XML_TEXT_NODE || th->nodetype==XML_COMMENT_NODE)
+	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
 		return NULL;
 
 	tiny_string localname;
@@ -965,9 +999,9 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	_NR<ASObject> newNamespace;
 	ARG_UNPACK(newNamespace);
 
-	if(th->nodetype==XML_TEXT_NODE ||
-	   th->nodetype==XML_COMMENT_NODE ||
-	   th->nodetype==XML_PI_NODE)
+	if(th->nodetype==pugi::node_pcdata ||
+	   th->nodetype==pugi::node_comment ||
+	   th->nodetype==pugi::node_pi)
 		return NULL;
 	tiny_string ns_uri;
 	tiny_string ns_prefix;
@@ -1008,7 +1042,7 @@ ASFUNCTIONBODY(XML,_setNamespace)
 		}
 	}
 	th->setNamespace(ns_uri, ns_prefix);
-	if (th->nodetype==XML_ATTRIBUTE_NODE && th->parentNode)
+	if (th->isAttribute && th->parentNode)
 	{
 		XML* tmp = th->parentNode.getPtr();
 		for (uint32_t i = 0; i < tmp->namespacedefs.size(); i++)
@@ -1089,18 +1123,18 @@ void XML::normalize()
 
 void XML::addTextContent(const tiny_string& str)
 {
-	assert(getNodeKind() == XML_TEXT_NODE);
+	assert(getNodeKind() == pugi::node_pcdata);
 
 	nodevalue += str;
 }
 
 void XML::setTextContent(const tiny_string& content)
 {
-	if (getNodeKind() == XML_TEXT_NODE ||
-	    getNodeKind() == XML_ATTRIBUTE_NODE ||
-	    getNodeKind() == XML_COMMENT_NODE ||
-	    getNodeKind() == XML_PI_NODE ||
-		getNodeKind() == XML_CDATA_SECTION_NODE)
+	if (getNodeKind() == pugi::node_pcdata ||
+	    isAttribute ||
+	    getNodeKind() == pugi::node_comment ||
+	    getNodeKind() == pugi::node_pi ||
+		getNodeKind() == pugi::node_cdata)
 	{
 		nodevalue = content;
 	}
@@ -1109,12 +1143,12 @@ void XML::setTextContent(const tiny_string& content)
 
 bool XML::hasSimpleContent() const
 {
-	if (getNodeKind() == XML_COMMENT_NODE ||
-		getNodeKind() == XML_PI_NODE)
+	if (getNodeKind() == pugi::node_comment ||
+		getNodeKind() == pugi::node_pi)
 		return false;
 	for(size_t i=0; i<childrenlist->nodes.size(); i++)
 	{
-		if (childrenlist->nodes[i]->getNodeKind() == XML_ELEMENT_NODE)
+		if (childrenlist->nodes[i]->getNodeKind() == pugi::node_element)
 			return false;
 	}
 	return true;
@@ -1125,7 +1159,7 @@ bool XML::hasComplexContent() const
 	return !hasSimpleContent();
 }
 
-xmlElementType XML::getNodeKind() const
+pugi::xml_node_type XML::getNodeKind() const
 {
 	return nodetype;
 }
@@ -1261,7 +1295,6 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 		tiny_string childnamespace_uri = "|";
 		childnamespace_uri += child->nodenamespace_uri;
 		childnamespace_uri += "|";
-		
 		bool bmatch = (
 					((normalizedName=="") &&
 					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
@@ -1431,7 +1464,8 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 			_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
 			this->incRef();
 			tmp->parentNode = _MR<XML>(this);
-			tmp->nodetype = XML_ATTRIBUTE_NODE;
+			tmp->nodetype = pugi::node_null;
+			tmp->isAttribute = true;
 			tmp->nodename = buf;
 			tmp->nodenamespace_uri = ns_uri;
 			tmp->nodenamespace_prefix = ns_prefix;
@@ -1463,12 +1497,12 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 				}
 				else if(o->is<XML>())
 				{
-					if (o->as<XML>()->getNodeKind() == XML_TEXT_NODE)
+					if (o->as<XML>()->getNodeKind() == pugi::node_pcdata)
 					{
 						_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
 						tmp->parentNode = tmpnode;
 						tmp->incRef();
-						tmp->nodetype = XML_TEXT_NODE;
+						tmp->nodetype = pugi::node_pcdata;
 						tmp->nodename = "text";
 						tmp->nodenamespace_uri = "";
 						tmp->nodenamespace_prefix = "";
@@ -1491,7 +1525,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 				}
 				else
 				{
-					if (tmpnode->childrenlist->nodes.size() == 1 && tmpnode->childrenlist->nodes[0]->nodetype == XML_TEXT_NODE)
+					if (tmpnode->childrenlist->nodes.size() == 1 && tmpnode->childrenlist->nodes[0]->nodetype == pugi::node_pcdata)
 						tmpnode->childrenlist->nodes[0]->nodevalue = o->toString();
 					else
 					{
@@ -1775,7 +1809,6 @@ ASFUNCTIONBODY(XML,_setIgnoreWhitespace)
 {
 	assert(args && argslen==1);
 	ignoreWhitespace = Boolean_concrete(args[0]);
-	xmlKeepBlanksDefault(ignoreWhitespace ? 0 : 1);
 	return NULL;
 }
 ASFUNCTIONBODY(XML,_getPrettyIndent)
@@ -1921,7 +1954,7 @@ ASFUNCTIONBODY(XML,insertChildAfter)
 	_NR<ASObject> child1;
 	_NR<ASObject> child2;
 	ARG_UNPACK(child1)(child2);
-	if (th->nodetype != XML_ELEMENT_NODE)
+	if (th->nodetype != pugi::node_element)
 		return getSys()->getUndefinedRef();
 	
 	if (child2->is<XML>())
@@ -1938,7 +1971,6 @@ ASFUNCTIONBODY(XML,insertChildAfter)
 	if (child1->is<Null>())
 	{
 		th->incRef();
-		child2->as<XML>()->parentNode = _NR<XML>(th);
 		if (child2->is<XML>())
 		{
 			th->incRef();
@@ -1998,7 +2030,7 @@ ASFUNCTIONBODY(XML,insertChildBefore)
 	_NR<ASObject> child1;
 	_NR<ASObject> child2;
 	ARG_UNPACK(child1)(child2);
-	if (th->nodetype != XML_ELEMENT_NODE)
+	if (th->nodetype != pugi::node_element)
 		return getSys()->getUndefinedRef();
 	
 	if (child2->is<XML>())
@@ -2138,7 +2170,7 @@ void XML::getComments(XMLVector& ret)
 	{
 		for (auto it = childrenlist->nodes.begin(); it != childrenlist->nodes.end(); it++)
 		{
-			if ((*it)->getNodeKind() == XML_COMMENT_NODE)
+			if ((*it)->getNodeKind() == pugi::node_comment)
 			{
 				(*it)->incRef();
 				ret.push_back(*it);
@@ -2162,7 +2194,7 @@ void XML::getprocessingInstructions(XMLVector& ret, tiny_string name)
 	{
 		for (auto it = childrenlist->nodes.begin(); it != childrenlist->nodes.end(); it++)
 		{
-			if ((*it)->getNodeKind() == XML_PI_NODE && (name == "*" || name == (*it)->nodename))
+			if ((*it)->getNodeKind() == pugi::node_pi && (name == "*" || name == (*it)->nodename))
 			{
 				(*it)->incRef();
 				ret.push_back(*it);
@@ -2198,14 +2230,14 @@ ASFUNCTIONBODY(XML,_hasOwnProperty)
 tiny_string XML::toString_priv()
 {
 	tiny_string ret;
-	if (getNodeKind() == XML_TEXT_NODE ||
-		getNodeKind() == XML_ATTRIBUTE_NODE ||
-		getNodeKind() == XML_CDATA_SECTION_NODE)
+	if (getNodeKind() == pugi::node_pcdata ||
+		isAttribute ||
+		getNodeKind() == pugi::node_cdata)
 	{
 		ret=nodevalue;
 	}
-	else if (getNodeKind() == XML_COMMENT_NODE ||
-			 getNodeKind() == XML_PI_NODE)
+	else if (getNodeKind() == pugi::node_comment ||
+			 getNodeKind() == pugi::node_pi)
 	{
 		ret="";
 	}
@@ -2214,8 +2246,8 @@ tiny_string XML::toString_priv()
 		auto it = childrenlist->nodes.begin();
 		while(it != childrenlist->nodes.end())
 		{
-			if ((*it)->getNodeKind() != XML_COMMENT_NODE &&
-					(*it)->getNodeKind() != XML_PI_NODE)
+			if ((*it)->getNodeKind() != pugi::node_comment &&
+					(*it)->getNodeKind() != pugi::node_pi)
 				ret += (*it)->toString_priv();
 			it++;
 		}
@@ -2227,14 +2259,18 @@ tiny_string XML::toString_priv()
 	return ret;
 }
 
-const tiny_string XML::encodeToXML(const tiny_string value, bool bIsAttribute)
-{
-	return XMLBase::encodeToXML(value,bIsAttribute);
-}
-
 bool XML::getPrettyPrinting()
 {
 	return prettyPrinting;
+}
+
+unsigned int XML::getParseMode()
+{
+	unsigned int parsemode = pugi::parse_cdata | pugi::parse_escapes|pugi::parse_fragment | pugi::parse_doctype |pugi::parse_pi|pugi::parse_declaration;
+	if (!ignoreWhitespace) parsemode |= pugi::parse_ws_pcdata;
+	//if (!ignoreProcessingInstructions) parsemode |= pugi::parse_pi|pugi::parse_declaration;
+	if (!ignoreComments) parsemode |= pugi::parse_comments;
+	return parsemode;
 }
 
 tiny_string XML::toString()
@@ -2265,23 +2301,51 @@ bool XML::nodesEqual(XML *a, XML *b) const
 	    a->nodenamespace_uri!=b->nodenamespace_uri))
 		return false;
 
-	// attributes
-	if(a->nodetype==XML_ELEMENT_NODE)
-	{
-		if (a->attributelist->nodes.size() != b->attributelist->nodes.size())
-			return false;
-			
-		for (int i = 0; i < (int)a->attributelist->nodes.size(); i++)
-		{
-			_R<XML> oa= a->attributelist->nodes[i];
-			_R<XML> ob= b->attributelist->nodes[i];
-			if (!oa->isEqual(ob.getPtr()))
-				return false;
-		}
-	}
 	// content
 	if (a->nodevalue != b->nodevalue)
 		return false;
+	// attributes
+	if (a->attributelist->nodes.size() != b->attributelist->nodes.size())
+		return false;
+	for (int i = 0; i < (int)a->attributelist->nodes.size(); i++)
+	{
+		_R<XML> oa= a->attributelist->nodes[i];
+		bool bequal = false;
+		for (int j = 0; j < (int)b->attributelist->nodes.size(); j++)
+		{
+			_R<XML> ob= b->attributelist->nodes[j];
+			if (oa->isEqual(ob.getPtr()))
+			{
+				bequal = true;
+				break;
+			}
+		}
+		if (!bequal)
+			return false;
+	}
+	if (!ignoreProcessingInstructions && (!a->procinstlist.isNull() || !b->procinstlist.isNull()))
+	{
+		if (a->procinstlist.isNull() || b->procinstlist.isNull())
+			return false;
+		if (a->procinstlist->nodes.size() != b->procinstlist->nodes.size())
+			return false;
+		for (int i = 0; i < (int)a->procinstlist->nodes.size(); i++)
+		{
+			_R<XML> oa= a->procinstlist->nodes[i];
+			bool bequal = false;
+			for (int j = 0; j < (int)b->procinstlist->nodes.size(); j++)
+			{
+				_R<XML> ob= b->procinstlist->nodes[j];
+				if (oa->isEqual(ob.getPtr()))
+				{
+					bequal = true;
+					break;
+				}
+			}
+			if (!bequal)
+				return false;
+		}
+	}
 	
 	// children
 	return a->childrenlist->isEqual(b->childrenlist.getPtr());
@@ -2340,111 +2404,219 @@ void XML::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 	out->writeXMLString(objMap, this, toString());
 }
 
-void XML::createTree(xmlpp::Node* node)
+void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 {
-	const xmlpp::Node::NodeList& list=node->get_children();
-	xmlpp::Node::NodeList::const_iterator it=list.begin();
-	childrenlist = _MR(Class<XMLList>::getInstanceS());
-	childrenlist->incRef();
-
-	this->nodetype = node->cobj()->type;
-	this->nodename = node->get_name();
-	this->nodenamespace_uri = node->get_namespace_uri();
-	this->nodenamespace_prefix = node ->get_namespace_prefix();
-	
-	switch (this->nodetype)
+	pugi::xml_node node = rootnode;
+	bool done = false;
+	this->childrenlist = _MR(Class<XMLList>::getInstanceS());
+	this->childrenlist->incRef();
+	if (parentNode.isNull() && !fromXMLList)
 	{
-		case XML_ATTRIBUTE_NODE:
-		case XML_TEXT_NODE:
+		while (true)
 		{
-			xmlpp::ContentNode *textnode=dynamic_cast<xmlpp::ContentNode*>(node);
-			this->nodevalue = textnode->get_content();
-			if (ignoreWhitespace)
+			//LOG(LOG_INFO,"rootfill:"<<node.name()<<" "<<node.value()<<" "<<node.type()<<" "<<parentNode.isNull());
+			switch (node.type())
 			{
-				nodevalue = removeWhitespace(nodevalue);
-				if (nodevalue.empty())
+				case pugi::node_null: // Empty (null) node handle
+					fillNode(this,node);
+					done = true;
+					break;
+				case pugi::node_document:// A document tree's absolute root
+					createTree(node.first_child(),fromXMLList);
 					return;
+				case pugi::node_pi:	// Processing instruction, i.e. '<?name?>'
+				case pugi::node_declaration: // Document declaration, i.e. '<?xml version="1.0"?>'
+				{
+					_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
+					fillNode(tmp.getPtr(),node);
+					if(this->procinstlist.isNull())
+						this->procinstlist = _MR(Class<XMLList>::getInstanceS());
+					this->procinstlist->incRef();
+					this->procinstlist->append(_R<XML>(tmp));
+					break;
+				}
+				case pugi::node_doctype:// Document type declaration, i.e. '<!DOCTYPE doc>'
+					fillNode(this,node);
+					break;
+				case pugi::node_pcdata: // Plain character data, i.e. 'text'
+				case pugi::node_cdata: // Character data, i.e. '<![CDATA[text]]>'
+					fillNode(this,node);
+					done = true;
+					break;
+				case pugi::node_comment: // Comment tag, i.e. '<!-- text -->'
+					fillNode(this,node);
+					break;
+				case pugi::node_element: // Element tag, i.e. '<node/>'
+				{
+					fillNode(this,node);
+					pugi::xml_node_iterator it=node.begin();
+					while(it!=node.end())
+					{
+						//LOG(LOG_ERROR,"rootchildnode1:"<<it->name()<<" "<<it->value()<<" "<<it->type()<<" "<<parentNode.isNull());
+						_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS(*it,this));
+						this->childrenlist->append(_R<XML>(tmp));
+						it++;
+					}
+					done = true;
+					break;
+				}
+				default:
+					LOG(LOG_ERROR,"createTree:unhandled type:" <<node.type());
+					done=true;
+					break;
 			}
-			break;
+			if (done)
+				break;
+			node = node.next_sibling();
 		}
-		case XML_PI_NODE:
-		{
-			xmlpp::ContentNode *textnode=dynamic_cast<xmlpp::ContentNode*>(node);
-			this->nodevalue = textnode->get_content();
-			break;
-		}
-		case XML_COMMENT_NODE:
-		case XML_CDATA_SECTION_NODE:
-		{
-			xmlpp::ContentNode *textnode=dynamic_cast<xmlpp::ContentNode*>(node);
-			this->nodevalue = textnode->get_content();
-			break;
-		}
-		default:
-			break;
+		//LOG(LOG_INFO,"constructed:"<<this->toXMLString_internal());
 	}
-	for(;it!=list.end();++it)
+	else
 	{
-		if (ignoreProcessingInstructions && (*it)->cobj()->type == XML_PI_NODE)
-			continue;
-		if (ignoreComments && (*it)->cobj()->type == XML_COMMENT_NODE)
-			continue;
-		if (ignoreWhitespace && (*it)->cobj()->type == XML_TEXT_NODE)
+		switch (node.type())
 		{
-			xmlpp::ContentNode *textnode=dynamic_cast<xmlpp::ContentNode*>(*it);
-			tiny_string tmpstr = textnode->get_content();
-			if (ignoreWhitespace)
+			case pugi::node_pi:	// Processing instruction, i.e. '<?name?>'
+			case pugi::node_declaration: // Document declaration, i.e. '<?xml version="1.0"?>'
+			case pugi::node_doctype:// Document type declaration, i.e. '<!DOCTYPE doc>'
+			case pugi::node_pcdata: // Plain character data, i.e. 'text'
+			case pugi::node_cdata: // Character data, i.e. '<![CDATA[text]]>'
+			case pugi::node_comment: // Comment tag, i.e. '<!-- text -->'
+				fillNode(this,node);
+				break;
+			case pugi::node_element: // Element tag, i.e. '<node/>'
 			{
-				tmpstr = removeWhitespace(tmpstr);
-				if (tmpstr.empty())
-					continue;
+				fillNode(this,node);
+				pugi::xml_node_iterator it=node.begin();
+				{
+					while(it!=node.end())
+					{
+						_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS(*it,this));
+						this->childrenlist->append(_R<XML>(tmp));
+						it++;
+					}
+				}
+				break;
+			}
+			default:
+				LOG(LOG_ERROR,"createTree:subtree unhandled type:" <<node.type());
+				break;
+		}
+	}
+}
+
+void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
+{
+	if (node->childrenlist.isNull())
+	{
+		node->childrenlist = _MR(Class<XMLList>::getInstanceS());
+		node->childrenlist->incRef();
+	}
+	node->nodetype = srcnode.type();
+	node->nodename = srcnode.name();
+	node->nodevalue = srcnode.value();
+	node->nodenamespace_uri = getVm()->getDefaultXMLNamespace();
+	if (ignoreWhitespace && node->nodetype == pugi::node_pcdata)
+		node->nodevalue = node->removeWhitespace(node->nodevalue);
+	node->attributelist = _MR(Class<XMLList>::getInstanceS());
+	pugi::xml_attribute_iterator itattr;
+	for(itattr = srcnode.attributes_begin();itattr!=srcnode.attributes_end();++itattr)
+	{
+		tiny_string aname = tiny_string(itattr->name(),true);
+		if(aname == "xmlns")
+		{
+			tiny_string uri = itattr->value();
+			Namespace* ns = Class<Namespace>::getInstanceS(uri,"");
+			node->namespacedefs.push_back(_MR(ns));
+			node->nodenamespace_uri = uri;
+		}
+		else if (aname.substr_bytes(0,6) == "xmlns:")
+		{
+			tiny_string uri = itattr->value();
+			tiny_string prefix = aname.substr(6,aname.end());
+			Namespace* ns = Class<Namespace>::getInstanceS(uri,prefix);
+			node->namespacedefs.push_back(_MR(ns));
+		}
+	}
+	uint32_t pos = node->nodename.find(":");
+	if (pos != tiny_string::npos)
+	{
+		// nodename has namespace
+		node->nodenamespace_prefix = node->nodename.substr(0,pos);
+		node->nodename = node->nodename.substr(pos+1,node->nodename.end());
+		if (node->nodenamespace_prefix == "xml")
+			node->nodenamespace_uri = "http://www.w3.org/XML/1998/namespace";
+		else
+		{
+			XML* tmpnode = node;
+			bool found = false;
+			while (tmpnode)
+			{
+				for (auto itns = tmpnode->namespacedefs.begin(); itns != tmpnode->namespacedefs.end();itns++)
+				{
+					bool undefined;
+					if ((*itns)->getPrefix(undefined) == node->nodenamespace_prefix)
+					{
+						node->nodenamespace_uri = (*itns)->getURI();
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					break;
+				if (tmpnode->parentNode.isNull())
+					break;
+				tmpnode = tmpnode->parentNode.getPtr();
 			}
 		}
-		_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS(*it));
-		this->incRef();
-		tmp->parentNode = _MR<XML>(this);
-		childrenlist->append(_R<XML>(tmp));
 	}
-	const xmlNode* xmlN = node->cobj();
-
-	xmlNsPtr nsdefs = xmlN->nsDef;
-	while (nsdefs)
+	for(itattr = srcnode.attributes_begin();itattr!=srcnode.attributes_end();++itattr)
 	{
-		tiny_string uri;
-		if (nsdefs->href) uri= (char*)nsdefs->href;
-		tiny_string prefix;
-		if (nsdefs->prefix) prefix= (char*)nsdefs->prefix;
-		Namespace* ns = Class<Namespace>::getInstanceS(uri,prefix);
-		namespacedefs.push_back(_MR(ns));
-		nsdefs = nsdefs->next;
-	}
-	attributelist = _MR(Class<XMLList>::getInstanceS());
-	for(xmlAttr* attr=xmlN->properties; attr!=NULL; attr=attr->next)
-	{
+		tiny_string aname = tiny_string(itattr->name(),true);
+		if(aname == "xmlns" || aname.substr_bytes(0,6) == "xmlns:")
+			continue;
 		_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
-		this->incRef();
-		tmp->parentNode = _MR<XML>(this);
-		tmp->nodetype = XML_ATTRIBUTE_NODE;
-		tmp->nodename = (char*)attr->name;
-		if (attr->ns)
+		node->incRef();
+		tmp->parentNode = _MR<XML>(node);
+		tmp->nodetype = pugi::node_null;
+		tmp->isAttribute = true;
+		tmp->nodename = aname;
+		tmp->nodenamespace_uri = getVm()->getDefaultXMLNamespace();
+		pos = tmp->nodename.find(":");
+		if (pos != tiny_string::npos)
 		{
-			tmp->nodenamespace_uri = (char*)attr->ns->href;
-			tmp->nodenamespace_prefix = (char*)attr->ns->prefix;
+			tmp->nodenamespace_prefix = tmp->nodename.substr(0,pos);
+			tmp->nodename = tmp->nodename.substr(pos+1,tmp->nodename.end());
+			if (tmp->nodenamespace_prefix == "xml")
+				tmp->nodenamespace_uri = "http://www.w3.org/XML/1998/namespace";
+			else
+			{
+				XML* tmpnode = node;
+				bool found = false;
+				while (tmpnode)
+				{
+					for (auto itns = tmpnode->namespacedefs.begin(); itns != tmpnode->namespacedefs.end();itns++)
+					{
+						bool undefined;
+						if ((*itns)->getPrefix(undefined) == tmp->nodenamespace_prefix)
+						{
+							tmp->nodenamespace_uri = (*itns)->getURI();
+							found = true;
+							break;
+						}
+					}
+					if (found)
+						break;
+					if (tmpnode->parentNode.isNull())
+						break;
+					tmpnode = tmpnode->parentNode.getPtr();
+				}
+			}
 		}
-		else 
-			tmp->nodenamespace_uri = getVm()->getDefaultXMLNamespace();
-
-		//NOTE: libxmlpp headers says that Node::create_wrapper
-		//is supposed to be internal API. Still it's very useful and
-		//we use it.
-		xmlpp::Node::create_wrapper(reinterpret_cast<xmlNode*>(attr));
-		xmlpp::Node* attrX=static_cast<xmlpp::Node*>(attr->_private);
-		xmlpp::Attribute *textnode=dynamic_cast<xmlpp::Attribute*>(attrX);
-		tmp->nodevalue = textnode->get_value();
+		tmp->nodevalue = itattr->value();
 		tmp->constructed = true;
-		attributelist->nodes.push_back(tmp);
+		node->attributelist->nodes.push_back(tmp);
 	}
-	constructed=true;
+	node->constructed=true;
 }
 
 ASFUNCTIONBODY(XML,_prependChild)
@@ -2469,7 +2641,9 @@ ASFUNCTIONBODY(XML,_prependChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		arg=_MR(Class<XML>::getInstanceS(args[0]->toString()));
+		arg=_MR(Class<XML>::getInstanceS("dummy"));
+		//avoid interpretation of the argument, just set it as text node
+		arg->setTextContent(args[0]->toString());
 	}
 
 	th->prependChild(arg);

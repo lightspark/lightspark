@@ -17,9 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <libxml++/libxml++.h>
-#include <libxml++/parsers/textreader.h>
-
 #include "version.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/abc.h"

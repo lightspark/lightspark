@@ -20,7 +20,6 @@
 #ifndef SCRIPTING_FLASH_TEXT_FLASHTEXT_H
 #define SCRIPTING_FLASH_TEXT_FLASHTEXT_H 1
 
-#include <libxml++/parsers/saxparser.h>
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -72,14 +71,12 @@ private:
 	/*
 	 * A parser for the HTML subset supported by TextField.
 	 */
-	class HtmlTextParser : public xmlpp::SaxParser {
+	class HtmlTextParser : public pugi::xml_tree_walker {
 	protected:
 		TextData *textdata;
 
 		uint32_t parseFontSize(const Glib::ustring& s, uint32_t currentFontSize);
-		void on_start_element(const Glib::ustring& name, const xmlpp::SaxParser::AttributeList& attributes);
-		void on_end_element(const Glib::ustring& name);
-		void on_characters(const Glib::ustring& characters);
+		bool for_each(pugi::xml_node& node);
 	public:
 		HtmlTextParser() : textdata(NULL) {};
 		//Stores the text and formating into a TextData object

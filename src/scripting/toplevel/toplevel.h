@@ -31,7 +31,6 @@
 #include "scripting/toplevel/Error.h"
 #include "scripting/toplevel/XML.h"
 #include "memory_support.h"
-#include <libxml++/parsers/domparser.h>
 #include <boost/intrusive/list.hpp>
 
 namespace lightspark
@@ -150,9 +149,9 @@ private:
 	void initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns);
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
-	void describeTraits(xmlpp::Element* root, std::vector<traits_info>& traits) const;
-	void describeMetadata(xmlpp::Element* node, const traits_info& trait) const;
-	void describeVariables(xmlpp::Element *root,const Class_base* c, std::map<tiny_string, xmlpp::Element*>& instanceNodes, const variables_map& map) const;
+	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits) const;
+	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
+	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map) const;
 	//Naive garbage collection until reference cycles are detected
 	Mutex referencedObjectsMutex;
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
@@ -208,7 +207,7 @@ public:
 	tiny_string toString();
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;
-	void describeInstance(xmlpp::Element* root) const;
+	void describeInstance(pugi::xml_node &root) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob) DLL_PUBLIC;
@@ -561,7 +560,6 @@ private:
 	tiny_string local_name;
 public:
 	ASQName(Class_base* c);
-	void setByNode(xmlpp::Node* node);
 	void setByXML(XML* node);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);

@@ -30,6 +30,7 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Error.h"
+#include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;
 using namespace std;
@@ -1667,22 +1668,34 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 ASObject *ASObject::describeType() const
 {
-	xmlpp::DomParser p;
-	xmlpp::Element* root=p.get_document()->create_root_node("type");
+	pugi::xml_document p;
+	pugi::xml_node root = p.append_child("type");
+
+	switch (getObjectType())
+	{
+		case T_NULL:
+			root.append_attribute("name").set_value("null");
+			break;
+		case T_UNDEFINED:
+			root.append_attribute("name").set_value("void");
+			break;
+		default:
+			break;
+	}
 
 	// type attributes
 	Class_base* prot=getClass();
 	if(prot)
 	{
-		root->set_attribute("name", prot->getQualifiedClassName().raw_buf());
+		root.append_attribute("name").set_value(prot->getQualifiedClassName().raw_buf());
 		if(prot->super)
-			root->set_attribute("base", prot->super->getQualifiedClassName().raw_buf());
+			root.append_attribute("base").set_value(prot->super->getQualifiedClassName().raw_buf());
 	}
 	bool isDynamic = classdef && !classdef->isSealed;
-	root->set_attribute("isDynamic", isDynamic?"true":"false");
-	bool isFinal = classdef && classdef->isFinal;
-	root->set_attribute("isFinal", isFinal?"true":"false");
-	root->set_attribute("isStatic", "false");
+	root.append_attribute("isDynamic").set_value(isDynamic?"true":"false");
+	bool isFinal = !classdef || classdef->isFinal;
+	root.append_attribute("isFinal").set_value(isFinal?"true":"false");
+	root.append_attribute("isStatic").set_value("false");
 
 	if(prot)
 		prot->describeInstance(root);

@@ -35,12 +35,12 @@ class XMLNode: public ASObject
 friend class XML;
 protected:
 	_NR<XMLDocument> root;
-	xmlpp::Node* node;
-	tiny_string toString_priv(xmlpp::Node *outputNode);
-	xmlpp::Node *getParentNode();
+	pugi::xml_node node;
+	tiny_string toString_priv(pugi::xml_node outputNode);
+	pugi::xml_node getParentNode();
 public:
 	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
-	XMLNode(Class_base* c, _R<XMLDocument> _r, xmlpp::Node* _n);
+	XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -63,7 +63,7 @@ class XMLDocument: public XMLNode, public XMLBase
 {
 friend class XMLNode;
 private:
-	xmlpp::Node* rootNode;
+	pugi::xml_node rootNode;
 public:
 	XMLDocument(Class_base* c, tiny_string s="");
 	void parseXMLImpl(const std::string& str);

@@ -236,17 +236,16 @@ ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int 
 
 ASObject *IFunction::describeType() const
 {
-	xmlpp::DomParser p;
-	xmlpp::Element* root=p.get_document()->create_root_node("type");
+	pugi::xml_document p;
+	pugi::xml_node root = p.append_child("type");
+	root.append_attribute("name").set_value("Function");
+	root.append_attribute("base").set_value("Object");
+	root.append_attribute("isDynamic").set_value("true");
+	root.append_attribute("isFinal").set_value("false");
+	root.append_attribute("isStatic").set_value("false");
 
-	root->set_attribute("name", "Function");
-	root->set_attribute("base", "Object");
-	root->set_attribute("isDynamic", "true");
-	root->set_attribute("isFinal", "false");
-	root->set_attribute("isStatic", "false");
-
-	xmlpp::Element* node=root->add_child("extendsClass");
-	node->set_attribute("type", "Object");
+	pugi::xml_node node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("Object");
 
 	// TODO: accessor
 	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
@@ -1190,41 +1189,41 @@ tiny_string Class_base::getQualifiedClassName() const
 
 ASObject *Class_base::describeType() const
 {
-	xmlpp::DomParser p;
-	xmlpp::Element* root=p.get_document()->create_root_node("type");
+	pugi::xml_document p;
+	pugi::xml_node root = p.append_child("type");
 
-	root->set_attribute("name", getQualifiedClassName().raw_buf());
-	root->set_attribute("base", "Class");
-	root->set_attribute("isDynamic", "true");
-	root->set_attribute("isFinal", "true");
-	root->set_attribute("isStatic", "true");
+	root.append_attribute("name").set_value("getQualifiedClassName().raw_buf()");
+	root.append_attribute("base").set_value("Class");
+	root.append_attribute("isDynamic").set_value("true");
+	root.append_attribute("isFinal").set_value("true");
+	root.append_attribute("isStatic").set_value("true");
 
 	// extendsClass
-	xmlpp::Element* extends_class=root->add_child("extendsClass");
-	extends_class->set_attribute("type", "Class");
-	extends_class=root->add_child("extendsClass");
-	extends_class->set_attribute("type", "Object");
+	pugi::xml_node node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("class");
+	node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("Object");
+
 
 	// variable
 	if(class_index>=0)
 		describeTraits(root, context->classes[class_index].traits);
 
 	// factory
-	xmlpp::Element* factory=root->add_child("factory");
-	factory->set_attribute("type", getQualifiedClassName().raw_buf());
-	describeInstance(factory);
-
+	node=root.append_child("factory");
+	node.append_attribute("type").set_value(getQualifiedClassName().raw_buf());
+	describeInstance(node);
 	return Class<XML>::getInstanceS(root);
 }
 
-void Class_base::describeInstance(xmlpp::Element* root) const
+void Class_base::describeInstance(pugi::xml_node& root) const
 {
 	// extendsClass
 	const Class_base* c=super.getPtr();
 	while(c)
 	{
-		xmlpp::Element* extends_class=root->add_child("extendsClass");
-		extends_class->set_attribute("type", c->getQualifiedClassName().raw_buf());
+		pugi::xml_node node=root.append_child("extendsClass");
+		node.append_attribute("type").set_value(c->getQualifiedClassName().raw_buf());
 		c=c->super.getPtr();
 	}
 
@@ -1236,8 +1235,8 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 		auto it=interfaces.begin();
 		for(; it!=interfaces.end(); ++it)
 		{
-			xmlpp::Element* node=root->add_child("implementsInterface");
-			node->set_attribute("type", (*it)->getQualifiedClassName().raw_buf());
+			pugi::xml_node node=root.append_child("implementsInterface");
+			node.append_attribute("type").set_value((*it)->getQualifiedClassName().raw_buf());
 		}
 		c=c->super.getPtr();
 	}
@@ -1248,7 +1247,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	{
 		// builtin class
 		LOG(LOG_NOT_IMPLEMENTED, "describeType for builtin classes not completely implemented:"<<this->class_name);
-		std::map<tiny_string, xmlpp::Element*> instanceNodes;
+		std::map<tiny_string, pugi::xml_node*> instanceNodes;
 		describeVariables(root,c,instanceNodes,Variables);
 		describeVariables(root,c,instanceNodes,borrowedVariables);
 	}
@@ -1259,7 +1258,7 @@ void Class_base::describeInstance(xmlpp::Element* root) const
 	}
 }
 
-void Class_base::describeVariables(xmlpp::Element* root,const Class_base* c, std::map<tiny_string, xmlpp::Element*>& instanceNodes, const variables_map& map) const
+void Class_base::describeVariables(pugi::xml_node& root,const Class_base* c, std::map<tiny_string, pugi::xml_node*>& instanceNodes, const variables_map& map) const
 {
 	variables_map::const_var_iterator it=map.Variables.cbegin();
 	for(;it!=map.Variables.cend();++it)
@@ -1293,18 +1292,18 @@ void Class_base::describeVariables(xmlpp::Element* root,const Class_base* c, std
 		auto existing=instanceNodes.find(name);
 		if(existing != instanceNodes.cend())
 			continue;
-		
-		xmlpp::Element* node=root->add_child(nodename);
-		instanceNodes[name] = node;
-		node->set_attribute("name", name.raw_buf());
+
+		pugi::xml_node node=root.append_child(nodename);
+		node.append_attribute("name").set_value(name.raw_buf());
 		if (access)
-			node->set_attribute("access", access);
+			node.append_attribute("access").set_value(access);
+		instanceNodes[name] = &node;
 	}
 }
-void Class_base::describeTraits(xmlpp::Element* root,
+void Class_base::describeTraits(pugi::xml_node &root,
 				std::vector<traits_info>& traits) const
 {
-	std::map<u30, xmlpp::Element*> accessorNodes;
+	std::map<u30, pugi::xml_node*> accessorNodes;
 	for(unsigned int i=0;i<traits.size();i++)
 	{
 		traits_info& t=traits[i];
@@ -1319,30 +1318,30 @@ void Class_base::describeTraits(xmlpp::Element* root,
 		{
 			multiname* type=context->getMultiname(t.type_name,NULL);
 			const char *nodename=kind==traits_info::Const?"constant":"variable";
-			xmlpp::Element* node=root->add_child(nodename);
-			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
-			node->set_attribute("type", type->qualifiedString().raw_buf());
+			pugi::xml_node node=root.append_child(nodename);
+			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node.append_attribute("type").set_value(type->qualifiedString().raw_buf());
 
 			describeMetadata(node, t);
 		}
 		else if (kind==traits_info::Method)
 		{
-			xmlpp::Element* node=root->add_child("method");
-			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
-			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
+			pugi::xml_node node=root.append_child("method");
+			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
 
 			method_info& method=context->methods[t.method];
 			const multiname* rtname=method.returnTypeName();
-			node->set_attribute("returnType", rtname->qualifiedString().raw_buf());
+			node.append_attribute("returnType").set_value(rtname->qualifiedString().raw_buf());
 
 			assert(method.numArgs() >= method.numOptions());
 			uint32_t firstOpt=method.numArgs() - method.numOptions();
 			for(uint32_t j=0;j<method.numArgs(); j++)
 			{
-				xmlpp::Element* param=node->add_child("parameter");
-				param->set_attribute("index", UInteger::toString(j+1).raw_buf());
-				param->set_attribute("type", method.paramTypeName(j)->qualifiedString().raw_buf());
-				param->set_attribute("optional", j>=firstOpt?"true":"false");
+				pugi::xml_node param=node.append_child("parameter");
+				param.append_attribute("index").set_value(UInteger::toString(j+1).raw_buf());
+				param.append_attribute("type").set_value(method.paramTypeName(j)->qualifiedString().raw_buf());
+				param.append_attribute("optional").set_value(j>=firstOpt?"true":"false");
 			}
 
 			describeMetadata(node, t);
@@ -1354,23 +1353,23 @@ void Class_base::describeTraits(xmlpp::Element* root,
 			// node for this multiname with the
 			// complementary accessor. If we have, update
 			// the access attribute to "readwrite".
-			xmlpp::Element* node;
+			pugi::xml_node node;
 			auto existing=accessorNodes.find(t.name);
 			if(existing==accessorNodes.end())
 			{
-				node=root->add_child("accessor");
-				accessorNodes[t.name]=node;
+				node=root.append_child("accessor");
+				accessorNodes[t.name]=&node;
 			}
 			else
-				node=existing->second;
+				node=*existing->second;
 
-			node->set_attribute("name", getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 
 			const char* access=NULL;
 			tiny_string oldAccess;
-			xmlpp::Attribute* oldAttr=node->get_attribute("access");
-			if(oldAttr)
-				oldAccess=oldAttr->get_value();
+			pugi::xml_attribute oldAttr=node.attribute("access");
+			if (!oldAttr.empty())
+				oldAccess=oldAttr.value();
 
 			if(kind==traits_info::Getter && oldAccess=="")
 				access="readonly";
@@ -1381,7 +1380,12 @@ void Class_base::describeTraits(xmlpp::Element* root,
 				access="readwrite";
 
 			if(access)
-				node->set_attribute("access", access);
+			{
+				if (oldAttr.empty())
+					node.append_attribute("access").set_value(access);
+				else
+					oldAttr.set_value(access);
+			}
 
 			tiny_string type;
 			method_info& method=context->methods[t.method];
@@ -1395,31 +1399,35 @@ void Class_base::describeTraits(xmlpp::Element* root,
 				type=method.paramTypeName(0)->qualifiedString();
 			}
 			if(!type.empty())
-				node->set_attribute("type", type.raw_buf());
+			{
+				node.remove_attribute("type");
+				node.append_attribute("type").set_value(type.raw_buf());
+			}
 
-			node->set_attribute("declaredBy", getQualifiedClassName().raw_buf());
-
+			node.remove_attribute("declaredBy");
+			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
+			
 			describeMetadata(node, t);
 		}
 	}
 }
 
-void Class_base::describeMetadata(xmlpp::Element* root, const traits_info& trait) const
+void Class_base::describeMetadata(pugi::xml_node& root, const traits_info& trait) const
 {
 	if((trait.kind&traits_info::Metadata) == 0)
 		return;
 
 	for(unsigned int i=0;i<trait.metadata_count;i++)
 	{
-		xmlpp::Element *metadata_node=root->add_child("metadata");
+		pugi::xml_node metadata_node=root.append_child("metadata");
 		metadata_info& minfo = context->metadata[trait.metadata[i]];
-		metadata_node->set_attribute("name", context->getString(minfo.name));
+		metadata_node.append_attribute("name").set_value(context->getString(minfo.name).raw_buf());
 
 		for(unsigned int j=0;j<minfo.item_count;++j)
 		{
-			xmlpp::Element *arg_node=metadata_node->add_child("arg");
-			arg_node->set_attribute("key", context->getString(minfo.items[j].key));
-			arg_node->set_attribute("value", context->getString(minfo.items[j].value));
+			pugi::xml_node arg_node=metadata_node.append_child("arg");
+			arg_node.append_attribute("key").set_value(context->getString(minfo.items[j].key).raw_buf());
+			arg_node.append_attribute("value").set_value(context->getString(minfo.items[j].value).raw_buf());
 		}
 	}
 }
@@ -1480,12 +1488,6 @@ EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) 
 ASQName::ASQName(Class_base* c):ASObject(c)
 {
 	type=T_QNAME; uri_is_null=false;
-}
-void ASQName::setByNode(xmlpp::Node* node)
-{
-	uri_is_null=false;
-	local_name = node->get_name();
-	uri=node->get_namespace_uri();
 }
 void ASQName::setByXML(XML* node)
 {

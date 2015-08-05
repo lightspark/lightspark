@@ -22,9 +22,6 @@
 #include "compat.h"
 #include "scripting/argconv.h"
 #include "abc.h"
-#include <libxml/tree.h>
-#include <libxml++/parsers/domparser.h>
-#include <libxml++/nodes/textnode.h>
 
 using namespace std;
 using namespace lightspark;
@@ -195,37 +192,45 @@ ASFUNCTIONBODY(XMLList,_constructor)
 	return NULL;
 }
 
-void XMLList::buildFromString(const std::string& str)
+void XMLList::buildFromString(const tiny_string &str)
 {
-	xmlpp::DomParser parser;
-	std::string default_ns=getVm()->getDefaultXMLNamespace();
-	std::string xmldecl;
-	std::string str_without_xmldecl = extractXMLDeclaration(str, xmldecl);
-	std::string expanded = xmldecl + 
-		"<parent xmlns=\"" + default_ns + "\">" + 
-		XMLBase::parserQuirks(str_without_xmldecl) + 
-		"</parent>";
-	try
+	pugi::xml_document xmldoc;
+
+	pugi::xml_parse_result res = xmldoc.load_buffer((void*)str.raw_buf(),str.numBytes(),XML::getParseMode());
+	switch (res.status)
 	{
-		parser.parse_memory(expanded);
+		case pugi::status_ok:
+			break;
+		case pugi::status_end_element_mismatch:
+			throwError<TypeError>(kXMLUnterminatedElementTag);
+			break;
+		case pugi::status_unrecognized_tag:
+			throwError<TypeError>(kXMLMalformedElement);
+			break;
+		case pugi::status_bad_pi:
+			throwError<TypeError>(kXMLUnterminatedXMLDecl);
+			break;
+		case pugi::status_bad_attribute:
+			throwError<TypeError>(kXMLUnterminatedAttribute);
+			break;
+		case pugi::status_bad_cdata:
+			throwError<TypeError>(kXMLUnterminatedCData);
+			break;
+		case pugi::status_bad_doctype:
+			throwError<TypeError>(kXMLUnterminatedDocTypeDecl);
+			break;
+		case pugi::status_bad_comment:
+			throwError<TypeError>(kXMLUnterminatedComment);
+			break;
+		default:
+			LOG(LOG_ERROR,"xmllist parser error:"<<str<<" "<<res.status<<" "<<res.description());
+			break;
 	}
-	catch(const exception& e)
+	
+	pugi::xml_node_iterator it=xmldoc.begin();
+	for(;it!=xmldoc.end();++it)
 	{
-		try
-		{
-			parser.parse_memory(str);
-		}
-		catch(const exception& e)
-		{
-			throw RunTimeException("Error while parsing XML");
-		}
-	}
-	const xmlpp::Node::NodeList& children=\
-	  parser.get_document()->get_root_node()->get_children();
-	xmlpp::Node::NodeList::const_iterator it;
-	for(it=children.begin(); it!=children.end(); ++it)
-	{
-		_R<XML> tmp = _MR(Class<XML>::getInstanceS(*it));
+		_R<XML> tmp = _MR(Class<XML>::getInstanceS(*it,(XML*)NULL,true));
 		if (tmp->constructed)
 			nodes.push_back(tmp);
 	}
@@ -566,14 +571,14 @@ void XMLList::normalize()
 	auto it=nodes.begin();
 	while (it!=nodes.end())
 	{
-		if ((*it)->getNodeKind() == XML_ELEMENT_NODE)
+		if ((*it)->getNodeKind() == pugi::node_element)
 		{
 			(*it)->normalize();
 			++it;
 		}
-		else if ((*it)->getNodeKind() == XML_TEXT_NODE)
+		else if ((*it)->getNodeKind() == pugi::node_pcdata)
 		{
-			if ((*it)->toString().empty())
+			if (XMLBase::removeWhitespace((*it)->toString()).empty())
 			{
 				it = nodes.erase(it);
 			}
@@ -582,7 +587,7 @@ void XMLList::normalize()
 				_R<XML> textnode = *it;
 
 				++it;
-				while (it!=nodes.end() && (*it)->getNodeKind() == XML_TEXT_NODE)
+				while (it!=nodes.end() && (*it)->getNodeKind() == pugi::node_pcdata)
 				{
 					textnode->addTextContent((*it)->toString());
 					it = nodes.erase(it);
@@ -775,7 +780,7 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 			if (!tmpprop.isEmpty())
 			{
 				XML* tmp = Class<XML>::getInstanceS();
-				tmp->nodetype = XML_ELEMENT_NODE;
+				tmp->nodetype = pugi::node_element;
 				tmp->nodename = targetproperty.normalizedName();
 				tmp->attributelist = _MR(Class<XMLList>::getInstanceS());
 				tmp->constructed = true;
@@ -785,7 +790,7 @@ void XMLList::setVariableByMultiname(const multiname& name, ASObject* o, CONST_A
 				if (retnodes.empty() && tmpname != "" && tmpname != "*")
 				{
 					XML* tmp2 = Class<XML>::getInstanceS();
-					tmp2->nodetype = XML_ELEMENT_NODE;
+					tmp2->nodetype = pugi::node_element;
 					tmp2->nodename = tmpname;
 					tmp2->attributelist = _MR(Class<XMLList>::getInstanceS());
 					tmp2->constructed = true;
@@ -880,7 +885,7 @@ bool XMLList::hasSimpleContent() const
 	auto it = nodes.begin();
 	while (it != nodes.end())
 	{
-		if ((*it)->nodetype == XML_ELEMENT_NODE)
+		if ((*it)->nodetype == pugi::node_element)
 			return false;
 		it++;
 	}
@@ -941,7 +946,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	if (idx >= nodes.size())
 		return;
 
-	if (nodes[idx]->getNodeKind() == XML_ATTRIBUTE_NODE)
+	if (nodes[idx]->isAttribute)
 	{
 		if (targetobject)
 			targetobject->setVariableByMultiname(targetproperty,o,allowConst);
@@ -993,13 +998,13 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			m.ns.push_back(nsNameAndKind("",NAMESPACE));
 			targetobject->setVariableByMultiname(m,o,allowConst);
 		}
-		if (o->as<XML>()->getNodeKind() == XML_TEXT_NODE)
+		if (o->as<XML>()->getNodeKind() == pugi::node_pcdata)
 		{
 			nodes[idx]->childrenlist->clear();
 			_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
 			nodes[idx]->incRef();
 			tmp->parentNode = nodes[idx];
-			tmp->nodetype = XML_TEXT_NODE;
+			tmp->nodetype = pugi::node_pcdata;
 			tmp->nodename = "text";
 			tmp->nodenamespace_uri = "";
 			tmp->nodenamespace_prefix = "";
@@ -1015,7 +1020,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	}
 	else
 	{
-		if (nodes[idx]->nodetype == XML_TEXT_NODE)
+		if (nodes[idx]->nodetype == pugi::node_pcdata)
 			nodes[idx]->nodevalue = o->toString();
 		else 
 		{
@@ -1023,7 +1028,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceS());
 			nodes[idx]->incRef();
 			tmp->parentNode = nodes[idx];
-			tmp->nodetype = XML_TEXT_NODE;
+			tmp->nodetype = pugi::node_pcdata;
 			tmp->nodename = "text";
 			tmp->nodenamespace_uri = "";
 			tmp->nodenamespace_prefix = "";
@@ -1041,21 +1046,22 @@ tiny_string XMLList::toString_priv()
 		tiny_string ret;
 		for(size_t i=0; i<nodes.size(); i++)
 		{
-			xmlElementType kind=nodes[i]->getNodeKind();
-			switch (kind)
+			if (nodes[i]->isAttribute)
+				ret+=nodes[i]->toString_priv();
+			else
 			{
-				case XML_COMMENT_NODE:
-				case XML_PI_NODE:
-					break;
-				case XML_ATTRIBUTE_NODE:
-					ret+=nodes[i]->toString_priv();
-					break;
-				default:
-					ret+=nodes[i]->toString_priv();
-					break;
-			}
-
+				pugi::xml_node_type kind=nodes[i]->getNodeKind();
+				switch (kind)
+				{
+					case pugi::node_comment:
+					case pugi::node_pi:
+						break;
+					default:
+						ret+=nodes[i]->toString_priv();
+						break;
+				}
 				
+			}
 		}
 		return ret;
 	}

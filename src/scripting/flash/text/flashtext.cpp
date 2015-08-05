@@ -17,16 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <libxml++/nodes/element.h>
-#include <libxml++/parsers/domparser.h>
-#include <libxml++/exceptions/exception.h>
-#include <libxml/tree.h>
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/class.h"
 #include "compat.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
 #include "scripting/argconv.h"
+#include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace std;
 using namespace lightspark;
@@ -878,15 +875,14 @@ void TextField::updateSizes()
 
 tiny_string TextField::toHtmlText()
 {
-	xmlpp::DomParser parser;
-	xmlpp::Document *doc = parser.get_document();
-	xmlpp::Element *root = doc->create_root_node("font");
+	pugi::xml_document doc;
+	pugi::xml_node root = doc.append_child("font");
 
 	ostringstream ss;
 	ss << fontSize;
-	root->set_attribute("size", ss.str());
-	root->set_attribute("color", textColor.toString());
-	root->set_attribute("face", font);
+	root.append_attribute("size").set_value(ss.str().c_str());
+	root.append_attribute("color").set_value(textColor.toString().raw_buf());
+	root.append_attribute("face").set_value(font.raw_buf());
 
 	//Split text into paragraphs and wraps them into <p> tags
 	uint32_t para_start = 0;
@@ -897,15 +893,13 @@ tiny_string TextField::toHtmlText()
 		if (para_end == text.npos)
 			para_end = text.numChars();
 
-		xmlpp::Element *pNode = root->add_child("p");
-		pNode->add_child_text(text.substr(para_start, para_end));
+		root.append_child("p").set_value(text.substr(para_start, para_end).raw_buf());
 		para_start = para_end + 1;
 	} while (para_end < text.numChars());
 
-	xmlBufferPtr buf = xmlBufferCreateSize(4096);
-	xmlNodeDump(buf, doc->cobj(), doc->get_root_node()->cobj(), 0, 0);
-	tiny_string ret = tiny_string((char*)buf->content,true);
-	xmlBufferFree(buf);
+	ostringstream buf;
+	doc.print(buf);
+	tiny_string ret = tiny_string(buf.str());
 	return ret;
 }
 
@@ -1017,28 +1011,27 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	textdata->text = "";
 
 	tiny_string rooted = tiny_string("<root>") + html + tiny_string("</root>");
-	try
+	pugi::xml_document doc;
+	if (doc.load_buffer(rooted.raw_buf(),rooted.numBytes()).status == pugi::status_ok)
 	{
-		parse_memory_raw((const unsigned char*)rooted.raw_buf(), rooted.numBytes());
+		doc.traverse(*this);
 	}
-	catch (xmlpp::exception& exc)
+	else
 	{
 		LOG(LOG_ERROR, "TextField HTML parser error");
 		return;
 	}
 }
 
-void TextField::HtmlTextParser::on_start_element(const Glib::ustring& name,
-						 const xmlpp::SaxParser::AttributeList& attributes)
+bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 {
-	if (!textdata)
-		return;
 
-	if (name == "root")
-	{
-		return;
-	}
-	else if (name == "br")
+	if (!textdata)
+		return true;
+	tiny_string name = node.name();
+	LOG(LOG_ERROR,"for_each:"<<node.name());
+	textdata->text += node.value();
+	if (name == "br")
 	{
 		if (textdata->multiline)
 			textdata->text += "\n";
@@ -1058,22 +1051,23 @@ void TextField::HtmlTextParser::on_start_element(const Glib::ustring& name,
 		if (!textdata->text.empty())
 		{
 			LOG(LOG_NOT_IMPLEMENTED, "Font can be defined only in the beginning");
-			return;
+			return false;
 		}
 
-		for (auto it=attributes.begin(); it!=attributes.end(); ++it)
+		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
-			if (it->name == "face")
+			tiny_string attrname = it->name();
+			if (attrname == "face")
 			{
-				textdata->font = it->value;
+				textdata->font = it->value();
 			}
-			else if (it->name == "size")
+			else if (attrname == "size")
 			{
-				textdata->fontSize = parseFontSize(it->value, textdata->fontSize);
+				textdata->fontSize = parseFontSize(it->value(), textdata->fontSize);
 			}
-			else if (it->name == "color")
+			else if (attrname == "color")
 			{
-				textdata->textColor = RGB(tiny_string(it->value));
+				textdata->textColor = RGB(tiny_string(it->value()));
 			}
 		}
 	}
@@ -1081,36 +1075,13 @@ void TextField::HtmlTextParser::on_start_element(const Glib::ustring& name,
 		 name == "li" || name == "b" || name == "i" ||
 		 name == "span" || name == "textformat" || name == "tab")
 	{
-		LOG(LOG_NOT_IMPLEMENTED, _("Unsupported tag in TextField: ") + name);
+		LOG(LOG_NOT_IMPLEMENTED, _("Unsupported tag in TextField: ") << name);
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED, _("Unknown tag in TextField: ") + name);
+		LOG(LOG_NOT_IMPLEMENTED, _("Unknown tag in TextField: ") << name);
 	}
-}
-
-void TextField::HtmlTextParser::on_end_element(const Glib::ustring& name)
-{
-	if (!textdata)
-		return;
-
-	if (name == "p")
-	{
-		if (textdata->multiline)
-		{
-			if (!textdata->text.empty() && 
-			    !textdata->text.endsWith("\n"))
-				textdata->text += "\n";
-		}
-	}
-}
-
-void TextField::HtmlTextParser::on_characters(const Glib::ustring& characters)
-{
-	if (!textdata)
-		return;
-
-	textdata->text += characters;
+	return true;
 }
 
 uint32_t TextField::HtmlTextParser::parseFontSize(const Glib::ustring& sizestr,

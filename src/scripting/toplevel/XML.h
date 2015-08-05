@@ -35,15 +35,18 @@ public:
 private:
 	_NR<XMLList> childrenlist;
 	_NR<XML> parentNode;
-	xmlElementType nodetype;
+	pugi::xml_node_type nodetype;
+	bool isAttribute;
 	tiny_string nodename;
 	tiny_string nodevalue;
 	tiny_string nodenamespace_uri;
 	tiny_string nodenamespace_prefix;
 	_NR<XMLList> attributelist;
+	_NR<XMLList> procinstlist;
 	NSVector namespacedefs;
 
-	void createTree(xmlpp::Node* node);
+	void createTree(const pugi::xml_node &rootnode, bool fromXMLList);
+	static void fillNode(XML* node, const pugi::xml_node &srcnode);
 	tiny_string toString_priv();
 	const char* nodekindString();
 	
@@ -69,7 +72,6 @@ private:
 	void prependChild(_R<XML> child);
 	static void normalizeRecursive(XML *node);
 	void addTextContent(const tiny_string& str);
-	bool hasParentNode;
 	void RemoveNamespace(Namespace *ns);
 	void getComments(XMLVector& ret);
 	void getprocessingInstructions(XMLVector& ret, tiny_string name);
@@ -77,7 +79,7 @@ private:
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
-	XML(Class_base* c,xmlpp::Node* _n);
+	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
 	void finalize();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
@@ -139,8 +141,8 @@ public:
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	
-	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
 	static bool getPrettyPrinting();
+	static unsigned int getParseMode();
 
 	const tiny_string getName() const { return nodename;}
 	const tiny_string getNamespaceURI() const { return nodenamespace_uri;}
@@ -161,7 +163,7 @@ public:
 	int32_t toInt();
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
-	xmlElementType getNodeKind() const;
+	pugi::xml_node_type getNodeKind() const;
 	ASObject *getParentNode();
 	XML *copy();
 	void normalize();

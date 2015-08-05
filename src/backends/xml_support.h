@@ -20,33 +20,11 @@
 #ifndef BACKENDS_XML_SUPPORT_H
 #define BACKENDS_XML_SUPPORT_H 1
 
-#include <libxml/tree.h>
-#include <libxml++/parsers/domparser.h>
-#include <libxml++/exceptions/internal_error.h>
-//For xmlCreateFileParserCtxt().
-#include <libxml/parserInternals.h>
 #include "tiny_string.h"
-
+#include <3rdparty/pugixml/src/pugixml.hpp>
 namespace lightspark
 {
 
-#ifdef XMLPP_2_35_1
-//Create a utility derived class from xmlpp::DomParser since we want to use the recovery mode
-class RecoveryDomParser:public xmlpp::DomParser
-{
-public:
-	void parse_memory_raw(const unsigned char* contents, size_type bytes_count);
-};
-//Also create a utility derived class from xmlpp::Document to access the protected constructor
-class RecoveryDocument: public xmlpp::Document
-{
-public:
-	RecoveryDocument(_xmlDoc* d);
-};
-typedef RecoveryDomParser LSDomParser;
-#else
-typedef xmlpp::DomParser LSDomParser;
-#endif
 
 /*
  * Base class for both XML and XMLNode
@@ -55,25 +33,19 @@ class XMLBase
 {
 protected:
 	//The parser will destroy the document and all the childs on destruction
-	LSDomParser parser;
-	xmlpp::Node* buildFromString(const std::string& str,
-				     bool ignoreEmptyTextnodes,
-				     bool *hasParent,
-				     const std::string& default_ns=std::string());
-	void addDefaultNamespace(xmlpp::Node *root, const std::string& default_ns);
-	void addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns);
-	// Set the root to be a copy of src. If src is a text node,
-	// create a new element node with the same content.
-	xmlpp::Node* buildCopy(const xmlpp::Node* node, bool *hasParent);
-	static std::string quirkCData(const std::string& str);
+	pugi::xml_document xmldoc;
+	const pugi::xml_node buildFromString(const tiny_string& str,
+										unsigned int xmlparsemode,
+										const tiny_string& default_ns=tiny_string());
+
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
-	void removeWhitespaceNodes(xmlpp::Node *node);
-	tiny_string removeWhitespace(tiny_string val);
+	static std::string quirkEncodeNull(const std::string value);
+	static tiny_string removeWhitespace(tiny_string val);
 public:
 	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
 	static std::string parserQuirks(const std::string& str);
 };
 
-};
+}
 
 #endif /* BACKENDS_XML_SUPPORT_H */

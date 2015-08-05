@@ -17,9 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <libxml++/libxml++.h>
-#include <libxml++/parsers/textreader.h>
-
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -1696,21 +1693,25 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 	in >> XmlString;
 	string XmlStringStd = XmlString;
 
-	try
+	pugi::xml_document xml;
+	if (xml.load_buffer((const unsigned char*)XmlStringStd.c_str(), XmlStringStd.length()).status == pugi::status_ok)
 	{
-		xmlpp::TextReader xml((const unsigned char*)XmlStringStd.c_str(), XmlStringStd.length());
-
+		pugi::xml_node_iterator it1 = xml.root().begin();
 		ostringstream output;
-		while(xml.read())
+		for (;it1 != xml.root().end(); it1++)
 		{
-			if(xml.get_depth() == 2 && xml.get_node_type() == xmlpp::TextReader::Element)
+			pugi::xml_node_iterator it2 = it1->begin();
+			for (;it2 != it1->end(); it2++)
 			{
-				output << endl << "\t" << xml.get_local_name() << ":\t\t" << xml.read_string();
+				if (it2->type() == pugi::node_element)
+				{
+					output << endl << "\t" << xml.name() << ":\t\t" << xml.value();
+				}
 			}
 		}
 		LOG(LOG_INFO, "SWF Metadata:" << output.str());
 	}
-	catch(std::exception& e)
+	else
 	{
 		LOG(LOG_INFO, "SWF Metadata:" << XmlStringStd);
 	}

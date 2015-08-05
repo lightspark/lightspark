@@ -17,140 +17,58 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <libxml++/nodes/textnode.h>
 #include "backends/xml_support.h"
 #include "logger.h"
+#include "scripting/abc.h"
+#include "scripting/toplevel/Error.h"
 
 using namespace lightspark;
 using namespace std;
 
-#ifdef XMLPP_2_35_1
-RecoveryDocument::RecoveryDocument(_xmlDoc* d):xmlpp::Document(d)
+const pugi::xml_node XMLBase::buildFromString(const tiny_string& str,
+										unsigned int xmlparsemode,
+										const tiny_string& default_ns)
 {
-}
-
-void RecoveryDomParser::parse_memory_raw(const unsigned char* contents, size_type bytes_count)
-{
-	release_underlying(); //Free any existing document.
-
-	//The following is based on the implementation of xmlParseFile(), in xmlSAXParseFileWithData():
-	context_ = xmlCreateMemoryParserCtxt((const char*)contents, bytes_count);
-	if(!context_)
-		throw xmlpp::internal_error("Couldn't create parsing context");
-
-	xmlSAXHandlerV1* handler=(xmlSAXHandlerV1*)calloc(1,sizeof(xmlSAXHandlerV1));
-	initxmlDefaultSAXHandler(handler, 0);
-	handler->comment = comment;
-	context_->recovery=1;
-	free(context_->sax);
-	context_->sax=(xmlSAXHandler*)handler;
-	context_->keepBlanks = 0;
-	handler->ignorableWhitespace = xmlSAX2IgnorableWhitespace;
-
-	//The following is based on the implementation of xmlParseFile(), in xmlSAXParseFileWithData():
-	//and the implementation of xmlParseMemory(), in xmlSaxParseMemoryWithData().
-	initialize_context();
-
-	if(!context_)
-		throw xmlpp::internal_error("Context not initialized");
-
-	xmlParseDocument(context_);
-
-	check_for_exception();
-
-	if(!context_->wellFormed)
-		LOG(LOG_ERROR, "XML data not well formed!");
-
-	if (context_->wellFormed && context_->myDoc)
-		doc_ = new RecoveryDocument(context_->myDoc);
-	// This is to indicate to release_underlying that we took the
-	// ownership on the doc.
-	context_->myDoc = 0;
-
-	//Free the parse context, but keep the document alive so people can navigate the DOM tree:
-	//TODO: Why not keep the context alive too?
-	Parser::release_underlying();
-
-	check_for_exception();
-}
-#endif
-
-xmlpp::Node* XMLBase::buildFromString(const string& str,
-				      bool ignoreEmptyTextNodes, bool *hasParent,
-				      const string& default_ns)
-{
-	string buf = parserQuirks(str);
-	try
+	tiny_string buf = quirkEncodeNull(removeWhitespace(str));
+	if (buf.numBytes() > 0 && buf.charAt(0) == '<')
 	{
-		parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-	}
-	catch(const exception& e)
-	{
-		LOG(LOG_ERROR,"xml error: "<<e.what());
-	}
-	xmlpp::Document* doc=parser.get_document();
-	if(doc)
-	{
-		xmlpp::Node *root = NULL;
-		if (!doc->get_root_node())
+		pugi::xml_parse_result res = xmldoc.load_buffer((void*)buf.raw_buf(),buf.numBytes(),xmlparsemode);
+		switch (res.status)
 		{
-			buf="<parent>";
-			buf += str;
-			buf += "</parent>";
-			try
-			{
-				parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-			}
-			catch(const exception& e)
-			{
-			}
-			doc=parser.get_document();
-			if (doc && doc->get_root_node())
-			{
-				root = doc->get_root_node()->get_first_child();
-			}
-		}
-		if (!doc || !doc->get_root_node())
-		{
-			try
-			{
-				buf="<parent>";
-				buf += XMLBase::encodeToXML(str,false);
-				buf += "</parent>";
-				parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-			}
-			catch(const exception& e)
-			{
-			}
-			doc=parser.get_document();
-			if (doc && doc->get_root_node())
-			{
-				root = doc->get_root_node()->get_first_child();
-			}
-		}
-		if (doc && doc->get_root_node())
-		{
-			*hasParent = true;
-			if (root==NULL) root = doc->get_root_node();
-			// It would be better to remove empty nodes during
-			// parsing, but xmlpp doesn't offer an interface.
-			if (ignoreEmptyTextNodes)
-				removeWhitespaceNodes(root);
-			addDefaultNamespace(root, default_ns);
-			return root;
+			case pugi::status_ok:
+				break;
+			case pugi::status_end_element_mismatch:
+				throwError<TypeError>(kXMLUnterminatedElementTag);
+				break;
+			case pugi::status_unrecognized_tag:
+				throwError<TypeError>(kXMLMalformedElement);
+				break;
+			case pugi::status_bad_pi:
+				throwError<TypeError>(kXMLUnterminatedXMLDecl);
+				break;
+			case pugi::status_bad_attribute:
+				throwError<TypeError>(kXMLUnterminatedAttribute);
+				break;
+			case pugi::status_bad_cdata:
+				throwError<TypeError>(kXMLUnterminatedCData);
+				break;
+			case pugi::status_bad_doctype:
+				throwError<TypeError>(kXMLUnterminatedDocTypeDecl);
+				break;
+			case pugi::status_bad_comment:
+				throwError<TypeError>(kXMLUnterminatedComment);
+				break;
+			default:
+				LOG(LOG_ERROR,"xml parser error:"<<buf<<" "<<res.status<<" "<<res.description());
+				break;
 		}
 	}
-	//If everything fails, create a fake document and add a single text string child
-	// see 10.3.1 in ECMA 357
-	
-	if (default_ns.empty())
-		buf="<parent></parent>";
 	else
-		buf="<parent xmlns=\"" + default_ns + "\"></parent>";
-	parser.parse_memory_raw((const unsigned char*)buf.c_str(), buf.size());
-
-	*hasParent = false;
-	return parser.get_document()->get_root_node()->add_child_text(str);
+	{
+		pugi::xml_node n = xmldoc.append_child(pugi::node_pcdata);
+		n.set_value(str.raw_buf());
+	}
+	return xmldoc.root();
 }
 const tiny_string XMLBase::encodeToXML(const tiny_string value, bool bIsAttribute)
 {
@@ -191,75 +109,15 @@ const tiny_string XMLBase::encodeToXML(const tiny_string value, bool bIsAttribut
 	return res;
 }
 
-void XMLBase::addDefaultNamespace(xmlpp::Node *root, const string& default_ns)
-{
-	if(default_ns.empty() || !root->get_namespace_uri().empty())
-		return;
-
-	xmlNodePtr node = root->cobj();
-	xmlNsPtr ns = xmlNewNs(node, BAD_CAST default_ns.c_str(), NULL);
-	addDefaultNamespaceRecursive(node, ns);
-}
-
-void XMLBase::addDefaultNamespaceRecursive(xmlNodePtr node, xmlNsPtr ns)
-{
-	//Set the default namespace to nodes by descending until we
-	//encounter another namespace.
-	if ((node->type != XML_ELEMENT_NODE) || (node->ns != NULL))
-		return;
-
-	xmlSetNs(node, ns);
-
-	xmlNodePtr child=node->children;
-	while(child)
-	{
-		addDefaultNamespaceRecursive(child, ns);
-		child = child->next;
-	}
-}
-
-xmlpp::Node* XMLBase::buildCopy(const xmlpp::Node* src, bool *hasParent)
-{
-	const xmlpp::ContentNode* contentnode;
-	const xmlpp::TextNode* textnode=dynamic_cast<const xmlpp::TextNode*>(src);
-	if(textnode)
-	{
-		return buildFromString(textnode->get_content(), false,hasParent);
-	}
-	else if ((contentnode = dynamic_cast<const xmlpp::ContentNode*>(src)))
-	{
-		// ContentNode but not TextNode => comment, PI or CData
-		// These can't be root nodes so we add a dummy root.
-		*hasParent = false;
-		xmlpp::Element* root = parser.get_document()->create_root_node("dummy_root");
-		return root->import_node(contentnode);
-	}
-	else
-	{
-		*hasParent = true;
-		return parser.get_document()->create_root_node_by_import(src);
-	}
-}
-
 // Adobe player's XML parser accepts many strings which are not valid
 // XML according to the specs. This function attempts to massage
 // invalid-but-accepted-by-Adobe strings into valid XML so that
 // libxml++ parser doesn't throw an error.
 string XMLBase::parserQuirks(const string& str)
 {
-	string buf = quirkCData(str);
+	string buf = quirkEncodeNull(str);
 	buf = quirkXMLDeclarationInMiddle(buf);
 	return buf;
-}
-
-string XMLBase::quirkCData(const string& str) {
-	//if this is a CDATA node replace CDATA tags to make it look like a text-node
-	//for compatibility with the Adobe player
-	//if (str.compare(0, 9, "<![CDATA[") == 0) {
-	//	return "<a>"+str.substr(9, str.size()-12)+"</a>";
-	//}
-	//else
-		return str;
 }
 
 string XMLBase::quirkXMLDeclarationInMiddle(const string& str) {
@@ -283,25 +141,26 @@ string XMLBase::quirkXMLDeclarationInMiddle(const string& str) {
 
 	return buf;
 }
-
-void XMLBase::removeWhitespaceNodes(xmlpp::Node *node)
+string XMLBase::quirkEncodeNull(const string value)
 {
-	xmlpp::Node::NodeList children = node->get_children();
-	xmlpp::Node::NodeList::iterator it;
-	for (it=children.begin(); it!=children.end(); ++it)
+	string res;
+	auto it = value.cbegin();
+	while (it != value.cend())
 	{
-		xmlpp::Element *element = dynamic_cast<xmlpp::Element*>(*it);
-		xmlNode *xmlnode = (*it)->cobj();
-		if (xmlnode->type == XML_TEXT_NODE && xmlIsBlankNode(xmlnode))
+		switch (*it)
 		{
-			node->remove_child(*it);
+			case '\0':
+				res += "&#x0;";
+				break;
+			default:
+				res += *it;
+				break;
 		}
-		else if (element)
-		{
-			removeWhitespaceNodes(element);
-		}
+		it++;
 	}
+	return res;
 }
+
 tiny_string XMLBase::removeWhitespace(tiny_string val)
 {
 	bool bwhite = true;

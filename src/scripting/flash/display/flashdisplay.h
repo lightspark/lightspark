@@ -32,6 +32,7 @@
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/ui/ContextMenu.h"
+#include "scripting/flash/accessibility/flashaccessibility.h"
 
 namespace lightspark
 {
@@ -66,6 +67,7 @@ protected:
 	~InteractiveObject();
 public:
 	InteractiveObject(Class_base* c);
+	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenu>,contextMenu); // TOOD: should be NativeMenu
 	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);

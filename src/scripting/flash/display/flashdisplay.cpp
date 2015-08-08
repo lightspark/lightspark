@@ -1535,7 +1535,7 @@ void DisplayObjectContainer::finalize()
 	dynamicDisplayList.clear();
 }
 
-InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),tabEnabled(false),tabIndex(-1)
+InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
 }
 
@@ -1601,12 +1601,14 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_getDoubleClickEnabled),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c, accessibilityImplementation);
 	REGISTER_GETTER_SETTER(c, contextMenu);
 	REGISTER_GETTER_SETTER(c, tabEnabled);
 	REGISTER_GETTER_SETTER(c, tabIndex);
 	REGISTER_GETTER_SETTER(c, focusRect);
 }
 
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, contextMenu);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled);
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex);

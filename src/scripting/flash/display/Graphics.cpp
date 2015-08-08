@@ -40,6 +40,7 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRectComplex","",Class<IFunction>::getFunction(drawRoundRectComplex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(drawEllipse),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawPath","",Class<IFunction>::getFunction(drawPath),NORMAL_METHOD,true);
@@ -242,6 +243,33 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
+	th->owner->owner->requestInvalidation(getSys());
+	
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,drawRoundRectComplex)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Graphics.drawRoundRectComplex currently draws a normal rect");
+	Graphics* th=static_cast<Graphics*>(obj);
+	assert_and_throw(argslen>=4);
+	th->checkAndSetScaling();
+
+	int x=args[0]->toInt();
+	int y=args[1]->toInt();
+	int width=args[2]->toInt();
+	int height=args[3]->toInt();
+
+	const Vector2 a(x,y);
+	const Vector2 b(x+width,y);
+	const Vector2 c(x+width,y+height);
+	const Vector2 d(x,y+height);
+
+	th->owner->tokens.emplace_back(GeomToken(MOVE, a));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, b));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
 	th->owner->owner->requestInvalidation(getSys());
 	
 	return NULL;

@@ -85,6 +85,7 @@ public:
 	ASFUNCTION(endFill);
 	ASFUNCTION(drawRect);
 	ASFUNCTION(drawRoundRect);
+	ASFUNCTION(drawRoundRectComplex);// this is an undocumented function (probably taken from mx.utils.GraphicsUtil)
 	ASFUNCTION(drawCircle);
 	ASFUNCTION(drawEllipse);
 	ASFUNCTION(drawGraphicsData);

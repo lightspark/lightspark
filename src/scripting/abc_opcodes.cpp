@@ -389,6 +389,13 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				LOG(LOG_CALLS,_("End of calling ") << *name);
 				return;
 			}
+			else if(!o.isNull())
+			{
+				o->incRef();
+				callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
+				LOG(LOG_CALLS,_("End of calling ") << *name);
+				return;
+			}
 		}
 		obj->decRef();
 		for(int i=0;i<m;i++)
@@ -743,7 +750,7 @@ void ABCVm::construct(call_context* th, int m)
 			throwError<TypeError>(kConstructOfNonFunctionError);
 		}
 	}
-
+	ret->setConstructorCallComplete();
 	obj->decRef();
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 	th->runtime_stack_push(ret);
@@ -1923,6 +1930,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 
 	th->runtime_stack_push(ret);
+	ret->setConstructorCallComplete();
+
 	obj->decRef();
 	LOG(LOG_CALLS,_("End of constructing ") << ret);
 }

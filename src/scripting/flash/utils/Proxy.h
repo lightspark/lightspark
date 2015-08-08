@@ -29,8 +29,10 @@ namespace lightspark
 class Proxy: public ASObject
 {
 friend class ABCVm;
+private:
+	bool proxyconstructionCompleted;
 public:
-	Proxy(Class_base* c):ASObject(c){}
+	Proxy(Class_base* c):ASObject(c),proxyconstructionCompleted(false){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
@@ -56,6 +58,7 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);
 	_R<ASObject> nextValue(uint32_t index);
+	bool isConstructed() const;
 };
 }
 

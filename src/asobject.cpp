@@ -1357,7 +1357,7 @@ void variables_map::destroyContents()
 }
 
 ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),
-	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),implEnable(true)
+	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1366,7 +1366,7 @@ ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(
 }
 
 ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
-	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),implEnable(true)
+	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 	setClass(c);
 #ifndef NDEBUG
@@ -1376,7 +1376,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 }
 
 ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
-	type(o.type),traitsInitialized(false),constructIndicator(false),implEnable(true)
+	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 	if(o.classdef)
 		setClass(o.classdef);

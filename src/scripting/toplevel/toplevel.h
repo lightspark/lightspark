@@ -373,6 +373,7 @@ public:
 			}
 			ret->closure_this=c;
 			ret->constructIndicator = true;
+			ret->constructorCallComplete = true;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -493,6 +494,7 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
 		return ret;
 	}
 	static Function* getFunction(Function::as_function v, int len)
@@ -501,6 +503,7 @@ public:
 		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->length = len;
 		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
 		return ret;
 	}
 	static SyntheticFunction* getSyntheticFunction(method_info* m)
@@ -508,6 +511,7 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass();
 		SyntheticFunction* ret=new (c->memoryAccount) SyntheticFunction(c, m);
 		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}

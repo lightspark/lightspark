@@ -56,6 +56,7 @@ Null::Null():ASObject((Class_base*)(NULL))
 {
 	traitsInitialized = true;
 	constructIndicator = true;
+	constructorCallComplete = true;
 	type=T_NULL;
 }
 
@@ -63,6 +64,7 @@ Undefined::Undefined():ASObject((Class_base*)(NULL))
 {
 	traitsInitialized = true;
 	constructIndicator = true;
+	constructorCallComplete = true;
 	type=T_UNDEFINED;
 }
 
@@ -1192,7 +1194,7 @@ ASObject *Class_base::describeType() const
 	pugi::xml_document p;
 	pugi::xml_node root = p.append_child("type");
 
-	root.append_attribute("name").set_value("getQualifiedClassName().raw_buf()");
+	root.append_attribute("name").set_value(getQualifiedClassName().raw_buf());
 	root.append_attribute("base").set_value("Class");
 	root.append_attribute("isDynamic").set_value("true");
 	root.append_attribute("isFinal").set_value("true");
@@ -2531,6 +2533,8 @@ ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
+	constructorCallComplete = true;
+
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
@@ -2611,6 +2615,7 @@ Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), f
 {
 	traitsInitialized = true;
 	constructIndicator = true;
+	constructorCallComplete = true;
 }
 
 void Function_object::finalize()

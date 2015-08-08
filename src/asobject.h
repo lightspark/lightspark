@@ -297,6 +297,7 @@ protected:
 	SWFOBJECT_TYPE type;
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
+	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
@@ -510,6 +511,7 @@ public:
 	void dumpVariables() const;
 	
 	void setConstructIndicator() { constructIndicator = true; }
+	void setConstructorCallComplete() { constructorCallComplete = true; }
 	
 	void setIsEnumerable(const multiname& name, bool isEnum);
 };

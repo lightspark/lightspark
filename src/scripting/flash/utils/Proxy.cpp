@@ -50,7 +50,6 @@ ASFUNCTIONBODY(Proxy,_isAttribute)
 	ARG_UNPACK(name);
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	LOG(LOG_ERROR,"isAttr:"<<mname.isAttribute);
 	return abstract_b(mname.isAttribute);
 }
 
@@ -99,12 +98,12 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	_NR<ASObject> o;
-	LOG(LOG_CALLS,"Proxy::getVar "<< name << " " << this->toDebugString());
+	LOG(LOG_CALLS,"Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true));
 	if(ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		o = ASObject::getVariableByMultiname(name,opt);
 	if (!o.isNull() || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		return o;
-
+		
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	multiname getPropertyName(NULL);
 	getPropertyName.name_type=multiname::NAME_STRING;
@@ -259,4 +258,7 @@ _R<ASObject> Proxy::nextValue(uint32_t index)
 	incRef();
 	return _MR(f->call(this,&arg,1));
 }
-
+bool Proxy::isConstructed() const
+{
+	return ASObject::isConstructed() && constructorCallComplete;
+}

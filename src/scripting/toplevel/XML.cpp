@@ -720,7 +720,6 @@ ASFUNCTIONBODY(XML,children)
 	mname.name_s_id=getSys()->getUniqueStringId("*");
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.push_back(nsNameAndKind("",NAMESPACE));
-	LOG(LOG_ERROR,"children:"<<th->toXMLString_internal());
 	XMLList* retObj=Class<XMLList>::getInstanceS(ret,th->getChildrenlist(),mname);
 	return retObj;
 }

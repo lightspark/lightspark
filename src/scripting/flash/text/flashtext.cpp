@@ -1029,7 +1029,6 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	if (!textdata)
 		return true;
 	tiny_string name = node.name();
-	LOG(LOG_ERROR,"for_each:"<<node.name());
 	textdata->text += node.value();
 	if (name == "br")
 	{

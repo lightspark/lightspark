@@ -361,6 +361,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef());
 	builtin->registerBuiltin("FontMetrics","flash.text.engine",Class<FontMetrics>::getRef());
 	builtin->registerBuiltin("FontLookup","flash.text.engine",Class<FontLookup>::getRef());
+	builtin->registerBuiltin("FontPosture","flash.text.engine",Class<FontPosture>::getRef());
 	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef());
 	builtin->registerBuiltin("Kerning","flash.text.engine",Class<Kerning>::getRef());
 	builtin->registerBuiltin("LineJustification","flash.text.engine",Class<LineJustification>::getRef());

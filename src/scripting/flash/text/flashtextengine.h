@@ -45,6 +45,7 @@ public:
 	ElementFormat(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_clone);
 	ASPROPERTY_GETTER_SETTER(tiny_string,alignmentBaseline);
 	ASPROPERTY_GETTER_SETTER(number_t,alpha);
 	ASPROPERTY_GETTER_SETTER(number_t,baselineShift);
@@ -79,6 +80,7 @@ public:
 		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_clone);
 	ASPROPERTY_GETTER_SETTER(tiny_string,cffHinting);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontLookup);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontName);
@@ -88,6 +90,12 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,renderingMode);
 };
 
+class FontPosture: public ASObject
+{
+public:
+	FontPosture(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
 class FontWeight: public ASObject
 {
 public:
@@ -147,14 +155,18 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class TextLine;
 class TextBlock: public ASObject
 {
 public:
-	TextBlock(Class_base* c): ASObject(c),bidiLevel(0) {}
+	TextBlock(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(createTextLine);
 	ASFUNCTION(recreateTextLine);
+	ASFUNCTION(releaseLines);
+	ASPROPERTY_GETTER(_NR<TextLine>, firstLine);
+	ASPROPERTY_GETTER(_NR<TextLine>, lastLine);
 	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
 	ASPROPERTY_GETTER_SETTER(_NR<TextJustifier>, textJustifier);
 	ASPROPERTY_GETTER_SETTER(int,bidiLevel);

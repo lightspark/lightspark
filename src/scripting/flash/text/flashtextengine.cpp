@@ -61,6 +61,8 @@ void ElementFormat::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("GRAPHIC_ELEMENT","",abstract_ui(0xFDEF),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(_clone),NORMAL_METHOD,true);
+
 	REGISTER_GETTER_SETTER(c,alignmentBaseline);
 	REGISTER_GETTER_SETTER(c,alpha);
 	REGISTER_GETTER_SETTER(c,baselineShift);
@@ -108,6 +110,31 @@ ASFUNCTIONBODY(ElementFormat, _constructor)
 			(th->digitWidth, "default")(th->ligatureLevel, "common")(th->typographicCase, "default");
 	return NULL;
 }
+ASFUNCTIONBODY(ElementFormat, _clone)
+{
+	ElementFormat* th=static_cast<ElementFormat*>(obj);
+
+	ElementFormat* newformat = Class<ElementFormat>::getInstanceS();
+	newformat->fontDescription = th->fontDescription;
+	newformat->fontSize = th->fontSize;
+	newformat->color = th->color;
+	newformat->alpha = th->alpha;
+	newformat->textRotation = th->textRotation;
+	newformat->dominantBaseline = th->dominantBaseline;
+	newformat->alignmentBaseline = th->alignmentBaseline;
+	newformat->baselineShift = th->baselineShift;
+	newformat->kerning = th->kerning;
+	newformat->trackingRight = th->trackingRight;
+	newformat->trackingLeft = th->trackingLeft;
+	newformat->locale = th->locale;
+	newformat->breakOpportunity = th->breakOpportunity;
+	newformat->digitCase = th->digitCase;
+	newformat->digitWidth = th->digitWidth;
+	newformat->ligatureLevel = th->ligatureLevel;
+	newformat->typographicCase = th->typographicCase;
+	newformat->locked = false;
+	return newformat;
+}
 
 void FontLookup::sinit(Class_base* c)
 {
@@ -119,6 +146,7 @@ void FontLookup::sinit(Class_base* c)
 void FontDescription::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(_clone),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,cffHinting);
 	REGISTER_GETTER_SETTER(c,fontLookup);
 	REGISTER_GETTER_SETTER(c,fontName);
@@ -141,6 +169,27 @@ ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontWeight)
 ASFUNCTIONBODY_GETTER_SETTER(FontDescription,locked)
 ASFUNCTIONBODY_GETTER_SETTER(FontDescription,renderingMode)
 
+ASFUNCTIONBODY(FontDescription, _clone)
+{
+	FontDescription* th=static_cast<FontDescription*>(obj);
+
+	FontDescription* newfontdescription = Class<FontDescription>::getInstanceS();
+	newfontdescription->cffHinting = th->cffHinting;
+	newfontdescription->fontLookup = th->fontLookup;
+	newfontdescription->fontName = th->fontName;
+	newfontdescription->fontPosture = th->fontPosture;
+	newfontdescription->fontWeight = th->fontWeight;
+	newfontdescription->renderingMode = th->renderingMode;
+	newfontdescription->locked = false;
+	return newfontdescription;
+}
+
+void FontPosture::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("ITALIC","",Class<ASString>::getInstanceS("italic"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+}
 void FontWeight::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
@@ -217,16 +266,25 @@ ASFUNCTIONBODY(EastAsianJustifier, _constructor)
 	return NULL;
 }
 
+TextBlock::TextBlock(Class_base *c): ASObject(c),firstLine(NullRef),lastLine(NullRef),bidiLevel(0)
+{
+}
+
 void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(createTextLine),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("recreateTextLine","",Class<IFunction>::getFunction(recreateTextLine),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("releaseLines","",Class<IFunction>::getFunction(releaseLines),NORMAL_METHOD,true);
+	REGISTER_GETTER(c, firstLine);
+	REGISTER_GETTER(c, lastLine);
 	REGISTER_GETTER_SETTER(c, content);
 	REGISTER_GETTER_SETTER(c, textJustifier);
 	REGISTER_GETTER_SETTER(c, bidiLevel);
 }
 
+ASFUNCTIONBODY_GETTER(TextBlock, firstLine)
+ASFUNCTIONBODY_GETTER(TextBlock, lastLine)
 ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content)
 ASFUNCTIONBODY_GETTER_SETTER(TextBlock, textJustifier)
 ASFUNCTIONBODY_GETTER_SETTER(TextBlock, bidiLevel)
@@ -268,19 +326,39 @@ ASFUNCTIONBODY(TextBlock, createTextLine)
 	LOG(LOG_NOT_IMPLEMENTED,"splitting textblock in multiple lines not implemented");
 	th->content->as<TextElement>()->text = "";
 	th->incRef();
-	TextLine *textLine = Class<TextLine>::getInstanceS(linetext, _MNR(th));
+	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(linetext, _MNR(th)));
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
 	if (textLine->width > textLine->textWidth)
 	{
-		delete textLine;
+		textLine->decRef();
 		th->decRef();
 		return NULL;
 	}
-	if (!previousLine.isNull())
-		previousLine->nextLine == textLine;
-	return textLine;
+	if (previousLine.isNull())
+	{
+		textLine->incRef();
+		th->firstLine = textLine;
+		if (th->lastLine.isNull())
+		{
+			textLine->incRef();
+			th->lastLine = textLine;
+		}
+	}
+	else
+	{
+		if (th->lastLine == previousLine)
+		{
+			th->lastLine->decRef();
+			textLine->incRef();
+			th->lastLine = textLine;
+		}
+		textLine->incRef();
+		previousLine->nextLine = textLine;
+	}
+	
+	return textLine.getPtr();
 }
 ASFUNCTIONBODY(TextBlock, recreateTextLine)
 {
@@ -327,6 +405,53 @@ ASFUNCTIONBODY(TextBlock, recreateTextLine)
 		previousLine->nextLine == textLine;
 	textLine->incRef();
 	return textLine.getPtr();
+}
+
+ASFUNCTIONBODY(TextBlock, releaseLines)
+{
+	TextBlock* th=static_cast<TextBlock*>(obj);
+	_NR<TextLine> firstLine;
+	_NR<TextLine> lastLine;
+	ARG_UNPACK (firstLine) (lastLine);
+
+
+	// TODO handle non TextElement Content
+	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+		return NULL;
+
+	if (firstLine.isNull() || firstLine->textBlock != th)
+	{
+		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: firstLine");
+	}
+	if (lastLine.isNull() || lastLine->textBlock != th)
+	{
+		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: lastLine");
+	}
+
+	bool afterlast = false;
+	_NR<TextLine> tmpLine;
+	_NR<TextLine> tmpLine2;
+	while (!firstLine.isNull())
+	{
+		firstLine->validity = "invalid";
+		tmpLine2 = firstLine->nextLine;
+		if (!afterlast)
+		{
+			if (!firstLine->previousLine.isNull())
+			{
+				tmpLine = firstLine->previousLine;
+				firstLine->previousLine = NullRef;
+				tmpLine->decRef();
+			}
+			firstLine->textBlock = NullRef;
+			firstLine->nextLine = NullRef;
+		}
+		if (firstLine == lastLine)
+			afterlast = true;
+		firstLine = tmpLine2;
+	}
+	
+	return NULL;
 }
 
 void TextElement::sinit(Class_base* c)

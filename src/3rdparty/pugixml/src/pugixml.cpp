@@ -3071,7 +3071,12 @@ PUGI__NS_BEGIN
 			else if (*s == '[')
 			{
 				// '<![CDATA[...'
+// flash xml doesn't require CDATA in uppercase
+#ifdef PUGIXML_LIGHTSPARK_MODE
+				if (toupper(*++s)=='C' && toupper(*++s)=='D' && toupper(*++s)=='A' && toupper(*++s)=='T' && toupper(*++s)=='A' && *++s == '[')
+#else
 				if (*++s=='C' && *++s=='D' && *++s=='A' && *++s=='T' && *++s=='A' && *++s == '[')
+#endif
 				{
 					++s;
 
@@ -3108,7 +3113,12 @@ PUGI__NS_BEGIN
 				}
 				else PUGI__THROW_ERROR(status_bad_cdata, s);
 			}
+// flash xml doesn't require DOCTYPE in uppercase
+#ifdef PUGIXML_LIGHTSPARK_MODE
+			else if (toupper(s[0]) == 'D' && toupper(s[1]) == 'O' && toupper(s[2]) == 'C' && toupper(s[3]) == 'T' && toupper(s[4]) == 'Y' && toupper(s[5]) == 'P' && PUGI__ENDSWITH(toupper(s[6]), 'E'))
+#else
 			else if (s[0] == 'D' && s[1] == 'O' && s[2] == 'C' && s[3] == 'T' && s[4] == 'Y' && s[5] == 'P' && PUGI__ENDSWITH(s[6], 'E'))
+#endif
 			{
 				s -= 2;
 
@@ -3150,7 +3160,10 @@ PUGI__NS_BEGIN
 			// read PI target
 			char_t* target = s;
 
+// flash xml allows PI with whitespace after <?
+#ifndef PUGIXML_LIGHTSPARK_MODE
 			if (!PUGI__IS_CHARTYPE(*s, ct_start_symbol)) PUGI__THROW_ERROR(status_bad_pi, s);
+#endif
 
 			PUGI__SCANWHILE(PUGI__IS_CHARTYPE(*s, ct_symbol));
 			PUGI__CHECK_ERROR(status_bad_pi, s);
@@ -3162,9 +3175,11 @@ PUGI__NS_BEGIN
 			{
 				if (declaration)
 				{
+// flash xml allows decleration in child nodes
+#ifndef PUGIXML_LIGHTSPARK_MODE
 					// disallow non top-level declarations
 					if (cursor->parent) PUGI__THROW_ERROR(status_bad_pi, s);
-
+#endif
 					PUGI__PUSHNODE(node_declaration);
 				}
 				else
@@ -3303,7 +3318,10 @@ PUGI__NS_BEGIN
 											// After this line the loop continues from the start;
 											// Whitespaces, / and > are ok, symbols and EOF are wrong,
 											// everything else will be detected
+// flash xml allows next attribute without whitespace
+#ifndef PUGIXML_LIGHTSPARK_MODE 
 											if (PUGI__IS_CHARTYPE(*s, ct_start_symbol)) PUGI__THROW_ERROR(status_bad_attribute, s);
+#endif
 										}
 										else PUGI__THROW_ERROR(status_bad_attribute, s);
 									}

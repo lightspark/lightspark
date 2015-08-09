@@ -116,6 +116,7 @@
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/ui/Keyboard.h"
 #include "scripting/flash/ui/Mouse.h"
+#include "scripting/flash/ui/Multitouch.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
@@ -495,6 +496,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef());
 	builtin->registerBuiltin("ContextMenuBuiltInItems","flash.ui",Class<ContextMenuBuiltInItems>::getRef());
 	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef());
+	builtin->registerBuiltin("Multitouch","flash.ui",Class<Multitouch>::getRef());
 
 	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef());
 

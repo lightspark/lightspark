@@ -10,17 +10,14 @@ INSTALLATION
 ============
 
 To compile this software you need to install development packages for
-llvm (version 2.8, 3.0, 3.1 or 3.2), opengl, curl, zlib, libavcodec,
-libglew, pcre, librtmp, cairo, libboost-filesystem, libxml++ (version
-2.33.1 or newer), gtk-2, libjpeg, libavformat, pango, liblzma
+llvm (version 2.8 or >= 3.0), opengl, curl, zlib, libavcodec,
+libglew, pcre, librtmp, cairo, libboost-filesystem, 
+gtk-2, libjpeg, libavformat, pango, liblzma
 
 If sound is enabled (on by default), you will also need the
 development package for pulseaudio-libs and/or libsdl.
 
-If the browser plugin is enabled (on by default), you will need the
-development package for xulrunner.
-
-Install also gcc (version 4.6.0 or newer), cmake and nasm.
+Install also cmake, nasm and gcc (version 4.6.0 or newer) or clang
 
 To build the software please follow these steps.
 

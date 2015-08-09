@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* switch to internal xml parsing (based on pugixml), removes dependency on libxml++
+	* compilation using clang possible
 	* implement several missing opcodes
 	* fix serialization
 	* implement data generation mode

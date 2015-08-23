@@ -498,17 +498,26 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 	}
 }
 
-IOErrorEvent::IOErrorEvent(Class_base* c) : ErrorEvent(c, "ioError")
+IOErrorEvent::IOErrorEvent(Class_base* c,const tiny_string& t, const std::string& e, int id) : ErrorEvent(c, t,e,id)
 {
 }
+
+Event *IOErrorEvent::cloneImpl() const
+{
+	return Class<IOErrorEvent>::getInstanceS(text, errorMsg,errorID);
+}
+
 
 void IOErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("DISK_ERROR","",Class<ASString>::getInstanceS("diskError"),DECLARED_TRAIT);
-	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),DECLARED_TRAIT);
-	c->setVariableByQName("NETWORK_ERROR","",Class<ASString>::getInstanceS("networkError"),DECLARED_TRAIT);
-	c->setVariableByQName("VERIFY_ERROR","",Class<ASString>::getInstanceS("verifyError"),DECLARED_TRAIT);
+	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),CONSTANT_TRAIT);
+	c->setVariableByQName("DISK_ERROR","",Class<ASString>::getInstanceS("diskError"),CONSTANT_TRAIT);
+	c->setVariableByQName("NETWORK_ERROR","",Class<ASString>::getInstanceS("networkError"),CONSTANT_TRAIT);
+	c->setVariableByQName("VERIFY_ERROR","",Class<ASString>::getInstanceS("verifyError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_ERROR_IO_ERROR","",Class<ASString>::getInstanceS("standardErrorIoError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_INPUT_IO_ERROR","",Class<ASString>::getInstanceS("standardInputIoError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_OUTPUT_IO_ERROR","",Class<ASString>::getInstanceS("standardOutputIoError"),CONSTANT_TRAIT);
 }
 
 EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)
@@ -980,7 +989,7 @@ ASFUNCTIONBODY(TextEvent,_constructor)
 	return NULL;
 }
 
-ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e): TextEvent(c,t), errorMsg(e)
+ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e, int id): TextEvent(c,t), errorMsg(e),errorID(id)
 {
 }
 
@@ -988,16 +997,22 @@ void ErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextEvent, _constructor, CLASS_SEALED);
 	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"),DECLARED_TRAIT);
+	REGISTER_GETTER(c,errorID);
 }
+ASFUNCTIONBODY_GETTER(ErrorEvent,errorID);
 
 Event* ErrorEvent::cloneImpl() const
 {
-	return Class<ErrorEvent>::getInstanceS(text, errorMsg);
+	return Class<ErrorEvent>::getInstanceS(text, errorMsg,errorID);
 }
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
 {
-	TextEvent::_constructor(obj,args,argslen);
+	ErrorEvent* th=static_cast<ErrorEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,4);
+	TextEvent::_constructor(obj,args,baseClassArgs);
+	if(argslen>=5)
+		th->errorID=args[4]->toInt();
 	return NULL;
 }
 

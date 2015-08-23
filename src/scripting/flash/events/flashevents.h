@@ -181,11 +181,12 @@ public:
 
 class ErrorEvent: public TextEvent
 {
-private:
+protected:
 	std::string errorMsg;
 	Event* cloneImpl() const;
+	ASPROPERTY_GETTER(int32_t,errorID);
 public:
-	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "");
+	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -195,8 +196,10 @@ public:
 
 class IOErrorEvent: public ErrorEvent
 {
+private:
+	Event* cloneImpl() const;
 public:
-	IOErrorEvent(Class_base* c);
+	IOErrorEvent(Class_base* c, const tiny_string& t = "ioError", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

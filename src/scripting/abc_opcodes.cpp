@@ -2264,6 +2264,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->constructor=constructorFunc;
 	}
 	ret->class_index=n;
+	th->context->root->bindClass(className,ret);
 
 	//Add prototype variable
 	ret->prototype = _MNR(new_objectPrototype());

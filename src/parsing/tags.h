@@ -75,11 +75,12 @@ public:
 	   the first one is reported here. This behaviour is tested.
 	*/
 	Class_base* bindedTo;
+	tiny_string bindingclassname;
 	RootMovieClip* loadedFrom;
 	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(NULL),loadedFrom(root){ }
 	virtual TAGTYPE getType()const{ return DICT_TAG; }
 	virtual int getId() const=0;
-	virtual ASObject* instance(Class_base* c=NULL) const { return NULL; };
+	virtual ASObject* instance(Class_base* c=NULL) const { return NULL; }
 };
 
 /*
@@ -312,7 +313,7 @@ protected:
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
 	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
-	const DictionaryTag* placedTag;
+	DictionaryTag* placedTag;
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);

@@ -261,6 +261,7 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
 		throw ParseException("Malformed SWF file");
 	}
+	root->loaderInfo->setBytesLoaded(f.tellg());
 	
 	return ret;
 }
@@ -1203,6 +1204,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 		if(placedTag==NULL)
 			throw RunTimeException("No tag to place");
 
+		placedTag->loadedFrom->checkBinding(placedTag);
+
 		//We can create the object right away
 		ASObject *instance = placedTag->instance();
 		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(instance);
@@ -1463,10 +1466,11 @@ ASObject* DefineButtonTag::instance(Class_base* c) const
 			}
 		}
 	}
+	Class_base* realClass=(c)?c:bindedTo;
 
-	if(c==NULL)
-		c=Class<SimpleButton>::getClass();
-	SimpleButton* ret=new (c->memoryAccount) SimpleButton(c, states[0], states[1], states[2], states[3]);
+	if(realClass==NULL)
+		realClass=Class<SimpleButton>::getClass();
+	SimpleButton* ret=new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3]);
 	return ret;
 }
 

@@ -146,6 +146,7 @@ RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDoma
 	Class_base* movieClipClass = Class<MovieClip>::getClass();
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
 	ret->constructIndicator = true;
+	ret->constructorCallComplete = true;
 	return ret;
 }
 
@@ -246,9 +247,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS());
 	loaderInfo->applicationDomain = applicationDomain;
-	//If the size is not known those will stay at zero
-	loaderInfo->setBytesLoaded(fileSize);
-	loaderInfo->setBytesTotal(fileSize);
+	loaderInfo->setBytesLoaded(0);
+	loaderInfo->setBytesTotal(0);
 	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
 	stage=Class<Stage>::getInstanceS();
 	mainClip->incRef();
@@ -347,7 +347,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 
 		if(ok)
 		{
-			//cout << varName << ' ' << varValue << endl;
+			cout << varName << endl << varValue << endl;
 			if(pfile)
 				f << varName << endl << varValue << endl;
 
@@ -379,7 +379,7 @@ void SystemState::parseParametersFromFile(const char* f)
 		getline(i,value);
 
 		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value),DYNAMIC_TRAIT);
-		//cout << name << ' ' << value << endl;
+		cout << name << ' ' << value << endl;
 	}
 	setParameters(ret);
 	i.close();
@@ -1242,7 +1242,10 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	f >> FileLength;
 	//Enable decompression if needed
 	if(fileType==FT_SWF)
+	{
 		LOG(LOG_INFO, _("Uncompressed SWF file: Version ") << (int)version);
+		root->loaderInfo->setBytesTotal(FileLength);
+	}
 	else
 	{
 		//The file is compressed, create a filtering streambuf
@@ -1263,11 +1266,14 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 			assert(false);
 		}
 		f.rdbuf(uncompressingFilter);
+		// the first 8 bytes from the header are always uncompressed (magic bytes + FileLength)
+		root->loaderInfo->setBytesTotal(FileLength-8);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;
 
 	root->fileLength=FileLength;
+	root->loaderInfo->setBytesLoaded(0);
 	float frameRate=FrameRate;
 	if (frameRate == 0)
 		//The Adobe player ignores frameRate == 0 and substitutes
@@ -1507,6 +1513,11 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		root->parsingFailed();
 		throw;
+	}
+	if (root->loaderInfo->getBytesLoaded() != root->loaderInfo->getBytesTotal())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
+		root->loaderInfo->setBytesLoaded(root->loaderInfo->getBytesTotal());
 	}
 	LOG(LOG_TRACE,_("End of parsing"));
 }
@@ -1981,16 +1992,10 @@ void RootMovieClip::initFrame()
 	if(getFramesLoaded() == 0)
 		return;
 
-	/* Bind classes between the previous and new frame. */
-	std::list<Frame>::iterator frame=frames.begin();
-	for(unsigned int i=0;i<=state.FP;i++)
-	{
-		if((int)i > state.last_FP)
-		{
-			frame->bindClasses(this);
-		}
-		++frame;
-	}
+	ABCVm *vm = getVm();
+	auto it=classesToBeBound.begin();
+	for(;it!=classesToBeBound.end();++it)
+		vm->buildClassAndBindTag(it->first.raw_buf(), it->second);
 
 	MovieClip::initFrame();
 }
@@ -2016,5 +2021,82 @@ void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)
 {
 	// This function will be called only be the parsing thread,
 	// and will only access the last frame, so no locking needed.
-	frames.back().classesToBeBound.push_back(make_pair(name, tag));
+	tag->bindingclassname = name;
+	classesToBeBound.push_back(make_pair(name, tag));
+}
+
+void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
+{
+	if (cls->isBinded())
+		return;
+
+	tiny_string clsname;
+	if (!classname.ns.empty())
+		clsname = classname.ns + ".";
+	clsname += classname.name;
+
+	auto it=classesToBeBound.begin();
+	for(;it!=classesToBeBound.end();++it)
+	{
+		if (it->first == clsname)
+		{
+			if(it->second->bindedTo==NULL)
+				it->second->bindedTo=cls;
+			
+			cls->bindToTag(it->second);
+			break;
+		}
+	}
+}
+
+void RootMovieClip::checkBinding(DictionaryTag *tag)
+{
+	if (tag->bindingclassname.empty())
+		return;
+	multiname clsname(NULL);
+	clsname.name_type=multiname::NAME_STRING;
+	clsname.isAttribute = false;
+
+	uint32_t pos = tag->bindingclassname.rfind(".");
+	tiny_string ns;
+	tiny_string nm;
+	if (pos != tiny_string::npos)
+	{
+		nm = tag->bindingclassname.substr(pos+1,tag->bindingclassname.numBytes());
+		ns = tag->bindingclassname.substr(0,pos);
+	}
+	else
+	{
+		nm = tag->bindingclassname;
+		ns = "";
+	}
+	clsname.name_s_id=getSys()->getUniqueStringId(nm);
+	clsname.ns.push_back(nsNameAndKind(ns,NAMESPACE));
+	
+	ASObject* typeObject = NULL;
+	auto i = applicationDomain->classesBeingDefined.cbegin();
+	while (i != applicationDomain->classesBeingDefined.cend())
+	{
+		if(i->first->qualifiedString() == clsname.qualifiedString())
+		{
+			typeObject = i->second;
+			break;
+		}
+		i++;
+	}
+	if (typeObject == NULL)
+	{
+		ASObject* target;
+		typeObject=applicationDomain->getVariableAndTargetByMultiname(clsname,target);
+	}
+	if (typeObject != NULL)
+	{
+		Class_inherit* cls = typeObject->as<Class_inherit>();
+		if (cls)
+		{
+			tag->bindedTo=cls;
+			tag->bindingclassname = "";
+			cls->bindToTag(tag);
+		}
+	}
 }

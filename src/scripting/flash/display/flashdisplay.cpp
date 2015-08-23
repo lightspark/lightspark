@@ -1026,16 +1026,6 @@ void Frame::execute(_R<DisplayObjectContainer> displayList)
 		(*it)->execute(displayList.getPtr());
 }
 
-void Frame::bindClasses(RootMovieClip *root)
-{
-	ABCVm *vm = getVm();
-	auto it=classesToBeBound.begin();
-	for(;it!=classesToBeBound.end();++it)
-		vm->buildClassAndBindTag(it->first.raw_buf(), it->second);
-
-	classesToBeBound.clear();
-}
-
 FrameContainer::FrameContainer():framesLoaded(0)
 {
 	frames.emplace_back(Frame());
@@ -1239,7 +1229,10 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 	{
 		uint32_t dest=getFrameIdByLabel(args[0]->toString(), sceneName);
 		if(dest==FRAME_NOT_FOUND)
-			throwError<ArgumentError>(kInvalidArgumentError,stop ? "gotoAndStop: label not found" : "gotoAndPlay: label not found");
+		{
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<args[0]->toString());
+			throwError<ArgumentError>(kInvalidArgumentError,args[0]->toString());
+		}
 
 		next_FP = dest;
 	}
@@ -1250,7 +1243,7 @@ ASObject* MovieClip::gotoAnd(ASObject* const* args, const unsigned int argslen, 
 			return NULL; /*this behavior was observed by testing */
 
 		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
-		if(next_FP >= getFramesLoaded())
+		if(next_FP > getFramesLoaded())
 		{
 			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded());
 			/* spec says we should throw an error, but then YT breaks */

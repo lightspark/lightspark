@@ -56,6 +56,7 @@ class SecurityManager;
 class Tag;
 class ApplicationDomain;
 class SecurityDomain;
+class Class_inherit;
 
 class RootMovieClip: public MovieClip
 {
@@ -67,6 +68,8 @@ private:
 	RGB Background;
 	Spinlock dictSpinlock;
 	std::list < DictionaryTag* > dictionary;
+	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
+
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
@@ -117,6 +120,8 @@ public:
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot();
 	void addBinding(const tiny_string& name, DictionaryTag *tag);
+	void bindClass(const QName &classname, Class_inherit* cls);
+	void checkBinding(DictionaryTag* tag);
 };
 
 class ThreadProfile

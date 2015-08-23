@@ -49,6 +49,7 @@ class Matrix;
 class Vector;
 class Graphics;
 class Rectangle;
+class Class_inherit;
 
 class InteractiveObject: public DisplayObject
 {
@@ -278,6 +279,8 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
+	uint32_t getBytesLoaded() { return bytesLoaded; }
+	uint32_t getBytesTotal() { return bytesTotal; }
 	void setURL(const tiny_string& _url, bool setParameters=true);
 	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
 	void setParameters(_NR<ASObject> p) { parameters = p; }
@@ -418,14 +421,12 @@ class Frame
 {
 public:
 	std::list<const DisplayListTag*> blueprint;
-	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
 	void execute(_R<DisplayObjectContainer> displayList);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
 	 */
 	void destroyTags();
-	void bindClasses(RootMovieClip *root);
 };
 
 class FrameContainer

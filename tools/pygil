@@ -29,6 +29,9 @@ rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 rconst = re.compile('[^/]*->setVariableByQName\("([A-Za-z_0-9]*)",.*[A-Z]*\_TRAIT');
+#looks like Event *IOErrorEvent::cloneImpl() const
+rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
+
 rcomment = re.compile('[ \t]*/')
 
 def getFullname(cls,name):
@@ -149,6 +152,15 @@ for line in ptmp.split(";"):
 	m = rconst.match(line)
 	if m:
 		const.add((curClass,m.group(1)))
+		continue
+	m = rclone.match(line)
+	if m:
+		curClassClone = m.group(1)
+		if curClassClone not in internalToExternal:
+			warnNotRegistered.add(curClassClone)
+		else:
+			curClassClone = internalToExternal[curClassClone]
+		methods.add((curClassClone, 'clone'))
 		continue
 	
 #print getters

@@ -501,7 +501,7 @@ public:
 	template<class T> T* as() { return static_cast<T*>(this); }
 
 	/* Returns a debug string identifying this object */
-	virtual std::string toDebugString() const;
+	virtual std::string toDebugString();
 	
 	/* stores proxy namespace settings for internal usage */
 	void setProxyProperty(const multiname& name); 

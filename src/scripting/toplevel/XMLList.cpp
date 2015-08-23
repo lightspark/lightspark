@@ -606,6 +606,22 @@ void XMLList::clear()
 {
 	nodes.clear();
 }
+
+void XMLList::removeNode(XML *node)
+{
+	XMLList::XMLListVector::iterator it = nodes.end();
+	while (it != nodes.begin())
+	{
+		it--;
+		_R<XML> n = *it;
+		if (n.getPtr() == node)
+		{
+			node->parentNode = NullRef;
+			nodes.erase(it);
+			break;
+		}
+	}
+}
 void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 {
 	unsigned int index=0;

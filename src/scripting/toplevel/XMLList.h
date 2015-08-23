@@ -116,6 +116,7 @@ public:
 	void prependNodesTo(XML *dest) const;
 	void normalize();
 	void clear();
+	void removeNode(XML* node);
 	XMLList* getTargetObject() { return targetobject; }
 };
 }

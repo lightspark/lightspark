@@ -23,6 +23,8 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "backends/security.h"
+#include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/XMLList.h"
 
 #include <istream>
 #include <gdk/gdk.h>
@@ -576,7 +578,7 @@ void System::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(disposeXML),NORMAL_METHOD,false);
 }
 
 
@@ -587,7 +589,17 @@ ASFUNCTIONBODY(System,totalMemory)
 }
 ASFUNCTIONBODY(System,disposeXML)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "System.disposeXML not implemented");
+	_NR<XML> xmlobj;
+	ARG_UNPACK (xmlobj);
+	LOG(LOG_NOT_IMPLEMENTED,"disposeXML only removes the node from its parent");
+	if (!xmlobj.isNull() && xmlobj->getParentNode()->is<XML>())
+	{
+		XML* parent = xmlobj->getParentNode()->as<XML>();
+		XMLList* l = parent->getChildrenlist();
+		if (l)
+			l->removeNode(xmlobj.getPtr());
+		parent->decRef();
+	}
 	return NULL;
 }
 

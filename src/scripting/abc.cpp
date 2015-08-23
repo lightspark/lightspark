@@ -26,9 +26,9 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #ifndef LLVM_36
 #include <llvm/ExecutionEngine/JIT.h>
-#include "llvm/IR/LegacyPassManager.h"
-#else
 #include <llvm/PassManager.h>
+#else
+#include "llvm/IR/LegacyPassManager.h"
 #endif
 #ifdef HAVE_IR_DATALAYOUT_H
 #  include <llvm/IR/Module.h>
@@ -1387,7 +1387,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
 	if(derived_class_tmp->isBinded())
 	{
-		LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
+		//LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
 		return NULL;
 	}
 	return derived_class_tmp;
@@ -1663,10 +1663,11 @@ void ABCVm::Run(ABCVm* th)
 		th->ex=eb.create();
 		assert_and_throw(th->ex);
 
-		th->FPM=new llvm::FunctionPassManager(th->module);
 #ifdef LLVM_36
+		th->FPM=new llvm::legacy::FunctionPassManager(th->module);
 		th->FPM->add(new llvm::DataLayoutPass());
 #else
+		th->FPM=new llvm::FunctionPassManager(th->module);
 #ifdef LLVM_35
 		th->FPM->add(new llvm::DataLayoutPass(*th->ex->getDataLayout()));
 #elif defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H

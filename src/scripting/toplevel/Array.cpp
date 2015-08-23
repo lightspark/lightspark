@@ -405,8 +405,9 @@ ASFUNCTIONBODY(Array, _reverse)
 ASFUNCTIONBODY(Array,lastIndexOf)
 {
 	Array* th=static_cast<Array*>(obj);
+	number_t index;
 	_NR<ASObject> arg0;
-	ARG_UNPACK(arg0);
+	ARG_UNPACK(arg0) (index, 0x7fffffff);
 	int ret=-1;
 
 	if(argslen == 1 && th->data.empty())
@@ -414,26 +415,23 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 
 	size_t i = th->size()-1;
 
-	if(argslen == 2 && std::isnan(args[1]->toNumber()))
-		return abstract_i(-1);
+	if(std::isnan(index))
+		return abstract_i(0);
 
-	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
+	int j = index; //Preserve sign
+	if(j < 0) //Negative offset, use it as offset from the end of the array
 	{
-		int j = args[1]->toInt(); //Preserve sign
-		if(j < 0) //Negative offset, use it as offset from the end of the array
-		{
-			if((size_t)-j > th->size())
-				i = 0;
-			else
-				i = th->size()+j;
-		}
-		else //Positive offset, use it directly
-		{
-			if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
-				i = th->size()-1;
-			else
-				i = j;
-		}
+		if((size_t)-j > th->size())
+			return abstract_i(-1);
+		else
+			i = th->size()+j;
+	}
+	else //Positive offset, use it directly
+	{
+		if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
+			i = th->size()-1;
+		else
+			i = j;
 	}
 	do
 	{
@@ -637,7 +635,8 @@ ASFUNCTIONBODY(Array,indexOf)
 	int32_t index;
 	_NR<ASObject> arg0;
 	ARG_UNPACK(arg0) (index, 0);
-	if (index < 0) index = abs(index);
+	if (index < 0) index = th->size()+ index;
+	if (index < 0) index = 0;
 
 	DATA_TYPE dtype;
 	std::map<uint32_t,data_slot>::iterator it;

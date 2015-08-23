@@ -35,7 +35,7 @@
 using namespace lightspark;
 using namespace std;
 
-string ASObject::toDebugString()
+string ASObject::toDebugString() const
 {
 	check();
 	string ret;

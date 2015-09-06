@@ -587,8 +587,6 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	//http://forums.adobe.com/thread/422391)
 	if(url.isRTMP())
 		return ALLOWED;
-	if(url.isValid())
-		return ALLOWED;
 
 	LOG(LOG_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
 	LOG(LOG_INFO, _("SECURITY: --> URL:    ") << url);

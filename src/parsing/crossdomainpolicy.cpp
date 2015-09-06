@@ -35,7 +35,7 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 	{
 		if (first)
 		{
-			if (xml.root().name() != "cross-domain-policy")
+			if (strcmp(xml.root().name(), "cross-domain-policy"))
 				return INVALID;
 			currentnode = xml.root().first_child();
 		}
@@ -83,12 +83,12 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 				toPorts = currentnode.attribute("to-ports").value();
 				secure = false;
 				secureSpecified = false;
-				if(currentnode.attribute("secure").value() == "false")
+				if(!strcmp(currentnode.attribute("secure").value(), "false"))
 				{
 					secure = false;
 					secureSpecified = true;
 				}
-				else if(currentnode.attribute("secure").value() == "true")
+				else if(!strcmp(currentnode.attribute("secure").value(), "true"))
 				{
 					secure = true;
 					secureSpecified = true;
@@ -113,12 +113,12 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 				headers = currentnode.attribute("headers").value();
 				secure = false;
 				secureSpecified = false;
-				if(currentnode.attribute("secure").value() == "false")
+				if(!strcmp(currentnode.attribute("secure").value(), "false"))
 				{
 					secure = false;
 					secureSpecified = true;
 				}
-				else if(currentnode.attribute("secure").value() == "true")
+				else if(!strcmp(currentnode.attribute("secure").value(), "true"))
 				{
 					secure = true;
 					secureSpecified = true;

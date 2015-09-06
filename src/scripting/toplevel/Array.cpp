@@ -1492,19 +1492,14 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 		}
 		if(cur_index<size())
 			return cur_index+1;
-		else
-			return 0;
 	}
+	//Fall back on object properties
+	uint32_t ret=ASObject::nextNameIndex(cur_index-size());
+	if(ret==0)
+		return 0;
 	else
-	{
-		//Fall back on object properties
-		uint32_t ret=ASObject::nextNameIndex(cur_index-size());
-		if(ret==0)
-			return 0;
-		else
-			return ret+size();
-
-	}
+		return ret+size();
+	
 }
 
 _R<ASObject> Array::nextName(uint32_t index)

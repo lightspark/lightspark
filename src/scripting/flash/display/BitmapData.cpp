@@ -141,7 +141,7 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
 		*alpha=0xFF;
 	}
-	for(uint32_t i=0; i<width*height; i++)
+	for(uint32_t i=0; i<(uint32_t)(width*height); i++)
 		pixelArray[i]=c;
 	th->pixels->fromRGB(reinterpret_cast<uint8_t *>(pixelArray), width, height, BitmapContainer::ARGB32);
 	th->transparent=transparent;
@@ -842,8 +842,6 @@ ASFUNCTIONBODY(BitmapData,compare)
 
 ASFUNCTIONBODY(BitmapData,applyFilter)
 {
-	BitmapData* th = obj->as<BitmapData>();
-	
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -852,9 +850,9 @@ ASFUNCTIONBODY(BitmapData,applyFilter)
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
 	return NULL;
 }
+
 ASFUNCTIONBODY(BitmapData,noise)
 {
-	BitmapData* th = obj->as<BitmapData>();
 	int randomSeed;
 	uint low;
 	uint high;

@@ -189,13 +189,13 @@ ASFUNCTIONBODY(Event,clone)
 
 ASFUNCTIONBODY(Event,stopPropagation)
 {
-	Event* th=static_cast<Event*>(obj);
+	//Event* th=static_cast<Event*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented");
 	return NULL;
 }
 ASFUNCTIONBODY(Event,stopImmediatePropagation)
 {
-	Event* th=static_cast<Event*>(obj);
+	//Event* th=static_cast<Event*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented");
 	return NULL;
 }
@@ -1420,8 +1420,8 @@ void UncaughtErrorEvents::sinit(Class_base* c)
 
 ASFUNCTIONBODY(UncaughtErrorEvents, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
-	UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
+	//EventDispatcher::_constructor(obj, NULL, 0);
+	//UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"UncaughtErrorEvents is not implemented");
 	return NULL;
 }

@@ -1641,7 +1641,7 @@ void ABCVm::Run(ABCVm* th)
 #else
 		llvm::JITExceptionHandling = true;
 #endif
-#ifndef NDEBUG
+#if defined(NDEBUG) && !defined(LLVM_37)
 #ifdef LLVM_31
 		Opts.JITEmitDebugInfo = true;
 #else
@@ -1665,7 +1665,9 @@ void ABCVm::Run(ABCVm* th)
 
 #ifdef LLVM_36
 		th->FPM=new llvm::legacy::FunctionPassManager(th->module);
+#ifndef LLVM_37
 		th->FPM->add(new llvm::DataLayoutPass());
+#endif
 #else
 		th->FPM=new llvm::FunctionPassManager(th->module);
 #ifdef LLVM_35

@@ -539,6 +539,7 @@ void SoundChannel::playStream()
 void SoundChannel::playRaw()
 {
 	assert(!stream.isNull());
+#ifdef ENABLE_LIBAVCODEC
 	FFMpegAudioDecoder *decoder = new FFMpegAudioDecoder(format.codec,
 							     format.sampleRate,
 							     format.channels,
@@ -572,6 +573,7 @@ void SoundChannel::playRaw()
 		incRef();
 		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("soundComplete")));
 	}
+#endif //ENABLE_LIBAVCODEC
 }
 
 void SoundChannel::jobFence()

@@ -148,8 +148,7 @@ bool Integer::isEqual(ASObject* o)
 		case T_INTEGER:
 			return val==o->toInt();
 		case T_UINTEGER:
-			//CHECK: somehow wrong
-			return val==o->toInt();
+			return val >= 0 && val==o->toInt();
 		case T_NUMBER:
 			return val==o->toNumber();
 		case T_BOOLEAN:

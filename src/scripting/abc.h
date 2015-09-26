@@ -248,7 +248,7 @@ private:
 		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
-		th->runtime_stack_push(abstract_ui(ret));
+		th->runtime_stack_push(abstract_i(ret));
 	}
 	template<class T>
 	static void storeIntN(call_context* th)
@@ -257,7 +257,7 @@ private:
 		ASObject* arg2=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
 		arg1->decRef();
-		uint32_t val=arg2->toUInt();
+		int32_t val=arg2->toInt();
 		arg2->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);

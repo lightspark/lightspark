@@ -1266,7 +1266,10 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 {
 	XMLVector ret;
 	tiny_string defns = "|";
-	defns += getVm()->getDefaultXMLNamespace();
+	if (nodenamespace_prefix == "" && nodenamespace_uri != "")
+		defns += nodenamespace_uri;
+	else
+		defns += getVm()->getDefaultXMLNamespace();
 	defns += "|";
 	tiny_string normalizedName= "";
 	normalizedName= name.normalizedName();

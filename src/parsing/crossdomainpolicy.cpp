@@ -26,7 +26,6 @@ CrossDomainPolicy::CrossDomainPolicy(const unsigned char* buffer, size_t length,
 	type(_type),subtype(_subtype),master(_master),first(true),siteControlFound(false)
 {
 	xml.load_buffer(buffer, length);
-	
 }
 
 CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
@@ -35,9 +34,10 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 	{
 		if (first)
 		{
-			if (strcmp(xml.root().name(), "cross-domain-policy"))
-				return INVALID;
 			currentnode = xml.root().first_child();
+			if (strcmp(currentnode.name(), "cross-domain-policy"))
+				return INVALID;
+			currentnode = currentnode.first_child();
 		}
 		else
 			currentnode = currentnode.next_sibling();
@@ -48,8 +48,6 @@ CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 		//We only handle elements
 		if (currentnode.type() != pugi::node_element)
 			continue;
-		if(!currentnode.empty())
-			return INVALID;
 
 		tagName = currentnode.name();
 		attrCount = 0;

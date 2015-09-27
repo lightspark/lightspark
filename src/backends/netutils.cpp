@@ -287,9 +287,7 @@ Downloader::~Downloader()
  */
 void Downloader::setFailed()
 {
-	cache->markFinished(true);
-	//Set the final length
-	length = cache->getReceivedLength();
+	length = cache->markFinished(true);
 }
 
 /**
@@ -303,9 +301,7 @@ void Downloader::setFailed()
  */
 void Downloader::setFinished()
 {
-	cache->markFinished();
-	//Set the final length
-	length = cache->getReceivedLength();
+	length = cache->markFinished();
 }
 
 /**

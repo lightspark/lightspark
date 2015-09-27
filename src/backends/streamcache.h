@@ -86,7 +86,8 @@ public:
 
 	// Writer should call this when all of the stream has been
 	// append()'ed
-	void markFinished(bool failed=false);
+	// returns the received length
+	size_t markFinished(bool failed=false);
 
 	// Create a streambuf for reading from this buffer (reader
 	// thread). Every call returns a new, independent streambuf.

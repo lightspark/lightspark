@@ -33,15 +33,16 @@ StreamCache::StreamCache()
 {
 }
 
-void StreamCache::markFinished(bool _failed)
+size_t StreamCache::markFinished(bool _failed)
 {
 	Locker locker(stateMutex);
 	if (terminated)
-		return;
+		return receivedLength;
 
 	failed = _failed;
 	terminated = true;
 	stateCond.broadcast();
+	return receivedLength;
 }
 
 void StreamCache::waitForData(size_t currentOffset)

@@ -370,10 +370,12 @@ NPVariantObject::NPVariantObject(std::map<const NPObject*, std::unique_ptr<ExtOb
 		{
 			type = EV_OBJECT;
 			NPObject* const npObj = NPVARIANT_TO_OBJECT(other);
+			/*
 			auto it=objectsMap.find(npObj);
 			if(it!=objectsMap.end())
 				objectValue = it->second.get();
 			else
+			*/
 				objectValue = new NPObjectObject(objectsMap, _instance, npObj);
 			break;
 		}
@@ -1028,7 +1030,7 @@ NPScriptObjectGW::~NPScriptObjectGW()
 {
 	// The NPScriptObject should already be deleted _before_ we get to this point.
 	// This is the only way we can guarantee that it is deleted _before_ SystemState is deleted.
-};
+}
 
 // Properties
 bool NPScriptObjectGW::getProperty(NPObject* obj, NPIdentifier id, NPVariant* result)

@@ -51,6 +51,8 @@ void XMLNode::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(_getNodeValue),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("parentNode","",Class<IFunction>::getFunction(parentNode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("previousSibling","",Class<IFunction>::getFunction(previousSibling),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("appendChild","",Class<IFunction>::getFunction(appendChild),NORMAL_METHOD,true);
 }
 
 void XMLNode::buildTraits(ASObject* o)
@@ -227,6 +229,29 @@ ASFUNCTIONBODY(XMLNode,_toString)
 	return Class<ASString>::getInstanceS(th->toString_priv(th->node));
 }
 
+ASFUNCTIONBODY(XMLNode,_getLocalName)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	tiny_string localname =th->node.name();
+	uint32_t pos = localname.find(".");
+	if (pos != tiny_string::npos)
+	{
+		localname = localname.substr(pos,localname.numChars()-pos);
+	}
+	return Class<ASString>::getInstanceS(localname);
+}
+ASFUNCTIONBODY(XMLNode,appendChild)
+{
+	XMLNode* th=Class<XMLNode>::cast(obj);
+	_NR<XMLNode> c;
+	ARG_UNPACK(c);
+	th->node.append_move(c->node);
+	if (!c->root.isNull())
+		c->root->decRef();
+	c->root = th->root;
+	th->root->incRef();
+	return NULL;
+}
 tiny_string XMLNode::toString()
 {
 	return toString_priv(node);
@@ -258,6 +283,7 @@ void XMLDocument::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("parseXML","",Class<IFunction>::getFunction(parseXML),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(XMLDocument::firstChild),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("createElement","",Class<IFunction>::getFunction(XMLDocument::createElement),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, ignoreWhite);
 }
 
@@ -323,6 +349,17 @@ ASFUNCTIONBODY(XMLDocument,firstChild)
 	assert_and_throw(argslen==0);
 	assert(th->node==NULL);
 	pugi::xml_node newNode=th->rootNode;
+	th->incRef();
+	return Class<XMLNode>::getInstanceS(_MR(th),newNode);
+}
+ASFUNCTIONBODY(XMLDocument,createElement)
+{
+	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	assert(th->node==NULL);
+	tiny_string name;
+	ARG_UNPACK(name);
+	pugi::xml_node newNode;
+	newNode.set_name(name.raw_buf());
 	th->incRef();
 	return Class<XMLNode>::getInstanceS(_MR(th),newNode);
 }

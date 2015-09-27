@@ -53,10 +53,12 @@ public:
 	ASFUNCTION(_getNodeType);
 	ASFUNCTION(_getNodeName);
 	ASFUNCTION(_getNodeValue);
+	ASFUNCTION(_getLocalName);
 	ASFUNCTION(nextSibling);
 	ASFUNCTION(parentNode);
 	ASFUNCTION(previousSibling);
 	ASFUNCTION(_toString);
+	ASFUNCTION(appendChild);
 };
 
 class XMLDocument: public XMLNode, public XMLBase
@@ -75,6 +77,7 @@ public:
 	ASFUNCTION(parseXML);
 	ASFUNCTION(firstChild);
 	ASFUNCTION(_toString);
+	ASFUNCTION(createElement);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

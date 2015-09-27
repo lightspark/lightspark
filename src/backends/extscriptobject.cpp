@@ -266,13 +266,14 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 	case EV_OBJECT:
 		{
 			ExtObject* objValue = getObject();
+			/*
 			auto it=objectsMap.find(objValue);
 			if(it!=objectsMap.end())
 			{
 				it->second->incRef();
 				return it->second;
 			}
-
+			*/
 			uint32_t count;
 
 			// We are converting an array, so lets set indexes

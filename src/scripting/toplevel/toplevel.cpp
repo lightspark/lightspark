@@ -569,7 +569,7 @@ bool Function::isEqual(ASObject* r)
 	Function* f=dynamic_cast<Function*>(r);
 	if(f==NULL)
 		return false;
-	return (val==f->val) && (closure_this==f->closure_this);
+	return (val==f->val) && (closure_this.isNull() || f->closure_this.isNull() || closure_this==f->closure_this);
 }
 
 bool Null::isEqual(ASObject* r)

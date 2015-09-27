@@ -2516,7 +2516,10 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 	node->nodetype = srcnode.type();
 	node->nodename = srcnode.name();
 	node->nodevalue = srcnode.value();
-	node->nodenamespace_uri = getVm()->getDefaultXMLNamespace();
+	if (!node->parentNode.isNull() && node->parentNode->nodenamespace_prefix == "")
+		node->nodenamespace_uri = node->parentNode->nodenamespace_uri;
+	else
+		node->nodenamespace_uri = getVm()->getDefaultXMLNamespace();
 	if (ignoreWhitespace && node->nodetype == pugi::node_pcdata)
 		node->nodevalue = node->removeWhitespace(node->nodevalue);
 	node->attributelist = _MR(Class<XMLList>::getInstanceS());

@@ -607,6 +607,9 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	
+	if (args[1]->getObjectType() == T_NULL) // it seems that null is allowed as function
+		return NULL;
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 

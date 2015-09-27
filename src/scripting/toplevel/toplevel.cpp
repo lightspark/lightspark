@@ -1305,7 +1305,7 @@ void Class_base::describeVariables(pugi::xml_node& root,const Class_base* c, std
 void Class_base::describeTraits(pugi::xml_node &root,
 				std::vector<traits_info>& traits) const
 {
-	std::map<u30, pugi::xml_node*> accessorNodes;
+	std::map<u30, pugi::xml_node> accessorNodes;
 	for(unsigned int i=0;i<traits.size();i++)
 	{
 		traits_info& t=traits[i];
@@ -1360,18 +1360,16 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			if(existing==accessorNodes.end())
 			{
 				node=root.append_child("accessor");
-				accessorNodes[t.name]=&node;
+				node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 			}
 			else
-				node=*existing->second;
-
-			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			{
+				node=existing->second;
+			}
 
 			const char* access=NULL;
-			tiny_string oldAccess;
 			pugi::xml_attribute oldAttr=node.attribute("access");
-			if (!oldAttr.empty())
-				oldAccess=oldAttr.value();
+			tiny_string oldAccess=oldAttr.value();
 
 			if(kind==traits_info::Getter && oldAccess=="")
 				access="readonly";
@@ -1381,13 +1379,8 @@ void Class_base::describeTraits(pugi::xml_node &root,
 				(kind==traits_info::Setter && oldAccess=="readonly"))
 				access="readwrite";
 
-			if(access)
-			{
-				if (oldAttr.empty())
-					node.append_attribute("access").set_value(access);
-				else
-					oldAttr.set_value(access);
-			}
+			node.remove_attribute("access");
+			node.append_attribute("access").set_value(access);
 
 			tiny_string type;
 			method_info& method=context->methods[t.method];
@@ -1410,6 +1403,7 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
 			
 			describeMetadata(node, t);
+			accessorNodes[t.name]=node;
 		}
 	}
 }

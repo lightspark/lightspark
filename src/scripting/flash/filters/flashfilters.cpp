@@ -178,15 +178,14 @@ void GradientGlowFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(GradientGlowFilter, _constructor)
 {
-	GradientGlowFilter *th = obj->as<GradientGlowFilter>();
+	//GradientGlowFilter *th = obj->as<GradientGlowFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
 {
-	GradientGlowFilter *cloned = Class<GradientGlowFilter>::getInstanceS();
-	return cloned;
+	return Class<GradientGlowFilter>::getInstanceS();
 }
 
 BevelFilter::BevelFilter(Class_base* c):
@@ -201,15 +200,14 @@ void BevelFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(BevelFilter, _constructor)
 {
-	BevelFilter *th = obj->as<BevelFilter>();
+	//BevelFilter *th = obj->as<BevelFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* BevelFilter::cloneImpl() const
 {
-	BevelFilter *cloned = Class<BevelFilter>::getInstanceS();
-	return cloned;
+	return Class<BevelFilter>::getInstanceS();
 }
 ColorMatrixFilter::ColorMatrixFilter(Class_base* c):
 	BitmapFilter(c),matrix(NULL)
@@ -253,15 +251,14 @@ void BlurFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(BlurFilter, _constructor)
 {
-	BlurFilter *th = obj->as<BlurFilter>();
+	//BlurFilter *th = obj->as<BlurFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"BlurFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* BlurFilter::cloneImpl() const
 {
-	BlurFilter *cloned = Class<BlurFilter>::getInstanceS();
-	return cloned;
+	return Class<BlurFilter>::getInstanceS();
 }
 
 ConvolutionFilter::ConvolutionFilter(Class_base* c):
@@ -276,15 +273,14 @@ void ConvolutionFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ConvolutionFilter, _constructor)
 {
-	ConvolutionFilter *th = obj->as<ConvolutionFilter>();
+	//ConvolutionFilter *th = obj->as<ConvolutionFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
 {
-	ConvolutionFilter *cloned = Class<ConvolutionFilter>::getInstanceS();
-	return cloned;
+	return Class<ConvolutionFilter>::getInstanceS();
 }
 
 DisplacementMapFilter::DisplacementMapFilter(Class_base* c):
@@ -299,15 +295,14 @@ void DisplacementMapFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(DisplacementMapFilter, _constructor)
 {
-	DisplacementMapFilter *th = obj->as<DisplacementMapFilter>();
+	//DisplacementMapFilter *th = obj->as<DisplacementMapFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"DisplacementMapFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
 {
-	DisplacementMapFilter *cloned = Class<DisplacementMapFilter>::getInstanceS();
-	return cloned;
+	return Class<DisplacementMapFilter>::getInstanceS();
 }
 
 GradientBevelFilter::GradientBevelFilter(Class_base* c):
@@ -322,15 +317,14 @@ void GradientBevelFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(GradientBevelFilter, _constructor)
 {
-	GradientBevelFilter *th = obj->as<GradientBevelFilter>();
+	//GradientBevelFilter *th = obj->as<GradientBevelFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const
 {
-	GradientBevelFilter *cloned = Class<GradientBevelFilter>::getInstanceS();
-	return cloned;
+	return Class<GradientBevelFilter>::getInstanceS();
 }
 
 ShaderFilter::ShaderFilter(Class_base* c):
@@ -345,15 +339,14 @@ void ShaderFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ShaderFilter, _constructor)
 {
-	ShaderFilter *th = obj->as<ShaderFilter>();
+	//ShaderFilter *th = obj->as<ShaderFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"ShaderFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* ShaderFilter::cloneImpl() const
 {
-	ShaderFilter *cloned = Class<ShaderFilter>::getInstanceS();
-	return cloned;
+	return Class<ShaderFilter>::getInstanceS();
 }
 
 void BitmapFilterQuality::sinit(Class_base* c)

@@ -507,10 +507,16 @@ void XMLSocketThread::sendData(const tiny_string& data)
 
 	tiny_string *packet = new tiny_string(data);
 	g_async_queue_push(sendQueue, packet);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
 	write(signalEmitter, &SOCKET_COMMAND_SEND, 1);
+#pragma GCC diagnostic pop
 }
 
 void XMLSocketThread::requestClose()
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
 	write(signalEmitter, &SOCKET_COMMAND_CLOSE, 1);
+#pragma GCC diagnostic pop
 }

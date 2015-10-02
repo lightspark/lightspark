@@ -30,6 +30,14 @@
 #define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
 #endif
 
+#ifndef HAVE_AV_FRAME_ALLOC
+#define av_frame_alloc avcodec_alloc_frame
+#endif
+
+#ifndef HAVE_AV_FRAME_UNREF
+#define av_frame_unref avcodec_get_frame_defaults
+#endif
+
 using namespace lightspark;
 using namespace std;
 
@@ -166,7 +174,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 	else
 		status=INIT;
 
-	frameIn=avcodec_alloc_frame();
+	frameIn=av_frame_alloc();
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
@@ -201,7 +209,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 	if(fillDataAndCheckValidity())
 		status=VALID;
 
-	frameIn=avcodec_alloc_frame();
+	frameIn=av_frame_alloc();
 }
 
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
@@ -476,7 +484,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 	else
 		status=INIT;
 #if HAVE_AVCODEC_DECODE_AUDIO4
-	frameIn=avcodec_alloc_frame();
+	frameIn=av_frame_alloc();
 #endif
 }
 
@@ -502,7 +510,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, i
 	if(fillDataAndCheckValidity())
 		status=VALID;
 #if HAVE_AVCODEC_DECODE_AUDIO4
-	frameIn=avcodec_alloc_frame();
+	frameIn=av_frame_alloc();
 #endif
 }
 
@@ -522,7 +530,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):ownedContext(false),c
 	if(fillDataAndCheckValidity())
 		status=VALID;
 #if HAVE_AVCODEC_DECODE_AUDIO4
-	frameIn=avcodec_alloc_frame();
+	frameIn=av_frame_alloc();
 #endif
 }
 
@@ -607,7 +615,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	}
 
 #if HAVE_AVCODEC_DECODE_AUDIO4
-	avcodec_get_frame_defaults(frameIn);
+	av_frame_unref(frameIn);
 	int frameOk=0;
 	int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
 	if(frameOk==0)
@@ -664,7 +672,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
 #if HAVE_AVCODEC_DECODE_AUDIO4
-	avcodec_get_frame_defaults(frameIn);
+	av_frame_unref(frameIn);
 	int frameOk=0;
 	int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
 	if(frameOk==0)

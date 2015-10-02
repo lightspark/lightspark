@@ -1031,8 +1031,8 @@ void NetStreamAppendBytesAction::sinit(Class_base* c)
 
 NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
 	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
-	audioDecoder(NULL),audioStream(NULL),datagenerationfile(NULL),datagenerationthreadstarted(false),framesdecoded(0),
-	client(NullRef),oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),playbackBytesPerSecond(0),
+	audioDecoder(NULL),audioStream(NULL),datagenerationfile(NULL),datagenerationthreadstarted(false),client(NullRef),
+	oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),framesdecoded(0),playbackBytesPerSecond(0),
 	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
 	maxPauseBufferTime(0)
 {
@@ -2135,31 +2135,31 @@ ASFUNCTIONBODY(LocalConnection, _constructor)
 }
 ASFUNCTIONBODY(LocalConnection, allowDomain)
 {
-	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowDomain is not implemented");
 	return NULL;
 }
 ASFUNCTIONBODY(LocalConnection, allowInsecureDomain)
 {
-	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowInsecureDomain is not implemented");
 	return NULL;
 }
 ASFUNCTIONBODY(LocalConnection, send)
 {
-	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::send is not implemented");
 	return NULL;
 }
 ASFUNCTIONBODY(LocalConnection, connect)
 {
-	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::connect is not implemented");
 	return NULL;
 }
 ASFUNCTIONBODY(LocalConnection, close)
 {
-	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::close is not implemented");
 	return NULL;
 }
@@ -2177,7 +2177,7 @@ void NetGroup::sinit(Class_base* c)
 ASFUNCTIONBODY(NetGroup, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
-	NetGroup* th=Class<NetGroup>::cast(obj);
+	//NetGroup* th=Class<NetGroup>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
 	return NULL;
 }
@@ -2196,7 +2196,7 @@ void ASSocket::sinit(Class_base* c)
 ASFUNCTIONBODY(ASSocket, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
-	ASSocket* th=Class<ASSocket>::cast(obj);
+	//ASSocket* th=Class<ASSocket>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
 	return NULL;
 }

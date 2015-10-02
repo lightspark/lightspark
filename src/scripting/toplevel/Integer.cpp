@@ -247,8 +247,19 @@ bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix
 	//Skip leading zeroes
 	if (radix == 0)
 	{
+		int count=0;
 		while(*cur=='0')
+		{
 			cur++;
+			count++;
+		}
+
+		//The string consisted of all zeroes
+		if(count>0 && *cur=='\0')
+		{
+			ret = 0;
+			return true;
+		}
 	}
 	
 	errno=0;

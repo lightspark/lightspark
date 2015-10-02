@@ -39,7 +39,7 @@ ASFUNCTIONBODY_GETTER(PrintJob, isSupported);
 ASFUNCTIONBODY(PrintJob, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
-	PrintJob* th=Class<PrintJob>::cast(obj);
+	//PrintJob* th=Class<PrintJob>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJob is not implemented");
 	return NULL;
 }
@@ -56,7 +56,7 @@ void PrintJobOptions::sinit(Class_base* c)
 
 ASFUNCTIONBODY(PrintJobOptions, _constructor)
 {
-	PrintJobOptions* th=Class<PrintJobOptions>::cast(obj);
+	//PrintJobOptions* th=Class<PrintJobOptions>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJobOptions is not implemented");
 	return NULL;
 }

@@ -1298,7 +1298,7 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	const char *socket_policy_cmd = "<policy-file-request/>\0";
 	unsigned int socket_policy_cmd_len = strlen(socket_policy_cmd)+1;
 	ssize_t nbytes = sock.sendAll(socket_policy_cmd, socket_policy_cmd_len);
-	if (nbytes != socket_policy_cmd_len)
+	if (nbytes != (int)socket_policy_cmd_len)
 	{
 		return false;
 	}

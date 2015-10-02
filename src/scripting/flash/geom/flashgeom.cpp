@@ -987,7 +987,7 @@ ASFUNCTIONBODY(Transform,_setColorTransform)
 
 ASFUNCTIONBODY(Transform,_getConcatenatedMatrix)
 {
-	Transform* th=Class<Transform>::cast(obj);
+	//Transform* th=Class<Transform>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"contcatenatedMAtrix not implemented");
 	return Class<Matrix>::getInstanceS();
 }
@@ -1721,7 +1721,7 @@ void Matrix3D::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Matrix3D,_constructor)
 {
-	Matrix3D * th=static_cast<Matrix3D*>(obj);
+	//Matrix3D * th=static_cast<Matrix3D*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D is not implemented");
 	return NULL;
 }
@@ -1733,7 +1733,7 @@ void PerspectiveProjection::sinit(Class_base* c)
 
 ASFUNCTIONBODY(PerspectiveProjection,_constructor)
 {
-	PerspectiveProjection * th=static_cast<PerspectiveProjection*>(obj);
+	//PerspectiveProjection * th=static_cast<PerspectiveProjection*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PerspectiveProjection is not implemented");
 	return NULL;
 }

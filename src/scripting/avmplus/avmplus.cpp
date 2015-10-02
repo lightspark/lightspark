@@ -56,7 +56,7 @@ ASFUNCTIONBODY(avmplusFile,write)
 }
 ASFUNCTIONBODY(avmplusFile,readByteArray)
 {
-	avmplusFile* th=static_cast<avmplusFile*>(obj);
+	//avmplusFile* th=static_cast<avmplusFile*>(obj);
 	tiny_string filename;
 	ARG_UNPACK(filename);
 	

@@ -1376,8 +1376,9 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
 	if(derived_class==NULL)
 	{
-		LOG(LOG_ERROR,_("Class ") << s << _(" not found in global for ")<<root->getOrigin());
-		throw RunTimeException("Class not found in global");
+		//LOG(LOG_ERROR,_("Class ") << s << _(" not found in global for ")<<root->getOrigin());
+		//throw RunTimeException("Class not found in global");
+		return NULL;
 	}
 
 	assert_and_throw(derived_class->getObjectType()==T_CLASS);

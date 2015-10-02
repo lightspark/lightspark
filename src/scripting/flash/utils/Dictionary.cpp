@@ -357,6 +357,11 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing Dictionary in AMF0 not implemented");
+		return;
+	}
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(dictionary_marker);
 	//Check if the dictionary has been already serialized

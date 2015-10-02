@@ -1158,6 +1158,11 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing Vector in AMF0 not implemented");
+		return;
+	}
 	uint8_t marker = 0;
 	if (vec_type == Class<Integer>::getClass())
 		marker = vector_int_marker;

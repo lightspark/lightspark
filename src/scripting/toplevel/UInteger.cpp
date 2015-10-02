@@ -211,6 +211,12 @@ void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		out->writeByte(amf0_number_marker);
+		out->serializeDouble(val);
+		return;
+	}
 	if(val>=0x40000000)
 	{
 		// write as double

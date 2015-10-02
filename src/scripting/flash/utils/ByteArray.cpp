@@ -552,14 +552,6 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 {
 	//Return the length of the serialized object
 
-	//TODO: support AMF0
-	
-	if (objectEncoding==ObjectEncoding::AMF0)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"ByteArray.writeObject: writing AMF0 objects not implemented");
-		//return 0;
-	}
-	//assert_and_throw(objectEncoding==ObjectEncoding::AMF3);
 	//TODO: support custom serialization
 	map<tiny_string, uint32_t> stringMap;
 	map<const ASObject*, uint32_t> objMap;
@@ -1178,6 +1170,23 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 	}
 }
 
+void ByteArray::writeStringAMF0(const tiny_string& s)
+{
+	const uint32_t len=s.numBytes();
+	if(len <= 0xffff)
+	{
+		writeUTF(s);
+	}
+	else
+	{
+		getBuffer(position+len+4,true);
+		uint32_t numBytes=endianIn((uint32_t)len);
+		memcpy(bytes+position,&numBytes,4);
+		memcpy(bytes+position+4,s.raw_buf(),len);
+		position+=len+4;
+	}
+}
+
 void ByteArray::writeXMLString(std::map<const ASObject*, uint32_t>& objMap,
 			       ASObject *xml,
 			       const tiny_string& xmlstr)
@@ -1463,6 +1472,11 @@ void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing ByteArray in AMF0 not implemented");
+		return;
+	}
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(byte_array_marker);
 	//Check if the bytearray has been already serialized

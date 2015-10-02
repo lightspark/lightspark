@@ -1537,6 +1537,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap) const
 {
+	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
 	//Pairs of name, value
 	auto it=Variables.begin();
 	for(;it!=Variables.end();it++)
@@ -1545,26 +1546,41 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			continue;
 		//Dynamic traits always have empty namespace
 		assert(it->first.ns.hasEmptyName());
-		out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first.nameId));
+		if (amf0)
+			out->writeStringAMF0(getSys()->getStringFromUniqueId(it->first.nameId));
+		else
+			out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first.nameId));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
-	out->writeStringVR(stringMap, "");
+	if (!amf0) out->writeStringVR(stringMap, "");
 }
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	//0x0A -> object marker
-	out->writeByte(object_marker);
+	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
+	if (amf0)
+		out->writeByte(amf0_object_marker);
+	else
+		out->writeByte(object_marker);
 	//Check if the object has been already serialized to send it by reference
 	auto it=objMap.find(this);
 	if(it!=objMap.end())
 	{
-		//The least significant bit is 0 to signal a reference
-		out->writeU29(it->second << 1);
+		if (amf0)
+		{
+			out->writeByte(amf0_reference_marker);
+			out->writeShort(it->second);
+		}
+		else
+		{
+			//The least significant bit is 0 to signal a reference
+			out->writeShort(it->second << 1);
+		}
 		return;
+		
 	}
 
 	Class_base* type=getClass();
@@ -1590,6 +1606,13 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		//Custom serialization necessary
 		if(!serializeTraits)
 			throwError<TypeError>(kInvalidParamError);
+		if (amf0)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"serializing IExternalizable in AMF0 not implemented");
+			out->writeShort(0);
+			out->writeByte(amf0_object_end_marker);
+			return;
+		}
 		out->writeU29(0x7);
 		out->writeStringVR(stringMap, alias);
 
@@ -1618,6 +1641,35 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	const variables_map::const_var_iterator endIt = Variables.Variables.end();
 	//Check if the class traits has been already serialized to send it by reference
 	auto it2=traitsMap.find(type);
+
+	if (amf0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing ASObject in AMF0 not completely implemented");
+		if(it2!=traitsMap.end())
+		{
+			out->writeByte(amf0_reference_marker);
+			out->writeShort(it2->second);
+			for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+			{
+				if(varIt->second.kind==DECLARED_TRAIT)
+				{
+					if(!varIt->first.ns.hasEmptyName())
+					{
+						//Skip variable with a namespace, like protected ones
+						continue;
+					}
+					out->writeStringAMF0(getSys()->getStringFromUniqueId(varIt->first.nameId));
+					varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
+				}
+			}
+		}
+		if(!type->isSealed)
+			serializeDynamicProperties(out, stringMap, objMap, traitsMap);
+		out->writeShort(0);
+		out->writeByte(amf0_object_end_marker);
+		return;
+	}
+
 	if(it2!=traitsMap.end())
 		out->writeU29((it2->second << 2) | 1);
 	else

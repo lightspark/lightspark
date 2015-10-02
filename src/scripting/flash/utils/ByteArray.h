@@ -62,6 +62,7 @@ public:
 	void writeUTF(const tiny_string& str);
 	uint32_t writeObject(ASObject* obj);
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
+	void writeStringAMF0(const tiny_string& s);
 	void writeXMLString(std::map<const ASObject*, uint32_t>& objMap, ASObject *xml, const tiny_string& s);
 	void writeU29(uint32_t val);
 
@@ -73,6 +74,7 @@ public:
 	
 	void append(std::streambuf* data, int length);
 
+	uint8_t getObjectEncoding() const { return objectEncoding; }
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
 	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
 	

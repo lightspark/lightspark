@@ -117,7 +117,10 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	out->writeByte(undefined_marker);
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+		out->writeByte(amf0_undefined_marker);
+	else
+		out->writeByte(undefined_marker);
 }
 
 void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
@@ -662,7 +665,10 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	out->writeByte(null_marker);
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+		out->writeByte(amf0_null_marker);
+	else
+		out->writeByte(null_marker);
 }
 
 void Null::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)

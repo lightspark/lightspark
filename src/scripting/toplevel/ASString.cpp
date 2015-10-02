@@ -585,8 +585,16 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	out->writeByte(string_marker);
-	out->writeStringVR(stringMap, data);
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		out->writeByte(amf0_string_marker);
+		out->writeStringAMF0(data);
+	}
+	else
+	{
+		out->writeByte(string_marker);
+		out->writeStringVR(stringMap, data);
+	}
 }
 
 ASFUNCTIONBODY(ASString,slice)

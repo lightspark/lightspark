@@ -309,6 +309,11 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing XMLDocument in AMF0 not implemented");
+		return;
+	}
 	out->writeByte(xml_doc_marker);
 	out->writeXMLString(objMap, this, toString());
 }

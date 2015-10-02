@@ -1573,6 +1573,11 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"serializing Array in AMF0 not implemented");
+		return;
+	}
 	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(array_marker);
 	//Check if the array has been already serialized

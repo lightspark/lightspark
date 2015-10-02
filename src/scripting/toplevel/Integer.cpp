@@ -213,6 +213,13 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	{
+		// write as double
+		out->writeByte(amf0_number_marker);
+		out->serializeDouble(val);
+		return;
+	}
 	if(val>=0x40000000 || val<=(int32_t)0xbfffffff)
 	{
 		// write as double

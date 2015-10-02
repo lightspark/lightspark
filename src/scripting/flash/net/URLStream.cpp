@@ -90,6 +90,8 @@ void URLStreamThread::execute()
 	// Don't send any events if the thread is aborting
 	if(success && !threadAborting)
 	{
+		loader->incRef();
+		getVm()->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(downloader->getLength(),downloader->getLength())));
 		//Send a complete event for this object
 		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("complete")));

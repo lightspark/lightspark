@@ -1577,7 +1577,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		else
 		{
 			//The least significant bit is 0 to signal a reference
-			out->writeShort(it->second << 1);
+			out->writeU29(it->second << 1);
 		}
 		return;
 		

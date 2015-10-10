@@ -62,6 +62,7 @@ void URLStreamThread::execute()
 	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
 	if(!createDownloader(cache, loader,this))
 		return;
+	data->setLength(0);
 
 	bool success=false;
 	if(!downloader->hasFailed())
@@ -116,7 +117,6 @@ void URLStream::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(bytesAvailable),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_getEndian),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_setEndian),SETTER_METHOD,true);

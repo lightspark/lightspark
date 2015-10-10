@@ -181,7 +181,7 @@ ASFUNCTIONBODY(Date,_constructor)
 	}
 	if (argslen == 0) {
 		GDateTime* tmp = g_date_time_new_now_utc();
-		int64_t ms = g_date_time_to_unix(tmp)*1000;
+		int64_t ms = g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000;
 		g_date_time_unref(tmp);
 		th->MakeDateFromMilliseconds(ms);
 	} else
@@ -275,7 +275,7 @@ ASFUNCTIONBODY(Date,generator)
 {
 	Date* th=Class<Date>::getInstanceS();
 	GDateTime* tmp = g_date_time_new_now_utc();
-	th->MakeDateFromMilliseconds(g_date_time_to_unix(tmp)*1000);
+	th->MakeDateFromMilliseconds(g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000);
 	g_date_time_unref(tmp);
 
 	return Class<ASString>::getInstanceS(th->toString());

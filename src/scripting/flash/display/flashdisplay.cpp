@@ -330,8 +330,11 @@ void LoaderThread::execute()
 		
 		// Wait for some data, making sure our check for failure is working
 		sbuf->sgetc(); // peek one byte
-		if(downloader->getRequestStatus() == 204) // empty answer
+		if(downloader->hasEmptyAnswer())
+		{
+			LOG(LOG_INFO,"empty answer:"<<url);
 			return;
+		}
 
 		if(cache->hasFailed()) //Check to see if the download failed for some reason
 		{

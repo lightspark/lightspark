@@ -127,6 +127,8 @@ protected:
 	uint32_t length;
 	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
 	void setLength(uint32_t _length);
+	
+	bool emptyanswer;
 public:
 	//This class can only get destroyed by DownloadManager derivate classes
 	virtual ~Downloader();
@@ -138,6 +140,9 @@ public:
 	//True if the download has finished
 	//Can be used in conjunction with failed to find out if it finished successfully
 	bool hasFinished() { return cache->hasTerminated(); }
+	
+	// true if status header is 204 or content-length header is 0
+	bool hasEmptyAnswer() { return emptyanswer; }
 
 	const tiny_string& getURL() { return url; }
 

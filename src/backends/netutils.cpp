@@ -245,7 +245,8 @@ Downloader::Downloader(const tiny_string& _url, _R<StreamCache> _cache, ILoadabl
 	cache(_cache),                                                //CACHING
 	owner(o),                                                     //PROGRESS
 	redirected(false),requestStatus(0),                           //HTTP REDIR, STATUS & HEADERS
-	length(0)                                                     //DOWNLOADED DATA
+	length(0),                                                    //DOWNLOADED DATA
+	emptyanswer(false)
 {
 }
 
@@ -261,7 +262,8 @@ Downloader::Downloader(const tiny_string& _url, _R<StreamCache> _cache, const st
 	cache(_cache),                                                   //CACHING
 	owner(o),                                                        //PROGRESS
 	redirected(false),requestStatus(0),requestHeaders(h),data(_data),//HTTP REDIR, STATUS & HEADERS
-	length(0)                                                        //DOWNLOADED DATA
+	length(0),                                                       //DOWNLOADED DATA
+	emptyanswer(false)
 {
 }
 
@@ -391,7 +393,11 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 			setFailed();
 		}
 		else if(getRequestStatus()/100 == 3) {;} //HTTP redirect
-		else if(getRequestStatus()/100 == 2) {;} //HTTP OK
+		else if(getRequestStatus()/100 == 2) //HTTP OK
+		{
+			if (getRequestStatus() == 204)
+				emptyanswer = true;
+		} 
 	}
 	else
 	{
@@ -423,7 +429,10 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 				//Only read the length when we're not redirecting
 				if(getRequestStatus()/100 != 3)
 				{
-					setLength(atoi(headerValue.c_str()));
+					int len = atoi(headerValue.c_str());
+					if (len == 0)
+						emptyanswer = true;
+					setLength(len);
 					return;
 				}
 			}

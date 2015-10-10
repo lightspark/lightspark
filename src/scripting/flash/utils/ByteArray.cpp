@@ -633,6 +633,13 @@ void ByteArray::writeByte(uint8_t b)
 	bytes[position++] = b;
 }
 
+void ByteArray::writeBytes(uint8_t *data, int length)
+{
+	getBuffer(position+length,true);
+	memcpy(bytes+position,data,length);
+	position+=length;
+}
+
 ASFUNCTIONBODY(ByteArray,writeByte)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
@@ -1224,6 +1231,13 @@ void ByteArray::append(streambuf *data, int length)
 	s.read((char*)bytes+oldlen,length);
 	unlock();
 }
+void ByteArray::removeFrontBytes(int count)
+{
+	memmove(bytes,bytes+count,count);
+	position -= count;
+	len -= count;
+}
+
 
 
 void ByteArray::compress_zlib()

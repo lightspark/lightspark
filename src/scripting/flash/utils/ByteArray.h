@@ -57,6 +57,7 @@ public:
 	bool readU29(uint32_t& ret);
 	bool readUTF(tiny_string& ret);
 	void writeByte(uint8_t b);
+	void writeBytes(uint8_t* data, int length);
 	void writeShort(uint16_t val);
 	void writeUnsignedInt(uint32_t val);
 	void writeUTF(const tiny_string& str);
@@ -73,6 +74,11 @@ public:
 	void setPosition(uint32_t p);
 	
 	void append(std::streambuf* data, int length);
+	/**
+	 * @brief remove bytes from front of buffer
+	 * @param count number of bytes to remove
+	 */
+	void removeFrontBytes(int count);
 
 	uint8_t getObjectEncoding() const { return objectEncoding; }
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }

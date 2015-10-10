@@ -1032,7 +1032,7 @@ void NetStreamAppendBytesAction::sinit(Class_base* c)
 NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
 	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
 	audioDecoder(NULL),audioStream(NULL),datagenerationfile(NULL),datagenerationthreadstarted(false),client(NullRef),
-	oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),framesdecoded(0),playbackBytesPerSecond(0),
+	oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),framesdecoded(0),playbackBytesPerSecond(0),maxBytesPerSecond(0),datagenerationexpecttype(DATAGENERATION_HEADER),datagenerationbuffer(Class<ByteArray>::getInstanceS()),
 	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
 	maxPauseBufferTime(0)
 {
@@ -1104,6 +1104,41 @@ ASFUNCTIONBODY(NetStream,_getInfo)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
 	NetStreamInfo* res = Class<NetStreamInfo>::getInstanceS();
+	if(th->isReady())
+	{
+		res->byteCount = th->getReceivedLength();
+		res->dataBufferLength = th->getReceivedLength();
+	}
+	if (th->datagenerationfile)
+	{
+		int curbps = 0;
+		uint64_t cur=compat_msectiming();
+		th->countermutex.lock();
+		while (th->currentBytesPerSecond.size() > 0 && (cur - th->currentBytesPerSecond.front().timestamp > 1000))
+		{
+			th->currentBytesPerSecond.pop_front();
+		}
+		auto it = th->currentBytesPerSecond.cbegin();
+		while (it != th->currentBytesPerSecond.cend())
+		{
+			curbps += it->bytesread;
+			it++;
+		}
+		if (th->maxBytesPerSecond < curbps)
+			th->maxBytesPerSecond = curbps;
+
+		res->currentBytesPerSecond = curbps;
+		res->dataBytesPerSecond = curbps;
+		res->maxBytesPerSecond = th->maxBytesPerSecond;
+		
+		//TODO compute video/audio BytesPerSecond correctly
+		res->videoBytesPerSecond = curbps*3/4;
+		res->audioBytesPerSecond = curbps/4;
+		
+		th->countermutex.unlock();
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"NetStreamInfo.currentBytesPerSecond/maxBytesPerSecond/dataBytesPerSecond is only implemented for data generation mode");
 	res->playbackBytesPerSecond = th->playbackBytesPerSecond;
 	res->audioBufferLength = th->bufferLength;
 	res->videoBufferLength = th->bufferLength;
@@ -1332,8 +1367,9 @@ ASFUNCTIONBODY(NetStream,close)
 ASFUNCTIONBODY(NetStream,seek)
 {
 	//NetStream* th=Class<NetStream>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"NetStream.seek is not implemented yet");
-	assert_and_throw(argslen == 1);
+	int pos;
+	ARG_UNPACK(pos);
+	LOG(LOG_NOT_IMPLEMENTED,"NetStream.seek is not implemented yet:"<<pos);
 	return NULL;
 }
 
@@ -1357,7 +1393,138 @@ ASFUNCTIONBODY(NetStream,appendBytes)
 	{
 		if (th->datagenerationfile)
 		{
-			th->datagenerationfile->append(bytearray->getBuffer(bytearray->getLength(),false),bytearray->getLength());
+			//th->datagenerationfile->append(bytearray->getBuffer(bytearray->getLength(),false),bytearray->getLength());
+			th->datagenerationbuffer->setPosition(th->datagenerationbuffer->getLength());
+			th->datagenerationbuffer->writeBytes(bytearray->getBuffer(bytearray->getLength(),false),bytearray->getLength());
+			th->datagenerationbuffer->setPosition(0);
+			uint8_t tmp_byte = 0;
+			uint32_t processedlength = th->datagenerationbuffer->getPosition();
+			bool done = false;
+			while (!done)
+			{
+				switch (th->datagenerationexpecttype)
+				{
+					case DATAGENERATION_HEADER:
+					{
+						// TODO check for correct header?
+						// skip flv header
+						th->datagenerationbuffer->setPosition(5);
+						uint32_t headerlen = 0;
+						// header length is always in big endian
+						if (!th->datagenerationbuffer->readByte(tmp_byte))
+						{
+							done = true; 
+							break;
+						}
+						headerlen |= tmp_byte<<24;
+						if (!th->datagenerationbuffer->readByte(tmp_byte))
+						{
+							done = true; 
+							break;
+						}
+						headerlen |= tmp_byte<<16;
+						if (!th->datagenerationbuffer->readByte(tmp_byte))
+						{
+							done = true; 
+							break;
+						}
+						headerlen |= tmp_byte<<8;
+						if (!th->datagenerationbuffer->readByte(tmp_byte))
+						{
+							done = true; 
+							break;
+						}
+						headerlen |= tmp_byte;
+						if (headerlen > 0)
+						{
+							th->datagenerationbuffer->setPosition(headerlen);
+							th->datagenerationexpecttype = DATAGENERATION_PREVTAG;
+							processedlength+= headerlen;
+						}
+						else
+							done = true;
+						break;
+					}
+					case DATAGENERATION_PREVTAG:
+					{
+						uint32_t tmp_uint32;
+						if (!th->datagenerationbuffer->readUnsignedInt(tmp_uint32)) // prevtag (value may be wrong as we don't check for big endian)
+						{
+							done = true;
+							break;
+						}
+						processedlength += 4;
+						th->datagenerationexpecttype = DATAGENERATION_FLVTAG;
+						break;
+					}
+					case DATAGENERATION_FLVTAG:
+					{
+						if (!th->datagenerationbuffer->readByte(tmp_byte)) // tag type
+						{
+							done = true;
+							break;
+						}
+						uint32_t datalen = 0;
+						if (!th->datagenerationbuffer->readByte(tmp_byte)) // data len 1
+						{
+							done = true;
+							break;
+						}
+						datalen |= tmp_byte<<16;
+						if (!th->datagenerationbuffer->readByte(tmp_byte)) // data len 2
+						{
+							done = true;
+							break;
+						}
+						datalen |= tmp_byte<<8;
+						if (!th->datagenerationbuffer->readByte(tmp_byte)) // data len 3
+						{
+							done = true;
+							break;
+						}
+						datalen |= tmp_byte;
+						datalen += 1 + 3 + 3 + 1 + 3; 
+						if (datalen + processedlength< th->datagenerationbuffer->getLength())
+						{
+							processedlength += datalen;
+							th->datagenerationbuffer->setPosition(processedlength);
+							th->datagenerationexpecttype = DATAGENERATION_PREVTAG;
+						}
+						break;
+					}
+					default:
+						LOG(LOG_ERROR,"invalid DATAGENERATION_EXPECT_TYPE:"<<th->datagenerationexpecttype);
+						done = true;
+						break;
+				}
+			}
+			if (processedlength > 0)
+			{
+				th->datagenerationfile->append(th->datagenerationbuffer->getBuffer(processedlength,false),processedlength);
+				if (processedlength!=th->datagenerationbuffer->getLength())
+					th->datagenerationbuffer->removeFrontBytes(processedlength);
+				else
+					th->datagenerationbuffer->setLength(0);
+				uint64_t cur=compat_msectiming();
+				struct bytespertime b;
+				b.timestamp = cur;
+				b.bytesread = processedlength;
+				th->countermutex.lock();
+				th->currentBytesPerSecond.push_back(b);
+				while (cur - th->currentBytesPerSecond.front().timestamp > 60000)
+					th->currentBytesPerSecond.pop_front();
+				uint32_t curbps = 0;
+				auto it = th->currentBytesPerSecond.cbegin();
+				while (it != th->currentBytesPerSecond.cend())
+				{
+					curbps += it->bytesread;
+					it++;
+				}
+				if (th->maxBytesPerSecond < curbps)
+					th->maxBytesPerSecond = curbps;
+				
+				th->countermutex.unlock();
+			}
 			if (!th->datagenerationthreadstarted && th->datagenerationfile->getReceivedLength() >= 8192)
 			{
 				th->datagenerationthreadstarted = true;
@@ -1377,13 +1544,17 @@ ASFUNCTIONBODY(NetStream,appendBytesAction)
 
 	if (val == "resetBegin")
 	{
-		LOG(LOG_INFO,"NetStream.appendBytesAction:"<<val<<" "<<th->url);
 		if (th->datagenerationfile)
 			delete th->datagenerationfile;
 		th->datagenerationfile = new FileStreamCache;
 		th->datagenerationfile->openForWriting();
+		th->datagenerationbuffer->setLength(0);
 	}
-
+	else if (val == "resetSeek")
+	{
+		LOG(LOG_INFO,"resetSeek:"<<th->datagenerationbuffer->getLength());
+		th->datagenerationbuffer->setLength(0);
+	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"NetStream.appendBytesAction is not implemented yet:"<<val);
 	return NULL;
@@ -1435,7 +1606,7 @@ bool NetStream::isReady() const
 	//Must have videoDecoder, but audioDecoder is optional (in
 	//case the video doesn't have audio)
 	return videoDecoder && videoDecoder->isValid() && 
-		(!audioDecoder || audioDecoder->isValid());
+			(!audioDecoder || audioDecoder->isValid());
 }
 
 bool NetStream::lockIfReady()
@@ -1513,6 +1684,7 @@ void NetStream::execute()
 		this->bufferLength = 0;
 		countermutex.unlock();
 		bool done=false;
+		bool bufferfull = true;
 		while(!done)
 		{
 			//Check if threadAbort has been called, if so, stop this loop
@@ -1521,9 +1693,14 @@ void NetStream::execute()
 				done = true;
 				continue;
 			}
-			bool decodingSuccess=streamDecoder->decodeNextFrame();
-			if(decodingSuccess==false)
-				done = true;
+			bool decodingSuccess= bufferfull && streamDecoder->decodeNextFrame();
+			if(!decodingSuccess && bufferfull)
+			{
+				bufferfull = false;
+				this->incRef();
+				getVm()->addEvent(_MR(this),
+								  _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Empty")));
+			}
 			else
 			{
 				if (streamDecoder->videoDecoder)
@@ -1567,7 +1744,8 @@ void NetStream::execute()
 				if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
 					audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
 				
-				sendClientNotification("onMetaData", createMetaDataObject(streamDecoder));
+				if(!datagenerationfile && bufferfull)
+					sendClientNotification("onMetaData", createMetaDataObject(streamDecoder));
 
 				tickStarted=true;
 				this->incRef();
@@ -1577,6 +1755,13 @@ void NetStream::execute()
 				//Also ask for a render rate equal to the video one (capped at 24)
 				float localRenderRate=dmin(frameRate,24);
 				getSys()->setRenderRate(localRenderRate);
+			}
+			if (!bufferfull && ((framesdecoded / frameRate) >= this->bufferTime))
+			{
+				bufferfull = true;
+				this->incRef();
+				getVm()->addEvent(_MR(this),
+								  _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full")));
 			}
 			profile->accountTime(chronometer.checkpoint());
 			if(threadAborting)

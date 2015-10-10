@@ -29,6 +29,7 @@
 #include "backends/decoder.h"
 #include "backends/interfaces/audio/IAudioPlugin.h"
 #include "NetStreamInfo.h"
+#include "scripting/flash/utils/ByteArray.h"
 
 namespace lightspark
 {
@@ -276,7 +277,16 @@ private:
 	uint32_t framesdecoded;
 	uint32_t prevstreamtime;
 	number_t playbackBytesPerSecond;
-	
+	number_t maxBytesPerSecond;
+
+	struct bytespertime {
+		uint64_t timestamp;
+		uint32_t bytesread;
+	};
+	std::deque<bytespertime> currentBytesPerSecond;
+	enum DATAGENERATION_EXPECT_TYPE { DATAGENERATION_HEADER=0,DATAGENERATION_PREVTAG,DATAGENERATION_FLVTAG };
+	DATAGENERATION_EXPECT_TYPE datagenerationexpecttype;
+	_NR<ByteArray> datagenerationbuffer;
 	
 	ASObject *createMetaDataObject(StreamDecoder* streamDecoder);
 	ASObject *createPlayStatusObject(const tiny_string& code);

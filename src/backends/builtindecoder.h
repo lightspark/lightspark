@@ -25,6 +25,7 @@
 
 namespace lightspark
 {
+class NetStream;
 
 class BuiltinStreamDecoder: public StreamDecoder
 {
@@ -38,13 +39,12 @@ private:
 	uint32_t decodedTime;
 	double frameRate;
 	ScriptDataTag metadataTag;
-	enum STREAM_TYPE { FLV_STREAM=0 };
+	enum STREAM_TYPE { FLV_STREAM=0, UNKOWN_STREAM=1 };
 	STREAM_TYPE classifyStream(std::istream& s);
+	NetStream* netstream;
 public:
-	BuiltinStreamDecoder(std::istream& _s);
+	BuiltinStreamDecoder(std::istream& _s, NetStream* _ns);
 	bool decodeNextFrame();
-	bool getMetadataInteger(const char* name, uint32_t& ret) const;
-	bool getMetadataDouble(const char* name, double& ret) const;
 };
 
 };

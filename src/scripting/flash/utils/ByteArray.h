@@ -81,6 +81,7 @@ public:
 	void removeFrontBytes(int count);
 
 	uint8_t getObjectEncoding() const { return objectEncoding; }
+	void setObjectEncoding(uint8_t encoding) { objectEncoding = encoding; }
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
 	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
 	

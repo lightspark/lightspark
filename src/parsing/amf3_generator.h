@@ -117,7 +117,6 @@ private:
 	_R<ASObject> parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const;
 
 
-	tiny_string parseStringAMF0() const;
 	_R<ASObject> parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
@@ -127,7 +126,8 @@ private:
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
 	_R<ASObject> readObject() const;
+	tiny_string parseStringAMF0() const;
 };
 
-};
+}
 #endif /* PARSING_AMF3_GENERATOR_H */

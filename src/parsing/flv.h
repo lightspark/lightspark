@@ -25,6 +25,7 @@
 #include <map>
 #include "swftypes.h"
 #include "backends/decoder.h"
+#include "asobject.h"
 
 namespace lightspark
 {
@@ -52,7 +53,7 @@ protected:
 	uint32_t timestamp;
 	uint32_t totalLen;
 public:
-	VideoTag() {};
+	VideoTag() {}
 	VideoTag(std::istream& s);
 	uint32_t getDataSize() const { return dataSize; }
 	uint32_t getTotalLen() const { return totalLen; }
@@ -61,29 +62,10 @@ public:
 class ScriptDataTag: public VideoTag
 {
 public:
-	//Metadatas
-	std::map<tiny_string, double> metadataDouble;
-	std::map<tiny_string, int> metadataInteger;
-	std::map<tiny_string, tiny_string> metadataString;
-	ScriptDataTag() {};
+	tiny_string methodName;
+	_NR<ASObject> dataobject;
+	ScriptDataTag() {}
 	ScriptDataTag(std::istream& s);
-};
-
-class ScriptDataString
-{
-private:
-	uint32_t size;
-	tiny_string val;
-public:
-	ScriptDataString(std::istream& s);
-	const tiny_string& getString() const { return val; }
-	uint32_t getSize() const { return size; }
-};
-
-class ScriptECMAArray
-{
-public:
-	ScriptECMAArray(std::istream& s, ScriptDataTag* tag);
 };
 
 class VideoDataTag: public VideoTag
@@ -126,6 +108,6 @@ public:
 	bool isHeader() const { return _isHeader; }
 };
 
-};
+}
 
 #endif /* PARSING_FLV_H */

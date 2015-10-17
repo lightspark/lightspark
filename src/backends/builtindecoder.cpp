@@ -18,11 +18,14 @@
 **************************************************************************/
 
 #include "backends/builtindecoder.h"
+#include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/net/flashnet.h"
 
 using namespace lightspark;
 
-BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s):
-	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0)
+BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns):
+	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0),netstream(_ns)
 {
 	STREAM_TYPE t=classifyStream(stream);
 	if(t==FLV_STREAM)
@@ -42,7 +45,7 @@ BuiltinStreamDecoder::STREAM_TYPE BuiltinStreamDecoder::classifyStream(std::istr
 	if(strncmp(buf,"FLV",3)==0)
 		ret=FLV_STREAM;
 	else
-		throw ParseException("File signature not recognized");
+		ret=UNKOWN_STREAM;
 
 	s.seekg(0);
 	return ret;
@@ -94,10 +97,20 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 			}
 			else
 			{
-				assert_and_throw(audioCodec==tag.SoundFormat);
-				decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-				//Adjust timing
-				decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
+			/*
+				if(tag.isHeader())
+				{
+					//The tag is the header, initialize decoding
+					audioDecoder->switchCodec(tag.SoundFormat, tag.packetData, tag.packetLen);
+					tag.releaseBuffer();
+				}
+				else*/
+				{
+					assert_and_throw(audioCodec==tag.SoundFormat);
+					decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+					//Adjust timing
+					decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
+				}
 			}
 			break;
 		}
@@ -130,50 +143,37 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 					videoDecoder=new NullVideoDecoder();
 #endif
 					videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
+					videoDecoder->framesdecoded++;
 					decodedVideoFrames++;
 				}
 			}
 			else
 			{
-				videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
-				decodedVideoFrames++;
+				if(tag.isHeader())
+				{
+					//The tag is the header, initialize decoding
+					videoDecoder->switchCodec(tag.codec,tag.packetData,tag.packetLen,frameRate);
+					tag.releaseBuffer();
+				}
+				else
+				{
+					videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
+					videoDecoder->framesdecoded++;
+					decodedVideoFrames++;
+				}
 			}
 			break;
 		}
 		case 18:
 		{
-			metadataTag=ScriptDataTag(stream);
-			prevSize=metadataTag.getTotalLen();
-
-			//The frameRate of the container overrides the stream
-			
-			if(metadataTag.metadataDouble.find("framerate") != metadataTag.metadataDouble.end())
-				frameRate=metadataTag.metadataDouble["framerate"];
+			ScriptDataTag tag(stream);
+			prevSize=tag.getTotalLen();
+			netstream->sendClientNotification(tag.methodName,tag.dataobject.getPtr());
 			break;
 		}
 		default:
 			LOG(LOG_ERROR,_("Unexpected tag type ") << (int)TagType << _(" in FLV"));
 			return false;
 	}
-	return true;
-}
-
-bool BuiltinStreamDecoder::getMetadataInteger(const char* name, uint32_t& ret) const
-{
-	auto it=metadataTag.metadataInteger.find(name);
-	if(it == metadataTag.metadataInteger.end())
-		return false;
-
-	ret=it->second;
-	return true;
-}
-
-bool BuiltinStreamDecoder::getMetadataDouble(const char* name, double& ret) const
-{
-	auto it=metadataTag.metadataDouble.find(name);
-	if(it == metadataTag.metadataDouble.end())
-		return false;
-
-	ret=it->second;
 	return true;
 }

@@ -287,10 +287,6 @@ private:
 	enum DATAGENERATION_EXPECT_TYPE { DATAGENERATION_HEADER=0,DATAGENERATION_PREVTAG,DATAGENERATION_FLVTAG };
 	DATAGENERATION_EXPECT_TYPE datagenerationexpecttype;
 	_NR<ByteArray> datagenerationbuffer;
-	
-	ASObject *createMetaDataObject(StreamDecoder* streamDecoder);
-	ASObject *createPlayStatusObject(const tiny_string& code);
-	void sendClientNotification(const tiny_string& name, ASObject *args);
 public:
 	NetStream(Class_base* c);
 	~NetStream();
@@ -299,6 +295,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
+	ASFUNCTION(play2);
 	ASFUNCTION(resume);
 	ASFUNCTION(pause);
 	ASFUNCTION(togglePause);
@@ -322,6 +319,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, bufferTime);
 	ASPROPERTY_GETTER_SETTER(number_t, bufferTimeMax);
 	ASPROPERTY_GETTER_SETTER(number_t, maxPauseBufferTime);
+
+	void sendClientNotification(const tiny_string& name, ASObject *args);
 
 	//Interface for video
 	/**

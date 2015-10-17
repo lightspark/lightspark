@@ -20,9 +20,15 @@
 #include "parsing/flv.h"
 #include "swftypes.h"
 #include "compat.h"
+#include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/utils/ByteArray.h"
+#include "scripting/class.h"
+#include "scripting/toplevel/toplevel.h"
+#include "amf3_generator.h"
 
 using namespace lightspark;
 using namespace std;
+
 
 FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVideo(false)
 {
@@ -87,94 +93,28 @@ VideoTag::VideoTag(istream& s)
 ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 {
 	unsigned int start=s.tellg();
-	tiny_string methodName;
 
-	//Specs talks about an arbitrary number of stuff, actually just a string and an array are expected
-	UI8 Type;
-	s >> Type;
-	if(Type!=2)
-		throw ParseException("Unexpected type in FLV");
+	_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+	uint8_t* data =b->getBuffer(dataSize,true);
+	s.read((char*)data,dataSize);
+	b->setObjectEncoding(ObjectEncoding::AMF0);
+	b->setCurrentObjectEncoding(ObjectEncoding::AMF0);
+	b->setPosition(0);
+	uint8_t tagtype;
+	if (!b->readByte(tagtype))
+		throw ParseException("Not enough data to parse tag type");
+	if (tagtype != amf0_string_marker)
+		throw ParseException("wrong tagtype in ScriptDataTag");
 
-	ScriptDataString String(s);
-	methodName=String.getString();
+	Amf3Deserializer d(b.getPtr());
+	methodName=d.parseStringAMF0();
+	dataobject = d.readObject();
 
-	s >> Type;
-	if(Type!=8)
-		throw ParseException("Unexpected type in FLV");
-
-	ScriptECMAArray ecmaArray(s, this);
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
 }
 
-ScriptDataString::ScriptDataString(std::istream& s)
-{
-	UI16_FLV Length;
-	s >> Length;
-	size=Length;
-	//TODO: use resize on tiny_string
-	char* buf=new char[Length+1];
-	s.read(buf,Length);
-	buf[Length]=0;
-
-	val=tiny_string(buf,true);
-
-	delete[] buf;
-}
-
-ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
-{
-	//numVar is an 'approximation' of array size
-	UI32_FLV numVar;
-	s >> numVar;
-
-	while(1)
-	{
-		ScriptDataString varName(s);
-		//cout << varName.getString() << endl;
-		UI8 Type;
-		s >> Type;
-		switch(Type)
-		{
-			case 0: //double (big-endian)
-			{
-				union
-				{
-					uint64_t i;
-					double d;
-				} tmp;
-				s.read((char*)&tmp.i,8);
-				tmp.i=GINT64_FROM_BE(tmp.i);
-				tag->metadataDouble[varName.getString()] = tmp.d;
-				//cout << "FLV metadata double: " << varName.getString() << " = " << tmp.d << endl;
-				break;
-			}
-			case 1: //integer
-			{
-				UI8 b;
-				s >> b;
-				tag->metadataInteger[varName.getString()] = int(b);
-				//cout << "FLV metadata int: " << varName.getString() << " = " << (int)b << endl;
-				break;
-			}
-			case 2: //string
-			{
-				ScriptDataString String(s);
-				tag->metadataString[varName.getString()] = String.getString();
-				//cout << "FLV metadata string: " << varName.getString() << " = " << String.getString() << endl;
-				break;
-			}
-			case 9: //End of array
-			{
-				return;
-			}
-			default:
-				LOG(LOG_ERROR,"Unknown type in flv parsing: " << (int)Type);
-				throw ParseException("Unexpected type in FLV");
-		}
-	}
-}
 
 VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(NULL)
 {
@@ -238,7 +178,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 		SI24_FLV CompositionTime;
 		s >> CompositionTime;
-		assert_and_throw(CompositionTime==0); //TODO: what are composition times
+		//assert_and_throw(CompositionTime==0); //TODO: what are composition times
 
 		//Compute lenght of raw data
 		packetLen=dataSize-5;

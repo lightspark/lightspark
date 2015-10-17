@@ -85,8 +85,9 @@ public:
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
-	virtual ~VideoDecoder(){};
+	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
+	virtual ~VideoDecoder(){}
+	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
 	virtual void skipUntil(uint32_t time)=0;
@@ -101,6 +102,7 @@ public:
 	}
 	double frameRate;
 	uint32_t framesdecoded;
+	uint32_t framesdropped;
 	/*
 		Useful to avoid destruction of the object while a pending upload is waiting
 	*/
@@ -194,6 +196,7 @@ public:
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
 	bool decodePacket(AVPacket* pkt, uint32_t time);
+	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint);
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 	bool discardFrame();
 	void skipUntil(uint32_t time);
@@ -241,7 +244,8 @@ public:
 	void* operator new(size_t);
 	void operator delete(void*);
 	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
-	virtual ~AudioDecoder(){};
+	virtual ~AudioDecoder(){}
+	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
 	{
@@ -316,6 +320,7 @@ public:
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
+	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
 	uint32_t decodeStreamSomePackets(std::istream& s, uint32_t time);
 };
@@ -327,8 +332,6 @@ public:
 	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
-	virtual bool getMetadataInteger(const char* name, uint32_t& ret) const=0;
-	virtual bool getMetadataDouble(const char* name, double& ret) const=0;
 	bool isValid() const { return valid; }
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
@@ -362,8 +365,6 @@ public:
 	FFMpegStreamDecoder(std::istream& s);
 	~FFMpegStreamDecoder();
 	bool decodeNextFrame();
-	bool getMetadataInteger(const char* name, uint32_t& ret) const;
-	bool getMetadataDouble(const char* name, double& ret) const;
 };
 #endif
 

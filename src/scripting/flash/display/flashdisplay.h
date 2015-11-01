@@ -552,6 +552,8 @@ public:
 	ASFUNCTION(_setFrameRate);
 	ASFUNCTION(_getWmodeGPU);
 	ASFUNCTION(_invalidate);
+	ASFUNCTION(_getColor);
+	ASFUNCTION(_setColor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);

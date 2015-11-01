@@ -852,6 +852,17 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				name->resetNameIfObject();
 				break;
 			}
+			case 0x5f:
+			{
+				//finddef
+				uint32_t t=data->uints[0];
+				instructionPointer+=4;
+				multiname* name=context->context->getMultiname(t,context);
+				LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<< *name);
+				context->runtime_stack_push(getSys()->getNullRef());
+				name->resetNameIfObject();
+				break;
+			}
 			case 0x60:
 			{
 				//getlex

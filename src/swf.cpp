@@ -1283,6 +1283,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		frameRate/=256;
 	LOG(LOG_INFO,_("FrameRate ") << frameRate);
 	root->setFrameRate(frameRate);
+	root->loaderInfo->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist
 	getSys()->setRenderRate(frameRate);
 	root->setFrameSize(FrameSize);

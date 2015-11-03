@@ -55,7 +55,7 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
-	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true)
+	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
@@ -64,7 +64,7 @@ LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicati
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
-	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true)
+	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
@@ -90,6 +90,7 @@ void LoaderInfo::sinit(Class_base* c)
 	REGISTER_GETTER(c,contentType);
 	REGISTER_GETTER(c,uncaughtErrorEvents);
 	REGISTER_GETTER(c,parentAllowsChild);
+	REGISTER_GETTER(c,frameRate);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
@@ -99,6 +100,7 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,contentType);
 ASFUNCTIONBODY_GETTER(LoaderInfo,swfVersion);
 ASFUNCTIONBODY_GETTER(LoaderInfo,uncaughtErrorEvents);
 ASFUNCTIONBODY_GETTER(LoaderInfo,parentAllowsChild);
+ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate);
 
 void LoaderInfo::buildTraits(ASObject* o)
 {

@@ -254,6 +254,7 @@ public:
 	ASPROPERTY_GETTER(bool, childAllowsParent);
 	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
 	ASPROPERTY_GETTER(bool,parentAllowsChild);
+	ASPROPERTY_GETTER(number_t,frameRate);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);
 	void finalize();
@@ -285,6 +286,7 @@ public:
 	void setLoaderURL(const tiny_string& _url) { loaderURL=_url; }
 	void setParameters(_NR<ASObject> p) { parameters = p; }
 	void resetState();
+	void setFrameRate(number_t f) { frameRate=f; }
 };
 
 class URLRequest;

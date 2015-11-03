@@ -762,7 +762,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	int out_linesize;
 	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
 	av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
-	maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*4;
+	maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*frameIn->channels; // 2 bytes in AV_SAMPLE_FMT_S16
 	memcpy(curTail.samples, output, maxLen);
 	av_freep(&output);
 	avresample_free(&avr);

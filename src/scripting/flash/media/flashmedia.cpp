@@ -555,7 +555,7 @@ void SoundChannel::playRaw()
 	do
 	{
 		decoder->decodeStreamSomePackets(stream, 0);
-		if (decoder->isValid())
+		if (decoder->isValid() && (audioStream == NULL))
 			audioStream=getSys()->audioManager->createStreamPlugin(decoder);
 	}
 	while (!ACQUIRE_READ(stopped) && !stream.eof() && !stream.fail() && !stream.bad());

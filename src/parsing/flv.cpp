@@ -94,21 +94,26 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 {
 	unsigned int start=s.tellg();
 
-	_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
-	uint8_t* data =b->getBuffer(dataSize,true);
-	s.read((char*)data,dataSize);
-	b->setObjectEncoding(ObjectEncoding::AMF0);
-	b->setCurrentObjectEncoding(ObjectEncoding::AMF0);
-	b->setPosition(0);
-	uint8_t tagtype;
-	if (!b->readByte(tagtype))
-		throw ParseException("Not enough data to parse tag type");
-	if (tagtype != amf0_string_marker)
-		throw ParseException("wrong tagtype in ScriptDataTag");
-
-	Amf3Deserializer d(b.getPtr());
-	methodName=d.parseStringAMF0();
-	dataobject = d.readObject();
+	if (dataSize > 0)
+	{
+		_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+		uint8_t* data =b->getBuffer(dataSize,true);
+		s.read((char*)data,dataSize);
+		b->setObjectEncoding(ObjectEncoding::AMF0);
+		b->setCurrentObjectEncoding(ObjectEncoding::AMF0);
+		b->setPosition(0);
+		uint8_t tagtype;
+		if (!b->readByte(tagtype))
+			throw ParseException("Not enough data to parse tag type");
+		if (tagtype != amf0_string_marker)
+			throw ParseException("wrong tagtype in ScriptDataTag");
+		
+		Amf3Deserializer d(b.getPtr());
+		methodName=d.parseStringAMF0();
+		
+		while (b->getPosition() < dataSize)
+			dataobjectlist.push_back(d.readObject());
+	}
 
 	//Compute totalLen
 	unsigned int end=s.tellg();

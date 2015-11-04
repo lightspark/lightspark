@@ -319,8 +319,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, bufferTime);
 	ASPROPERTY_GETTER_SETTER(number_t, bufferTimeMax);
 	ASPROPERTY_GETTER_SETTER(number_t, maxPauseBufferTime);
+	ASPROPERTY_GETTER_SETTER(bool, useHardwareDecoder);
 
-	void sendClientNotification(const tiny_string& name, ASObject *args);
+	void sendClientNotification(const tiny_string& name, std::list<_NR<ASObject> >& arglist);
 
 	//Interface for video
 	/**

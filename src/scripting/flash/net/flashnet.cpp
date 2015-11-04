@@ -1086,6 +1086,7 @@ void NetStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, bufferTimeMax);
 	REGISTER_GETTER_SETTER(c, maxPauseBufferTime);
 	REGISTER_GETTER_SETTER(c,soundTransform);
+	REGISTER_GETTER_SETTER(c,useHardwareDecoder);
 	c->setDeclaredMethodByQName("info","",Class<IFunction>::getFunction(_getInfo),GETTER_METHOD,true);
 }
 
@@ -1100,6 +1101,7 @@ ASFUNCTIONBODY_GETTER_SETTER(NetStream, bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(NetStream, bufferTimeMax);
 ASFUNCTIONBODY_GETTER_SETTER(NetStream, maxPauseBufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(NetStream,soundTransform);
+ASFUNCTIONBODY_GETTER_SETTER(NetStream,useHardwareDecoder);
 
 ASFUNCTIONBODY(NetStream,_getInfo)
 {
@@ -1745,7 +1747,7 @@ void NetStream::execute()
 							this->playbackBytesPerSecond = s.tellg() / (framesdecoded / frameRate);
 							// TODO this overrides the real number of decoded frames
 							// otherwise on slow computers we never get the buffer filled
-							framesdecoded = (this->getReceivedLength() / this->playbackBytesPerSecond) *  frameRate;
+							//framesdecoded = (this->getReceivedLength() / this->playbackBytesPerSecond) *  frameRate;
 							this->bufferLength = (framesdecoded / frameRate) - (streamTime-prevstreamtime)/1000.0;
 						}
 						countermutex.unlock();
@@ -1767,15 +1769,14 @@ void NetStream::execute()
 				getVm()->addEvent(_MR(this),
 								  _MR(Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start")));
 			}
+			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+				audioDecoder=streamDecoder->audioDecoder;
+			
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
+				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
 			
 			if(!tickStarted && isReady() && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
-				if(audioDecoder==NULL && streamDecoder->audioDecoder)
-					audioDecoder=streamDecoder->audioDecoder;
-				
-				if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
-					audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
-				
 				tickStarted=true;
 				this->incRef();
 				getVm()->addEvent(_MR(this),
@@ -1878,9 +1879,9 @@ void NetStream::threadAbort()
 	}
 }
 
-void NetStream::sendClientNotification(const tiny_string& name, ASObject *arg)
+void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<ASObject> >& arglist)
 {
-	if (client.isNull() || !arg)
+	if (client.isNull())
 		return;
 
 	multiname callbackName(NULL);
@@ -1890,15 +1891,20 @@ void NetStream::sendClientNotification(const tiny_string& name, ASObject *arg)
 	_NR<ASObject> callback = client->getVariableByMultiname(callbackName);
 	if(!callback.isNull() && callback->is<Function>())
 	{
-		ASObject* callbackArgs[1];
+		ASObject* callbackArgs[arglist.size()];
 
 		client->incRef();
-		arg->incRef();
-		callbackArgs[0] = arg;
+		int i= 0;
+		for (auto it = arglist.cbegin();it != arglist.cend(); it++)
+		{
+			_NR<ASObject> arg = (*it);
+			arg->incRef();
+			callbackArgs[i++] = arg.getPtr();
+		}
 		callback->incRef();
 		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(_MR(
 				static_cast<IFunction*>(callback.getPtr())),
-				_MR(client), callbackArgs, 1));
+				_MR(client), callbackArgs, arglist.size()));
 		getVm()->addEvent(NullRef,event);
 	}
 }

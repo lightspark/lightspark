@@ -144,6 +144,8 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 #endif
 					videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
 					videoDecoder->framesdecoded++;
+					if (videoDecoder->frameRate != 0)
+						frameRate = videoDecoder->frameRate;
 					decodedVideoFrames++;
 				}
 			}
@@ -159,6 +161,8 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				{
 					videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
 					videoDecoder->framesdecoded++;
+					if (videoDecoder->frameRate != 0)
+						frameRate = videoDecoder->frameRate;
 					decodedVideoFrames++;
 				}
 			}
@@ -168,7 +172,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 		{
 			ScriptDataTag tag(stream);
 			prevSize=tag.getTotalLen();
-			netstream->sendClientNotification(tag.methodName,tag.dataobject.getPtr());
+			netstream->sendClientNotification(tag.methodName,tag.dataobjectlist);
 			break;
 		}
 		default:

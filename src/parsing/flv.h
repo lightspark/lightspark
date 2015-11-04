@@ -63,7 +63,7 @@ class ScriptDataTag: public VideoTag
 {
 public:
 	tiny_string methodName;
-	_NR<ASObject> dataobject;
+	std::list<_NR<ASObject> > dataobjectlist;
 	ScriptDataTag() {}
 	ScriptDataTag(std::istream& s);
 };

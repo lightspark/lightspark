@@ -1798,6 +1798,9 @@ void SystemState::resizeCompleted() const
 	{
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS("resize",false)));
+		
+		stage->incRef();
+		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS()));
 	}
 }
 

@@ -604,16 +604,20 @@ _R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stri
 	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
 
 	//Read name, value pairs
-	while(count)
+	while(true)
 	{
 		tiny_string varName = parseStringAMF0();
 		if (varName == "")
+		{
+			uint8_t marker = 0;
+			input->readByte(marker);
+			if (marker == amf0_object_end_marker )
+				break;
 			throw ParseException("empty key in AMF0 ECMA array");
+		}
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
 		value->incRef();
-
 		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
-		count--;
 	}
 	return ret;
 }

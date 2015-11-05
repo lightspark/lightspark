@@ -78,9 +78,13 @@ public:
 class SoundTransform: public ASObject
 {
 public:
-	SoundTransform(Class_base* c):ASObject(c){}
+	SoundTransform(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(number_t,volume);
 	ASPROPERTY_GETTER_SETTER(number_t,pan);
+	ASPROPERTY_GETTER_SETTER(number_t,leftToLeft);
+	ASPROPERTY_GETTER_SETTER(number_t,leftToRight);
+	ASPROPERTY_GETTER_SETTER(number_t,rightToLeft);
+	ASPROPERTY_GETTER_SETTER(number_t,rightToRight);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };
@@ -88,7 +92,7 @@ public:
 class SoundChannel : public EventDispatcher, public IThreadJob
 {
 private:
-        _NR<StreamCache> stream;
+	_NR<StreamCache> stream;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(stopped);
 	AudioDecoder* audioDecoder;

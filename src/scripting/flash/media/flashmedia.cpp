@@ -30,15 +30,27 @@
 using namespace lightspark;
 using namespace std;
 
+SoundTransform::SoundTransform(Class_base* c): ASObject(c),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
+{
+}
+
 void SoundTransform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c,volume);
 	REGISTER_GETTER_SETTER(c,pan);
+	REGISTER_GETTER_SETTER(c,leftToLeft);
+	REGISTER_GETTER_SETTER(c,leftToRight);
+	REGISTER_GETTER_SETTER(c,rightToLeft);
+	REGISTER_GETTER_SETTER(c,rightToRight);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,volume);
-ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,pan);
+ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,volume)
+ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,pan)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,leftToLeft)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,leftToRight)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,rightToLeft)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,rightToRight)
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
 {

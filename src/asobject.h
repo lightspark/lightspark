@@ -80,7 +80,7 @@
 		c* th = obj->as<c>(); \
 		if(argslen != 0) \
 			throw Class<ArgumentError>::getInstanceS("Arguments provided in getter"); \
-		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " is not implemented"); \
+		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " getter is not implemented"); \
 		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
 	}
 
@@ -93,6 +93,19 @@
 		c* th = obj->as<c>(); \
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
+		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
+		return NULL; \
+	}
+
+#define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
+	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	{ \
+		if(!obj->is<c>()) \
+			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+		c* th = obj->as<c>(); \
+		if(argslen != 1) \
+			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
+		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " setter is not implemented"); \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		return NULL; \
 	}
@@ -118,6 +131,10 @@
 #define ASFUNCTIONBODY_GETTER_SETTER(c,name) \
 		ASFUNCTIONBODY_GETTER(c,name) \
 		ASFUNCTIONBODY_SETTER(c,name)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(c,name) \
+		ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
+		ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name)
 
 #define ASFUNCTIONBODY_GETTER_SETTER_CB(c,name,callback) \
 		ASFUNCTIONBODY_GETTER(c,name) \

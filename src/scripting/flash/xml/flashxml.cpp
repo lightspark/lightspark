@@ -248,8 +248,17 @@ ASFUNCTIONBODY(XMLNode,appendChild)
 	th->node.append_move(c->node);
 	if (!c->root.isNull())
 		c->root->decRef();
-	c->root = th->root;
-	th->root->incRef();
+	if (th->is<XMLDocument>())
+	{
+		th->incRef();
+		c->root = _MR(th->as<XMLDocument>());
+	}
+	else
+	{
+		assert_and_throw(!th->root.isNull());
+		c->root = th->root;
+		th->root->incRef();
+	}
 	return NULL;
 }
 tiny_string XMLNode::toString()

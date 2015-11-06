@@ -1626,13 +1626,13 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
 	if (ok)
 		return res;
-
-	res += "[";
-	std::map<uint32_t,data_slot>::iterator it;
 	// check for cylic reference
 	if (std::find(path.begin(),path.end(), this) != path.end())
 		throwError<TypeError>(kJSONCyclicStructure);
+	
 	path.push_back(this);
+	res += "[";
+	std::map<uint32_t,data_slot>::iterator it;
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	for (it=data.begin() ; it != data.end(); ++it)
@@ -1672,11 +1672,11 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 			bfirst = false;
 			res += subres;
 		}
-		path.push_back(o);
 	}
 	if (!bfirst)
 		res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
 	res += "]";
+	path.pop_back();
 	return res;
 	
 }

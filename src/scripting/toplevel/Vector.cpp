@@ -1099,12 +1099,12 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, c
 	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
 	if (ok)
 		return res;
-
-	res += "[";
 	// check for cylic reference
 	if (std::find(path.begin(),path.end(), this) != path.end())
 		throwError<TypeError>(kJSONCyclicStructure);
+
 	path.push_back(this);
+	res += "[";
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	for (uint i =0;  i < vec.size(); i++)
@@ -1138,11 +1138,11 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, c
 			bfirst = false;
 			res += subres;
 		}
-		path.push_back(o);
 	}
 	if (!bfirst)
 		res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
 	res += "]";
+	path.pop_back();
 	return res;
 }
 
@@ -1197,7 +1197,11 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		for(uint32_t i=0;i<count;i++)
 		{
 			if (!vec[i])
+			{
+				//TODO should we write a null_marker here?
+				LOG(LOG_NOT_IMPLEMENTED,"serialize unset vector objects");
 				continue;
+			}
 			switch (marker)
 			{
 				case vector_int_marker:

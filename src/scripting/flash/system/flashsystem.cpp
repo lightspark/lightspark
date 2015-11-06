@@ -403,7 +403,7 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 }
 
 LoaderContext::LoaderContext(Class_base* c):
-	ASObject(c),allowCodeImport(true),checkPolicyFile(false)
+	ASObject(c),allowCodeImport(true),checkPolicyFile(false),imageDecodingPolicy("onDemand")
 {
 }
 
@@ -417,6 +417,7 @@ void LoaderContext::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, checkPolicyFile);
 	REGISTER_GETTER_SETTER(c, parameters);
 	REGISTER_GETTER_SETTER(c, securityDomain);
+	REGISTER_GETTER_SETTER(c, imageDecodingPolicy);
 }
 
 void LoaderContext::finalize()
@@ -440,6 +441,7 @@ ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, parameters);
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(LoaderContext, imageDecodingPolicy);
 
 bool LoaderContext::getCheckPolicyFile()
 {
@@ -626,4 +628,10 @@ ASFUNCTIONBODY(ASWorker,getSharedProperty)
 	return Class<ASObject>::getInstanceS();
 }
 
+void ImageDecodingPolicy::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableByQName("ON_DEMAND","",Class<ASString>::getInstanceS("onDemand"),CONSTANT_TRAIT);
+	c->setVariableByQName("ON_LOAD	","",Class<ASString>::getInstanceS("onLoad"),CONSTANT_TRAIT);
+}
 

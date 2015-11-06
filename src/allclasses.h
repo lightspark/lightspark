@@ -234,6 +234,7 @@ REGISTER_CLASS_NAME(Security,"flash.system")
 REGISTER_CLASS_NAME(SecurityDomain,"flash.system")
 REGISTER_CLASS_NAME(System,"flash.system")
 REGISTER_CLASS_NAME(ASWorker,"flash.system")
+REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")

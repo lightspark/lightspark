@@ -119,6 +119,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, checkPolicyFile);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, parameters);
 	ASPROPERTY_GETTER_SETTER(_NR<SecurityDomain>, securityDomain);
+	ASPROPERTY_GETTER_SETTER(tiny_string, imageDecodingPolicy);
 	void finalize();
 	bool getAllowCodeImport();
 	bool getCheckPolicyFile();
@@ -166,6 +167,12 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_getCurrent);
 	ASFUNCTION(getSharedProperty);
+};
+class ImageDecodingPolicy: public ASObject
+{
+public:
+	ImageDecodingPolicy(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
 };
 
 }

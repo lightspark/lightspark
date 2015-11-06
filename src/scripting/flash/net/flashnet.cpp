@@ -398,6 +398,10 @@ void URLLoaderThread::execute()
 	{
 		//Send a complete event for this object
 		loader->setData(data);
+
+		loader->incRef();
+		getVm()->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(downloader->getLength(),downloader->getLength())));
+		//Send a complete event for this object
 		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("complete")));
 	}
@@ -416,7 +420,7 @@ void URLLoaderThread::execute()
 	}
 }
 
-URLLoader::URLLoader(Class_base* c):EventDispatcher(c),dataFormat("text"),data(),job(NULL)
+URLLoader::URLLoader(Class_base* c):EventDispatcher(c),dataFormat("text"),data(),job(NULL),timestamp_last_progress(0)
 {
 }
 
@@ -473,6 +477,13 @@ void URLLoader::setBytesTotal(uint32_t b)
 void URLLoader::setBytesLoaded(uint32_t b)
 {
 	bytesLoaded = b;
+	uint64_t cur=compat_get_thread_cputime_us();
+	if (cur > timestamp_last_progress+ 40*1000)
+	{
+		timestamp_last_progress = cur;
+		this->incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(b,bytesTotal)));
+	}
 }
 
 ASFUNCTIONBODY(URLLoader,_constructor)

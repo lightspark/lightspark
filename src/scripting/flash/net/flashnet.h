@@ -142,6 +142,7 @@ private:
 	_NR<ASObject> data;
 	Spinlock spinlock;
 	URLLoaderThread *job;
+	uint64_t timestamp_last_progress;
 public:
 	URLLoader(Class_base* c);
 	void finalize();

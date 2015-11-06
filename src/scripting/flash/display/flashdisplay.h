@@ -563,6 +563,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,showDefaultContextMenu);
 	ASPROPERTY_GETTER_SETTER(tiny_string,quality);
 	ASPROPERTY_GETTER_SETTER(bool,stageFocusRect);
+	ASPROPERTY_GETTER(bool,allowsFullScreen);
 };
 
 class StageScaleMode: public ASObject

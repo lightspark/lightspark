@@ -2124,6 +2124,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,showDefaultContextMenu);
 	REGISTER_GETTER_SETTER(c,quality);
 	REGISTER_GETTER_SETTER(c,stageFocusRect);
+	REGISTER_GETTER(c,allowsFullScreen);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
@@ -2133,6 +2134,7 @@ ASFUNCTIONBODY_GETTER_SETTER(Stage,showDefaultContextMenu);  // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,stageFocusRect);  // stub
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen);  // stub
 
 void Stage::onDisplayState(const tiny_string&)
 {
@@ -2169,7 +2171,7 @@ void Stage::buildTraits(ASObject* o)
 
 Stage::Stage(Class_base* c):
 	DisplayObjectContainer(c), colorCorrection("default"),
-	showDefaultContextMenu(true), quality("high")
+	showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	onStage = true;
 }

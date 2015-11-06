@@ -131,7 +131,7 @@ ASFUNCTIONBODY(JSON,_stringify)
 }
 void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, IFunction *reviver)
 {
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	int pos = 0;
 	while (pos < len)
 	{
@@ -154,7 +154,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 		   jsonstring.charAt(pos) == '\r'
 		   )
 		   pos++;
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	if (pos < len)
 	{
 		char c = jsonstring.charAt(pos);
@@ -241,7 +241,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 }
 int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
 {
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	if (len >= pos+4)
 	{
 		if (jsonstring.charAt(pos) == 't' && 
@@ -264,7 +264,7 @@ int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,con
 }
 int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
 {
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	if (len >= pos+5)
 	{
 		if (jsonstring.charAt(pos) == 'f' && 
@@ -288,7 +288,7 @@ int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,co
 }
 int JSON::parseNull(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
 {
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	if (len >= pos+4)
 	{
 		if (jsonstring.charAt(pos) == 'n' && 
@@ -428,7 +428,7 @@ int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,c
 }
 int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent, const multiname& key)
 {
-	int len = jsonstring.numBytes();
+	int len = jsonstring.numChars();
 	tiny_string res;
 	bool done = false;
 	while (!done && pos < len)

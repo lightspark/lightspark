@@ -133,12 +133,12 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 	{
 		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
-		if(isVmThread())
+		if(getVm())
 		{
 			this->incRef();
 			getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
 		}
-		if(loadStatus==INIT_SENT)
+		if(loadStatus==INIT_SENT || (bytesLoaded == bytesTotal))
 		{
 			//The clip is also complete now
 			this->incRef();
@@ -353,6 +353,8 @@ void LoaderThread::execute()
 	{
 		assert_and_throw(bytes->bytes);
 
+		loaderInfo->incRef();
+		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
 

@@ -55,7 +55,7 @@ ASFUNCTIONBODY(JSON,_parse)
 
 	if (argslen > 0 && (args[0]->is<Null>() ||args[0]->is<Undefined>()))
 		throwError<SyntaxError>(kJSONInvalidParseInput);
-	ARG_UNPACK(text);
+	ARG_UNPACK_MORE_ALLOWED(text);
 	if (argslen > 1)
 	{
 		if (!args[1]->is<IFunction>())
@@ -72,7 +72,7 @@ ASFUNCTIONBODY(JSON,_parse)
 ASFUNCTIONBODY(JSON,_stringify)
 {
 	_NR<ASObject> value;
-	ARG_UNPACK(value);
+	ARG_UNPACK_MORE_ALLOWED(value);
 	std::vector<ASObject *> path;
 	tiny_string filter;
 	IFunction* replacer = NULL;

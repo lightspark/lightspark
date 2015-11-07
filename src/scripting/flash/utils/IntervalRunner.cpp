@@ -56,6 +56,7 @@ void IntervalRunner::tick()
 	}
 	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
 	getVm()->addEvent(NullRef,event);
+	event->done.wait();
 	if(type == TIMEOUT)
 	{
 		//TODO: IntervalRunner deletes itself. Is this allowed?

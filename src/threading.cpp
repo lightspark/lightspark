@@ -95,7 +95,8 @@ void Semaphore::signal()
 
 CondTime::CondTime(long milliseconds)
 {
-	timepoint=g_get_monotonic_time()+milliseconds*G_TIME_SPAN_MILLISECOND;
+	// round to full milliseconds
+	timepoint=((g_get_monotonic_time()+G_TIME_SPAN_MILLISECOND/2)/G_TIME_SPAN_MILLISECOND+milliseconds)*G_TIME_SPAN_MILLISECOND;
 }
 
 bool CondTime::operator<(CondTime& c) const

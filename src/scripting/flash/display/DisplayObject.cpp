@@ -410,6 +410,13 @@ void DisplayObject::setOnStage(bool staged)
 				ABCVm::publicHandleEvent(_MR(this),e);
 			else
 				getVm()->addEvent(_MR(this),e);
+			if (getStage())
+			{
+				// it seems that DisplayObjects can expect a StageVideoAvailabilityEvent after
+				// they are added to the stage
+				getStage()->incRef();
+				getVm()->addEvent(_MR(getStage()),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS()));
+			}
 		}
 		else if(onStage==false)
 		{

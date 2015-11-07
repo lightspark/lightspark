@@ -531,6 +531,7 @@ public:
 	void setConstructorCallComplete() { constructorCallComplete = true; }
 	
 	void setIsEnumerable(const multiname& name, bool isEnum);
+	void destroyContents();
 };
 
 class Number;

@@ -1105,6 +1105,10 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 	if (v)
 		v->isenumerable = isEnum;
 }
+void ASObject::destroyContents()
+{
+	Variables.destroyContents();
+}
 
 ASFUNCTIONBODY(ASObject,_constructor)
 {

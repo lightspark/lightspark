@@ -620,6 +620,7 @@ void SharedObject::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(getLocal),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(flush),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,data);
 }
 
@@ -650,6 +651,12 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 ASFUNCTIONBODY(SharedObject,flush)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(SharedObject,clear)
+{
+	SharedObject* th=static_cast<SharedObject*>(obj);
+	th->data->destroyContents();
 	return NULL;
 }
 

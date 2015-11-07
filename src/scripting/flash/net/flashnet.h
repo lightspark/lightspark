@@ -113,6 +113,7 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION(getLocal);
 	ASFUNCTION(flush);
+	ASFUNCTION(clear);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
 };
 

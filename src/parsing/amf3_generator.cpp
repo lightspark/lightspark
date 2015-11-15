@@ -555,8 +555,7 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case amf0_ecma_array_marker:
 				return parseECMAArrayAMF0(stringMap,objMap,traitsMap);
 			case amf0_strict_array_marker:
-				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
-				throw UnsupportedException("unimplemented marker");
+				return parseStrictArrayAMF0(stringMap,objMap,traitsMap);
 			case amf0_date_marker:
 				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
 				throw UnsupportedException("unimplemented marker");
@@ -621,6 +620,28 @@ _R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stri
 	}
 	return ret;
 }
+_R<ASObject> Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const
+{
+	uint32_t count;
+	if(!input->readUnsignedInt(count))
+		throw ParseException("Not enough data to parse AMF3 strict array");
+
+	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS());
+	//Add object to the map
+	objMap.push_back(ret.getPtr());
+
+	while(count)
+	{
+		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+		value->incRef();
+		ret->push(value);
+		count--;
+	}
+	return ret;
+}
+
 _R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const

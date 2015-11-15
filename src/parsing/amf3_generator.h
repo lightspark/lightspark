@@ -120,6 +120,9 @@ private:
 	_R<ASObject> parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
+	_R<ASObject> parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<ASObject*>& objMap,
+			std::vector<TraitsRef>& traitsMap) const;
 	_R<ASObject> parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;

@@ -752,19 +752,29 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	AVAudioResampleContext * avr = avresample_alloc_context();
 	av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
 	av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
-	av_opt_set_int(avr, "in_sample_rate",     frameIn->sample_rate,     0);
-	av_opt_set_int(avr, "out_sample_rate",    frameIn->sample_rate,     0);
+	av_opt_set_int(avr, "in_sample_rate",     codecContext->sample_rate,     0);
+	av_opt_set_int(avr, "out_sample_rate",    codecContext->sample_rate,     0);
 	av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
 	av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
 	avresample_open(avr);
 
 	uint8_t *output;
 	int out_linesize;
-	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], frameIn->sample_rate, frameIn->sample_rate, AV_ROUND_UP);
-	av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
-	maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*frameIn->channels; // 2 bytes in AV_SAMPLE_FMT_S16
-	memcpy(curTail.samples, output, maxLen);
-	av_freep(&output);
+	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], codecContext->sample_rate, codecContext->sample_rate, AV_ROUND_UP);
+	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
+	if (res == 0)
+	{
+		maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*codecContext->channels; // 2 bytes in AV_SAMPLE_FMT_S16
+		memcpy(curTail.samples, output, maxLen);
+		av_freep(&output);
+	}
+	else
+	{
+		LOG(LOG_ERROR, "resampling failed, error code:"<<res);
+		memset(curTail.samples, 0, frameIn->linesize[0]);
+		maxLen = frameIn->linesize[0];
+	}
+	
 	avresample_free(&avr);
 #else
 	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libavresample");

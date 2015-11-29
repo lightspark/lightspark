@@ -592,6 +592,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
+	th->eventListenerAdded(eventName);
 	return NULL;
 }
 

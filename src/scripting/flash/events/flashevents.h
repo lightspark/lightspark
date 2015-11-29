@@ -257,7 +257,7 @@ class TimerEvent: public Event
 {
 public:
 	TimerEvent(Class_base* c):Event(c, "DEPRECATED"){}
-	TimerEvent(Class_base* c,const tiny_string& t):Event(c,t,true){};
+	TimerEvent(Class_base* c,const tiny_string& t):Event(c,t,true){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -315,7 +315,7 @@ private:
 	bool use_capture;
 public:
 	explicit listener(_R<IFunction> _f, int32_t _p, bool _c)
-		:f(_f),priority(_p),use_capture(_c){};
+		:f(_f),priority(_p),use_capture(_c){}
 	bool operator==(std::pair<IFunction*,bool> r)
 	{
 		/* One can register the same handle for the same event with
@@ -345,6 +345,8 @@ private:
 	 * This will be used when a target is passed to EventDispatcher constructor
 	 */
 	_NR<ASObject> forcedTarget;
+protected:
+	virtual void eventListenerAdded(const tiny_string& eventName) {}
 public:
 	EventDispatcher(Class_base* c);
 	void finalize();
@@ -353,7 +355,7 @@ public:
 	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
-	virtual void defaultEventBehavior(_R<Event> e) {};
+	virtual void defaultEventBehavior(_R<Event> e) {}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(removeEventListener);
@@ -475,8 +477,8 @@ public:
 class FlushInvalidationQueueEvent: public Event
 {
 public:
-	FlushInvalidationQueueEvent():Event(NULL, "FlushInvalidationQueueEvent"){};
-	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; };
+	FlushInvalidationQueueEvent():Event(NULL, "FlushInvalidationQueueEvent"){}
+	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; }
 };
 
 class ParseRPCMessageEvent: public Event
@@ -486,7 +488,7 @@ public:
 	_NR<ASObject> client;
 	_NR<Responder> responder;
 	ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> client, _NR<Responder> responder);
-	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; };
+	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; }
 	void finalize();
 };
 

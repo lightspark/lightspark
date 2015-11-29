@@ -528,6 +528,8 @@ private:
 	// code) and the input thread and is protected focusSpinlock
 	Spinlock focusSpinlock;
 	_NR<InteractiveObject> focus;
+protected:
+	virtual void eventListenerAdded(const tiny_string& eventName);
 public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}

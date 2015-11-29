@@ -2168,6 +2168,17 @@ void Stage::onFullScreenSourceRect(_NR<Rectangle> /*oldValue*/)
 	fullScreenSourceRect.reset();
 }
 
+void Stage::eventListenerAdded(const tiny_string& eventName)
+{
+	if (eventName == "stageVideoAvailability")
+	{
+		// StageVideoAvailabilityEvent is dispatched directly after an eventListener is added added
+		// see https://www.adobe.com/devnet/flashplayer/articles/stage_video.html 
+		this->incRef();
+		getVm()->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS()));
+	}
+}
+
 void Stage::buildTraits(ASObject* o)
 {
 }

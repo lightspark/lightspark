@@ -762,7 +762,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	int out_linesize;
 	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], codecContext->sample_rate, codecContext->sample_rate, AV_ROUND_UP);
 	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
-	if (res == 0)
+	if (res >= 0)
 	{
 		maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*codecContext->channels; // 2 bytes in AV_SAMPLE_FMT_S16
 		memcpy(curTail.samples, output, maxLen);
@@ -836,7 +836,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 #else
 	avioContext->is_streamed=1;
 #endif
-	
+
 	//Probe the stream format.
 	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 	AVProbeData probeData;

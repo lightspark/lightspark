@@ -385,6 +385,7 @@ public:
 	}
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
+	uint32_t functionname;
 };
 
 /*

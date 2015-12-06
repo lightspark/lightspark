@@ -129,7 +129,7 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
-IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL)
+IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL),functionname(0)
 {
 	type=T_FUNCTION;
 }
@@ -451,6 +451,12 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	cur_recursion++; //increment current recursion depth
 	Log::calls_indent++;
+
+	std::pair<uint32_t,ASObject*> s;
+	s.first = this->functionname;
+	s.second = obj;
+
+	getVm()->stacktrace.push_back(s);
 	while (true)
 	{
 		try
@@ -504,6 +510,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			{
 				cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
+				getVm()->stacktrace.pop_back();
 				getVm()->currentCallContext = saved_cc;
 				throw;
 			}
@@ -512,6 +519,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		break;
 	}
 	cur_recursion--; //decrement current recursion depth
+	getVm()->stacktrace.pop_back();
 	Log::calls_indent--;
 	getVm()->currentCallContext = saved_cc;
 
@@ -1162,8 +1170,8 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 
 	// it seems that classes with the same name from different applicationDomains 
 	// are treated as equal, so we test for same names
-	if (this->getQualifiedClassName() == cls->getQualifiedClassName())
-		return true;
+	//if (this->getQualifiedClassName() == cls->getQualifiedClassName())
+	//	return true;
 
 	//Now check the interfaces
 	if (considerInterfaces)

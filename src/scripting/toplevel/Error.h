@@ -36,13 +36,13 @@ template<class T>
 void throwError(int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
 {
 	tiny_string message = createErrorMessage(errorID, arg1, arg2, arg3);
-	LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<message);
 	throw Class<T>::getInstanceS(message, errorID);
 }
 
 class ASError: public ASObject
 {
 private:
+	tiny_string stacktrace;
 	ASPROPERTY_GETTER(int32_t, errorID);
 	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 protected:
@@ -53,11 +53,12 @@ public:
 	ASError(Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
 	ASFUNCTION(_constructor);
 	ASFUNCTION(generator);
-	ASFUNCTION(getStackTrace);
+	ASFUNCTION(_getStackTrace);
 	ASFUNCTION(_toString);
-	tiny_string toString(bool debugMsg=false);
+	tiny_string toString();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	tiny_string getStackTraceString();
 };
 
 class SecurityError: public ASError

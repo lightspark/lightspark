@@ -346,8 +346,7 @@ const std::vector<KeyNameCodePair>& InputThread::getKeyNamesAndCodes()
 bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
 {
 	bool handled = false;
-
-	if ((keyevent->state & GDK_MODIFIER_MASK) != GDK_CONTROL_MASK)
+	if ((keyevent->state & GDK_CONTROL_MASK) != GDK_CONTROL_MASK)
 		return handled;
 
 	switch(keyevent->keyval)

@@ -23,6 +23,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/abc.h"
 
 using namespace std;
 using namespace lightspark;
@@ -69,24 +70,52 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 
 		msgtemplate++;
 	}
-
+	if (Log::getLevel() >= LOG_INFO)
+	{
+		tiny_string stacktrace;
+		for (auto it = getVm()->stacktrace.crbegin(); it != getVm()->stacktrace.crend(); it++)
+		{
+			stacktrace += "    at ";
+			stacktrace += (*it).second->getClassName();
+			stacktrace += "/";
+			stacktrace += getSys()->getStringFromUniqueId((*it).first);
+			stacktrace += "()\n";
+		}
+		LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
+	}
 	return msg.str();
 }
 
 ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
 	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
+	stacktrace = "";
+	for (auto it = getVm()->stacktrace.crbegin(); it != getVm()->stacktrace.crend(); it++)
+	{
+		stacktrace += "    at ";
+		stacktrace += (*it).second->getClassName();
+		stacktrace += "/";
+		stacktrace += getSys()->getStringFromUniqueId((*it).first);
+		stacktrace += "()\n";
+	}
 }
 
-ASFUNCTIONBODY(ASError,getStackTrace)
+ASFUNCTIONBODY(ASError,_getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS(th->toString(true));
-	LOG(LOG_NOT_IMPLEMENTED,_("Error.getStackTrace not yet implemented."));
+
+	ASString* ret=Class<ASString>::getInstanceS(th->getStackTraceString());
+	return ret;
+}
+tiny_string ASError::getStackTraceString()
+{
+	tiny_string ret = toString();
+	ret += "\n";
+	ret += stacktrace;
 	return ret;
 }
 
-tiny_string ASError::toString(bool debugMsg)
+tiny_string ASError::toString()
 {
 	tiny_string ret;
 	ret = name;
@@ -100,7 +129,7 @@ tiny_string ASError::toString(bool debugMsg)
 ASFUNCTIONBODY(ASError,_toString)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->ASError::toString(false));
+	return Class<ASString>::getInstanceS(th->ASError::toString());
 }
 
 ASFUNCTIONBODY(ASError,_constructor)
@@ -141,7 +170,7 @@ void ASError::errorGenerator(ASError* obj, ASObject* const* args, const unsigned
 void ASError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("getStackTrace","",Class<IFunction>::getFunction(getStackTrace),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStackTrace","",Class<IFunction>::getFunction(_getStackTrace),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, errorID);

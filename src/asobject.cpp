@@ -547,6 +547,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			break;
 		}
 	}
+	o->functionname = nameId;
 }
 
 bool ASObject::deleteVariableByMultiname(const multiname& name)

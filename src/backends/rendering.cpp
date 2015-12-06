@@ -789,28 +789,38 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 	cairo_paint(cr);
 	cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
 
+	int y = th->windowHeight-20;
 	renderText(cr, "We're sorry, Lightspark encountered a yet unsupported Flash file",
-			0,th->windowHeight/2+20);
+			0,y);
+	y -= 20;
 
 	stringstream errorMsg;
 	errorMsg << "SWF file: " << th->m_sys->mainClip->getOrigin().getParsedURL();
-	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2);
+	renderText(cr, errorMsg.str().c_str(),0,y);
+	y -= 20;
 
 	errorMsg.str("");
 	errorMsg << "Cause: " << th->m_sys->errorCause;
-	renderText(cr, errorMsg.str().c_str(),0,th->windowHeight/2-20);
+	tiny_string s = errorMsg.str();
+	std::list<tiny_string> msglist = s.split('\n');
+	for (auto it = msglist.begin(); it != msglist.end(); it++)
+	{
+		renderText(cr, (*it).raw_buf(),0,y);
+		y -= 20;
+	}
 
 	if (standalone)
 	{
 		renderText(cr, "Please look at the console output to copy this error",
-			0,th->windowHeight/2-40);
+			0,y);
+		y -= 20;
 
-		renderText(cr, "Press 'Ctrl+Q' to exit",0,th->windowHeight/2-60);
+		renderText(cr, "Press 'Ctrl+Q' to exit",0,y);
 	}
 	else
 	{
 		renderText(cr, "Press Ctrl+C to copy this error to clipboard",
-				0,th->windowHeight/2-40);
+				0,y);
 	}
 
 	glUniform1f(alphaUniform, 1);

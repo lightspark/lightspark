@@ -1308,7 +1308,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				m_sys->mainClip->getStage()->advanceFrame();
-				ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
+				//ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:
@@ -1763,7 +1763,13 @@ void ABCVm::Run(ABCVm* th)
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
 			else
 				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
-			th->m_sys->setError(_("Unhandled ActionScript exception"));
+			if (e->is<ASError>())
+			{
+				th->m_sys->setError(e->as<ASError>()->getStackTraceString());
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->as<ASError>()->getStackTraceString());
+			}
+			else
+				th->m_sys->setError(_("Unhandled ActionScript exception"));
 			/* do not allow any more event to be enqueued */
 			th->shuttingdown = true;
 			th->signalEventWaiters();

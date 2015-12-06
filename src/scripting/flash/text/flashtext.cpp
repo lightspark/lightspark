@@ -71,7 +71,8 @@ ASFUNCTIONBODY(ASFont,enumerateFonts)
 	bool enumerateDeviceFonts=false;
 	ARG_UNPACK(enumerateDeviceFonts,false);
 
-	LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
+	if (enumerateDeviceFonts)
+		LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
 	Array* ret = Class<Array>::getInstanceS();
 	std::vector<ASObject*>* fontlist = getFontList();
 	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
@@ -1070,6 +1071,8 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			}
 		}
 	}
+	else if (name == "" || name == "root" || name == "body")
+		return true;
 	else if (name == "a" || name == "img" || name == "u" ||
 		 name == "li" || name == "b" || name == "i" ||
 		 name == "span" || name == "textformat" || name == "tab")

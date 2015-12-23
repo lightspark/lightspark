@@ -112,9 +112,15 @@ public:
 	SharedObject(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION(getLocal);
+	ASFUNCTION(getRemote);
 	ASFUNCTION(flush);
 	ASFUNCTION(clear);
+	ASFUNCTION(close);
+	ASFUNCTION(connect);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
+	ASPROPERTY_SETTER(number_t,fps);
+	ASPROPERTY_GETTER_SETTER(uint32_t,objectEncoding);
+	ASFUNCTION(_getSize);
 };
 
 class ObjectEncoding: public ASObject

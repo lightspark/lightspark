@@ -629,21 +629,24 @@ void SharedObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	REGISTER_SETTER(c,fps);
 	REGISTER_GETTER_SETTER(c,objectEncoding);
+	c->setDeclaredMethodByQName("preventBackup","",Class<IFunction>::getFunction(_getPreventBackup),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("preventBackup","",Class<IFunction>::getFunction(_setPreventBackup),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_getSize),GETTER_METHOD,true);
 
 	getSys()->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
+	getSys()->staticSharedObjectPreventBackup = false;
 }
 
 ASFUNCTIONBODY_GETTER(SharedObject,data);
 ASFUNCTIONBODY_SETTER(SharedObject,fps);
 ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding);
 
-ASFUNCTIONBODY(SharedObject, _getDefaultObjectEncoding)
+ASFUNCTIONBODY(SharedObject,_getDefaultObjectEncoding)
 {
 	return abstract_ui(getSys()->staticSharedObjectDefaultObjectEncoding);
 }
 
-ASFUNCTIONBODY(SharedObject, _setDefaultObjectEncoding)
+ASFUNCTIONBODY(SharedObject,_setDefaultObjectEncoding)
 {
 	assert_and_throw(argslen == 1);
 	uint32_t value = args[0]->toUInt();
@@ -707,6 +710,20 @@ ASFUNCTIONBODY(SharedObject,close)
 ASFUNCTIONBODY(SharedObject,connect)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.connect not implemented");
+	return NULL;
+}
+
+ASFUNCTIONBODY(SharedObject,_getPreventBackup)
+{
+	return abstract_b(getSys()->staticSharedObjectPreventBackup);
+}
+
+ASFUNCTIONBODY(SharedObject,_setPreventBackup)
+{
+	assert_and_throw(argslen == 1);
+	assert_and_throw(args[0]->getObjectType()==T_BOOLEAN);
+	bool value = Class<Boolean>::cast(args[0])->val;
+	getSys()->staticSharedObjectPreventBackup = value;
 	return NULL;
 }
 

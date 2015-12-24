@@ -122,6 +122,8 @@ public:
 	ASFUNCTION(_setDefaultObjectEncoding);
 	ASPROPERTY_SETTER(number_t,fps);
 	ASPROPERTY_GETTER_SETTER(uint32_t,objectEncoding);
+	ASFUNCTION(_getPreventBackup);
+	ASFUNCTION(_setPreventBackup);
 	ASFUNCTION(_getSize);
 };
 

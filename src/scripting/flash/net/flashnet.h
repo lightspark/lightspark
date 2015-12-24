@@ -117,6 +117,7 @@ public:
 	ASFUNCTION(clear);
 	ASFUNCTION(close);
 	ASFUNCTION(connect);
+	ASPROPERTY_GETTER_SETTER(_R<ASObject>,client);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
 	ASFUNCTION(_getDefaultObjectEncoding);
 	ASFUNCTION(_setDefaultObjectEncoding);

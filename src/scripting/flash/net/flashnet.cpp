@@ -610,7 +610,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 }
 
 std::map<tiny_string, SharedObject* > SharedObject::sharedobjectmap;
-SharedObject::SharedObject(Class_base* c):EventDispatcher(c),objectEncoding(ObjectEncoding::AMF3)
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c),objectEncoding(ObjectEncoding::AMF3),client(this)
 {
 	data=_MR(new_asobject());
 }
@@ -624,6 +624,7 @@ void SharedObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c,client);
 	REGISTER_GETTER(c,data);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
@@ -637,6 +638,7 @@ void SharedObject::sinit(Class_base* c)
 	getSys()->staticSharedObjectPreventBackup = false;
 }
 
+ASFUNCTIONBODY_GETTER_SETTER(SharedObject,client);
 ASFUNCTIONBODY_GETTER(SharedObject,data);
 ASFUNCTIONBODY_SETTER(SharedObject,fps);
 ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding);

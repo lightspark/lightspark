@@ -118,6 +118,8 @@ public:
 	ASFUNCTION(close);
 	ASFUNCTION(connect);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
+	ASFUNCTION(_getDefaultObjectEncoding);
+	ASFUNCTION(_setDefaultObjectEncoding);
 	ASPROPERTY_SETTER(number_t,fps);
 	ASPROPERTY_GETTER_SETTER(uint32_t,objectEncoding);
 	ASFUNCTION(_getSize);

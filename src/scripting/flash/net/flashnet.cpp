@@ -625,14 +625,36 @@ void SharedObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(connect),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,data);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	REGISTER_SETTER(c,fps);
 	REGISTER_GETTER_SETTER(c,objectEncoding);
 	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_getSize),GETTER_METHOD,true);
+
+	getSys()->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
 }
 
 ASFUNCTIONBODY_GETTER(SharedObject,data);
 ASFUNCTIONBODY_SETTER(SharedObject,fps);
 ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding);
+
+ASFUNCTIONBODY(SharedObject, _getDefaultObjectEncoding)
+{
+	return abstract_ui(getSys()->staticSharedObjectDefaultObjectEncoding);
+}
+
+ASFUNCTIONBODY(SharedObject, _setDefaultObjectEncoding)
+{
+	assert_and_throw(argslen == 1);
+	uint32_t value = args[0]->toUInt();
+	if(value == 0)
+	    getSys()->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF0;
+	else if(value == 3)
+	    getSys()->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
+	else
+	    throw RunTimeException("Invalid shared object encoding");
+	return NULL;
+}
 
 ASFUNCTIONBODY(SharedObject,getLocal)
 {
@@ -656,32 +678,38 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 	it->second->incRef();
 	return it->second;
 }
+
 ASFUNCTIONBODY(SharedObject,getRemote)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getRemote not implemented");
 	return NULL;
 }
+
 ASFUNCTIONBODY(SharedObject,flush)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
 	return NULL;
 }
+
 ASFUNCTIONBODY(SharedObject,clear)
 {
 	SharedObject* th=static_cast<SharedObject*>(obj);
 	th->data->destroyContents();
 	return NULL;
 }
+
 ASFUNCTIONBODY(SharedObject,close)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.close not implemented");
 	return NULL;
 }
+
 ASFUNCTIONBODY(SharedObject,connect)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.connect not implemented");
 	return NULL;
 }
+
 ASFUNCTIONBODY(SharedObject,_getSize)
 {
 	/* Get the size of the objects in the sharedobjectmap */

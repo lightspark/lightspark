@@ -138,7 +138,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			this->incRef();
 			getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
 		}
-		if(loadStatus==INIT_SENT || (bytesLoaded == bytesTotal))
+		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
 			if(getVm())

@@ -2540,7 +2540,7 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 			node->namespacedefs.push_back(_MR(ns));
 			node->nodenamespace_uri = uri;
 		}
-		else if (aname.substr_bytes(0,6) == "xmlns:")
+		else if (aname.numBytes() >= 6 && aname.substr_bytes(0,6) == "xmlns:")
 		{
 			tiny_string uri = itattr->value();
 			tiny_string prefix = aname.substr(6,aname.end());

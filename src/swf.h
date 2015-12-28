@@ -384,6 +384,8 @@ public:
 	//	NetConnection
 	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;
 	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
+	ObjectEncoding::ENCODING staticSharedObjectDefaultObjectEncoding;
+	bool staticSharedObjectPreventBackup;
 	
 	//enterFrame event management
 	void registerFrameListener(_R<DisplayObject> clip);

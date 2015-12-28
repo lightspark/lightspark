@@ -55,7 +55,8 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 {
 	UI32_FLV PreviousTagSize;
 	stream >> PreviousTagSize;
-	assert_and_throw(PreviousTagSize==prevSize);
+	// It seems that Adobe simply ignores invalid values for PreviousTagSize
+	//assert_and_throw(PreviousTagSize==prevSize);
 
 	//Check tag type and read it
 	UI8 TagType;

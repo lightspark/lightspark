@@ -611,7 +611,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 }
 
 std::map<tiny_string, SharedObject* > SharedObject::sharedobjectmap;
-SharedObject::SharedObject(Class_base* c):EventDispatcher(c),objectEncoding(ObjectEncoding::AMF3),client(this)
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
 {
 	data=_MR(new_asobject());
 }

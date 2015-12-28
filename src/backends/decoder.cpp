@@ -285,7 +285,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 #else
 	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
 #endif
-	if (ret < 0 || frameOk == 0)
+	if (ret < 0)
 	{
 		LOG(LOG_INFO,"not decoded:"<<ret<<" "<< frameOk);
 		return false;
@@ -313,7 +313,7 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 #else
 	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, pkt->data, pkt->size);
 #endif
-	if (ret < 0 || frameOk == 0)
+	if (ret < 0)
 	{
 		LOG(LOG_INFO,"not decoded:"<<ret<<" "<< frameOk);
 		return false;
@@ -642,7 +642,9 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	int frameOk=0;
 	int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
 	if(frameOk==0)
-		ret=-1;
+	{
+		LOG(LOG_ERROR,"not decoded audio:"<<ret);
+	}
 	else
 	{
 		if (frameIn->format != AV_SAMPLE_FMT_S16)
@@ -699,7 +701,9 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	int frameOk=0;
 	int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
 	if(frameOk==0)
-		ret=-1;
+	{
+		LOG(LOG_ERROR,"not decoded audio:"<<ret);
+	}
 	else
 	{
 		if (frameIn->format != AV_SAMPLE_FMT_S16)

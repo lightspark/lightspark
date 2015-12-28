@@ -353,6 +353,7 @@ void URLLoaderThread::execute()
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
+		loader->incRef();
 		getVm()->addEvent(loader,_MR(Class<Event>::getInstanceS("open")));
 
 		cache->waitForTermination();
@@ -1416,7 +1417,7 @@ ASFUNCTIONBODY(NetStream,appendBytes)
 	NetStream* th=Class<NetStream>::cast(obj);
 	_NR<ByteArray> bytearray;
 	ARG_UNPACK(bytearray);
-	
+
 	if(!bytearray.isNull())
 	{
 		if (th->datagenerationfile)
@@ -1555,6 +1556,7 @@ ASFUNCTIONBODY(NetStream,appendBytes)
 			}
 			if (!th->datagenerationthreadstarted && th->datagenerationfile->getReceivedLength() >= 8192)
 			{
+				th->closed = false;
 				th->datagenerationthreadstarted = true;
 				th->incRef();
 				getSys()->addJob(th);
@@ -1573,7 +1575,6 @@ ASFUNCTIONBODY(NetStream,appendBytesAction)
 	if (val == "resetBegin")
 	{
 		th->threadAbort();
-		th->closed = false;
 		LOG(LOG_INFO,"resetBegin");
 		if (th->datagenerationfile)
 			delete th->datagenerationfile;
@@ -1700,7 +1701,7 @@ void NetStream::execute()
 	}
 	istream s(sbuf);
 	s.exceptions(istream::goodbit);
-	
+
 	ThreadProfile* profile=getSys()->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
 	bool waitForFlush=true;
@@ -1717,11 +1718,14 @@ void NetStream::execute()
 		{
 			streamDecoder=new BuiltinStreamDecoder(s,this);
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
+			{
+				s.seekg(0);
 				streamDecoder=new FFMpegStreamDecoder(s);
+			}
 			if(!streamDecoder->isValid())
 				threadAbort();
 		}
-		
+
 		
 		countermutex.lock();
 		framesdecoded = 0;
@@ -1743,6 +1747,12 @@ void NetStream::execute()
 			bool decodingSuccess= bufferfull && streamDecoder->decodeNextFrame();
 			if(!decodingSuccess && bufferfull)
 			{
+				if (s.tellg() == -1)
+				{
+					done = true;
+					continue;
+				}
+
 				LOG(LOG_INFO,"decoding failed:"<<s.tellg()<<" "<<this->getReceivedLength());
 				bufferfull = false;
 			}

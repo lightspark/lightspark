@@ -661,18 +661,27 @@ public:
 	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
 };
 
+class PixelSnapping: public ASObject
+{
+public:
+	PixelSnapping(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 private:
 	void onBitmapData(_NR<BitmapData>);
 	void onSmoothingChanged(bool);
+	void onPixelSnappingChanged(tiny_string snapping);
 protected:
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
+	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);

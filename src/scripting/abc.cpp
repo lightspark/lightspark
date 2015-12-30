@@ -326,6 +326,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("AVM1Movie","flash.display",Class<AVM1Movie>::getRef());
 	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef());
 	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef());
+	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef());
 
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef());
 	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef());
@@ -1305,7 +1306,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case ADVANCE_FRAME:
 			{
-				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
+				//AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				m_sys->mainClip->getStage()->advanceFrame();
 				//ev->done.signal(); // Won't this signal twice, wrt to the signal() below?

@@ -344,12 +344,15 @@ void LoaderThread::execute()
 		if(cache->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
+			loaderInfo->incRef();
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			loader->incRef();
 			getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
 		}
+		loaderInfo->incRef();
 		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
 	}
 	else if(source==BYTES)
@@ -386,7 +389,10 @@ void LoaderThread::execute()
 	{
 		// The stream did not contain RootMovieClip or Bitmap
 		if(!threadAborting)
+		{
+			loaderInfo->incRef();
 			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+		}
 		return;
 	}
 }
@@ -591,6 +597,7 @@ void Loader::unload()
 	
 	if(loaded)
 	{
+		contentLoaderInfo->incRef();
 		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("unload")));
 		loaded=false;
 	}
@@ -1801,6 +1808,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	th->_addChildAt(d,index);
 
 	//Notify the object
+	d->incRef();
 	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	//incRef again as the value is getting returned
@@ -1826,6 +1834,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
+	d->incRef();
 	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
 
 	d->incRef();
@@ -2530,6 +2539,8 @@ void Bitmap::sinit(Class_base* c)
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_SETTER(c,bitmapData);
 	REGISTER_GETTER_SETTER(c,smoothing);
+	REGISTER_GETTER_SETTER(c,pixelSnapping);
+
 }
 
 ASFUNCTIONBODY(Bitmap,_constructor)
@@ -2542,7 +2553,8 @@ ASFUNCTIONBODY(Bitmap,_constructor)
 	DisplayObject::_constructor(obj,NULL,0);
 
 	if(_pixelSnapping!="auto")
-		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping");
+		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping:"<<_pixelSnapping);
+	th->pixelSnapping = _pixelSnapping;
 
 	if(!_bitmapData.isNull())
 	{
@@ -2568,8 +2580,16 @@ void Bitmap::onSmoothingChanged(bool /*old*/)
 	updatedData();
 }
 
+void Bitmap::onPixelSnappingChanged(tiny_string snapping)
+{
+	if(snapping!="auto")
+		LOG(LOG_NOT_IMPLEMENTED, "Bitmap doesn't support pixelSnapping:"<<snapping);
+	pixelSnapping = snapping;
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged);
 
 void Bitmap::updatedData()
 {
@@ -2922,6 +2942,15 @@ void GraphicsPathWinding::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("EVEN_ODD","",Class<ASString>::getInstanceS("evenOdd"),CONSTANT_TRAIT);
 	c->setVariableByQName("NON_ZERO","",Class<ASString>::getInstanceS("nonZero"),CONSTANT_TRAIT);
+}
+
+void PixelSnapping::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableByQName("ALWAYS","",Class<ASString>::getInstanceS("always"),CONSTANT_TRAIT);
+	c->setVariableByQName("AUTO","",Class<ASString>::getInstanceS("auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("NEVER","",Class<ASString>::getInstanceS("never"),CONSTANT_TRAIT);
+
 }
 
 /* Go through the hierarchy and add all

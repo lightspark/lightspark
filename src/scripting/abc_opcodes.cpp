@@ -307,7 +307,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 	ASObject* obj=th->runtime_stack_pop();
 	checkDeclaredTraits(obj);
-
+	
 	if(obj->is<Null>())
 	{
 		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
@@ -397,19 +397,35 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				return;
 			}
 		}
-		obj->decRef();
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
 		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
 		if (obj->hasPropertyByMultiname(*name,true,true))
-			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+		{
+			tiny_string clsname = obj->getClass()->getQualifiedClassName();
+			obj->decRef();
+			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(), clsname);
+		}
 		if (obj->getClass() && obj->getClass()->isSealed)
-			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), obj->getClass()->getQualifiedClassName());
+		{
+			tiny_string clsname = obj->getClass()->getQualifiedClassName();
+			obj->decRef();
+			throwError<ReferenceError>(kReadSealedError, name->normalizedName(), clsname);
+		}
 		if (obj->is<Class_base>())
-			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->as<Class_base>()->class_name.getQualifiedName());
+		{
+			tiny_string clsname = obj->as<Class_base>()->class_name.getQualifiedName();
+			obj->decRef();
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), clsname);
+		}
 		else
-			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
+		{
+			tiny_string clsname = obj->getClassName();
+			obj->decRef();
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(), clsname);
+		}
 
+		obj->decRef();
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 
@@ -1421,7 +1437,7 @@ void ABCVm::getLex(call_context* th, int n)
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
-			throwError<ReferenceError>(kUndefinedVarError);
+			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved());
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 			name->resetNameIfObject();
 			return;

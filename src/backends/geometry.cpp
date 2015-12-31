@@ -94,6 +94,7 @@ unsigned int ShapesBuilder::makeVertex(const Vector2& v) {
 
 	unsigned int i = verticesMap.size();
 	verticesMap.insert(make_pair(v, i));
+	verticesVector.push_back(v);
 	return i;
 }
 
@@ -158,6 +159,9 @@ void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const V
 
 const Vector2& ShapesBuilder::getVertex(unsigned int index)
 {
+	if (index < verticesVector.size())
+		return verticesVector[index];
+	/*
 	//Linear lookup
 	map<Vector2, unsigned int>::const_iterator it=verticesMap.begin();
 	for(;it!=verticesMap.end();++it)
@@ -165,6 +169,7 @@ const Vector2& ShapesBuilder::getVertex(unsigned int index)
 		if(it->second==index)
 			return it->first;
 	}
+	*/
 	::abort();
 }
 

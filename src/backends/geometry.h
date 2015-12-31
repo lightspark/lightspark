@@ -101,6 +101,8 @@ class ShapesBuilder
 {
 private:
 	std::map< Vector2, unsigned int > verticesMap;
+	// also add a vector of the vertices for performance
+	std::vector< Vector2> verticesVector;
 	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
 	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
 	void joinOutlines();

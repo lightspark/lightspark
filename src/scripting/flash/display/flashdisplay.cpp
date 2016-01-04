@@ -1293,6 +1293,11 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP+1;
 	th->state.explicit_FP=true;
+	if (!th->getParent())
+	{
+		th->advanceFrame();
+		th->initFrame();
+	}
 	return NULL;
 }
 
@@ -1302,6 +1307,11 @@ ASFUNCTIONBODY(MovieClip,prevFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP-1;
 	th->state.explicit_FP=true;
+	if (!th->getParent())
+	{
+		th->advanceFrame();
+		th->initFrame();
+	}
 	return NULL;
 }
 

@@ -1459,7 +1459,8 @@ ASObject* DefineButtonTag::instance(Class_base* c) const
 					Sprite* spr = Class<Sprite>::getInstanceS();
 					spr->insertLegacyChildAt(curDepth[j],states[j]);
 					states[j] = spr;
-					spr->name = "Button_spr";
+					//spr->name = "Button_spr";
+					spr->name = "";
 				}
 				Sprite* spr = Class<Sprite>::cast(states[j]);
 				spr->insertLegacyChildAt(i->PlaceDepth,state);

@@ -20,6 +20,7 @@
 #include "compat.h"
 #include <cassert>
 
+#include "backends/audio.h"
 #include "backends/decoder.h"
 #include "platforms/fastpaths.h"
 #include "swf.h"
@@ -647,17 +648,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	}
 	else
 	{
-		if (frameIn->format != AV_SAMPLE_FMT_S16)
-		{
-			maxLen = resampleFrameToS16(curTail);
-		}
-		else 
-		{
-			//This is suboptimal but equivalent to what libavcodec
-			//does for the compatibility version of avcodec_decode_audio3
-			memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
-			maxLen=frameIn->linesize[0];
-		}
+		maxLen = resampleFrameToS16(curTail);
 	}
 #else
 	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
@@ -706,17 +697,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	}
 	else
 	{
-		if (frameIn->format != AV_SAMPLE_FMT_S16)
-		{
-			maxLen = resampleFrameToS16(curTail);
-		}
-		else 
-		{
-			//This is suboptimal but equivalent to what libavcodec
-			//does for the compatibility version of avcodec_decode_audio3
-			memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
-			maxLen=frameIn->linesize[0];
-		}
+		maxLen = resampleFrameToS16(curTail);
 	}
 #elif HAVE_AVCODEC_DECODE_AUDIO3
 	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
@@ -751,24 +732,33 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 #if HAVE_AVCODEC_DECODE_AUDIO4
 int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
+	int sample_rate = getSys()->audioManager->forcedSampleRate() == -1 ? codecContext->sample_rate : getSys()->audioManager->forcedSampleRate();
+	uint channel_layout = getSys()->audioManager->forcedChannelLayout() == -1 ? frameIn->channel_layout : getSys()->audioManager->forcedChannelLayout();
+	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == codecContext->sample_rate && channel_layout == frameIn->channel_layout)
+	{
+		//This is suboptimal but equivalent to what libavcodec
+		//does for the compatibility version of avcodec_decode_audio3
+		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
+		return frameIn->linesize[0];
+	}
 	int maxLen;
 #ifdef HAVE_LIBAVRESAMPLE
 	AVAudioResampleContext * avr = avresample_alloc_context();
 	av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
-	av_opt_set_int(avr, "out_channel_layout", frameIn->channel_layout,  0);
+	av_opt_set_int(avr, "out_channel_layout", channel_layout,  0);
 	av_opt_set_int(avr, "in_sample_rate",     codecContext->sample_rate,     0);
-	av_opt_set_int(avr, "out_sample_rate",    codecContext->sample_rate,     0);
+	av_opt_set_int(avr, "out_sample_rate",    sample_rate,     0);
 	av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
 	av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
 	avresample_open(avr);
 
 	uint8_t *output;
 	int out_linesize;
-	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], codecContext->sample_rate, codecContext->sample_rate, AV_ROUND_UP);
+	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], sample_rate, sample_rate, AV_ROUND_UP);
 	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
 	if (res >= 0)
 	{
-		maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*codecContext->channels; // 2 bytes in AV_SAMPLE_FMT_S16
+		maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout); // 2 bytes in AV_SAMPLE_FMT_S16
 		memcpy(curTail.samples, output, maxLen);
 		av_freep(&output);
 	}
@@ -778,7 +768,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 		memset(curTail.samples, 0, frameIn->linesize[0]);
 		maxLen = frameIn->linesize[0];
 	}
-	
+
 	avresample_free(&avr);
 #else
 	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libavresample");

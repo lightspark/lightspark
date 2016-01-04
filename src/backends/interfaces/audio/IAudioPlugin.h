@@ -74,6 +74,10 @@ public:
 	virtual void unmuteAll() { muteAllStreams = false; }
 	virtual void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
 	virtual bool allMuted() { return muteAllStreams; }
+	// if not -1, all streams will be resampled to the provided sample rate
+	virtual int forcedSampleRate() const { return -1;}
+	// if not -1, all streams will be resampled to the provided channel_layout
+	virtual int forcedChannelLayout() const { return -1;}
 
 	virtual ~IAudioPlugin();
 };

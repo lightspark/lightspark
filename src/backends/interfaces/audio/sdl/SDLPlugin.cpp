@@ -1,46 +1,68 @@
 /**************************************************************************
-    Lightspark, a free flash player implementation
+	Lightspark, a free flash player implementation
 
-    Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2011 Ludger Krämer (dbluelle@blau-weissoedingen.de)
+	Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+	Copyright (C) 2011 Ludger Krämer (dbluelle@blau-weissoedingen.de)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU Lesser General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
 #include "backends/interfaces/audio/sdl/SDLPlugin.h"
 #include <SDL.h>
-#include <SDL_audio.h>
 
 using lightspark::AudioDecoder;
 using namespace std;
 
+void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
+{
+	SDLAudioStream *s = (SDLAudioStream*)udata;
+	if (!s)
+		return;
+
+	if (!s->decoder->hasDecodedFrames())
+		return;
+	uint32_t readcount = 0;
+	while (readcount < ((uint32_t)len))
+	{
+		if (!s->decoder->hasDecodedFrames())
+			break;
+		uint32_t ret = s->decoder->copyFrame((int16_t *)(((unsigned char*)stream)+readcount), ((uint32_t)len)-readcount);
+		if (!ret)
+			break;
+		readcount += ret;
+	}
+}
 
 SDLPlugin::SDLPlugin(string init_Name, string init_audiobackend, bool init_stopped ) :
 		IAudioPlugin ( init_Name, init_audiobackend, init_stopped )
 {
 	sdl_available = 0;
-	if (SDL_WasInit(0)) // some part of SDL already was initialized 
+	if (SDL_WasInit(0)) // some part of SDL already was initialized
 		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
 	else
 		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
-
-	/* We use SDL_OpenAudio/SDL_CloseAudio in SDLAudioStream's constructor/destructor
-	 * to access the device directly. We _should_ use SDL_mixer instead.
-	 */
-	LOG(LOG_NOT_IMPLEMENTED,"The SDL audio plugin does only support one concurrent stream!");
+	if (Mix_OpenAudio (LIGHTSPARK_AUDIO_SDL_SAMPLERATE, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFERSIZE) < 0)
+	{
+		LOG(LOG_ERROR,"Couldn't open SDL_mixer");
+		sdl_available = 0;
+		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
+		if (!SDL_WasInit(0))
+			SDL_Quit ();
+		return;
+	}
+	Mix_Pause(-1);
 }
-
 void SDLPlugin::set_device(std::string desiredDevice,
 		IAudioPlugin::DEVICE_TYPES desiredType)
 {
@@ -52,16 +74,18 @@ AudioStream* SDLPlugin::createStream(AudioDecoder* decoder)
 	if (!sdl_available)
 		return NULL;
 
-    SDLAudioStream *stream = new SDLAudioStream(this);
-    stream->decoder = decoder;
-    if (!stream->init())
-    {
+	SDLAudioStream *stream = new SDLAudioStream(this);
+	stream->decoder = decoder;
+	if (!stream->init())
+	{
 		delete stream;
 		return NULL;
-    }
-    streams.push_back(stream);
-    return stream;
+	}
+	streams.push_back(stream);
+
+	return stream;
 }
+
 
 SDLPlugin::~SDLPlugin()
 {
@@ -70,6 +94,7 @@ SDLPlugin::~SDLPlugin()
 	}
 	if (sdl_available)
 	{
+		Mix_CloseAudio();
 		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
 		if (!SDL_WasInit(0))
 			SDL_Quit ();
@@ -111,47 +136,24 @@ uint32_t SDLAudioStream::getPlayedTime()
 	return ret;
 }
 
-bool SDLAudioStream::init() 
+bool SDLAudioStream::init()
 {
-	SDL_AudioSpec fmt;
-	fmt.freq = decoder->sampleRate;
-	fmt.format = AUDIO_S16;
-	fmt.channels = decoder->channelCount;
-	fmt.samples = 4096;
-	fmt.callback = async_callback;
-	fmt.userdata = this;
-	if ( SDL_OpenAudio(&fmt, NULL) < 0 ) {
-		LOG(LOG_ERROR, "Unable to open SDL audio:" << SDL_GetError());
-		return false;
-	}
 	unmutevolume = curvolume = SDL_MIX_MAXVOLUME;
 	playedtime = 0;
 	gettimeofday(&starttime, NULL);
-	SDL_PauseAudio(0);
-	return true;
-}
-void SDLAudioStream::async_callback(void *unused, uint8_t *stream, int len)
-{
-	SDLAudioStream *s = static_cast<SDLAudioStream*>(unused);
+	mixer_channel = -1;
 
-	if (!s->decoder->hasDecodedFrames())
-		return;
+	uint32_t len = LIGHTSPARK_AUDIO_SDL_BUFERSIZE;
 
 	uint8_t *buf = new uint8_t[len];
-	int readcount = 0;
-	while (readcount < len)
-	{
-		if (!s->decoder->hasDecodedFrames())
-			break;
-		uint32_t ret = s->decoder->copyFrame((int16_t *)(buf+readcount), len-readcount);
-		if (!ret)
-			break;
-		readcount += ret;
-	}
-	SDL_LockAudio();
-	SDL_MixAudio(stream, buf, readcount, s->curvolume);
-	SDL_UnlockAudio();
-	delete[] buf;
+	memset(buf,0,len);
+	Mix_Chunk* chunk = Mix_QuickLoad_RAW(buf, len);
+
+
+	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
+	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, NULL, this);
+	Mix_Resume(mixer_channel);
+	return true;
 }
 
 void SDLAudioStream::SetPause(bool pause_on)
@@ -159,12 +161,15 @@ void SDLAudioStream::SetPause(bool pause_on)
 	if (pause_on)
 	{
 		playedtime = getPlayedTime();
+		if (mixer_channel != -1)
+			Mix_Pause(mixer_channel);
 	}
 	else
 	{
 		gettimeofday(&starttime, NULL);
+		if (mixer_channel != -1)
+			Mix_Resume(mixer_channel);
 	}
-	SDL_PauseAudio(pause_on);
 }
 
 bool SDLAudioStream::ispaused()
@@ -187,13 +192,16 @@ void SDLAudioStream::unmute()
 }
 void SDLAudioStream::setVolume(double volume)
 {
-	curvolume = SDL_MIX_MAXVOLUME * volume; 
+	curvolume = SDL_MIX_MAXVOLUME * volume;
+	if (mixer_channel != -1)
+		Mix_Volume(mixer_channel, curvolume);
 }
 
 SDLAudioStream::~SDLAudioStream()
 {
 	manager->streams.remove(this);
-	SDL_CloseAudio();
+	if (mixer_channel != -1)
+		Mix_HaltChannel(mixer_channel);
 }
 
 extern "C" DLL_PUBLIC IPlugin *create()

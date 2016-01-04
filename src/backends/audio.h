@@ -59,6 +59,8 @@ public:
 	void unmuteAll() { oAudioPlugin->unmuteAll(); }
 	void toggleMuteAll() { oAudioPlugin->toggleMuteAll(); }
 	bool allMuted() { return oAudioPlugin->allMuted(); }
+	int forcedSampleRate() const { return oAudioPlugin->forcedSampleRate();}
+	int forcedChannelLayout() const { return oAudioPlugin->forcedChannelLayout();}
 
 	~AudioManager();
 };

@@ -10,12 +10,12 @@ INSTALLATION
 ============
 
 To compile this software you need to install development packages for
-llvm (version 2.8 or >= 3.0), opengl, curl, zlib, libavcodec,
+llvm (version 2.8 or >= 3.0), opengl, curl, zlib, libavcodec, libavresample
 libglew, pcre, librtmp, cairo, libboost-filesystem, 
 gtk-2, libjpeg, libavformat, pango, liblzma
 
 If sound is enabled (on by default), you will also need the
-development package for pulseaudio-libs and/or libsdl.
+development package for pulseaudio-libs and/or sdl_mixer.
 
 Install also cmake, nasm and gcc (version 4.6.0 or newer) or clang
 

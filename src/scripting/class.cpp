@@ -96,6 +96,9 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 
 void Class_inherit::buildInstanceTraits(ASObject* o) const
 {
+	if (class_index == -1 && o->getClass()->is<Class_inherit>() && o->getClass()->as<Class_inherit>()->isBinded())
+		return;
+
 	assert_and_throw(class_index!=-1);
 	//The class is declared in the script and has an index
 	LOG(LOG_CALLS,_("Building instance traits"));

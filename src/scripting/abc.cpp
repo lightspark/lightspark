@@ -2171,6 +2171,18 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			{
 				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
 				Class_inherit* c=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+
+				if(instances[t->classi].supername)
+				{
+					// set superclass for classes that are not instantiated by newClass opcode (e.g. buttons)
+					multiname mnsuper = *getMultiname(instances[t->classi].supername,NULL);
+					ASObject* superclass=root->applicationDomain->getVariableByMultinameOpportunistic(mnsuper);
+					if(superclass && superclass->is<Class_base>())
+					{
+						superclass->incRef();
+						c->setSuper(_MR(superclass->as<Class_base>()));
+					}
+				}
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 			}

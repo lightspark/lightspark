@@ -322,7 +322,7 @@ public:
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
 	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
-	uint32_t decodeStreamSomePackets(std::istream& s, uint32_t time);
+	uint32_t decodeStreamSomePackets(std::istream& s, uint32_t time, IThreadJob *callingthread);
 };
 #endif
 

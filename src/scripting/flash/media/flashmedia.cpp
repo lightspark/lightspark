@@ -566,7 +566,7 @@ void SoundChannel::playRaw()
 	istream stream(sbuf);
 	do
 	{
-		decoder->decodeStreamSomePackets(stream, 0);
+		decoder->decodeStreamSomePackets(stream, 0,this);
 		if (decoder->isValid() && (audioStream == NULL))
 			audioStream=getSys()->audioManager->createStreamPlugin(decoder);
 	}
@@ -575,7 +575,7 @@ void SoundChannel::playRaw()
 	decoder->setFlushing();
 	decoder->waitFlushed();
 	sleep(1);
-	
+
 	delete audioStream;
 	delete decoder;
 	delete sbuf;

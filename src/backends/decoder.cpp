@@ -779,7 +779,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 }
 #endif
 
-uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t time)
+uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t time, IThreadJob* callingthread)
 {
 	const size_t BUF_SIZE = 4096;
 	uint32_t ret;
@@ -794,6 +794,8 @@ uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t t
 	size_t overflowSize = overflowBuffer.size();
 	while (overflowSize > BUF_SIZE)
 	{
+		if (callingthread->threadAborting)
+			break;
 		ret = decodeData(NULL, 0, time);
 		if (overflowBuffer.size() == overflowSize)
 			break;

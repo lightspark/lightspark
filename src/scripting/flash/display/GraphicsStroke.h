@@ -43,7 +43,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, pixelHinting);
 	ASPROPERTY_GETTER_SETTER(tiny_string, scaleMode);
 	ASPROPERTY_GETTER_SETTER(number_t, thickness);
-	void appendToTokens(std::vector<GeomToken>& tokens);
+	void appendToTokens(tokensVector& tokens);
 };
 
 };

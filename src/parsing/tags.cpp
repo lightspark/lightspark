@@ -307,6 +307,9 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if(HasFont)
 	{
 		in >> FontID;
+		DefineFont3Tag* fonttag =  dynamic_cast<DefineFont3Tag*>(root->dictionaryLookup(FontID));
+		if (fonttag)
+			textData.font = fonttag->getFontname();
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
@@ -706,6 +709,8 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	}
 	//TODO: implment Kerning support
 	ignore(in,KerningCount*4);
+	root->registerEmbeddedFont(getFontname(),this);
+
 }
 ASObject* DefineFont3Tag::instance(Class_base* c) const
 { 
@@ -722,6 +727,57 @@ ASObject* DefineFont3Tag::instance(Class_base* c) const
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFont3Tag::instance doesn't handle all font properties");
 	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
 	return ret;
+}
+
+const tiny_string DefineFont3Tag::getFontname() const
+{
+	return tiny_string((const char*)FontName.data(),true);
+}
+
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,RGB textColor) const
+{
+	std::list<FILLSTYLE> fillStyles;
+	Vector2 curPos;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+	fillStyles.push_back(fs);
+
+	number_t tokenscaling = fontpixelsize * this->scaling;
+	curPos.y = 20*1024 * this->scaling;
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13) 
+		{
+			curPos.x = 0;
+			curPos.y += 20*1024 * this->scaling;
+		}
+		else
+		{
+			bool found = false;
+			for (uint i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
+					Vector2 glyphPos = curPos*tokenscaling;
+	
+					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
+							   glyphPos.x,
+							   glyphPos.y);
+	
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+	
+					curPos.x += FontAdvanceTable[i];
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text);
+		}
+	}
 }
 
 DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)

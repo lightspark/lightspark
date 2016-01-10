@@ -302,12 +302,12 @@ class CairoTokenRenderer : public CairoRenderer
 {
 private:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
-	static bool cairoPathFromTokens(cairo_t* cr, const std::vector<GeomToken>& tokens, double scaleCorrection, bool skipFill);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
 	*/
-	const std::vector<GeomToken> tokens;
+	const tokensVector tokens;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
@@ -325,7 +325,7 @@ public:
 	   @param _a The alpha factor to be applied
 	   @param _ms The masks that must be applied
 	*/
-	CairoTokenRenderer(const std::vector<GeomToken>& _g, const MATRIX& _m,
+	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 		    float _s, float _a, const std::vector<MaskData>& _ms)
 		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms),tokens(_g){}
@@ -337,7 +337,7 @@ public:
 	   @param x The X in local coordinates
 	   @param y The Y in local coordinates
 	*/
-	static bool hitTest(const std::vector<GeomToken>& tokens, float scaleFactor, number_t x, number_t y);
+	static bool hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y);
 };
 
 class TextData

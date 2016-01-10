@@ -66,7 +66,7 @@ FILLSTYLE GraphicsShaderFill::toFillStyle()
 	return FILLSTYLE(0xff);
 }
 
-void GraphicsShaderFill::appendToTokens(std::vector<GeomToken>& tokens)
+void GraphicsShaderFill::appendToTokens(tokensVector& tokens)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "GraphicsShaderFill::appendToTokens()");
 	return;

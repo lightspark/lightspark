@@ -69,12 +69,12 @@ public:
 	static void pathToTokens(_NR<Vector> commands,
 				 _NR<Vector> data,
 				 tiny_string windings,
-				 std::vector<GeomToken>& tokens);
+				 tokensVector &tokens);
 	static void drawTrianglesToTokens(_NR<Vector> vertices,
 					  _NR<Vector> indices,
 					  _NR<Vector> uvtData,
 					  tiny_string culling,
-					  std::vector<GeomToken>& tokens);
+					  tokensVector &tokens);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(lineBitmapStyle);
 	ASFUNCTION(lineGradientStyle);

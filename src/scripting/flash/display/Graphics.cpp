@@ -412,7 +412,7 @@ ASFUNCTIONBODY(Graphics,drawPath)
 }
 
 void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
-			    tiny_string winding, std::vector<GeomToken>& tokens)
+			    tiny_string winding, tokensVector& tokens)
 {
 	if (commands.isNull() || data.isNull())
 		return;
@@ -552,7 +552,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	return NULL;
 }
 
-void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, _NR<Vector> uvtData, tiny_string culling, std::vector<GeomToken>& tokens)
+void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, _NR<Vector> uvtData, tiny_string culling, tokensVector& tokens)
 {
 	if (culling != "none")
 		LOG(LOG_NOT_IMPLEMENTED, "Graphics.drawTriangles doesn't support culling");

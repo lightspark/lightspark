@@ -1339,6 +1339,7 @@ void ParseThread::parseSWF(UI8 ver)
 	if (loader && !loader->allowLoadingSWF())
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+		li->incRef();
 		getVm()->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(
 			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
 		return;
@@ -1609,7 +1610,7 @@ void RootMovieClip::commitFrame(bool another)
 		if(this==sys->mainClip)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
-			sys->addFrameTick(1000/frameRate,sys);
+			sys->addTick(1000/frameRate,sys);
 		}
 		else
 		{
@@ -2103,4 +2104,17 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 			cls->bindToTag(tag);
 		}
 	}
+}
+
+void RootMovieClip::registerEmbeddedFont(const tiny_string fontname, DefineFont3Tag *tag)
+{
+	embeddedfonts[fontname] = tag;
+}
+
+DefineFont3Tag *RootMovieClip::getEmbeddedFont(const tiny_string fontname) const
+{
+	auto it = embeddedfonts.find(fontname);
+	if (it != embeddedfonts.end())
+		return it->second;
+	return NULL;
 }

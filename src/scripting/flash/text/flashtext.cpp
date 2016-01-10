@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/class.h"
 #include "compat.h"
@@ -89,7 +90,7 @@ ASFUNCTIONBODY(ASFont,registerFont)
 }
 
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
-	: InteractiveObject(c), TextData(textData), type(ET_READ_ONLY), 
+	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL), alwaysShowSelection(false),
 	  caretIndex(0), condenseWhite(false), displayAsPassword(false),
@@ -962,9 +963,14 @@ void TextField::textUpdated()
 
 void TextField::requestInvalidation(InvalidateQueue* q)
 {
-	incRef();
-	updateSizes();
-	q->addToInvalidateQueue(_MR(this));
+	if (!tokensEmpty())
+		TokenContainer::requestInvalidation(q);
+	else
+	{
+		incRef();
+		updateSizes();
+		q->addToInvalidateQueue(_MR(this));
+	}
 }
 
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
@@ -978,6 +984,17 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return NULL;
 	}
 
+	RootMovieClip* currentRoot=getSys()->mainClip;
+	DefineFont3Tag* embeddedfont = currentRoot->getEmbeddedFont(font);
+	tokens.clear();
+	if (embeddedfont)
+	{
+		scaling = 1.0f/1024.0f/20.0f;
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor);
+	}
+	if (!tokensEmpty())
+		return TokenContainer::invalidate(target, initialMatrix);
+	
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
 	computeMasksAndMatrix(target, masks, totalMatrix);

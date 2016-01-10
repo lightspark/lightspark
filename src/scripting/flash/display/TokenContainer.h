@@ -46,11 +46,11 @@ public:
 	 * the tokens are cleared and scaling is set
 	 * to 1.0f.
 	 */
-	std::vector<GeomToken> tokens;
+	tokensVector tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const MATRIX& matrix = MATRIX());
-	static void getTextureSize(std::vector<GeomToken>& tokens, int *width, int *height);
+	static void getTextureSize(tokensVector& tokens, int *width, int *height);
 	uint16_t getCurrentLineWidth() const;
 	float scaling;
 protected:

@@ -63,7 +63,7 @@ FILLSTYLE GraphicsBitmapFill::toFillStyle()
 	return Graphics::createBitmapFill(bitmapData, matrix, repeat, smooth);
 }
 
-void GraphicsBitmapFill::appendToTokens(std::vector<GeomToken>& tokens)
+void GraphicsBitmapFill::appendToTokens(tokensVector& tokens)
 {
 
 	tokens.emplace_back(GeomToken(SET_FILL, toFillStyle()));

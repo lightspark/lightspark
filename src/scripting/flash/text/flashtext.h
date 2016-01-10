@@ -65,7 +65,7 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
-class TextField: public InteractiveObject, public TextData
+class TextField: public InteractiveObject, public TextData, public TokenContainer
 {
 private:
 	/*
@@ -112,7 +112,7 @@ private:
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;
 	TEXT_INTERACTION_MODE textInteractionMode;
-        _NR<ASString> restrictChars;
+	_NR<ASString> restrictChars;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	void finalize();

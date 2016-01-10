@@ -40,7 +40,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 	ASPROPERTY_GETTER_SETTER(_NR<Shader>, shader);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<GeomToken>& tokens);
+	void appendToTokens(tokensVector& tokens);
 };
 
 };

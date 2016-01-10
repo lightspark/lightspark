@@ -488,6 +488,8 @@ private:
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL) const;
+	const tiny_string getFontname() const;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor) const;
 };
 
 class DefineFont4Tag : public DictionaryTag

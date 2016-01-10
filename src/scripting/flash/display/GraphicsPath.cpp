@@ -167,7 +167,7 @@ ASFUNCTIONBODY(GraphicsPath, wideMoveTo)
 	return NULL;
 }
 
-void GraphicsPath::appendToTokens(std::vector<GeomToken>& tokens)
+void GraphicsPath::appendToTokens(tokensVector& tokens)
 {
 	Graphics::pathToTokens(commands, data, winding, tokens);
 }

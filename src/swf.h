@@ -57,6 +57,7 @@ class Tag;
 class ApplicationDomain;
 class SecurityDomain;
 class Class_inherit;
+class DefineFont3Tag;
 
 class RootMovieClip: public MovieClip
 {
@@ -69,6 +70,7 @@ private:
 	Spinlock dictSpinlock;
 	std::list < DictionaryTag* > dictionary;
 	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
+	std::map < tiny_string,DefineFont3Tag* > embeddedfonts;
 
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
@@ -122,6 +124,8 @@ public:
 	void addBinding(const tiny_string& name, DictionaryTag *tag);
 	void bindClass(const QName &classname, Class_inherit* cls);
 	void checkBinding(DictionaryTag* tag);
+	void registerEmbeddedFont(const tiny_string fontname,DefineFont3Tag* tag);
+	DefineFont3Tag* getEmbeddedFont(const tiny_string fontname) const;
 };
 
 class ThreadProfile

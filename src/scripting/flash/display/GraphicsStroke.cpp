@@ -90,7 +90,7 @@ void GraphicsStroke::validateFill(_NR<ASObject> oldValue)
 	}
 }
 
-void GraphicsStroke::appendToTokens(std::vector<GeomToken>& tokens)
+void GraphicsStroke::appendToTokens(tokensVector& tokens)
 {
 	LINESTYLE2 style(0xff);
 	style.Width = thickness;

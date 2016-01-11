@@ -48,6 +48,7 @@ struct namespace_info;
 class Any;
 class Void;
 class Class_object;
+class ApplicationDomain;
 
 // Enum used during early binding in abc_optimizer.cpp
 enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
@@ -233,7 +234,7 @@ private:
 	QName template_name;
 public:
 	Template_base(QName name);
-	virtual Class_base* applyType(const std::vector<const Type*>& t)=0;
+	virtual Class_base* applyType(const std::vector<const Type*>& t,_NR<ApplicationDomain> appdomain)=0;
 };
 
 class Class_object: public Class_base

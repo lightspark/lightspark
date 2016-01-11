@@ -62,6 +62,7 @@ public:
 	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize();
 	std::map<const multiname*, Class_base*> classesBeingDefined;
+	std::map<QName, Class_base*> instantiatedTemplates;
 	
 	// list of classes where super class is not defined yet 
 	std::list<Class_base*> classesSuperNotFilled;

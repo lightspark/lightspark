@@ -216,7 +216,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			throw ParseException("invalid marker in AMF3 vector");
 			
 	}
-	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(type));
+	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(type,ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 

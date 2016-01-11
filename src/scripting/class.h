@@ -22,6 +22,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"
@@ -418,17 +419,22 @@ public:
 		return ret;
 	}
 
-	Class_base* applyType(const std::vector<const Type*>& types)
+	Class_base* applyType(const std::vector<const Type*>& types,_NR<ApplicationDomain> applicationDomain)
 	{
 		QName instantiatedQName = getQName(types);
+		_NR<ApplicationDomain> appdomain = applicationDomain;
+		
+		// if type is a builtin class, it is handled in the systemDomain
+		if (appdomain.isNull() || (types.size() > 0 && !dynamic_cast<const Class_inherit*>(types[0])))
+			appdomain = getSys()->systemDomain;
 
-		std::map<QName, Class_base*>::iterator it=getSys()->instantiatedTemplates.find(instantiatedQName);
+		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);
 		Class<T>* ret=NULL;
-		if(it==getSys()->instantiatedTemplates.end()) //This class is not yet in the map, create it
+		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(instantiatedQName.name);
 			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
-			getSys()->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
+			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 			if(ret->super)
@@ -446,16 +452,17 @@ public:
 		ret->incRef();
 		return ret;
 	}
-	Class_base* applyTypeByQName(const QName& qname)
+	Class_base* applyTypeByQName(const QName& qname,_NR<ApplicationDomain> applicationDomain)
 	{
 		const std::vector<const Type*> types;
-		std::map<QName, Class_base*>::iterator it=getSys()->instantiatedTemplates.find(qname);
+		_NR<ApplicationDomain> appdomain = applicationDomain;
+		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(qname);
 		Class<T>* ret=NULL;
-		if(it==getSys()->instantiatedTemplates.end()) //This class is not yet in the map, create it
+		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(qname.name);
 			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(qname,types,this,memoryAccount);
-			getSys()->instantiatedTemplates.insert(std::make_pair(qname,ret));
+			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
 			ret->prototype = _MNR(new_objectPrototype());
 			T::sinit(ret);
 			if(ret->super)
@@ -469,26 +476,26 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(const Type* type)
+	static Ref<Class_base> getTemplateInstance(const Type* type,_NR<ApplicationDomain> appdomain)
 	{
 		std::vector<const Type*> t(1,type);
 		Template<T>* templ=getTemplate();
-		Ref<Class_base> ret=_MR(templ->applyType(t));
+		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
 		templ->decRef();
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(const QName& qname, ABCContext* context)
+	static Ref<Class_base> getTemplateInstance(const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
 	{
 		Template<T>* templ=getTemplate();
-		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname));
+		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname,appdomain));
 		ret->context = context;
 		templ->decRef();
 		return ret;
 	}
-	static T* getInstanceS(const Type* type)
+	static T* getInstanceS(const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		return static_cast<T*>(getTemplateInstance(type).getPtr()->getInstance(true,NULL,0));
+		return static_cast<T*>(getTemplateInstance(type,appdomain).getPtr()->getInstance(true,NULL,0));
 	}
 
 	static Template<T>* getTemplate(const QName& name)

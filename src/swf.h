@@ -336,7 +336,6 @@ public:
 	//This is an array of fixed size, we can avoid using std::vector
 	Class_base** builtinClasses;
 	std::map<QName, Template_base*> templates;
-	std::map<QName, Class_base*> instantiatedTemplates;
 
 	//Flags for command line options
 	bool useInterpreter;

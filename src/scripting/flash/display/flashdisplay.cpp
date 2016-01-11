@@ -2314,7 +2314,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 ASFUNCTIONBODY(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	return Template<Vector>::getInstanceS(Class<StageVideo>::getClass());
+	return Template<Vector>::getInstanceS(Class<StageVideo>::getClass(),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()

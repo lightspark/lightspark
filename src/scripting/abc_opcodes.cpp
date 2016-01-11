@@ -809,7 +809,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 			throw Class<TypeError>::getInstanceS("Wrong type in applytype");
 	}
 
-	Class_base* o_class = o_template->applyType(t);
+	Class_base* o_class = o_template->applyType(t,th->context->root->applicationDomain);
 
 	// Register the type name in the global scope. The type name
 	// is later used by the coerce opcode.
@@ -1669,11 +1669,12 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	}
 	else
 	{
+		tiny_string clsname = obj->getClassName();
 		obj->decRef();
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
 		//LOG(LOG_ERROR,_("Calling an undefined function ") << getSys()->getStringFromUniqueId(name->name_s_id));
-		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(), obj->getClassName());
+		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(), clsname);
 		if(keepReturn)
 			th->runtime_stack_push(getSys()->getUndefinedRef());
 	}

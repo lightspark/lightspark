@@ -223,6 +223,11 @@ void ApplicationDomain::finalize()
 	domainMemory.reset();
 	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
 		(*i)->decRef();
+	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
+		it->second->finalize();
+	//Free template instantations by decRef'ing them
+	for(auto i = instantiatedTemplates.begin(); i != instantiatedTemplates.end(); ++i)
+		i->second->decRef();
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)

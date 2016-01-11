@@ -437,7 +437,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		rest->resize(passedToRest);
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
+		{
+			args[passedToLocals+j]->incRef();
 			rest->set(j,_MR(args[passedToLocals+j]));
+		}
 
 		assert_and_throw(cc.locals_size>args_len+1);
 		cc.locals[args_len+1]=rest;
@@ -756,7 +759,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 		if (mn->ns.size() >= 1 && mn->ns[0].getImpl().name == "__AS3__.vec")
 		{
 			QName qname(getSys()->getStringFromUniqueId(mn->name_s_id),mn->ns[0].getImpl().name);
-			typeObject = Template<Vector>::getTemplateInstance(qname,context).getPtr();
+			typeObject = Template<Vector>::getTemplateInstance(qname,context,context->root->applicationDomain).getPtr();
 		}
 	}
 	return typeObject->as<Type>();
@@ -1167,11 +1170,6 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 	check();
 	if(cls==this || cls==Class<ASObject>::getClass())
 		return true;
-
-	// it seems that classes with the same name from different applicationDomains 
-	// are treated as equal, so we test for same names
-	//if (this->getQualifiedClassName() == cls->getQualifiedClassName())
-	//	return true;
 
 	//Now check the interfaces
 	if (considerInterfaces)

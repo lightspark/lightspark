@@ -79,9 +79,9 @@ void GraphicsPath::finalize()
 void GraphicsPath::ensureValid()
 {
 	if (commands.isNull())
-		commands = _MNR(Template<Vector>::getInstanceS(Class<Integer>::getClass()));
+		commands = _MNR(Template<Vector>::getInstanceS(Class<Integer>::getClass(),NullRef));
 	if (data.isNull())
-		data = _MNR(Template<Vector>::getInstanceS(Class<Number>::getClass()));
+		data = _MNR(Template<Vector>::getInstanceS(Class<Number>::getClass(),NullRef));
 }
 
 ASFUNCTIONBODY(GraphicsPath, curveTo)

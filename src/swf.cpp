@@ -1981,6 +1981,11 @@ void SystemState::showMouseCursor(bool visible)
 		EngineData::runInGtkThread(sigc::mem_fun(engineData, &EngineData::hideMouseCursor));
 }
 
+void SystemState::waitRendering()
+{
+	getRenderThread()->waitRendering();
+}
+
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

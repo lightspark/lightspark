@@ -683,6 +683,11 @@ void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
 	cairo_restore(cr);
 }
 
+void RenderThread::waitRendering()
+{
+	Locker l(mutexRendering);
+}
+
 //Send the texture drawn by Cairo to the GPU
 void RenderThread::mapCairoTexture(int w, int h)
 {
@@ -757,6 +762,7 @@ void RenderThread::plotProfilingData()
 
 void RenderThread::coreRendering()
 {
+	Locker l(mutexRendering);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	//Clear the back buffer
@@ -863,7 +869,7 @@ void RenderThread::draw(bool force)
 	if(!diff.negative()) /* is one seconds elapsed? */
 	{
 		time_s=time_d;
-		LOG(LOG_INFO,_("FPS: ") << dec << frameCount);
+		LOG(LOG_INFO,_("FPS: ") << dec << frameCount<<" "<<getVm()->getEventQueueSize());
 		frameCount=0;
 		secsCount++;
 	}

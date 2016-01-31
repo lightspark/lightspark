@@ -444,6 +444,7 @@ public:
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
 
 	void showMouseCursor(bool visible);
+	void waitRendering() DLL_PUBLIC;
 };
 
 class ParseThread: public IThreadJob

@@ -35,8 +35,9 @@ using namespace lightspark;
 class StandaloneEngineData: public EngineData
 {
 	guint destroyHandlerId;
+	guint deleteHandlerId;
 public:
-	StandaloneEngineData() : destroyHandlerId(0)
+	StandaloneEngineData() : destroyHandlerId(0),deleteHandlerId(0)
 	{
 #ifndef _WIN32
 		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
@@ -52,6 +53,8 @@ public:
 	{
 		if(widget)
 		{
+			if(deleteHandlerId)
+				g_signal_handler_disconnect(widget, deleteHandlerId);
 			if(destroyHandlerId)
 				g_signal_handler_disconnect(widget, destroyHandlerId);
 
@@ -66,10 +69,17 @@ public:
 		e->widget = NULL;
 		getSys()->setShutdownFlag();
 	}
+	static gboolean StandaloneDelete(GtkWidget *widget, gpointer data)
+	{
+		// wait for rendering complete
+		getSys()->waitRendering();
+		return FALSE;
+	}
 	GtkWidget* createGtkWidget()
 	{
 		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_title((GtkWindow*)window,"Lightspark");
+		deleteHandlerId = g_signal_connect(window,"delete_event",G_CALLBACK(StandaloneDelete),this);
 		destroyHandlerId = g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
 		return window;
 	}

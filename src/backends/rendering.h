@@ -115,6 +115,7 @@ private:
 	void coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
+	Mutex mutexRendering;
 
 	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
@@ -175,6 +176,7 @@ public:
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
+	void waitRendering();
 };
 
 RenderThread* getRenderThread();

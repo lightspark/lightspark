@@ -204,7 +204,7 @@ VideoDataTag::~VideoDataTag()
 	aligned_free(packetData);
 }
 
-AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
+AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false),packetData(NULL),packetLen(0)
 {
 	unsigned int start=s.tellg();
 	BitStream bs(s);
@@ -236,13 +236,15 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 		_isHeader=(t==0);
 		headerConsumed++;
 	}
-	packetLen=dataSize-headerConsumed;
-
-	aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
-
-	s.read((char*)packetData,packetLen);
-	memset(packetData+packetLen,0,16);
-
+	if (dataSize > headerConsumed)
+	{
+		packetLen=dataSize-headerConsumed;
+	
+		aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+	
+		s.read((char*)packetData,packetLen);
+		memset(packetData+packetLen,0,16);
+	}
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
@@ -250,5 +252,6 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 
 AudioDataTag::~AudioDataTag()
 {
-	aligned_free(packetData);
+	if (packetData)
+		aligned_free(packetData);
 }

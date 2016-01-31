@@ -52,16 +52,7 @@ SDLPlugin::SDLPlugin(string init_Name, string init_audiobackend, bool init_stopp
 		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
 	else
 		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
-	if (Mix_OpenAudio (LIGHTSPARK_AUDIO_SDL_SAMPLERATE, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFERSIZE) < 0)
-	{
-		LOG(LOG_ERROR,"Couldn't open SDL_mixer");
-		sdl_available = 0;
-		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
-		if (!SDL_WasInit(0))
-			SDL_Quit ();
-		return;
-	}
-	Mix_Pause(-1);
+	mixeropened = 0;
 }
 void SDLPlugin::set_device(std::string desiredDevice,
 		IAudioPlugin::DEVICE_TYPES desiredType)
@@ -73,6 +64,16 @@ AudioStream* SDLPlugin::createStream(AudioDecoder* decoder)
 {
 	if (!sdl_available)
 		return NULL;
+	if (!mixeropened)
+	{
+		if (Mix_OpenAudio (LIGHTSPARK_AUDIO_SDL_SAMPLERATE, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFERSIZE) < 0)
+		{
+			LOG(LOG_ERROR,"Couldn't open SDL_mixer");
+			sdl_available = 0;
+			return NULL;
+		}
+		mixeropened = 1;
+	}
 
 	SDLAudioStream *stream = new SDLAudioStream(this);
 	stream->decoder = decoder;
@@ -92,9 +93,12 @@ SDLPlugin::~SDLPlugin()
 	for (stream_iterator it = streams.begin(); it != streams.end(); ++it) {
 		delete *it;
 	}
-	if (sdl_available)
+	if (mixeropened)
 	{
 		Mix_CloseAudio();
+	}
+	if (sdl_available)
+	{
 		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
 		if (!SDL_WasInit(0))
 			SDL_Quit ();
@@ -174,7 +178,7 @@ void SDLAudioStream::SetPause(bool pause_on)
 
 bool SDLAudioStream::ispaused()
 {
-	return SDL_GetAudioStatus() != SDL_AUDIO_PLAYING;
+	return Mix_Paused(mixer_channel);
 }
 
 bool SDLAudioStream::isValid()

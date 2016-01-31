@@ -39,7 +39,7 @@ class SDLPlugin : public IAudioPlugin
 friend class SDLAudioStream;
 private:
 	int sdl_available;
-
+	int mixeropened;
 public:
 	SDLPlugin ( std::string init_Name = "SDL plugin", std::string init_audiobackend = "sdl", bool init_stopped = false );
 

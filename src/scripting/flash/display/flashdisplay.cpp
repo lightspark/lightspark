@@ -469,7 +469,8 @@ ASFUNCTIONBODY(Loader,load)
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
 	_R<RootMovieClip> currentRoot=getVm()->currentCallContext->context->root;
-	if(currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
+	// empty origin is possible if swf is loaded by loadBytes()
+	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
 	{
 		//Same domain
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;

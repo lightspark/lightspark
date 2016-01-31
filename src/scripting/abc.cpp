@@ -2104,10 +2104,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 	{
 		case traits_info::Class:
 		{
-			// check if class is alreadey defined in this context
-			if (root->applicationDomain->getVariableByMultinameOpportunistic(*mname))
-				return;
-			
 			//Check if this already defined in upper levels
 			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
 			if(!tmpo.isNull())

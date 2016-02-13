@@ -107,7 +107,7 @@ public:
 class SharedObject: public EventDispatcher
 {
 private:
-	static std::map<tiny_string, SharedObject* > sharedobjectmap;
+	static std::map<tiny_string, ASObject* > sharedobjectmap;
 public:
 	SharedObject(Class_base* c);
 	static void sinit(Class_base*);

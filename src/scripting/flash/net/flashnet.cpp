@@ -610,7 +610,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 	c->setVariableByQName("PENDING","",Class<ASString>::getInstanceS("pending"),DECLARED_TRAIT);
 }
 
-std::map<tiny_string, SharedObject* > SharedObject::sharedobjectmap;
+std::map<tiny_string, ASObject* > SharedObject::sharedobjectmap;
 SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
 {
 	data=_MR(new_asobject());
@@ -671,18 +671,22 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 	
 	if (name=="")
 		throwError<ASError>(0,"invalid name");
-	if (localPath != "" || secure)
-		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameters 'localPath' and 'secure' are ignored");
+	if (secure)
+		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameter 'secure' is ignored");
 
 
-	std::map<tiny_string, SharedObject* >::iterator it = sharedobjectmap.find(name);
+	tiny_string fullname = localPath + "|";
+	fullname += name;
+	SharedObject* res = Class<SharedObject>::getInstanceS();
+	std::map<tiny_string, ASObject* >::iterator it = sharedobjectmap.find(fullname);
 	if (it == sharedobjectmap.end())
 	{
-		sharedobjectmap.insert(make_pair(name,Class<SharedObject>::getInstanceS()));
-		it = sharedobjectmap.find(name);
+		sharedobjectmap.insert(make_pair(fullname,Class<ASObject>::getInstanceS()));
+		it = sharedobjectmap.find(fullname);
 	}
 	it->second->incRef();
-	return it->second;
+	res->data = _NR<ASObject>(it->second);
+	return res;
 }
 
 ASFUNCTIONBODY(SharedObject,getRemote)

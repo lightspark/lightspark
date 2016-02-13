@@ -60,7 +60,7 @@ ASFUNCTIONBODY(Mouse, setCursor)
 	tiny_string cursorName;
 	ARG_UNPACK(cursorName);
 	if (cursorName != "auto")
-		throwError<ArgumentError>(kInvalidEnumError, "cursor");
+		LOG(LOG_NOT_IMPLEMENTED,"setting mouse cursor is not implemented");
 	return NULL;
 }
 

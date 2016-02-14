@@ -28,10 +28,10 @@
 
 class AudioStream
 {
-  protected:
+protected:
 	AudioStream(lightspark::AudioDecoder *dec = NULL);
 
-  public:
+public:
 	lightspark::AudioDecoder *decoder;
 	virtual bool ispaused() = 0;	//Is the stream paused? (corked)
 	virtual bool isValid() = 0; //Is the stream alive, fully working?
@@ -41,6 +41,7 @@ class AudioStream
 	virtual ~AudioStream() {};
 	virtual void setVolume(double volume)
 		{LOG(LOG_NOT_IMPLEMENTED,"setVolume not implemented in plugin");}
+	bool hasStarted;
 };
 
 /**********************

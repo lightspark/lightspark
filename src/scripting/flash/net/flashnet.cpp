@@ -1689,6 +1689,11 @@ void NetStream::tick()
 	}
 	if(paused)
 		return;
+	if(audioStream && audioStream->isValid() && !audioStream->hasStarted)
+	{
+		audioStream->hasStarted = true;
+		audioStream->resume();
+	}
 	//Advance video and audio to current time, follow the audio stream time
 	countermutex.lock();
 	if(audioStream && getSys()->audioManager->isTimingAvailablePlugin())
@@ -1853,9 +1858,6 @@ void NetStream::execute()
 						if (frameRate)
 						{
 							this->playbackBytesPerSecond = s.tellg() / (framesdecoded / frameRate);
-							// TODO this overrides the real number of decoded frames
-							// otherwise on slow computers we never get the buffer filled
-							//framesdecoded = (this->getReceivedLength() / this->playbackBytesPerSecond) *  frameRate;
 							this->bufferLength = (framesdecoded / frameRate) - (streamTime-prevstreamtime)/1000.0;
 						}
 						countermutex.unlock();
@@ -1881,9 +1883,8 @@ void NetStream::execute()
 				audioDecoder=streamDecoder->audioDecoder;
 			
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
-				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder);
-			
-			if(!tickStarted && isReady() && ((framesdecoded / frameRate) >= this->bufferTime))
+				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder,streamDecoder->hasVideo());
+			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				tickStarted=true;
 				this->incRef();
@@ -1894,7 +1895,7 @@ void NetStream::execute()
 				float localRenderRate=dmin(frameRate,24);
 				getSys()->setRenderRate(localRenderRate);
 			}
-			if (!bufferfull && ((framesdecoded / frameRate) >= this->bufferTime))
+			if (!bufferfull && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				bufferfull = true;
 				this->incRef();

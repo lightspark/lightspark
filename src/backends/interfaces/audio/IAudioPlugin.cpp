@@ -69,7 +69,7 @@ IAudioPlugin::~IAudioPlugin()
 
 
 AudioStream::AudioStream ( lightspark::AudioDecoder* dec ):
-	decoder(dec)
+	decoder(dec),hasStarted(false)
 {
 
 }

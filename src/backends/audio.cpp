@@ -58,11 +58,16 @@ bool AudioManager::pluginLoaded() const
 	return oAudioPlugin != NULL;
 }
 
-AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
+AudioStream *AudioManager::createStreamPlugin (AudioDecoder *decoder , bool startpaused)
 {
 	if ( pluginLoaded() )
 	{
-		return oAudioPlugin->createStream ( decoder );
+		AudioStream * res = oAudioPlugin->createStream ( decoder );
+		if (startpaused)
+			res->pause();
+		else
+			res->hasStarted=true;
+		return res;
 	}
 	else
 	{

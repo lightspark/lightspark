@@ -950,7 +950,10 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 		if (customVideoDecoder)
 		{
 			if (customVideoDecoder->decodePacket(&pkt, mtime))
+			{
 				customVideoDecoder->framesdecoded++;
+				hasvideo=true;
+			}
 		}
 	}
 	av_free_packet(&pkt);

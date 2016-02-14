@@ -49,7 +49,7 @@ private:
 public:
 	AudioManager ( PluginManager *sharePluginManager );
 	bool pluginLoaded() const;
-	AudioStream *createStreamPlugin ( AudioDecoder *decoder );
+	AudioStream *createStreamPlugin ( AudioDecoder *decoder, bool startpaused );
 	bool isTimingAvailablePlugin() const;
 	void set_audiobackend ( std::string desired_backend );
 	void get_audioBackendsList();

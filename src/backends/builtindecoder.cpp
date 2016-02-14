@@ -32,6 +32,7 @@ BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns):
 	{
 		FLV_HEADER h(stream);
 		valid=h.isValid();
+		hasvideo=h.hasVideo();
 	}
 	else
 		valid=false;
@@ -67,6 +68,8 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 		{
 			AudioDataTag tag(stream);
 			prevSize=tag.getTotalLen();
+			if (tag.packetLen == 0)
+				return false;
 
 			if(audioDecoder==NULL)
 			{

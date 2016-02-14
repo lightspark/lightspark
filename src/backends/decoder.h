@@ -329,14 +329,16 @@ public:
 class StreamDecoder
 {
 public:
-	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false){}
+	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false),hasvideo(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
 	bool isValid() const { return valid; }
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
+	bool hasVideo() const { return hasvideo; }
 protected:
 	bool valid;
+	bool hasvideo;
 };
 
 #ifdef ENABLE_LIBAVCODEC

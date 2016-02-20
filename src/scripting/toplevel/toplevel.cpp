@@ -767,14 +767,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),protected_ns("",NAMESPACE),constructor(NULL),
 	borrowedVariables(m),
-	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
+	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns("",NAMESPACE),constructor(NULL),
 	borrowedVariables(NULL),
-	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),use_protected(false)
+	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),use_protected(false)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -1145,8 +1145,9 @@ void Class_base::linkInterface(Class_base* c) const
 {
 	assert(class_index!=-1);
 	//Recursively link interfaces implemented by this interface
-	for(unsigned int i=0;i<getInterfaces().size();i++)
-		getInterfaces()[i]->linkInterface(c);
+	const std::vector<Class_base*> interfaces = getInterfaces();
+	for(unsigned int i=0;i<interfaces.size();i++)
+		interfaces[i]->linkInterface(c);
 
 	assert_and_throw(context);
 
@@ -1172,11 +1173,13 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 		return true;
 
 	//Now check the interfaces
-	if (considerInterfaces)
+	//an interface can't be subclass of a normal class, we only check the interfaces if cls is an interface itself
+	if (considerInterfaces && cls->isInterface)
 	{
-		for(unsigned int i=0;i<getInterfaces().size();i++)
+		const std::vector<Class_base*> interfaces = getInterfaces();
+		for(unsigned int i=0;i<interfaces.size();i++)
 		{
-			if(getInterfaces()[i]->isSubClass(cls, considerInterfaces))
+			if(interfaces[i]->isSubClass(cls, considerInterfaces))
 				return true;
 		}
 	}

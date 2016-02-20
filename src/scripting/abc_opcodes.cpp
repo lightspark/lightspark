@@ -2211,6 +2211,7 @@ void ABCVm::newClass(call_context* th, int n)
 		
 	ret->isFinal = th->context->instances[n].isFinal();
 	ret->isSealed = th->context->instances[n].isSealed();
+	ret->isInterface = th->context->instances[n].isInterface();
 
 	assert_and_throw(th->context);
 	ret->context=th->context;

@@ -2117,6 +2117,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
 				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				ci->isInterface = true;
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)

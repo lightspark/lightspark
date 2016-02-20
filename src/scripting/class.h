@@ -305,6 +305,7 @@ public:
 			QName name(ClassName<T>::name,ClassName<T>::ns);
 			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
 			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
+			ret->isInterface = true;
 			ret->incRef();
 			*retAddr=ret;
 		}

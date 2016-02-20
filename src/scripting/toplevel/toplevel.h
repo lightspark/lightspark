@@ -175,6 +175,7 @@ public:
 	int32_t class_index;
 	bool isFinal:1;
 	bool isSealed:1;
+	bool isInterface:1;
 private:
 	//TODO: move in Class_inherit
 	bool use_protected:1;

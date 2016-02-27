@@ -96,6 +96,7 @@ private:
 	   stringSize includes the trailing \0
 	*/
 	uint32_t stringSize;
+	uint32_t numchars;
 	TYPE type;
 #ifdef MEMORY_USAGE_PROFILING
 	//Implemented in memory_support.cpp
@@ -115,7 +116,7 @@ private:
 public:
 	static const uint32_t npos = (uint32_t)(-1);
 
-	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),type(STATIC),isASCII(true),hasNull(false){buf[0]=0;}
+	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),numchars(0),type(STATIC),isASCII(true),hasNull(false){buf[0]=0;}
 	/* construct from utf character */
 	static tiny_string fromChar(uint32_t c);
 	tiny_string(const char* s,bool copy=false);

@@ -65,6 +65,7 @@ tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),st
 		buf=r.buf;
 		this->isASCII = r.isASCII;
 		this->hasNull = r.hasNull;
+		this->numchars = r.numchars;
 		return;
 	}
 	if(stringSize > STATIC_SIZE)
@@ -72,6 +73,7 @@ tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),st
 	memcpy(buf,r.buf,stringSize);
 	this->isASCII = r.isASCII;
 	this->hasNull = r.hasNull;
+	this->numchars = r.numchars;
 }
 
 tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),stringSize(r.size()+1),type(STATIC)
@@ -105,6 +107,7 @@ tiny_string& tiny_string::operator=(const tiny_string& s)
 	}
 	this->isASCII = s.isASCII;
 	this->hasNull = s.hasNull;
+	this->numchars = s.numchars;
 	return *this;
 }
 
@@ -210,6 +213,7 @@ tiny_string& tiny_string::operator+=(const tiny_string& r)
 		this->isASCII = r.isASCII;
 	if (!this->hasNull)
 		this->hasNull = r.hasNull;
+	this->numchars += r.numchars;
 	return *this;
 }
 
@@ -321,6 +325,8 @@ uint32_t tiny_string::numBytes() const
 /* returns the length in utf-8 characters, not counting the trailing \0 */
 uint32_t tiny_string::numChars() const
 {
+	return numchars;
+	/*
 	if (isASCII)
 		return stringSize-1;
 	if (!hasNull)
@@ -335,6 +341,7 @@ uint32_t tiny_string::numChars() const
 		++len;
 	}
 	return len;
+	*/
 }
 
 char* tiny_string::strchr(char c) const
@@ -440,17 +447,32 @@ void tiny_string::resetToStatic()
 	_buf_static[0] = '\0';
 	buf=_buf_static;
 	type=STATIC;
-	init();
 }
 
 void tiny_string::init()
 {
+	numchars = 0;
 	isASCII = true;
 	hasNull = false;
+	unsigned char utfpos=0;
 	for (uint i = 0; i < stringSize-1; i++)
 	{
 		if (buf[i] & 0x80)
+		{
+			if (utfpos == 0)
+			{
+				utfpos = buf[i];
+			}
+			utfpos = utfpos << 1;
+			if (!(utfpos & 0x80))
+			{
+				numchars++;
+				utfpos = 0;
+			}
 			isASCII = false;
+		}
+		else
+			numchars++;
 		if (buf[i] == 0)
 			hasNull = true;
 	}
@@ -461,10 +483,11 @@ tiny_string tiny_string::fromChar(uint32_t c)
 	tiny_string ret;
 	ret.buf = ret._buf_static;
 	ret.type = STATIC;
-	ret.stringSize = g_unichar_to_utf8(c,ret.buf) + 1;
+	ret.stringSize = c&0x80 ? 2 : g_unichar_to_utf8(c,ret.buf) + 1;
 	ret.buf[ret.stringSize-1] = '\0';
 	ret.isASCII = c<0x80;
 	ret.hasNull = c == 0;
+	ret.numchars = 1;
 	return ret;
 }
 
@@ -497,7 +520,9 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 	memcpy(ret.buf,buf+start,len);
 	ret.buf[len]=0;
 	ret.stringSize = len+1;
-	if (!this->isASCII || this->hasNull)
+	if (this->isASCII && !this->hasNull)
+		ret.numchars = len;
+	else
 		ret.init();
 	return ret;
 }

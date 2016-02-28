@@ -112,6 +112,7 @@ public:
 	unsigned int tellg() const;
 	void seekg(unsigned int offset);
 	void read(char *out, unsigned int nbytes);
+	uint8_t readbyte();
 	bool eof() const;
 };
 

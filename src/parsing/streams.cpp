@@ -249,7 +249,20 @@ void memorystream::read(char *out, unsigned int nbytes)
 		pos += nbytes;
 	}
 }
-
+uint8_t memorystream::readbyte()
+{
+	if (pos < len)
+	{
+		pos++;
+		return code[pos-1];
+	}
+	else
+	{
+		pos = len;
+		read_past_end = true;
+		return 0;
+	}
+}
 bool memorystream::eof() const
 {
 	return read_past_end;
@@ -257,8 +270,7 @@ bool memorystream::eof() const
 
 memorystream& lightspark::operator>>(memorystream& in, lightspark::u8& v)
 {
-	uint8_t t;
-	in.read((char*)&t,1);
+	uint8_t t = in.readbyte();
 	v.val= t;
 	return in;
 }
@@ -289,7 +301,7 @@ memorystream& lightspark::operator>>(memorystream& in, lightspark::u32& v)
 	uint8_t t;
 	do
 	{
-		in.read((char*)&t,1);
+		t = in.readbyte();
 		//No more than 5 bytes should be read
 		if(i==28)
 		{

@@ -514,8 +514,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x24:
 			{
 				//pushbyte
-				int8_t t;
-				code.read((char*)&t,1);
+				int8_t t = code.readbyte();
 				context->runtime_stack_push(abstract_i(t));
 				pushByte(t);
 				break;
@@ -1622,13 +1621,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//debug
 				LOG(LOG_CALLS, _("debug") );
-				uint8_t debug_type;
 				u30 index;
-				uint8_t reg;
 				u30 extra;
-				code.read((char*)&debug_type,1);
+				code.readbyte();
 				code >> index;
-				code.read((char*)&reg,1);
+				code.readbyte();
 				code >> extra;
 				break;
 			}

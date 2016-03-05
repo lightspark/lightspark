@@ -1036,28 +1036,40 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//convert_i
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_i(convert_i(val)));
+				if (val->is<Integer>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_i(convert_i(val)));
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_ui(convert_u(val)));
+				if (val->is<UInteger>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_ui(convert_u(val)));
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_d(convert_d(val)));
+				if (val->is<Number>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_d(convert_d(val)));
 				break;
 			}
 			case 0x76:
 			{
 				//convert_b
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_b(convert_b(val)));
+				if (val->is<Boolean>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_b(convert_b(val)));
 				break;
 			}
 			case 0x77:
@@ -1114,7 +1126,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x85:
 			{
 				//coerce_s
-				context->runtime_stack_push(coerce_s(context->runtime_stack_pop()));
+				ASObject* val=context->runtime_stack_pop();
+				if (val->is<ASString>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(coerce_s(val));
 				break;
 			}
 			case 0x86:

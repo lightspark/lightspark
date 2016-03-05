@@ -40,11 +40,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 {
 	method_info* mi=function->mi;
 
-	memorystream code(mi->body->code.data(), mi->body->code.size());
+	const int code_len=mi->body->code.size();
+	memorystream code(mi->body->code.data(), code_len);
 	//This may be non-zero and point to the position of an exception handler
 	code.seekg(context->exec_pos);
 
-	const int code_len=mi->body->code.size();
 
 	u8 opcode;
 
@@ -1143,28 +1143,40 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//convert_i
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_i(convert_i(val)));
+				if (val->is<Integer>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_i(convert_i(val)));
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_ui(convert_u(val)));
+				if (val->is<UInteger>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_ui(convert_u(val)));
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_d(convert_d(val)));
+				if (val->is<Number>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_d(convert_d(val)));
 				break;
 			}
 			case 0x76:
 			{
 				//convert_b
 				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(abstract_b(convert_b(val)));
+				if (val->is<Boolean>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(abstract_b(convert_b(val)));
 				break;
 			}
 			case 0x77:
@@ -1209,7 +1221,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x85:
 			{
 				//coerce_s
-				context->runtime_stack_push(coerce_s(context->runtime_stack_pop()));
+				ASObject* val=context->runtime_stack_pop();
+				if (val->is<ASString>())
+					context->runtime_stack_push(val);
+				else
+					context->runtime_stack_push(coerce_s(val));
 				break;
 			}
 			case 0x86:

@@ -316,6 +316,14 @@ bool tiny_string::empty() const
 	return stringSize == 1;
 }
 
+void tiny_string::clear()
+{
+	resetToStatic();
+	numchars = 0;
+	isASCII = true;
+	hasNull = false;
+}
+
 /* returns the length in bytes, not counting the trailing \0 */
 uint32_t tiny_string::numBytes() const
 {
@@ -483,9 +491,17 @@ tiny_string tiny_string::fromChar(uint32_t c)
 	tiny_string ret;
 	ret.buf = ret._buf_static;
 	ret.type = STATIC;
-	ret.stringSize = c&0x80 ? 2 : g_unichar_to_utf8(c,ret.buf) + 1;
-	ret.buf[ret.stringSize-1] = '\0';
 	ret.isASCII = c<0x80;
+	if (ret.isASCII)
+	{
+		ret.buf[0] = c&0xff;
+		ret.stringSize = 2;
+	}
+	else
+	{
+		ret.stringSize =  g_unichar_to_utf8(c,ret.buf) + 1;
+	}
+	ret.buf[ret.stringSize-1] = '\0';
 	ret.hasNull = c == 0;
 	ret.numchars = 1;
 	return ret;

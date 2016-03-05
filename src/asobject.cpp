@@ -180,7 +180,7 @@ _R<ASObject> ASObject::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	return _MR(Class<ASString>::getInstanceS(getNameAt(index-1)));
+	return _MR(abstract_s(getNameAt(index-1)));
 }
 
 _R<ASObject> ASObject::nextValue(uint32_t index)
@@ -324,8 +324,8 @@ bool ASObject::has_valueOf()
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
-	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	valueOfName.ns.emplace_back("",NAMESPACE);
+	valueOfName.ns.emplace_back(AS3,NAMESPACE);
 	valueOfName.isAttribute = false;
 	return hasPropertyByMultiname(valueOfName, true, true);
 }
@@ -338,8 +338,8 @@ _R<ASObject> ASObject::call_valueOf()
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
-	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	valueOfName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	valueOfName.ns.emplace_back("",NAMESPACE);
+	valueOfName.ns.emplace_back(AS3,NAMESPACE);
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
@@ -358,8 +358,8 @@ bool ASObject::has_toString()
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toStringName.ns.emplace_back("",NAMESPACE);
+	toStringName.ns.emplace_back(AS3,NAMESPACE);
 	toStringName.isAttribute = false;
 	return ASObject::hasPropertyByMultiname(toStringName, true, true);
 }
@@ -372,8 +372,8 @@ _R<ASObject> ASObject::call_toString()
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	toStringName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toStringName.ns.emplace_back("",NAMESPACE);
+	toStringName.ns.emplace_back(AS3,NAMESPACE);
 	toStringName.isAttribute = false;
 	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
@@ -393,8 +393,8 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunct
 	multiname toJSONName(NULL);
 	toJSONName.name_type=multiname::NAME_STRING;
 	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
-	toJSONName.ns.push_back(nsNameAndKind("",NAMESPACE));
-	toJSONName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+	toJSONName.ns.emplace_back("",NAMESPACE);
+	toJSONName.ns.emplace_back(AS3,NAMESPACE);
 	toJSONName.isAttribute = false;
 	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
 		return res;
@@ -1000,7 +1000,7 @@ ASFUNCTIONBODY(ASObject,_toString)
 	else
 		ret="[object Object]";
 
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(ret);
 }
 
 ASFUNCTIONBODY(ASObject,_toLocaleString)
@@ -1008,7 +1008,7 @@ ASFUNCTIONBODY(ASObject,_toLocaleString)
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	toStringName.ns.emplace_back("",NAMESPACE);
 	toStringName.isAttribute = false;
 	if (obj->hasPropertyByMultiname(toStringName, true, false))
 	{
@@ -1029,7 +1029,7 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.emplace_back("",NAMESPACE);
 	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true, false);
 	return abstract_b(ret);
@@ -1069,7 +1069,7 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.emplace_back("",NAMESPACE);
 	name.isAttribute=false;
 	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
@@ -1095,7 +1095,7 @@ ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.emplace_back("",NAMESPACE);
 	name.isAttribute=false;
 	obj->setIsEnumerable(name, isEnum);
 	return NULL;
@@ -1158,7 +1158,7 @@ const variable* ASObject::findGettable(const multiname& name, NS_KIND &nskind) c
 	return findGettableImpl(Variables,name,nskind);
 }
 
-const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind)
+const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind) const
 {
 	//Get from the current object without considering borrowed properties
 	const variable* var=findGettable(name,nskind);
@@ -1247,7 +1247,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::lis
 	varName.name_type=multiname::NAME_STRING;
 	varName.name_s_id=getSys()->getUniqueStringId(name);
 	for (auto ns=namespaces.begin(); ns!=namespaces.end(); ns++)
-		varName.ns.push_back(nsNameAndKind(*ns,NAMESPACE));
+		varName.ns.emplace_back(*ns,NAMESPACE);
 	varName.isAttribute = false;
 
 	return getVariableByMultiname(varName,SKIP_IMPL);
@@ -1397,6 +1397,8 @@ ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryA
 
 void ASObject::setClass(Class_base* c)
 {
+	if (classdef == c)
+		return;
 	if(classdef)
 	{
 		classdef->abandonObject(this);
@@ -1410,23 +1412,47 @@ void ASObject::setClass(Class_base* c)
 	}
 }
 
-void ASObject::finalize()
+void ASObject::destroy()
 {
-	Variables.destroyContents();
 	if(classdef)
 	{
 		classdef->abandonObject(this);
 		classdef->decRef();
 		classdef=NULL;
 	}
-	if (proxyMultiName)
-		delete proxyMultiName;
-	proxyMultiName = NULL;
+}
+
+void ASObject::finalize()
+{
 }
 
 ASObject::~ASObject()
 {
+	destroy();
+}
+void ASObject::destruct()
+{
 	finalize();
+	Variables.destroyContents();
+	if (proxyMultiName)
+		delete proxyMultiName;
+	proxyMultiName = NULL;
+	traitsInitialized =false;
+	constructIndicator = false;
+	constructorCallComplete =false;
+	implEnable = true;
+#ifndef NDEBUG
+	//Stuff only used in debugging
+	initialized=false;
+#endif
+	if (classdef && classdef->isReusable)
+	{
+		classdef->pushObjectToFreeList(this);
+	}
+	else
+	{
+		RefCountable::destruct();
+	}
 }
 
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
@@ -1625,7 +1651,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		multiname writeExternalName(NULL);
 		writeExternalName.name_type=multiname::NAME_STRING;
 		writeExternalName.name_s_id=getSys()->getUniqueStringId("writeExternal");
-		writeExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		writeExternalName.ns.emplace_back("",NAMESPACE);
 		writeExternalName.isAttribute = false;
 
 		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
@@ -1759,6 +1785,7 @@ ASObject *ASObject::describeType() const
 		prot->describeInstance(root);
 
 	// TODO: undocumented constructor node
+	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(root)->toXMLString_internal());
 
 	return Class<XML>::getInstanceS(root);
 }
@@ -1867,7 +1894,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 					res += " ";
 				ASObject* params[2];
 				
-				params[0] = Class<ASString>::getInstanceS(getSys()->getStringFromUniqueId(varIt->first.nameId));
+				params[0] = abstract_s(getSys()->getStringFromUniqueId(varIt->first.nameId));
 				params[1] = varIt->second.var;
 				params[1]->incRef();
 				ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
@@ -1928,7 +1955,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
-	prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	prototypeName.ns.emplace_back("",NAMESPACE);
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)

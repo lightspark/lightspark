@@ -33,16 +33,24 @@ Date::Date(Class_base* c):ASObject(c),extrayears(0), nan(false), datetime(NULL),
 
 Date::~Date()
 {
-	if(datetime)
-		g_date_time_unref(datetime);
-	if(datetimeUTC)
+}
+
+void Date::finalize()
+{
+	if (datetimeUTC)
 		g_date_time_unref(datetimeUTC);
+	if (datetime)
+		g_date_time_unref(datetime);
+	datetime = NULL;
+	datetimeUTC = NULL;
+	extrayears = 0;
+	nan = false;
 }
 
 void Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
-	c->prototype->isSealed=true;
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),NORMAL_METHOD,true);
@@ -278,7 +286,7 @@ ASFUNCTIONBODY(Date,generator)
 	th->MakeDateFromMilliseconds(g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000);
 	g_date_time_unref(tmp);
 
-	return Class<ASString>::getInstanceS(th->toString());
+	return abstract_s(th->toString());
 }
 
 ASFUNCTIONBODY(Date,UTC)
@@ -783,8 +791,8 @@ ASFUNCTIONBODY(Date,setTime)
 		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=getSys()->getUniqueStringId("value");
-		name.ns.push_back(nsNameAndKind("",NAMESPACE));
-		name.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		name.ns.emplace_back("",NAMESPACE);
+		name.ns.emplace_back(AS3,NAMESPACE);
 		name.isAttribute = true;
 		obj->setVariableByMultiname(name,abstract_d(ms),CONST_NOT_ALLOWED);
 		return abstract_d(ms);
@@ -854,27 +862,27 @@ tiny_string Date::toString_priv(bool utc, const char* formatstr) const
 ASFUNCTIONBODY(Date,_toString)
 {
 	if (!obj->is<Date>())
-		return Class<ASString>::getInstanceS("Invalid Date");
+		return abstract_s("Invalid Date");
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString());
+	return abstract_s(th->toString());
 }
 
 ASFUNCTIONBODY(Date,toUTCString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString_priv(true,"%a %b %e %H:%M:%S UTC"));
+	return abstract_s(th->toString_priv(true,"%a %b %e %H:%M:%S UTC"));
 }
 
 ASFUNCTIONBODY(Date,toDateString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString_priv(false,"%a %b %e"));
+	return abstract_s(th->toString_priv(false,"%a %b %e"));
 }
 
 ASFUNCTIONBODY(Date,toTimeString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(g_date_time_format(th->datetime, "%H:%M:%S GMT%z"));
+	return abstract_s(g_date_time_format(th->datetime, "%H:%M:%S GMT%z"));
 }
 
 
@@ -882,7 +890,7 @@ ASFUNCTIONBODY(Date,toLocaleString)
 {
 	Date* th=static_cast<Date*>(obj);
 	if (!th->datetime)
-		return Class<ASString>::getInstanceS("");
+		return abstract_s();
 	tiny_string res = th->toString_priv(false,"%a %b %e");
 	gchar* fs = g_date_time_format(th->datetime, " %I:%M:%S");
 	res += fs;
@@ -891,17 +899,17 @@ ASFUNCTIONBODY(Date,toLocaleString)
 	else
 		res += " AM";
 	g_free(fs);
-	return Class<ASString>::getInstanceS(res);
+	return abstract_s(res);
 }
 ASFUNCTIONBODY(Date,toLocaleDateString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(th->toString_priv(false,"%a %b %e"));
+	return abstract_s(th->toString_priv(false,"%a %b %e"));
 }
 ASFUNCTIONBODY(Date,toLocaleTimeString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return Class<ASString>::getInstanceS(g_date_time_format(th->datetime, "%H:%M:%S %Z%z"));
+	return abstract_s(g_date_time_format(th->datetime, "%H:%M:%S %Z%z"));
 }
 
 ASFUNCTIONBODY(Date,_parse)

@@ -29,7 +29,6 @@ namespace lightspark
 class RefCountable {
 private:
 	ATOMIC_INT32(ref_count);
-
 protected:
 	RefCountable() : ref_count(1) {}
 
@@ -50,14 +49,18 @@ public:
 		uint32_t t=ATOMIC_DECREMENT(ref_count);
 		if(t==0)
 		{
-			//Let's make refcount very invalid
-			ref_count=-1024;
-			delete this;
+			destruct();
 		}
 	}
 	void fake_decRef()
 	{
 		ATOMIC_DECREMENT(ref_count);
+	}
+	virtual void destruct()
+	{
+		//Let's make refcount very invalid
+		ref_count=-1024;
+		delete this;
 	}
 };
 
@@ -143,8 +146,14 @@ public:
 	{
 		m->decRef();
 	}
-	T* operator->() const {return m;}
-	T* getPtr() const { return m; }
+	T* operator->() const 
+	{
+		return m;
+	}
+	T* getPtr() const 
+	{ 
+		return m; 
+	}
 };
 
 #define _R Ref

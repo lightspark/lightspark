@@ -321,6 +321,10 @@ protected:
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
 	static const variable* findGettableImpl(const variables_map& map, const multiname& name, NS_KIND &nskind);
+	//overridden from RefCountable
+	void destruct();
+	// called when object is really destroyed
+	virtual void destroy();
 public:
 	ASObject(Class_base* c);
 #ifndef NDEBUG
@@ -356,12 +360,13 @@ public:
 			o->decRef();
 	}
 	/*
-	   The finalize function should be implemented in all derived class that stores pointers.
-	   It should decRef all referenced objects. It's guaranteed that the only operations
+	   The finalize function is called when the reference count reaches 0 and the objects is added to the free list of the class.
+	   It should be implemented in all derived class.
+	   It should decRef all referenced objects.
+	   It has to reset all data to their default state.
 	   that will happen on the object after finalization are decRef and delete.
-	   Each class must call BaseClass::finalize in their finalize function. 
 	   The finalize method must be callable multiple time with the same effects (no double frees).
-	   Each class must also call his own ::finalize in the destructor!*/
+	*/
 	virtual void finalize();
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
@@ -374,7 +379,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind);
+	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind) const;
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.

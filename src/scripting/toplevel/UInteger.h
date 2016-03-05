@@ -35,6 +35,7 @@ public:
 	static void sinit(Class_base* c);
 	tiny_string toString();
 	static tiny_string toString(uint32_t val);
+	void finalize() { val=0;}
 	int32_t toInt()
 	{
 		return val;

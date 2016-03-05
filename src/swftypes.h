@@ -82,6 +82,7 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_LZMA_COMPRESSED_SWF
 typedef double number_t;
 
 class ASObject;
+class ASString;
 class ABCContext;
 struct namespace_info;
 
@@ -1332,6 +1333,10 @@ public:
 ASObject* abstract_i(int32_t i);
 ASObject* abstract_ui(uint32_t i);
 ASObject* abstract_d(number_t i);
+ASString* abstract_s();
+ASString* abstract_s(const char* s, uint32_t len);
+ASString* abstract_s(const char* s);
+ASString* abstract_s(const tiny_string& s);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 

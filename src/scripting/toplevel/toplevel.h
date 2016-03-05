@@ -32,6 +32,7 @@
 #include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <boost/intrusive/list.hpp>
+#include <forward_list>
 
 namespace lightspark
 {
@@ -157,11 +158,15 @@ private:
 	Mutex referencedObjectsMutex;
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
 	void finalizeObjects();
+	std::forward_list<ASObject*> freelist;
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 	void initStandardProps();
+	void destroy();
 public:
+	ASObject* getObjectFromFreeList();
+	void pushObjectToFreeList(ASObject* obj);
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
@@ -176,6 +181,11 @@ public:
 	bool isFinal:1;
 	bool isSealed:1;
 	bool isInterface:1;
+	
+	// indicates if objects can be reused after they have lost their last reference
+	bool isReusable:1;
+	// this is only set to true for Proxy and Proxy-derived classes
+	bool isProxy:1;
 private:
 	//TODO: move in Class_inherit
 	bool use_protected:1;

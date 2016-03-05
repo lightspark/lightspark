@@ -74,46 +74,37 @@ TRISTATE Number::isLess(ASObject* o)
 {
 	if(std::isnan(val))
 		return TUNDEFINED;
-	if(o->getObjectType()==T_INTEGER)
+	switch(o->getObjectType())
 	{
-		const Integer* i=static_cast<const Integer*>(o);
-		return (val<i->val)?TTRUE:TFALSE;
-	}
-	if(o->getObjectType()==T_UINTEGER)
-	{
-		const UInteger* i=static_cast<const UInteger*>(o);
-		return (val<i->val)?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* i=static_cast<const Number*>(o);
-		if(std::isnan(i->val)) return TUNDEFINED;
-		return (val<i->val)?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_BOOLEAN)
-	{
-		return (val<o->toNumber())?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_UNDEFINED)
-	{
-		//Undefined is NaN, so the result is undefined
-		return TUNDEFINED;
-	}
-	else if(o->getObjectType()==T_STRING)
-	{
-		double val2=o->toNumber();
-		if(std::isnan(val2)) return TUNDEFINED;
-		return (val<val2)?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_NULL)
-	{
-		return (val<0)?TTRUE:TFALSE;
-	}
-	else
-	{
-		double val2=o->toPrimitive()->toNumber();
-		if(std::isnan(val2)) return TUNDEFINED;
-		return (val<val2)?TTRUE:TFALSE;
+		case T_INTEGER:
+			return (val<o->as<Integer>()->val)?TTRUE:TFALSE;
+		case T_UINTEGER:
+			return (val<o->as<UInteger>()->val)?TTRUE:TFALSE;
+		case T_NUMBER:
+		{
+			const Number* i=static_cast<const Number*>(o);
+			if(std::isnan(i->val)) return TUNDEFINED;
+			return (val<i->val)?TTRUE:TFALSE;
+		}
+		case T_BOOLEAN:
+			return (val<o->toNumber())?TTRUE:TFALSE;
+		case T_UNDEFINED:
+			//Undefined is NaN, so the result is undefined
+			return TUNDEFINED;
+		case T_STRING:
+		{
+			double val2=o->toNumber();
+			if(std::isnan(val2)) return TUNDEFINED;
+			return (val<val2)?TTRUE:TFALSE;
+		}
+		case T_NULL:
+			return (val<0)?TTRUE:TFALSE;
+		default:
+		{
+			double val2=o->toPrimitive()->toNumber();
+			if(std::isnan(val2)) return TUNDEFINED;
+			return (val<val2)?TTRUE:TFALSE;
+		}
 	}
 }
 
@@ -176,7 +167,7 @@ void Number::purgeTrailingZeroes(char* buf)
 ASFUNCTIONBODY(Number,_toString)
 {
 	if(Class<Number>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("0");
+		return abstract_s("0");
 	if(!obj->is<Number>())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
 	Number* th=static_cast<Number*>(obj);
@@ -186,11 +177,11 @@ ASFUNCTIONBODY(Number,_toString)
 	if(radix==10 || std::isnan(th->val) || std::isinf(th->val))
 	{
 		//see e 15.7.4.2
-		return Class<ASString>::getInstanceS(th->toString());
+		return abstract_s(th->toString());
 	}
 	else
 	{
-		return Class<ASString>::getInstanceS(Number::toStringRadix(th->val, radix));
+		return abstract_s(Number::toStringRadix(th->val, radix));
 	}
 }
 
@@ -261,6 +252,7 @@ tiny_string Number::toStringRadix(number_t val, int radix)
 void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable = true;
 	c->setVariableByQName("NEGATIVE_INFINITY","",abstract_d(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	c->setVariableByQName("POSITIVE_INFINITY","",abstract_d(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	c->setVariableByQName("MAX_VALUE","",abstract_d(numeric_limits<double>::max()),CONSTANT_TRAIT);
@@ -330,7 +322,7 @@ ASFUNCTIONBODY(Number,toFixed)
 	number_t val = obj->toNumber();
 	int fractiondigits;
 	ARG_UNPACK (fractiondigits,0);
-	return Class<ASString>::getInstanceS(toFixedString(val, fractiondigits));
+	return abstract_s(toFixedString(val, fractiondigits));
 }
 
 tiny_string Number::toFixedString(double v, int32_t fractiondigits)
@@ -375,7 +367,7 @@ ASFUNCTIONBODY(Number,toExponential)
 	ARG_UNPACK(fractionDigits, 0);
 	if (argslen == 0 || args[0]->is<Undefined>())
 		fractionDigits = imin(imax(Number::countSignificantDigits(v)-1, 1), 20);
-	return Class<ASString>::getInstanceS(toExponentialString(v, fractionDigits));
+	return abstract_s(toExponentialString(v, fractionDigits));
 }
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
@@ -479,11 +471,11 @@ ASFUNCTIONBODY(Number,toPrecision)
 	Number* th=obj->as<Number>();
 	double v = th->val;
 	if (argslen == 0 || args[0]->is<Undefined>())
-		return Class<ASString>::getInstanceS(toString(v));
+		return abstract_s(toString(v));
 
 	int32_t precision;
 	ARG_UNPACK(precision);
-	return Class<ASString>::getInstanceS(toPrecisionString(v, precision));
+	return abstract_s(toPrecisionString(v, precision));
 }
 
 tiny_string Number::toPrecisionString(double v, int32_t precision)

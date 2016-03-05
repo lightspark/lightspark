@@ -119,6 +119,7 @@ ASFUNCTIONBODY(UInteger,_valueOf)
 void UInteger::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable = true;
 	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
@@ -136,7 +137,7 @@ void UInteger::sinit(Class_base* c)
 ASFUNCTIONBODY(UInteger,_toString)
 {
 	if(Class<UInteger>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("0");
+		return abstract_s("0");
 
 	UInteger* th=static_cast<UInteger*>(obj);
 	uint32_t radix;
@@ -146,12 +147,12 @@ ASFUNCTIONBODY(UInteger,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%u",th->val);
-		return Class<ASString>::getInstanceS(buf);
+		return abstract_s(buf);
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
-		return Class<ASString>::getInstanceS(s);
+		return abstract_s(s);
 	}
 }
 
@@ -186,7 +187,7 @@ ASFUNCTIONBODY(UInteger,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
 	}
-	return Class<ASString>::getInstanceS(Number::toExponentialString(v, fractionDigits));
+	return abstract_s(Number::toExponentialString(v, fractionDigits));
 }
 
 ASFUNCTIONBODY(UInteger,_toFixed)
@@ -194,17 +195,17 @@ ASFUNCTIONBODY(UInteger,_toFixed)
 	UInteger *th=obj->as<UInteger>();
 	int fractiondigits;
 	ARG_UNPACK (fractiondigits, 0);
-	return Class<ASString>::getInstanceS(Number::toFixedString(th->val, fractiondigits));
+	return abstract_s(Number::toFixedString(th->val, fractiondigits));
 }
 
 ASFUNCTIONBODY(UInteger,_toPrecision)
 {
 	UInteger *th=obj->as<UInteger>();
 	if (argslen == 0 || args[0]->is<Undefined>())
-		return Class<ASString>::getInstanceS(th->toString());
+		return abstract_s(th->toString());
 	int precision;
 	ARG_UNPACK (precision);
-	return Class<ASString>::getInstanceS(Number::toPrecisionString(th->val, precision));
+	return abstract_s(Number::toPrecisionString(th->val, precision));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

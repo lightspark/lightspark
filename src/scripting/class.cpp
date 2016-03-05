@@ -165,7 +165,7 @@ ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, co
 		case T_UINTEGER:
 			return abstract_ui(args[0]->toUInt());
 		case T_STRING:
-			return Class<ASString>::getInstanceS(args[0]->toString());
+			return abstract_s(args[0]->toString());
 		case T_FUNCTION:
 		case T_OBJECT:
 			args[0]->incRef();

@@ -1343,24 +1343,46 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	}
 	return s;
 }
-
-ASObject* lightspark::abstract_d(number_t i)
+ASString* lightspark::abstract_s()
 {
-	Number* ret=Class<Number>::getInstanceS();
-	// we have to set the value seperately, because for i = NaN, getInstanceS will overwrite the value
-	ret->val = i;
+	return Class<ASString>::getInstanceSNoArgs();
+}
+ASString* lightspark::abstract_s(const char* s, uint32_t len)
+{
+	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ret->data = std::string(s,len);
+	return ret;
+}
+ASString* lightspark::abstract_s(const char* s)
+{
+	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ret->data = s;
+	return ret;
+}
+ASString* lightspark::abstract_s(const tiny_string& s)
+{
+	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ret->data = s;
 	return ret;
 }
 
+ASObject* lightspark::abstract_d(number_t i)
+{
+	Number* ret=Class<Number>::getInstanceSNoArgs();
+	ret->val = i;
+	return ret;
+}
 ASObject* lightspark::abstract_i(int32_t i)
 {
-	Integer* ret=Class<Integer>::getInstanceS(i);
+	Integer* ret=Class<Integer>::getInstanceSNoArgs();
+	ret->val = i;
 	return ret;
 }
 
 ASObject* lightspark::abstract_ui(uint32_t i)
 {
-	UInteger* ret=Class<UInteger>::getInstanceS(i);
+	UInteger* ret=Class<UInteger>::getInstanceSNoArgs();
+	ret->val = i;
 	return ret;
 }
 
@@ -1418,7 +1440,7 @@ QName::operator multiname() const
 	multiname ret(NULL);
 	ret.name_type = multiname::NAME_STRING;
 	ret.name_s_id = getSys()->getUniqueStringId(name);
-	ret.ns.push_back( nsNameAndKind(ns, NAMESPACE) );
+	ret.ns.emplace_back(ns, NAMESPACE);
 	ret.isAttribute = false;
 	return ret;
 }

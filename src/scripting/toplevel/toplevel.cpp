@@ -227,7 +227,7 @@ ASFUNCTIONBODY(IFunction,_call)
 
 ASFUNCTIONBODY(IFunction,_toString)
 {
-	return Class<ASString>::getInstanceS("function Function() {}");
+	return abstract_s("function Function() {}");
 }
 
 ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int argslen)
@@ -266,7 +266,6 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),
 
 SyntheticFunction::~SyntheticFunction()
 {
-	finalize();
 }
 
 void SyntheticFunction::finalize()
@@ -384,11 +383,15 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.scope_stack=func_scope;
 	cc.initialScopeStack=func_scope.size();
 	cc.exec_pos=0;
-	if (getVm()->currentCallContext)
-		cc.defaultNamespaceUri = getVm()->currentCallContext->defaultNamespaceUri;
+	call_context* saved_cc = getVm()->currentCallContext;
+	if (saved_cc)
+	{
+		if (!saved_cc->defaultNamespaceUri.isNull())
+			saved_cc->defaultNamespaceUri->incRef();
+		cc.defaultNamespaceUri = saved_cc->defaultNamespaceUri;
+	}
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	call_context* saved_cc = getVm()->currentCallContext;
 	getVm()->currentCallContext = &cc;
 
 	if(isBound())
@@ -455,11 +458,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cur_recursion++; //increment current recursion depth
 	Log::calls_indent++;
 
-	std::pair<uint32_t,ASObject*> s;
-	s.first = this->functionname;
-	s.second = obj;
-
-	getVm()->stacktrace.push_back(s);
+	getVm()->stacktrace.push_back(std::pair<uint32_t,ASObject*>(this->functionname,obj));
 	while (true)
 	{
 		try
@@ -767,14 +766,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),protected_ns("",NAMESPACE),constructor(NULL),
 	borrowedVariables(m),
-	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),use_protected(false)
+	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns("",NAMESPACE),constructor(NULL),
 	borrowedVariables(NULL),
-	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),use_protected(false)
+	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -860,6 +859,7 @@ ASObject* Class_base::coerce(ASObject* o) const
 void Class_base::setSuper(Ref<Class_base> super_)
 {
 	assert(!super);
+	isProxy = super_->isProxy;
 	super = super_;
 	copyBorrowedTraitsFromSuper();
 }
@@ -871,7 +871,7 @@ ASFUNCTIONBODY(Class_base,_toString)
 	ret = "[class ";
 	ret += th->class_name.name;
 	ret += "]";
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(ret);
 }
 
 void Class_base::addConstructorGetter()
@@ -1048,19 +1048,54 @@ void Class_base::finalizeObjects()
 	}
 }
 
-void Class_base::finalize()
+void Class_base::destroy()
 {
 	finalizeObjects();
 
-	ASObject::finalize();
-	borrowedVariables.destroyContents();
-	super.reset();
-	prototype.reset();
 	if(constructor)
 	{
 		constructor->decRef();
 		constructor=NULL;
 	}
+}
+
+ASObject *Class_base::getObjectFromFreeList()
+{
+	Locker l(referencedObjectsMutex);
+	ASObject* ret = NULL;
+	if (!freelist.empty())
+	{
+		ret=freelist.front();
+		freelist.pop_front();
+		ret->incRef();
+	}
+//	else
+//		LOG(LOG_INFO,"cache miss:"<<this->class_name);
+		
+	return ret;
+}
+
+void Class_base::pushObjectToFreeList(ASObject *obj)
+{
+	Locker l(referencedObjectsMutex);
+	freelist.push_front(obj);
+}
+
+void Class_base::finalize()
+{
+	borrowedVariables.destroyContents();
+	super.reset();
+	prototype.reset();
+	protected_ns = nsNameAndKind("",NAMESPACE);
+	constructor = NULL;
+	context = NULL;
+	length = 1;
+	class_index = -1;
+	isFinal = false;
+	isSealed = false;
+	isInterface = false;
+	isProxy = false;
+	use_protected = false;
 }
 
 Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),template_name(name)
@@ -1673,13 +1708,13 @@ ASFUNCTIONBODY(ASQName,_getURI)
 	if(th->uri_is_null)
 		return getSys()->getNullRef();
 	else
-		return Class<ASString>::getInstanceS(th->uri);
+		return abstract_s(th->uri);
 }
 
 ASFUNCTIONBODY(ASQName,_getLocalName)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
-	return Class<ASString>::getInstanceS(th->local_name);
+	return abstract_s(th->local_name);
 }
 
 ASFUNCTIONBODY(ASQName,_toString)
@@ -1687,7 +1722,7 @@ ASFUNCTIONBODY(ASQName,_toString)
 	if(!obj->is<ASQName>())
 		throw Class<TypeError>::getInstanceS("QName.toString is not generic");
 	ASQName* th=static_cast<ASQName*>(obj);
-	return Class<ASString>::getInstanceS(th->toString());
+	return abstract_s(th->toString());
 }
 
 bool ASQName::isEqual(ASObject* o)
@@ -1735,9 +1770,9 @@ _R<ASObject> ASQName::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(Class<ASString>::getInstanceS("uri"));
+			return _MR(abstract_s("uri"));
 		case 2:
-			return _MR(Class<ASString>::getInstanceS("localName"));
+			return _MR(abstract_s("localName"));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1752,9 +1787,9 @@ _R<ASObject> ASQName::nextValue(uint32_t index)
 			if (uri_is_null)
 				return _MR(getSys()->getNullRef());
 			else
-				return _MR(Class<ASString>::getInstanceS(this->uri));
+				return _MR(abstract_s(this->uri));
 		case 2:
-			return _MR(Class<ASString>::getInstanceS(this->local_name));
+			return _MR(abstract_s(this->local_name));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1973,7 +2008,7 @@ ASFUNCTIONBODY(Namespace,_setURI)
 ASFUNCTIONBODY(Namespace,_getURI)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
-	return Class<ASString>::getInstanceS(th->uri);
+	return abstract_s(th->uri);
 }
 /*
 ASFUNCTIONBODY(Namespace,_setPrefix)
@@ -1998,7 +2033,7 @@ ASFUNCTIONBODY(Namespace,_getPrefix)
 	if(th->prefix_is_undefined)
 		return getSys()->getUndefinedRef();
 	else
-		return Class<ASString>::getInstanceS(th->prefix);
+		return abstract_s(th->prefix);
 }
 
 ASFUNCTIONBODY(Namespace,_toString)
@@ -2006,12 +2041,12 @@ ASFUNCTIONBODY(Namespace,_toString)
 	if(!obj->is<Namespace>())
 		throw Class<TypeError>::getInstanceS("Namespace.toString is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
-	return Class<ASString>::getInstanceS(th->uri);
+	return abstract_s(th->uri);
 }
 
 ASFUNCTIONBODY(Namespace,_valueOf)
 {
-	return Class<ASString>::getInstanceS(obj->as<Namespace>()->uri);
+	return abstract_s(obj->as<Namespace>()->uri);
 }
 
 ASFUNCTIONBODY(Namespace,_ECMA_valueOf)
@@ -2019,7 +2054,7 @@ ASFUNCTIONBODY(Namespace,_ECMA_valueOf)
 	if(!obj->is<Namespace>())
 		throw Class<TypeError>::getInstanceS("Namespace.valueOf is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
-	return Class<ASString>::getInstanceS(th->uri);
+	return abstract_s(th->uri);
 }
 
 bool Namespace::isEqual(ASObject* o)
@@ -2056,9 +2091,9 @@ _R<ASObject> Namespace::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(Class<ASString>::getInstanceS("uri"));
+			return _MR(abstract_s("uri"));
 		case 2:
-			return _MR(Class<ASString>::getInstanceS("prefix"));
+			return _MR(abstract_s("prefix"));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -2070,12 +2105,12 @@ _R<ASObject> Namespace::nextValue(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(Class<ASString>::getInstanceS(this->uri));
+			return _MR(abstract_s(this->uri));
 		case 2:
 			if(prefix_is_undefined)
 				return _MR(getSys()->getUndefinedRef());
 			else
-				return _MR(Class<ASString>::getInstanceS(this->prefix));
+				return _MR(abstract_s(this->prefix));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -2262,28 +2297,28 @@ ASFUNCTIONBODY(lightspark,encodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_URI));
+	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_URI));
+	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,encodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
+	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
+	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,escape)
@@ -2291,8 +2326,8 @@ ASFUNCTIONBODY(lightspark,escape)
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
 	if (argslen > 0 && args[0]->is<Undefined>())
-		return Class<ASString>::getInstanceS("null");
-	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+		return abstract_s("null");
+	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,unescape)
@@ -2300,8 +2335,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
 	if (argslen > 0 && args[0]->is<Undefined>())
-		return Class<ASString>::getInstanceS("null");
-	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+		return abstract_s("null");
+	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,print)

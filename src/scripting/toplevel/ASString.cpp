@@ -70,12 +70,16 @@ ASFUNCTIONBODY(ASString,_constructor)
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
+	// fast path if obj is ASString
+	if (obj->is<ASString>())
+		return abstract_i(obj->as<ASString>()->data.numChars());
 	return abstract_i(obj->toString().numChars());
 }
 
 void ASString::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(split,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(substr,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substring",AS3,Class<IFunction>::getFunction(substring,2),NORMAL_METHOD,true);
@@ -250,7 +254,7 @@ ASFUNCTIONBODY(ASString,match)
 ASFUNCTIONBODY(ASString,_toString)
 {
 	if(Class<ASString>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("");
+		return abstract_s();
 	if(!obj->is<ASString>())
 	{
 		LOG(LOG_ERROR,"String.toString is not generic:"<<obj->toDebugString());
@@ -270,7 +274,7 @@ ASFUNCTIONBODY(ASString,split)
 	uint32_t limit = 0x7fffffff;
 	if(argslen == 0 )
 	{
-		ret->push(_MR(Class<ASString>::getInstanceS(data)));
+		ret->push(_MR(abstract_s(data)));
 		return ret;
 	}
 	if (argslen > 1 && !args[1]->is<Undefined>())
@@ -288,7 +292,7 @@ ASFUNCTIONBODY(ASString,split)
 			{
 				if (ret->size() >= limit)
 					break;
-				ret->push(_MR(Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) ));
+				ret->push(_MR(abstract_s( tiny_string::fromChar(*i) ) ));
 			}
 			return ret;
 		}
@@ -323,7 +327,7 @@ ASFUNCTIONBODY(ASString,split)
 				continue;
 			}
 			//Extract string from last match until the beginning of the current match
-			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,end-lastMatch));
+			ASString* s=abstract_s(data.substr_bytes(lastMatch,end-lastMatch));
 			if (ret->size() >= limit)
 				break;
 			ret->push(_MR(s));
@@ -335,14 +339,14 @@ ASFUNCTIONBODY(ASString,split)
 				if (ret->size() >= limit)
 					break;
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
-				ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ASString* s=abstract_s(data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				ret->push(_MR(s));
 			}
 		}
 		while(end<data.numBytes() && ret->size() < limit);
 		if(ret->size() < limit && lastMatch != data.numBytes()+1)
 		{
-			ASString* s=Class<ASString>::getInstanceS(data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
+			ASString* s=abstract_s(data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
 			ret->push(_MR(s));
 		}
 		pcre_free(pcreRE);
@@ -356,7 +360,7 @@ ASFUNCTIONBODY(ASString,split)
 
 			if (data.numChars() == 0)
 			{
-				ret->push(_MR(Class<ASString>::getInstanceS("")));
+				ret->push(_MR(abstract_s()));
 			}
 			uint32_t j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
@@ -364,7 +368,7 @@ ASFUNCTIONBODY(ASString,split)
 				if (j >= limit)
 					break;
 				j++;
-				ret->push(_MR(Class<ASString>::getInstanceS( tiny_string::fromChar(*i) ) ));
+				ret->push(_MR(abstract_s( tiny_string::fromChar(*i) ) ));
 			}
 			return ret;
 		}
@@ -377,13 +381,13 @@ ASFUNCTIONBODY(ASString,split)
 				match++;
 			if(match==-1)
 				match= len;
-			ASString* s=Class<ASString>::getInstanceS(data.substr(start,(match-start)));
+			ASString* s=abstract_s(data.substr(start,(match-start)));
 			if (ret->size() >= limit)
 				break;
 			ret->push(_MR(s));
 			start=match+del.numChars();
 			if (start == len)
-				ret->push(_MR(Class<ASString>::getInstanceS("")));
+				ret->push(_MR(abstract_s()));
 		}
 		while(start<len && ret->size() < limit);
 	}
@@ -400,7 +404,7 @@ ASFUNCTIONBODY(ASString,substr)
 		if (!std::isnan(args[0]->toNumber()))
 			start=args[0]->toInt();
 		if (start >= 0  && std::isinf(args[0]->toNumber()))
-			return Class<ASString>::getInstanceS("");
+			return abstract_s();
 	}
 	if(start<0) {
 		start=data.numChars()+start;
@@ -421,7 +425,7 @@ ASFUNCTIONBODY(ASString,substr)
 		else
 			len=args[1]->toInt();
 	}
-	return Class<ASString>::getInstanceS(data.substr(start,len));
+	return abstract_s(data.substr(start,len));
 }
 
 ASFUNCTIONBODY(ASString,substring)
@@ -446,7 +450,7 @@ ASFUNCTIONBODY(ASString,substring)
 		end=tmp;
 	}
 
-	return Class<ASString>::getInstanceS(data.substr(start,end-start));
+	return abstract_s(data.substr(start,end-start));
 }
 
 tiny_string ASString::toString_priv() const
@@ -621,30 +625,46 @@ ASFUNCTIONBODY(ASString,slice)
 	}
 	if(endIndex>(int)data.numChars())
 		endIndex=data.numChars();
-
 	if(endIndex<=startIndex)
-		return Class<ASString>::getInstanceS("");
+		return abstract_s();
 	else
-		return Class<ASString>::getInstanceS(data.substr(startIndex,endIndex-startIndex));
+		return abstract_s(data.substr(startIndex,endIndex-startIndex));
 }
 
 ASFUNCTIONBODY(ASString,charAt)
 {
-	tiny_string data = obj->toString();
 	number_t index;
 	ARG_UNPACK (index, 0);
+	// fast path if obj is ASString
+	if (obj->is<ASString>())
+	{
+		int maxIndex=obj->as<ASString>()->data.numChars();
+		
+		if(index<0 || index>=maxIndex || std::isinf(index))
+			return abstract_s();
+		return abstract_s( tiny_string::fromChar(obj->as<ASString>()->data.charAt(index)) );
+	}
 
+	tiny_string data = obj->toString();
 	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex || std::isinf(index))
-		return Class<ASString>::getInstanceS("");
-	return Class<ASString>::getInstanceS( tiny_string::fromChar(data.charAt(index)) );
+		return abstract_s();
+	return abstract_s( tiny_string::fromChar(data.charAt(index)) );
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	tiny_string data = obj->toString();
 	number_t index;
 	ARG_UNPACK (index, 0);
+
+	// fast path if obj is ASString
+	if (obj->is<ASString>())
+	{
+		if(index<0 || index>=obj->as<ASString>()->data.numChars() || std::isinf(index) || std::isnan(index))
+			return abstract_d(Number::NaN);
+		return abstract_i(obj->as<ASString>()->data.charAt(index));
+	}
+	tiny_string data = obj->toString();
 	if(index<0 || index>=data.numChars() || std::isinf(index) || std::isnan(index))
 		return abstract_d(Number::NaN);
 	else
@@ -698,13 +718,13 @@ ASFUNCTIONBODY(ASString,lastIndexOf)
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
 	tiny_string data = obj->toString();
-	return Class<ASString>::getInstanceS(data.lowercase());
+	return abstract_s(data.lowercase());
 }
 
 ASFUNCTIONBODY(ASString,toUpperCase)
 {
 	tiny_string data = obj->toString();
-	return Class<ASString>::getInstanceS(data.uppercase());
+	return abstract_s(data.uppercase());
 }
 ASFUNCTIONBODY(ASString,localeCompare)
 {
@@ -730,7 +750,7 @@ ASFUNCTIONBODY(ASString,localeCompare_prototype)
 
 ASFUNCTIONBODY(ASString,fromCharCode)
 {
-	ASString* ret=Class<ASString>::getInstanceS();
+	ASString* ret=abstract_s();
 	for(uint32_t i=0;i<argslen;i++)
 	{
 		ret->data += tiny_string::fromChar(args[i]->toUInt16());
@@ -743,7 +763,7 @@ ASFUNCTIONBODY(ASString,replace)
 	tiny_string data = obj->toString();
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* ret=Class<ASString>::getInstanceS(data);
+	ASString* ret=abstract_s(data);
 
 	tiny_string replaceWith;
 	if(argslen < 2)
@@ -800,12 +820,12 @@ ASFUNCTIONBODY(ASString,replace)
 				IFunction* f=static_cast<IFunction*>(args[1]);
 				ASObject** subargs = g_newa(ASObject*, 3+capturingGroups);
 				//we index on bytes, not on UTF-8 characters
-				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]));
+				subargs[0]=abstract_s(ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+					subargs[i+1]=abstract_s(ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				
-				subargs[capturingGroups+2]=Class<ASString>::getInstanceS(data);
+				subargs[capturingGroups+2]=abstract_s(data);
 				ASObject* ret=f->call(getSys()->getNullRef(), subargs, 3+capturingGroups);
 				replaceWithTmp=ret->toString().raw_buf();
 				ret->decRef();
@@ -877,7 +897,7 @@ ASFUNCTIONBODY(ASString,replace)
 ASFUNCTIONBODY(ASString,concat)
 {
 	tiny_string data = obj->toString();
-	ASString* ret=Class<ASString>::getInstanceS(data);
+	ASString* ret=abstract_s(data);
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
 
@@ -888,9 +908,9 @@ ASFUNCTIONBODY(ASString,generator)
 {
 	assert(argslen<=1);
 	if (argslen == 0)
-		return Class<ASString>::getInstanceS("");
+		return abstract_s();
 	else
-		return Class<ASString>::getInstanceS(args[0]->toString());
+		return abstract_s(args[0]->toString());
 }
 
 bool ASString::isEcmaSpace(uint32_t c)

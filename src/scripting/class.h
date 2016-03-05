@@ -121,18 +121,46 @@ protected:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret=new (realClass->memoryAccount) T(realClass);
+		T* ret = realClass->getObjectFromFreeList()->as<T>();
+		if (!ret)
+			ret=new (realClass->memoryAccount) T(realClass);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
 public:
+	/*
 	template<typename... Args>
 	static T* getInstanceS(Args&&... args)
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=newWithOptionalClass<T, sizeof...(Args)>::doNew(c, std::forward<Args>(args)...);
 		c->handleConstruction(ret,NULL,0,true);
+		return ret;
+	}
+	*/
+	template<typename... Args>
+	static T* getInstanceS(Args&&... args)
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret=newWithOptionalClass<T, sizeof...(Args)>::doNew(c, std::forward<Args>(args)...);
+		c->setupDeclaredTraits(ret);
+		ret->constructionComplete();
+		ret->setConstructIndicator();
+		return ret;
+	}
+	// constructor without arguments
+	static T* getInstanceSNoArgs()
+	{
+		Class<T>* c=Class<T>::getClass();
+		T* ret = c->getObjectFromFreeList()->as<T>();
+		if (!ret)
+		{
+			ret=new (c->memoryAccount) T(c);
+		}
+		c->setupDeclaredTraits(ret);
+		ret->constructionComplete();
+		ret->setConstructIndicator();
 		return ret;
 	}
 	static Class<T>* getClass()
@@ -235,8 +263,16 @@ public:
 	static ASObject* getInstanceS()
 	{
 		Class<ASObject>* c=Class<ASObject>::getClass();
-		return c->getInstance(true,NULL,0);
+		ASObject* ret = c->getObjectFromFreeList();
+		if (!ret)
+			ret=new (c->memoryAccount) ASObject(c);
+		c->setupDeclaredTraits(ret);
+		ret->constructionComplete();
+		ret->setConstructIndicator();
+		return ret;
+		//return c->getInstance(true,NULL,0);
 	}
+
 	static Class<ASObject>* getClass();
 	static _R<Class<ASObject>> getRef()
 	{

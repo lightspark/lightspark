@@ -37,6 +37,7 @@ public:
 	int32_t val;
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
+	void finalize() { val=0;}
 	ASFUNCTION(_toString);
 	tiny_string toString();
 	static tiny_string toString(int32_t val);
@@ -66,6 +67,7 @@ public:
 	 * whitespace, zeroes). Returns 0 if conversion fails.
 	 */
 	static int32_t stringToASInteger(const char* cur, int radix);
+	
 };
 
 }

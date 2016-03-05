@@ -80,6 +80,7 @@ ASFUNCTIONBODY(Boolean,generator)
 void Boolean::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
@@ -100,13 +101,13 @@ ASFUNCTIONBODY(Boolean,_constructor)
 ASFUNCTIONBODY(Boolean,_toString)
 {
 	if(Class<Boolean>::getClass()->prototype->getObj() == obj) //See ECMA 15.6.4
-		return Class<ASString>::getInstanceS("false");
+		return abstract_s("false");
 
 	if(!obj->is<Boolean>())
 		throw Class<TypeError>::getInstanceS("");
 
 	Boolean* th=static_cast<Boolean*>(obj);
-	return Class<ASString>::getInstanceS(th->toString());
+	return abstract_s(th->toString());
 }
 
 ASFUNCTIONBODY(Boolean,_valueOf)

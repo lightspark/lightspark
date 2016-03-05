@@ -29,7 +29,7 @@ using namespace lightspark;
 ASFUNCTIONBODY(Integer,_toString)
 {
 	if(Class<Integer>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("0");
+		return abstract_s("0");
 
 	Integer* th=static_cast<Integer*>(obj);
 	int radix=10;
@@ -40,12 +40,12 @@ ASFUNCTIONBODY(Integer,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%i",th->val);
-		return Class<ASString>::getInstanceS(buf);
+		return abstract_s(buf);
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
-		return Class<ASString>::getInstanceS(s);
+		return abstract_s(s);
 	}
 }
 
@@ -195,6 +195,7 @@ tiny_string Integer::toString(int32_t val)
 void Integer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable = true;
 	c->setVariableByQName("MAX_VALUE","",abstract_i(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableByQName("MIN_VALUE","",abstract_i(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
@@ -304,7 +305,7 @@ ASFUNCTIONBODY(Integer,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
 	}
-	return Class<ASString>::getInstanceS(Number::toExponentialString(v, fractionDigits));
+	return abstract_s(Number::toExponentialString(v, fractionDigits));
 }
 
 ASFUNCTIONBODY(Integer,_toFixed)
@@ -312,15 +313,15 @@ ASFUNCTIONBODY(Integer,_toFixed)
 	Integer *th=obj->as<Integer>();
 	int fractiondigits;
 	ARG_UNPACK (fractiondigits, 0);
-	return Class<ASString>::getInstanceS(Number::toFixedString(th->val, fractiondigits));
+	return abstract_s(Number::toFixedString(th->val, fractiondigits));
 }
 
 ASFUNCTIONBODY(Integer,_toPrecision)
 {
 	Integer *th=obj->as<Integer>();
 	if (argslen == 0 || args[0]->is<Undefined>())
-		return Class<ASString>::getInstanceS(th->toString());
+		return abstract_s(th->toString());
 	int precision;
 	ARG_UNPACK (precision);
-	return Class<ASString>::getInstanceS(Number::toPrecisionString(th->val, precision));
+	return abstract_s(Number::toPrecisionString(th->val, precision));
 }

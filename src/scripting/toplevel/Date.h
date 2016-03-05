@@ -41,6 +41,7 @@ private:
 	static number_t parse(tiny_string str);
 public:
 	Date(Class_base* c);
+	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

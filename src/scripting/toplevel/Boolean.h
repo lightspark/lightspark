@@ -39,6 +39,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o){};
 	bool val;
+	void finalize() { val=false;}
 	int32_t toInt()
 	{
 		return val ? 1 : 0;

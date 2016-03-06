@@ -63,7 +63,7 @@ struct call_context
 	/* Current namespace set by 'default xml namespace = ...'.
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
-	tiny_string defaultNamespaceUri;
+	_NR<ASString> defaultNamespaceUri;
 	int initialScopeStack;
 	~call_context();
 	void runtime_stack_clear();

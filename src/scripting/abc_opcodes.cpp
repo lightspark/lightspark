@@ -125,7 +125,7 @@ ASObject* ABCVm::convert_s(ASObject* o)
 	ASObject* ret=o;
 	if(o->getObjectType()!=T_STRING)
 	{
-		ret=Class<ASString>::getInstanceS(o->toString());
+		ret=abstract_s(o->toString());
 		o->decRef();
 	}
 	return ret;
@@ -334,7 +334,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			tmpcls = tmpcls->super;
 		}	
 	}
-	if(!o.isNull() && !(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass())))
+	if(!o.isNull() && !(obj->classdef && obj->classdef->isProxy))
 	{
 		o->incRef();
 		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
@@ -342,13 +342,13 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	else
 	{
 		//If the object is a Proxy subclass, try to invoke callProperty
-		if(obj->classdef && obj->classdef->isSubClass(Class<Proxy>::getClass()))
+		if(obj->classdef && obj->classdef->isProxy)
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName(NULL);
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s_id=getSys()->getUniqueStringId("callProperty");
-			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			callPropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 			_NR<ASObject> oproxy=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 
 			if(!oproxy.isNull())
@@ -364,7 +364,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 					IFunction* f=static_cast<IFunction*>(oproxy.getPtr());
 					//Create a new array
 					ASObject** proxyArgs=g_newa(ASObject*, m+1);
-					ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
+					ASObject* namearg = abstract_s(name->normalizedName());
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=namearg;
 					for(int i=0;i<m;i++)
@@ -868,7 +868,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			assert_and_throw(false);
 	}
 	obj->decRef();
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(ret);
 }
 
 void ABCVm::jump(int offset)
@@ -1001,7 +1001,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		LOG(LOG_CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
-		return Class<ASString>::getInstanceS(a + b);
+		return abstract_s(a + b);
 	}
 	else if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 	{
@@ -1034,7 +1034,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 			string a(val1p->toString().raw_buf());
 			string b(val2p->toString().raw_buf());
 			LOG(LOG_CALLS,"add " << a << '+' << b);
-			return Class<ASString>::getInstanceS(a+b);
+			return abstract_s(a+b);
 		}
 		else
 		{//Convert both to numbers and add
@@ -1093,7 +1093,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
-		return Class<ASString>::getInstanceS(a+b);
+		return abstract_s(a+b);
 	}
 	else
 	{
@@ -1127,7 +1127,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
-		return Class<ASString>::getInstanceS(a+b);
+		return abstract_s(a+b);
 	}
 	else
 	{
@@ -1874,7 +1874,7 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	name.name_type=multiname::NAME_OBJECT;
 	//Acquire the reference
 	name.name_o=val1;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.emplace_back("",NAMESPACE);
 	bool ret=val2->hasPropertyByMultiname(name, true, true);
 	name.name_o=NULL;
 	val1->decRef();
@@ -1982,7 +1982,7 @@ void ABCVm::newObject(call_context* th, int n)
 	//Duplicated keys overwrite the previous value
 	multiname propertyName(NULL);
 	propertyName.name_type=multiname::NAME_STRING;
-	propertyName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	propertyName.ns.emplace_back("",NAMESPACE);
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
@@ -2028,12 +2028,12 @@ void ABCVm::getDescendants(call_context* th, int n)
 		targetobject = xmlObj;
 		xmlObj->getDescendantsByQName(name->normalizedName(), ns_uri,name->isAttribute, ret);
 	}
-	else if(obj->getClass()->isSubClass(Class<Proxy>::getClass()))
+	else if(obj->getClass()->isProxy)
 	{
 		multiname callPropertyName(NULL);
 		callPropertyName.name_type=multiname::NAME_STRING;
 		callPropertyName.name_s_id=getSys()->getUniqueStringId("getDescendants");
-		callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+		callPropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 		_NR<ASObject> o=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
 		
 		if(!o.isNull())
@@ -2043,7 +2043,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			IFunction* f=static_cast<IFunction*>(o.getPtr());
 			//Create a new array
 			ASObject** proxyArgs=g_newa(ASObject*, 1);
-			ASObject* namearg = Class<ASString>::getInstanceS(name->normalizedName());
+			ASObject* namearg = abstract_s(name->normalizedName());
 			namearg->setProxyProperty(*name);
 			proxyArgs[0]=namearg;
 
@@ -2518,9 +2518,9 @@ ASObject* ABCVm::getScopeObject(call_context* th, int n)
 
 ASObject* ABCVm::pushString(call_context* th, int n)
 {
-	tiny_string s=th->context->getString(n); 
+	const tiny_string s=th->context->getString(n); 
 	LOG(LOG_CALLS, _("pushString ") << s );
-	return Class<ASString>::getInstanceS(s);
+	return abstract_s(s);
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
@@ -2554,7 +2554,7 @@ ASObject* ABCVm::esc_xattr(ASObject* o)
 	else
 		t = XML::encodeToXML(o->toString(),true);
 	o->decRef();
-	return Class<ASString>::getInstanceS(t);
+	return abstract_s(t);
 }
 
 ASObject* ABCVm::esc_xelem(ASObject* o)
@@ -2567,7 +2567,7 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
 	else
 		t = XML::encodeToXML(o->toString(),false);
 	o->decRef();
-	return Class<ASString>::getInstanceS(t);
+	return abstract_s(t);
 }
 
 /* This should walk prototype chain of value, trying to find type. See ECMA.
@@ -2621,7 +2621,9 @@ void ABCVm::dxns(call_context* th, int n)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS("dxns without SET_DXNS");
 
-	th->defaultNamespaceUri = th->context->getString(n);
+	if (!th->defaultNamespaceUri.isNull())
+		th->defaultNamespaceUri->decRef();
+	th->defaultNamespaceUri = _NR<ASString>(abstract_s(th->context->getString(n)));
 }
 
 /* @spec-checked avm2overview */
@@ -2630,6 +2632,8 @@ void ABCVm::dxnslate(call_context* th, ASObject* o)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS("dxnslate without SET_DXNS");
 
-	th->defaultNamespaceUri = o->toString();
+	if (!th->defaultNamespaceUri.isNull())
+		th->defaultNamespaceUri->decRef();
+	th->defaultNamespaceUri = _NR<ASString>(abstract_s(o->toString()));
 	o->decRef();
 }

@@ -612,7 +612,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.push_back(nsNameAndKind(th->context, s->ns[i]));
+					ret->ns.emplace_back(th->context, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
@@ -664,7 +664,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.push_back(nsNameAndKind(th->context, s->ns[i]));
+					ret->ns.emplace_back(th->context, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
@@ -751,7 +751,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		{
 			ret->name_s_id=getSys()->getUniqueStringId("any");
 			ret->name_type=multiname::NAME_STRING;
-			ret->ns.emplace_back(nsNameAndKind("",NAMESPACE));
+			ret->ns.emplace_back("",NAMESPACE);
 			ret->isAttribute=false;
 			return ret;
 		}
@@ -761,7 +761,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x07: //QName
 			case 0x0D: //QNameA
 			{
-				ret->ns.push_back(nsNameAndKind(this, m->ns));
+				ret->ns.emplace_back(this, m->ns);
 				if (m->name)
 				{
 					ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
@@ -776,7 +776,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.push_back(nsNameAndKind(this, s->ns[i]));
+					ret->ns.emplace_back(this, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -794,7 +794,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.push_back(nsNameAndKind(this, s->ns[i]));
+					ret->ns.emplace_back(this, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				break;
@@ -834,7 +834,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					}
 					name += getString(p->name);
 				}
-				ret->ns.push_back(nsNameAndKind(this, td->ns));
+				ret->ns.emplace_back(this, td->ns);
 				ret->name_s_id=getSys()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -877,7 +877,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret=m->dynamic;
 				ret->isAttribute=m->cached->isAttribute;
 				ret->ns.clear();
-				ret->ns.push_back(nsNameAndKind(qname->getURI(),NAMESPACE));
+				ret->ns.emplace_back(qname->getURI(),NAMESPACE);
 			}
 			else
 				n->applyProxyProperty(*ret);
@@ -892,7 +892,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			assert_and_throw(n->classdef==Class<Namespace>::getClass());
 			Namespace* tmpns=static_cast<Namespace*>(n);
 			ret->ns.clear();
-			ret->ns.push_back(nsNameAndKind(tmpns->uri,tmpns->nskind));
+			ret->ns.emplace_back(tmpns->uri,tmpns->nskind);
 			n->decRef();
 			break;
 		}
@@ -903,7 +903,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass());
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
-			ret->ns.push_back(nsNameAndKind(tmpns->uri,tmpns->nskind));
+			ret->ns.emplace_back(tmpns->uri,tmpns->nskind);
 			ret->setName(n);
 			n->decRef();
 			n2->decRef();
@@ -1814,7 +1814,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		//invoked on the client object
 		multiname headerName(NULL);
 		headerName.name_type=multiname::NAME_STRING;
-		headerName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		headerName.ns.emplace_back("",NAMESPACE);
 		tiny_string headerNameString;
 		if(!message->readUTF(headerNameString))
 			return;
@@ -1881,7 +1881,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		multiname onResultName(NULL);
 		onResultName.name_type=multiname::NAME_STRING;
 		onResultName.name_s_id=getSys()->getUniqueStringId("onResult");
-		onResultName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		onResultName.ns.emplace_back("",NAMESPACE);
 		_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
 		if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
 		{
@@ -1910,7 +1910,7 @@ uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 
 tiny_string ABCVm::getDefaultXMLNamespace()
 {
-	return currentCallContext->defaultNamespaceUri;
+	return currentCallContext->defaultNamespaceUri == NULL ? tiny_string() : currentCallContext->defaultNamespaceUri->data;
 }
 
 const tiny_string& ABCContext::getString(unsigned int s) const
@@ -2036,7 +2036,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x00: //Undefined
 			return getSys()->getUndefinedRef();
 		case 0x01: //String
-			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
+			return abstract_s(constant_pool.strings[index]);
 		case 0x03: //Int
 			return abstract_i(constant_pool.integer[index]);
 		case 0x06: //Double

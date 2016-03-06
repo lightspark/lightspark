@@ -38,6 +38,7 @@ using namespace lightspark;
 void Proxy::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject,CLASS_DYNAMIC_NOT_FINAL);
+	c->isProxy = true;
 	c->setDeclaredMethodByQName("isAttribute","",Class<IFunction>::getFunction(_isAttribute),NORMAL_METHOD,true);
 }
 
@@ -66,7 +67,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	multiname setPropertyName(NULL);
 	setPropertyName.name_type=multiname::NAME_STRING;
 	setPropertyName.name_s_id=getSys()->getUniqueStringId("setProperty");
-	setPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	setPropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> proxySetter=getVariableByMultiname(setPropertyName,ASObject::SKIP_IMPL);
 
 	if(proxySetter.isNull())
@@ -79,7 +80,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 
 	IFunction* f=static_cast<IFunction*>(proxySetter.getPtr());
 
-	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = abstract_s(name.normalizedName());
 	namearg->setProxyProperty(name);
 	ASObject* args[2];
 	args[0]=namearg;
@@ -108,7 +109,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	multiname getPropertyName(NULL);
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s_id=getSys()->getUniqueStringId("getProperty");
-	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	getPropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 	o=getVariableByMultiname(getPropertyName,ASObject::SKIP_IMPL);
 
 	if(o.isNull())
@@ -118,7 +119,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 
 	IFunction* f=static_cast<IFunction*>(o.getPtr());
 
-	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = abstract_s(name.normalizedName());
 	namearg->setProxyProperty(name);
 	ASObject* arg = namearg;
 	//We now suppress special handling
@@ -144,7 +145,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	multiname hasPropertyName(NULL);
 	hasPropertyName.name_type=multiname::NAME_STRING;
 	hasPropertyName.name_s_id=getSys()->getUniqueStringId("hasProperty");
-	hasPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	hasPropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> proxyHasProperty=getVariableByMultiname(hasPropertyName,ASObject::SKIP_IMPL);
 
 	if(proxyHasProperty.isNull())
@@ -156,7 +157,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 	IFunction* f=static_cast<IFunction*>(proxyHasProperty.getPtr());
 
-	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = abstract_s(name.normalizedName());
 	namearg->setProxyProperty(name);
 	ASObject* arg = namearg;
 	//We now suppress special handling
@@ -180,7 +181,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	multiname deletePropertyName(NULL);
 	deletePropertyName.name_type=multiname::NAME_STRING;
 	deletePropertyName.name_s_id=getSys()->getUniqueStringId("deleteProperty");
-	deletePropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	deletePropertyName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> proxyDeleter=getVariableByMultiname(deletePropertyName,ASObject::SKIP_IMPL);
 
 	if(proxyDeleter.isNull())
@@ -192,7 +193,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 
 	IFunction* f=static_cast<IFunction*>(proxyDeleter.getPtr());
 
-	ASObject* namearg = Class<ASString>::getInstanceS(name.normalizedName());
+	ASObject* namearg = abstract_s(name.normalizedName());
 	namearg->setProxyProperty(name);
 	ASObject* arg = namearg;
 	//We now suppress special handling
@@ -213,7 +214,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	multiname nextNameIndexName(NULL);
 	nextNameIndexName.name_type=multiname::NAME_STRING;
 	nextNameIndexName.name_s_id=getSys()->getUniqueStringId("nextNameIndex");
-	nextNameIndexName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	nextNameIndexName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> o=getVariableByMultiname(nextNameIndexName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o.getPtr());
@@ -233,7 +234,7 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 	multiname nextNameName(NULL);
 	nextNameName.name_type=multiname::NAME_STRING;
 	nextNameName.name_s_id=getSys()->getUniqueStringId("nextName");
-	nextNameName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	nextNameName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> o=getVariableByMultiname(nextNameName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o.getPtr());
@@ -250,7 +251,7 @@ _R<ASObject> Proxy::nextValue(uint32_t index)
 	multiname nextValueName(NULL);
 	nextValueName.name_type=multiname::NAME_STRING;
 	nextValueName.name_s_id=getSys()->getUniqueStringId("nextValue");
-	nextValueName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	nextValueName.ns.emplace_back(flash_proxy,NAMESPACE);
 	_NR<ASObject> o=getVariableByMultiname(nextValueName,ASObject::SKIP_IMPL);
 	assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o.getPtr());

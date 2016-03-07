@@ -117,8 +117,8 @@ protected:
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
 
-	void constructionComplete();
 public:
+	void constructionComplete();
 	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;

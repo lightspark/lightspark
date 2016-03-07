@@ -167,7 +167,6 @@ ssize_t SocketIO::sendAll(const void *buf, size_t count) const
 
 XMLSocket::~XMLSocket()
 {
-	finalize();
 }
 
 void XMLSocket::sinit(Class_base* c)
@@ -196,6 +195,7 @@ void XMLSocket::finalize()
 		job->threadAbort();
 		job = NULL;
 	}
+	timeout = 20000;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(XMLSocket, timeout);
@@ -378,10 +378,12 @@ void XMLSocketThread::execute()
 {
 	if (!sock.connect(hostname, port))
 	{
+		owner->incRef();
 		getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
 		return;
 	}
 
+	owner->incRef();
 	getVm()->addEvent(owner, _MR(Class<Event>::getInstanceS("connect")));
 
 	struct timeval timeout;
@@ -402,6 +404,7 @@ void XMLSocketThread::execute()
 		int status = select(maxfd+1, &readfds, NULL, NULL, &timeout);
 		if (status  < 0)
 		{
+			owner->incRef();
 			getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
 			return;
 		}
@@ -413,6 +416,7 @@ void XMLSocketThread::execute()
 			ssize_t nbytes = read(signalListener, &cmd, 1);
 			if (nbytes < 0)
 			{
+				owner->incRef();
 				getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
 				return;
 			}
@@ -444,17 +448,20 @@ void XMLSocketThread::readSocket(const SocketIO& sock)
 	{
 		buf[nbytes] = '\0';
 		tiny_string data(buf, true);
+		owner->incRef();
 		getVm()->addEvent(owner, _MR(Class<DataEvent>::getInstanceS(data)));
 	}
 	else if (nbytes == 0)
 	{
 		// The server has closed the socket
+		owner->incRef();
 		getVm()->addEvent(owner, _MR(Class<Event>::getInstanceS("close")));
 		threadAborting = true;
 	}
 	else
 	{
 		// Error
+		owner->incRef();
 		getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
 		threadAborting = true;
 	}

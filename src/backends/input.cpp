@@ -303,7 +303,9 @@ void InputThread::handleMouseLeave()
 	if(m_sys->currentVm == NULL)
 		return;
 
-	m_sys->currentVm->addEvent(m_sys->mainClip->getStage(),
+	_NR<Stage> stage = m_sys->mainClip->getStage();
+	stage->incRef();
+	m_sys->currentVm->addEvent(stage,
 		_MR(Class<Event>::getInstanceS("mouseLeave")));
 }
 
@@ -414,6 +416,7 @@ void InputThread::sendKeyEvent(const GdkEventKey *keyevent)
 	if (keyevent->is_modifier)
 		charcode = 0;
 
+	target->incRef();
 	m_sys->currentVm->addEvent(target,
 	    _MR(Class<KeyboardEvent>::getInstanceS(type, charcode, keyevent->hardware_keycode, keyevent->state)));
 }

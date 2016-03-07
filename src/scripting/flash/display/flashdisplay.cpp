@@ -57,6 +57,9 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
+	parameters = _MR(Class<ASObject>::getInstanceS());
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
@@ -66,12 +69,16 @@ LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicati
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
+	parameters = _MR(Class<ASObject>::getInstanceS());
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
 void LoaderInfo::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(_getLoader),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
@@ -115,6 +122,18 @@ void LoaderInfo::finalize()
 	securityDomain.reset();
 	waitedObject.reset();
 	bytesData.reset();
+	contentType = "application/x-shockwave-flash";
+	bytesLoaded = 0;
+	bytesTotal = 0;
+	loadStatus =STARTED;
+	actionScriptVersion = 3;
+	swfVersion = 0;
+	childAllowsParent = true;
+	uncaughtErrorEvents.reset();
+	parentAllowsChild =true;
+	frameRate =0;
+	parameters.reset();
+	uncaughtErrorEvents.reset();
 }
 
 void LoaderInfo::resetState()
@@ -204,16 +223,13 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
-	th->sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
-	th->parameters = _MR(Class<ASObject>::getInstanceS());
-	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
 	return NULL;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return Class<ASString>::getInstanceS(th->loaderURL);
+	return abstract_s(th->loaderURL);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getContent)
@@ -248,7 +264,7 @@ ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 ASFUNCTIONBODY(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return Class<ASString>::getInstanceS(th->url);
+	return abstract_s(th->url);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
@@ -681,11 +697,14 @@ void Sprite::finalize()
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
+	buttonMode = false;
+	useHandCursor = false;
 }
 
 void Sprite::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
@@ -961,7 +980,7 @@ ASFUNCTIONBODY(FrameLabel,_getFrame)
 ASFUNCTIONBODY(FrameLabel,_getName)
 {
 	FrameLabel* th=static_cast<FrameLabel*>(obj);
-	return Class<ASString>::getInstanceS(th->name);
+	return abstract_s(th->name);
 }
 
 /*
@@ -1021,7 +1040,7 @@ ASFUNCTIONBODY(Scene,_getLabels)
 ASFUNCTIONBODY(Scene,_getName)
 {
 	Scene* th=static_cast<Scene*>(obj);
-	return Class<ASString>::getInstanceS(th->name);
+	return abstract_s(th->name);
 }
 
 ASFUNCTIONBODY(Scene,_getNumFrames)
@@ -1083,6 +1102,7 @@ void FrameContainer::addFrameLabel(uint32_t frame, const tiny_string& label)
 void MovieClip::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Sprite, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),GETTER_METHOD,true);
@@ -1122,6 +1142,9 @@ void MovieClip::finalize()
 	Sprite::finalize();
 	frames.clear();
 	frameScripts.clear();
+	fromDefineSpriteTag = false;
+	totalFrames_unreliable = 1;
+	enabled = true;
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -1382,7 +1405,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
 	{
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
 			if(th->scenes[i].labels[j].frame == th->state.FP)
-				return Class<ASString>::getInstanceS(th->scenes[i].labels[j].name);
+				return abstract_s(th->scenes[i].labels[j].name);
 	}
 	return getSys()->getNullRef();
 }
@@ -1407,7 +1430,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 	if(label.empty())
 		return getSys()->getNullRef();
 	else
-		return Class<ASString>::getInstanceS(label);
+		return abstract_s(label);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
@@ -1451,6 +1474,7 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(_getChildIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(_setChildIndex),NORMAL_METHOD,true);
@@ -1498,7 +1522,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSys()->getUniqueStringId(obj->name);
-		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		objName.ns.emplace_back("",NAMESPACE);
 		setVariableByMultiname(objName,getSys()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 
@@ -1522,7 +1546,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSys()->getUniqueStringId(obj->name);
-		objName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		objName.ns.emplace_back("",NAMESPACE);
 		setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 	}
 
@@ -1554,6 +1578,8 @@ void DisplayObjectContainer::finalize()
 	InteractiveObject::finalize();
 	//Release every child
 	dynamicDisplayList.clear();
+	mouseChildren = true;
+	tabChildren = true;
 }
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
@@ -1609,6 +1635,11 @@ void InteractiveObject::finalize()
 {
 	DisplayObject::finalize();
 	contextMenu.reset();
+	mouseEnabled = true;
+	doubleClickEnabled =false;
+	accessibilityImplementation.reset();
+	tabEnabled = false;
+	tabIndex = -1;
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -1618,6 +1649,7 @@ void InteractiveObject::buildTraits(ASObject* o)
 void InteractiveObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
@@ -2283,13 +2315,13 @@ ASFUNCTIONBODY(Stage,_getScaleMode)
 	switch(getSys()->scaleMode)
 	{
 		case SystemState::EXACT_FIT:
-			return Class<ASString>::getInstanceS("exactFit");
+			return abstract_s("exactFit");
 		case SystemState::SHOW_ALL:
-			return Class<ASString>::getInstanceS("showAll");
+			return abstract_s("showAll");
 		case SystemState::NO_BORDER:
-			return Class<ASString>::getInstanceS("noBorder");
+			return abstract_s("noBorder");
 		case SystemState::NO_SCALE:
-			return Class<ASString>::getInstanceS("noScale");
+			return abstract_s("noScale");
 	}
 	return NULL;
 }
@@ -2445,40 +2477,40 @@ ASFUNCTIONBODY(Stage,_setColor)
 void StageScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit"),CONSTANT_TRAIT);
-	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder"),CONSTANT_TRAIT);
-	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale"),CONSTANT_TRAIT);
-	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll"),CONSTANT_TRAIT);
+	c->setVariableByQName("EXACT_FIT","",abstract_s("exactFit"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_BORDER","",abstract_s("noBorder"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_SCALE","",abstract_s("noScale"),CONSTANT_TRAIT);
+	c->setVariableByQName("SHOW_ALL","",abstract_s("showAll"),CONSTANT_TRAIT);
 }
 
 void StageAlign::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BOTTOM","",Class<ASString>::getInstanceS("B"),CONSTANT_TRAIT);
-	c->setVariableByQName("BOTTOM_LEFT","",Class<ASString>::getInstanceS("BL"),CONSTANT_TRAIT);
-	c->setVariableByQName("BOTTOM_RIGHT","",Class<ASString>::getInstanceS("BR"),CONSTANT_TRAIT);
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("L"),CONSTANT_TRAIT);
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("R"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP","",Class<ASString>::getInstanceS("T"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP_RIGHT","",Class<ASString>::getInstanceS("TR"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM","",abstract_s("B"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_LEFT","",abstract_s("BL"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_RIGHT","",abstract_s("BR"),CONSTANT_TRAIT);
+	c->setVariableByQName("LEFT","",abstract_s("L"),CONSTANT_TRAIT);
+	c->setVariableByQName("RIGHT","",abstract_s("R"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP","",abstract_s("T"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_LEFT","",abstract_s("TL"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_RIGHT","",abstract_s("TR"),CONSTANT_TRAIT);
 }
 
 void StageQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BEST","",Class<ASString>::getInstanceS("best"),CONSTANT_TRAIT);
-	c->setVariableByQName("HIGH","",Class<ASString>::getInstanceS("high"),CONSTANT_TRAIT);
-	c->setVariableByQName("LOW","",Class<ASString>::getInstanceS("low"),CONSTANT_TRAIT);
-	c->setVariableByQName("MEDIUM","",Class<ASString>::getInstanceS("medium"),CONSTANT_TRAIT);
+	c->setVariableByQName("BEST","",abstract_s("best"),CONSTANT_TRAIT);
+	c->setVariableByQName("HIGH","",abstract_s("high"),CONSTANT_TRAIT);
+	c->setVariableByQName("LOW","",abstract_s("low"),CONSTANT_TRAIT);
+	c->setVariableByQName("MEDIUM","",abstract_s("medium"),CONSTANT_TRAIT);
 }
 
 void StageDisplayState::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),CONSTANT_TRAIT);
-	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",Class<ASString>::getInstanceS("fullScreenInteractive"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("FULL_SCREEN","",abstract_s("fullScreen"),CONSTANT_TRAIT);
+	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",abstract_s("fullScreenInteractive"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
@@ -2534,7 +2566,6 @@ Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenConta
 
 Bitmap::~Bitmap()
 {
-	finalize();
 }
 
 void Bitmap::finalize()
@@ -2542,12 +2573,14 @@ void Bitmap::finalize()
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
+	smoothing = false;
 	DisplayObject::finalize();
 }
 
 void Bitmap::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	REGISTER_GETTER_SETTER(c,bitmapData);
 	REGISTER_GETTER_SETTER(c,smoothing);
 	REGISTER_GETTER_SETTER(c,pixelSnapping);
@@ -2898,42 +2931,42 @@ ASFUNCTIONBODY(SimpleButton,_getUseHandCursor)
 void GradientType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("LINEAR","",Class<ASString>::getInstanceS("linear"),CONSTANT_TRAIT);
-	c->setVariableByQName("RADIAL","",Class<ASString>::getInstanceS("radial"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINEAR","",abstract_s("linear"),CONSTANT_TRAIT);
+	c->setVariableByQName("RADIAL","",abstract_s("radial"),CONSTANT_TRAIT);
 }
 
 void BlendMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ADD","",Class<ASString>::getInstanceS("add"),CONSTANT_TRAIT);
-	c->setVariableByQName("ALPHA","",Class<ASString>::getInstanceS("alpha"),CONSTANT_TRAIT);
-	c->setVariableByQName("DARKEN","",Class<ASString>::getInstanceS("darken"),CONSTANT_TRAIT);
-	c->setVariableByQName("DIFFERENCE","",Class<ASString>::getInstanceS("difference"),CONSTANT_TRAIT);
-	c->setVariableByQName("ERASE","",Class<ASString>::getInstanceS("erase"),CONSTANT_TRAIT);
-	c->setVariableByQName("HARDLIGHT","",Class<ASString>::getInstanceS("hardlight"),CONSTANT_TRAIT);
-	c->setVariableByQName("INVERT","",Class<ASString>::getInstanceS("invert"),CONSTANT_TRAIT);
-	c->setVariableByQName("LAYER","",Class<ASString>::getInstanceS("layer"),CONSTANT_TRAIT);
-	c->setVariableByQName("LIGHTEN","",Class<ASString>::getInstanceS("lighten"),CONSTANT_TRAIT);
-	c->setVariableByQName("MULTIPLY","",Class<ASString>::getInstanceS("multiply"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
-	c->setVariableByQName("OVERLAY","",Class<ASString>::getInstanceS("overlay"),CONSTANT_TRAIT);
-	c->setVariableByQName("SCREEN","",Class<ASString>::getInstanceS("screen"),CONSTANT_TRAIT);
-	c->setVariableByQName("SUBTRACT","",Class<ASString>::getInstanceS("subtract"),CONSTANT_TRAIT);
+	c->setVariableByQName("ADD","",abstract_s("add"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALPHA","",abstract_s("alpha"),CONSTANT_TRAIT);
+	c->setVariableByQName("DARKEN","",abstract_s("darken"),CONSTANT_TRAIT);
+	c->setVariableByQName("DIFFERENCE","",abstract_s("difference"),CONSTANT_TRAIT);
+	c->setVariableByQName("ERASE","",abstract_s("erase"),CONSTANT_TRAIT);
+	c->setVariableByQName("HARDLIGHT","",abstract_s("hardlight"),CONSTANT_TRAIT);
+	c->setVariableByQName("INVERT","",abstract_s("invert"),CONSTANT_TRAIT);
+	c->setVariableByQName("LAYER","",abstract_s("layer"),CONSTANT_TRAIT);
+	c->setVariableByQName("LIGHTEN","",abstract_s("lighten"),CONSTANT_TRAIT);
+	c->setVariableByQName("MULTIPLY","",abstract_s("multiply"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("OVERLAY","",abstract_s("overlay"),CONSTANT_TRAIT);
+	c->setVariableByQName("SCREEN","",abstract_s("screen"),CONSTANT_TRAIT);
+	c->setVariableByQName("SUBTRACT","",abstract_s("subtract"),CONSTANT_TRAIT);
 }
 
 void SpreadMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("PAD","",Class<ASString>::getInstanceS("pad"),CONSTANT_TRAIT);
-	c->setVariableByQName("REFLECT","",Class<ASString>::getInstanceS("reflect"),CONSTANT_TRAIT);
-	c->setVariableByQName("REPEAT","",Class<ASString>::getInstanceS("repeat"),CONSTANT_TRAIT);
+	c->setVariableByQName("PAD","",abstract_s("pad"),CONSTANT_TRAIT);
+	c->setVariableByQName("REFLECT","",abstract_s("reflect"),CONSTANT_TRAIT);
+	c->setVariableByQName("REPEAT","",abstract_s("repeat"),CONSTANT_TRAIT);
 }
 
 void InterpolationMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("RGB","",Class<ASString>::getInstanceS("rgb"),CONSTANT_TRAIT);
-	c->setVariableByQName("LINEAR_RGB","",Class<ASString>::getInstanceS("linearRGB"),CONSTANT_TRAIT);
+	c->setVariableByQName("RGB","",abstract_s("rgb"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINEAR_RGB","",abstract_s("linearRGB"),CONSTANT_TRAIT);
 }
 
 void GraphicsPathCommand::sinit(Class_base* c)
@@ -2951,16 +2984,16 @@ void GraphicsPathCommand::sinit(Class_base* c)
 void GraphicsPathWinding::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EVEN_ODD","",Class<ASString>::getInstanceS("evenOdd"),CONSTANT_TRAIT);
-	c->setVariableByQName("NON_ZERO","",Class<ASString>::getInstanceS("nonZero"),CONSTANT_TRAIT);
+	c->setVariableByQName("EVEN_ODD","",abstract_s("evenOdd"),CONSTANT_TRAIT);
+	c->setVariableByQName("NON_ZERO","",abstract_s("nonZero"),CONSTANT_TRAIT);
 }
 
 void PixelSnapping::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ALWAYS","",Class<ASString>::getInstanceS("always"),CONSTANT_TRAIT);
-	c->setVariableByQName("AUTO","",Class<ASString>::getInstanceS("auto"),CONSTANT_TRAIT);
-	c->setVariableByQName("NEVER","",Class<ASString>::getInstanceS("never"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALWAYS","",abstract_s("always"),CONSTANT_TRAIT);
+	c->setVariableByQName("AUTO","",abstract_s("auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("NEVER","",abstract_s("never"),CONSTANT_TRAIT);
 
 }
 
@@ -3168,8 +3201,8 @@ unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
 void LineScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"),CONSTANT_TRAIT);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
-	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical"),CONSTANT_TRAIT);
+	c->setVariableByQName("HORIZONTAL","",abstract_s("horizontal"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s("none"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("VERTICAL","",abstract_s("vertical"),CONSTANT_TRAIT);
 }

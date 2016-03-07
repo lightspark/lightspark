@@ -475,9 +475,9 @@ private:
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
-	void constructionComplete();
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
+	void constructionComplete();
 	RunState state;
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);

@@ -1787,7 +1787,7 @@ ASObject *ASObject::describeType() const
 	// TODO: undocumented constructor node
 	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(root)->toXMLString_internal());
 
-	return Class<XML>::getInstanceS(root);
+	return XML::createFromNode(root);
 }
 
 tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)

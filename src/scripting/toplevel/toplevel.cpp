@@ -255,7 +255,7 @@ ASObject *IFunction::describeType() const
 	// TODO: accessor
 	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
 
-	return Class<XML>::getInstanceS(root);
+	return XML::createFromNode(root);
 }
 
 SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),mi(m),val(NULL)
@@ -1265,7 +1265,7 @@ ASObject *Class_base::describeType() const
 	node=root.append_child("factory");
 	node.append_attribute("type").set_value(getQualifiedClassName().raw_buf());
 	describeInstance(node);
-	return Class<XML>::getInstanceS(root);
+	return XML::createFromNode(root);
 }
 
 void Class_base::describeInstance(pugi::xml_node& root) const

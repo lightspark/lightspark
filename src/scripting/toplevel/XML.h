@@ -143,6 +143,8 @@ public:
 	
 	static bool getPrettyPrinting();
 	static unsigned int getParseMode();
+	static XML* createFromString(const tiny_string& s);
+	static XML* createFromNode(const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
 
 	const tiny_string getName() const { return nodename;}
 	const tiny_string getNamespaceURI() const { return nodenamespace_uri;}

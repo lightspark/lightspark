@@ -2621,8 +2621,6 @@ void ABCVm::dxns(call_context* th, int n)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS("dxns without SET_DXNS");
 
-	if (!th->defaultNamespaceUri.isNull())
-		th->defaultNamespaceUri->decRef();
 	th->defaultNamespaceUri = _NR<ASString>(abstract_s(th->context->getString(n)));
 }
 
@@ -2632,8 +2630,6 @@ void ABCVm::dxnslate(call_context* th, ASObject* o)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS("dxnslate without SET_DXNS");
 
-	if (!th->defaultNamespaceUri.isNull())
-		th->defaultNamespaceUri->decRef();
 	th->defaultNamespaceUri = _NR<ASString>(abstract_s(o->toString()));
 	o->decRef();
 }

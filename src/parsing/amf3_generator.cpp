@@ -476,7 +476,7 @@ _R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool leg
 	if(legacyXML)
 		xmlObj=Class<XMLDocument>::getInstanceS(xmlStr);
 	else
-		xmlObj=Class<XML>::getInstanceS(xmlStr);
+		xmlObj=XML::createFromString(xmlStr);
 	objMap.push_back(xmlObj);
 	return _MR(xmlObj);
 }

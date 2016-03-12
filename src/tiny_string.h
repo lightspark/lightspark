@@ -151,7 +151,14 @@ public:
 	bool operator!=(const Glib::ustring&) const;
 	const char* raw_buf() const;
 	bool empty() const;
-	void clear();
+	inline void clear()
+	{
+		resetToStatic();
+		numchars = 0;
+		isASCII = true;
+		hasNull = false;
+	}
+	
 	/* returns the length in bytes, not counting the trailing \0 */
 	uint32_t numBytes() const;
 	/* returns the length in utf-8 characters, not counting the trailing \0 */

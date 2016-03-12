@@ -56,24 +56,19 @@ tiny_string::tiny_string(const char* s,bool copy):_buf_static(),buf(_buf_static)
 	init();
 }
 
-tiny_string::tiny_string(const tiny_string& r):_buf_static(),buf(_buf_static),stringSize(r.stringSize),type(STATIC)
+tiny_string::tiny_string(const tiny_string& r):
+	_buf_static(),buf(_buf_static),stringSize(r.stringSize),numchars(r.numchars),type(STATIC),isASCII(r.isASCII),hasNull(r.hasNull)
 {
 	//Fast path for static read-only strings
 	if(r.type==READONLY)
 	{
 		type=READONLY;
 		buf=r.buf;
-		this->isASCII = r.isASCII;
-		this->hasNull = r.hasNull;
-		this->numchars = r.numchars;
 		return;
 	}
 	if(stringSize > STATIC_SIZE)
 		createBuffer(stringSize);
 	memcpy(buf,r.buf,stringSize);
-	this->isASCII = r.isASCII;
-	this->hasNull = r.hasNull;
-	this->numchars = r.numchars;
 }
 
 tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),stringSize(r.size()+1),type(STATIC)
@@ -314,14 +309,6 @@ const char* tiny_string::raw_buf() const
 bool tiny_string::empty() const
 {
 	return stringSize == 1;
-}
-
-void tiny_string::clear()
-{
-	resetToStatic();
-	numchars = 0;
-	isASCII = true;
-	hasNull = false;
 }
 
 /* returns the length in bytes, not counting the trailing \0 */

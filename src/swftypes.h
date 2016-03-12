@@ -366,7 +366,7 @@ struct multiname: public memory_reporter
 	/*
 		Returns a string name whatever is the name type
 	*/
-	tiny_string normalizedName() const;
+	const tiny_string normalizedName() const;
 	/*
 	 * 	Return a string id whatever is the name type
 	 */
@@ -376,9 +376,9 @@ struct multiname: public memory_reporter
 		this should be used for exception or debug messages to avoid calling 
 		overridden toString property of the object
 	*/
-	tiny_string normalizedNameUnresolved() const;
+	const tiny_string normalizedNameUnresolved() const;
 
-	tiny_string qualifiedString() const;
+	const tiny_string qualifiedString() const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);
 	void resetNameIfObject();

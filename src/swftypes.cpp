@@ -41,7 +41,7 @@ multiname::multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsName
 {
 }
 
-tiny_string multiname::qualifiedString() const
+const tiny_string multiname::qualifiedString() const
 {
 	assert_and_throw(ns.size()>=1);
 	assert_and_throw(name_type==NAME_STRING);
@@ -58,7 +58,7 @@ tiny_string multiname::qualifiedString() const
 	}
 }
 
-tiny_string multiname::normalizedName() const
+const tiny_string multiname::normalizedName() const
 {
 	switch(name_type)
 	{
@@ -94,7 +94,7 @@ uint32_t multiname::normalizedNameId() const
 	}
 }
 
-tiny_string multiname::normalizedNameUnresolved() const
+const tiny_string multiname::normalizedNameUnresolved() const
 {
 	switch(name_type)
 	{

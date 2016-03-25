@@ -1497,9 +1497,9 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
-const variable* Class_base::findBorrowedGettable(const multiname& name,NS_KIND& nskind) const
+const variable* Class_base::findBorrowedGettable(const multiname& name,uint32_t* nsRealId) const
 {
-	return ASObject::findGettableImpl(borrowedVariables,name,nskind);
+	return ASObject::findGettableImpl(borrowedVariables,name,nsRealId);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
@@ -1524,8 +1524,7 @@ variable* Class_base::findSettableInPrototype(const multiname& name)
 
 EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const
 {
-	NS_KIND nskind;
-	if(findBorrowedGettable(name,nskind)!=NULL)
+	if(findBorrowedGettable(name)!=NULL)
 		return BINDED;
 	else
 		return NOT_BINDED;

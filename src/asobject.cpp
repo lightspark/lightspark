@@ -470,14 +470,13 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(classdef && classdef->borrowedVariables.findObjVar(name, NO_CREATE_TRAIT, DECLARED_TRAIT)!=NULL)
 		return true;
 
-	NS_KIND nskind;
 	//Check prototype inheritance chain
 	if(getClass() && considerPrototype)
 	{
 		Prototype* proto = getClass()->prototype.getPtr();
 		while(proto)
 		{
-			if(proto->getObj()->findGettable(name,nskind) != NULL)
+			if(proto->getObj()->findGettable(name) != NULL)
 				return true;
 			proto=proto->prevPrototype.getPtr();
 		}
@@ -846,7 +845,7 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds, NS_KIND &nskind) const
+const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t *nsRealId) const
 {
 	if (mname.isEmpty())
 		return NULL;
@@ -863,7 +862,8 @@ const variable* variables_map::findObjVar(const multiname& mname, uint32_t trait
 		const nsNameAndKind& ns=ret->first.ns;
 		if(ns==*nsIt)
 		{
-			nskind = ns.getImpl().kind;
+			if (nsRealId)
+				*nsRealId = ns.nsRealId;
 			if(ret->second.kind & traitKinds)
 				return &ret->second;
 			else
@@ -1140,9 +1140,9 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name, NS_KIND &nskind)
+const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name, uint32_t *nsRealId)
 {
-	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nskind);
+	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1153,20 +1153,20 @@ const variable* ASObject::findGettableImpl(const variables_map& map, const multi
 	return ret;
 }
 
-const variable* ASObject::findGettable(const multiname& name, NS_KIND &nskind) const
+const variable* ASObject::findGettable(const multiname& name, uint32_t* nsRealId) const
 {
-	return findGettableImpl(Variables,name,nskind);
+	return findGettableImpl(Variables,name,nsRealId);
 }
 
-const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind) const
+const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID) const
 {
 	//Get from the current object without considering borrowed properties
-	const variable* var=findGettable(name,nskind);
+	const variable* var=findGettable(name,nsRealID);
 
 	if(!var && cls)
 	{
 		//Look for borrowed traits before
-		var=cls->findBorrowedGettable(name,nskind);
+		var=cls->findBorrowedGettable(name,nsRealID);
 	}
 
 	if(!var && cls)
@@ -1175,7 +1175,7 @@ const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VAR
 		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			var = proto->getObj()->findGettable(name,nskind);
+			var = proto->getObj()->findGettable(name,nsRealID);
 			if(var)
 				break;
 			proto = proto->prevPrototype.getPtr();
@@ -1188,8 +1188,8 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
-	NS_KIND nskind;
-	const variable* obj=findVariableByMultiname(name, opt, cls,nskind);
+	uint32_t nsRealId;
+	const variable* obj=findVariableByMultiname(name, opt, cls,&nsRealId);
 
 	if(!obj)
 		return NullRef;
@@ -1198,9 +1198,8 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			 obj->var->getObjectType() == T_UNDEFINED ||
 			 obj->var->getObjectType() == T_NULL))
 	{
-		LOG(LOG_CALLS,"accessing class:"<<name<<" "<< this->as<Class_base>()->getQualifiedClassName()<<" "<<nskind);
 		if (obj->kind == INSTANCE_TRAIT &&
-				nskind != STATIC_PROTECTED_NAMESPACE)
+				getSys()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved());
 	}
 

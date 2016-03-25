@@ -1536,8 +1536,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 				_R<ASObject> r = it->object;
 				if (!r->is<Class_base>())
 					continue;
-				NS_KIND nskind;
-				if (r->as<Class_base>()->findBorrowedGettable(*name,nskind))
+				if (r->as<Class_base>()->findBorrowedGettable(*name))
 				{
 					if (!r->as<Class_base>()->isSealed)
 						break;

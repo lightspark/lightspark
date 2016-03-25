@@ -250,7 +250,7 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	const variable* findObjVar(const multiname& mname, uint32_t traitKinds, NS_KIND &nskind) const;
+	const variable* findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const;
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj);
 	void killObjVar(const multiname& mname);
@@ -304,7 +304,7 @@ friend class IFunction; //Needed for clone
 private:
 	variables_map Variables;
 	Class_base* classdef;
-	const variable* findGettable(const multiname& name, NS_KIND &nskind) const DLL_LOCAL;
+	const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL;
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	multiname* proxyMultiName;
 protected:
@@ -320,7 +320,7 @@ protected:
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
-	static const variable* findGettableImpl(const variables_map& map, const multiname& name, NS_KIND &nskind);
+	static const variable* findGettableImpl(const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL);
 	//overridden from RefCountable
 	void destruct();
 	// called when object is really destroyed
@@ -379,7 +379,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, NS_KIND &nskind) const;
+	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t* nsRealID = NULL) const;
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.

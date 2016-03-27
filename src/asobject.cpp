@@ -464,10 +464,10 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(Variables.findObjVar(name, NO_CREATE_TRAIT, validTraits)!=NULL)
+	if(Variables.findObjVar(name, validTraits)!=NULL)
 		return true;
 
-	if(classdef && classdef->borrowedVariables.findObjVar(name, NO_CREATE_TRAIT, DECLARED_TRAIT)!=NULL)
+	if(classdef && classdef->borrowedVariables.findObjVar(name, DECLARED_TRAIT)!=NULL)
 		return true;
 
 	//Check prototype inheritance chain
@@ -845,43 +845,6 @@ variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKin
 	return &inserted->second;
 }
 
-const variable* variables_map::findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t *nsRealId) const
-{
-	if (mname.isEmpty())
-		return NULL;
-	uint32_t name=mname.normalizedNameId();
-	assert(!mname.ns.empty());
-	
-	const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
-	auto nsIt=mname.ns.begin();
-
-	//Find the namespace
-	while(ret!=Variables.end() && ret->first.nameId==name)
-	{
-		//breaks when the namespace is not found
-		const nsNameAndKind& ns=ret->first.ns;
-		if(ns==*nsIt)
-		{
-			if (nsRealId)
-				*nsRealId = ns.nsRealId;
-			if(ret->second.kind & traitKinds)
-				return &ret->second;
-			else
-				return NULL;
-		}
-		else if(*nsIt<ns)
-		{
-			++nsIt;
-			if(nsIt==mname.ns.end())
-				break;
-		}
-		else if(ns<*nsIt)
-			++ret;
-	}
-
-	return NULL;
-}
-
 void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj)
 {
 	const Type* type = NULL;
@@ -1140,24 +1103,6 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-const variable* ASObject::findGettableImpl(const variables_map& map, const multiname& name, uint32_t *nsRealId)
-{
-	const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
-	if(ret)
-	{
-		//It seems valid for a class to redefine only the setter, so if we can't find
-		//something to get, it's ok
-		if(!(ret->getter || ret->var))
-			ret=NULL;
-	}
-	return ret;
-}
-
-const variable* ASObject::findGettable(const multiname& name, uint32_t* nsRealId) const
-{
-	return findGettableImpl(Variables,name,nsRealId);
-}
-
 const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID) const
 {
 	//Get from the current object without considering borrowed properties
@@ -1189,7 +1134,41 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	check();
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
-	const variable* obj=findVariableByMultiname(name, opt, cls,&nsRealId);
+
+	const variable* obj=Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+	if(obj)
+	{
+		//It seems valid for a class to redefine only the setter, so if we can't find
+		//something to get, it's ok
+		if(!(obj->getter || obj->var))
+			obj=NULL;
+	}
+
+	if(!obj && cls)
+	{
+		//Look for borrowed traits before
+		obj=cls->findBorrowedGettable(name,&nsRealId);
+	}
+
+	if(!obj && cls)
+	{
+		//Check prototype chain
+		Prototype* proto = cls->prototype.getPtr();
+		while(proto)
+		{
+			obj=proto->getObj()->Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+			if(obj)
+			{
+				//It seems valid for a class to redefine only the setter, so if we can't find
+				//something to get, it's ok
+				if(!(obj->getter || obj->var))
+					obj=NULL;
+			}
+			if(obj)
+				break;
+			proto = proto->prevPrototype.getPtr();
+		}
+	}
 
 	if(!obj)
 		return NullRef;
@@ -1348,8 +1327,8 @@ variables_map::~variables_map()
 
 void variables_map::destroyContents()
 {
-	var_iterator it=Variables.begin();
-	for(;it!=Variables.end();++it)
+	const_var_iterator it=Variables.begin();
+	while(it!=Variables.end())
 	{
 		if(it->second.var)
 			it->second.var->decRef();
@@ -1357,8 +1336,8 @@ void variables_map::destroyContents()
 			it->second.setter->decRef();
 		if(it->second.getter)
 			it->second.getter->decRef();
+		it = Variables.erase(it);
 	}
-	Variables.clear();
 }
 
 ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),

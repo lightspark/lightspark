@@ -38,8 +38,6 @@
 #include <algorithm>
 #endif
 
-class memorystream;
-
 namespace lightspark
 {
 
@@ -224,11 +222,10 @@ public:
 class u32
 {
 friend std::istream& operator>>(std::istream& in, u32& v);
-friend memorystream& operator>>(memorystream& in, u32& v);
 private:
 	uint32_t val;
 public:
-	operator uint32_t() const{return val;}
+	inline operator uint32_t() const{return val;}
 };
 
 class STRING
@@ -362,7 +359,10 @@ struct multiname: public memory_reporter
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	bool isAttribute;
-	multiname(MemoryAccount* m);
+	multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false)
+	{
+	}
+	
 	/*
 		Returns a string name whatever is the name type
 	*/

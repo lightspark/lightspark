@@ -250,7 +250,43 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	const variable* findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const;
+	inline const variable* findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
+	{
+		if (mname.isEmpty())
+			return NULL;
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId();
+		assert(!mname.ns.empty());
+		
+		const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+		auto nsIt=mname.ns.begin();
+	
+		//Find the namespace
+		while(ret!=Variables.end() && ret->first.nameId==name)
+		{
+			//breaks when the namespace is not found
+			const nsNameAndKind& ns=ret->first.ns;
+			if(ns==*nsIt)
+			{
+				if (nsRealId)
+					*nsRealId = ns.nsRealId;
+				if(ret->second.kind & traitKinds)
+					return &ret->second;
+				else
+					return NULL;
+			}
+			else if(*nsIt<ns)
+			{
+				++nsIt;
+				if(nsIt==mname.ns.end())
+					break;
+			}
+			else if(ns<*nsIt)
+				++ret;
+		}
+	
+		return NULL;
+	}
+	
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj);
 	void killObjVar(const multiname& mname);
@@ -299,12 +335,25 @@ class ASObject: public memory_reporter, public boost::intrusive::list_base_hook<
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
+friend class Class_inherit; 
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
 private:
 	variables_map Variables;
 	Class_base* classdef;
-	const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL;
+	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
+	{
+		const variable* ret=Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		if(ret)
+		{
+			//It seems valid for a class to redefine only the setter, so if we can't find
+			//something to get, it's ok
+			if(!(ret->getter || ret->var))
+				ret=NULL;
+		}
+		return ret;
+	}
+	
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	multiname* proxyMultiName;
 protected:
@@ -320,7 +369,19 @@ protected:
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
-	static const variable* findGettableImpl(const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL);
+	inline static const variable* findGettableImpl(const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	{
+		const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		if(ret)
+		{
+			//It seems valid for a class to redefine only the setter, so if we can't find
+			//something to get, it's ok
+			if(!(ret->getter || ret->var))
+				ret=NULL;
+		}
+		return ret;
+	}
+	
 	//overridden from RefCountable
 	void destruct();
 	// called when object is really destroyed
@@ -459,7 +520,7 @@ public:
 	virtual uint32_t toUInt();
 	uint16_t toUInt16();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
-	number_t toNumber();
+	virtual number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 	_R<ASObject> toPrimitive(TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;

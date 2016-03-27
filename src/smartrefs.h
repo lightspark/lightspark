@@ -38,12 +38,12 @@ public:
 #ifndef NDEBUG
 	int getRefCount() const { return ref_count; }
 #endif
-	void incRef()
+	inline void incRef()
 	{
 		ATOMIC_INCREMENT(ref_count);
 		assert(ref_count>0);
 	}
-	void decRef()
+	inline void decRef()
 	{
 		assert(ref_count>0);
 		uint32_t t=ATOMIC_DECREMENT(ref_count);
@@ -52,7 +52,7 @@ public:
 			destruct();
 		}
 	}
-	void fake_decRef()
+	inline void fake_decRef()
 	{
 		ATOMIC_DECREMENT(ref_count);
 	}
@@ -146,11 +146,11 @@ public:
 	{
 		m->decRef();
 	}
-	T* operator->() const 
+	inline T* operator->() const 
 	{
 		return m;
 	}
-	T* getPtr() const 
+	inline T* getPtr() const 
 	{ 
 		return m; 
 	}

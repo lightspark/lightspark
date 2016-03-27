@@ -48,10 +48,12 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 	DictionaryTag const* tag;
 	bool bindedToRoot;
+	void recursiveBuild(ASObject* target) const;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m);
 	void finalize();
 	void buildInstanceTraits(ASObject* o) const;
+	void setupDeclaredTraits(ASObject *target) const;
 	void bindToTag(DictionaryTag const* t)
 	{
 		tag=t;

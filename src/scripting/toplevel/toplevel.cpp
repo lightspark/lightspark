@@ -948,39 +948,10 @@ tiny_string Class_base::toString()
 	return ret;
 }
 
-void Class_base::recursiveBuild(ASObject* target)
-{
-	if(super)
-		super->recursiveBuild(target);
-
-	buildInstanceTraits(target);
-}
-
 void Class_base::setConstructor(IFunction* c)
 {
 	assert_and_throw(constructor==NULL);
 	constructor=c;
-}
-
-void Class_base::setupDeclaredTraits(ASObject *target)
-{
-	if (!target->traitsInitialized)
-	{
-	#ifndef NDEBUG
-		assert_and_throw(!target->initialized);
-	#endif
-		//HACK: suppress implementation handling of variables just now
-		bool bak=target->implEnable;
-		target->implEnable=false;
-		recursiveBuild(target);
-		//And restore it
-		target->implEnable=bak;
-
-	#ifndef NDEBUG
-		target->initialized=true;
-	#endif
-		target->traitsInitialized = true;
-	}
 }
 
 void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
@@ -1057,28 +1028,6 @@ void Class_base::destroy()
 		constructor->decRef();
 		constructor=NULL;
 	}
-}
-
-ASObject *Class_base::getObjectFromFreeList()
-{
-	Locker l(referencedObjectsMutex);
-	ASObject* ret = NULL;
-	if (!freelist.empty())
-	{
-		ret=freelist.front();
-		freelist.pop_front();
-		ret->incRef();
-	}
-//	else
-//		LOG(LOG_INFO,"cache miss:"<<this->class_name);
-		
-	return ret;
-}
-
-void Class_base::pushObjectToFreeList(ASObject *obj)
-{
-	Locker l(referencedObjectsMutex);
-	freelist.push_front(obj);
 }
 
 void Class_base::finalize()
@@ -1495,11 +1444,6 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		protected_ns=nsNameAndKind(name,(NS_KIND)(int)ns.kind);
 	else
 		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
-}
-
-const variable* Class_base::findBorrowedGettable(const multiname& name,uint32_t* nsRealId) const
-{
-	return ASObject::findGettableImpl(borrowedVariables,name,nsRealId);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)

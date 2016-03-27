@@ -149,7 +149,6 @@ private:
 	mutable std::vector<Class_base*> interfaces_added;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns);
-	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits) const;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
@@ -165,8 +164,24 @@ protected:
 	void initStandardProps();
 	void destroy();
 public:
-	ASObject* getObjectFromFreeList();
-	void pushObjectToFreeList(ASObject* obj);
+	inline ASObject* getObjectFromFreeList()
+	{
+		Locker l(referencedObjectsMutex);
+		ASObject* ret = NULL;
+		if (!freelist.empty())
+		{
+			ret=freelist.front();
+			freelist.pop_front();
+			ret->incRef();
+		}
+		return ret;
+	}
+	
+	inline void pushObjectToFreeList(ASObject *obj)
+	{
+		Locker l(referencedObjectsMutex);
+		freelist.push_front(obj);
+	}
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
@@ -193,7 +208,7 @@ public:
 	void addConstructorGetter();
 	void addPrototypeGetter();
 	void addLengthGetter();
-	void setupDeclaredTraits(ASObject *target);
+	virtual void setupDeclaredTraits(ASObject *target) const { target->traitsInitialized = true; }
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	bool hasConstructor() { return constructor != NULL; }
@@ -232,7 +247,11 @@ public:
 	virtual ASObject* coerce(ASObject* o) const;
 
 	void setSuper(_R<Class_base> super_);
-	const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL;
+	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
+	{
+		return ASObject::findGettableImpl(borrowedVariables,name,nsRealId);
+	}
+	
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	variable* findSettableInPrototype(const multiname& name) DLL_LOCAL;
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
@@ -297,7 +316,7 @@ public:
 	void finalize();
 	void incRef() { ASObject::incRef(); }
 	void decRef() { ASObject::decRef(); }
-	ASObject* getObj() { return this; }
+	inline ASObject* getObj() { return this; }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
@@ -435,7 +454,7 @@ public:
 	void finalize();
 	void incRef() { ASObject::incRef(); }
 	void decRef() { ASObject::decRef(); }
-	ASObject* getObj() { return this; }
+	inline ASObject* getObj() { return this; }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 

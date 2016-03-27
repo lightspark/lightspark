@@ -93,6 +93,14 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 		handleConstruction(ret,args,argslen,true);
 	return ret;
 }
+void Class_inherit::recursiveBuild(ASObject* target) const
+{
+	if(super && super->is<Class_inherit>())
+		super->as<Class_inherit>()->recursiveBuild(target);
+
+	buildInstanceTraits(target);
+}
+
 
 void Class_inherit::buildInstanceTraits(ASObject* o) const
 {
@@ -105,6 +113,28 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 
 	context->buildInstanceTraits(o,class_index);
 }
+void Class_inherit::setupDeclaredTraits(ASObject *target) const
+{
+	if (!target->traitsInitialized)
+	{
+	#ifndef NDEBUG
+		assert_and_throw(!target->initialized);
+	#endif
+		//HACK: suppress implementation handling of variables just now
+		bool bak=target->implEnable;
+		target->implEnable=false;
+		recursiveBuild(target);
+		
+		//And restore it
+		target->implEnable=bak;
+
+	#ifndef NDEBUG
+		target->initialized=true;
+	#endif
+		target->traitsInitialized = true;
+	}
+}
+
 
 template<>
 Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)

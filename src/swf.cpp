@@ -2081,7 +2081,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	auto i = applicationDomain->classesBeingDefined.cbegin();
 	while (i != applicationDomain->classesBeingDefined.cend())
 	{
-		if(i->first->qualifiedString() == clsname.qualifiedString())
+		if(i->first->name_s_id == clsname.name_s_id && i->first->ns[0].nsRealId == clsname.ns[0].nsRealId)
 		{
 			typeObject = i->second;
 			break;

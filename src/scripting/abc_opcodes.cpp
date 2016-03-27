@@ -2173,7 +2173,7 @@ void ABCVm::newClass(call_context* th, int n)
 	auto i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
 	while (i != th->context->root->applicationDomain->classesBeingDefined.cend())
 	{
-		if(i->first->qualifiedString() == mname->qualifiedString())
+		if(i->first->name_s_id == mname->name_s_id && i->first->ns[0].nsRealId == mname->ns[0].nsRealId)
 		{
 			ret = (Class_inherit*)i->second;
 			ret->incRef();

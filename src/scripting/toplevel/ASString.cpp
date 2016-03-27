@@ -458,10 +458,7 @@ tiny_string ASString::toString_priv() const
 	return data;
 }
 
-/* Note that toNumber() is not virtual.
- * ASString::toNumber is directly called by ASObject::toNumber
- */
-double ASString::toNumber() const
+number_t ASString::toNumber()
 {
 	assert_and_throw(implEnable);
 

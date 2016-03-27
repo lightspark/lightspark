@@ -70,7 +70,7 @@ public:
 	ASFUNCTION(localeCompare_prototype);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	number_t toNumber() const;
+	number_t toNumber();
 	int32_t toInt();
 	uint32_t toUInt();
 	ASFUNCTION(generator);

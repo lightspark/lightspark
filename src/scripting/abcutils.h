@@ -21,6 +21,7 @@
 #define SCRIPTING_ABCUTILS_H 1
 
 #include "smartrefs.h"
+#include "errorconstants.h"
 
 namespace lightspark
 {
@@ -66,10 +67,34 @@ struct call_context
 	_NR<ASString> defaultNamespaceUri;
 	int initialScopeStack;
 	~call_context();
-	void runtime_stack_clear();
-	void runtime_stack_push(ASObject* s);
-	ASObject* runtime_stack_pop();
-	ASObject* runtime_stack_peek();
+	static void handleError(int errorcode);
+	inline void runtime_stack_clear()
+	{
+		while(stack_index > 0)
+			stack[--stack_index]->decRef();
+	}
+	inline void runtime_stack_push(ASObject* s)
+	{
+		if(stack_index>=max_stack)
+			handleError(kStackOverflowError);
+		stack[stack_index++]=s;
+	}
+	inline ASObject* runtime_stack_pop()
+	{
+		if(stack_index==0)
+			handleError(kStackUnderflowError);
+		ASObject* ret=stack[--stack_index];
+		return ret;
+	}
+	inline ASObject* runtime_stack_peek()
+	{
+		if(stack_index==0)
+		{
+			LOG(LOG_ERROR,_("Empty stack"));
+			return NULL;
+		}
+		return stack[stack_index-1];
+	}
 };
 
 }

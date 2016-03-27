@@ -204,7 +204,38 @@ public:
 
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
-	int getMultinameRTData(int n) const;
+
+	/* This function determines how many stack values are needed for
+	 * resolving the multiname at index mi
+	 */
+	inline int getMultinameRTData(int mi) const
+	{
+		if(mi==0)
+			return 0;
+	
+		const multiname_info* m=&constant_pool.multinames[mi];
+		switch(m->kind)
+		{
+			case 0x07: //QName
+			case 0x0d: //QNameA
+			case 0x09: //Multiname
+			case 0x0e: //MultinameA
+			case 0x1d: //Templated name
+				return 0;
+			case 0x0f: //RTQName
+			case 0x10: //RTQNameA
+			case 0x1b: //MultinameL
+			case 0x1c: //MultinameLA
+				return 1;
+			case 0x11: //RTQNameL
+			case 0x12: //RTQNameLA
+				return 2;
+			default:
+				LOG(LOG_ERROR,_("getMultinameRTData not yet implemented for this kind ") << m->kind);
+				throw UnsupportedException("kind not implemented for getMultinameRTData");
+		}
+	}
+	
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);

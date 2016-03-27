@@ -29,6 +29,7 @@
 #include <llvm/PassManager.h>
 #else
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
 #endif
 #ifdef HAVE_IR_DATALAYOUT_H
 #  include <llvm/IR/Module.h>
@@ -561,36 +562,6 @@ void ABCVm::registerClasses()
 	getSys()->systemDomain->registerGlobalScope(builtin);
 }
 
-/* This function determines how many stack values are needed for
- * resolving the multiname at index mi
- */
-int ABCContext::getMultinameRTData(int mi) const
-{
-	if(mi==0)
-		return 0;
-
-	const multiname_info* m=&constant_pool.multinames[mi];
-	switch(m->kind)
-	{
-		case 0x07: //QName
-		case 0x0d: //QNameA
-		case 0x09: //Multiname
-		case 0x0e: //MultinameA
-		case 0x1d: //Templated name
-			return 0;
-		case 0x0f: //RTQName
-		case 0x10: //RTQNameA
-		case 0x1b: //MultinameL
-		case 0x1c: //MultinameLA
-			return 1;
-		case 0x11: //RTQNameL
-		case 0x12: //RTQNameLA
-			return 2;
-		default:
-			LOG(LOG_ERROR,_("getMultinameRTData not yet implemented for this kind ") << hex << m->kind);
-			throw UnsupportedException("kind not implemented for getMultinameRTData");
-	}
-}
 
 //Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
 multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
@@ -1441,35 +1412,6 @@ void ABCVm::not_impl(int n)
 	throw UnsupportedException("Not implemented opcode");
 }
 
-void call_context::runtime_stack_clear()
-{
-	while(stack_index > 0)
-		stack[--stack_index]->decRef();
-}
-void call_context::runtime_stack_push(ASObject* s)
-{
-  if(stack_index>=max_stack)
-	throwError<ASError>(kStackOverflowError);
-  stack[stack_index++]=s;
-}
-ASObject* call_context::runtime_stack_pop()
-{
-  if(stack_index==0)
-	throwError<ASError>(kStackUnderflowError);
-  
-  ASObject* ret=stack[--stack_index];
-  return ret;
-}
-ASObject* call_context::runtime_stack_peek()
-{
-  if(stack_index==0)
-  {
-	LOG(LOG_ERROR,_("Empty stack"));
-	return NULL;
-  }
-  return stack[stack_index-1];
-}
-
 call_context::~call_context()
 {
 	//The stack may be not clean, is this a programmer/compiler error?
@@ -1488,6 +1430,11 @@ call_context::~call_context()
 		if(locals[i])
 			locals[i]->decRef();
 	}
+}
+
+void call_context::handleError(int errorcode)
+{
+	throwError<ASError>(errorcode);
 }
 
 bool ABCContext::isinstance(ASObject* obj, multiname* name)
@@ -1660,11 +1607,15 @@ void ABCVm::Run(ABCVm* th)
 		llvm::EngineBuilder eb(th->module);
 #endif
 		eb.setEngineKind(llvm::EngineKind::JIT);
+		std::string errStr;
+		eb.setErrorStr(&errStr);
 #ifdef LLVM_31
 		eb.setTargetOptions(Opts);
 #endif
 		eb.setOptLevel(llvm::CodeGenOpt::Default);
 		th->ex=eb.create();
+		if (th->ex == NULL)
+			LOG(LOG_ERROR,"could not create llvm engine:"<<errStr);
 		assert_and_throw(th->ex);
 
 #ifdef LLVM_36

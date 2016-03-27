@@ -65,7 +65,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		code >> opcode;
+		opcode = code.readbyte();
 		if(code.eof())
 			throw ParseException("End of code in interpreter");
 
@@ -93,24 +93,21 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x04:
 			{
 				//getsuper
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				getSuper(context,t);
 				break;
 			}
 			case 0x05:
 			{
 				//setsuper
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				setSuper(context,t);
 				break;
 			}
 			case 0x06:
 			{
 				//dxns
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				dxns(context,t);
 				break;
 			}
@@ -124,8 +121,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x08:
 			{
 				//kill
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				LOG(LOG_CALLS, "kill " << t);
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
@@ -140,8 +136,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x0c:
 			{
 				//ifnlt
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLT(v1, v2);
@@ -160,8 +155,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x0d:
 			{
 				//ifnle
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLE(v1, v2);
@@ -180,8 +174,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x0e:
 			{
 				//ifngt
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGT(v1, v2);
@@ -200,8 +193,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x0f:
 			{
 				//ifnge
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGE(v1, v2);
@@ -220,8 +212,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x10:
 			{
 				//jump
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				int here=code.tellg();
 				int dest=here+t;
@@ -235,8 +226,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x11:
 			{
 				//iftrue
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				bool cond=ifTrue(v1);
@@ -255,8 +245,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x12:
 			{
 				//iffalse
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				bool cond=ifFalse(v1);
@@ -275,8 +264,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x13:
 			{
 				//ifeq
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -296,8 +284,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x14:
 			{
 				//ifne
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -317,8 +304,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x15:
 			{
 				//iflt
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -338,8 +324,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x16:
 			{
 				//ifle
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -359,8 +344,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x17:
 			{
 				//ifgt
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -380,8 +364,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x18:
 			{
 				//ifge
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -401,8 +384,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x19:
 			{
 				//ifstricteq
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -422,8 +404,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x1a:
 			{
 				//ifstrictne
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
@@ -444,16 +425,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//lookupswitch
 				int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
-				s24 t;
-				code >> t;
+				int32_t t = code.reads24();
 				int defaultdest=here+t;
 				LOG(LOG_CALLS,_("Switch default dest ") << defaultdest);
-				u30 count;
-				code >> count;
-				s24* offsets=g_newa(s24, count+1);
+				uint32_t count = code.readu30();
+				int32_t* offsets=g_newa(int32_t, count+1);
 				for(unsigned int i=0;i<count+1;i++)
 				{
-					code >> offsets[i];
+					offsets[i] = code.reads24();
 					LOG(LOG_CALLS,_("Switch dest ") << i << ' ' << offsets[i]);
 				}
 
@@ -524,8 +503,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//pushshort
 				// specs say pushshort is a u30, but it's really a u32
 				// see https://bugs.adobe.com/jira/browse/ASC-4181
-				u32 t;
-				code >> t;
+				uint32_t t = code.readu32();
 				context->runtime_stack_push(abstract_i(t));
 				pushShort(t);
 				break;
@@ -580,16 +558,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x2c:
 			{
 				//pushstring
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				context->runtime_stack_push(pushString(context,t));
 				break;
 			}
 			case 0x2d:
 			{
 				//pushint
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				s32 val=context->context->constant_pool.integer[t];
 				pushInt(context, val);
 
@@ -600,8 +576,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x2e:
 			{
 				//pushuint
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				u32 val=context->context->constant_pool.uinteger[t];
 				pushUInt(context, val);
 
@@ -612,8 +587,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x2f:
 			{
 				//pushdouble
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				d64 val=context->context->constant_pool.doubles[t];
 				pushDouble(context, val);
 
@@ -630,17 +604,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x31:
 			{
 				//pushnamespace
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				context->runtime_stack_push( pushNamespace(context, t) );
 				break;
 			}
 			case 0x32:
 			{
 				//hasnext2
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 
 				bool ret=hasNext2(context,t,t2);
 				context->runtime_stack_push(abstract_b(ret));
@@ -720,16 +692,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x40:
 			{
 				//newfunction
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				context->runtime_stack_push(newFunction(context,t));
 				break;
 			}
 			case 0x41:
 			{
 				//call
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				call(context,t,&called_mi);
@@ -742,17 +712,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x42:
 			{
 				//construct
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				construct(context,t);
 				break;
 			}
 			case 0x44:
 			{
 				//callstatic
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callStatic(context,t,t2,&called_mi,true);
@@ -765,9 +733,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x45:
 			{
 				//callsuper
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callSuper(context,t,t2,&called_mi,true);
@@ -781,9 +748,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callproperty
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callProperty(context,t,t2,&called_mi,true);
@@ -811,26 +777,23 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x49:
 			{
 				//constructsuper
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				constructSuper(context,t);
 				break;
 			}
 			case 0x4a:
 			{
 				//constructprop
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				constructProp(context,t,t2);
 				break;
 			}
 			case 0x4e:
 			{
 				//callsupervoid
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callSuper(context,t,t2,&called_mi,false);
@@ -843,9 +806,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x4f:
 			{
 				//callpropvoid
-				u30 t,t2;
-				code >> t;
-				code >> t2;
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				callProperty(context,t,t2,&called_mi,false);
@@ -888,24 +850,21 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x53:
 			{
 				//constructgenerictype
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				constructGenericType(context, t);
 				break;
 			}
 			case 0x55:
 			{
 				//newobject
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				newObject(context,t);
 				break;
 			}
 			case 0x56:
 			{
 				//newarray
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				newArray(context,t);
 				break;
 			}
@@ -918,32 +877,28 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x58:
 			{
 				//newclass
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				newClass(context,t);
 				break;
 			}
 			case 0x59:
 			{
 				//getdescendants
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				getDescendants(context, t);
 				break;
 			}
 			case 0x5a:
 			{
 				//newcatch
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				context->runtime_stack_push(newCatch(context,t));
 				break;
 			}
 			case 0x5d:
 			{
 				//findpropstrict
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,context);
 				context->runtime_stack_push(findPropStrict(context,name));
 				name->resetNameIfObject();
@@ -952,8 +907,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x5e:
 			{
 				//findproperty
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,context);
 				context->runtime_stack_push(findProperty(context,name));
 				name->resetNameIfObject();
@@ -962,8 +916,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x5f:
 			{
 				//finddef
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,context);
 				LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
 				context->runtime_stack_push(getSys()->getNullRef());
@@ -973,16 +926,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x60:
 			{
 				//getlex
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				getLex(context,t);
 				break;
 			}
 			case 0x61:
 			{
 				//setproperty
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				ASObject* value=context->runtime_stack_pop();
 
 				multiname* name=context->context->getMultiname(t,context);
@@ -996,8 +947,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x62:
 			{
 				//getlocal
-				u30 i;
-				code >> i;
+				uint32_t i = code.readu30();
 				if (!context->locals[i])
 				{
 					LOG(LOG_CALLS, _("getLocal ") << i << " not set, pushing Undefined");
@@ -1012,8 +962,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x63:
 			{
 				//setlocal
-				u30 i;
-				code >> i;
+				uint32_t i = code.readu30();
 				LOG(LOG_CALLS, _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				assert_and_throw(obj);
@@ -1034,16 +983,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x65:
 			{
 				//getscopeobject
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				context->runtime_stack_push(getScopeObject(context,t));
 				break;
 			}
 			case 0x66:
 			{
 				//getproperty
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,context);
 
 				ASObject* obj=context->runtime_stack_pop();
@@ -1057,8 +1004,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x68:
 			{
 				//initproperty
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				ASObject* value=context->runtime_stack_pop();
 				multiname* name=context->context->getMultiname(t,context);
 				ASObject* obj=context->runtime_stack_pop();
@@ -1069,8 +1015,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x6a:
 			{
 				//deleteproperty
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name = context->context->getMultiname(t,context);
 				ASObject* obj=context->runtime_stack_pop();
 				bool ret = deleteProperty(obj,name);
@@ -1081,8 +1026,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x6c:
 			{
 				//getslot
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				ASObject* obj=context->runtime_stack_pop();
 				ASObject* ret=getSlot(obj, t);
 				context->runtime_stack_push(ret);
@@ -1091,9 +1035,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x6d:
 			{
 				//setslot
-				u30 t;
-				code >> t;
-
+				uint32_t t = code.readu30();
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 
@@ -1103,8 +1045,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x6e:
 			{
 				//getglobalSlot
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 
 				Global* globalscope = getGlobalScope(context);
 				context->runtime_stack_push(globalscope->getSlot(t));
@@ -1113,8 +1054,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x6f:
 			{
 				//setglobalSlot
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 
 				Global* globalscope = getGlobalScope(context);
 				ASObject* obj=context->runtime_stack_pop();
@@ -1207,8 +1147,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x80:
 			{
 				//coerce
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				coerce(context, t);
 				break;
 			}
@@ -1231,8 +1170,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x86:
 			{
 				//astype
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,NULL);
 
 				ASObject* v1=context->runtime_stack_pop();
@@ -1270,8 +1208,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x92:
 			{
 				//inclocal
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				incLocal(context, t);
 				break;
 			}
@@ -1286,8 +1223,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x94:
 			{
 				//declocal
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				decLocal(context, t);
 				break;
 			}
@@ -1498,8 +1434,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0xb2:
 			{
 				//istype
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,NULL);
 
 				ASObject* v1=context->runtime_stack_pop();
@@ -1547,16 +1482,14 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0xc2:
 			{
 				//inclocal_i
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				incLocal_i(context, t);
 				break;
 			}
 			case 0xc3:
 			{
 				//declocal_i
-				u30 t;
-				code >> t;
+				uint32_t t = code.readu30();
 				decLocal_i(context, t);
 				break;
 			}
@@ -1637,36 +1570,31 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//debug
 				LOG(LOG_CALLS, _("debug") );
-				u30 index;
-				u30 extra;
 				code.readbyte();
-				code >> index;
+				code.readu30();
 				code.readbyte();
-				code >> extra;
+				code.readu30();
 				break;
 			}
 			case 0xf0:
 			{
 				//debugline
 				LOG(LOG_CALLS, _("debugline") );
-				u30 t;
-				code >> t;
+				code.readu30();
 				break;
 			}
 			case 0xf1:
 			{
 				//debugfile
 				LOG(LOG_CALLS, _("debugfile") );
-				u30 t;
-				code >> t;
+				code.readu30();
 				break;
 			}
 			case 0xf2:
 			{
 				//bkptline
 				LOG(LOG_CALLS, _("bkptline") );
-				u30 t;
-				code >> t;
+				code.readu30();
 				break;
 			}
 			case 0xf3:

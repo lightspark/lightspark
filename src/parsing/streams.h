@@ -107,18 +107,99 @@ public:
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l);
-	unsigned int size() const;
-	unsigned int tellg() const;
-	void seekg(unsigned int offset);
-	void read(char *out, unsigned int nbytes);
-	uint8_t readbyte();
-	bool eof() const;
+	memorystream(const char* const b, unsigned int l): code(b), len(l), pos(0), read_past_end(false) {};
+	static void handleError(const char *msg);
+	inline unsigned int size() const
+	{
+		return len;
+	}
+	
+	inline unsigned int tellg() const
+	{
+		return pos;
+	}
+	
+	inline void seekg(unsigned int offset)
+	{
+		if (offset > len)
+			pos = len;
+		else
+			pos = offset;
+	}
+	
+	inline void read(char *out, unsigned int nbytes)
+	{
+		if (pos+nbytes > len)
+		{
+			memcpy(out, code+pos, len-pos);
+			pos = len;
+			read_past_end = true;
+		}
+		else
+		{
+			memcpy(out, code+pos, nbytes);
+			pos += nbytes;
+		}
+	}
+	
+	inline uint8_t readbyte()
+	{
+		if (pos < len)
+		{
+			pos++;
+			return code[pos-1];
+		}
+		else
+		{
+			pos = len;
+			read_past_end = true;
+			return 0;
+		}
+	}
+	inline uint32_t readu30()
+	{
+		uint32_t val = readu32();
+		if(val&0xc0000000)
+			memorystream::handleError("Invalid u30");
+		return val;
+	}
+	inline uint32_t readu32()
+	{
+		int i=0;
+		uint32_t val=0;
+		uint8_t t;
+		do
+		{
+			t = readbyte();
+			//No more than 5 bytes should be read
+			if(i==28)
+			{
+				//Only the first 4 bits should be used to reach 32 bits
+				if((t&0xf0))
+					LOG(LOG_ERROR,"Error in u32");
+				val|=((t&0xf)<<i);
+				break;
+			}
+			else
+			{
+				val|=((t&0x7f)<<i);
+				i+=7;
+			}
+		}
+		while(t&0x80);
+		return val;
+	}
+	inline int32_t reads24()
+	{
+		uint32_t val=0;
+		read((char*)&val,3);
+		return LittleEndianToSignedHost24(val);
+	}
+	
+	inline bool eof() const
+	{
+		return read_past_end;
+	}
+	
 };
-
-memorystream& lightspark::operator>>(memorystream& in, lightspark::u8& v);
-memorystream& lightspark::operator>>(memorystream& in, lightspark::s24& v);
-memorystream& lightspark::operator>>(memorystream& in, lightspark::u30& v);
-memorystream& lightspark::operator>>(memorystream& in, lightspark::u32& v);
-
 #endif /* PARSING_STREAMS_H */

@@ -51,125 +51,125 @@ void Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(getTimezoneOffset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(valueOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(getTime),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(getFullYear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getMonth",AS3,Class<IFunction>::getFunction(getMonth),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDate",AS3,Class<IFunction>::getFunction(getDate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDay",AS3,Class<IFunction>::getFunction(getDay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getHours",AS3,Class<IFunction>::getFunction(getHours),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(getSeconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getMilliseconds",AS3,Class<IFunction>::getFunction(getMilliseconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setFullYear",AS3,Class<IFunction>::getFunction(setFullYear,3),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setMonth",AS3,Class<IFunction>::getFunction(setMonth,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setDate",AS3,Class<IFunction>::getFunction(setDate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setHours",AS3,Class<IFunction>::getFunction(setHours,4),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setMinutes",AS3,Class<IFunction>::getFunction(setMinutes,3),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setSeconds",AS3,Class<IFunction>::getFunction(setSeconds,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setMilliseconds",AS3,Class<IFunction>::getFunction(setMilliseconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCFullYear",AS3,Class<IFunction>::getFunction(getUTCFullYear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCMonth",AS3,Class<IFunction>::getFunction(getUTCMonth),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCDate",AS3,Class<IFunction>::getFunction(getUTCDate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCDay",AS3,Class<IFunction>::getFunction(getUTCDay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCHours",AS3,Class<IFunction>::getFunction(getUTCHours),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCMinutes",AS3,Class<IFunction>::getFunction(getUTCMinutes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCSeconds",AS3,Class<IFunction>::getFunction(getUTCSeconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getUTCMilliseconds",AS3,Class<IFunction>::getFunction(getUTCMilliseconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCFullYear",AS3,Class<IFunction>::getFunction(setUTCFullYear,3),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCMonth",AS3,Class<IFunction>::getFunction(setUTCMonth,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCDate",AS3,Class<IFunction>::getFunction(setUTCDate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCHours",AS3,Class<IFunction>::getFunction(setUTCHours,4),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCMinutes",AS3,Class<IFunction>::getFunction(setUTCMinutes,3),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCSeconds",AS3,Class<IFunction>::getFunction(setUTCSeconds,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setUTCMilliseconds",AS3,Class<IFunction>::getFunction(setUTCMilliseconds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTime",AS3,Class<IFunction>::getFunction(setTime,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(UTC,7),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toUTCString",AS3,Class<IFunction>::getFunction(toUTCString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toDateString",AS3,Class<IFunction>::getFunction(toDateString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toTimeString",AS3,Class<IFunction>::getFunction(toTimeString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleDateString",AS3,Class<IFunction>::getFunction(toLocaleDateString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(_parse),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),valueOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(c->getSystemState(),getTime),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(c->getSystemState(),getFullYear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMonth",AS3,Class<IFunction>::getFunction(c->getSystemState(),getMonth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDate",AS3,Class<IFunction>::getFunction(c->getSystemState(),getDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDay",AS3,Class<IFunction>::getFunction(c->getSystemState(),getDay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getHours",AS3,Class<IFunction>::getFunction(c->getSystemState(),getHours),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMinutes",AS3,Class<IFunction>::getFunction(c->getSystemState(),getMinutes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getSeconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),getSeconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMilliseconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),getMilliseconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setFullYear",AS3,Class<IFunction>::getFunction(c->getSystemState(),setFullYear,3),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMonth",AS3,Class<IFunction>::getFunction(c->getSystemState(),setMonth,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setDate",AS3,Class<IFunction>::getFunction(c->getSystemState(),setDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setHours",AS3,Class<IFunction>::getFunction(c->getSystemState(),setHours,4),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMinutes",AS3,Class<IFunction>::getFunction(c->getSystemState(),setMinutes,3),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSeconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),setSeconds,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMilliseconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),setMilliseconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCFullYear",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCFullYear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCMonth",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCMonth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCDate",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCDay",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCDay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCHours",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCHours),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCMinutes",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCMinutes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCSeconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCSeconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getUTCMilliseconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),getUTCMilliseconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCFullYear",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCFullYear,3),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCMonth",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCMonth,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCDate",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCDate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCHours",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCHours,4),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCMinutes",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCMinutes,3),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCSeconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCSeconds,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setUTCMilliseconds",AS3,Class<IFunction>::getFunction(c->getSystemState(),setUTCMilliseconds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTime",AS3,Class<IFunction>::getFunction(c->getSystemState(),setTime,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("UTC","",Class<IFunction>::getFunction(c->getSystemState(),UTC,7),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toUTCString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toUTCString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toDateString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toDateString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toTimeString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toTimeString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toLocaleString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleDateString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toLocaleDateString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),_parse),NORMAL_METHOD,false);
 
-	c->setDeclaredMethodByQName("date","",Class<IFunction>::getFunction(getDate),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("date","",Class<IFunction>::getFunction(dateSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("dateUTC","",Class<IFunction>::getFunction(getUTCDate),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("dateUTC","",Class<IFunction>::getFunction(UTCDateSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("day","",Class<IFunction>::getFunction(getDay),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("dayUTC","",Class<IFunction>::getFunction(getUTCDay),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(getFullYear),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(fullYearSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullYearUTC","",Class<IFunction>::getFunction(getUTCFullYear),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullYearUTC","",Class<IFunction>::getFunction(UTCFullYearSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hours","",Class<IFunction>::getFunction(getHours),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hours","",Class<IFunction>::getFunction(hoursSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hoursUTC","",Class<IFunction>::getFunction(getUTCHours),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hoursUTC","",Class<IFunction>::getFunction(UTCHoursSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("milliseconds","",Class<IFunction>::getFunction(getMilliseconds),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("milliseconds","",Class<IFunction>::getFunction(millisecondsSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("millisecondsUTC","",Class<IFunction>::getFunction(getUTCMilliseconds),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("millisecondsUTC","",Class<IFunction>::getFunction(UTCMillisecondsSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("minutes","",Class<IFunction>::getFunction(getMinutes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("minutes","",Class<IFunction>::getFunction(minutesSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("minutesUTC","",Class<IFunction>::getFunction(getUTCMinutes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("minutesUTC","",Class<IFunction>::getFunction(UTCMinutesSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("month","",Class<IFunction>::getFunction(getMonth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("month","",Class<IFunction>::getFunction(monthSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("monthUTC","",Class<IFunction>::getFunction(getUTCMonth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("monthUTC","",Class<IFunction>::getFunction(UTCMonthSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("seconds","",Class<IFunction>::getFunction(getSeconds),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("seconds","",Class<IFunction>::getFunction(secondsSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(getUTCSeconds),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(UTCSecondsSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(getTime),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(timeSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("date","",Class<IFunction>::getFunction(c->getSystemState(),getDate),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("date","",Class<IFunction>::getFunction(c->getSystemState(),dateSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dateUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCDate),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dateUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCDateSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("day","",Class<IFunction>::getFunction(c->getSystemState(),getDay),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dayUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCDay),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(c->getSystemState(),getFullYear),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullYear","",Class<IFunction>::getFunction(c->getSystemState(),fullYearSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullYearUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCFullYear),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullYearUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCFullYearSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hours","",Class<IFunction>::getFunction(c->getSystemState(),getHours),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hours","",Class<IFunction>::getFunction(c->getSystemState(),hoursSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hoursUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCHours),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hoursUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCHoursSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("milliseconds","",Class<IFunction>::getFunction(c->getSystemState(),getMilliseconds),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("milliseconds","",Class<IFunction>::getFunction(c->getSystemState(),millisecondsSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("millisecondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMilliseconds),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("millisecondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCMillisecondsSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("minutes","",Class<IFunction>::getFunction(c->getSystemState(),getMinutes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("minutes","",Class<IFunction>::getFunction(c->getSystemState(),minutesSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("minutesUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMinutes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("minutesUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCMinutesSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("month","",Class<IFunction>::getFunction(c->getSystemState(),getMonth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("month","",Class<IFunction>::getFunction(c->getSystemState(),monthSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("monthUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMonth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("monthUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCMonthSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("seconds","",Class<IFunction>::getFunction(c->getSystemState(),getSeconds),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("seconds","",Class<IFunction>::getFunction(c->getSystemState(),secondsSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCSeconds),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCSecondsSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),timeSetter),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),GETTER_METHOD,true);
 
-	c->prototype->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getTime","",Class<IFunction>::getFunction(getTime),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(getFullYear),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getMonth","",Class<IFunction>::getFunction(getMonth),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getDate","",Class<IFunction>::getFunction(getDate),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getDay","",Class<IFunction>::getFunction(getDay),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getHours","",Class<IFunction>::getFunction(getHours),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getMinutes","",Class<IFunction>::getFunction(getMinutes),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getSeconds","",Class<IFunction>::getFunction(getSeconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getMilliseconds","",Class<IFunction>::getFunction(getMilliseconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setFullYear","",Class<IFunction>::getFunction(setFullYear,3),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setMonth","",Class<IFunction>::getFunction(setMonth,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setDate","",Class<IFunction>::getFunction(setDate),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setHours","",Class<IFunction>::getFunction(setHours,4),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setMinutes","",Class<IFunction>::getFunction(setMinutes,3),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setSeconds","",Class<IFunction>::getFunction(setSeconds,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setMilliseconds","",Class<IFunction>::getFunction(setMilliseconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCFullYear","",Class<IFunction>::getFunction(getUTCFullYear),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCMonth","",Class<IFunction>::getFunction(getUTCMonth),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCDate","",Class<IFunction>::getFunction(getUTCDate),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCDay","",Class<IFunction>::getFunction(getUTCDay),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCHours","",Class<IFunction>::getFunction(getUTCHours),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCMinutes","",Class<IFunction>::getFunction(getUTCMinutes),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCSeconds","",Class<IFunction>::getFunction(getUTCSeconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getUTCMilliseconds","",Class<IFunction>::getFunction(getUTCMilliseconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCFullYear","",Class<IFunction>::getFunction(setUTCFullYear,3),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCMonth","",Class<IFunction>::getFunction(setUTCMonth,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCDate","",Class<IFunction>::getFunction(setUTCDate),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCHours","",Class<IFunction>::getFunction(setUTCHours,4),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCMinutes","",Class<IFunction>::getFunction(setUTCMinutes,3),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCSeconds","",Class<IFunction>::getFunction(setUTCSeconds,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setUTCMilliseconds","",Class<IFunction>::getFunction(setUTCMilliseconds),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setTime","",Class<IFunction>::getFunction(setTime,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toUTCString","",Class<IFunction>::getFunction(toUTCString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toDateString","",Class<IFunction>::getFunction(toDateString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toTimeString","",Class<IFunction>::getFunction(toTimeString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleTimeString","",Class<IFunction>::getFunction(toLocaleTimeString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleDateString","",Class<IFunction>::getFunction(toLocaleDateString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(toLocaleString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),valueOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getTime","",Class<IFunction>::getFunction(c->getSystemState(),getTime),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(c->getSystemState(),getFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMonth","",Class<IFunction>::getFunction(c->getSystemState(),getMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDate","",Class<IFunction>::getFunction(c->getSystemState(),getDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDay","",Class<IFunction>::getFunction(c->getSystemState(),getDay),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getHours","",Class<IFunction>::getFunction(c->getSystemState(),getHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMinutes","",Class<IFunction>::getFunction(c->getSystemState(),getMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getSeconds","",Class<IFunction>::getFunction(c->getSystemState(),getSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getMilliseconds","",Class<IFunction>::getFunction(c->getSystemState(),getMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setFullYear","",Class<IFunction>::getFunction(c->getSystemState(),setFullYear,3),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMonth","",Class<IFunction>::getFunction(c->getSystemState(),setMonth,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setDate","",Class<IFunction>::getFunction(c->getSystemState(),setDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setHours","",Class<IFunction>::getFunction(c->getSystemState(),setHours,4),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMinutes","",Class<IFunction>::getFunction(c->getSystemState(),setMinutes,3),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setSeconds","",Class<IFunction>::getFunction(c->getSystemState(),setSeconds,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setMilliseconds","",Class<IFunction>::getFunction(c->getSystemState(),setMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCFullYear","",Class<IFunction>::getFunction(c->getSystemState(),getUTCFullYear),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMonth","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMonth),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCDate","",Class<IFunction>::getFunction(c->getSystemState(),getUTCDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCDay","",Class<IFunction>::getFunction(c->getSystemState(),getUTCDay),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCHours","",Class<IFunction>::getFunction(c->getSystemState(),getUTCHours),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMinutes","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMinutes),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCSeconds","",Class<IFunction>::getFunction(c->getSystemState(),getUTCSeconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getUTCMilliseconds","",Class<IFunction>::getFunction(c->getSystemState(),getUTCMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCFullYear","",Class<IFunction>::getFunction(c->getSystemState(),setUTCFullYear,3),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMonth","",Class<IFunction>::getFunction(c->getSystemState(),setUTCMonth,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCDate","",Class<IFunction>::getFunction(c->getSystemState(),setUTCDate),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCHours","",Class<IFunction>::getFunction(c->getSystemState(),setUTCHours,4),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMinutes","",Class<IFunction>::getFunction(c->getSystemState(),setUTCMinutes,3),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCSeconds","",Class<IFunction>::getFunction(c->getSystemState(),setUTCSeconds,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setUTCMilliseconds","",Class<IFunction>::getFunction(c->getSystemState(),setUTCMilliseconds),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setTime","",Class<IFunction>::getFunction(c->getSystemState(),setTime,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toUTCString","",Class<IFunction>::getFunction(c->getSystemState(),toUTCString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toDateString","",Class<IFunction>::getFunction(c->getSystemState(),toDateString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toTimeString","",Class<IFunction>::getFunction(c->getSystemState(),toTimeString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleTimeString","",Class<IFunction>::getFunction(c->getSystemState(),toLocaleTimeString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleDateString","",Class<IFunction>::getFunction(c->getSystemState(),toLocaleDateString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),toLocaleString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 void Date::buildTraits(ASObject* o)
@@ -281,27 +281,27 @@ void Date::MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int6
 
 ASFUNCTIONBODY(Date,generator)
 {
-	Date* th=Class<Date>::getInstanceS();
+	Date* th=Class<Date>::getInstanceS(getSys());
 	GDateTime* tmp = g_date_time_new_now_utc();
 	th->MakeDateFromMilliseconds(g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000);
 	g_date_time_unref(tmp);
 
-	return abstract_s(th->toString());
+	return abstract_s(th->getSystemState(),th->toString());
 }
 
 ASFUNCTIONBODY(Date,UTC)
 {
 	for (uint32_t i = 0; i < argslen; i++) {
 		if(args[i]->getObjectType()==T_NUMBER && std::isnan(args[i]->toNumber())) {
-			return abstract_d(Number::NaN);
+			return abstract_d(obj->getSystemState(),Number::NaN);
 		}
 	}
 	number_t year, month, day, hour, minute, second, millisecond;
 	ARG_UNPACK (year) (month) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0);
-	_R<Date> dt=_MR(Class<Date>::getInstanceS());
+	_R<Date> dt=_MR(Class<Date>::getInstanceS(args[0]->getSystemState()));
 	dt->MakeDate(year, month+1, day, hour, minute,second, millisecond,false);
 	if(dt->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(args[0]->getSystemState(),Number::NaN);
 	}
 	return dt->msSinceEpoch();
 }
@@ -310,163 +310,163 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
-	return abstract_d(-diff/G_TIME_SPAN_MINUTE);
+	return abstract_d(obj->getSystemState(),-diff/G_TIME_SPAN_MINUTE);
 }
 
 ASFUNCTIONBODY(Date,getUTCFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(th->extrayears + g_date_time_get_year(th->datetimeUTC));
+	return abstract_d(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMonth)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_month(th->datetimeUTC)-1);
+	return abstract_d(obj->getSystemState(),g_date_time_get_month(th->datetimeUTC)-1);
 }
 
 ASFUNCTIONBODY(Date,getUTCDate)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_day_of_month(th->datetimeUTC));
+	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_month(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCDay)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_day_of_week(th->datetimeUTC)%7);
+	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_week(th->datetimeUTC)%7);
 }
 
 ASFUNCTIONBODY(Date,getUTCHours)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_hour(th->datetimeUTC));
+	return abstract_d(obj->getSystemState(),g_date_time_get_hour(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_minute(th->datetimeUTC));
+	return abstract_d(obj->getSystemState(),g_date_time_get_minute(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCSeconds)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_second(th->datetimeUTC));
+	return abstract_d(obj->getSystemState(),g_date_time_get_second(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMilliseconds)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(th->milliseconds % 1000);
+	return abstract_d(obj->getSystemState(),th->milliseconds % 1000);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(th->extrayears + g_date_time_get_year(th->datetime));
+	return abstract_d(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMonth)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_month(th->datetime)-1);
+	return abstract_d(obj->getSystemState(),g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY(Date,getDate)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_day_of_month(th->datetime));
+	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getDay)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_day_of_week(th->datetime)%7);
+	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_hour(th->datetime));
+	return abstract_d(obj->getSystemState(),g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_minute(th->datetime));
+	return abstract_d(obj->getSystemState(),g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getSeconds)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(g_date_time_get_second(th->datetime));
+	return abstract_d(obj->getSystemState(),g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMilliseconds)
 {
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(th->milliseconds % 1000);
+	return abstract_d(obj->getSystemState(),th->milliseconds % 1000);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
 	if (!obj->is<Date>())
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	return th->msSinceEpoch();
 }
@@ -477,7 +477,7 @@ ASFUNCTIONBODY(Date,setFullYear)
 	if (argslen == 0)
 	{
 		th->nan = true;
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	number_t y, m, d;
 	ARG_UNPACK (y) (m, 0) (d, 0);
@@ -507,7 +507,7 @@ ASFUNCTIONBODY(Date,setMonth)
 	ARG_UNPACK (m) (d, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (argslen < 2)
 		d = g_date_time_get_day_of_month(th->datetime);
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, m+1, d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),th->milliseconds % 1000,true);
@@ -529,7 +529,7 @@ ASFUNCTIONBODY(Date,setDate)
 	ARG_UNPACK (d);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),th->milliseconds % 1000,true);
 	return th->msSinceEpoch();
 }
@@ -549,7 +549,7 @@ ASFUNCTIONBODY(Date,setHours)
 	ARG_UNPACK (h) (min, 0) (sec, 0) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!min) min = g_date_time_get_minute(th->datetime);
 	if (!sec) sec = g_date_time_get_second(th->datetime);
 	if (!ms) ms = th->milliseconds % 1000;
@@ -572,7 +572,7 @@ ASFUNCTIONBODY(Date,setMinutes)
 	ARG_UNPACK (min) (sec, 0) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!sec) sec = g_date_time_get_second(th->datetime);
 	if (!ms) ms = th->milliseconds % 1000;
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), min, sec, ms,true);
@@ -595,7 +595,7 @@ ASFUNCTIONBODY(Date,setSeconds)
 	ARG_UNPACK (sec) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!ms) ms = th->milliseconds % 1000;
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), int64_t(sec), int64_t(ms),true);
 	return th->msSinceEpoch();
@@ -616,7 +616,7 @@ ASFUNCTIONBODY(Date,setMilliseconds)
 	ARG_UNPACK (ms);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), g_date_time_get_second(th->datetime), ms,true);
 	return th->msSinceEpoch();
 }
@@ -660,7 +660,7 @@ ASFUNCTIONBODY(Date,setUTCMonth)
 	ARG_UNPACK (m) (d, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (argslen < 2)
 		d = g_date_time_get_day_of_month(th->datetimeUTC);
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, m+1, d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),th->milliseconds % 1000,false);
@@ -682,7 +682,7 @@ ASFUNCTIONBODY(Date,setUTCDate)
 	ARG_UNPACK (d);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),th->milliseconds % 1000,false);
 	return th->msSinceEpoch();
 }
@@ -702,7 +702,7 @@ ASFUNCTIONBODY(Date,setUTCHours)
 	ARG_UNPACK (h) (min, 0) (sec, 0) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!min) min = g_date_time_get_minute(th->datetimeUTC);
 	if (!sec) sec = g_date_time_get_second(th->datetimeUTC);
 	if (!ms) ms = th->milliseconds % 1000;
@@ -725,7 +725,7 @@ ASFUNCTIONBODY(Date,setUTCMinutes)
 	ARG_UNPACK (min) (sec, 0) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!sec) sec = g_date_time_get_second(th->datetimeUTC);
 	if (!ms) ms = th->milliseconds % 1000;
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), min, sec, ms,false);
@@ -748,7 +748,7 @@ ASFUNCTIONBODY(Date,setUTCSeconds)
 	ARG_UNPACK (sec) (ms, 0);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	if (!ms) ms = th->milliseconds % 1000;
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), sec, ms,false);
 	return th->msSinceEpoch();
@@ -769,7 +769,7 @@ ASFUNCTIONBODY(Date,setUTCMilliseconds)
 	ARG_UNPACK (ms);
 
 	if (th->nan)
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), g_date_time_get_second(th->datetimeUTC), ms,false);
 	return th->msSinceEpoch();
 }
@@ -790,12 +790,12 @@ ASFUNCTIONBODY(Date,setTime)
 	{
 		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
-		name.name_s_id=getSys()->getUniqueStringId("value");
-		name.ns.emplace_back("",NAMESPACE);
-		name.ns.emplace_back(AS3,NAMESPACE);
+		name.name_s_id=obj->getSystemState()->getUniqueStringId("value");
+		name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+		name.ns.emplace_back(obj->getSystemState(),AS3,NAMESPACE);
 		name.isAttribute = true;
-		obj->setVariableByMultiname(name,abstract_d(ms),CONST_NOT_ALLOWED);
-		return abstract_d(ms);
+		obj->setVariableByMultiname(name,abstract_d(obj->getSystemState(),ms),CONST_NOT_ALLOWED);
+		return abstract_d(obj->getSystemState(),ms);
 	}
 	assert_and_throw(obj->is<Date>());
 	Date* th=static_cast<Date*>(obj);
@@ -803,7 +803,7 @@ ASFUNCTIONBODY(Date,setTime)
 	if (std::isnan(ms))
 	{
 		th->nan = true;
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	th->MakeDateFromMilliseconds(int64_t(ms));
 
@@ -821,17 +821,17 @@ ASFUNCTIONBODY(Date,timeSetter)
 ASFUNCTIONBODY(Date,valueOf)
 {
 	if (!obj->is<Date>())
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	Date* th=static_cast<Date*>(obj);
 	if(th->nan) {
-		return abstract_d(Number::NaN);
+		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	return th->msSinceEpoch();
 }
 
 ASObject* Date::msSinceEpoch()
 {
-	return abstract_d(getMsSinceEpoch());
+	return abstract_d(getSystemState(),getMsSinceEpoch());
 }
 number_t Date::getMsSinceEpoch()
 {
@@ -862,27 +862,27 @@ tiny_string Date::toString_priv(bool utc, const char* formatstr) const
 ASFUNCTIONBODY(Date,_toString)
 {
 	if (!obj->is<Date>())
-		return abstract_s("Invalid Date");
+		return abstract_s(obj->getSystemState(),"Invalid Date");
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(th->toString());
+	return abstract_s(obj->getSystemState(),th->toString());
 }
 
 ASFUNCTIONBODY(Date,toUTCString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(th->toString_priv(true,"%a %b %e %H:%M:%S UTC"));
+	return abstract_s(obj->getSystemState(),th->toString_priv(true,"%a %b %e %H:%M:%S UTC"));
 }
 
 ASFUNCTIONBODY(Date,toDateString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(th->toString_priv(false,"%a %b %e"));
+	return abstract_s(obj->getSystemState(),th->toString_priv(false,"%a %b %e"));
 }
 
 ASFUNCTIONBODY(Date,toTimeString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(g_date_time_format(th->datetime, "%H:%M:%S GMT%z"));
+	return abstract_s(obj->getSystemState(),g_date_time_format(th->datetime, "%H:%M:%S GMT%z"));
 }
 
 
@@ -890,7 +890,7 @@ ASFUNCTIONBODY(Date,toLocaleString)
 {
 	Date* th=static_cast<Date*>(obj);
 	if (!th->datetime)
-		return abstract_s();
+		return abstract_s(obj->getSystemState());
 	tiny_string res = th->toString_priv(false,"%a %b %e");
 	gchar* fs = g_date_time_format(th->datetime, " %I:%M:%S");
 	res += fs;
@@ -899,22 +899,22 @@ ASFUNCTIONBODY(Date,toLocaleString)
 	else
 		res += " AM";
 	g_free(fs);
-	return abstract_s(res);
+	return abstract_s(obj->getSystemState(),res);
 }
 ASFUNCTIONBODY(Date,toLocaleDateString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(th->toString_priv(false,"%a %b %e"));
+	return abstract_s(obj->getSystemState(),th->toString_priv(false,"%a %b %e"));
 }
 ASFUNCTIONBODY(Date,toLocaleTimeString)
 {
 	Date* th=static_cast<Date*>(obj);
-	return abstract_s(g_date_time_format(th->datetime, "%H:%M:%S %Z%z"));
+	return abstract_s(obj->getSystemState(),g_date_time_format(th->datetime, "%H:%M:%S %Z%z"));
 }
 
 ASFUNCTIONBODY(Date,_parse)
 {
-	return abstract_d(parse(args[0]->toString()));
+	return abstract_d(obj->getSystemState(),parse(args[0]->toString()));
 }
 
 static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
@@ -1107,7 +1107,7 @@ number_t Date::parse(tiny_string str)
 				y += 1900;
 			if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59)
 			{
-				_R<Date> dt=_MR(Class<Date>::getInstanceS());
+				_R<Date> dt=_MR(Class<Date>::getInstanceS(getSys()));
 				if (tz == 0)
 					dt->MakeDate(y, mon, d, h, m, s, 0,bIsLocalTime);
 				else

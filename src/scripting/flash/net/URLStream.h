@@ -79,7 +79,7 @@ private:
 	ASFUNCTION(readUTFBytes);
 	ASPROPERTY_GETTER(bool,connected);
 public:
-	URLStream(Class_base* c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS())),job(NULL),connected(false) {}
+	URLStream(Class_base* c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS(c->getSystemState()))),job(NULL),connected(false) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job);

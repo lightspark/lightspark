@@ -101,43 +101,43 @@ ASFUNCTIONBODY(UInteger,_constructor)
 ASFUNCTIONBODY(UInteger,generator)
 {
 	if (argslen == 0)
-		return abstract_ui(0);
-	return abstract_ui(args[0]->toUInt());
+		return abstract_ui(getSys(),0);
+	return abstract_ui(args[0]->getSystemState(),args[0]->toUInt());
 }
 
 ASFUNCTIONBODY(UInteger,_valueOf)
 {
-	if(Class<UInteger>::getClass()->prototype->getObj() == obj)
-		return abstract_ui(0);
+	if(Class<UInteger>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_ui(obj->getSystemState(),0);
 
 	if(!obj->is<UInteger>())
-			throw Class<TypeError>::getInstanceS("");
+			throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
 
-	return abstract_ui(obj->as<UInteger>()->val);
+	return abstract_ui(obj->getSystemState(),obj->as<UInteger>()->val);
 }
 
 void UInteger::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableByQName("MAX_VALUE","",abstract_ui(0xFFFFFFFF),CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",abstract_ui(0),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(_toFixed,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(_toExponential,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(_toPrecision,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(_toExponential, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(_toFixed, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(_toPrecision, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_ui(c->getSystemState(),0xFFFFFFFF),CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_ui(c->getSystemState(),0),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toFixed,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toExponential,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toPrecision,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),_toExponential, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),_toFixed, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),_toPrecision, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(UInteger,_toString)
 {
-	if(Class<UInteger>::getClass()->prototype->getObj() == obj)
-		return abstract_s("0");
+	if(Class<UInteger>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_s(obj->getSystemState(),"0");
 
 	UInteger* th=static_cast<UInteger*>(obj);
 	uint32_t radix;
@@ -147,12 +147,12 @@ ASFUNCTIONBODY(UInteger,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%u",th->val);
-		return abstract_s(buf);
+		return abstract_s(obj->getSystemState(),buf);
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
-		return abstract_s(s);
+		return abstract_s(obj->getSystemState(),s);
 	}
 }
 
@@ -187,7 +187,7 @@ ASFUNCTIONBODY(UInteger,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
 	}
-	return abstract_s(Number::toExponentialString(v, fractionDigits));
+	return abstract_s(obj->getSystemState(),Number::toExponentialString(v, fractionDigits));
 }
 
 ASFUNCTIONBODY(UInteger,_toFixed)
@@ -195,17 +195,17 @@ ASFUNCTIONBODY(UInteger,_toFixed)
 	UInteger *th=obj->as<UInteger>();
 	int fractiondigits;
 	ARG_UNPACK (fractiondigits, 0);
-	return abstract_s(Number::toFixedString(th->val, fractiondigits));
+	return abstract_s(obj->getSystemState(),Number::toFixedString(th->val, fractiondigits));
 }
 
 ASFUNCTIONBODY(UInteger,_toPrecision)
 {
 	UInteger *th=obj->as<UInteger>();
 	if (argslen == 0 || args[0]->is<Undefined>())
-		return abstract_s(th->toString());
+		return abstract_s(obj->getSystemState(),th->toString());
 	int precision;
 	ARG_UNPACK (precision);
-	return abstract_s(Number::toPrecisionString(th->val, precision));
+	return abstract_s(obj->getSystemState(),Number::toPrecisionString(th->val, precision));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

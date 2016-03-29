@@ -40,8 +40,8 @@ const char* Endian::bigEndian = "bigEndian";
 void Endian::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("LITTLE_ENDIAN","",Class<ASString>::getInstanceS(littleEndian),DECLARED_TRAIT);
-	c->setVariableByQName("BIG_ENDIAN","",Class<ASString>::getInstanceS(bigEndian),DECLARED_TRAIT);
+	c->setVariableByQName("LITTLE_ENDIAN","",abstract_s(c->getSystemState(),littleEndian),DECLARED_TRAIT);
+	c->setVariableByQName("BIG_ENDIAN","",abstract_s(c->getSystemState(),bigEndian),DECLARED_TRAIT);
 }
 
 void IExternalizable::linkTraits(Class_base* c)
@@ -98,10 +98,10 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	Class_base* c;
 	SWFOBJECT_TYPE otype=target->getObjectType();
 	if(otype==T_NULL)
-		return Class<ASString>::getInstanceS("null");
+		return abstract_s(target->getSystemState(),"null");
 	else if(otype==T_UNDEFINED)
 		// Testing shows that this really returns "void"!
-		return Class<ASString>::getInstanceS("void");
+		return abstract_s(target->getSystemState(),"void");
 	else if(otype!=T_CLASS)
 	{
 		assert_and_throw(target->getClass());
@@ -110,7 +110,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	else
 		c=static_cast<Class_base*>(target);
 
-	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
+	return abstract_s(obj->getSystemState(),c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
@@ -127,9 +127,9 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 		c=static_cast<Class_base*>(target)->super.getPtr();
 
 	if (!c)
-		return getSys()->getNullRef();
+		return target->getSystemState()->getNullRef();
 
-	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
+	return abstract_s(obj->getSystemState(),c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
@@ -142,12 +142,12 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=getSys()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
+	name.name_s_id=args[0]->getSystemState()->getUniqueStringId(tmpName);
+	name.ns.push_back(nsNameAndKind(args[0]->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm(args[0]->getSystemState())->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 
 	if(o==NULL)
 	{
@@ -169,8 +169,8 @@ ASFUNCTIONBODY(lightspark,describeType)
 
 ASFUNCTIONBODY(lightspark,getTimer)
 {
-	uint64_t ret=compat_msectiming() - getSys()->startTime;
-	return abstract_i(ret);
+	uint64_t ret=compat_msectiming() - obj->getSystemState()->startTime;
+	return abstract_i(obj->getSystemState(),ret);
 }
 
 
@@ -192,9 +192,9 @@ ASFUNCTIONBODY(lightspark,setInterval)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add interval through manager
-	uint32_t id = getSys()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2,
-			_MR(getSys()->getNullRef()), args[1]->toInt());
-	return abstract_i(id);
+	uint32_t id = args[0]->getSystemState()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2,
+			_MR(args[0]->getSystemState()->getNullRef()), args[1]->toInt());
+	return abstract_i(args[0]->getSystemState(),id);
 }
 
 ASFUNCTIONBODY(lightspark,setTimeout)
@@ -215,22 +215,22 @@ ASFUNCTIONBODY(lightspark,setTimeout)
 	args[0]->incRef();
 	IFunction* callback=static_cast<IFunction*>(args[0]);
 	//Add timeout through manager
-	uint32_t id = getSys()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2,
-			_MR(getSys()->getNullRef()), args[1]->toInt());
-	return abstract_i(id);
+	uint32_t id = args[0]->getSystemState()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2,
+			_MR(args[0]->getSystemState()->getNullRef()), args[1]->toInt());
+	return abstract_i(args[0]->getSystemState(),id);
 }
 
 ASFUNCTIONBODY(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	getSys()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
+	args[0]->getSystemState()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
 	return NULL;
 }
 
 ASFUNCTIONBODY(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	getSys()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
+	args[0]->getSystemState()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
 	return NULL;
 }
 
@@ -238,11 +238,11 @@ ASFUNCTIONBODY(lightspark,escapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
 }
 ASFUNCTIONBODY(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return Class<ASString>::getInstanceS(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
 }

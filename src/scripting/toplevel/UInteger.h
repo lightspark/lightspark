@@ -35,16 +35,10 @@ public:
 	static void sinit(Class_base* c);
 	tiny_string toString();
 	static tiny_string toString(uint32_t val);
-	number_t toNumber() { return val; }
-	void finalize() { val=0;}
-	int32_t toInt()
-	{
-		return val;
-	}
-	uint32_t toUInt()
-	{
-		return val;
-	}
+	inline number_t toNumber() { return val; }
+	inline void finalize() { val=0; }
+	inline int32_t toInt() { return val; }
+	inline uint32_t toUInt() { return val; }
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(_constructor);

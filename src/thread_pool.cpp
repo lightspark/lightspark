@@ -84,7 +84,7 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 {
 	setTLSSys(th->m_sys);
 
-	ThreadProfile* profile=getSys()->allocateProfiler(RGB(200,200,0));
+	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(200,200,0));
 	char buf[16];
 	snprintf(buf,16,"Thread %u",index);
 	profile->setTag(buf);
@@ -116,7 +116,7 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
-			getSys()->setError(e.cause);
+			th->m_sys->setError(e.cause);
 		}
 		profile->accountTime(chronometer.checkpoint());
 

@@ -36,7 +36,7 @@ template<class T>
 void throwError(int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
 {
 	tiny_string message = createErrorMessage(errorID, arg1, arg2, arg3);
-	throw Class<T>::getInstanceS(message, errorID);
+	throw Class<T>::getInstanceS(getSys(),message, errorID);
 }
 
 class ASError: public ASObject

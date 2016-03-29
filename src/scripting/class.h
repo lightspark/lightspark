@@ -71,8 +71,8 @@ public:
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
-ASObject* new_asobject();
-Prototype* new_objectPrototype();
+ASObject* new_asobject(SystemState *sys);
+Prototype* new_objectPrototype(SystemState *sys);
 Prototype* new_functionPrototype(Class_base* functionClass, _NR<Prototype> p);
 Function_object* new_functionObject(_NR<ASObject> p);
 ObjectConstructor* new_objectConstructor(Class_base* cls,uint32_t length);
@@ -142,9 +142,11 @@ public:
 	}
 	*/
 	template<typename... Args>
-	static T* getInstanceS(Args&&... args)
+	static T* getInstanceS(SystemState* sys, Args&&... args)
 	{
-		Class<T>* c=Class<T>::getClass();
+		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
+		if (!c)
+			c = getClass(sys);
 		T* ret=newWithOptionalClass<T, sizeof...(Args)>::doNew(c, std::forward<Args>(args)...);
 		c->setupDeclaredTraits(ret);
 		ret->constructionComplete();
@@ -152,33 +154,36 @@ public:
 		return ret;
 	}
 	// constructor without arguments
-	static T* getInstanceSNoArgs()
+	inline static T* getInstanceSNoArgs(SystemState* sys)
 	{
-		Class<T>* c=Class<T>::getClass();
+		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
+		if (!c)
+			c = getClass(sys);
 		T* ret = c->getObjectFromFreeList()->as<T>();
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) T(c);
 		}
-		c->setupDeclaredTraits(ret);
+		ret->setIsInitialized();
 		ret->constructionComplete();
 		ret->setConstructIndicator();
 		return ret;
 	}
-	static Class<T>* getClass()
+	inline static Class<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;
 		Class<T>* ret=NULL;
-		Class_base** retAddr=&getSys()->builtinClasses[classId];
+		Class_base** retAddr= &sys->builtinClasses[classId];
 		if(*retAddr==NULL)
 		{
 			//Create the class
 			QName name(ClassName<T>::name,ClassName<T>::ns);
-			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-			ret=new (getSys()->unaccountedMemory) Class<T>(name, memoryAccount);
+			MemoryAccount* memoryAccount = sys->allocateMemoryAccount(name.name);
+			ret=new (sys->unaccountedMemory) Class<T>(name, memoryAccount);
+			ret->setSystemState(sys);
 			ret->incRef();
 			*retAddr=ret;
-			ret->prototype = _MNR(new_objectPrototype());
+			ret->prototype = _MNR(new_objectPrototype(sys));
 			T::sinit(ret);
 
 			ret->initStandardProps();
@@ -188,9 +193,9 @@ public:
 
 		return ret;
 	}
-	static _R<Class<T>> getRef()
+	static _R<Class<T>> getRef(SystemState* sys)
 	{
-		Class<T>* ret = getClass();
+		Class<T>* ret = getClass(sys);
 		ret->incRef();
 		return _MR(ret);
 	}
@@ -227,7 +232,7 @@ inline ASObject* Class<Number>::coerce(ASObject* o) const
 {
 	number_t n = o->toNumber();
 	o->decRef();
-	return abstract_d(n);
+	return abstract_d(o->getSystemState(),n);
 }
 
 template<>
@@ -235,7 +240,7 @@ inline ASObject* Class<UInteger>::coerce(ASObject* o) const
 {
 	uint32_t n = o->toUInt();
 	o->decRef();
-	return abstract_ui(n);
+	return abstract_ui(o->getSystemState(),n);
 }
 
 template<>
@@ -243,7 +248,7 @@ inline ASObject* Class<Integer>::coerce(ASObject* o) const
 {
 	int32_t n = o->toInt();
 	o->decRef();
-	return abstract_i(n);
+	return abstract_i(o->getSystemState(),n);
 }
 
 template<>
@@ -251,7 +256,7 @@ inline ASObject* Class<Boolean>::coerce(ASObject* o) const
 {
 	bool n = Boolean_concrete(o);
 	o->decRef();
-	return abstract_b(n);
+	return abstract_b(o->getSystemState(),n);
 }
 
 template<>
@@ -262,9 +267,9 @@ private:
 	//This function is instantiated always because of inheritance
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL);
 public:
-	static ASObject* getInstanceS()
+	static ASObject* getInstanceS(SystemState* sys)
 	{
-		Class<ASObject>* c=Class<ASObject>::getClass();
+		Class<ASObject>* c=Class<ASObject>::getClass(sys);
 		ASObject* ret = c->getObjectFromFreeList();
 		if (!ret)
 			ret=new (c->memoryAccount) ASObject(c);
@@ -275,10 +280,10 @@ public:
 		//return c->getInstance(true,NULL,0);
 	}
 
-	static Class<ASObject>* getClass();
-	static _R<Class<ASObject>> getRef()
+	static Class<ASObject>* getClass(SystemState* sys);
+	static _R<Class<ASObject>> getRef(SystemState* sys)
 	{
-		Class<ASObject>* ret = getClass();
+		Class<ASObject>* ret = getClass(sys);
 		ret->incRef();
 		return _MR(ret);
 	}
@@ -294,7 +299,7 @@ public:
 	{
 		ASObject *ret;
 		if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
-			ret=Class<ASObject>::getInstanceS();
+			ret=Class<ASObject>::getInstanceS(getSys());
 		else
 		{
 			args[0]->incRef();
@@ -332,17 +337,17 @@ class InterfaceClass: public Class_base
 	}
 	InterfaceClass(const QName& name, MemoryAccount* m):Class_base(name, m) { }
 public:
-	static InterfaceClass<T>* getClass()
+	static InterfaceClass<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;
 		InterfaceClass<T>* ret=NULL;
-		Class_base** retAddr=&getSys()->builtinClasses[classId];
+		Class_base** retAddr=&sys->builtinClasses[classId];
 		if(*retAddr==NULL)
 		{
 			//Create the class
 			QName name(ClassName<T>::name,ClassName<T>::ns);
-			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-			ret=new (getSys()->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
+			MemoryAccount* memoryAccount = sys->allocateMemoryAccount(name.name);
+			ret=new (sys->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
 			ret->isInterface = true;
 			ret->incRef();
 			*retAddr=ret;
@@ -352,9 +357,9 @@ public:
 
 		return ret;
 	}
-	static _R<InterfaceClass<T>> getRef()
+	static _R<InterfaceClass<T>> getRef(SystemState* sys)
 	{
-		InterfaceClass<T>* ret = getClass();
+		InterfaceClass<T>* ret = getClass(sys);
 		ret->incRef();
 		return _MR(ret);
 	}
@@ -419,7 +424,7 @@ public:
 		if (o->is<Undefined>())
 		{
 			o->decRef();
-			return getSys()->getNullRef();
+			return o->getSystemState()->getNullRef();
 		}
 		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this)) || 
 				 o->is<Null>())
@@ -471,10 +476,10 @@ public:
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(instantiatedQName.name);
-			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
+			MemoryAccount* memoryAccount = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.name);
+			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
 			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
-			ret->prototype = _MNR(new_objectPrototype());
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
 			if(ret->super)
 				ret->prototype->prevPrototype=ret->super->prototype;
@@ -499,10 +504,10 @@ public:
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(qname.name);
-			ret=new (getSys()->unaccountedMemory) TemplatedClass<T>(qname,types,this,memoryAccount);
+			MemoryAccount* memoryAccount = appdomain->getSystemState()->allocateMemoryAccount(qname.name);
+			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(qname,types,this,memoryAccount);
 			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
-			ret->prototype = _MNR(new_objectPrototype());
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
 			if(ret->super)
 				ret->prototype->prevPrototype=ret->super->prototype;
@@ -515,18 +520,18 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(const Type* type,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
 		std::vector<const Type*> t(1,type);
-		Template<T>* templ=getTemplate();
+		Template<T>* templ=getTemplate(sys);
 		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
 		templ->decRef();
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(SystemState* sys,const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
 	{
-		Template<T>* templ=getTemplate();
+		Template<T>* templ=getTemplate(sys);
 		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname,appdomain));
 		ret->context = context;
 		templ->decRef();
@@ -534,17 +539,17 @@ public:
 	}
 	static T* getInstanceS(const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		return static_cast<T*>(getTemplateInstance(type,appdomain).getPtr()->getInstance(true,NULL,0));
+		return static_cast<T*>(getTemplateInstance(appdomain->getSystemState(),type,appdomain).getPtr()->getInstance(true,NULL,0));
 	}
 
-	static Template<T>* getTemplate(const QName& name)
+	static Template<T>* getTemplate(SystemState* sys,const QName& name)
 	{
-		std::map<QName, Template_base*>::iterator it=getSys()->templates.find(name);
+		std::map<QName, Template_base*>::iterator it=sys->templates.find(name);
 		Template<T>* ret=NULL;
-		if(it==getSys()->templates.end()) //This class is not yet in the map, create it
+		if(it==sys->templates.end()) //This class is not yet in the map, create it
 		{
-			ret=new (getSys()->unaccountedMemory) Template<T>(name);
-			getSys()->templates.insert(std::make_pair(name,ret));
+			ret=new (sys->unaccountedMemory) Template<T>(name);
+			sys->templates.insert(std::make_pair(name,ret));
 		}
 		else
 			ret=static_cast<Template<T>*>(it->second);
@@ -553,9 +558,9 @@ public:
 		return ret;
 	}
 
-	static Template<T>* getTemplate()
+	static Template<T>* getTemplate(SystemState* sys)
 	{
-		return getTemplate(QName(ClassName<T>::name,ClassName<T>::ns));
+		return getTemplate(sys,QName(ClassName<T>::name,ClassName<T>::ns));
 	}
 };
 

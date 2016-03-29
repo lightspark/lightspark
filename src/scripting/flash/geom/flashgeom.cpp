@@ -27,57 +27,57 @@ using namespace std;
 void Rectangle::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
+	IFunction* gleft=Class<IFunction>::getFunction(c->getSystemState(),_getLeft);
 	c->setDeclaredMethodByQName("left","",gleft,GETTER_METHOD,true);
 	gleft->incRef();
 	c->setDeclaredMethodByQName("x","",gleft,GETTER_METHOD,true);
-	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
+	IFunction* sleft=Class<IFunction>::getFunction(c->getSystemState(),_setLeft);
 	c->setDeclaredMethodByQName("left","",sleft,SETTER_METHOD,true);
 	sleft->incRef();
 	c->setDeclaredMethodByQName("x","",sleft,SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(_getRight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(_setRight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(c->getSystemState(),_getRight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(c->getSystemState(),_setRight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_setWidth),SETTER_METHOD,true);
 
-	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
+	IFunction* gtop=Class<IFunction>::getFunction(c->getSystemState(),_getTop);
 	c->setDeclaredMethodByQName("top","",gtop,GETTER_METHOD,true);
 	gtop->incRef();
 	c->setDeclaredMethodByQName("y","",gtop,GETTER_METHOD,true);
-	IFunction* stop=Class<IFunction>::getFunction(_setTop);
+	IFunction* stop=Class<IFunction>::getFunction(c->getSystemState(),_setTop);
 	c->setDeclaredMethodByQName("top","",stop,SETTER_METHOD,true);
 	stop->incRef();
 	c->setDeclaredMethodByQName("y","",stop,SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(_getBottom),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(_setBottom),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(c->getSystemState(),_getBottom),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(c->getSystemState(),_setBottom),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(_getBottomRight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(_setBottomRight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(c->getSystemState(),_getBottomRight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomRight","",Class<IFunction>::getFunction(c->getSystemState(),_setBottomRight),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_getSize),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(_setSize),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_getSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_setSize),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(_getTopLeft),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(_setTopLeft),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(c->getSystemState(),_getTopLeft),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("topLeft","",Class<IFunction>::getFunction(c->getSystemState(),_setTopLeft),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("containsPoint","",Class<IFunction>::getFunction(containsPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("containsRect","",Class<IFunction>::getFunction(containsRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(_union),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(c->getSystemState(),contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsPoint","",Class<IFunction>::getFunction(c->getSystemState(),containsPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsRect","",Class<IFunction>::getFunction(c->getSystemState(),containsRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(c->getSystemState(),equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(c->getSystemState(),inflate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflatePoint","",Class<IFunction>::getFunction(c->getSystemState(),inflatePoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersection","",Class<IFunction>::getFunction(c->getSystemState(),intersection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersects","",Class<IFunction>::getFunction(c->getSystemState(),intersects),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isEmpty","",Class<IFunction>::getFunction(c->getSystemState(),isEmpty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(c->getSystemState(),offset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offsetPoint","",Class<IFunction>::getFunction(c->getSystemState(),offsetPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(c->getSystemState(),setEmpty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(c->getSystemState(),_union),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -108,7 +108,7 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 ASFUNCTIONBODY(Rectangle,_getLeft)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->x);
+	return abstract_d(obj->getSystemState(),th->x);
 }
 
 ASFUNCTIONBODY(Rectangle,_setLeft)
@@ -122,7 +122,7 @@ ASFUNCTIONBODY(Rectangle,_setLeft)
 ASFUNCTIONBODY(Rectangle,_getRight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->x + th->width);
+	return abstract_d(obj->getSystemState(),th->x + th->width);
 }
 
 ASFUNCTIONBODY(Rectangle,_setRight)
@@ -136,7 +136,7 @@ ASFUNCTIONBODY(Rectangle,_setRight)
 ASFUNCTIONBODY(Rectangle,_getWidth)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->width);
+	return abstract_d(obj->getSystemState(),th->width);
 }
 
 ASFUNCTIONBODY(Rectangle,_setWidth)
@@ -150,7 +150,7 @@ ASFUNCTIONBODY(Rectangle,_setWidth)
 ASFUNCTIONBODY(Rectangle,_getTop)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->y);
+	return abstract_d(obj->getSystemState(),th->y);
 }
 
 ASFUNCTIONBODY(Rectangle,_setTop)
@@ -164,7 +164,7 @@ ASFUNCTIONBODY(Rectangle,_setTop)
 ASFUNCTIONBODY(Rectangle,_getBottom)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->y + th->height);
+	return abstract_d(obj->getSystemState(),th->y + th->height);
 }
 
 ASFUNCTIONBODY(Rectangle,_setBottom)
@@ -179,7 +179,7 @@ ASFUNCTIONBODY(Rectangle,_getBottomRight)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(th->x + th->width, th->y + th->height);
+	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->x + th->width, th->y + th->height);
 	return ret;
 }
 
@@ -197,7 +197,7 @@ ASFUNCTIONBODY(Rectangle,_getTopLeft)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(th->x, th->y);
+	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->x, th->y);
 	return ret;
 }
 
@@ -215,7 +215,7 @@ ASFUNCTIONBODY(Rectangle,_getSize)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(th->width, th->height);
+	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->width, th->height);
 	return ret;
 }
 
@@ -232,7 +232,7 @@ ASFUNCTIONBODY(Rectangle,_setSize)
 ASFUNCTIONBODY(Rectangle,_getHeight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(th->height);
+	return abstract_d(obj->getSystemState(),th->height);
 }
 
 ASFUNCTIONBODY(Rectangle,_setHeight)
@@ -246,7 +246,7 @@ ASFUNCTIONBODY(Rectangle,_setHeight)
 ASFUNCTIONBODY(Rectangle,clone)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	Rectangle* ret=Class<Rectangle>::getInstanceS();
+	Rectangle* ret=Class<Rectangle>::getInstanceS(obj->getSystemState());
 	ret->x=th->x;
 	ret->y=th->y;
 	ret->width=th->width;
@@ -261,7 +261,7 @@ ASFUNCTIONBODY(Rectangle,contains)
 	number_t x = args[0]->toNumber();
 	number_t y = args[1]->toNumber();
 
-	return abstract_b( th->x <= x && x <= th->x + th->width
+	return abstract_b(obj->getSystemState(), th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
@@ -273,7 +273,7 @@ ASFUNCTIONBODY(Rectangle,containsPoint)
 	number_t x = br->getX();
 	number_t y = br->getY();
 
-	return abstract_b( th->x <= x && x <= th->x + th->width
+	return abstract_b(obj->getSystemState(), th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
@@ -283,7 +283,7 @@ ASFUNCTIONBODY(Rectangle,containsRect)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	Rectangle* cr = static_cast<Rectangle*>(args[0]);
 
-	return abstract_b( th->x <= cr->x && cr->x + cr->width <= th->x + th->width
+	return abstract_b(obj->getSystemState(), th->x <= cr->x && cr->x + cr->width <= th->x + th->width
 						&& th->y <= cr->y && cr->y + cr->height <= th->y + th->height );
 }
 
@@ -293,7 +293,7 @@ ASFUNCTIONBODY(Rectangle,equals)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	Rectangle* co = static_cast<Rectangle*>(args[0]);
 
-	return abstract_b( th->x == co->x && th->width == co->width
+	return abstract_b(obj->getSystemState(), th->x == co->x && th->width == co->width
 						&& th->y == co->y && th->height == co->height );
 }
 
@@ -333,7 +333,7 @@ ASFUNCTIONBODY(Rectangle,intersection)
 	assert_and_throw(argslen == 1);
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	Rectangle* ti = static_cast<Rectangle*>(args[0]);
-	Rectangle* ret = Class<Rectangle>::getInstanceS();
+	Rectangle* ret = Class<Rectangle>::getInstanceS(obj->getSystemState());
 
 	number_t thtop = th->y;
 	number_t thleft = th->x;
@@ -400,7 +400,7 @@ ASFUNCTIONBODY(Rectangle,intersects)
 	number_t tiright = ti->x + ti->width;
 	number_t tibottom = ti->y + ti->height;
 
-	return abstract_b( !(thtop > tibottom || thright < tileft ||
+	return abstract_b(obj->getSystemState(), !(thtop > tibottom || thright < tileft ||
 						thbottom < titop || thleft > tiright) );
 }
 
@@ -409,7 +409,7 @@ ASFUNCTIONBODY(Rectangle,isEmpty)
 	assert_and_throw(argslen == 0);
 	Rectangle* th = static_cast<Rectangle*>(obj);
 
-	return abstract_b( th->width <= 0 || th->height <= 0 );
+	return abstract_b(obj->getSystemState(), th->width <= 0 || th->height <= 0 );
 }
 
 ASFUNCTIONBODY(Rectangle,offset)
@@ -453,7 +453,7 @@ ASFUNCTIONBODY(Rectangle,_union)
 	assert_and_throw(argslen == 1);
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	Rectangle* ti = static_cast<Rectangle*>(args[0]);
-	Rectangle* ret = Class<Rectangle>::getInstanceS();
+	Rectangle* ret = Class<Rectangle>::getInstanceS(obj->getSystemState());
 
 	ret->x = th->x;
 	ret->y = th->y;
@@ -478,7 +478,7 @@ ASFUNCTIONBODY(Rectangle,_toString)
 	Rectangle* th=static_cast<Rectangle*>(obj);
 	char buf[512];
 	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",th->x,th->y,th->width,th->height);
-	return Class<ASString>::getInstanceS(buf);
+	return abstract_s(obj->getSystemState(),buf);
 }
 
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
@@ -493,30 +493,30 @@ void ColorTransform::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 
 	// properties
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(getColor),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(setColor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),getColor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),setColor),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(getRedMultiplier),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(setRedMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(getGreenMultiplier),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(setGreenMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(getBlueMultiplier),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(setBlueMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(getAlphaMultiplier),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(setAlphaMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),getRedMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),setRedMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),getGreenMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),setGreenMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),getBlueMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),setBlueMultiplier),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),getAlphaMultiplier),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),setAlphaMultiplier),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(getRedOffset),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(setRedOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(getGreenOffset),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(setGreenOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(getBlueOffset),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(setBlueOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(getAlphaOffset),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(setAlphaOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(c->getSystemState(),getRedOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redOffset","",Class<IFunction>::getFunction(c->getSystemState(),setRedOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(c->getSystemState(),getGreenOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenOffset","",Class<IFunction>::getFunction(c->getSystemState(),setGreenOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(c->getSystemState(),getBlueOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueOffset","",Class<IFunction>::getFunction(c->getSystemState(),setBlueOffset),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(c->getSystemState(),getAlphaOffset),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaOffset","",Class<IFunction>::getFunction(c->getSystemState(),setAlphaOffset),SETTER_METHOD,true);
 
 	// methods
-	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),concat),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 void ColorTransform::buildTraits(ASObject* o)
@@ -592,13 +592,13 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 
 	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
 
-	return abstract_d(color);
+	return abstract_d(obj->getSystemState(),color);
 }
 
 ASFUNCTIONBODY(ColorTransform,getRedMultiplier)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->redMultiplier);
+	return abstract_d(obj->getSystemState(),th->redMultiplier);
 }
 
 ASFUNCTIONBODY(ColorTransform,setRedMultiplier)
@@ -612,7 +612,7 @@ ASFUNCTIONBODY(ColorTransform,setRedMultiplier)
 ASFUNCTIONBODY(ColorTransform,getGreenMultiplier)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->greenMultiplier);
+	return abstract_d(obj->getSystemState(),th->greenMultiplier);
 }
 
 ASFUNCTIONBODY(ColorTransform,setGreenMultiplier)
@@ -626,7 +626,7 @@ ASFUNCTIONBODY(ColorTransform,setGreenMultiplier)
 ASFUNCTIONBODY(ColorTransform,getBlueMultiplier)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->blueMultiplier);
+	return abstract_d(obj->getSystemState(),th->blueMultiplier);
 }
 
 ASFUNCTIONBODY(ColorTransform,setBlueMultiplier)
@@ -640,7 +640,7 @@ ASFUNCTIONBODY(ColorTransform,setBlueMultiplier)
 ASFUNCTIONBODY(ColorTransform,getAlphaMultiplier)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->alphaMultiplier);
+	return abstract_d(obj->getSystemState(),th->alphaMultiplier);
 }
 
 ASFUNCTIONBODY(ColorTransform,setAlphaMultiplier)
@@ -654,7 +654,7 @@ ASFUNCTIONBODY(ColorTransform,setAlphaMultiplier)
 ASFUNCTIONBODY(ColorTransform,getRedOffset)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->redOffset);
+	return abstract_d(obj->getSystemState(),th->redOffset);
 }
 
 ASFUNCTIONBODY(ColorTransform,setRedOffset)
@@ -668,7 +668,7 @@ ASFUNCTIONBODY(ColorTransform,setRedOffset)
 ASFUNCTIONBODY(ColorTransform,getGreenOffset)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->greenOffset);
+	return abstract_d(obj->getSystemState(),th->greenOffset);
 }
 
 ASFUNCTIONBODY(ColorTransform,setGreenOffset)
@@ -682,7 +682,7 @@ ASFUNCTIONBODY(ColorTransform,setGreenOffset)
 ASFUNCTIONBODY(ColorTransform,getBlueOffset)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->blueOffset);
+	return abstract_d(obj->getSystemState(),th->blueOffset);
 }
 
 ASFUNCTIONBODY(ColorTransform,setBlueOffset)
@@ -696,7 +696,7 @@ ASFUNCTIONBODY(ColorTransform,setBlueOffset)
 ASFUNCTIONBODY(ColorTransform,getAlphaOffset)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(th->alphaOffset);
+	return abstract_d(obj->getSystemState(),th->alphaOffset);
 }
 
 ASFUNCTIONBODY(ColorTransform,setAlphaOffset)
@@ -732,27 +732,27 @@ ASFUNCTIONBODY(ColorTransform,_toString)
 	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)",
 			th->redOffset, th->redMultiplier, th->greenOffset, th->greenMultiplier, th->blueOffset, th->blueMultiplier, th->alphaOffset, th->alphaMultiplier);
 	
-	return Class<ASString>::getInstanceS(buf);
+	return abstract_s(obj->getSystemState(),buf);
 }
 
 void Point::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_getX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_getY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getlength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_setX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_setY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(distance),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(add),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(offset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(polar),NORMAL_METHOD,false);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getlength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("interpolate","",Class<IFunction>::getFunction(c->getSystemState(),interpolate),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(c->getSystemState(),distance),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(c->getSystemState(),add),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(c->getSystemState(),subtract),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(c->getSystemState(),equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(c->getSystemState(),normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(c->getSystemState(),offset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(c->getSystemState(),polar),NORMAL_METHOD,false);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 void Point::buildTraits(ASObject* o)
@@ -764,7 +764,7 @@ ASFUNCTIONBODY(Point,_toString)
 	Point* th=static_cast<Point*>(obj);
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f)",th->x,th->y);
-	return Class<ASString>::getInstanceS(buf);
+	return abstract_s(obj->getSystemState(),buf);
 }
 
 number_t Point::lenImpl(number_t x, number_t y)
@@ -791,13 +791,13 @@ ASFUNCTIONBODY(Point,_constructor)
 ASFUNCTIONBODY(Point,_getX)
 {
 	Point* th=static_cast<Point*>(obj);
-	return abstract_d(th->x);
+	return abstract_d(obj->getSystemState(),th->x);
 }
 
 ASFUNCTIONBODY(Point,_getY)
 {
 	Point* th=static_cast<Point*>(obj);
-	return abstract_d(th->y);
+	return abstract_d(obj->getSystemState(),th->y);
 }
 
 ASFUNCTIONBODY(Point,_setX)
@@ -820,7 +820,7 @@ ASFUNCTIONBODY(Point,_getlength)
 {
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==0);
-	return abstract_d(th->len());
+	return abstract_d(obj->getSystemState(),th->len());
 }
 
 ASFUNCTIONBODY(Point,interpolate)
@@ -829,7 +829,7 @@ ASFUNCTIONBODY(Point,interpolate)
 	Point* pt1=static_cast<Point*>(args[0]);
 	Point* pt2=static_cast<Point*>(args[1]);
 	number_t f=args[2]->toNumber();
-	Point* ret=Class<Point>::getInstanceS();
+	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
 	ret->x = pt1->x + pt2->x * f;
 	ret->y = pt1->y + pt2->y * f;
 	return ret;
@@ -841,7 +841,7 @@ ASFUNCTIONBODY(Point,distance)
 	Point* pt1=static_cast<Point*>(args[0]);
 	Point* pt2=static_cast<Point*>(args[1]);
 	number_t ret=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
-	return abstract_d(ret);
+	return abstract_d(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Point,add)
@@ -849,7 +849,7 @@ ASFUNCTIONBODY(Point,add)
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==1);
 	Point* v=static_cast<Point*>(args[0]);
-	Point* ret=Class<Point>::getInstanceS();
+	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
 	ret->x = th->x + v->x;
 	ret->y = th->y + v->y;
 	return ret;
@@ -860,7 +860,7 @@ ASFUNCTIONBODY(Point,subtract)
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==1);
 	Point* v=static_cast<Point*>(args[0]);
-	Point* ret=Class<Point>::getInstanceS();
+	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
 	ret->x = th->x - v->x;
 	ret->y = th->y - v->y;
 	return ret;
@@ -870,7 +870,7 @@ ASFUNCTIONBODY(Point,clone)
 {
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==0);
-	Point* ret=Class<Point>::getInstanceS();
+	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
 	ret->x = th->x;
 	ret->y = th->y;
 	return ret;
@@ -881,7 +881,7 @@ ASFUNCTIONBODY(Point,equals)
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==1);
 	Point* toCompare=static_cast<Point*>(args[0]);
-	return abstract_b((th->x == toCompare->x) & (th->y == toCompare->y));
+	return abstract_b(obj->getSystemState(),(th->x == toCompare->x) & (th->y == toCompare->y));
 }
 
 ASFUNCTIONBODY(Point,normalize)
@@ -911,7 +911,7 @@ ASFUNCTIONBODY(Point,polar)
 	assert_and_throw(argslen==2);
 	number_t len = args[0]->toNumber();
 	number_t angle = args[1]->toNumber();
-	Point* ret=Class<Point>::getInstanceS();
+	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
 	ret->x = len * cos(angle);
 	ret->y = len * sin(angle);
 	return ret;
@@ -930,12 +930,12 @@ void Transform::finalize()
 void Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(_getColorTransform),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(_setColorTransform),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_getMatrix),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(_setMatrix),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("concatenatedMatrix","",Class<IFunction>::getFunction(_getConcatenatedMatrix),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(c->getSystemState(),_getColorTransform),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(c->getSystemState(),_setColorTransform),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_setMatrix),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_getMatrix),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_setMatrix),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concatenatedMatrix","",Class<IFunction>::getFunction(c->getSystemState(),_getConcatenatedMatrix),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(Transform,_constructor)
@@ -949,7 +949,7 @@ ASFUNCTIONBODY(Transform,_getMatrix)
 	Transform* th=Class<Transform>::cast(obj);
 	assert_and_throw(argslen==0);
 	const MATRIX& ret=th->owner->getMatrix();
-	return Class<Matrix>::getInstanceS(ret);
+	return Class<Matrix>::getInstanceS(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Transform,_setMatrix)
@@ -968,7 +968,7 @@ ASFUNCTIONBODY(Transform,_getColorTransform)
 {
 	Transform* th=Class<Transform>::cast(obj);
 	const CXFORMWITHALPHA& ct=th->owner->ColorTransform;
-	return Class<ColorTransform>::getInstanceS(ct);
+	return Class<ColorTransform>::getInstanceS(obj->getSystemState(),ct);
 }
 
 ASFUNCTIONBODY(Transform,_setColorTransform)
@@ -989,7 +989,7 @@ ASFUNCTIONBODY(Transform,_getConcatenatedMatrix)
 {
 	//Transform* th=Class<Transform>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"contcatenatedMAtrix not implemented");
-	return Class<Matrix>::getInstanceS();
+	return Class<Matrix>::getInstanceS(obj->getSystemState());
 }
 
 void Transform::buildTraits(ASObject* o)
@@ -1009,33 +1009,33 @@ void Matrix::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	
 	//Properties
-	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(_get_a),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(_get_b),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(_get_c),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(_get_d),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(_get_tx),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(_get_ty),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(c->getSystemState(),_get_a),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(c->getSystemState(),_get_b),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(c->getSystemState(),_get_c),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(c->getSystemState(),_get_d),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(c->getSystemState(),_get_tx),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(c->getSystemState(),_get_ty),GETTER_METHOD,true);
 	
-	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(_set_a),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(_set_b),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(_set_c),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(_set_d),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(_set_tx),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(_set_ty),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(c->getSystemState(),_set_a),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(c->getSystemState(),_set_b),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("c","",Class<IFunction>::getFunction(c->getSystemState(),_set_c),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("d","",Class<IFunction>::getFunction(c->getSystemState(),_set_d),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tx","",Class<IFunction>::getFunction(c->getSystemState(),_set_tx),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ty","",Class<IFunction>::getFunction(c->getSystemState(),_set_ty),SETTER_METHOD,true);
 	
 	//Methods 
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(concat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createGradientBox","",Class<IFunction>::getFunction(createGradientBox),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(identity),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(invert),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(scale),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(translate),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createBox","",Class<IFunction>::getFunction(c->getSystemState(),createBox),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createGradientBox","",Class<IFunction>::getFunction(c->getSystemState(),createGradientBox),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(c->getSystemState(),deltaTransformPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(c->getSystemState(),identity),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(c->getSystemState(),invert),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("rotate","",Class<IFunction>::getFunction(c->getSystemState(),rotate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(c->getSystemState(),scale),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(c->getSystemState(),transformPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(c->getSystemState(),translate),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -1079,7 +1079,7 @@ ASFUNCTIONBODY(Matrix,_toString)
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
 			th->matrix.xx, th->matrix.yx, th->matrix.xy, th->matrix.yy, th->matrix.x0, th->matrix.y0);
-	return Class<ASString>::getInstanceS(buf);
+	return abstract_s(obj->getSystemState(),buf);
 }
 
 MATRIX Matrix::getMATRIX() const
@@ -1090,7 +1090,7 @@ MATRIX Matrix::getMATRIX() const
 ASFUNCTIONBODY(Matrix,_get_a)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.xx);
+	return abstract_d(obj->getSystemState(),th->matrix.xx);
 }
 
 ASFUNCTIONBODY(Matrix,_set_a)
@@ -1104,7 +1104,7 @@ ASFUNCTIONBODY(Matrix,_set_a)
 ASFUNCTIONBODY(Matrix,_get_b)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.yx);
+	return abstract_d(obj->getSystemState(),th->matrix.yx);
 }
 
 ASFUNCTIONBODY(Matrix,_set_b)
@@ -1118,7 +1118,7 @@ ASFUNCTIONBODY(Matrix,_set_b)
 ASFUNCTIONBODY(Matrix,_get_c)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.xy);
+	return abstract_d(obj->getSystemState(),th->matrix.xy);
 }
 
 ASFUNCTIONBODY(Matrix,_set_c)
@@ -1132,7 +1132,7 @@ ASFUNCTIONBODY(Matrix,_set_c)
 ASFUNCTIONBODY(Matrix,_get_d)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.yy);
+	return abstract_d(obj->getSystemState(),th->matrix.yy);
 }
 
 ASFUNCTIONBODY(Matrix,_set_d)
@@ -1146,7 +1146,7 @@ ASFUNCTIONBODY(Matrix,_set_d)
 ASFUNCTIONBODY(Matrix,_get_tx)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.x0);
+	return abstract_d(obj->getSystemState(),th->matrix.x0);
 }
 
 ASFUNCTIONBODY(Matrix,_set_tx)
@@ -1160,7 +1160,7 @@ ASFUNCTIONBODY(Matrix,_set_tx)
 ASFUNCTIONBODY(Matrix,_get_ty)
 {
 	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(th->matrix.y0);
+	return abstract_d(obj->getSystemState(),th->matrix.y0);
 }
 
 ASFUNCTIONBODY(Matrix,_set_ty)
@@ -1176,7 +1176,7 @@ ASFUNCTIONBODY(Matrix,clone)
 	assert_and_throw(argslen==0);
 
 	Matrix* th=static_cast<Matrix*>(obj);
-	Matrix* ret=Class<Matrix>::getInstanceS(th->matrix);
+	Matrix* ret=Class<Matrix>::getInstanceS(obj->getSystemState(),th->matrix);
 	return ret;
 }
 
@@ -1308,7 +1308,7 @@ ASFUNCTIONBODY(Matrix,transformPoint)
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
-	return Class<Point>::getInstanceS(ttx, tty);
+	return Class<Point>::getInstanceS(obj->getSystemState(),ttx, tty);
 }
 
 ASFUNCTIONBODY(Matrix,deltaTransformPoint)
@@ -1320,7 +1320,7 @@ ASFUNCTIONBODY(Matrix,deltaTransformPoint)
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
-	return Class<Point>::getInstanceS(ttx, tty);
+	return Class<Point>::getInstanceS(obj->getSystemState(),ttx, tty);
 }
 
 void Vector3D::sinit(Class_base* c)
@@ -1341,35 +1341,35 @@ void Vector3D::sinit(Class_base* c)
 	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
 
 	// properties
-	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(_get_w),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_get_x),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_get_y),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(_get_z),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_get_length),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("lengthSquared","",Class<IFunction>::getFunction(_get_lengthSquared),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(c->getSystemState(),_get_w),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_get_x),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_get_y),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_get_z),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_get_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lengthSquared","",Class<IFunction>::getFunction(c->getSystemState(),_get_lengthSquared),GETTER_METHOD,true);
 	
-	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(_set_w),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_set_x),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_set_y),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(_set_z),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(c->getSystemState(),_set_w),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_set_x),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_set_y),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_set_z),SETTER_METHOD,true);
 	
 	// methods 
-	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(add),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(distance),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(equals),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("negate","",Class<IFunction>::getFunction(negate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(project),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(c->getSystemState(),add),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("angleBetween","",Class<IFunction>::getFunction(c->getSystemState(),angleBetween),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("crossProduct","",Class<IFunction>::getFunction(c->getSystemState(),crossProduct),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("decrementBy","",Class<IFunction>::getFunction(c->getSystemState(),decrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(c->getSystemState(),distance),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dotProduct","",Class<IFunction>::getFunction(c->getSystemState(),dotProduct),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(c->getSystemState(),equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("incrementBy","",Class<IFunction>::getFunction(c->getSystemState(),incrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nearEquals","",Class<IFunction>::getFunction(c->getSystemState(),nearEquals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("negate","",Class<IFunction>::getFunction(c->getSystemState(),negate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(c->getSystemState(),normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(c->getSystemState(),project),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(c->getSystemState(),scaleBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(c->getSystemState(),subtract),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1405,7 +1405,7 @@ ASFUNCTIONBODY(Vector3D,_toString)
 	Vector3D* th=static_cast<Vector3D*>(obj);
 	char buf[512];
 	snprintf(buf,512,"(x=%f, y=%f, z=%f)", th->x, th->y, th->z);
-	return Class<ASString>::getInstanceS(buf);
+	return abstract_s(obj->getSystemState(),buf);
 }
 
 ASFUNCTIONBODY(Vector3D,_get_w)
@@ -1413,7 +1413,7 @@ ASFUNCTIONBODY(Vector3D,_get_w)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(th->w);
+	return abstract_d(obj->getSystemState(),th->w);
 }
 
 ASFUNCTIONBODY(Vector3D,_set_w)
@@ -1429,7 +1429,7 @@ ASFUNCTIONBODY(Vector3D,_get_x)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(th->x);
+	return abstract_d(obj->getSystemState(),th->x);
 }
 
 ASFUNCTIONBODY(Vector3D,_set_x)
@@ -1445,7 +1445,7 @@ ASFUNCTIONBODY(Vector3D,_get_y)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(th->y);
+	return abstract_d(obj->getSystemState(),th->y);
 }
 
 ASFUNCTIONBODY(Vector3D,_set_y)
@@ -1461,7 +1461,7 @@ ASFUNCTIONBODY(Vector3D,_get_z)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(th->z);
+	return abstract_d(obj->getSystemState(),th->z);
 }
 
 ASFUNCTIONBODY(Vector3D,_set_z)
@@ -1477,7 +1477,7 @@ ASFUNCTIONBODY(Vector3D,_get_length)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+	return abstract_d(obj->getSystemState(),sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
 }
 
 ASFUNCTIONBODY(Vector3D,_get_lengthSquared)
@@ -1485,7 +1485,7 @@ ASFUNCTIONBODY(Vector3D,_get_lengthSquared)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(th->x * th->x + th->y * th->y + th->z * th->z);
+	return abstract_d(obj->getSystemState(),th->x * th->x + th->y * th->y + th->z * th->z);
 }
 
 ASFUNCTIONBODY(Vector3D,clone)
@@ -1493,7 +1493,7 @@ ASFUNCTIONBODY(Vector3D,clone)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* ret=Class<Vector3D>::getInstanceS();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
 
 	ret->w = th->w;
 	ret->x = th->x;
@@ -1509,7 +1509,7 @@ ASFUNCTIONBODY(Vector3D,add)
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
 
 	ret->x = th->x + vc->x;
 	ret->y = th->y + vc->y;
@@ -1530,7 +1530,7 @@ ASFUNCTIONBODY(Vector3D,angleBetween)
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
 	angle = acos(angle);
 
-	return abstract_d(angle);
+	return abstract_d(obj->getSystemState(),angle);
 }
 
 ASFUNCTIONBODY(Vector3D,crossProduct)
@@ -1539,7 +1539,7 @@ ASFUNCTIONBODY(Vector3D,crossProduct)
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
 
 	ret->x = th->y * vc->z - th->z * vc->y;
 	ret->y = th->z * vc->x - th->x * vc->z;
@@ -1575,7 +1575,7 @@ ASFUNCTIONBODY(Vector3D,distance)
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-	return abstract_d(dist);
+	return abstract_d(obj->getSystemState(),dist);
 }
 
 ASFUNCTIONBODY(Vector3D,dotProduct)
@@ -1585,7 +1585,7 @@ ASFUNCTIONBODY(Vector3D,dotProduct)
 	Vector3D* th=static_cast<Vector3D*>(obj);
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
 
-	return abstract_d(th->x * vc->x + th->y * vc->y + th->z * vc->z);
+	return abstract_d(obj->getSystemState(),th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
 ASFUNCTIONBODY(Vector3D,equals)
@@ -1602,7 +1602,7 @@ ASFUNCTIONBODY(Vector3D,equals)
 		allfour = af->toInt();
 	}
 
-	return abstract_b(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
+	return abstract_b(obj->getSystemState(),th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
 }
 
 ASFUNCTIONBODY(Vector3D,incrementBy)
@@ -1640,7 +1640,7 @@ ASFUNCTIONBODY(Vector3D,nearEquals)
 	dz = (th->z - vc->z) < tolerance;
 	dw = allfour ? (th->w - vc->w) < tolerance : true;
 
-	return abstract_b(dx && dy && dz && dw);
+	return abstract_b(obj->getSystemState(),dx && dy && dz && dw);
 }
 
 ASFUNCTIONBODY(Vector3D,negate)
@@ -1704,7 +1704,7 @@ ASFUNCTIONBODY(Vector3D,subtract)
 
 	Vector3D* th=static_cast<Vector3D*>(obj);
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
 
 	ret->x = th->x - vc->x;
 	ret->y = th->y - vc->y;

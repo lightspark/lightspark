@@ -94,7 +94,7 @@ public:
 	Array(Class_base* c);
 	void finalize();
 	//These utility methods are also used by ByteArray
-	static bool isValidMultiname(const multiname& name, uint32_t& index);
+	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
 	static void sinit(Class_base*);

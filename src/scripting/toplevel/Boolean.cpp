@@ -27,12 +27,12 @@
 using namespace lightspark;
 using namespace std;
 
-Boolean* lightspark::abstract_b(bool v)
+Boolean* lightspark::abstract_b(SystemState *sys, bool v)
 {
 	if(v==true)
-		return getSys()->getTrueRef();
+		return sys->getTrueRef();
 	else
-		return getSys()->getFalseRef();
+		return sys->getFalseRef();
 }
 
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
@@ -72,18 +72,18 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 ASFUNCTIONBODY(Boolean,generator)
 {
 	if(argslen==1)
-		return abstract_b(Boolean_concrete(args[0]));
+		return abstract_b(args[0]->getSystemState(),Boolean_concrete(args[0]));
 	else
-		return abstract_b(false);
+		return abstract_b(getSys(),false);
 }
 
 void Boolean::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(Boolean,_constructor)
@@ -100,27 +100,27 @@ ASFUNCTIONBODY(Boolean,_constructor)
 
 ASFUNCTIONBODY(Boolean,_toString)
 {
-	if(Class<Boolean>::getClass()->prototype->getObj() == obj) //See ECMA 15.6.4
-		return abstract_s("false");
+	if(Class<Boolean>::getClass(obj->getSystemState())->prototype->getObj() == obj) //See ECMA 15.6.4
+		return abstract_s(obj->getSystemState(),"false");
 
 	if(!obj->is<Boolean>())
-		throw Class<TypeError>::getInstanceS("");
+		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
 
 	Boolean* th=static_cast<Boolean*>(obj);
-	return abstract_s(th->toString());
+	return abstract_s(obj->getSystemState(),th->toString());
 }
 
 ASFUNCTIONBODY(Boolean,_valueOf)
 {
-	if(Class<Boolean>::getClass()->prototype->getObj() == obj)
-		return abstract_b(false);
+	if(Class<Boolean>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_b(obj->getSystemState(),false);
 
 	if(!obj->is<Boolean>())
-			throw Class<TypeError>::getInstanceS("");
+			throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object
-	return abstract_b(obj->as<Boolean>()->val);
+	return abstract_b(obj->getSystemState(),obj->as<Boolean>()->val);
 }
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -25,12 +25,12 @@
 using namespace lightspark;
 using namespace std;
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(reporter_allocator<GeomToken>(getSys()->unaccountedMemory)), scaling(1.0f)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(reporter_allocator<GeomToken>(_o->getSystemState()->unaccountedMemory)), scaling(1.0f)
 {
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o), tokens(_tokens.begin(),_tokens.end(),reporter_allocator<GeomToken>(getSys()->unaccountedMemory)), scaling(_scaling)
+	owner(_o), tokens(_tokens.begin(),_tokens.end(),reporter_allocator<GeomToken>(_o->getSystemState()->unaccountedMemory)), scaling(_scaling)
 
 {
 }

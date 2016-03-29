@@ -226,10 +226,10 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"nextName",(void*)&ABCVm::nextName,ARGS_OBJ_OBJ},
 	{"nextValue",(void*)&ABCVm::nextValue,ARGS_OBJ_OBJ},
-	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
-	{"abstract_i",(void*)&abstract_i,ARGS_INT},
-	{"abstract_ui",(void*)&abstract_ui,ARGS_INT},
-	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
+//	{"abstract_d",(void*)&abstract_d,ARGS_OBJ_NUMBER},
+//	{"abstract_i",(void*)&abstract_i,ARGS_OBJ_INT},
+//	{"abstract_ui",(void*)&abstract_ui,ARGS_OBJ_INT},
+//	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
 	{"pushNaN",(void*)&ABCVm::pushNaN,ARGS_NONE},
 	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
@@ -300,13 +300,13 @@ void ABCVm::registerFunctions()
 	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context());
 #endif
 	//Pointer to 8 bit type, needed for pointer arithmetic
-	voidptr_type=llvm::IntegerType::get(getVm()->llvm_context(),8)->getPointerTo();
+	voidptr_type=llvm::IntegerType::get(llvm_context(),8)->getPointerTo();
 	number_type=llvm::Type::getDoubleTy(llvm_context());
 	numberptr_type=llvm::Type::getDoublePtrTy(llvm_context());
 	bool_type=llvm::IntegerType::get(llvm_context(),1);
 	boolptr_type=bool_type->getPointerTo();
 	void_type=llvm::Type::getVoidTy(llvm_context());
-	int_type=llvm::IntegerType::get(getVm()->llvm_context(),32);
+	int_type=llvm::IntegerType::get(llvm_context(),32);
 	intptr_type=int_type->getPointerTo();
 
 	//All the opcodes needs a pointer to the context
@@ -575,7 +575,7 @@ static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynam
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm(getSys())->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 
@@ -586,7 +586,7 @@ static llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynam
 static llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm(getSys())->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
@@ -600,7 +600,7 @@ static void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builde
 	builder.CreateStore(val,dest);
 
 	//increment stack index
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm(getSys())->llvm_context(),32), 1);
 	llvm::Value* index2=builder.CreateAdd(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 }
@@ -714,7 +714,7 @@ inline void syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
 			//dest_block does not expect us to transfer locals,
 			//so just write them to call_context->locals, overwriting (and decRef'ing) the old contents of call_context->locals
 			assert(dest_block.locals_start[i] == STACK_NONE);
-			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm()->llvm_context(),32), i);
+			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(getVm(getSys())->llvm_context(),32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
 			llvm::Value* old=builder.CreateLoad(t);
 			if(static_locals[i].second==STACK_OBJECT)
@@ -878,7 +878,7 @@ inline pair<unsigned int,STACK_TYPE> method_info::popTypeFromStack(static_stack_
 
 block_info::block_info(const method_info* mi, const char* blockName)
 {
-	BB=llvm::BasicBlock::Create(getVm()->llvm_context(), blockName, mi->llvmf);
+	BB=llvm::BasicBlock::Create(getVm(getSys())->llvm_context(), blockName, mi->llvmf);
 	locals_start.resize(mi->body->local_count,STACK_NONE);
 	locals_reset.resize(mi->body->local_count,false);
 	locals_used.resize(mi->body->local_count,false);
@@ -1852,7 +1852,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 	}
 }
 
-SyntheticFunction::synt_function method_info::synt_method()
+SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 {
 	if(f)
 		return f;
@@ -1864,10 +1864,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 		LOG(LOG_CALLS,_("Method ") << method_name << _(" should be intrinsic"));;
 		return NULL;
 	}
-	llvm::ExecutionEngine* ex=getVm()->ex;
-	llvm::LLVMContext& llvm_context=getVm()->llvm_context();
+	llvm::ExecutionEngine* ex=getVm(sys)->ex;
+	llvm::LLVMContext& llvm_context=getVm(sys)->llvm_context();
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
+	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm(sys)->module);
 
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
 	llvm::IRBuilder<> Builder(llvm_context);
@@ -1949,7 +1949,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	for(unsigned i=0;i<paramTypes.size();++i)
 	{
-		if(paramTypes[i] == Class<Number>::getClass())
+		if(paramTypes[i] == Class<Number>::getClass(sys))
 		{
 			/* yield t = locals[i+1] */
 			LOAD_LOCALPTR
@@ -1961,7 +1961,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			blocks[0].locals_start_obj[i+1] = t;
 			LOG(LOG_TRACE,"found STACK_NUMBER parameter for local " << i+1);
 		}
-		else if(paramTypes[i] == Class<Integer>::getClass())
+		else if(paramTypes[i] == Class<Integer>::getClass(sys))
 		{
 			/* yield t = locals[i+1] */
 			LOAD_LOCALPTR
@@ -1972,7 +1972,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			//locals_start_obj should hold the pointer to the local's value
 			blocks[0].locals_start_obj[i+1] = t;
 		}
-		else if(paramTypes[i] == Class<UInteger>::getClass())
+		else if(paramTypes[i] == Class<UInteger>::getClass(sys))
 		{
 			/* yield t = locals[i+1] */
 			LOAD_LOCALPTR
@@ -1983,7 +1983,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			//locals_start_obj should hold the pointer to the local's value
 			blocks[0].locals_start_obj[i+1] = t;
 		}
-		else if(paramTypes[i] == Class<Boolean>::getClass())
+		else if(paramTypes[i] == Class<Boolean>::getClass(sys))
 		{
 			/* yield t = locals[i+1] */
 			LOAD_LOCALPTR
@@ -4656,7 +4656,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
 
-				f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
+				f=(SyntheticFunction::synt_function)getVm(sys)->ex->getPointerToFunction(llvmf);
 				return f;
 		}
 	}
@@ -4672,8 +4672,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	//llvmf->dump(); //dump before optimization
-	getVm()->FPM->run(*llvmf);
-	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
+	getVm(sys)->FPM->run(*llvmf);
+	f=(SyntheticFunction::synt_function)getVm(sys)->ex->getPointerToFunction(llvmf);
 	//llvmf->dump(); //dump after optimization
 	body->codeStatus = method_body_info::JITTED;
 	return f;

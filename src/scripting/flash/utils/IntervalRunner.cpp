@@ -55,7 +55,7 @@ void IntervalRunner::tick()
 		args[i]->incRef();
 	}
 	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
-	getVm()->addEvent(NullRef,event);
+	getVm(getSys())->addEvent(NullRef,event);
 	event->done.wait();
 	if(type == TIMEOUT)
 	{

@@ -58,38 +58,38 @@ BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)
 void BitmapData::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
-	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(draw),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(dispose),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(getPixel),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(getPixel32),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setPixel","",Class<IFunction>::getFunction(setPixel),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setPixel32","",Class<IFunction>::getFunction(setPixel32),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(copyPixels),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(fillRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(generateFilterRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(hitTest),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(scroll),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(copyChannel),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(lock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(unlock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(floodFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("histogram","",Class<IFunction>::getFunction(histogram),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getColorBoundsRect","",Class<IFunction>::getFunction(getColorBoundsRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPixels","",Class<IFunction>::getFunction(getPixels),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getVector","",Class<IFunction>::getFunction(getVector),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setPixels","",Class<IFunction>::getFunction(setPixels),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setVector","",Class<IFunction>::getFunction(setVector),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(colorTransform),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(compare),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(applyFilter),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(noise),NORMAL_METHOD,true);
+	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
+	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(c->getSystemState(),draw),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(c->getSystemState(),getPixel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(c->getSystemState(),getPixel32),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixel","",Class<IFunction>::getFunction(c->getSystemState(),setPixel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixel32","",Class<IFunction>::getFunction(c->getSystemState(),setPixel32),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(c->getSystemState(),copyPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(c->getSystemState(),fillRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(c->getSystemState(),generateFilterRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),hitTest),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(c->getSystemState(),scroll),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(c->getSystemState(),copyChannel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(c->getSystemState(),lock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(c->getSystemState(),unlock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("floodFill","",Class<IFunction>::getFunction(c->getSystemState(),floodFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("histogram","",Class<IFunction>::getFunction(c->getSystemState(),histogram),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getColorBoundsRect","",Class<IFunction>::getFunction(c->getSystemState(),getColorBoundsRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixels","",Class<IFunction>::getFunction(c->getSystemState(),getPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getVector","",Class<IFunction>::getFunction(c->getSystemState(),getVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPixels","",Class<IFunction>::getFunction(c->getSystemState(),setPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setVector","",Class<IFunction>::getFunction(c->getSystemState(),setVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(c->getSystemState(),colorTransform),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(c->getSystemState(),compare),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(c->getSystemState(),applyFilter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(c->getSystemState(),noise),NORMAL_METHOD,true);
 
 	// properties
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(getRect),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
 	REGISTER_GETTER(c,transparent);
 
 	IBitmapDrawable::linkTraits(c);
@@ -122,7 +122,7 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	uint32_t fillColor;
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF);
 
 	ASObject::_constructor(obj,NULL,0);
@@ -130,9 +130,9 @@ ASFUNCTIONBODY(BitmapData,_constructor)
 	if(width==0 || height==0 || !th->pixels->isEmpty())
 		return NULL;
 	if(width<0 || height<0)
-		throw Class<ArgumentError>::getInstanceS("invalid height or width", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"invalid height or width", kInvalidArgumentError);
 	if(width>8191 || height>8191)
-		throw Class<ArgumentError>::getInstanceS("invalid height or width", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"invalid height or width", kInvalidArgumentError);
 
 	uint32_t *pixelArray=new uint32_t[width*height];
 	uint32_t c=GUINT32_TO_BE(fillColor); // fromRGB expects big endian data
@@ -190,7 +190,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
@@ -201,7 +201,7 @@ ASFUNCTIONBODY(BitmapData,draw)
 	ARG_UNPACK (drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, NullRef)
 					(clipRect, NullRef) (smoothing, false);
 
-	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass()) )
+	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass(obj->getSystemState())) )
 		throwError<TypeError>(kCheckTypeFailedError, 
 				      drawable->getClassName(),
 				      "IBitmapDrawable");
@@ -242,33 +242,33 @@ ASFUNCTIONBODY(BitmapData,getPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
 
 	uint32_t pix=th->pixels->getPixel(x, y);
-	return abstract_ui(pix & 0xffffff);
+	return abstract_ui(obj->getSystemState(),pix & 0xffffff);
 }
 
 ASFUNCTIONBODY(BitmapData,getPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	ARG_UNPACK(x)(y);
 
 	uint32_t pix=th->pixels->getPixel(x, y);
-	return abstract_ui(pix);
+	return abstract_ui(obj->getSystemState(),pix);
 }
 
 ASFUNCTIONBODY(BitmapData,setPixel)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -283,7 +283,7 @@ ASFUNCTIONBODY(BitmapData,setPixel32)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -298,8 +298,8 @@ ASFUNCTIONBODY(BitmapData,getRect)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
-	Rectangle *rect=Class<Rectangle>::getInstanceS();
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
+	Rectangle *rect=Class<Rectangle>::getInstanceS(obj->getSystemState());
 	rect->width=th->pixels->getWidth();
 	rect->height=th->pixels->getHeight();
 	return rect;
@@ -309,16 +309,16 @@ ASFUNCTIONBODY(BitmapData,_getHeight)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
-	return abstract_i(th->getHeight());
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
+	return abstract_i(obj->getSystemState(),th->getHeight());
 }
 
 ASFUNCTIONBODY(BitmapData,_getWidth)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
-	return abstract_i(th->getWidth());
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
+	return abstract_i(obj->getSystemState(),th->getWidth());
 }
 
 ASFUNCTIONBODY(BitmapData,fillRect)
@@ -329,7 +329,7 @@ ASFUNCTIONBODY(BitmapData,fillRect)
 	ARG_UNPACK(rect)(color);
 
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	if (rect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 
@@ -350,7 +350,7 @@ ASFUNCTIONBODY(BitmapData,copyPixels)
 	ARG_UNPACK(source)(sourceRect)(destPoint)(alphaBitmapData, NullRef)(alphaPoint, NullRef)(mergeAlpha,false);
 
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	if (source.isNull())
 		throwError<TypeError>(kNullPointerError, "source");
 	if (sourceRect.isNull())
@@ -374,8 +374,8 @@ ASFUNCTIONBODY(BitmapData,generateFilterRect)
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData::generateFilterRect is just a stub");
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
-	Rectangle *rect=Class<Rectangle>::getInstanceS();
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
+	Rectangle *rect=Class<Rectangle>::getInstanceS(obj->getSystemState());
 	rect->width=th->pixels->getWidth();
 	rect->height=th->pixels->getHeight();
 	return rect;
@@ -385,7 +385,7 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	_NR<Point> firstPoint;
 	uint32_t firstAlphaThreshold;
@@ -395,7 +395,7 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 	ARG_UNPACK (firstPoint) (firstAlphaThreshold) (secondObject) (secondBitmapDataPoint, NullRef)
 					(secondAlphaThreshold,1);
 
-	if(!secondObject->getClass() || !secondObject->getClass()->isSubClass(Class<Point>::getClass()))
+	if(!secondObject->getClass() || !secondObject->getClass()->isSubClass(Class<Point>::getClass(obj->getSystemState())))
 		throwError<TypeError>(kCheckTypeFailedError, 
 				      secondObject->getClassName(),
 				      "Point");
@@ -407,16 +407,16 @@ ASFUNCTIONBODY(BitmapData,hitTest)
 
 	uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPoint->getX(), secondPoint->getY()-firstPoint->getY());
 	if((pix>>24)>=firstAlphaThreshold)
-		return abstract_b(true);
+		return abstract_b(obj->getSystemState(),true);
 	else
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 }
 
 ASFUNCTIONBODY(BitmapData,scroll)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	int x;
 	int y;
@@ -432,16 +432,16 @@ ASFUNCTIONBODY(BitmapData,clone)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
-	return Class<BitmapData>::getInstanceS(*th);
+	return Class<BitmapData>::getInstanceS(obj->getSystemState(),*th);
 }
 
 ASFUNCTIONBODY(BitmapData,copyChannel)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	
 	_NR<BitmapData> source;
 	_NR<Rectangle> sourceRect;
@@ -500,7 +500,7 @@ ASFUNCTIONBODY(BitmapData,lock)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	th->locked++;
 	return NULL;
@@ -510,7 +510,7 @@ ASFUNCTIONBODY(BitmapData,unlock)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	if (th->locked > 0)
 	{
@@ -526,7 +526,7 @@ ASFUNCTIONBODY(BitmapData,floodFill)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	int32_t x;
 	int32_t y;
@@ -545,7 +545,7 @@ ASFUNCTIONBODY(BitmapData,histogram)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	_NR<Rectangle> inputRect;
 	ARG_UNPACK (inputRect);
@@ -570,14 +570,14 @@ ASFUNCTIONBODY(BitmapData,histogram)
 		}
 	}
 
-	Vector *result = Template<Vector>::getInstanceS(Template<Vector>::getTemplateInstance(Class<Number>::getClass(),NullRef).getPtr(),NullRef);
+	Vector *result = Template<Vector>::getInstanceS(Template<Vector>::getTemplateInstance(obj->getSystemState(),Class<Number>::getClass(obj->getSystemState()),NullRef).getPtr(),NullRef);
 	int channelOrder[4] = {2, 1, 0, 3}; // red, green, blue, alpha
 	for (int j=0; j<4; j++)
 	{
-		Vector *histogram = Template<Vector>::getInstanceS(Class<Number>::getClass(),NullRef);
+		Vector *histogram = Template<Vector>::getInstanceS(Class<Number>::getClass(obj->getSystemState()),NullRef);
 		for (int level=0; level<256; level++)
 		{
-			histogram->append(abstract_d(counts[channelOrder[j]][level]));
+			histogram->append(abstract_d(obj->getSystemState(),counts[channelOrder[j]][level]));
 		}
 		result->append(histogram);
 	}
@@ -589,7 +589,7 @@ ASFUNCTIONBODY(BitmapData,getColorBoundsRect)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 
 	uint32_t mask;
 	uint32_t color;
@@ -620,7 +620,7 @@ ASFUNCTIONBODY(BitmapData,getColorBoundsRect)
 		}
 	}
 
-	Rectangle *bounds = Class<Rectangle>::getInstanceS();
+	Rectangle *bounds = Class<Rectangle>::getInstanceS(obj->getSystemState());
 	if ((xmin <= xmax) && (ymin <= ymax))
 	{
 		bounds->x = xmin;
@@ -635,7 +635,7 @@ ASFUNCTIONBODY(BitmapData,getPixels)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	
 	_NR<Rectangle> rect;
 	ARG_UNPACK (rect);
@@ -643,7 +643,7 @@ ASFUNCTIONBODY(BitmapData,getPixels)
 	if (rect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 
-	ByteArray *ba = Class<ByteArray>::getInstanceS();
+	ByteArray *ba = Class<ByteArray>::getInstanceS(obj->getSystemState());
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;
 	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)
@@ -655,7 +655,7 @@ ASFUNCTIONBODY(BitmapData,getVector)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	
 	_NR<Rectangle> rect;
 	ARG_UNPACK (rect);
@@ -663,11 +663,11 @@ ASFUNCTIONBODY(BitmapData,getVector)
 	if (rect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 
-	Vector *result = Template<Vector>::getInstanceS(Class<UInteger>::getClass(),NullRef);
+	Vector *result = Template<Vector>::getInstanceS(Class<UInteger>::getClass(obj->getSystemState()),NullRef);
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;
 	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)
-		result->append(abstract_ui(*it));
+		result->append(abstract_ui(obj->getSystemState(),*it));
 	return result;
 }
 
@@ -675,7 +675,7 @@ ASFUNCTIONBODY(BitmapData,setPixels)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	
 	_NR<Rectangle> inputRect;
 	_NR<ByteArray> inputByteArray;
@@ -707,7 +707,7 @@ ASFUNCTIONBODY(BitmapData,setVector)
 {
 	BitmapData* th = obj->as<BitmapData>();
 	if(th->pixels.isNull())
-		throw Class<ArgumentError>::getInstanceS("Disposed BitmapData", 2015);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Disposed BitmapData", 2015);
 	
 	_NR<Rectangle> inputRect;
 	_NR<Vector> inputVector;
@@ -798,9 +798,9 @@ ASFUNCTIONBODY(BitmapData,compare)
 		throwError<TypeError>(kNullPointerError, "otherBitmapData");
 
 	if (th->getWidth() != otherBitmapData->getWidth())
-		return abstract_d(-3);
+		return abstract_d(obj->getSystemState(),-3);
 	if (th->getHeight() != otherBitmapData->getHeight())
-		return abstract_d(-4);
+		return abstract_d(obj->getSystemState(),-4);
 	RECT rect;
 	rect.Xmin = 0;
 	rect.Xmax = th->getWidth();
@@ -810,7 +810,7 @@ ASFUNCTIONBODY(BitmapData,compare)
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect);
 	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect);
 	
-	BitmapData* res = Class<BitmapData>::getInstanceS(rect.Xmax,rect.Ymax);
+	BitmapData* res = Class<BitmapData>::getInstanceS(obj->getSystemState(),rect.Xmax,rect.Ymax);
 	unsigned int i = 0;
 	bool different = false;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
@@ -836,7 +836,7 @@ ASFUNCTIONBODY(BitmapData,compare)
 		}
 	}
 	if (!different)
-		return abstract_d(0);
+		return abstract_d(obj->getSystemState(),0);
 	return res;
 }
 

@@ -208,7 +208,7 @@ public:
 	void addConstructorGetter();
 	void addPrototypeGetter();
 	void addLengthGetter();
-	virtual void setupDeclaredTraits(ASObject *target) const { target->traitsInitialized = true; }
+	inline virtual void setupDeclaredTraits(ASObject *target) const { target->traitsInitialized = true; }
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	bool hasConstructor() { return constructor != NULL; }
@@ -249,7 +249,7 @@ public:
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
-		return ASObject::findGettableImpl(borrowedVariables,name,nsRealId);
+		return ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,nsRealId);
 	}
 	
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
@@ -281,10 +281,23 @@ private:
 	{
 //		throw RunTimeException("Class_object::buildInstanceTraits");
 	}
-	void finalize();
+	void finalize()
+	{
+		//Remove the cyclic reference to itself
+		setClass(NULL);
+		Class_base::finalize();
+	}
+	
 public:
-	static Class_object* getClass();
-	static _R<Class_object> getRef();
+	static Class_object* getClass(SystemState* sys);
+	
+	static _R<Class_object> getRef(SystemState* sys)
+	{
+		Class_object* ret = getClass(sys);
+		ret->incRef();
+		return _MR(ret);
+	}
+	
 };
 
 class Prototype
@@ -313,7 +326,7 @@ class ObjectPrototype: public ASObject, public Prototype
 {
 public:
 	ObjectPrototype(Class_base* c);
-	void finalize();
+	inline void finalize() { prevPrototype.reset(); }
 	void incRef() { ASObject::incRef(); }
 	void decRef() { ASObject::decRef(); }
 	inline ASObject* getObj() { return this; }
@@ -346,7 +359,8 @@ class Function_object: public ASObject
 public:
 	Function_object(Class_base* c, _R<ASObject> p);
 	_NR<ASObject> functionPrototype;
-	void finalize();
+	void finalize() { functionPrototype.reset(); }
+
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
@@ -374,7 +388,7 @@ public:
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
 	bool isConstructed() const { return constructIndicator; }
-	void finalize();
+	inline void finalize() {closure_this.reset();}
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
@@ -451,7 +465,12 @@ class FunctionPrototype: public Function, public Prototype
 {
 public:
 	FunctionPrototype(Class_base* c, _NR<Prototype> p);
-	void finalize();
+	inline void finalize()
+	{
+		Function::finalize();
+		prevPrototype.reset();
+	}
+	
 	void incRef() { ASObject::incRef(); }
 	void decRef() { ASObject::decRef(); }
 	inline ASObject* getObj() { return this; }
@@ -473,15 +492,21 @@ private:
 	/* Pointer to JIT-compiled function or NULL if not yet compiled */
 	synt_function val;
 	SyntheticFunction(Class_base* c,method_info* m);
+	
 	SyntheticFunction* clone()
 	{
 		return new (getClass()->memoryAccount) SyntheticFunction(*this);
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
-	~SyntheticFunction();
+	~SyntheticFunction() {}
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
-	void finalize();
+	inline void finalize()
+	{
+		IFunction::finalize();
+		func_scope.clear();
+	}
+	
 	std::vector<scope_entry> func_scope;
 	bool isEqual(ASObject* r)
 	{
@@ -514,33 +539,33 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 	IFunction* getNopFunction();
 public:
-	static Class<IFunction>* getClass();
-	static _R<Class<IFunction>> getRef()
+	static Class<IFunction>* getClass(SystemState* sys);
+	static _R<Class<IFunction>> getRef(SystemState* sys)
 	{
-		Class<IFunction>* ret = getClass();
+		Class<IFunction>* ret = getClass(sys);
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(Function::as_function v)
+	static Function* getFunction(SystemState* sys,Function::as_function v)
 	{
-		Class<IFunction>* c=Class<IFunction>::getClass();
+		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;
 	}
-	static Function* getFunction(Function::as_function v, int len)
+	static Function* getFunction(SystemState* sys,Function::as_function v, int len)
 	{
-		Class<IFunction>* c=Class<IFunction>::getClass();
+		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function* ret=new (c->memoryAccount) Function(c, v);
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;
 	}
-	static SyntheticFunction* getSyntheticFunction(method_info* m)
+	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m)
 	{
-		Class<IFunction>* c=Class<IFunction>::getClass();
+		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		SyntheticFunction* ret=new (c->memoryAccount) SyntheticFunction(c, m);
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

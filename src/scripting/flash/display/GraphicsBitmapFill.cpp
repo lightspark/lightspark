@@ -39,9 +39,9 @@ void GraphicsBitmapFill::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, repeat);
 	REGISTER_GETTER_SETTER(c, smooth);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass(c->getSystemState()));
 	IGraphicsFill::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 

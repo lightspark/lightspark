@@ -33,7 +33,7 @@ CompressionAlgorithm::CompressionAlgorithm(Class_base* c):
 void CompressionAlgorithm::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
-	c->setVariableByQName("DEFLATE","",Class<ASString>::getInstanceS("deflate"),CONSTANT_TRAIT);
-	c->setVariableByQName("LZMA","",Class<ASString>::getInstanceS("lzma"),CONSTANT_TRAIT);
-	c->setVariableByQName("ZLIB","",Class<ASString>::getInstanceS("zlib"),CONSTANT_TRAIT);
+	c->setVariableByQName("DEFLATE","",abstract_s(c->getSystemState(),"deflate"),CONSTANT_TRAIT);
+	c->setVariableByQName("LZMA","",abstract_s(c->getSystemState(),"lzma"),CONSTANT_TRAIT);
+	c->setVariableByQName("ZLIB","",abstract_s(c->getSystemState(),"zlib"),CONSTANT_TRAIT);
 }

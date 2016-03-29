@@ -29,69 +29,69 @@ using namespace lightspark;
 void Vector::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(setLength),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(getFixed),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(setFixed),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("every","",Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("filter","",Class<IFunction>::getFunction(filter),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("forEach","",Class<IFunction>::getFunction(forEach),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("indexOf","",Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lastIndexOf","",Class<IFunction>::getFunction(lastIndexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("join","",Class<IFunction>::getFunction(join),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("map","",Class<IFunction>::getFunction(_map),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pop","",Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("push","",Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(push),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("reverse","",Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("shift","",Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice","",Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("some","",Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("sort","",Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("splice","",Class<IFunction>::getFunction(splice),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unshift","",Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),getFixed),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),setFixed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(c->getSystemState(),every),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("filter","",Class<IFunction>::getFunction(c->getSystemState(),filter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(c->getSystemState(),filter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("forEach","",Class<IFunction>::getFunction(c->getSystemState(),forEach),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(c->getSystemState(),forEach),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf","",Class<IFunction>::getFunction(c->getSystemState(),indexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),indexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf","",Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("join","",Class<IFunction>::getFunction(c->getSystemState(),join),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(c->getSystemState(),join),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("map","",Class<IFunction>::getFunction(c->getSystemState(),_map),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(c->getSystemState(),_map),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pop","",Class<IFunction>::getFunction(c->getSystemState(),_pop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(c->getSystemState(),_pop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("push","",Class<IFunction>::getFunction(c->getSystemState(),push),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(c->getSystemState(),push),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reverse","",Class<IFunction>::getFunction(c->getSystemState(),_reverse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(c->getSystemState(),_reverse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("shift","",Class<IFunction>::getFunction(c->getSystemState(),shift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(c->getSystemState(),shift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice","",Class<IFunction>::getFunction(c->getSystemState(),slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(c->getSystemState(),slice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("some","",Class<IFunction>::getFunction(c->getSystemState(),some),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(c->getSystemState(),some),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sort","",Class<IFunction>::getFunction(c->getSystemState(),_sort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(c->getSystemState(),_sort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("splice","",Class<IFunction>::getFunction(c->getSystemState(),splice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unshift","",Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
 	
 
-	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(_map),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("push",AS3,Class<IFunction>::getFunction(push),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("every",AS3,Class<IFunction>::getFunction(c->getSystemState(),every),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(c->getSystemState(),filter),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(c->getSystemState(),forEach),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),indexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("join",AS3,Class<IFunction>::getFunction(c->getSystemState(),join),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(c->getSystemState(),_map),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(c->getSystemState(),_pop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("push",AS3,Class<IFunction>::getFunction(c->getSystemState(),push),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(c->getSystemState(),_reverse),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(c->getSystemState(),shift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(c->getSystemState(),slice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("some",AS3,Class<IFunction>::getFunction(c->getSystemState(),some),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(c->getSystemState(),_sort),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),DYNAMIC_TRAIT);
 }
 
 Vector::Vector(Class_base* c, const Type *vtype):ASObject(c),vec_type(vtype),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
@@ -134,7 +134,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 
 	const Type* type = o_class->getTypes()[0];
 
-	if(args[0]->getClass() == Class<Array>::getClass())
+	if(args[0]->getClass() == Class<Array>::getClass(args[0]->getSystemState()))
 	{
 		//create object without calling _constructor
 		Vector* ret = o_class->getInstance(false,NULL,0);
@@ -149,7 +149,7 @@ ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* ar
 		}
 		return ret;
 	}
-	else if(args[0]->getClass()->getTemplate() == Template<Vector>::getTemplate())
+	else if(args[0]->getClass()->getTemplate() == Template<Vector>::getTemplate(args[0]->getSystemState()))
 	{
 		Vector* arg = static_cast<Vector*>(args[0]);
 
@@ -252,13 +252,13 @@ ASFUNCTIONBODY(Vector,filter)
 			continue;
 		params[0] = th->vec[i];
 		th->vec[i]->incRef();
-		params[1] = abstract_i(i);
+		params[1] = abstract_i(obj->getSystemState(),i);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -295,13 +295,13 @@ ASFUNCTIONBODY(Vector, some)
 			continue;
 		params[0] = th->vec[i];
 		th->vec[i]->incRef();
-		params[1] = abstract_i(i);
+		params[1] = abstract_i(obj->getSystemState(),i);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -317,7 +317,7 @@ ASFUNCTIONBODY(Vector, some)
 			funcRet->decRef();
 		}
 	}
-	return abstract_b(false);
+	return abstract_b(obj->getSystemState(),false);
 }
 
 ASFUNCTIONBODY(Vector, every)
@@ -339,14 +339,14 @@ ASFUNCTIONBODY(Vector, every)
 			th->vec[i]->incRef();
 		}
 		else
-			params[0] = getSys()->getNullRef();
-		params[1] = abstract_i(i);
+			params[0] = obj->getSystemState()->getNullRef();
+		params[1] = abstract_i(obj->getSystemState(),i);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -364,7 +364,7 @@ ASFUNCTIONBODY(Vector, every)
 			funcRet->decRef();
 		}
 	}
-	return abstract_b(true);
+	return abstract_b(obj->getSystemState(),true);
 }
 
 void Vector::append(ASObject *o)
@@ -390,7 +390,7 @@ ASFUNCTIONBODY(Vector,push)
 		//they are converted to the vec_type
 		th->vec.push_back( th->vec_type->coerce(args[i]) );
 	}
-	return abstract_ui(th->vec.size());
+	return abstract_ui(obj->getSystemState(),th->vec.size());
 }
 
 ASFUNCTIONBODY(Vector,_pop)
@@ -400,17 +400,17 @@ ASFUNCTIONBODY(Vector,_pop)
 		throwError<RangeError>(kVectorFixedError);
 	uint32_t size =th->size();
 	if (size == 0)
-        return th->vec_type->coerce(getSys()->getNullRef());
+        return th->vec_type->coerce(obj->getSystemState()->getNullRef());
 	ASObject* ret = th->vec[size-1];
 	if (!ret)
-		ret = th->vec_type->coerce(getSys()->getNullRef());
+		ret = th->vec_type->coerce(obj->getSystemState()->getNullRef());
 	th->vec.pop_back();
 	return ret;
 }
 
 ASFUNCTIONBODY(Vector,getLength)
 {
-	return abstract_ui(obj->as<Vector>()->vec.size());
+	return abstract_ui(obj->getSystemState(),obj->as<Vector>()->vec.size());
 }
 
 ASFUNCTIONBODY(Vector,setLength)
@@ -432,7 +432,7 @@ ASFUNCTIONBODY(Vector,setLength)
 
 ASFUNCTIONBODY(Vector,getFixed)
 {
-	return abstract_b(obj->as<Vector>()->fixed);
+	return abstract_b(obj->getSystemState(),obj->as<Vector>()->fixed);
 }
 
 ASFUNCTIONBODY(Vector,setFixed)
@@ -460,14 +460,14 @@ ASFUNCTIONBODY(Vector,forEach)
 			continue;
 		params[0] = th->vec[i];
 		th->vec[i]->incRef();
-		params[1] = abstract_i(i);
+		params[1] = abstract_i(obj->getSystemState(),i);
 		params[2] = th;
 		th->incRef();
 
 		ASObject *funcret;
 		if( argslen == 1 )
 		{
-			funcret=f->call(getSys()->getNullRef(), params, 3);
+			funcret=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -508,12 +508,12 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	ASObject* arg0=args[0];
 
 	if(th->vec.size() == 0)
-		return abstract_d(-1);
+		return abstract_d(obj->getSystemState(),-1);
 
 	size_t i = th->size()-1;
 
 	if(argslen == 2 && std::isnan(args[1]->toNumber()))
-		return abstract_i(0);
+		return abstract_i(obj->getSystemState(),0);
 
 	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
 	{
@@ -545,7 +545,7 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	}
 	while(i--);
 
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Vector,shift)
@@ -554,12 +554,12 @@ ASFUNCTIONBODY(Vector,shift)
 	if (th->fixed)
 		throwError<RangeError>(kVectorFixedError);
 	if(!th->size())
-		return th->vec_type->coerce(getSys()->getNullRef());
+		return th->vec_type->coerce(obj->getSystemState()->getNullRef());
 	ASObject* ret;
 	if(th->vec[0])
 		ret=th->vec[0];
 	else
-		ret=th->vec_type->coerce(getSys()->getNullRef());
+		ret=th->vec_type->coerce(obj->getSystemState()->getNullRef());
 	for(uint32_t i= 1;i< th->size();i++)
 	{
 		if (th->vec[i])
@@ -704,7 +704,7 @@ ASFUNCTIONBODY(Vector,join)
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Vector,indexOf)
@@ -730,7 +730,7 @@ ASFUNCTIONBODY(Vector,indexOf)
 			break;
 		}
 	}
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 bool Vector::sortComparatorDefault::operator()(ASObject* d1, ASObject* d2)
 {
@@ -780,17 +780,17 @@ bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
 		objs[0]->incRef();
 	}
 	else
-		objs[0] = vec_type->coerce(getSys()->getNullRef());
+		objs[0] = vec_type->coerce(comparator->getSystemState()->getNullRef());
 	if (d2)
 	{
 		objs[1] = d2;
 		objs[1]->incRef();
 	}
 	else
-		objs[1] = vec_type->coerce(getSys()->getNullRef());
+		objs[1] = vec_type->coerce(comparator->getSystemState()->getNullRef());
 
 	assert(comparator);
-	_NR<ASObject> ret=_MNR(comparator->call(getSys()->getNullRef(), objs, 2));
+	_NR<ASObject> ret=_MNR(comparator->call(comparator->getSystemState()->getNullRef(), objs, 2));
 	assert_and_throw(ret);
 	return (ret->toNumber()<0); //Less
 }
@@ -867,7 +867,7 @@ ASFUNCTIONBODY(Vector,unshift)
 			th->vec[i] = th->vec_type->coerce(args[i]);
 		}
 	}
-	return abstract_i(th->size());
+	return abstract_i(obj->getSystemState(),th->size());
 }
 
 ASFUNCTIONBODY(Vector,_map)
@@ -888,7 +888,7 @@ ASFUNCTIONBODY(Vector,_map)
 	{
 		ASObject* funcArgs[3];
 		if (!th->vec[i])
-			funcArgs[0]=getSys()->getNullRef();
+			funcArgs[0]=obj->getSystemState()->getNullRef();
 		else
 		{
 			if(th->vec[i])
@@ -897,13 +897,13 @@ ASFUNCTIONBODY(Vector,_map)
 				funcArgs[0]->incRef();
 			}
 			else
-				funcArgs[0]=getSys()->getUndefinedRef();
+				funcArgs[0]=obj->getSystemState()->getUndefinedRef();
 		}
-		funcArgs[1]=abstract_i(i);
+		funcArgs[1]=abstract_i(obj->getSystemState(),i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
 		if (thisObject.isNull())
-			thisObj = getSys()->getNullRef();
+			thisObj = obj->getSystemState()->getNullRef();
 		else
 		{
 			thisObj = thisObject.getPtr();
@@ -927,12 +927,12 @@ ASFUNCTIONBODY(Vector,_toString)
 			ret += th->vec[i]->toString();
 		else
 			// use the type's default value
-			ret += th->vec_type->coerce( getSys()->getNullRef() )->toString();
+			ret += th->vec_type->coerce( obj->getSystemState()->getNullRef() )->toString();
 
 		if(i!=th->vec.size()-1)
 			ret += ',';
 	}
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
@@ -943,7 +943,7 @@ bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic,
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(name,index))
+	if(!Vector::isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	if(index < vec.size())
@@ -963,7 +963,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(name,index) || index == UINT32_MAX)
+	if(!Vector::isValidMultiname(getSystemState(),name,index) || index == UINT32_MAX)
 	{
 		if (name.name_type == multiname::NAME_INT ||
 				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
@@ -971,7 +971,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 
 		_NR<ASObject> ret = ASObject::getVariableByMultiname(name,opt);
 		if (ret.isNull()) 
-			throwError<ReferenceError>(kReadSealedError, name.normalizedName(), this->getClass()->getQualifiedClassName());
+			throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
 		return ret;
 	}
 	if(index < vec.size())
@@ -982,7 +982,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 			return _MNR(vec[index]);
 		}
 		else
-			return _MNR(vec_type->coerce( getSys()->getNullRef() ));
+			return _MNR(vec_type->coerce( getSystemState()->getNullRef() ));
 	}
 	else
 	{
@@ -1001,14 +1001,14 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_AL
 		return ASObject::setVariableByMultiname(name, o, allowConst);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(name,index))
+	if(!Vector::isValidMultiname(getSystemState(),name,index))
 	{
 		if (name.name_type == multiname::NAME_INT ||
 				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
-			throwError<RangeError>(kOutOfRangeError,name.normalizedName(),Integer::toString(vec.size()));
+			throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 		
 		if (!ASObject::hasPropertyByMultiname(name,false,true))
-			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(), this->getClass()->getQualifiedClassName());
+			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
 		return ASObject::setVariableByMultiname(name, o, allowConst);
 	}
 	ASObject* o2 = this->vec_type->coerce(o);
@@ -1044,7 +1044,7 @@ tiny_string Vector::toString()
 		if (vec[i]) 
 			t += vec[i]->toString();
 		else
-			t += vec_type->coerce( getSys()->getNullRef() )->toString();
+			t += vec_type->coerce( getSystemState()->getNullRef() )->toString();
 	}
 	return t;
 }
@@ -1060,7 +1060,7 @@ uint32_t Vector::nextNameIndex(uint32_t cur_index)
 _R<ASObject> Vector::nextName(uint32_t index)
 {
 	if(index<=vec.size())
-		return _MR(abstract_i(index-1));
+		return _MR(abstract_i(getSystemState(),index-1));
 	else
 		throw RunTimeException("Vector::nextName out of bounds");
 }
@@ -1074,13 +1074,13 @@ _R<ASObject> Vector::nextValue(uint32_t index)
 			vec[index-1]->incRef();
 			return _MR(vec[index-1]);
 		}
-		return _MR(vec_type->coerce( getSys()->getNullRef() ));
+		return _MR(vec_type->coerce( getSystemState()->getNullRef() ));
 	}
 	else
 		throw RunTimeException("Vector::nextValue out of bounds");
 }
 
-bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
+bool Vector::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
@@ -1088,7 +1088,7 @@ bool Vector::isValidMultiname(const multiname& name, uint32_t& index)
 	if(!name.ns[0].hasEmptyName())
 		return false;
 
-	bool validIndex=name.toUInt(index, true);
+	bool validIndex=name.toUInt(sys,index, true);
 
 	return validIndex;
 }
@@ -1112,16 +1112,16 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, c
 		tiny_string subres;
 		ASObject* o = vec[i];
 		if (!o)
-			o = getSys()->getNullRef();
+			o = getSystemState()->getNullRef();
 		if (replacer != NULL)
 		{
 			ASObject* params[2];
 			
-			params[0] = Class<Number>::getInstanceS(i);
+			params[0] = abstract_d(getSystemState(),i);
 			params[0]->incRef();
 			params[1] = o;
 			params[1]->incRef();
-			ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+			ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
 			if (funcret)
 				subres = funcret->toJSON(path,NULL,spaces,filter);
 		}
@@ -1164,11 +1164,11 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		return;
 	}
 	uint8_t marker = 0;
-	if (vec_type == Class<Integer>::getClass())
+	if (vec_type == Class<Integer>::getClass(getSystemState()))
 		marker = vector_int_marker;
-	else if (vec_type == Class<UInteger>::getClass())
+	else if (vec_type == Class<UInteger>::getClass(getSystemState()))
 		marker = vector_uint_marker;
-	else if (vec_type == Class<Number>::getClass())
+	else if (vec_type == Class<Number>::getClass(getSystemState()))
 		marker = vector_double_marker;
 	else
 		marker = vector_object_marker;

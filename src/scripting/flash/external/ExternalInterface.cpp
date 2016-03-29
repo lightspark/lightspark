@@ -27,39 +27,40 @@ using namespace lightspark;
 void ExternalInterface::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("available","",Class<IFunction>::getFunction(_getAvailable),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("objectID","",Class<IFunction>::getFunction(_getObjectID),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(_getMarshallExceptions),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(_setMarshallExceptions),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("addCallback","",Class<IFunction>::getFunction(addCallback),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(call),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("available","",Class<IFunction>::getFunction(c->getSystemState(),_getAvailable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("objectID","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectID),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(c->getSystemState(),_getMarshallExceptions),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(c->getSystemState(),_setMarshallExceptions),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("addCallback","",Class<IFunction>::getFunction(c->getSystemState(),addCallback),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),call),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
 {
-	return abstract_b(getSys()->extScriptObject != NULL);
+	return abstract_b(getSys(),getSys()->extScriptObject != NULL);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 {
-	if(getSys()->extScriptObject == NULL)
-		return Class<ASString>::getInstanceS("");
+	SystemState* sys = getSys();
+	if(sys->extScriptObject == NULL)
+		return abstract_s(sys,"");
 
-	ExtScriptObject* so=getSys()->extScriptObject;
+	ExtScriptObject* so=sys->extScriptObject;
 	if(so->hasProperty("name")==false)
-		return Class<ASString>::getInstanceS("");
+		return abstract_s(sys,"");
 
 	const ExtVariant& object = so->getProperty("name");
 	std::string result = object.getString();
-	return Class<ASString>::getInstanceS(result);
+	return abstract_s(sys,result);
 }
 
 ASFUNCTIONBODY(ExternalInterface, _getMarshallExceptions)
 {
 	if(getSys()->extScriptObject == NULL)
-		return abstract_b(false);
+		return abstract_b(getSys(),false);
 	else
-		return abstract_b(getSys()->extScriptObject->getMarshallExceptions());
+		return abstract_b(getSys(),getSys()->extScriptObject->getMarshallExceptions());
 }
 
 ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
@@ -73,7 +74,7 @@ ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
 ASFUNCTIONBODY(ExternalInterface,addCallback)
 {
 	if(getSys()->extScriptObject == NULL)
-		return abstract_b(false);
+		return abstract_b(getSys(),false);
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
@@ -85,7 +86,7 @@ ASFUNCTIONBODY(ExternalInterface,addCallback)
 		IFunction* f=static_cast<IFunction*>(args[1]);
 		getSys()->extScriptObject->setMethod(args[0]->toString().raw_buf(), new ExtASCallback(f));
 	}
-	return abstract_b(true);
+	return abstract_b(getSys(),true);
 }
 
 ASFUNCTIONBODY(ExternalInterface,call)

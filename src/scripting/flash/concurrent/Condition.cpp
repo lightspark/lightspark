@@ -30,10 +30,10 @@ ASCondition::ASCondition(Class_base* c):ASObject(c)
 void ASCondition::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
-	c->setVariableByQName("isSupported","",abstract_b(false),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("notify","",Class<IFunction>::getFunction(_notify),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("notifyAll","",Class<IFunction>::getFunction(_notifyAll),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wait","",Class<IFunction>::getFunction(_wait),NORMAL_METHOD,true);
+	c->setVariableByQName("isSupported","",abstract_b(c->getSystemState(),false),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("notify","",Class<IFunction>::getFunction(c->getSystemState(),_notify),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("notifyAll","",Class<IFunction>::getFunction(c->getSystemState(),_notifyAll),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wait","",Class<IFunction>::getFunction(c->getSystemState(),_wait),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,mutex);
 }
 
@@ -76,6 +76,6 @@ ASFUNCTIONBODY(ASCondition,_wait)
 	ASCondition* th=obj->as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotWait) ;
-	return abstract_b(true);
+	return abstract_b(obj->getSystemState(),true);
 }
 

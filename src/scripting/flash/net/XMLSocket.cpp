@@ -172,10 +172,10 @@ XMLSocket::~XMLSocket()
 void XMLSocket::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(_close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(_connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(_send),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(_connected),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),_close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),_connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),_send),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_connected),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,timeout);
 }
 
@@ -238,17 +238,17 @@ ASFUNCTIONBODY(XMLSocket, _close)
 void XMLSocket::connect(tiny_string host, int port)
 {
 	if (port <= 0 || port > 65535)
-		throw Class<SecurityError>::getInstanceS("Invalid port");
+		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid port");
 
 	if (host.empty())
 		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
-		throw Class<IOError>::getInstanceS("Already connected");
+		throw Class<IOError>::getInstanceS(getSystemState(),"Already connected");
 
 	// Host shouldn't contain scheme or port
 	if (host.strchr(':') != NULL)
-		throw Class<SecurityError>::getInstanceS("Invalid hostname");
+		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid hostname");
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
@@ -256,7 +256,7 @@ void XMLSocket::connect(tiny_string host, int port)
 	snprintf(urlbuf, buflen, "xmlsocket://%s:%d", host.raw_buf(), port);
 	URLInfo url(urlbuf);
 
-	getSys()->securityManager->checkURLStaticAndThrow(url,
+	getSystemState()->securityManager->checkURLStaticAndThrow(url,
 		~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 		true);
@@ -266,7 +266,7 @@ void XMLSocket::connect(tiny_string host, int port)
 	if(evaluationResult != SecurityManager::ALLOWED)
 	{
 		incRef();
-		getVm()->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS("No policy file allows socket connection")));
+		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS(getSystemState(),"No policy file allows socket connection")));
 		return;
 	}
 
@@ -306,7 +306,7 @@ ASFUNCTIONBODY(XMLSocket, _send)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS("Socket is not connected");
+		throw Class<IOError>::getInstanceS(obj->getSystemState(),"Socket is not connected");
 	}
 
 	return NULL;
@@ -321,7 +321,7 @@ bool XMLSocket::isConnected()
 ASFUNCTIONBODY(XMLSocket, _connected)
 {
 	XMLSocket* th=obj->as<XMLSocket>();
-	return abstract_b(th->isConnected());
+	return abstract_b(obj->getSystemState(),th->isConnected());
 }
 
 void XMLSocket::threadFinished()
@@ -379,12 +379,12 @@ void XMLSocketThread::execute()
 	if (!sock.connect(hostname, port))
 	{
 		owner->incRef();
-		getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
 		return;
 	}
 
 	owner->incRef();
-	getVm()->addEvent(owner, _MR(Class<Event>::getInstanceS("connect")));
+	getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
 
 	struct timeval timeout;
 	int maxfd;
@@ -405,7 +405,7 @@ void XMLSocketThread::execute()
 		if (status  < 0)
 		{
 			owner->incRef();
-			getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
 			return;
 		}
 
@@ -417,7 +417,7 @@ void XMLSocketThread::execute()
 			if (nbytes < 0)
 			{
 				owner->incRef();
-				getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
+				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
 				return;
 			}
 			else if (nbytes == 0)
@@ -449,20 +449,20 @@ void XMLSocketThread::readSocket(const SocketIO& sock)
 		buf[nbytes] = '\0';
 		tiny_string data(buf, true);
 		owner->incRef();
-		getVm()->addEvent(owner, _MR(Class<DataEvent>::getInstanceS(data)));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<DataEvent>::getInstanceS(owner->getSystemState(),data)));
 	}
 	else if (nbytes == 0)
 	{
 		// The server has closed the socket
 		owner->incRef();
-		getVm()->addEvent(owner, _MR(Class<Event>::getInstanceS("close")));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
 		threadAborting = true;
 	}
 	else
 	{
 		// Error
 		owner->incRef();
-		getVm()->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
 		threadAborting = true;
 	}
 }

@@ -252,16 +252,16 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 	switch(getType())
 	{
 	case EV_STRING:
-		asobj = Class<ASString>::getInstanceS(getString().c_str());
+		asobj = abstract_s(getSys(),getString().c_str());
 		break;
 	case EV_INT32:
-		asobj = abstract_i(getInt());
+		asobj = abstract_i(getSys(),getInt());
 		break;
 	case EV_DOUBLE:
-		asobj = abstract_d(getDouble());
+		asobj = abstract_d(getSys(),getDouble());
 		break;
 	case EV_BOOLEAN:
-		asobj = abstract_b(getBoolean());
+		asobj = abstract_b(getSys(),getBoolean());
 		break;
 	case EV_OBJECT:
 		{
@@ -279,7 +279,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 			// We are converting an array, so lets set indexes
 			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
-				asobj = Class<Array>::getInstanceS();
+				asobj = Class<Array>::getInstanceS(getSys());
 				objectsMap[objValue] = asobj;
 
 				count = objValue->getLength();
@@ -293,7 +293,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 			// We are converting an object, so lets set variables
 			else
 			{
-				asobj = Class<ASObject>::getInstanceS();
+				asobj = Class<ASObject>::getInstanceS(getSys());
 				objectsMap[objValue] = asobj;
 			
 				ExtIdentifier** ids;
@@ -373,7 +373,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		func->incRef();
 		funcEvent = _MR(new (getSys()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
 		// Add the callback function event to the VM event queue
-		funcWasCalled=getVm()->addEvent(NullRef,funcEvent);
+		funcWasCalled=getVm(getSys())->addEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
 			funcEvent = NullRef;
 	}

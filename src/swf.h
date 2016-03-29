@@ -402,7 +402,7 @@ public:
 	void flushInvalidationQueue();
 
 	//Resize support
-	void resizeCompleted() const;
+	void resizeCompleted();
 
 	/*
 	 * Support for class aliases in AMF3 serialization

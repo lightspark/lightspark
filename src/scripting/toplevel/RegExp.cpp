@@ -36,16 +36,16 @@ RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c),dotall(false),
 void RegExp::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(exec),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("test","",Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(test),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("exec",AS3,Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("test","",Class<IFunction>::getFunction(c->getSystemState(),test),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(c->getSystemState(),test),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(c->getSystemState(),exec),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(c->getSystemState(),test),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(c->getSystemState(),test),DYNAMIC_TRAIT);
 	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);
 	REGISTER_GETTER(c,ignoreCase);
@@ -114,7 +114,7 @@ ASFUNCTIONBODY(RegExp,generator)
 {
 	if(argslen == 0)
 	{
-		return Class<RegExp>::getInstanceS("");
+		return Class<RegExp>::getInstanceS(getSys(),"");
 	}
 	else if(args[0]->is<RegExp>())
 	{
@@ -125,7 +125,7 @@ ASFUNCTIONBODY(RegExp,generator)
 	{
 		if (argslen > 1)
 			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		return Class<RegExp>::getInstanceS(args[0]->toString());
+		return Class<RegExp>::getInstanceS(args[0]->getSystemState(),args[0]->toString());
 	}
 }
 
@@ -149,13 +149,13 @@ ASObject *RegExp::match(const tiny_string& str)
 {
 	pcre* pcreRE = compile();
 	if (!pcreRE)
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	}
 	//Get information about named capturing groups
 	int namedGroups;
@@ -163,7 +163,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	}
 	//Get information about the size of named entries
 	int namedSize;
@@ -171,7 +171,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	}
 	struct nameEntry
 	{
@@ -184,7 +184,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	{
 		pcre_free(pcreRE);
 		lastIndex=0;
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	}
 	pcre_extra extra;
 	extra.match_limit_recursion=200;
@@ -196,24 +196,24 @@ ASObject *RegExp::match(const tiny_string& str)
 	{
 		//No matches or error
 		pcre_free(pcreRE);
-		return getSys()->getNullRef();
+		return getSystemState()->getNullRef();
 	}
-	Array* a=Class<Array>::getInstanceS();
+	Array* a=Class<Array>::getInstanceS(getSystemState());
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] >= 0)
-			a->push(_MR(Class<ASString>::getInstanceS( str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
+			a->push(_MR(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
-			a->push(_MR(getSys()->getUndefinedRef()));
+			a->push(_MR(getSystemState()->getUndefinedRef()));
 	}
-	a->setVariableByQName("input","",Class<ASString>::getInstanceS(str),DYNAMIC_TRAIT);
+	a->setVariableByQName("input","",abstract_s(getSystemState(),str),DYNAMIC_TRAIT);
 
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = str.substr_bytes(0, ovector[0]);
 	int index = tmp.numChars();
 
-	a->setVariableByQName("index","",abstract_i(index),DYNAMIC_TRAIT);
+	a->setVariableByQName("index","",abstract_i(getSystemState(),index),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=reinterpret_cast<nameEntry*>(entries);
@@ -231,20 +231,20 @@ ASObject *RegExp::match(const tiny_string& str)
 ASFUNCTIONBODY(RegExp,test)
 {
 	if (!obj->is<RegExp>())
-		return abstract_b(true);
+		return abstract_b(obj->getSystemState(),true);
 	RegExp* th=static_cast<RegExp*>(obj);
 
 	const tiny_string& arg0 = args[0]->toString();
 	pcre* pcreRE = th->compile();
 	if (!pcreRE)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	}
 	int ovector[(capturingGroups+1)*3];
 	
@@ -256,15 +256,15 @@ ASFUNCTIONBODY(RegExp,test)
 	bool ret = (rc >= 0);
 	pcre_free(pcreRE);
 
-	return abstract_b(ret);
+	return abstract_b(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(RegExp,_toString)
 {
-	if(Class<RegExp>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("/(?:)/");
+	if(Class<RegExp>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_s(obj->getSystemState(),"/(?:)/");
 	if(!obj->is<RegExp>())
-		throw Class<TypeError>::getInstanceS("RegExp.toString is not generic");
+		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"RegExp.toString is not generic");
 
 	RegExp* th=static_cast<RegExp*>(obj);
 	tiny_string ret;
@@ -279,7 +279,7 @@ ASFUNCTIONBODY(RegExp,_toString)
 		ret += "m";
 	if(th->dotall)
 		ret += "s";
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 
 pcre* RegExp::compile()

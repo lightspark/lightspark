@@ -44,9 +44,9 @@ void GraphicsStroke::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, scaleMode);
 	REGISTER_GETTER_SETTER(c, thickness);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsStroke>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsStroke>::getClass(c->getSystemState()));
 	IGraphicsStroke::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 

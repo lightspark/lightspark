@@ -71,7 +71,7 @@ void ASObject::setProxyProperty(const multiname &name)
 	if (this->proxyMultiName)
 		this->proxyMultiName->ns.clear();
 	else
-		this->proxyMultiName = new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+		this->proxyMultiName = new (getVm(getSystemState())->vmDataMemory) multiname(getVm(getSystemState())->vmDataMemory);
 	this->proxyMultiName->isAttribute = name.isAttribute;
 	this->proxyMultiName->ns.reserve(name.ns.size());
 	for(unsigned int i=0;i<name.ns.size();i++)
@@ -180,7 +180,7 @@ _R<ASObject> ASObject::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	return _MR(abstract_s(getNameAt(index-1)));
+	return _MR(abstract_s(getSystemState(),getNameAt(index-1)));
 }
 
 _R<ASObject> ASObject::nextValue(uint32_t index)
@@ -192,16 +192,16 @@ _R<ASObject> ASObject::nextValue(uint32_t index)
 
 void ASObject::sinit(Class_base* c)
 {
-	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(hasOwnProperty),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,Class<IFunction>::getFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(c->getSystemState(),hasOwnProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,Class<IFunction>::getFunction(c->getSystemState(),setPropertyIsEnumerable),NORMAL_METHOD,true);
 
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toLocaleString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("hasOwnProperty","",Class<IFunction>::getFunction(hasOwnProperty),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(isPrototypeOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("propertyIsEnumerable","",Class<IFunction>::getFunction(propertyIsEnumerable),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("setPropertyIsEnumerable","",Class<IFunction>::getFunction(setPropertyIsEnumerable),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),_toLocaleString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),valueOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("hasOwnProperty","",Class<IFunction>::getFunction(c->getSystemState(),hasOwnProperty),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(c->getSystemState(),isPrototypeOf),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("propertyIsEnumerable","",Class<IFunction>::getFunction(c->getSystemState(),propertyIsEnumerable),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setPropertyIsEnumerable","",Class<IFunction>::getFunction(c->getSystemState(),setPropertyIsEnumerable),DYNAMIC_TRAIT);
 
 }
 
@@ -323,9 +323,9 @@ bool ASObject::has_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
-	valueOfName.ns.emplace_back("",NAMESPACE);
-	valueOfName.ns.emplace_back(AS3,NAMESPACE);
+	valueOfName.name_s_id=getSystemState()->getUniqueStringId("valueOf");
+	valueOfName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	valueOfName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	valueOfName.isAttribute = false;
 	return hasPropertyByMultiname(valueOfName, true, true);
 }
@@ -337,15 +337,15 @@ _R<ASObject> ASObject::call_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s_id=getSys()->getUniqueStringId("valueOf");
-	valueOfName.ns.emplace_back("",NAMESPACE);
-	valueOfName.ns.emplace_back(AS3,NAMESPACE);
+	valueOfName.name_s_id=getSystemState()->getUniqueStringId("valueOf");
+	valueOfName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	valueOfName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
 	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	if (!o->is<IFunction>())
-		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved());
+		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 	IFunction* f=o->as<IFunction>();
 
 	incRef();
@@ -357,9 +357,9 @@ bool ASObject::has_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back("",NAMESPACE);
-	toStringName.ns.emplace_back(AS3,NAMESPACE);
+	toStringName.name_s_id=getSystemState()->getUniqueStringId("toString");
+	toStringName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	toStringName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	toStringName.isAttribute = false;
 	return ASObject::hasPropertyByMultiname(toStringName, true, true);
 }
@@ -371,9 +371,9 @@ _R<ASObject> ASObject::call_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back("",NAMESPACE);
-	toStringName.ns.emplace_back(AS3,NAMESPACE);
+	toStringName.name_s_id=getSystemState()->getUniqueStringId("toString");
+	toStringName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	toStringName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	toStringName.isAttribute = false;
 	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
@@ -392,9 +392,9 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunct
 	ok = false;
 	multiname toJSONName(NULL);
 	toJSONName.name_type=multiname::NAME_STRING;
-	toJSONName.name_s_id=getSys()->getUniqueStringId("toJSON");
-	toJSONName.ns.emplace_back("",NAMESPACE);
-	toJSONName.ns.emplace_back(AS3,NAMESPACE);
+	toJSONName.name_s_id=getSystemState()->getUniqueStringId("toJSON");
+	toJSONName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	toJSONName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	toJSONName.isAttribute = false;
 	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
 		return res;
@@ -464,10 +464,10 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(Variables.findObjVar(name, validTraits)!=NULL)
+	if(Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
 		return true;
 
-	if(classdef && classdef->borrowedVariables.findObjVar(name, DECLARED_TRAIT)!=NULL)
+	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=NULL)
 		return true;
 
 	//Check prototype inheritance chain
@@ -488,12 +488,12 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 
 void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
 {
-	setDeclaredMethodByQName(name, nsNameAndKind(ns, NAMESPACE), o, type, isBorrowed);
+	setDeclaredMethodByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed);
 }
 
 void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
 {
-	setDeclaredMethodByQName(getSys()->getUniqueStringId(name), ns, o, type, isBorrowed);
+	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed);
 }
 
 void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
@@ -551,7 +551,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 
 bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
-	variable* obj=Variables.findObjVar(name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	
 	if(obj==NULL)
 	{
@@ -574,7 +574,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	obj->var->decRef();
 
 	//Now kill the variable
-	Variables.killObjVar(name);
+	Variables.killObjVar(getSystemState(),name);
 	return true;
 }
 
@@ -582,12 +582,12 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	check();
-	setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
+	setVariableByMultiname(name,abstract_i(this->getSystemState(),value),CONST_NOT_ALLOWED);
 }
 
-variable* ASObject::findSettableImpl(variables_map& map, const multiname& name, bool* has_getter)
+variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter)
 {
-	variable* ret=map.findObjVar(name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	variable* ret=map.findObjVar(sys,name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -604,7 +604,7 @@ variable* ASObject::findSettableImpl(variables_map& map, const multiname& name, 
 
 variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 {
-	return findSettableImpl(Variables, name, has_getter);
+	return findSettableImpl(getSystemState(),Variables, name, has_getter);
 }
 
 
@@ -618,7 +618,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), classdef->as<Class_base>()->getQualifiedClassName());
+		throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 	}
 	if(!obj && cls)
 	{
@@ -629,7 +629,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && (cls->isFinal || cls->isSealed) && !obj->setter)
 		{
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
 
@@ -644,7 +644,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		    ((protoObj->var && protoObj->var->is<Function>()) ||
 		     protoObj->setter))
 		{
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
 
@@ -652,20 +652,20 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 
 		// Properties can not be added to a sealed class
-		if (cls && cls->isSealed && getVm()->currentCallContext)
+		if (cls && cls->isSealed && getVm(getSystemState())->currentCallContext)
 		{
-			const Type* type = Type::getTypeFromMultiname(&name,getVm()->currentCallContext->context);
+			const Type* type = Type::getTypeFromMultiname(&name,getVm(getSystemState())->currentCallContext->context);
 			if (type)
-				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(), cls ? cls->getQualifiedClassName() : "");
-			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(), cls->getQualifiedClassName());
+				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
 		}
 
 		//Create a new dynamic variable
-		obj=Variables.findObjVar(name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
+		obj=Variables.findObjVar(getSystemState(),name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
 	}
 
 	if(obj->setter)
@@ -690,13 +690,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind)
 {
-	const nsNameAndKind tmpns(ns, NAMESPACE);
+	const nsNameAndKind tmpns(getSystemState(),ns, NAMESPACE);
 	setVariableByQName(name, tmpns, o, traitKind);
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
 {
-	setVariableByQName(getSys()->getUniqueStringId(name), ns, o, traitKind);
+	setVariableByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind);
 }
 
 void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
@@ -745,9 +745,9 @@ void variable::setVar(ASObject* v)
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
 	//children, which is done outisde any ABC context
-	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm()->currentCallContext)
+	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm(v->getSystemState())->currentCallContext)
 	{
-		type = Type::getTypeFromMultiname(traitTypemname, getVm()->currentCallContext->context);
+		type = Type::getTypeFromMultiname(traitTypemname, getVm(v->getSystemState())->currentCallContext->context);
 		assert(type);
 		traitState=TYPE_RESOLVED;
 	}
@@ -767,9 +767,9 @@ void variable::setVarNoCoerce(ASObject* v)
 	var=v;
 }
 
-void variables_map::killObjVar(const multiname& mname)
+void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 {
-	uint32_t name=mname.normalizedNameId();
+	uint32_t name=mname.normalizedNameId(sys);
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
@@ -798,9 +798,9 @@ void variables_map::killObjVar(const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
-variable* variables_map::findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	uint32_t name=mname.normalizedNameId();
+	uint32_t name=mname.normalizedNameId(sys);
 	assert(!mname.ns.empty());
 
 	var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
@@ -859,7 +859,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	{
 		if (obj == NULL) // create dynamic object
 		{
-			obj = getSys()->getUndefinedRef();
+			obj = mainObj->getSystemState()->getUndefinedRef();
 		}
 		else
 		{
@@ -869,7 +869,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				//Casting undefined to an object (of unknown class)
 				//results in Null
 				obj->decRef();
-				obj = getSys()->getNullRef();
+				obj = mainObj->getSystemState()->getNullRef();
 			}
 		}
 	}
@@ -888,18 +888,18 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				v.traitKind = traitKind;
 				v.typemname = typemname;
 				//context->addUninitializedVar(v);
-				obj = getSys()->getUndefinedRef();
+				obj = mainObj->getSystemState()->getUndefinedRef();
 				obj = type->coerce(obj);
 			}
 			else if(mainObj->is<Class_base>() &&
-				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString())
+				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString(mainObj->getSystemState()))
 			{
 				// avoid recursive construction
-				//obj = getSys()->getNullRef();
-				obj = getSys()->getUndefinedRef();
+				//obj = mainObj->getSystemState()->getNullRef();
+				obj = mainObj->getSystemState()->getUndefinedRef();
 			}
-			else if (type != Class_object::getClass() &&
-					dynamic_cast<const Class_base*>(type))
+			else if (dynamic_cast<const Class_base*>(type) 
+					 && type != Class_object::getClass(dynamic_cast<const Class_base*>(type)->getSystemState()))
 			{
 				//if (!((Class_base*)type)->super)
 				{
@@ -912,8 +912,8 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 					v.traitKind = traitKind;
 					v.typemname = typemname;
 					//context->addUninitializedVar(v);
-					obj = getSys()->getUndefinedRef();
-					//obj = getSys()->getNullRef();
+					obj = mainObj->getSystemState()->getUndefinedRef();
+					//obj = mainObj->getSystemState()->getNullRef();
 					obj = type->coerce(obj);
 				}
 				//else
@@ -921,14 +921,14 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			}
 			else
 			{
-				obj = getSys()->getUndefinedRef();
+				obj = mainObj->getSystemState()->getUndefinedRef();
 				obj = type->coerce(obj);
 			}
 		}
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 
-	uint32_t name=mname.normalizedNameId();
+	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
 }
 
@@ -942,7 +942,7 @@ ASFUNCTIONBODY(ASObject,generator)
 		return args[0];
 	}
 	else
-		return Class<ASObject>::getInstanceS();
+		return Class<ASObject>::getInstanceS(getSys());
 }
 
 ASFUNCTIONBODY(ASObject,_toString)
@@ -963,15 +963,15 @@ ASFUNCTIONBODY(ASObject,_toString)
 	else
 		ret="[object Object]";
 
-	return abstract_s(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ASObject,_toLocaleString)
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=getSys()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back("",NAMESPACE);
+	toStringName.name_s_id=obj->getSystemState()->getUniqueStringId("toString");
+	toStringName.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
 	toStringName.isAttribute = false;
 	if (obj->hasPropertyByMultiname(toStringName, true, false))
 	{
@@ -991,11 +991,11 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back("",NAMESPACE);
+	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
+	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
 	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true, false);
-	return abstract_b(ret);
+	return abstract_b(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ASObject,valueOf)
@@ -1022,33 +1022,33 @@ ASFUNCTIONBODY(ASObject,isPrototypeOf)
 			break;
 		cls = clsparent;
 	}
-	return abstract_b(ret);
+	return abstract_b(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 {
 	if (argslen == 0)
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back("",NAMESPACE);
+	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
+	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
 	name.isAttribute=false;
 	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
 		Array* a = static_cast<Array*>(obj);
 		unsigned int index = 0;
-		if (a->isValidMultiname(name,index))
+		if (a->isValidMultiname(obj->getSystemState(),name,index))
 		{
-			return abstract_b(index < (unsigned int)a->size());
+			return abstract_b(obj->getSystemState(),index < (unsigned int)a->size());
 		}
 	}
-	variable* v = obj->Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* v = obj->Variables.findObjVar(obj->getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if (v)
-		return abstract_b(v->isenumerable);
+		return abstract_b(obj->getSystemState(),v->isenumerable);
 	if (obj->hasPropertyByMultiname(name,true,false))
-		return abstract_b(true);
-	return abstract_b(false);
+		return abstract_b(obj->getSystemState(),true);
+	return abstract_b(obj->getSystemState(),false);
 }
 ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
 {
@@ -1057,21 +1057,17 @@ ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
 	ARG_UNPACK(propname) (isEnum, true);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=getSys()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back("",NAMESPACE);
+	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
+	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
 	name.isAttribute=false;
 	obj->setIsEnumerable(name, isEnum);
 	return NULL;
 }
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
-	variable* v = Variables.findObjVar(name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* v = Variables.findObjVar(getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if (v)
 		v->isenumerable = isEnum;
-}
-void ASObject::destroyContents()
-{
-	Variables.destroyContents();
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)
@@ -1135,7 +1131,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 
-	const variable* obj=Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+	const variable* obj=Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1156,7 +1152,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		Prototype* proto = cls->prototype.getPtr();
 		while(proto)
 		{
-			obj=proto->getObj()->Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+			obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
 			if(obj)
 			{
 				//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1178,8 +1174,8 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			 obj->var->getObjectType() == T_NULL))
 	{
 		if (obj->kind == INSTANCE_TRAIT &&
-				getSys()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
-			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved());
+				getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
+			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 	}
 
 	if(obj->getter)
@@ -1223,9 +1219,9 @@ _NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::lis
 {
 	multiname varName(NULL);
 	varName.name_type=multiname::NAME_STRING;
-	varName.name_s_id=getSys()->getUniqueStringId(name);
+	varName.name_s_id=getSystemState()->getUniqueStringId(name);
 	for (auto ns=namespaces.begin(); ns!=namespaces.end(); ns++)
-		varName.ns.emplace_back(*ns,NAMESPACE);
+		varName.ns.emplace_back(getSystemState(),*ns,NAMESPACE);
 	varName.isAttribute = false;
 
 	return getVariableByMultiname(varName,SKIP_IMPL);
@@ -1340,16 +1336,7 @@ void variables_map::destroyContents()
 	}
 }
 
-ASObject::ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),
-	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
-{
-#ifndef NDEBUG
-	//Stuff only used in debugging
-	initialized=false;
-#endif
-}
-
-ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
+ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(c?c->sys:NULL),
 	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 	setClass(c);
@@ -1359,7 +1346,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),
+ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
 	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 	if(o.classdef)
@@ -1387,6 +1374,7 @@ void ASObject::setClass(Class_base* c)
 	{
 		classdef->acquireObject(this);
 		classdef->incRef();
+		this->sys = c->sys;
 	}
 }
 
@@ -1400,14 +1388,6 @@ void ASObject::destroy()
 	}
 }
 
-void ASObject::finalize()
-{
-}
-
-ASObject::~ASObject()
-{
-	destroy();
-}
 void ASObject::destruct()
 {
 	finalize();
@@ -1510,7 +1490,7 @@ _R<ASObject> ASObject::getValueAt(int index)
 	}
 }
 
-tiny_string variables_map::getNameAt(unsigned int index) const
+tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
@@ -1520,7 +1500,7 @@ tiny_string variables_map::getNameAt(unsigned int index) const
 		for(unsigned int i=0;i<index;i++)
 			++it;
 
-		return getSys()->getStringFromUniqueId(it->first.nameId);
+		return sys->getStringFromUniqueId(it->first.nameId);
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -1529,10 +1509,6 @@ tiny_string variables_map::getNameAt(unsigned int index) const
 unsigned int ASObject::numVariables() const
 {
 	return Variables.size();
-}
-
-void ASObject::constructionComplete()
-{
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1556,9 +1532,9 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		//Dynamic traits always have empty namespace
 		assert(it->first.ns.hasEmptyName());
 		if (amf0)
-			out->writeStringAMF0(getSys()->getStringFromUniqueId(it->first.nameId));
+			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first.nameId));
 		else
-			out->writeStringVR(stringMap,getSys()->getStringFromUniqueId(it->first.nameId));
+			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first.nameId));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
@@ -1596,8 +1572,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	assert_and_throw(type);
 
 	//Check if an alias is registered
-	auto aliasIt=getSys()->aliasMap.begin();
-	const auto aliasEnd=getSys()->aliasMap.end();
+	auto aliasIt=getSystemState()->aliasMap.begin();
+	const auto aliasEnd=getSystemState()->aliasMap.end();
 	//Linear search for alias
 	tiny_string alias;
 	for(;aliasIt!=aliasEnd;++aliasIt)
@@ -1610,7 +1586,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	}
 	bool serializeTraits = alias.empty()==false;
 
-	if(type->isSubClass(InterfaceClass<IExternalizable>::getClass()))
+	if(type->isSubClass(InterfaceClass<IExternalizable>::getClass(getSystemState())))
 	{
 		//Custom serialization necessary
 		if(!serializeTraits)
@@ -1628,8 +1604,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		//Invoke writeExternal
 		multiname writeExternalName(NULL);
 		writeExternalName.name_type=multiname::NAME_STRING;
-		writeExternalName.name_s_id=getSys()->getUniqueStringId("writeExternal");
-		writeExternalName.ns.emplace_back("",NAMESPACE);
+		writeExternalName.name_s_id=getSystemState()->getUniqueStringId("writeExternal");
+		writeExternalName.ns.emplace_back(getSystemState(),"",NAMESPACE);
 		writeExternalName.isAttribute = false;
 
 		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
@@ -1667,7 +1643,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 						//Skip variable with a namespace, like protected ones
 						continue;
 					}
-					out->writeStringAMF0(getSys()->getStringFromUniqueId(varIt->first.nameId));
+					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first.nameId));
 					varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
 				}
 			}
@@ -1708,7 +1684,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 					//Skip variable with a namespace, like protected ones
 					continue;
 				}
-				out->writeStringVR(stringMap, getSys()->getStringFromUniqueId(varIt->first.nameId));
+				out->writeStringVR(stringMap, getSystemState()->getStringFromUniqueId(varIt->first.nameId));
 			}
 		}
 	}
@@ -1865,30 +1841,30 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 					res += ",";
 				res += newline+spaces;
 				res += "\"";
-				res += getSys()->getStringFromUniqueId(varIt->first.nameId);
+				res += getSystemState()->getStringFromUniqueId(varIt->first.nameId);
 				res += "\"";
 				res += ":";
 				if (!spaces.empty())
 					res += " ";
 				ASObject* params[2];
 				
-				params[0] = abstract_s(getSys()->getStringFromUniqueId(varIt->first.nameId));
+				params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first.nameId));
 				params[1] = varIt->second.var;
 				params[1]->incRef();
-				ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+				ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
 				if (funcret)
 					res += funcret->toString();
 				else
 					res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
 				bfirst = false;
 			}
-			else if (filter.empty() || filter.find(tiny_string(" ")+getSys()->getStringFromUniqueId(varIt->first.nameId)+" ") != tiny_string::npos)
+			else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first.nameId)+" ") != tiny_string::npos)
 			{
 				if (!bfirst)
 					res += ",";
 				res += newline+spaces;
 				res += "\"";
-				res += getSys()->getStringFromUniqueId(varIt->first.nameId);
+				res += getSystemState()->getStringFromUniqueId(varIt->first.nameId);
 				res += "\"";
 				res += ":";
 				if (!spaces.empty())
@@ -1932,16 +1908,16 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s_id=getSys()->getUniqueStringId("prototype");
-	prototypeName.ns.emplace_back("",NAMESPACE);
+	prototypeName.name_s_id=getSystemState()->getUniqueStringId("prototype");
+	prototypeName.ns.emplace_back(getSystemState(),"",NAMESPACE);
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)
 		throwError<ReferenceError>(kConstWriteError,
-					   prototypeName.normalizedNameUnresolved(),
+					   prototypeName.normalizedNameUnresolved(getSystemState()),
 					   classdef ? classdef->as<Class_base>()->getQualifiedClassName() : "");
 	if(!ret)
-		ret = Variables.findObjVar(prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret->setter)
 	{
 		this->incRef();

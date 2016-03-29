@@ -103,7 +103,7 @@ public:
 	SyntheticFunction::synt_function f;
 	ABCContext* context;
 	method_body_info* body;
-	SyntheticFunction::synt_function synt_method();
+	SyntheticFunction::synt_function synt_method(SystemState* sys);
 	bool needsArgs() { return info.needsArgs(); }
 	bool needsActivation() { return info.needsActivation(); }
 	bool needsRest() { return info.needsRest(); }
@@ -279,7 +279,7 @@ private:
 		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
-		th->runtime_stack_push(abstract_i(ret));
+		th->runtime_stack_push(abstract_i(arg1->getSystemState(),ret));
 	}
 	template<class T>
 	static void storeIntN(call_context* th)
@@ -300,7 +300,7 @@ private:
 		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<float>(addr);
-		th->runtime_stack_push(abstract_d(ret));
+		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
 	}
 
 	static void loadDouble(call_context* th)
@@ -310,7 +310,7 @@ private:
 		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<double>(addr);
-		th->runtime_stack_push(abstract_d(ret));
+		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
 	}
 	static void storeFloat(call_context* th)
 	{
@@ -628,9 +628,9 @@ public:
 
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
-inline ABCVm* getVm()
+inline ABCVm* getVm(SystemState* sys)
 {
-	return getSys()->currentVm;
+	return sys->currentVm;
 }
 
 std::istream& operator>>(std::istream& in, method_info& v);

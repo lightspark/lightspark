@@ -54,7 +54,7 @@ class ArgumentConversion
 {
 public:
 	static T toConcrete(ASObject* obj);
-	static ASObject* toAbstract(const T& val);
+	static ASObject* toAbstract(SystemState* sys,const T& val);
 };
 
 template<class T>
@@ -67,11 +67,11 @@ public:
 		if(!o)
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj->getClassName(),
-                                                  Class<T>::getClass()->getQualifiedClassName());
+                                                  Class<T>::getClass(obj->getSystemState())->getQualifiedClassName());
 		o->incRef();
 		return _MR(o);
 	}
-	static ASObject* toAbstract(const Ref<T>& val)
+	static ASObject* toAbstract(SystemState* /*sys*/,const Ref<T>& val)
 	{
 		val->incRef();
 		return val.getPtr();
@@ -95,14 +95,14 @@ public:
 		if(!o)
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj->getClassName(),
-                                                  Class<T>::getClass()->getQualifiedClassName());
+                                                  Class<T>::getClass(obj->getSystemState())->getQualifiedClassName());
 		o->incRef();
 		return _MNR(o);
 	}
-	static ASObject* toAbstract(const NullableRef<T>& val)
+	static ASObject* toAbstract(SystemState* sys,const NullableRef<T>& val)
 	{
 		if(val.isNull())
-			return getSys()->getNullRef();
+			return sys->getNullRef();
 		val->incRef();
 		return val.getPtr();
 	}
@@ -121,10 +121,10 @@ public:
 		obj->incRef();
 		return _MNR(obj);
 	}
-	static ASObject* toAbstract(const NullableRef<ASObject>& val)
+	static ASObject* toAbstract(SystemState* sys,const NullableRef<ASObject>& val)
 	{
 		if(val.isNull())
-			return getSys()->getNullRef();
+			return sys->getNullRef();
 		val->incRef();
 		return val.getPtr();
 	}
@@ -174,45 +174,45 @@ inline RGB lightspark::ArgumentConversion<RGB>::toConcrete(ASObject* obj)
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(const int32_t& val)
+inline ASObject* lightspark::ArgumentConversion<int32_t>::toAbstract(SystemState* sys,const int32_t& val)
 {
-	return abstract_i(val);
+	return abstract_i(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<uint32_t>::toAbstract(const uint32_t& val)
+inline ASObject* lightspark::ArgumentConversion<uint32_t>::toAbstract(SystemState* sys,const uint32_t& val)
 {
-	return abstract_ui(val);
+	return abstract_ui(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<number_t>::toAbstract(const number_t& val)
+inline ASObject* lightspark::ArgumentConversion<number_t>::toAbstract(SystemState* sys,const number_t& val)
 {
-	return abstract_d(val);
+	return abstract_d(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<bool>::toAbstract(const bool& val)
+inline ASObject* lightspark::ArgumentConversion<bool>::toAbstract(SystemState* sys,const bool& val)
 {
-	return abstract_b(val);
+	return abstract_b(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(const tiny_string& val)
+inline ASObject* lightspark::ArgumentConversion<tiny_string>::toAbstract(SystemState* sys,const tiny_string& val)
 {
-	return Class<ASString>::getInstanceS(val);
+	return abstract_s(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<std::string>::toAbstract(const std::string& val)
+inline ASObject* lightspark::ArgumentConversion<std::string>::toAbstract(SystemState* sys,const std::string& val)
 {
-	return Class<ASString>::getInstanceS(val);
+	return abstract_s(sys,val);
 }
 
 template<>
-inline ASObject* lightspark::ArgumentConversion<RGB>::toAbstract(const RGB& val)
+inline ASObject* lightspark::ArgumentConversion<RGB>::toAbstract(SystemState* sys,const RGB& val)
 {
-	return abstract_ui(val.toUInt());
+	return abstract_ui(sys,val.toUInt());
 }
 
 #define ARG_UNPACK ArgUnpack(args,argslen,false)

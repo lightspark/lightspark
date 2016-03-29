@@ -50,62 +50,62 @@ void Event::finalize()
 void Event::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS("activate"),DECLARED_TRAIT);
-	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS("added"),DECLARED_TRAIT);
-	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage"),DECLARED_TRAIT);
-	c->setVariableByQName("CANCEL","",Class<ASString>::getInstanceS("cancel"),DECLARED_TRAIT);
-	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change"),DECLARED_TRAIT);
-	c->setVariableByQName("CLEAR","",Class<ASString>::getInstanceS("clear"),DECLARED_TRAIT);
-	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS("close"),DECLARED_TRAIT);
-	c->setVariableByQName("CLOSING","",Class<ASString>::getInstanceS("closing"),DECLARED_TRAIT);
-	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS("complete"),DECLARED_TRAIT);
-	c->setVariableByQName("CONNECT","",Class<ASString>::getInstanceS("connect"),DECLARED_TRAIT);
-	c->setVariableByQName("CONTEXT3D_CREATE","",Class<ASString>::getInstanceS("context3DCreate"),DECLARED_TRAIT);
-	c->setVariableByQName("COPY","",Class<ASString>::getInstanceS("copy"),DECLARED_TRAIT);
-	c->setVariableByQName("CUT","",Class<ASString>::getInstanceS("cut"),DECLARED_TRAIT);
-	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS("deactivate"),DECLARED_TRAIT);
-	c->setVariableByQName("DISPLAYING","",Class<ASString>::getInstanceS("displaying"),DECLARED_TRAIT);
-	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame"),DECLARED_TRAIT);
-	c->setVariableByQName("EXIT_FRAME","",Class<ASString>::getInstanceS("exitFrame"),DECLARED_TRAIT);
-	c->setVariableByQName("EXITING","",Class<ASString>::getInstanceS("exiting"),DECLARED_TRAIT);
-	c->setVariableByQName("FRAME_CONSTRUCTED","",Class<ASString>::getInstanceS("frameConstructed"),DECLARED_TRAIT);
-	c->setVariableByQName("FULLSCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
-	c->setVariableByQName("HTML_BOUNDS_CHANGE","",Class<ASString>::getInstanceS("htmlBoundsChange"),DECLARED_TRAIT);
-	c->setVariableByQName("HTML_DOM_INITIALIZE","",Class<ASString>::getInstanceS("htmlDOMInitialize"),DECLARED_TRAIT);
-	c->setVariableByQName("HTML_RENDER","",Class<ASString>::getInstanceS("htmlRender"),DECLARED_TRAIT);
-	c->setVariableByQName("ID3","",Class<ASString>::getInstanceS("id3"),DECLARED_TRAIT);
-	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS("init"),DECLARED_TRAIT);
-	c->setVariableByQName("LOCATION_CHANGE","",Class<ASString>::getInstanceS("locationChange"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"),DECLARED_TRAIT);
-	c->setVariableByQName("NETWORK_CHANGE","",Class<ASString>::getInstanceS("networkChange"),DECLARED_TRAIT);
-	c->setVariableByQName("OPEN","",Class<ASString>::getInstanceS("open"),DECLARED_TRAIT);
-	c->setVariableByQName("PASTE","",Class<ASString>::getInstanceS("paste"),DECLARED_TRAIT);
-	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS("removed"),DECLARED_TRAIT);
-	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage"),DECLARED_TRAIT);
-	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render"),DECLARED_TRAIT);
-	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"),DECLARED_TRAIT);
-	c->setVariableByQName("SCROLL","",Class<ASString>::getInstanceS("scroll"),DECLARED_TRAIT);
-	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"),DECLARED_TRAIT);
-	c->setVariableByQName("SELECT_ALL","",Class<ASString>::getInstanceS("selectAll"),DECLARED_TRAIT);
-	c->setVariableByQName("SOUND_COMPLETE","",Class<ASString>::getInstanceS("soundComplete"),DECLARED_TRAIT);
-	c->setVariableByQName("STANDARD_ERROR_CLOSE","",Class<ASString>::getInstanceS("standardErrorClose"),DECLARED_TRAIT);
-	c->setVariableByQName("STANDARD_INPUT_CLOSE","",Class<ASString>::getInstanceS("standardInputClose"),DECLARED_TRAIT);
-	c->setVariableByQName("STANDARD_OUTPUT_CLOSE","",Class<ASString>::getInstanceS("standardOutputClose"),DECLARED_TRAIT);
-	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"),DECLARED_TRAIT);
-	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"),DECLARED_TRAIT);
-	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"),DECLARED_TRAIT);
-	c->setVariableByQName("TEXT_INTERACTION_MODE_CHANGE","",Class<ASString>::getInstanceS("textInteractionModeChange"),DECLARED_TRAIT);
-	c->setVariableByQName("TEXTURE_READY","",Class<ASString>::getInstanceS("textureReady"),DECLARED_TRAIT);
-	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS("unload"),DECLARED_TRAIT);
-	c->setVariableByQName("USER_IDLE","",Class<ASString>::getInstanceS("userIdle"),DECLARED_TRAIT);
-	c->setVariableByQName("USER_PRESENT","",Class<ASString>::getInstanceS("userPresent"),DECLARED_TRAIT);
+	c->setVariableByQName("ACTIVATE","",abstract_s(c->getSystemState(),"activate"),DECLARED_TRAIT);
+	c->setVariableByQName("ADDED","",abstract_s(c->getSystemState(),"added"),DECLARED_TRAIT);
+	c->setVariableByQName("ADDED_TO_STAGE","",abstract_s(c->getSystemState(),"addedToStage"),DECLARED_TRAIT);
+	c->setVariableByQName("CANCEL","",abstract_s(c->getSystemState(),"cancel"),DECLARED_TRAIT);
+	c->setVariableByQName("CHANGE","",abstract_s(c->getSystemState(),"change"),DECLARED_TRAIT);
+	c->setVariableByQName("CLEAR","",abstract_s(c->getSystemState(),"clear"),DECLARED_TRAIT);
+	c->setVariableByQName("CLOSE","",abstract_s(c->getSystemState(),"close"),DECLARED_TRAIT);
+	c->setVariableByQName("CLOSING","",abstract_s(c->getSystemState(),"closing"),DECLARED_TRAIT);
+	c->setVariableByQName("COMPLETE","",abstract_s(c->getSystemState(),"complete"),DECLARED_TRAIT);
+	c->setVariableByQName("CONNECT","",abstract_s(c->getSystemState(),"connect"),DECLARED_TRAIT);
+	c->setVariableByQName("CONTEXT3D_CREATE","",abstract_s(c->getSystemState(),"context3DCreate"),DECLARED_TRAIT);
+	c->setVariableByQName("COPY","",abstract_s(c->getSystemState(),"copy"),DECLARED_TRAIT);
+	c->setVariableByQName("CUT","",abstract_s(c->getSystemState(),"cut"),DECLARED_TRAIT);
+	c->setVariableByQName("DEACTIVATE","",abstract_s(c->getSystemState(),"deactivate"),DECLARED_TRAIT);
+	c->setVariableByQName("DISPLAYING","",abstract_s(c->getSystemState(),"displaying"),DECLARED_TRAIT);
+	c->setVariableByQName("ENTER_FRAME","",abstract_s(c->getSystemState(),"enterFrame"),DECLARED_TRAIT);
+	c->setVariableByQName("EXIT_FRAME","",abstract_s(c->getSystemState(),"exitFrame"),DECLARED_TRAIT);
+	c->setVariableByQName("EXITING","",abstract_s(c->getSystemState(),"exiting"),DECLARED_TRAIT);
+	c->setVariableByQName("FRAME_CONSTRUCTED","",abstract_s(c->getSystemState(),"frameConstructed"),DECLARED_TRAIT);
+	c->setVariableByQName("FULLSCREEN","",abstract_s(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
+	c->setVariableByQName("HTML_BOUNDS_CHANGE","",abstract_s(c->getSystemState(),"htmlBoundsChange"),DECLARED_TRAIT);
+	c->setVariableByQName("HTML_DOM_INITIALIZE","",abstract_s(c->getSystemState(),"htmlDOMInitialize"),DECLARED_TRAIT);
+	c->setVariableByQName("HTML_RENDER","",abstract_s(c->getSystemState(),"htmlRender"),DECLARED_TRAIT);
+	c->setVariableByQName("ID3","",abstract_s(c->getSystemState(),"id3"),DECLARED_TRAIT);
+	c->setVariableByQName("INIT","",abstract_s(c->getSystemState(),"init"),DECLARED_TRAIT);
+	c->setVariableByQName("LOCATION_CHANGE","",abstract_s(c->getSystemState(),"locationChange"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_LEAVE","",abstract_s(c->getSystemState(),"mouseLeave"),DECLARED_TRAIT);
+	c->setVariableByQName("NETWORK_CHANGE","",abstract_s(c->getSystemState(),"networkChange"),DECLARED_TRAIT);
+	c->setVariableByQName("OPEN","",abstract_s(c->getSystemState(),"open"),DECLARED_TRAIT);
+	c->setVariableByQName("PASTE","",abstract_s(c->getSystemState(),"paste"),DECLARED_TRAIT);
+	c->setVariableByQName("REMOVED","",abstract_s(c->getSystemState(),"removed"),DECLARED_TRAIT);
+	c->setVariableByQName("REMOVED_FROM_STAGE","",abstract_s(c->getSystemState(),"removedFromStage"),DECLARED_TRAIT);
+	c->setVariableByQName("RENDER","",abstract_s(c->getSystemState(),"render"),DECLARED_TRAIT);
+	c->setVariableByQName("RESIZE","",abstract_s(c->getSystemState(),"resize"),DECLARED_TRAIT);
+	c->setVariableByQName("SCROLL","",abstract_s(c->getSystemState(),"scroll"),DECLARED_TRAIT);
+	c->setVariableByQName("SELECT","",abstract_s(c->getSystemState(),"select"),DECLARED_TRAIT);
+	c->setVariableByQName("SELECT_ALL","",abstract_s(c->getSystemState(),"selectAll"),DECLARED_TRAIT);
+	c->setVariableByQName("SOUND_COMPLETE","",abstract_s(c->getSystemState(),"soundComplete"),DECLARED_TRAIT);
+	c->setVariableByQName("STANDARD_ERROR_CLOSE","",abstract_s(c->getSystemState(),"standardErrorClose"),DECLARED_TRAIT);
+	c->setVariableByQName("STANDARD_INPUT_CLOSE","",abstract_s(c->getSystemState(),"standardInputClose"),DECLARED_TRAIT);
+	c->setVariableByQName("STANDARD_OUTPUT_CLOSE","",abstract_s(c->getSystemState(),"standardOutputClose"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_CHILDREN_CHANGE","",abstract_s(c->getSystemState(),"tabChildrenChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_ENABLED_CHANGE","",abstract_s(c->getSystemState(),"tabEnabledChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TAB_INDEX_CHANGE","",abstract_s(c->getSystemState(),"tabIndexChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TEXT_INTERACTION_MODE_CHANGE","",abstract_s(c->getSystemState(),"textInteractionModeChange"),DECLARED_TRAIT);
+	c->setVariableByQName("TEXTURE_READY","",abstract_s(c->getSystemState(),"textureReady"),DECLARED_TRAIT);
+	c->setVariableByQName("UNLOAD","",abstract_s(c->getSystemState(),"unload"),DECLARED_TRAIT);
+	c->setVariableByQName("USER_IDLE","",abstract_s(c->getSystemState(),"userIdle"),DECLARED_TRAIT);
+	c->setVariableByQName("USER_PRESENT","",abstract_s(c->getSystemState(),"userPresent"),DECLARED_TRAIT);
 
-	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(formatToString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(_isDefaultPrevented),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(_preventDefault),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(stopPropagation),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(stopImmediatePropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(c->getSystemState(),formatToString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(c->getSystemState(),_isDefaultPrevented),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(c->getSystemState(),_preventDefault),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopPropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopImmediatePropagation),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
 	REGISTER_GETTER(c,target);
 	REGISTER_GETTER(c,type);
@@ -139,7 +139,7 @@ ASFUNCTIONBODY_GETTER(Event,cancelable);
 ASFUNCTIONBODY(Event,_isDefaultPrevented)
 {
 	Event* th=static_cast<Event*>(obj);
-	return abstract_b(th->defaultPrevented);
+	return abstract_b(obj->getSystemState(),th->defaultPrevented);
 }
 
 ASFUNCTIONBODY(Event,_preventDefault)
@@ -165,20 +165,20 @@ ASFUNCTIONBODY(Event,formatToString)
 
 		multiname propName(NULL);
 		propName.name_type=multiname::NAME_STRING;
-		propName.name_s_id=getSys()->getUniqueStringId(prop);
-		propName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		propName.name_s_id=obj->getSystemState()->getUniqueStringId(prop);
+		propName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		_NR<ASObject> value=th->getVariableByMultiname(propName);
 		if (!value.isNull())
 			msg += value->toString();
 	}
 	msg += "]";
 
-	return Class<ASString>::getInstanceS(msg);
+	return abstract_s(obj->getSystemState(),msg);
 }
 
 Event* Event::cloneImpl() const
 {
-	return Class<Event>::getInstanceS(type, bubbles, cancelable);
+	return Class<Event>::getInstanceS(getSystemState(),type, bubbles, cancelable);
 }
 
 ASFUNCTIONBODY(Event,clone)
@@ -203,9 +203,9 @@ ASFUNCTIONBODY(Event,stopImmediatePropagation)
 void EventPhase::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(CAPTURING_PHASE),DECLARED_TRAIT);
-	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(BUBBLING_PHASE),DECLARED_TRAIT);
-	c->setVariableByQName("AT_TARGET","",abstract_i(AT_TARGET),DECLARED_TRAIT);
+	c->setVariableByQName("CAPTURING_PHASE","",abstract_i(c->getSystemState(),CAPTURING_PHASE),DECLARED_TRAIT);
+	c->setVariableByQName("BUBBLING_PHASE","",abstract_i(c->getSystemState(),BUBBLING_PHASE),DECLARED_TRAIT);
+	c->setVariableByQName("AT_TARGET","",abstract_i(c->getSystemState(),AT_TARGET),DECLARED_TRAIT);
 }
 
 FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
@@ -215,10 +215,10 @@ FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
 void FocusEvent::sinit(Class_base* c)
 {	
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn"),DECLARED_TRAIT);
-	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS("focusOut"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS("mouseFocusChange"),DECLARED_TRAIT);
-	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS("keyFocusChange"),DECLARED_TRAIT);
+	c->setVariableByQName("FOCUS_IN","",abstract_s(c->getSystemState(),"focusIn"),DECLARED_TRAIT);
+	c->setVariableByQName("FOCUS_OUT","",abstract_s(c->getSystemState(),"focusOut"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",abstract_s(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
+	c->setVariableByQName("KEY_FOCUS_CHANGE","",abstract_s(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(FocusEvent,_constructor)
@@ -241,7 +241,7 @@ MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_
 
 Event* MouseEvent::cloneImpl() const
 {
-	return Class<MouseEvent>::getInstanceS(type,localX,localY,bubbles,modifiers,relatedObject,delta);
+	return Class<MouseEvent>::getInstanceS(getSystemState(),type,localX,localY,bubbles,modifiers,relatedObject,delta);
 }
 
 ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
@@ -254,13 +254,13 @@ ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total):Eve
 
 Event* ProgressEvent::cloneImpl() const
 {
-	return Class<ProgressEvent>::getInstanceS(bytesLoaded, bytesTotal);
+	return Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded, bytesTotal);
 }
 
 void ProgressEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"),DECLARED_TRAIT);
+	c->setVariableByQName("PROGRESS","",abstract_s(c->getSystemState(),"progress"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,bytesLoaded);
 	REGISTER_GETTER_SETTER(c,bytesTotal);
 }
@@ -288,9 +288,9 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 void TimerEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer"),DECLARED_TRAIT);
-	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(updateAfterEvent),NORMAL_METHOD,true);
+	c->setVariableByQName("TIMER","",abstract_s(c->getSystemState(),"timer"),DECLARED_TRAIT);
+	c->setVariableByQName("TIMER_COMPLETE","",abstract_s(c->getSystemState(),"timerComplete"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY(TimerEvent,updateAfterEvent)
 {
@@ -301,18 +301,18 @@ ASFUNCTIONBODY(TimerEvent,updateAfterEvent)
 void MouseEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"),DECLARED_TRAIT);
-	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS("mouseOut"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS("mouseOver"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS("mouseUp"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS("mouseWheel"),DECLARED_TRAIT);
-	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"),DECLARED_TRAIT);
-	c->setVariableByQName("RIGHT_CLICK","",Class<ASString>::getInstanceS("rightClick"),DECLARED_TRAIT);
-	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"),DECLARED_TRAIT);
-	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(updateAfterEvent),NORMAL_METHOD,true);
+	c->setVariableByQName("CLICK","",abstract_s(c->getSystemState(),"click"),DECLARED_TRAIT);
+	c->setVariableByQName("DOUBLE_CLICK","",abstract_s(c->getSystemState(),"doubleClick"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_DOWN","",abstract_s(c->getSystemState(),"mouseDown"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_OUT","",abstract_s(c->getSystemState(),"mouseOut"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_OVER","",abstract_s(c->getSystemState(),"mouseOver"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_UP","",abstract_s(c->getSystemState(),"mouseUp"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_WHEEL","",abstract_s(c->getSystemState(),"mouseWheel"),DECLARED_TRAIT);
+	c->setVariableByQName("MOUSE_MOVE","",abstract_s(c->getSystemState(),"mouseMove"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT_CLICK","",abstract_s(c->getSystemState(),"rightClick"),DECLARED_TRAIT);
+	c->setVariableByQName("ROLL_OVER","",abstract_s(c->getSystemState(),"rollOver"),DECLARED_TRAIT);
+	c->setVariableByQName("ROLL_OUT","",abstract_s(c->getSystemState(),"rollOut"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,relatedObject);
 	REGISTER_GETTER(c,stageX);
@@ -371,12 +371,12 @@ ASFUNCTIONBODY(MouseEvent,_setter_localX)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); 
 	number_t val=args[0]->toNumber();
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -388,12 +388,12 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); 
 	number_t val=args[0]->toNumber();
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass())))
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -404,7 +404,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 ASFUNCTIONBODY(MouseEvent,_getter_buttonDown)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_BUTTON1_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_BUTTON1_MASK);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_buttonDown)
@@ -417,7 +417,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_buttonDown)
 ASFUNCTIONBODY(MouseEvent,_getter_altKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_MOD1_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_MOD1_MASK);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_altKey)
@@ -430,7 +430,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_altKey)
 ASFUNCTIONBODY(MouseEvent,_getter_controlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_controlKey)
@@ -443,7 +443,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_controlKey)
 ASFUNCTIONBODY(MouseEvent,_getter_ctrlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_ctrlKey)
@@ -456,7 +456,7 @@ ASFUNCTIONBODY(MouseEvent,_setter_ctrlKey)
 ASFUNCTIONBODY(MouseEvent,_getter_shiftKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_SHIFT_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_SHIFT_MASK);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_shiftKey)
@@ -491,7 +491,7 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 		relatedObject = NullRef;
 	}
 	//If t is non null, it should be an InteractiveObject
-	else if(t->getClass()->isSubClass(Class<InteractiveObject>::getClass()))	
+	else if(t->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getPtr());
 		tar->localToGlobal(localX, localY, stageX, stageY);
@@ -504,20 +504,20 @@ IOErrorEvent::IOErrorEvent(Class_base* c,const tiny_string& t, const std::string
 
 Event *IOErrorEvent::cloneImpl() const
 {
-	return Class<IOErrorEvent>::getInstanceS(text, errorMsg,errorID);
+	return Class<IOErrorEvent>::getInstanceS(getSystemState(),text, errorMsg,errorID);
 }
 
 
 void IOErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError"),CONSTANT_TRAIT);
-	c->setVariableByQName("DISK_ERROR","",Class<ASString>::getInstanceS("diskError"),CONSTANT_TRAIT);
-	c->setVariableByQName("NETWORK_ERROR","",Class<ASString>::getInstanceS("networkError"),CONSTANT_TRAIT);
-	c->setVariableByQName("VERIFY_ERROR","",Class<ASString>::getInstanceS("verifyError"),CONSTANT_TRAIT);
-	c->setVariableByQName("STANDARD_ERROR_IO_ERROR","",Class<ASString>::getInstanceS("standardErrorIoError"),CONSTANT_TRAIT);
-	c->setVariableByQName("STANDARD_INPUT_IO_ERROR","",Class<ASString>::getInstanceS("standardInputIoError"),CONSTANT_TRAIT);
-	c->setVariableByQName("STANDARD_OUTPUT_IO_ERROR","",Class<ASString>::getInstanceS("standardOutputIoError"),CONSTANT_TRAIT);
+	c->setVariableByQName("IO_ERROR","",abstract_s(c->getSystemState(),"ioError"),CONSTANT_TRAIT);
+	c->setVariableByQName("DISK_ERROR","",abstract_s(c->getSystemState(),"diskError"),CONSTANT_TRAIT);
+	c->setVariableByQName("NETWORK_ERROR","",abstract_s(c->getSystemState(),"networkError"),CONSTANT_TRAIT);
+	c->setVariableByQName("VERIFY_ERROR","",abstract_s(c->getSystemState(),"verifyError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_ERROR_IO_ERROR","",abstract_s(c->getSystemState(),"standardErrorIoError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_INPUT_IO_ERROR","",abstract_s(c->getSystemState(),"standardInputIoError"),CONSTANT_TRAIT);
+	c->setVariableByQName("STANDARD_OUTPUT_IO_ERROR","",abstract_s(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
 }
 
 EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)
@@ -534,12 +534,12 @@ void EventDispatcher::finalize()
 void EventDispatcher::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->addImplementedInterface(InterfaceClass<IEventDispatcher>::getClass());
+	c->addImplementedInterface(InterfaceClass<IEventDispatcher>::getClass(c->getSystemState()));
 
-	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),addEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasEventListener","",Class<IFunction>::getFunction(c->getSystemState(),_hasEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(c->getSystemState(),removeEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(c->getSystemState(),dispatchEvent),NORMAL_METHOD,true);
 
 	IEventDispatcher::linkTraits(c);
 }
@@ -579,7 +579,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 				|| eventName=="frameConstructed") )
 	{
 		dispobj->incRef();
-		getSys()->registerFrameListener(_MR(dispobj));
+		obj->getSystemState()->registerFrameListener(_MR(dispobj));
 	}
 
 	{
@@ -602,7 +602,7 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	const tiny_string& eventName=args[0]->toString();
 	bool ret=th->hasEventListener(eventName);
-	return abstract_b(ret);
+	return abstract_b(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
@@ -648,7 +648,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 					&& !th->hasEventListener("frameConstructed")) )
 	{
 		dispobj->incRef();
-		getSys()->unregisterFrameListener(_MR(dispobj));
+		obj->getSystemState()->unregisterFrameListener(_MR(dispobj));
 	}
 
 	return NULL;
@@ -657,8 +657,8 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->getClass()==NULL || !(args[0]->getClass()->isSubClass(Class<Event>::getClass())))
-		return abstract_b(false);
+	if(args[0]->getClass()==NULL || !(args[0]->getClass()->isSubClass(Class<Event>::getClass(obj->getSystemState()))))
+		return abstract_b(obj->getSystemState(),false);
 
 	args[0]->incRef();
 	_R<Event> e=_MR(Class<Event>::cast(args[0]));
@@ -672,7 +672,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		_NR<ASObject> cloned = e->executeASMethod("clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
 		if(!cloned->is<Event>())
-			return abstract_b(false);
+			return abstract_b(obj->getSystemState(),false);
 
 		cloned->incRef();
 		e = _MR(cloned->as<Event>());
@@ -681,7 +681,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		e->setTarget(th->forcedTarget);
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);
-	return abstract_b(true);
+	return abstract_b(obj->getSystemState(),true);
 }
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
@@ -693,8 +693,8 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 	{
 		if(forcedTarget->getObjectType()==T_NULL || forcedTarget->getObjectType()==T_UNDEFINED)
 			forcedTarget=NullRef;
-		else if(!forcedTarget->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass()))
-			throw Class<ArgumentError>::getInstanceS("Wrong argument for EventDispatcher");
+		else if(!forcedTarget->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(obj->getSystemState())))
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong argument for EventDispatcher");
 	}
 	th->forcedTarget=forcedTarget;
 	return NULL;
@@ -748,18 +748,18 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent(Class_base* cb, const tiny_string& level, const tiny_string& code):Event(cb, "netStatus")
+NetStatusEvent::NetStatusEvent(Class_base* c, const tiny_string& level, const tiny_string& code):Event(c, "netStatus")
 {
-	ASObject* info=Class<ASObject>::getInstanceS();
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(level),DECLARED_TRAIT);
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(code),DECLARED_TRAIT);
+	ASObject* info=Class<ASObject>::getInstanceS(c->getSystemState());
+	info->setVariableByQName("level","",abstract_s(c->getSystemState(),level),DECLARED_TRAIT);
+	info->setVariableByQName("code","",abstract_s(c->getSystemState(),code),DECLARED_TRAIT);
 	setVariableByQName("info","",info, DECLARED_TRAIT);
 }
 
 void NetStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus"),DECLARED_TRAIT);
+	c->setVariableByQName("NET_STATUS","",abstract_s(c->getSystemState(),"netStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
@@ -783,12 +783,12 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	else
 	{
 		//Uninitialized info
-		info=getSys()->getNullRef();
+		info=obj->getSystemState()->getNullRef();
 	}
 	multiname infoName(NULL);
 	infoName.name_type=multiname::NAME_STRING;
-	infoName.name_s_id=getSys()->getUniqueStringId("info");
-	infoName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	infoName.name_s_id=obj->getSystemState()->getUniqueStringId("info");
+	infoName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 	infoName.isAttribute = false;
 	obj->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 	return NULL;
@@ -796,15 +796,15 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 
 Event* NetStatusEvent::cloneImpl() const
 {
-	NetStatusEvent *clone=Class<NetStatusEvent>::getInstanceS();
+	NetStatusEvent *clone=Class<NetStatusEvent>::getInstanceS(getSystemState());
 	clone->type = type;
 	clone->bubbles = bubbles;
 	clone->cancelable = cancelable;
 
 	multiname infoName(NULL);
 	infoName.name_type=multiname::NAME_STRING;
-	infoName.name_s_id=getSys()->getUniqueStringId("info");
-	infoName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	infoName.name_s_id=getSystemState()->getUniqueStringId("info");
+	infoName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 	infoName.isAttribute = false;
 
 	_NR<ASObject> info = const_cast<NetStatusEvent*>(this)->getVariableByMultiname(infoName);
@@ -822,7 +822,7 @@ FullScreenEvent::FullScreenEvent(Class_base* c):Event(c, "fullScreenEvent")
 void FullScreenEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen"),DECLARED_TRAIT);
+	c->setVariableByQName("FULL_SCREEN","",abstract_s(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(FullScreenEvent,_constructor)
@@ -848,8 +848,8 @@ void KeyboardEvent::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, keyCode);
 	REGISTER_GETTER_SETTER(c, keyLocation);
 	REGISTER_GETTER_SETTER(c, shiftKey);
-	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown"),DECLARED_TRAIT);
-	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp"),DECLARED_TRAIT);
+	c->setVariableByQName("KEY_DOWN","",abstract_s(c->getSystemState(),"keyDown"),DECLARED_TRAIT);
+	c->setVariableByQName("KEY_UP","",abstract_s(c->getSystemState(),"keyUp"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
@@ -896,7 +896,7 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
 ASFUNCTIONBODY(KeyboardEvent, _getter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_MOD1_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_MOD1_MASK);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_altKey)
@@ -909,7 +909,7 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_altKey)
 ASFUNCTIONBODY(KeyboardEvent, _getter_commandKey)
 {
 	// Supported only on OSX
-	return abstract_b(false);
+	return abstract_b(obj->getSystemState(),false);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_commandKey)
@@ -921,7 +921,7 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_commandKey)
 ASFUNCTIONBODY(KeyboardEvent, _getter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_controlKey)
@@ -934,7 +934,7 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_controlKey)
 ASFUNCTIONBODY(KeyboardEvent, _getter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_ctrlKey)
@@ -947,7 +947,7 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_ctrlKey)
 ASFUNCTIONBODY(KeyboardEvent, _getter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(th->modifiers & GDK_SHIFT_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & GDK_SHIFT_MASK);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_shiftKey)
@@ -959,7 +959,7 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_shiftKey)
 
 Event* KeyboardEvent::cloneImpl() const
 {
-	KeyboardEvent *cloned = Class<KeyboardEvent>::getInstanceS();
+	KeyboardEvent *cloned = Class<KeyboardEvent>::getInstanceS(getSystemState());
 	cloned->type = type;
 	cloned->bubbles = bubbles;
 	cloned->cancelable = cancelable;
@@ -977,7 +977,7 @@ TextEvent::TextEvent(Class_base* c,const tiny_string& t):Event(c,t)
 void TextEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput"),DECLARED_TRAIT);
+	c->setVariableByQName("TEXT_INPUT","",abstract_s(c->getSystemState(),"textInput"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,text);
 }
 
@@ -1000,14 +1000,14 @@ ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e
 void ErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error"),DECLARED_TRAIT);
+	c->setVariableByQName("ERROR","",abstract_s(c->getSystemState(),"error"),DECLARED_TRAIT);
 	REGISTER_GETTER(c,errorID);
 }
 ASFUNCTIONBODY_GETTER(ErrorEvent,errorID);
 
 Event* ErrorEvent::cloneImpl() const
 {
-	return Class<ErrorEvent>::getInstanceS(text, errorMsg,errorID);
+	return Class<ErrorEvent>::getInstanceS(getSystemState(),text, errorMsg,errorID);
 }
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
@@ -1027,7 +1027,7 @@ SecurityErrorEvent::SecurityErrorEvent(Class_base* c, const std::string& e):Erro
 void SecurityErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError"),DECLARED_TRAIT);
+	c->setVariableByQName("SECURITY_ERROR","",abstract_s(c->getSystemState(),"securityError"),DECLARED_TRAIT);
 }
 
 AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
@@ -1037,7 +1037,7 @@ AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
 void AsyncErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS("asyncError"),DECLARED_TRAIT);
+	c->setVariableByQName("ASYNC_ERROR","",abstract_s(c->getSystemState(),"asyncError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
@@ -1055,7 +1055,7 @@ UncaughtErrorEvent::UncaughtErrorEvent(Class_base* c):ErrorEvent(c, "uncaughtErr
 void UncaughtErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("UNCAUGHT_ERROR","",Class<ASString>::getInstanceS("uncaughtError"),DECLARED_TRAIT);
+	c->setVariableByQName("UNCAUGHT_ERROR","",abstract_s(c->getSystemState(),"uncaughtError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(UncaughtErrorEvent,_constructor)
@@ -1076,7 +1076,7 @@ ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")
 void HTTPStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"),DECLARED_TRAIT);
+	c->setVariableByQName("HTTP_STATUS","",abstract_s(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(HTTPStatusEvent,_constructor)
@@ -1141,16 +1141,16 @@ void StatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	/* TODO: dispatch this event */
-	c->setVariableByQName("STATUS","",Class<ASString>::getInstanceS("status"),DECLARED_TRAIT);
+	c->setVariableByQName("STATUS","",abstract_s(c->getSystemState(),"status"),DECLARED_TRAIT);
 }
 
 void DataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextEvent, _constructor, CLASS_SEALED);
 	/* TODO: dispatch this event */
-	c->setVariableByQName("DATA","",Class<ASString>::getInstanceS("data"),DECLARED_TRAIT);
+	c->setVariableByQName("DATA","",abstract_s(c->getSystemState(),"data"),DECLARED_TRAIT);
 	/* TODO: dispatch this event */
-	c->setVariableByQName("UPLOAD_COMPLETE_DATA","",Class<ASString>::getInstanceS("uploadCompleteData"),DECLARED_TRAIT);
+	c->setVariableByQName("UPLOAD_COMPLETE_DATA","",abstract_s(c->getSystemState(),"uploadCompleteData"),DECLARED_TRAIT);
 
 	REGISTER_GETTER_SETTER(c, data);
 }
@@ -1173,7 +1173,7 @@ ASFUNCTIONBODY(DataEvent,_constructor)
 
 Event* DataEvent::cloneImpl() const
 {
-	DataEvent *clone = Class<DataEvent>::getInstanceS();
+	DataEvent *clone = Class<DataEvent>::getInstanceS(getSystemState());
 	clone->data = data;
 	// TextEvent
 	clone->text = text;
@@ -1187,7 +1187,7 @@ Event* DataEvent::cloneImpl() const
 void InvokeEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("INVOKE","",Class<ASString>::getInstanceS("invoke"),DECLARED_TRAIT);
+	c->setVariableByQName("INVOKE","",abstract_s(c->getSystemState(),"invoke"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(InvokeEvent,_constructor)
@@ -1204,8 +1204,8 @@ DRMErrorEvent::DRMErrorEvent(Class_base* c) : ErrorEvent(c, "drmAuthenticate")
 void DRMErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("DRM_ERROR","",Class<ASString>::getInstanceS("drmError"),DECLARED_TRAIT);
-	c->setVariableByQName("DRM_LOAD_DEVICEID_ERROR","",Class<ASString>::getInstanceS("drmLoadDeviceIdError"),DECLARED_TRAIT);
+	c->setVariableByQName("DRM_ERROR","",abstract_s(c->getSystemState(),"drmError"),DECLARED_TRAIT);
+	c->setVariableByQName("DRM_LOAD_DEVICEID_ERROR","",abstract_s(c->getSystemState(),"drmLoadDeviceIdError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(DRMErrorEvent,_constructor)
@@ -1224,7 +1224,7 @@ DRMStatusEvent::DRMStatusEvent(Class_base* c) : Event(c, "drmAuthenticate")
 void DRMStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("DRM_STATUS","",Class<ASString>::getInstanceS("drmStatus"),DECLARED_TRAIT);
+	c->setVariableByQName("DRM_STATUS","",abstract_s(c->getSystemState(),"drmStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(DRMStatusEvent,_constructor)
@@ -1244,10 +1244,10 @@ VideoEvent::VideoEvent(Class_base* c)
 void VideoEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),CONSTANT_TRAIT);
-	c->setVariableByQName("RENDER_STATUS_ACCELERATED","",Class<ASString>::getInstanceS("accelerated"),CONSTANT_TRAIT);
-	c->setVariableByQName("RENDER_STATUS_SOFTWARE","",Class<ASString>::getInstanceS("software"),CONSTANT_TRAIT);
-	c->setVariableByQName("RENDER_STATUS_UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATE","",abstract_s(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_ACCELERATED","",abstract_s(c->getSystemState(),"accelerated"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_SOFTWARE","",abstract_s(c->getSystemState(),"software"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATUS_UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,status);
 }
 
@@ -1268,7 +1268,7 @@ ASFUNCTIONBODY(VideoEvent,_constructor)
 Event* VideoEvent::cloneImpl() const
 {
 	VideoEvent *clone;
-	clone = Class<VideoEvent>::getInstanceS();
+	clone = Class<VideoEvent>::getInstanceS(getSystemState());
 	clone->status = status;
 	// Event
 	clone->type = type;
@@ -1288,7 +1288,7 @@ StageVideoEvent::StageVideoEvent(Class_base* c)
 void StageVideoEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("RENDER_STATE","",Class<ASString>::getInstanceS("renderState"),CONSTANT_TRAIT);
+	c->setVariableByQName("RENDER_STATE","",abstract_s(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,colorSpace);
 	REGISTER_GETTER(c,status);
 }
@@ -1314,7 +1314,7 @@ ASFUNCTIONBODY(StageVideoEvent,_constructor)
 Event* StageVideoEvent::cloneImpl() const
 {
 	StageVideoEvent *clone;
-	clone = Class<StageVideoEvent>::getInstanceS();
+	clone = Class<StageVideoEvent>::getInstanceS(getSystemState());
 	clone->status = status;
 	clone->colorSpace = colorSpace;
 	// Event
@@ -1335,7 +1335,7 @@ StageVideoAvailabilityEvent::StageVideoAvailabilityEvent(Class_base* c)
 void StageVideoAvailabilityEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
-	c->setVariableByQName("STAGE_VIDEO_AVAILABILITY","",Class<ASString>::getInstanceS("stageVideoAvailability"),DECLARED_TRAIT);
+	c->setVariableByQName("STAGE_VIDEO_AVAILABILITY","",abstract_s(c->getSystemState(),"stageVideoAvailability"),DECLARED_TRAIT);
 	REGISTER_GETTER(c, availability);
 }
 
@@ -1356,7 +1356,7 @@ ASFUNCTIONBODY(StageVideoAvailabilityEvent, _constructor)
 Event* StageVideoAvailabilityEvent::cloneImpl() const
 {
 	StageVideoAvailabilityEvent *clone;
-	clone = Class<StageVideoAvailabilityEvent>::getInstanceS();
+	clone = Class<StageVideoAvailabilityEvent>::getInstanceS(getSystemState());
 	clone->availability = availability;
 	// Event
 	clone->type = type;
@@ -1370,43 +1370,43 @@ ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability);
 void ContextMenuEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("MENU_ITEM_SELECT","",Class<ASString>::getInstanceS("menuItemSelect"),DECLARED_TRAIT);
-	c->setVariableByQName("MENU_SELECT","",Class<ASString>::getInstanceS("menuSelect"),DECLARED_TRAIT);
+	c->setVariableByQName("MENU_ITEM_SELECT","",abstract_s(c->getSystemState(),"menuItemSelect"),DECLARED_TRAIT);
+	c->setVariableByQName("MENU_SELECT","",abstract_s(c->getSystemState(),"menuSelect"),DECLARED_TRAIT);
 }
 
 
 void TouchEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("TOUCH_BEGIN","",Class<ASString>::getInstanceS("touchBegin"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_END","",Class<ASString>::getInstanceS("touchEnd"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_MOVE","",Class<ASString>::getInstanceS("touchMove"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_OUT","",Class<ASString>::getInstanceS("touchOut"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_OVER","",Class<ASString>::getInstanceS("touchOver"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_ROLL_OUT","",Class<ASString>::getInstanceS("touchRollOut"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_ROLL_OVER","",Class<ASString>::getInstanceS("touchRollOver"),DECLARED_TRAIT);
-	c->setVariableByQName("TOUCH_TAP","",Class<ASString>::getInstanceS("touchTap"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_BEGIN","",abstract_s(c->getSystemState(),"touchBegin"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_END","",abstract_s(c->getSystemState(),"touchEnd"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_MOVE","",abstract_s(c->getSystemState(),"touchMove"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_OUT","",abstract_s(c->getSystemState(),"touchOut"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_OVER","",abstract_s(c->getSystemState(),"touchOver"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_ROLL_OUT","",abstract_s(c->getSystemState(),"touchRollOut"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_ROLL_OVER","",abstract_s(c->getSystemState(),"touchRollOver"),DECLARED_TRAIT);
+	c->setVariableByQName("TOUCH_TAP","",abstract_s(c->getSystemState(),"touchTap"),DECLARED_TRAIT);
 }
 
 void GestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableByQName("GESTURE_TWO_FINGER_TAP","",Class<ASString>::getInstanceS("gestureTwoFingerTap"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_TWO_FINGER_TAP","",abstract_s(c->getSystemState(),"gestureTwoFingerTap"),DECLARED_TRAIT);
 }
 
 void PressAndTapGestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("GESTURE_PRESS_AND_TAP","",Class<ASString>::getInstanceS("gesturePressAndTap"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_PRESS_AND_TAP","",abstract_s(c->getSystemState(),"gesturePressAndTap"),DECLARED_TRAIT);
 }
 
 void TransformGestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
-	c->setVariableByQName("GESTURE_PAN","",Class<ASString>::getInstanceS("gesturePan"),DECLARED_TRAIT);
-	c->setVariableByQName("GESTURE_ROTATE","",Class<ASString>::getInstanceS("gestureRotate"),DECLARED_TRAIT);
-	c->setVariableByQName("GESTURE_SWIPE","",Class<ASString>::getInstanceS("gestureSwipe"),DECLARED_TRAIT);
-	c->setVariableByQName("GESTURE_ZOOM","",Class<ASString>::getInstanceS("gestureZoom"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_PAN","",abstract_s(c->getSystemState(),"gesturePan"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_ROTATE","",abstract_s(c->getSystemState(),"gestureRotate"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_SWIPE","",abstract_s(c->getSystemState(),"gestureSwipe"),DECLARED_TRAIT);
+	c->setVariableByQName("GESTURE_ZOOM","",abstract_s(c->getSystemState(),"gestureZoom"),DECLARED_TRAIT);
 }
 
 UncaughtErrorEvents::UncaughtErrorEvents(Class_base* c):

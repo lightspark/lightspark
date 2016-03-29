@@ -47,7 +47,7 @@ _R<ASObject> Amf3Deserializer::parseInteger() const
 	uint32_t tmp;
 	if(!input->readU29(tmp))
 		throw ParseException("Not enough data to parse integer");
-	return _MR(abstract_i(tmp));
+	return _MR(abstract_i(input->getSystemState(),tmp));
 }
 
 _R<ASObject> Amf3Deserializer::parseDouble() const
@@ -65,7 +65,7 @@ _R<ASObject> Amf3Deserializer::parseDouble() const
 			throw ParseException("Not enough data to parse double");
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
-	return _MR(abstract_d(tmp.val));
+	return _MR(abstract_d(input->getSystemState(),tmp.val));
 }
 
 _R<ASObject> Amf3Deserializer::parseDate() const
@@ -83,7 +83,7 @@ _R<ASObject> Amf3Deserializer::parseDate() const
 			throw ParseException("Not enough data to parse date");
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
-	Date* dt = Class<Date>::getInstanceS();
+	Date* dt = Class<Date>::getInstanceS(input->getSystemState());
 	dt->MakeDateFromMilliseconds((int64_t)tmp.val);
 	return _MR(dt);
 }
@@ -135,7 +135,7 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		return _MR(ret);
 	}
 
-	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS());
+	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -186,13 +186,13 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 	switch (marker)
 	{
 		case vector_int_marker:
-			type = Class<Integer>::getClass();
+			type = Class<Integer>::getClass(input->getSystemState());
 			break;
 		case vector_uint_marker:
-			type = Class<UInteger>::getClass();
+			type = Class<UInteger>::getClass(input->getSystemState());
 			break;
 		case vector_double_marker:
-			type = Class<Number>::getClass();
+			type = Class<Number>::getClass(input->getSystemState());
 			break;
 		case vector_object_marker:
 		{
@@ -200,14 +200,14 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			vectypename = parseStringVR(stringMap);
 			multiname m(NULL);
 			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=getSys()->getUniqueStringId(vectypename);
-			m.ns.push_back(nsNameAndKind("",NAMESPACE));
+			m.name_s_id=input->getSystemState()->getUniqueStringId(vectypename);
+			m.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 			m.isAttribute = false;
-			type = Type::getTypeFromMultiname(&m,getVm()->currentCallContext->context);
+			type = Type::getTypeFromMultiname(&m,getVm(input->getSystemState())->currentCallContext->context);
 			if (type == NULL)
 			{
 				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);
-				type = Class<ASObject>::getClass();
+				type = Class<ASObject>::getClass(input->getSystemState());
 			}
 			break;
 		}
@@ -216,7 +216,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			throw ParseException("invalid marker in AMF3 vector");
 			
 	}
-	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(type,ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext)));
+	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -232,7 +232,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 				uint32_t value = 0;
 				if (!input->readUnsignedInt(value))
 					throw ParseException("Not enough data to parse AMF3 vector");
-				ret->append(abstract_i(value));
+				ret->append(abstract_i(input->getSystemState(),value));
 				break;
 			}
 			case vector_uint_marker:
@@ -240,7 +240,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 				uint32_t value = 0;
 				if (!input->readUnsignedInt(value))
 					throw ParseException("Not enough data to parse AMF3 vector");
-				ret->append(abstract_ui(value));
+				ret->append(abstract_ui(input->getSystemState(),value));
 				break;
 			}
 			case vector_double_marker:
@@ -288,7 +288,7 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		throw ParseException("Not enough data to parse AMF3 vector");
 	if (weakkeys)
 		LOG(LOG_NOT_IMPLEMENTED,"handling of weak keys in Dictionary");
-	_R<Dictionary> ret=_MR(Class<Dictionary>::getInstanceS());
+	_R<Dictionary> ret=_MR(Class<Dictionary>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -302,7 +302,7 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		multiname name(NULL);
 		name.name_type=multiname::NAME_OBJECT;
 		name.name_o = key.getPtr();
-		name.ns.push_back(nsNameAndKind("",NAMESPACE));
+		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		key->incRef();
 		value->incRef();
 		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED);
@@ -328,7 +328,7 @@ _R<ASObject> Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMa
 		return _MR(ret);
 	}
 
-	_R<ByteArray> ret=_MR(Class<ByteArray>::getInstanceS());
+	_R<ByteArray> ret=_MR(Class<ByteArray>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -367,8 +367,8 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Custom serialization
 		const tiny_string& className=parseStringVR(stringMap);
 		assert_and_throw(!className.empty());
-		const auto it=getSys()->aliasMap.find(className);
-		assert_and_throw(it!=getSys()->aliasMap.end());
+		const auto it=input->getSystemState()->aliasMap.find(className);
+		assert_and_throw(it!=input->getSystemState()->aliasMap.end());
 
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
@@ -377,8 +377,8 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Invoke readExternal
 		multiname readExternalName(NULL);
 		readExternalName.name_type=multiname::NAME_STRING;
-		readExternalName.name_s_id=getSys()->getUniqueStringId("readExternal");
-		readExternalName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		readExternalName.name_s_id=input->getSystemState()->getUniqueStringId("readExternal");
+		readExternalName.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		readExternalName.isAttribute = false;
 
 		_NR<ASObject> o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
@@ -408,14 +408,14 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		for(uint32_t i=0;i<traitsCount;i++)
 			traits.traitsNames.emplace_back(parseStringVR(stringMap));
 
-		const auto it=getSys()->aliasMap.find(className);
-		if(it!=getSys()->aliasMap.end())
+		const auto it=input->getSystemState()->aliasMap.find(className);
+		if(it!=input->getSystemState()->aliasMap.end())
 			traits.type=it->second.getPtr();
 		traitsMap.emplace_back(traits);
 	}
 
 	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0):
-		Class<ASObject>::getInstanceS());
+		Class<ASObject>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -426,8 +426,8 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 
 		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
-		name.name_s_id=getSys()->getUniqueStringId(traits.traitsNames[i]);
-		name.ns.push_back(nsNameAndKind("",NAMESPACE));
+		name.name_s_id=input->getSystemState()->getUniqueStringId(traits.traitsNames[i]);
+		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 
 		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED,traits.type);
@@ -474,9 +474,9 @@ _R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool leg
 
 	ASObject *xmlObj;
 	if(legacyXML)
-		xmlObj=Class<XMLDocument>::getInstanceS(xmlStr);
+		xmlObj=Class<XMLDocument>::getInstanceS(input->getSystemState(),xmlStr);
 	else
-		xmlObj=XML::createFromString(xmlStr);
+		xmlObj=XML::createFromString(input->getSystemState(),xmlStr);
 	objMap.push_back(xmlObj);
 	return _MR(xmlObj);
 }
@@ -495,13 +495,13 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 		switch(marker)
 		{
 			case null_marker:
-				return _MR(getSys()->getNullRef());
+				return _MR(input->getSystemState()->getNullRef());
 			case undefined_marker:
-				return _MR(getSys()->getUndefinedRef());
+				return _MR(input->getSystemState()->getUndefinedRef());
 			case false_marker:
-				return _MR(abstract_b(false));
+				return _MR(abstract_b(input->getSystemState(),false));
 			case true_marker:
-				return _MR(abstract_b(true));
+				return _MR(abstract_b(input->getSystemState(),true));
 			case integer_marker:
 				return parseInteger();
 			case double_marker:
@@ -509,7 +509,7 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case date_marker:
 				return parseDate();
 			case string_marker:
-				return _MR(Class<ASString>::getInstanceS(parseStringVR(stringMap)));
+				return _MR(abstract_s(input->getSystemState(),parseStringVR(stringMap)));
 			case xml_doc_marker:
 				return parseXML(objMap, true);
 			case array_marker:
@@ -540,15 +540,15 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case amf0_number_marker:
 				return parseDouble();
 			case amf0_boolean_marker:
-				return _MR(abstract_b(input->readByte(marker)));
+				return _MR(abstract_b(input->getSystemState(), input->readByte(marker)));
 			case amf0_string_marker:
-				return _MR(Class<ASString>::getInstanceS(parseStringAMF0()));
+				return _MR(abstract_s(input->getSystemState(),parseStringAMF0()));
 			case amf0_object_marker:
 				return parseObjectAMF0(stringMap,objMap,traitsMap);
 			case amf0_null_marker:
-				return _MR(getSys()->getNullRef());
+				return _MR(input->getSystemState()->getNullRef());
 			case amf0_undefined_marker:
-				return _MR(getSys()->getUndefinedRef());
+				return _MR(input->getSystemState()->getUndefinedRef());
 			case amf0_reference_marker:
 				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
 				throw UnsupportedException("unimplemented marker");
@@ -600,7 +600,7 @@ _R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stri
 	if(!input->readUnsignedInt(count))
 		throw ParseException("Not enough data to parse AMF3 array");
 
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(input->getSystemState()));
 
 	//Read name, value pairs
 	while(true)
@@ -628,7 +628,7 @@ _R<ASObject> Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& st
 	if(!input->readUnsignedInt(count))
 		throw ParseException("Not enough data to parse AMF3 strict array");
 
-	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS());
+	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -646,7 +646,7 @@ _R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringM
 			std::vector<ASObject*>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS());
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(input->getSystemState()));
 
 	while (true)
 	{
@@ -664,6 +664,6 @@ _R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringM
 
 		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
 	}
-	return _R<ASObject>(getSys()->getUndefinedRef());
+	return _R<ASObject>(input->getSystemState()->getUndefinedRef());
 }
 

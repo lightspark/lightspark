@@ -65,23 +65,23 @@
 	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj->as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS("Arguments provided in getter"); \
-		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter"); \
+		return ArgumentConversion<decltype(th->name)>::toAbstract(obj->getSystemState(),th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
 	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj->as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS("Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " getter is not implemented"); \
-		return ArgumentConversion<decltype(th->name)>::toAbstract(th->name); \
+		return ArgumentConversion<decltype(th->name)>::toAbstract(obj->getSystemState(),th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
@@ -89,10 +89,10 @@
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj->as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		return NULL; \
 	}
@@ -101,10 +101,10 @@
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj->as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " setter is not implemented"); \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		return NULL; \
@@ -117,10 +117,10 @@
 	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
 	{ \
 		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS("Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj->as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS("Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
 		th->callback(oldValue); \
@@ -142,10 +142,10 @@
 
 /* registers getter/setter with Class_base. To be used in ::sinit()-functions */
 #define REGISTER_GETTER(c,name) \
-	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_getter_##name),GETTER_METHOD,true)
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_getter_##name),GETTER_METHOD,true)
 
 #define REGISTER_SETTER(c,name) \
-	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(_setter_##name),SETTER_METHOD,true)
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_setter_##name),SETTER_METHOD,true)
 
 #define REGISTER_GETTER_SETTER(c,name) \
 		REGISTER_GETTER(c,name); \
@@ -157,18 +157,18 @@
 
 // TODO: Every class should have a constructor
 #define CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes) \
-	c->setSuper(Class<superClass>::getRef()); \
+	c->setSuper(Class<superClass>::getRef(c->getSystemState())); \
 	c->setConstructor(NULL); \
 	c->isFinal = ((attributes) & CLASS_FINAL) != 0;	\
 	c->isSealed = ((attributes) & CLASS_SEALED) != 0
 
 #define CLASS_SETUP(c, superClass, constructor, attributes) \
 	CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
-	c->setConstructor(Class<IFunction>::getFunction(constructor));
+	c->setConstructor(Class<IFunction>::getFunction(c->getSystemState(),constructor));
 
 #define CLASS_SETUP_CONSTRUCTOR_LENGTH(c, superClass, constructor, ctorlength, attributes) \
 	CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
-	c->setConstructor(Class<IFunction>::getFunction((constructor), (ctorlength)));
+	c->setConstructor(Class<IFunction>::getFunction(c->getSystemState(),(constructor), (ctorlength)));
 
 namespace lightspark
 {
@@ -181,7 +181,9 @@ class ByteArray;
 class Loader;
 class Type;
 class ABCContext;
+class SystemState;
 
+extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
@@ -246,22 +248,22 @@ public:
 	   @param traitKinds Bitwise OR of accepted trait kinds
 	*/
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
-	variable* findObjVar(const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
+	variable* findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	inline const variable* findObjVar(const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
+	inline const variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
 	{
 		if (mname.isEmpty())
 			return NULL;
-		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId();
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 		assert(!mname.ns.empty());
 		
 		const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
-		auto nsIt=mname.ns.begin();
+		auto nsIt=mname.ns.cbegin();
 	
 		//Find the namespace
-		while(ret!=Variables.end() && ret->first.nameId==name)
+		while(ret!=Variables.cend() && ret->first.nameId==name)
 		{
 			//breaks when the namespace is not found
 			const nsNameAndKind& ns=ret->first.ns;
@@ -277,7 +279,7 @@ public:
 			else if(*nsIt<ns)
 			{
 				++nsIt;
-				if(nsIt==mname.ns.end())
+				if(nsIt==mname.ns.cend())
 					break;
 			}
 			else if(ns<*nsIt)
@@ -289,7 +291,7 @@ public:
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj);
-	void killObjVar(const multiname& mname);
+	void killObjVar(SystemState* sys, const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
 		assert_and_throw(n > 0 && n<=slots_vars.size());
@@ -314,7 +316,7 @@ public:
 	{
 		return Variables.size();
 	}
-	tiny_string getNameAt(unsigned int i) const;
+	tiny_string getNameAt(SystemState* sys,unsigned int i) const;
 	variable* getValueAt(unsigned int i);
 	int getNextEnumerable(unsigned int i) const;
 	~variables_map();
@@ -343,7 +345,7 @@ private:
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
-		const variable* ret=Variables.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -356,10 +358,22 @@ private:
 	
 	variable* findSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
 	multiname* proxyMultiName;
+	SystemState* sys;
 protected:
-	ASObject(MemoryAccount* m);
+	ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),sys(NULL),
+		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	{
+#ifndef NDEBUG
+		//Stuff only used in debugging
+		initialized=false;
+#endif
+	}
+	
 	ASObject(const ASObject& o);
-	virtual ~ASObject();
+	virtual ~ASObject()
+	{
+		destroy();
+	}
 	SWFOBJECT_TYPE type;
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
@@ -368,10 +382,10 @@ protected:
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
 	void setClass(Class_base* c);
-	static variable* findSettableImpl(variables_map& map, const multiname& name, bool* has_getter);
-	inline static const variable* findGettableImpl(const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
+	inline static const variable* findGettableImpl(SystemState* sys,const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
 	{
-		const variable* ret=map.findObjVar(name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=map.findObjVar(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -425,10 +439,9 @@ public:
 	   It should be implemented in all derived class.
 	   It should decRef all referenced objects.
 	   It has to reset all data to their default state.
-	   that will happen on the object after finalization are decRef and delete.
 	   The finalize method must be callable multiple time with the same effects (no double frees).
 	*/
-	virtual void finalize();
+	inline virtual void finalize() {}
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
 
@@ -506,13 +519,23 @@ public:
 	unsigned int numVariables() const;
 	tiny_string getNameAt(int i) const
 	{
-		return Variables.getNameAt(i);
+		return Variables.getNameAt(sys,i);
 	}
 	_R<ASObject> getValueAt(int i);
 	SWFOBJECT_TYPE getObjectType() const
 	{
 		return type;
 	}
+	SystemState* getSystemState() const
+	{
+		assert_and_throw(sys);
+		return sys;
+	}
+	void setSystemState(SystemState* s)
+	{
+		sys = s;
+	}
+
 	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
 	tiny_string toString();
 	tiny_string toLocaleString();
@@ -561,7 +584,9 @@ public:
 	virtual _R<ASObject> nextValue(uint32_t index);
 
 	//Called when the object construction is completed. Used by MovieClip implementation
-	virtual void constructionComplete();
+	inline virtual void constructionComplete()
+	{
+	}
 
 	/**
 	  Serialization interface
@@ -593,11 +618,16 @@ public:
 	
 	void dumpVariables() const;
 	
-	void setConstructIndicator() { constructIndicator = true; }
-	void setConstructorCallComplete() { constructorCallComplete = true; }
+	inline void setConstructIndicator() { constructIndicator = true; }
+	inline void setConstructorCallComplete() { constructorCallComplete = true; }
+	inline void setIsInitialized() { traitsInitialized=true;}
 	
 	void setIsEnumerable(const multiname& name, bool isEnum);
-	void destroyContents();
+	inline void destroyContents()
+	{
+		Variables.destroyContents();
+	}
+	
 };
 
 class Number;

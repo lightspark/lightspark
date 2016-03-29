@@ -64,6 +64,6 @@ ASFUNCTIONBODY(PrintJobOptions, _constructor)
 void PrintJobOrientation::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED| CLASS_FINAL);
-	c->setVariableByQName("LANDSCAPE","",Class<ASString>::getInstanceS("landscape"),CONSTANT_TRAIT);
-	c->setVariableByQName("PORTRAIT","",Class<ASString>::getInstanceS("portrait"),CONSTANT_TRAIT);
+	c->setVariableByQName("LANDSCAPE","",abstract_s(c->getSystemState(),"landscape"),CONSTANT_TRAIT);
+	c->setVariableByQName("PORTRAIT","",abstract_s(c->getSystemState(),"portrait"),CONSTANT_TRAIT);
 }

@@ -27,7 +27,7 @@ namespace lightspark
 
 /* returns a fully inialized Boolean object with value b
  * like Class<Boolean>::getInstanceS(b) but without the constructor problems */
-Boolean* abstract_b(bool b);
+Boolean* abstract_b(SystemState *sys, bool b);
 
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
 bool Boolean_concrete(const ASObject* obj);
@@ -39,7 +39,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o){};
 	bool val;
-	void finalize() { val=false;}
+	inline void finalize() { val=false;}
 	int32_t toInt()
 	{
 		return val ? 1 : 0;

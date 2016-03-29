@@ -28,34 +28,34 @@ void Math::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	// public constants
-	c->setVariableByQName("E","",abstract_d(2.71828182845905),CONSTANT_TRAIT);
-	c->setVariableByQName("LN10","",abstract_d(2.302585092994046),CONSTANT_TRAIT);
-	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),CONSTANT_TRAIT);
-	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),CONSTANT_TRAIT);
-	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),CONSTANT_TRAIT);
-	c->setVariableByQName("PI","",abstract_d(3.141592653589793),CONSTANT_TRAIT);
-	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),CONSTANT_TRAIT);
-	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),CONSTANT_TRAIT);
+	c->setVariableByQName("E","",abstract_d(c->getSystemState(),2.71828182845905),CONSTANT_TRAIT);
+	c->setVariableByQName("LN10","",abstract_d(c->getSystemState(),2.302585092994046),CONSTANT_TRAIT);
+	c->setVariableByQName("LN2","",abstract_d(c->getSystemState(),0.6931471805599453),CONSTANT_TRAIT);
+	c->setVariableByQName("LOG10E","",abstract_d(c->getSystemState(),0.4342944819032518),CONSTANT_TRAIT);
+	c->setVariableByQName("LOG2E","",abstract_d(c->getSystemState(),1.442695040888963387),CONSTANT_TRAIT);
+	c->setVariableByQName("PI","",abstract_d(c->getSystemState(),3.141592653589793),CONSTANT_TRAIT);
+	c->setVariableByQName("SQRT1_2","",abstract_d(c->getSystemState(),0.7071067811865476),CONSTANT_TRAIT);
+	c->setVariableByQName("SQRT2","",abstract_d(c->getSystemState(),1.4142135623730951),CONSTANT_TRAIT);
 
 	// public methods
-	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(abs,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(acos,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(asin,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(atan,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(atan2,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(ceil,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(cos,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(exp,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(floor,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(log,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(_max,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(_min,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(pow,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(random),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(round,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(sin,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(sqrt,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(tan,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),abs,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),acos,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(c->getSystemState(),asin,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(c->getSystemState(),atan,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(c->getSystemState(),atan2,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(c->getSystemState(),ceil,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(c->getSystemState(),cos,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(c->getSystemState(),exp,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(c->getSystemState(),floor,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(c->getSystemState(),log,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),_max,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),_min,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(c->getSystemState(),pow,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(c->getSystemState(),random),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(c->getSystemState(),round,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(c->getSystemState(),sin,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(c->getSystemState(),sqrt,1),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(c->getSystemState(),tan,1),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY(Math,_constructor)
@@ -74,7 +74,7 @@ ASFUNCTIONBODY(Math,atan2)
 {
 	number_t n1, n2;
 	ARG_UNPACK (n1) (n2);
-	return abstract_d(::atan2(n1,n2));
+	return abstract_d(obj->getSystemState(),::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,_max)
@@ -94,7 +94,7 @@ ASFUNCTIONBODY(Math,_max)
 		else
 			largest = (arg>largest) ? arg : largest;
 	}
-	return abstract_d(largest);
+	return abstract_d(obj->getSystemState(),largest);
 }
 
 ASFUNCTIONBODY(Math,_min)
@@ -115,14 +115,14 @@ ASFUNCTIONBODY(Math,_min)
 			smallest = (arg<smallest)? arg : smallest;
 	}
 
-	return abstract_d(smallest);
+	return abstract_d(obj->getSystemState(),smallest);
 }
 
 ASFUNCTIONBODY(Math,exp)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::exp(n));
+	return abstract_d(obj->getSystemState(),::exp(n));
 }
 
 ASFUNCTIONBODY(Math,acos)
@@ -130,7 +130,7 @@ ASFUNCTIONBODY(Math,acos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::acos(n));
+	return abstract_d(obj->getSystemState(),::acos(n));
 }
 
 ASFUNCTIONBODY(Math,asin)
@@ -138,7 +138,7 @@ ASFUNCTIONBODY(Math,asin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::asin(n));
+	return abstract_d(obj->getSystemState(),::asin(n));
 }
 
 ASFUNCTIONBODY(Math,atan)
@@ -146,7 +146,7 @@ ASFUNCTIONBODY(Math,atan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::atan(n));
+	return abstract_d(obj->getSystemState(),::atan(n));
 }
 
 ASFUNCTIONBODY(Math,cos)
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(Math,cos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::cos(n));
+	return abstract_d(obj->getSystemState(),::cos(n));
 }
 
 ASFUNCTIONBODY(Math,sin)
@@ -162,7 +162,7 @@ ASFUNCTIONBODY(Math,sin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::sin(n));
+	return abstract_d(obj->getSystemState(),::sin(n));
 }
 
 ASFUNCTIONBODY(Math,tan)
@@ -170,35 +170,35 @@ ASFUNCTIONBODY(Math,tan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::tan(n));
+	return abstract_d(obj->getSystemState(),::tan(n));
 }
 
 ASFUNCTIONBODY(Math,abs)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::fabs(n));
+	return abstract_d(obj->getSystemState(),::fabs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::ceil(n));
+	return abstract_d(obj->getSystemState(),::ceil(n));
 }
 
 ASFUNCTIONBODY(Math,log)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::log(n));
+	return abstract_d(obj->getSystemState(),::log(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::floor(n));
+	return abstract_d(obj->getSystemState(),::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
@@ -206,15 +206,15 @@ ASFUNCTIONBODY(Math,round)
 	number_t n;
 	ARG_UNPACK (n);
 	if (n < 0 && n >= -0.5)
-		return abstract_d(0);
-	return abstract_d(::round(n));
+		return abstract_d(obj->getSystemState(),0);
+	return abstract_d(obj->getSystemState(),::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
 	number_t n;
 	ARG_UNPACK (n);
-	return abstract_d(::sqrt(n));
+	return abstract_d(obj->getSystemState(),::sqrt(n));
 }
 
 ASFUNCTIONBODY(Math,pow)
@@ -222,8 +222,8 @@ ASFUNCTIONBODY(Math,pow)
 	number_t x, y;
 	ARG_UNPACK (x) (y);
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
-		return abstract_d(Number::NaN);
-	return abstract_d(::pow(x,y));
+		return abstract_d(obj->getSystemState(),Number::NaN);
+	return abstract_d(obj->getSystemState(),::pow(x,y));
 }
 
 ASFUNCTIONBODY(Math,random)
@@ -233,7 +233,7 @@ ASFUNCTIONBODY(Math,random)
 
 	number_t ret=rand();
 	ret/=(number_t(1.)+RAND_MAX);
-	return abstract_d(ret);
+	return abstract_d(obj->getSystemState(),ret);
 }
 
 

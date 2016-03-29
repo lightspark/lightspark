@@ -57,59 +57,59 @@ ByteArray::~ByteArray()
 void ByteArray::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_getPosition),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(_setPosition),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_getEndian),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(_setEndian),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesAvailable),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_setPosition),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_getEndian),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_setEndian),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectEncoding),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setObjectEncoding),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
 
-	getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("compress","",Class<IFunction>::getFunction(_compress),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uncompress","",Class<IFunction>::getFunction(_uncompress),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("deflate","",Class<IFunction>::getFunction(_deflate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(_inflate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readBoolean","",Class<IFunction>::getFunction(readBoolean),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(readBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(readByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(readDouble),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(readFloat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(readInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readMultiByte","",Class<IFunction>::getFunction(readMultiByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readShort","",Class<IFunction>::getFunction(readShort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedByte","",Class<IFunction>::getFunction(readUnsignedByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(readUnsignedInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedShort","",Class<IFunction>::getFunction(readUnsignedShort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(readObject),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(readUTF),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(readUTFBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeBoolean","",Class<IFunction>::getFunction(writeBoolean),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeUTF","",Class<IFunction>::getFunction(writeUTF),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(writeUTFBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(writeBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(writeByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(writeDouble),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(writeFloat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(writeInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeMultiByte","",Class<IFunction>::getFunction(writeMultiByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeUnsignedInt","",Class<IFunction>::getFunction(writeUnsignedInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(writeObject),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("writeShort","",Class<IFunction>::getFunction(writeShort),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(ByteArray::_toString),DYNAMIC_TRAIT);
+	c->getSystemState()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compress","",Class<IFunction>::getFunction(c->getSystemState(),_compress),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uncompress","",Class<IFunction>::getFunction(c->getSystemState(),_uncompress),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deflate","",Class<IFunction>::getFunction(c->getSystemState(),_deflate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inflate","",Class<IFunction>::getFunction(c->getSystemState(),_inflate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readBoolean","",Class<IFunction>::getFunction(c->getSystemState(),readBoolean),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(c->getSystemState(),readBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(c->getSystemState(),readByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(c->getSystemState(),readDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(c->getSystemState(),readFloat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(c->getSystemState(),readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readMultiByte","",Class<IFunction>::getFunction(c->getSystemState(),readMultiByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readShort","",Class<IFunction>::getFunction(c->getSystemState(),readShort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedByte","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedShort","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedShort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(c->getSystemState(),readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(c->getSystemState(),readUTF),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(c->getSystemState(),readUTFBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeBoolean","",Class<IFunction>::getFunction(c->getSystemState(),writeBoolean),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUTF","",Class<IFunction>::getFunction(c->getSystemState(),writeUTF),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(c->getSystemState(),writeUTFBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(c->getSystemState(),writeBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(c->getSystemState(),writeByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(c->getSystemState(),writeDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(c->getSystemState(),writeFloat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeInt","",Class<IFunction>::getFunction(c->getSystemState(),writeInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeMultiByte","",Class<IFunction>::getFunction(c->getSystemState(),writeMultiByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeUnsignedInt","",Class<IFunction>::getFunction(c->getSystemState(),writeUnsignedInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeObject","",Class<IFunction>::getFunction(c->getSystemState(),writeObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeShort","",Class<IFunction>::getFunction(c->getSystemState(),writeShort),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),ByteArray::_toString),DYNAMIC_TRAIT);
 	REGISTER_GETTER_SETTER(c,shareable);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",Class<IFunction>::getFunction(atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",Class<IFunction>::getFunction(atomicCompareAndSwapLength),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(_toJSON),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",Class<IFunction>::getFunction(c->getSystemState(),atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",Class<IFunction>::getFunction(c->getSystemState(),atomicCompareAndSwapLength),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toJSON),DYNAMIC_TRAIT);
 
-	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass());
+	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass(c->getSystemState()));
 	IDataInput::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IDataOutput>::getClass());
+	c->addImplementedInterface(InterfaceClass<IDataOutput>::getClass(c->getSystemState()));
 	IDataOutput::linkTraits(c);
 }
 
@@ -239,7 +239,7 @@ ASFUNCTIONBODY(ByteArray,_constructor)
 ASFUNCTIONBODY(ByteArray,_getPosition)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	return abstract_i(th->getPosition());
+	return abstract_i(obj->getSystemState(),th->getPosition());
 }
 
 void ByteArray::setPosition(uint32_t p)
@@ -261,9 +261,9 @@ ASFUNCTIONBODY(ByteArray,_getEndian)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	if(th->littleEndian)
-		return Class<ASString>::getInstanceS(Endian::littleEndian);
+		return abstract_s(obj->getSystemState(),Endian::littleEndian);
 	else
-		return Class<ASString>::getInstanceS(Endian::bigEndian);
+		return abstract_s(obj->getSystemState(),Endian::bigEndian);
 }
 
 ASFUNCTIONBODY(ByteArray,_setEndian)
@@ -281,7 +281,7 @@ ASFUNCTIONBODY(ByteArray,_setEndian)
 ASFUNCTIONBODY(ByteArray,_getObjectEncoding)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	return abstract_ui(th->objectEncoding);
+	return abstract_ui(obj->getSystemState(),th->objectEncoding);
 }
 
 ASFUNCTIONBODY(ByteArray,_setObjectEncoding)
@@ -299,7 +299,7 @@ ASFUNCTIONBODY(ByteArray,_setObjectEncoding)
 
 ASFUNCTIONBODY(ByteArray,_getDefaultObjectEncoding)
 {
-	return abstract_i(getSys()->staticNetConnectionDefaultObjectEncoding);
+	return abstract_i(obj->getSystemState(),obj->getSystemState()->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
@@ -307,9 +307,9 @@ ASFUNCTIONBODY(ByteArray,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = args[0]->toInt();
 	if(value == 0)
-		getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
+		args[0]->getSystemState()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
 	else if(value == 3)
-		getSys()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
+		args[0]->getSystemState()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 	return NULL;
@@ -353,13 +353,13 @@ void ByteArray::setLength(uint32_t newLen)
 ASFUNCTIONBODY(ByteArray,_getLength)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	return abstract_i(th->len);
+	return abstract_i(obj->getSystemState(),th->len);
 }
 
 ASFUNCTIONBODY(ByteArray,_getBytesAvailable)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
-	return abstract_i(th->len-th->position);
+	return abstract_i(obj->getSystemState(),th->len-th->position);
 }
 
 ASFUNCTIONBODY(ByteArray,readBoolean)
@@ -375,7 +375,7 @@ ASFUNCTIONBODY(ByteArray,readBoolean)
 	}
 
 	th->unlock();
-	return abstract_b(ret!=0);
+	return abstract_b(obj->getSystemState(),ret!=0);
 }
 
 ASFUNCTIONBODY(ByteArray,readBytes)
@@ -402,7 +402,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
 		th->unlock();
-		throw Class<RangeError>::getInstanceS("length+offset");
+		throw Class<RangeError>::getInstanceS(obj->getSystemState(),"length+offset");
 	}
 	
 	uint8_t* buf=out->getBuffer(length+offset,true);
@@ -451,7 +451,7 @@ ASFUNCTIONBODY(ByteArray,readUTF)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return Class<ASString>::getInstanceS(res);
+	return abstract_s(obj->getSystemState(),res);
 }
 
 ASFUNCTIONBODY(ByteArray,readUTFBytes)
@@ -484,7 +484,7 @@ ASFUNCTIONBODY(ByteArray,readUTFBytes)
 	strncpy(buf,(char*)bufStart,(size_t)length);
 	th->position+=length;
 	th->unlock();
-	return Class<ASString>::getInstanceS((char *)buf,strlen(buf));
+	return abstract_s(obj->getSystemState(),(char *)buf,strlen(buf));
 }
 
 void ByteArray::writeUTF(const tiny_string& str)
@@ -598,7 +598,7 @@ ASFUNCTIONBODY(ByteArray,writeBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass()));
+	assert_and_throw(args[0]->getClass()->isSubClass(Class<ByteArray>::getClass(obj->getSystemState())));
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	uint32_t offset=0;
 	uint32_t length=0;
@@ -800,7 +800,7 @@ ASFUNCTIONBODY(ByteArray, readByte)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return abstract_i((int8_t)ret);
+	return abstract_i(obj->getSystemState(),(int8_t)ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readDouble)
@@ -822,7 +822,7 @@ ASFUNCTIONBODY(ByteArray,readDouble)
 
 	double *doubleptr=reinterpret_cast<double*>(&ret);
 	th->unlock();
-	return abstract_d(*doubleptr);
+	return abstract_d(obj->getSystemState(),*doubleptr);
 }
 
 ASFUNCTIONBODY(ByteArray,readFloat)
@@ -844,7 +844,7 @@ ASFUNCTIONBODY(ByteArray,readFloat)
 
 	float *floatptr=reinterpret_cast<float*>(&ret);
 	th->unlock();
-	return abstract_d(*floatptr);
+	return abstract_d(obj->getSystemState(),*floatptr);
 }
 
 ASFUNCTIONBODY(ByteArray,readInt)
@@ -863,7 +863,7 @@ ASFUNCTIONBODY(ByteArray,readInt)
 	memcpy(&ret,th->bytes+th->position,4);
 	th->position+=4;
 	th->unlock();
-	return abstract_i((int32_t)th->endianOut(ret));
+	return abstract_i(obj->getSystemState(),(int32_t)th->endianOut(ret));
 }
 
 bool ByteArray::readShort(uint16_t& ret)
@@ -892,7 +892,7 @@ ASFUNCTIONBODY(ByteArray,readShort)
 	}
 
 	th->unlock();
-	return abstract_i((int16_t)ret);
+	return abstract_i(obj->getSystemState(),(int16_t)ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedByte)
@@ -907,7 +907,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedByte)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-	return abstract_ui(ret);
+	return abstract_ui(obj->getSystemState(),ret);
 }
 
 bool ByteArray::readUnsignedInt(uint32_t& ret)
@@ -935,7 +935,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedInt)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return abstract_ui(ret);
+	return abstract_ui(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readUnsignedShort)
@@ -951,7 +951,7 @@ ASFUNCTIONBODY(ByteArray,readUnsignedShort)
 		throwError<EOFError>(kEOFError);
 	}
 
-	return abstract_ui(ret);
+	return abstract_ui(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ByteArray,readMultiByte)
@@ -970,7 +970,7 @@ ASFUNCTIONBODY(ByteArray,readMultiByte)
 
 	// TODO: should convert from charset to UTF-8
 	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset");
-	return Class<ASString>::getInstanceS((char*)th->bytes+th->position,strlen);
+	return abstract_s(obj->getSystemState(),(char*)th->bytes+th->position,strlen);
 }
 
 ASFUNCTIONBODY(ByteArray,readObject)
@@ -982,7 +982,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	{
 		th->unlock();
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 		//throwError<EOFError>(kEOFError);
 	}
 	//assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
@@ -1003,7 +1003,7 @@ ASFUNCTIONBODY(ByteArray,readObject)
 	if(ret.isNull())
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	ret->incRef();
 	return ret.getPtr();
@@ -1021,7 +1021,7 @@ ASFUNCTIONBODY(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	return Class<ASString>::getInstanceS((char*)th->bytes+start,th->len-start);
+	return abstract_s(obj->getSystemState(),(char*)th->bytes+start,th->len-start);
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
@@ -1032,7 +1032,7 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 		return false;
 
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	return index<len;
@@ -1041,23 +1041,23 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
-	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(name,index))
+	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
-		return _MNR(abstract_ui(static_cast<uint32_t>(value)));
+		return _MNR(abstract_ui(getSystemState(),static_cast<uint32_t>(value)));
 	}
 	else
-		return _MNR(getSys()->getUndefinedRef());
+		return _MNR(getSystemState()->getUndefinedRef());
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
 	if(index<len)
@@ -1066,14 +1066,14 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return static_cast<uint32_t>(value);
 	}
 	else
-		return _MNR(getSys()->getUndefinedRef());
+		return _MNR(getSystemState()->getUndefinedRef());
 }
 
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!Array::isValidMultiname(name,index))
+	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst);
 
 	if(index>=len)
@@ -1093,7 +1093,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	setVariableByMultiname(name, abstract_i(value),ASObject::CONST_NOT_ALLOWED);
+	setVariableByMultiname(name, abstract_i(getSystemState(),value),ASObject::CONST_NOT_ALLOWED);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -1275,7 +1275,7 @@ void ByteArray::uncompress_zlib()
 	strm.total_out=0;
 	status=inflateInit(&strm);
 	if(status==Z_VERSION_ERROR)
-		throw Class<IOError>::getInstanceS("not valid compressed data");
+		throw Class<IOError>::getInstanceS(getSystemState(),"not valid compressed data");
 	else if(status!=Z_OK)
 		throw RunTimeException("zlib uncompress failed");
 
@@ -1289,7 +1289,7 @@ void ByteArray::uncompress_zlib()
 		if(status!=Z_OK && status!=Z_STREAM_END)
 		{
 			inflateEnd(&strm);
-			throw Class<IOError>::getInstanceS("not valid compressed data");
+			throw Class<IOError>::getInstanceS(getSystemState(),"not valid compressed data");
 		}
 
 		if(strm.avail_out==0)
@@ -1383,7 +1383,7 @@ ASFUNCTIONBODY(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	return abstract_ui(res);
+	return abstract_ui(obj->getSystemState(),res);
 	
 }
 
@@ -1399,7 +1399,7 @@ ASFUNCTIONBODY(ByteArray,push)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return abstract_ui(res);
+	return abstract_ui(obj->getSystemState(),res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
@@ -1414,7 +1414,7 @@ ASFUNCTIONBODY(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	return abstract_ui(res);
+	return abstract_ui(obj->getSystemState(),res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
@@ -1430,7 +1430,7 @@ ASFUNCTIONBODY(ByteArray,unshift)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return abstract_ui(res);
+	return abstract_ui(obj->getSystemState(),res);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ByteArray,shareable);
 
@@ -1459,7 +1459,7 @@ ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapIntAt)
 		memcpy(th->bytes+byteindex,&newvalue,4);
 	}
 	th->unlock();
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapLength)
 {
@@ -1474,12 +1474,12 @@ ASFUNCTIONBODY(ByteArray,atomicCompareAndSwapLength)
 		th->setLength(newLength);
 	}
 	th->unlock();
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(ByteArray,_toJSON)
 {
-	return Class<ASString>::getInstanceS("ByteArray");
+	return abstract_s(getSys(),"ByteArray");
 }
 
 void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

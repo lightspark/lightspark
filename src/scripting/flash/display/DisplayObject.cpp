@@ -98,7 +98,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceS()),cacheAsBitmap(false)
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceS(c->getSystemState())),cacheAsBitmap(false)
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
@@ -119,56 +119,56 @@ void DisplayObject::finalize()
 void DisplayObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(_getScaleX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(_getScaleZ),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(_setScaleZ),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_getX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(_setX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_getY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(_setY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(_getVisible),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(_setVisible),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(_getRotation),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(_setRotation),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_setName),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(_getParent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("root","",Class<IFunction>::getFunction(_getRoot),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(_setBlendMode),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(_getStage),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(_getMask),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(_setMask),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_getAlpha),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(_setAlpha),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getRect","",Class<IFunction>::getFunction(_getBounds),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(_getMouseX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(_getMouseY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(globalToLocal),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestObject","",Class<IFunction>::getFunction(hitTestObject),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestPoint","",Class<IFunction>::getFunction(hitTestPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_getTransform),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(_setTransform),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleZ),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleZ),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_getVisible),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_setVisible),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_setRotation),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_setName),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(c->getSystemState(),_getParent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("root","",Class<IFunction>::getFunction(c->getSystemState(),_getRoot),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(c->getSystemState(),_getBlendMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(c->getSystemState(),_setBlendMode),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(c->getSystemState(),_getScale9Grid),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(c->getSystemState(),_getStage),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(c->getSystemState(),_getMask),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(c->getSystemState(),_getAlpha),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(c->getSystemState(),_setAlpha),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),_getBounds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getRect","",Class<IFunction>::getFunction(c->getSystemState(),_getBounds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseY","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(c->getSystemState(),globalToLocal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestObject","",Class<IFunction>::getFunction(c->getSystemState(),hitTestObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestPoint","",Class<IFunction>::getFunction(c->getSystemState(),hitTestPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_getTransform),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_setTransform),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
 	REGISTER_GETTER_SETTER(c,filters);
 	REGISTER_GETTER_SETTER(c,scrollRect);
 
-	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass());
+	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	IBitmapDrawable::linkTraits(c);
 }
 
@@ -191,7 +191,7 @@ ASFUNCTIONBODY(DisplayObject,_getTransform)
 
 	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
 	th->incRef();
-	return Class<Transform>::getInstanceS(_MR(th));
+	return Class<Transform>::getInstanceS(obj->getSystemState(),_MR(th));
 }
 
 ASFUNCTIONBODY(DisplayObject,_setTransform)
@@ -217,7 +217,7 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 		}
 	}
 	if(mustInvalidate && onStage)
-		requestInvalidation(getSys());
+		requestInvalidation(getSystemState());
 }
 
 void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
@@ -250,7 +250,7 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	}
 
 	if(mustInvalidate && onStage)
-		requestInvalidation(getSys());
+		requestInvalidation(getSystemState());
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -392,8 +392,8 @@ void DisplayObject::setOnStage(bool staged)
 		//Our stage condition changed, send event
 		onStage=staged;
 		if(staged==true)
-			requestInvalidation(getSys());
-		if(getVm()==NULL)
+			requestInvalidation(getSystemState());
+		if(getVm(getSystemState())==NULL)
 			return;
 		/*NOTE: By tests we can assert that added/addedToStage is dispatched
 		  immediately when addChild is called. On the other hand setOnStage may
@@ -405,20 +405,20 @@ void DisplayObject::setOnStage(bool staged)
 		if(onStage==true)
 		{
 			this->incRef();
-			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
 			if(isVmThread())
 				ABCVm::publicHandleEvent(_MR(this),e);
 			else
-				getVm()->addEvent(_MR(this),e);
+				getVm(getSystemState())->addEvent(_MR(this),e);
 		}
 		else if(onStage==false)
 		{
 			this->incRef();
-			_R<Event> e=_MR(Class<Event>::getInstanceS("removedFromStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"removedFromStage"));
 			if(isVmThread())
 				ABCVm::publicHandleEvent(_MR(this),e);
 			else
-				getVm()->addEvent(_MR(this),e);
+				getVm(getSystemState())->addEvent(_MR(this),e);
 		}
 	}
 }
@@ -432,21 +432,21 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	 * stored value even if it is outside the [0, 1] range. */
 	th->alpha=val;
 	if(th->onStage)
-		th->requestInvalidation(getSys());
+		th->requestInvalidation(obj->getSystemState());
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->alpha);
+	return abstract_d(obj->getSystemState(),th->alpha);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
 	if(th->mask.isNull())
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->mask->incRef();
 	return th->mask.getPtr();
@@ -456,7 +456,7 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 {
 	DisplayObject* th=Class<DisplayObject>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(args[0] && args[0]->getClass() && args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()))
+	if(args[0] && args[0]->getClass() && args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())))
 	{
 		//We received a valid mask object
 		DisplayObject* newMask=Class<DisplayObject>::cast(args[0]);
@@ -472,7 +472,7 @@ ASFUNCTIONBODY(DisplayObject,_setMask)
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->sx);
+	return abstract_d(obj->getSystemState(),th->sx);
 }
 
 void DisplayObject::setScaleX(number_t val)
@@ -482,7 +482,7 @@ void DisplayObject::setScaleX(number_t val)
 	{
 		sx=val;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -501,7 +501,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 ASFUNCTIONBODY(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->sy);
+	return abstract_d(obj->getSystemState(),th->sy);
 }
 
 void DisplayObject::setScaleY(number_t val)
@@ -511,7 +511,7 @@ void DisplayObject::setScaleY(number_t val)
 	{
 		sy=val;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -530,7 +530,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 ASFUNCTIONBODY(DisplayObject,_getScaleZ)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->sz);
+	return abstract_d(obj->getSystemState(),th->sz);
 }
 
 void DisplayObject::setScaleZ(number_t val)
@@ -540,7 +540,7 @@ void DisplayObject::setScaleZ(number_t val)
 	{
 		sz=val;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -560,7 +560,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleZ)
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->tx);
+	return abstract_d(obj->getSystemState(),th->tx);
 }
 
 void DisplayObject::setX(number_t val)
@@ -573,7 +573,7 @@ void DisplayObject::setX(number_t val)
 	{
 		tx=val;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -587,7 +587,7 @@ void DisplayObject::setY(number_t val)
 	{
 		ty=val;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -603,7 +603,7 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 ASFUNCTIONBODY(DisplayObject,_getY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->ty);
+	return abstract_d(obj->getSystemState(),th->ty);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setY)
@@ -621,7 +621,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 	assert_and_throw(argslen==1);
 
 	if(args[0]->is<Undefined>() || args[0]->is<Null>())
-		return Class<Rectangle>::getInstanceS();
+		return Class<Rectangle>::getInstanceS(obj->getSystemState());
 	if (!args[0]->is<DisplayObject>())
 		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<args[0]->toDebugString());
 	assert_and_throw(args[0]->is<DisplayObject>());
@@ -644,7 +644,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 			m = targetMatrix.getInverted().multiplyMatrix(m);
 	}
 
-	Rectangle* ret=Class<Rectangle>::getInstanceS();
+	Rectangle* ret=Class<Rectangle>::getInstanceS(obj->getSystemState());
 	number_t x1,x2,y1,y2;
 	bool r=th->getBounds(x1,x2,y1,y2, m);
 	if(r)
@@ -675,7 +675,7 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 	 * the main class should have non-null loaderInfo. */
 	_NR<RootMovieClip> r=th->getRoot();
 	if(r.isNull() || r->loaderInfo.isNull())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	
 	r->loaderInfo->incRef();
 	return r->loaderInfo.getPtr();
@@ -686,7 +686,7 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	_NR<Stage> ret=th->getStage();
 	if(ret.isNull())
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	ret->incRef();
 	return ret.getPtr();
@@ -695,13 +695,13 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return getSys()->getUndefinedRef();
+	return obj->getSystemState()->getUndefinedRef();
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return Class<ASString>::getInstanceS(th->blendMode);
+	return abstract_s(obj->getSystemState(),th->blendMode);
 }
 ASFUNCTIONBODY(DisplayObject,_setBlendMode)
 {
@@ -743,7 +743,7 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
 
-	return Class<Point>::getInstanceS(tempx, tempy);
+	return Class<Point>::getInstanceS(obj->getSystemState(),tempx, tempy);
 }
 
 ASFUNCTIONBODY(DisplayObject,globalToLocal)
@@ -757,7 +757,7 @@ ASFUNCTIONBODY(DisplayObject,globalToLocal)
 
 	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
-	return Class<Point>::getInstanceS(tempx, tempy);
+	return Class<Point>::getInstanceS(obj->getSystemState(),tempx, tempy);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)
@@ -773,7 +773,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	{
 		th->rotation=val;
 		if(th->onStage)
-			th->requestInvalidation(getSys());
+			th->requestInvalidation(obj->getSystemState());
 	}
 	return NULL;
 }
@@ -789,7 +789,7 @@ ASFUNCTIONBODY(DisplayObject,_setName)
 ASFUNCTIONBODY(DisplayObject,_getName)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return Class<ASString>::getInstanceS(th->name);
+	return abstract_s(obj->getSystemState(),th->name);
 }
 
 void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
@@ -798,7 +798,7 @@ void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 	{
 		parent=p;
 		if(onStage)
-			requestInvalidation(getSys());
+			requestInvalidation(getSystemState());
 	}
 }
 
@@ -806,7 +806,7 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->parent.isNull())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 
 	th->parent->incRef();
 	return th->parent.getPtr();
@@ -817,7 +817,7 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	_NR<RootMovieClip> ret=th->getRoot();
 	if(ret.isNull())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 
 	ret->incRef();
 	return ret.getPtr();
@@ -826,7 +826,7 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->rotation);
+	return abstract_d(obj->getSystemState(),th->rotation);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setVisible)
@@ -840,7 +840,7 @@ ASFUNCTIONBODY(DisplayObject,_setVisible)
 ASFUNCTIONBODY(DisplayObject,_getVisible)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_b(th->visible);
+	return abstract_b(obj->getSystemState(),th->visible);
 }
 
 number_t DisplayObject::computeHeight()
@@ -878,7 +878,7 @@ _NR<Stage> DisplayObject::getStage()
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->computeWidth());
+	return abstract_d(obj->getSystemState(),th->computeWidth());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setWidth)
@@ -906,7 +906,7 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->computeHeight());
+	return abstract_d(obj->getSystemState(),th->computeHeight());
 }
 
 ASFUNCTIONBODY(DisplayObject,_setHeight)
@@ -933,19 +933,19 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 
 Vector2f DisplayObject::getLocalMousePos()
 {
-	return getConcatenatedMatrix().getInverted().multiply2D(getSys()->getInputThread()->getMousePos());
+	return getConcatenatedMatrix().getInverted().multiply2D(getSystemState()->getInputThread()->getMousePos());
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->getLocalMousePos().x);
+	return abstract_d(obj->getSystemState(),th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return abstract_d(th->getLocalMousePos().y);
+	return abstract_d(obj->getSystemState(),th->getLocalMousePos().y);
 }
 
 _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
@@ -995,13 +995,13 @@ void DisplayObject::initFrame()
 		if(!parent.isNull())
 		{
 			this->incRef();
-			_R<Event> e=_MR(Class<Event>::getInstanceS("added"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"added"));
 			ABCVm::publicHandleEvent(_MR(this),e);
 		}
 		if(onStage)
 		{
 			this->incRef();
-			_R<Event> e=_MR(Class<Event>::getInstanceS("addedToStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
 			ABCVm::publicHandleEvent(_MR(this),e);
 		}
 	}
@@ -1016,7 +1016,7 @@ void DisplayObject::constructionComplete()
 		loaderInfo->objectHasLoaded(_MR(this));
 	}
 	if(onStage)
-		requestInvalidation(getSys());
+		requestInvalidation(getSystemState());
 }
 
 void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const
@@ -1056,14 +1056,14 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			bool ret=mask->getBounds(xmin,xmax,ymin,ymax,mask->getConcatenatedMatrix());
 			if(ret==false)
 				return;
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(xmax-xmin,ymax-ymin));
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),xmax-xmin,ymax-ymin));
 			//Forge a matrix. It must contain the right rotation and scaling while translation
 			//only compensate for the xmin/ymin offset
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
 			data->drawDisplayObject(mask.getPtr(), m);
-			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(data));
+			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getSystemState(),data));
 
 			//The created bitmap is already correctly scaled and rotated
 			//Just apply the needed offset
@@ -1109,7 +1109,7 @@ bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& y
 {
 	number_t x1, x2, y1, y2;
 	if (!boundsRect(x1, x2, y1, y2))
-		return abstract_b(false);
+		return abstract_b(getSystemState(),false);
 
 	localToGlobal(x1, y1, x1, y1);
 	localToGlobal(x2, y2, x2, y2);
@@ -1132,18 +1132,18 @@ ASFUNCTIONBODY(DisplayObject,hitTestObject)
 
 	number_t xmin, xmax, ymin, ymax;
 	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 
 	number_t xmin2, xmax2, ymin2, ymax2;
 	if (!another->boundsRectGlobal(xmin2, xmax2, ymin2, ymax2))
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 
 	number_t intersect_xmax = dmin(xmax, xmax2);
 	number_t intersect_xmin = dmax(xmin, xmin2);
 	number_t intersect_ymax = dmin(ymax, ymax2);
 	number_t intersect_ymin = dmax(ymin, ymin2);
 
-	return abstract_b((intersect_xmax > intersect_xmin) && 
+	return abstract_b(obj->getSystemState(),(intersect_xmax > intersect_xmin) && 
 			  (intersect_ymax > intersect_ymin));
 }
 
@@ -1157,18 +1157,18 @@ ASFUNCTIONBODY(DisplayObject,hitTestPoint)
 
 	number_t xmin, xmax, ymin, ymax;
 	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 
 	bool insideBoundingBox = (xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax);
 
 	if (!shapeFlag)
 	{
-		return abstract_b(insideBoundingBox);
+		return abstract_b(obj->getSystemState(),insideBoundingBox);
 	}
 	else
 	{
 		if (!insideBoundingBox)
-			return abstract_b(false);
+			return abstract_b(obj->getSystemState(),false);
 
 		number_t localX;
 		number_t localY;
@@ -1180,6 +1180,6 @@ ASFUNCTIONBODY(DisplayObject,hitTestPoint)
 		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE);
 
-		return abstract_b(hit.getPtr() == th);
+		return abstract_b(obj->getSystemState(),hit.getPtr() == th);
 	}
 }

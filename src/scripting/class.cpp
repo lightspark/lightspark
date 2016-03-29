@@ -24,15 +24,15 @@
 
 using namespace lightspark;
 
-ASObject* lightspark::new_asobject()
+ASObject* lightspark::new_asobject(SystemState* sys)
 {
-	return Class<ASObject>::getInstanceS();
+	return Class<ASObject>::getInstanceS(sys);
 }
 
-Prototype* lightspark::new_objectPrototype()
+Prototype* lightspark::new_objectPrototype(SystemState* sys)
 {
 	//Create a Prototype object, the class should be ASObject
-	Class_base* c=Class<ASObject>::getClass();
+	Class_base* c=Class<ASObject>::getClass(sys);
 	return new (c->memoryAccount) ObjectPrototype(c);
 }
 
@@ -44,7 +44,7 @@ Prototype* lightspark::new_functionPrototype(Class_base* functionClass, _NR<Prot
 
 Function_object* lightspark::new_functionObject(_NR<ASObject> p)
 {
-	Class_base* c=Class<ASObject>::getClass();
+	Class_base* c=Class<ASObject>::getClass(p->getSystemState());
 	return new (c->memoryAccount) Function_object(c, p);
 }
 
@@ -61,7 +61,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(nam
 #ifndef NDEBUG
 	bool ret=
 #endif
-	getSys()->customClasses.insert(this).second;
+	this->getSystemState()->customClasses.insert(this).second;
 	assert(ret);
 }
 
@@ -150,7 +150,7 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 	//Find the origin
 	while(cur)
 	{
-		var=cur->borrowedVariables.findObjVar(getSys()->getUniqueStringId(name),nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+		var=cur->borrowedVariables.findObjVar(c->getSystemState()->getUniqueStringId(name),nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 		if(var)
 			break;
 		cur=cur->super.getPtr();
@@ -181,21 +181,21 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 
 ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
-	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass())
+	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
 		// Construction according to ECMA 15.2.2.1
 		switch(args[0]->getObjectType())
 		{
 		case T_BOOLEAN:
-			return abstract_b(Boolean_concrete(args[0]));
+			return abstract_b(this->getSystemState(),Boolean_concrete(args[0]));
 		case T_NUMBER:
-			return abstract_d(args[0]->toNumber());
+			return abstract_d(this->getSystemState(),args[0]->toNumber());
 		case T_INTEGER:
-			return abstract_i(args[0]->toInt());
+			return abstract_i(this->getSystemState(),args[0]->toInt());
 		case T_UINTEGER:
-			return abstract_ui(args[0]->toUInt());
+			return abstract_ui(this->getSystemState(),args[0]->toUInt());
 		case T_STRING:
-			return abstract_s(args[0]->toString());
+			return abstract_s(this->getSystemState(),args[0]->toString());
 		case T_FUNCTION:
 		case T_OBJECT:
 			args[0]->incRef();
@@ -211,20 +211,22 @@ ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, co
 		handleConstruction(ret,args,argslen,true);
 	return ret;
 }
-Class<ASObject>* Class<ASObject>::getClass()
+Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {
 	uint32_t classId=ClassName<ASObject>::id;
 	Class<ASObject>* ret=NULL;
-	Class_base** retAddr=&getSys()->builtinClasses[classId];
+	SystemState* s = sys == NULL ? getSys() : sys;
+	Class_base** retAddr=&s->builtinClasses[classId];
 	if(*retAddr==NULL)
 	{
 		//Create the class
 		QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(name.name);
-		ret=new (getSys()->unaccountedMemory) Class<ASObject>(name, memoryAccount);
+		MemoryAccount* memoryAccount = s->allocateMemoryAccount(name.name);
+		ret=new (s->unaccountedMemory) Class<ASObject>(name, memoryAccount);
+		ret->setSystemState(s);
 		ret->incRef();
 		*retAddr=ret;
-		ret->prototype = _MNR(new_objectPrototype());
+		ret->prototype = _MNR(new_objectPrototype(sys));
 		ASObject::sinit(ret);
 		ret->initStandardProps();
 	}

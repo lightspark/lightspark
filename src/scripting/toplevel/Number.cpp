@@ -166,8 +166,8 @@ void Number::purgeTrailingZeroes(char* buf)
 
 ASFUNCTIONBODY(Number,_toString)
 {
-	if(Class<Number>::getClass()->prototype->getObj() == obj)
-		return abstract_s("0");
+	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_s(obj->getSystemState(),"0");
 	if(!obj->is<Number>())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
 	Number* th=static_cast<Number*>(obj);
@@ -177,20 +177,20 @@ ASFUNCTIONBODY(Number,_toString)
 	if(radix==10 || std::isnan(th->val) || std::isinf(th->val))
 	{
 		//see e 15.7.4.2
-		return abstract_s(th->toString());
+		return abstract_s(obj->getSystemState(),th->toString());
 	}
 	else
 	{
-		return abstract_s(Number::toStringRadix(th->val, radix));
+		return abstract_s(obj->getSystemState(),Number::toStringRadix(th->val, radix));
 	}
 }
 
 ASFUNCTIONBODY(Number,generator)
 {
 	if(argslen==0)
-		return abstract_d(0.);
+		return abstract_d(getSys(),0.);
 	else
-		return abstract_d(args[0]->toNumber());
+		return abstract_d(args[0]->getSystemState(),args[0]->toNumber());
 }
 
 tiny_string Number::toString()
@@ -253,53 +253,53 @@ void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableByQName("NEGATIVE_INFINITY","",abstract_d(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableByQName("POSITIVE_INFINITY","",abstract_d(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableByQName("MAX_VALUE","",abstract_d(numeric_limits<double>::max()),CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",abstract_d(numeric_limits<double>::min()),CONSTANT_TRAIT);
-	c->setVariableByQName("NaN","",abstract_d(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(toFixed,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(toExponential,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(toPrecision,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(Number::_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(Number::toFixed, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(Number::toExponential, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(Number::toPrecision, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_valueOf),DYNAMIC_TRAIT);
+	c->setVariableByQName("NEGATIVE_INFINITY","",abstract_d(c->getSystemState(),-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableByQName("POSITIVE_INFINITY","",abstract_d(c->getSystemState(),numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableByQName("MAX_VALUE","",abstract_d(c->getSystemState(),numeric_limits<double>::max()),CONSTANT_TRAIT);
+	c->setVariableByQName("MIN_VALUE","",abstract_d(c->getSystemState(),numeric_limits<double>::min()),CONSTANT_TRAIT);
+	c->setVariableByQName("NaN","",abstract_d(c->getSystemState(),numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),toFixed,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),toExponential,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(c->getSystemState(),toPrecision,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),Number::toFixed, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),Number::toExponential, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),Number::toPrecision, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
 
 	// if needed add AVMPLUS definitions
-	if(getSys()->flashMode==SystemState::AVMPLUS)
+	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
 	{
-		c->setVariableByQName("E","",abstract_d(2.71828182845905),CONSTANT_TRAIT);
-		c->setVariableByQName("LN10","",abstract_d(2.302585092994046),CONSTANT_TRAIT);
-		c->setVariableByQName("LN2","",abstract_d(0.6931471805599453),CONSTANT_TRAIT);
-		c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518),CONSTANT_TRAIT);
-		c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387),CONSTANT_TRAIT);
-		c->setVariableByQName("PI","",abstract_d(3.141592653589793),CONSTANT_TRAIT);
-		c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476),CONSTANT_TRAIT);
-		c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951),CONSTANT_TRAIT);
+		c->setVariableByQName("E","",abstract_d(c->getSystemState(),2.71828182845905),CONSTANT_TRAIT);
+		c->setVariableByQName("LN10","",abstract_d(c->getSystemState(),2.302585092994046),CONSTANT_TRAIT);
+		c->setVariableByQName("LN2","",abstract_d(c->getSystemState(),0.6931471805599453),CONSTANT_TRAIT);
+		c->setVariableByQName("LOG10E","",abstract_d(c->getSystemState(),0.4342944819032518),CONSTANT_TRAIT);
+		c->setVariableByQName("LOG2E","",abstract_d(c->getSystemState(),1.442695040888963387),CONSTANT_TRAIT);
+		c->setVariableByQName("PI","",abstract_d(c->getSystemState(),3.141592653589793),CONSTANT_TRAIT);
+		c->setVariableByQName("SQRT1_2","",abstract_d(c->getSystemState(),0.7071067811865476),CONSTANT_TRAIT);
+		c->setVariableByQName("SQRT2","",abstract_d(c->getSystemState(),1.4142135623730951),CONSTANT_TRAIT);
 		
-		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(Math::abs,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(Math::acos,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(Math::asin,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(Math::atan,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(Math::atan2,2),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(Math::ceil,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(Math::cos,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(Math::exp,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(Math::floor,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(Math::log,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(Math::_max,2),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(Math::_min,2),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(Math::pow,2),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(Math::random),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(Math::round,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(Math::sin,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(Math::sqrt,1),NORMAL_METHOD,false);
-		c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(Math::tan,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),Math::abs,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),Math::acos,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(c->getSystemState(),Math::asin,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan2,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(c->getSystemState(),Math::ceil,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(c->getSystemState(),Math::cos,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(c->getSystemState(),Math::exp,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(c->getSystemState(),Math::floor,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(c->getSystemState(),Math::log,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),Math::_max,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),Math::_min,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(c->getSystemState(),Math::pow,2),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(c->getSystemState(),Math::random),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(c->getSystemState(),Math::round,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(c->getSystemState(),Math::sin,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(c->getSystemState(),Math::sqrt,1),NORMAL_METHOD,false);
+		c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(c->getSystemState(),Math::tan,1),NORMAL_METHOD,false);
 	}
 }
 
@@ -322,7 +322,7 @@ ASFUNCTIONBODY(Number,toFixed)
 	number_t val = obj->toNumber();
 	int fractiondigits;
 	ARG_UNPACK (fractiondigits,0);
-	return abstract_s(toFixedString(val, fractiondigits));
+	return abstract_s(obj->getSystemState(),toFixedString(val, fractiondigits));
 }
 
 tiny_string Number::toFixedString(double v, int32_t fractiondigits)
@@ -367,7 +367,7 @@ ASFUNCTIONBODY(Number,toExponential)
 	ARG_UNPACK(fractionDigits, 0);
 	if (argslen == 0 || args[0]->is<Undefined>())
 		fractionDigits = imin(imax(Number::countSignificantDigits(v)-1, 1), 20);
-	return abstract_s(toExponentialString(v, fractionDigits));
+	return abstract_s(obj->getSystemState(),toExponentialString(v, fractionDigits));
 }
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
@@ -471,11 +471,11 @@ ASFUNCTIONBODY(Number,toPrecision)
 	Number* th=obj->as<Number>();
 	double v = th->val;
 	if (argslen == 0 || args[0]->is<Undefined>())
-		return abstract_s(toString(v));
+		return abstract_s(obj->getSystemState(),toString(v));
 
 	int32_t precision;
 	ARG_UNPACK(precision);
-	return abstract_s(toPrecisionString(v, precision));
+	return abstract_s(obj->getSystemState(),toPrecisionString(v, precision));
 }
 
 tiny_string Number::toPrecisionString(double v, int32_t precision)
@@ -508,13 +508,13 @@ tiny_string Number::toPrecisionString(double v, int32_t precision)
 
 ASFUNCTIONBODY(Number,_valueOf)
 {
-	if(Class<Number>::getClass()->prototype->getObj() == obj)
-		return abstract_d(0.);
+	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_d(obj->getSystemState(),0.);
 
 	if(!obj->is<Number>())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
-	return abstract_d(obj->as<Number>()->val);
+	return abstract_d(obj->getSystemState(),obj->as<Number>()->val);
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

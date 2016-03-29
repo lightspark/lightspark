@@ -32,15 +32,15 @@ using namespace lightspark;
 void lightspark::AntiAliasType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("ADVANCED","",Class<ASString>::getInstanceS("advanced"),DECLARED_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
+	c->setVariableByQName("ADVANCED","",abstract_s(c->getSystemState(),"advanced"),DECLARED_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),DECLARED_TRAIT);
 }
 
 void ASFont::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(registerFont),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(c->getSystemState(),enumerateFonts),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,false);
 
 	REGISTER_GETTER(c,fontName);
 	REGISTER_GETTER(c,fontStyle);
@@ -74,7 +74,7 @@ ASFUNCTIONBODY(ASFont,enumerateFonts)
 
 	if (enumerateDeviceFonts)
 		LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
-	Array* ret = Class<Array>::getInstanceS();
+	Array* ret = Class<Array>::getInstanceS(getSys());
 	std::vector<ASObject*>* fontlist = getFontList();
 	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
 	{
@@ -110,48 +110,48 @@ void TextField::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, InteractiveObject, CLASS_SEALED);
 
 	// methods
-	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(TextField:: appendText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(_getTextFormat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(_setTextFormat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineIndexAtPoint","",Class<IFunction>::getFunction(_getLineIndexAtPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineIndexOfChar","",Class<IFunction>::getFunction(_getLineIndexOfChar),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineLength","",Class<IFunction>::getFunction(_getLineLength),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(_getLineMetrics),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineOffset","",Class<IFunction>::getFunction(_getLineOffset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineText","",Class<IFunction>::getFunction(_getLineText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(_replaceSelectedText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(_replaceText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(_setSelection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(c->getSystemState(),TextField:: appendText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),_getTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),_setTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexAtPoint","",Class<IFunction>::getFunction(c->getSystemState(),_getLineIndexAtPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexOfChar","",Class<IFunction>::getFunction(c->getSystemState(),_getLineIndexOfChar),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineLength","",Class<IFunction>::getFunction(c->getSystemState(),_getLineLength),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(c->getSystemState(),_getLineMetrics),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineOffset","",Class<IFunction>::getFunction(c->getSystemState(),_getLineOffset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineText","",Class<IFunction>::getFunction(c->getSystemState(),_getLineText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceSelectedText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(c->getSystemState(),_setSelection),NORMAL_METHOD,true);
 
 	// properties
-	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(TextField::_setAntiAliasType),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_setAutoSize),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(TextField::_getAutoSize),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_getDefaultTextFormat),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(TextField::_setDefaultTextFormat),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(TextField::_getGridFitType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(TextField::_setGridFitType),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_getHtmlText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(TextField::_setHtmlText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(TextField::_getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_getText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(TextField::_setText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(TextField::_getTextHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(TextField::_getTextWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_setWordWrap),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(TextField::_getWordWrap),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numLines","",Class<IFunction>::getFunction(TextField::_getNumLines),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("maxScrollH","",Class<IFunction>::getFunction(TextField::_getMaxScrollH),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(TextField::_getMaxScrollV),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(TextField::_getBottomScrollV),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_getRestrict),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(TextField::_setRestrict),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(TextField::_getTextInteractionMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAntiAliasType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setAntiAliasType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setAutoSize),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAutoSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getDefaultTextFormat),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setDefaultTextFormat),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getGridFitType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setGridFitType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getHtmlText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHtmlText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setWordWrap),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getWordWrap),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numLines","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getNumLines),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollH","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getMaxScrollH),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getMaxScrollV),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getBottomScrollV),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getRestrict),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setRestrict),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextInteractionMode),GETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
@@ -238,7 +238,7 @@ _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, n
 ASFUNCTIONBODY(TextField,_getWordWrap)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_b(th->wordWrap);
+	return abstract_b(obj->getSystemState(),th->wordWrap);
 }
 
 ASFUNCTIONBODY(TextField,_setWordWrap)
@@ -257,13 +257,13 @@ ASFUNCTIONBODY(TextField,_getAutoSize)
 	switch(th->autoSize)
 	{
 		case AS_NONE:
-			return Class<ASString>::getInstanceS("none");
+			return abstract_s(obj->getSystemState(),"none");
 		case AS_LEFT:
-			return Class<ASString>::getInstanceS("left");
+			return abstract_s(obj->getSystemState(),"left");
 		case AS_RIGHT:
-			return Class<ASString>::getInstanceS("right");
+			return abstract_s(obj->getSystemState(),"right");
 		case AS_CENTER:
-			return Class<ASString>::getInstanceS("center");
+			return abstract_s(obj->getSystemState(),"center");
 	}
 	return NULL;
 }
@@ -327,7 +327,7 @@ void TextField::setSizeAndPositionFromAutoSize()
 ASFUNCTIONBODY(TextField,_getWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->width);
+	return abstract_i(obj->getSystemState(),th->width);
 }
 
 ASFUNCTIONBODY(TextField,_setWidth)
@@ -349,7 +349,7 @@ ASFUNCTIONBODY(TextField,_setWidth)
 ASFUNCTIONBODY(TextField,_getHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->height);
+	return abstract_i(obj->getSystemState(),th->height);
 }
 
 ASFUNCTIONBODY(TextField,_setHeight)
@@ -371,19 +371,19 @@ ASFUNCTIONBODY(TextField,_setHeight)
 ASFUNCTIONBODY(TextField,_getTextWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->textWidth);
+	return abstract_i(obj->getSystemState(),th->textWidth);
 }
 
 ASFUNCTIONBODY(TextField,_getTextHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->textHeight);
+	return abstract_i(obj->getSystemState(),th->textHeight);
 }
 
 ASFUNCTIONBODY(TextField,_getHtmlText)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return Class<ASString>::getInstanceS(th->toHtmlText());
+	return abstract_s(obj->getSystemState(),th->toHtmlText());
 }
 
 ASFUNCTIONBODY(TextField,_setHtmlText)
@@ -398,7 +398,7 @@ ASFUNCTIONBODY(TextField,_setHtmlText)
 ASFUNCTIONBODY(TextField,_getText)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return Class<ASString>::getInstanceS(th->text);
+	return abstract_s(obj->getSystemState(),th->text);
 }
 
 ASFUNCTIONBODY(TextField,_setText)
@@ -420,9 +420,9 @@ ASFUNCTIONBODY(TextField, appendText)
 ASFUNCTIONBODY(TextField,_getTextFormat)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	TextFormat *format=Class<TextFormat>::getInstanceS();
+	TextFormat *format=Class<TextFormat>::getInstanceS(obj->getSystemState());
 
-	format->color=_MNR(abstract_ui(th->textColor.toUInt()));
+	format->color=_MNR(abstract_ui(obj->getSystemState(),th->textColor.toUInt()));
 	format->font = th->font;
 	format->size = th->fontSize;
 
@@ -457,7 +457,7 @@ ASFUNCTIONBODY(TextField,_getDefaultTextFormat)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	
-	TextFormat* tf = Class<TextFormat>::getInstanceS();
+	TextFormat* tf = Class<TextFormat>::getInstanceS(obj->getSystemState());
 	tf->font = th->font;
 	LOG(LOG_NOT_IMPLEMENTED,"getDefaultTextFormat does not get all fields of TextFormat");
 	return tf;
@@ -483,9 +483,9 @@ ASFUNCTIONBODY(TextField, _getter_type)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	if (th->type == ET_READ_ONLY)
-		return Class<ASString>::getInstanceS("dynamic");
+		return abstract_s(obj->getSystemState(),"dynamic");
 	else
-		return Class<ASString>::getInstanceS("input");
+		return abstract_s(obj->getSystemState(),"input");
 }
 
 ASFUNCTIONBODY(TextField, _setter_type)
@@ -519,10 +519,10 @@ ASFUNCTIONBODY(TextField,_getLineIndexAtPoint)
 	{
 		if (x > it->extents.Xmin && x <= it->extents.Xmax &&
 		    y > it->extents.Ymin && y <= it->extents.Ymax)
-			return abstract_i(i);
+			return abstract_i(obj->getSystemState(),i);
 	}
 
-	return abstract_i(-1);
+	return abstract_i(obj->getSystemState(),-1);
 }
 
 ASFUNCTIONBODY(TextField,_getLineIndexOfChar)
@@ -532,7 +532,7 @@ ASFUNCTIONBODY(TextField,_getLineIndexOfChar)
 	ARG_UNPACK(charIndex);
 
 	if (charIndex < 0)
-		return abstract_i(-1);
+		return abstract_i(obj->getSystemState(),-1);
 
 	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
 	std::vector<LineData>::const_iterator it;
@@ -541,12 +541,12 @@ ASFUNCTIONBODY(TextField,_getLineIndexOfChar)
 	{
 		if (charIndex >= it->firstCharOffset &&
 		    charIndex < it->firstCharOffset + it->length)
-			return abstract_i(i);
+			return abstract_i(obj->getSystemState(),i);
 	}
 
 	// testing shows that returns -1 on invalid index instead of
 	// throwing RangeError
-	return abstract_i(-1);
+	return abstract_i(obj->getSystemState(),-1);
 }
 
 ASFUNCTIONBODY(TextField,_getLineLength)
@@ -559,7 +559,7 @@ ASFUNCTIONBODY(TextField,_getLineLength)
 	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
 		throwError<RangeError>(kParamRangeError);
 
-	return abstract_i(lines[lineIndex].length);
+	return abstract_i(obj->getSystemState(),lines[lineIndex].length);
 }
 
 ASFUNCTIONBODY(TextField,_getLineMetrics)
@@ -572,7 +572,7 @@ ASFUNCTIONBODY(TextField,_getLineMetrics)
 	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
 		throwError<RangeError>(kParamRangeError);
 
-	return Class<TextLineMetrics>::getInstanceS(
+	return Class<TextLineMetrics>::getInstanceS(obj->getSystemState(),
 		lines[lineIndex].indent,
 		lines[lineIndex].extents.Xmax - lines[lineIndex].extents.Xmin,
 		lines[lineIndex].extents.Ymax - lines[lineIndex].extents.Ymin,
@@ -591,7 +591,7 @@ ASFUNCTIONBODY(TextField,_getLineOffset)
 	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
 		throwError<RangeError>(kParamRangeError);
 
-	return abstract_i(lines[lineIndex].firstCharOffset);
+	return abstract_i(obj->getSystemState(),lines[lineIndex].firstCharOffset);
 }
 
 ASFUNCTIONBODY(TextField,_getLineText)
@@ -606,16 +606,16 @@ ASFUNCTIONBODY(TextField,_getLineText)
 
 	tiny_string substr = th->text.substr(lines[lineIndex].firstCharOffset,
 					     lines[lineIndex].length);
-	return Class<ASString>::getInstanceS(substr);
+	return abstract_s(obj->getSystemState(),substr);
 }
 
 ASFUNCTIONBODY(TextField,_getAntiAliasType)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	if (th->antiAliasType == AA_NORMAL)
-		return Class<ASString>::getInstanceS("normal");
+		return abstract_s(obj->getSystemState(),"normal");
 	else
-		return Class<ASString>::getInstanceS("advanced");
+		return abstract_s(obj->getSystemState(),"advanced");
 }
 
 ASFUNCTIONBODY(TextField,_setAntiAliasType)
@@ -640,11 +640,11 @@ ASFUNCTIONBODY(TextField,_getGridFitType)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	if (th->gridFitType == GF_NONE)
-		return Class<ASString>::getInstanceS("none");
+		return abstract_s(obj->getSystemState(),"none");
 	else if (th->gridFitType == GF_PIXEL)
-		return Class<ASString>::getInstanceS("pixel");
+		return abstract_s(obj->getSystemState(),"pixel");
 	else
-		return Class<ASString>::getInstanceS("subpixel");
+		return abstract_s(obj->getSystemState(),"subpixel");
 }
 
 ASFUNCTIONBODY(TextField,_setGridFitType)
@@ -668,25 +668,25 @@ ASFUNCTIONBODY(TextField,_setGridFitType)
 ASFUNCTIONBODY(TextField,_getLength)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->text.numChars());
+	return abstract_i(obj->getSystemState(),th->text.numChars());
 }
 
 ASFUNCTIONBODY(TextField,_getNumLines)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(CairoPangoRenderer::getLineData(*th).size());
+	return abstract_i(obj->getSystemState(),CairoPangoRenderer::getLineData(*th).size());
 }
 
 ASFUNCTIONBODY(TextField,_getMaxScrollH)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->getMaxScrollH());
+	return abstract_i(obj->getSystemState(),th->getMaxScrollH());
 }
 
 ASFUNCTIONBODY(TextField,_getMaxScrollV)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	return abstract_i(th->getMaxScrollV());
+	return abstract_i(obj->getSystemState(),th->getMaxScrollV());
 }
 
 ASFUNCTIONBODY(TextField,_getBottomScrollV)
@@ -696,10 +696,10 @@ ASFUNCTIONBODY(TextField,_getBottomScrollV)
 	for (unsigned int k=0; k<lines.size()-1; k++)
 	{
 		if (lines[k+1].extents.Ymin >= (int)th->height)
-			return abstract_i(k + 1);
+			return abstract_i(obj->getSystemState(),k + 1);
 	}
 
-	return abstract_i(lines.size() + 1);
+	return abstract_i(obj->getSystemState(),lines.size() + 1);
 }
 
 ASFUNCTIONBODY(TextField,_getRestrict)
@@ -727,9 +727,9 @@ ASFUNCTIONBODY(TextField,_getTextInteractionMode)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	if (th->textInteractionMode == TI_NORMAL)
-		return Class<ASString>::getInstanceS("normal");
+		return abstract_s(obj->getSystemState(),"normal");
 	else
-		return Class<ASString>::getInstanceS("selection");
+		return abstract_s(obj->getSystemState(),"selection");
 }
 
 ASFUNCTIONBODY(TextField,_setSelection)
@@ -777,7 +777,7 @@ ASFUNCTIONBODY(TextField,_replaceText)
 void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_string& newText)
 {
 	if (!styleSheet.isNull())
-		throw Class<ASError>::getInstanceS("Can not replace text on text field with a style sheet");
+		throw Class<ASError>::getInstanceS(getSystemState(),"Can not replace text on text field with a style sheet");
 
 	if (begin >= text.numChars())
 	{
@@ -1132,28 +1132,28 @@ uint32_t TextField::HtmlTextParser::parseFontSize(const Glib::ustring& sizestr,
 void TextFieldAutoSize::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
+	c->setVariableByQName("CENTER","",abstract_s(c->getSystemState(),"center"),DECLARED_TRAIT);
+	c->setVariableByQName("LEFT","",abstract_s(c->getSystemState(),"left"),DECLARED_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT","",abstract_s(c->getSystemState(),"right"),DECLARED_TRAIT);
 }
 
 void TextFieldType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("DYNAMIC","",Class<ASString>::getInstanceS("dynamic"),DECLARED_TRAIT);
-	c->setVariableByQName("INPUT","",Class<ASString>::getInstanceS("input"),DECLARED_TRAIT);
+	c->setVariableByQName("DYNAMIC","",abstract_s(c->getSystemState(),"dynamic"),DECLARED_TRAIT);
+	c->setVariableByQName("INPUT","",abstract_s(c->getSystemState(),"input"),DECLARED_TRAIT);
 }
 
 void TextFormatAlign::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("CENTER","",Class<ASString>::getInstanceS("center"),DECLARED_TRAIT);
-	c->setVariableByQName("END","",Class<ASString>::getInstanceS("end"),DECLARED_TRAIT);
-	c->setVariableByQName("JUSTIFY","",Class<ASString>::getInstanceS("justify"),DECLARED_TRAIT);
-	c->setVariableByQName("LEFT","",Class<ASString>::getInstanceS("left"),DECLARED_TRAIT);
-	c->setVariableByQName("RIGHT","",Class<ASString>::getInstanceS("right"),DECLARED_TRAIT);
-	c->setVariableByQName("START","",Class<ASString>::getInstanceS("start"),DECLARED_TRAIT);
+	c->setVariableByQName("CENTER","",abstract_s(c->getSystemState(),"center"),DECLARED_TRAIT);
+	c->setVariableByQName("END","",abstract_s(c->getSystemState(),"end"),DECLARED_TRAIT);
+	c->setVariableByQName("JUSTIFY","",abstract_s(c->getSystemState(),"justify"),DECLARED_TRAIT);
+	c->setVariableByQName("LEFT","",abstract_s(c->getSystemState(),"left"),DECLARED_TRAIT);
+	c->setVariableByQName("RIGHT","",abstract_s(c->getSystemState(),"right"),DECLARED_TRAIT);
+	c->setVariableByQName("START","",abstract_s(c->getSystemState(),"start"),DECLARED_TRAIT);
 }
 
 void TextFormat::sinit(Class_base* c)
@@ -1258,9 +1258,9 @@ void StyleSheet::finalize()
 void StyleSheet::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(getStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(c->getSystemState(),_getStyleNames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(c->getSystemState(),setStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(c->getSystemState(),getStyle),NORMAL_METHOD,true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)
@@ -1298,7 +1298,7 @@ ASFUNCTIONBODY(StyleSheet,getStyle)
 	{
 		// Tested behaviour is to return an empty ASObject
 		// instead of Null as is said in the documentation
-		return Class<ASObject>::getInstanceS();
+		return Class<ASObject>::getInstanceS(obj->getSystemState());
 	}
 	return NULL;
 }
@@ -1307,10 +1307,10 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 {
 	StyleSheet* th=Class<StyleSheet>::cast(obj);
 	assert_and_throw(argslen==0);
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
 	map<tiny_string, _R<ASObject>>::const_iterator it=th->styles.begin();
 	for(;it!=th->styles.end();++it)
-		ret->push(_MR(Class<ASString>::getInstanceS(it->first)));
+		ret->push(_MR(abstract_s(obj->getSystemState(),it->first)));
 	return ret;
 }
 
@@ -1320,60 +1320,60 @@ void StaticText::sinit(Class_base* c)
 	// _constructorNotInstantiatable but that breaks when
 	// DisplayObjectContainer::initFrame calls the constructor
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(StaticText,_getText)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");
-	return Class<ASString>::getInstanceS("");
+	return abstract_s(getSys(),"");
 }
 
 void FontStyle::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("BOLD","",Class<ASString>::getInstanceS("bold"),DECLARED_TRAIT);
-	c->setVariableByQName("BOLD_ITALIC","",Class<ASString>::getInstanceS("boldItalic"),DECLARED_TRAIT);
-	c->setVariableByQName("ITALIC","",Class<ASString>::getInstanceS("italic"),DECLARED_TRAIT);
-	c->setVariableByQName("REGULAR","",Class<ASString>::getInstanceS("regular"),DECLARED_TRAIT);
+	c->setVariableByQName("BOLD","",abstract_s(c->getSystemState(),"bold"),DECLARED_TRAIT);
+	c->setVariableByQName("BOLD_ITALIC","",abstract_s(c->getSystemState(),"boldItalic"),DECLARED_TRAIT);
+	c->setVariableByQName("ITALIC","",abstract_s(c->getSystemState(),"italic"),DECLARED_TRAIT);
+	c->setVariableByQName("REGULAR","",abstract_s(c->getSystemState(),"regular"),DECLARED_TRAIT);
 }
 
 void FontType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("DEVICE","",Class<ASString>::getInstanceS("device"),DECLARED_TRAIT);
-	c->setVariableByQName("EMBEDDED","",Class<ASString>::getInstanceS("embedded"),DECLARED_TRAIT);
-	c->setVariableByQName("EMBEDDED_CFF","",Class<ASString>::getInstanceS("embeddedCFF"),DECLARED_TRAIT);
+	c->setVariableByQName("DEVICE","",abstract_s(c->getSystemState(),"device"),DECLARED_TRAIT);
+	c->setVariableByQName("EMBEDDED","",abstract_s(c->getSystemState(),"embedded"),DECLARED_TRAIT);
+	c->setVariableByQName("EMBEDDED_CFF","",abstract_s(c->getSystemState(),"embeddedCFF"),DECLARED_TRAIT);
 }
 
 void TextDisplayMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("CRT","",Class<ASString>::getInstanceS("crt"),DECLARED_TRAIT);
-	c->setVariableByQName("DEFAULT","",Class<ASString>::getInstanceS("default"),DECLARED_TRAIT);
-	c->setVariableByQName("LCD","",Class<ASString>::getInstanceS("lcd"),DECLARED_TRAIT);
+	c->setVariableByQName("CRT","",abstract_s(c->getSystemState(),"crt"),DECLARED_TRAIT);
+	c->setVariableByQName("DEFAULT","",abstract_s(c->getSystemState(),"default"),DECLARED_TRAIT);
+	c->setVariableByQName("LCD","",abstract_s(c->getSystemState(),"lcd"),DECLARED_TRAIT);
 }
 
 void TextColorType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("DARK_COLOR","",Class<ASString>::getInstanceS("dark"),DECLARED_TRAIT);
-	c->setVariableByQName("LIGHT_COLOR","",Class<ASString>::getInstanceS("light"),DECLARED_TRAIT);
+	c->setVariableByQName("DARK_COLOR","",abstract_s(c->getSystemState(),"dark"),DECLARED_TRAIT);
+	c->setVariableByQName("LIGHT_COLOR","",abstract_s(c->getSystemState(),"light"),DECLARED_TRAIT);
 }
 
 void GridFitType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"),DECLARED_TRAIT);
-	c->setVariableByQName("PIXEL","",Class<ASString>::getInstanceS("pixel"),DECLARED_TRAIT);
-	c->setVariableByQName("SUBPIXEL","",Class<ASString>::getInstanceS("subpixel"),DECLARED_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),DECLARED_TRAIT);
+	c->setVariableByQName("PIXEL","",abstract_s(c->getSystemState(),"pixel"),DECLARED_TRAIT);
+	c->setVariableByQName("SUBPIXEL","",abstract_s(c->getSystemState(),"subpixel"),DECLARED_TRAIT);
 }
 
 void TextInteractionMode::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),DECLARED_TRAIT);
-	c->setVariableByQName("SELECTION","",Class<ASString>::getInstanceS("selection"),DECLARED_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),DECLARED_TRAIT);
+	c->setVariableByQName("SELECTION","",abstract_s(c->getSystemState(),"selection"),DECLARED_TRAIT);
 }
 
 void TextLineMetrics::sinit(Class_base* c)

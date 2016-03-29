@@ -143,7 +143,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm());
+	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -153,11 +153,11 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCTag::execute(RootMovieClip*) const
+void DoABCTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
-	getVm()->addEvent(NullRef,_MR(new (getSys()->unaccountedMemory) ABCContextInitEvent(context,false)));
+	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -169,7 +169,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm());
+	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -179,11 +179,11 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCDefineTag::execute(RootMovieClip*) const
+void DoABCDefineTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
-	getVm()->addEvent(NullRef,_MR(new (getSys()->unaccountedMemory) ABCContextInitEvent(context,((int32_t)Flags)&1)));
+	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,((int32_t)Flags)&1)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -209,7 +209,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		if(Tags[i]==0)
 		{
 			root->incRef();
-			getVm()->addEvent(NullRef, _MR(new (getSys()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 
 		}
 		else
@@ -221,345 +221,345 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 
 void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
-	getVm()->limits.max_recursion = MaxRecursionDepth;
-	getVm()->limits.script_timeout = ScriptTimeoutSeconds;
+	getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
+	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
 }
 
 void ABCVm::registerClasses()
 {
-	Global* builtin=Class<Global>::getInstanceS((ABCContext*)NULL, 0);
+	Global* builtin=Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
 	//Register predefined types, ASObject are enough for not implemented classes
-	builtin->registerBuiltin("Object","",Class<ASObject>::getRef());
-	builtin->registerBuiltin("Class","",Class_object::getRef());
-	builtin->registerBuiltin("Number","",Class<Number>::getRef());
-	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef());
-	builtin->registerBuiltin("NaN","",_MR(abstract_d(numeric_limits<double>::quiet_NaN())));
-	builtin->registerBuiltin("Infinity","",_MR(abstract_d(numeric_limits<double>::infinity())));
-	builtin->registerBuiltin("String","",Class<ASString>::getRef());
-	builtin->registerBuiltin("Array","",Class<Array>::getRef());
-	builtin->registerBuiltin("Function","",Class<IFunction>::getRef());
-	builtin->registerBuiltin("undefined","",_MR(getSys()->getUndefinedRef()));
-	builtin->registerBuiltin("Math","",Class<Math>::getRef());
-	builtin->registerBuiltin("Namespace","",Class<Namespace>::getRef());
-	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(AS3)));
-	builtin->registerBuiltin("Date","",Class<Date>::getRef());
-	builtin->registerBuiltin("JSON","",Class<JSON>::getRef());
-	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef());
-	builtin->registerBuiltin("QName","",Class<ASQName>::getRef());
-	builtin->registerBuiltin("uint","",Class<UInteger>::getRef());
-	builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate()));
-	builtin->registerBuiltin("Error","",Class<ASError>::getRef());
-	builtin->registerBuiltin("SecurityError","",Class<SecurityError>::getRef());
-	builtin->registerBuiltin("ArgumentError","",Class<ArgumentError>::getRef());
-	builtin->registerBuiltin("DefinitionError","",Class<DefinitionError>::getRef());
-	builtin->registerBuiltin("EvalError","",Class<EvalError>::getRef());
-	builtin->registerBuiltin("RangeError","",Class<RangeError>::getRef());
-	builtin->registerBuiltin("ReferenceError","",Class<ReferenceError>::getRef());
-	builtin->registerBuiltin("SyntaxError","",Class<SyntaxError>::getRef());
-	builtin->registerBuiltin("TypeError","",Class<TypeError>::getRef());
-	builtin->registerBuiltin("URIError","",Class<URIError>::getRef());
-	builtin->registerBuiltin("UninitializedError","",Class<UninitializedError>::getRef());
-	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef());
-	builtin->registerBuiltin("XML","",Class<XML>::getRef());
-	builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef());
-	builtin->registerBuiltin("int","",Class<Integer>::getRef());
+	builtin->registerBuiltin("Object","",Class<ASObject>::getRef(m_sys));
+	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
+	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
+	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
+	builtin->registerBuiltin("NaN","",_MR(abstract_d(m_sys,numeric_limits<double>::quiet_NaN())));
+	builtin->registerBuiltin("Infinity","",_MR(abstract_d(m_sys,numeric_limits<double>::infinity())));
+	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
+	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
+	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));
+	builtin->registerBuiltin("undefined","",_MR(m_sys->getUndefinedRef()));
+	builtin->registerBuiltin("Math","",Class<Math>::getRef(m_sys));
+	builtin->registerBuiltin("Namespace","",Class<Namespace>::getRef(m_sys));
+	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(m_sys,AS3)));
+	builtin->registerBuiltin("Date","",Class<Date>::getRef(m_sys));
+	builtin->registerBuiltin("JSON","",Class<JSON>::getRef(m_sys));
+	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef(m_sys));
+	builtin->registerBuiltin("QName","",Class<ASQName>::getRef(m_sys));
+	builtin->registerBuiltin("uint","",Class<UInteger>::getRef(m_sys));
+	builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys)));
+	builtin->registerBuiltin("Error","",Class<ASError>::getRef(m_sys));
+	builtin->registerBuiltin("SecurityError","",Class<SecurityError>::getRef(m_sys));
+	builtin->registerBuiltin("ArgumentError","",Class<ArgumentError>::getRef(m_sys));
+	builtin->registerBuiltin("DefinitionError","",Class<DefinitionError>::getRef(m_sys));
+	builtin->registerBuiltin("EvalError","",Class<EvalError>::getRef(m_sys));
+	builtin->registerBuiltin("RangeError","",Class<RangeError>::getRef(m_sys));
+	builtin->registerBuiltin("ReferenceError","",Class<ReferenceError>::getRef(m_sys));
+	builtin->registerBuiltin("SyntaxError","",Class<SyntaxError>::getRef(m_sys));
+	builtin->registerBuiltin("TypeError","",Class<TypeError>::getRef(m_sys));
+	builtin->registerBuiltin("URIError","",Class<URIError>::getRef(m_sys));
+	builtin->registerBuiltin("UninitializedError","",Class<UninitializedError>::getRef(m_sys));
+	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef(m_sys));
+	builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
+	builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
+	builtin->registerBuiltin("int","",Class<Integer>::getRef(m_sys));
 
-	builtin->registerBuiltin("eval","",_MR(Class<IFunction>::getFunction(eval)));
-	builtin->registerBuiltin("print","",_MR(Class<IFunction>::getFunction(print)));
-	builtin->registerBuiltin("trace","",_MR(Class<IFunction>::getFunction(trace)));
-	builtin->registerBuiltin("parseInt","",_MR(Class<IFunction>::getFunction(parseInt,2)));
-	builtin->registerBuiltin("parseFloat","",_MR(Class<IFunction>::getFunction(parseFloat,1)));
-	builtin->registerBuiltin("encodeURI","",_MR(Class<IFunction>::getFunction(encodeURI)));
-	builtin->registerBuiltin("decodeURI","",_MR(Class<IFunction>::getFunction(decodeURI)));
-	builtin->registerBuiltin("encodeURIComponent","",_MR(Class<IFunction>::getFunction(encodeURIComponent)));
-	builtin->registerBuiltin("decodeURIComponent","",_MR(Class<IFunction>::getFunction(decodeURIComponent)));
-	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(escape,1)));
-	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(unescape,1)));
-	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(ASObject::_toString)));
+	builtin->registerBuiltin("eval","",_MR(Class<IFunction>::getFunction(m_sys,eval)));
+	builtin->registerBuiltin("print","",_MR(Class<IFunction>::getFunction(m_sys,print)));
+	builtin->registerBuiltin("trace","",_MR(Class<IFunction>::getFunction(m_sys,trace)));
+	builtin->registerBuiltin("parseInt","",_MR(Class<IFunction>::getFunction(m_sys,parseInt,2)));
+	builtin->registerBuiltin("parseFloat","",_MR(Class<IFunction>::getFunction(m_sys,parseFloat,1)));
+	builtin->registerBuiltin("encodeURI","",_MR(Class<IFunction>::getFunction(m_sys,encodeURI)));
+	builtin->registerBuiltin("decodeURI","",_MR(Class<IFunction>::getFunction(m_sys,decodeURI)));
+	builtin->registerBuiltin("encodeURIComponent","",_MR(Class<IFunction>::getFunction(m_sys,encodeURIComponent)));
+	builtin->registerBuiltin("decodeURIComponent","",_MR(Class<IFunction>::getFunction(m_sys,decodeURIComponent)));
+	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(m_sys,escape,1)));
+	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(m_sys,unescape,1)));
+	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(m_sys,ASObject::_toString)));
 
-	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef());
-	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef());
-	builtin->registerBuiltin("Accessibility","flash.accessibility",Class<Accessibility>::getRef());
+	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef(m_sys));
+	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef(m_sys));
+	builtin->registerBuiltin("Accessibility","flash.accessibility",Class<Accessibility>::getRef(m_sys));
 
-	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef());
-	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef());
+	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef(m_sys));
+	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef(m_sys));
 
-	builtin->registerBuiltin("MovieClip","flash.display",Class<MovieClip>::getRef());
-	builtin->registerBuiltin("DisplayObject","flash.display",Class<DisplayObject>::getRef());
-	builtin->registerBuiltin("Loader","flash.display",Class<Loader>::getRef());
-	builtin->registerBuiltin("LoaderInfo","flash.display",Class<LoaderInfo>::getRef());
-	builtin->registerBuiltin("SimpleButton","flash.display",Class<SimpleButton>::getRef());
-	builtin->registerBuiltin("InteractiveObject","flash.display",Class<InteractiveObject>::getRef());
-	builtin->registerBuiltin("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getRef());
-	builtin->registerBuiltin("Sprite","flash.display",Class<Sprite>::getRef());
-	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef());
-	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef());
-	builtin->registerBuiltin("Graphics","flash.display",Class<Graphics>::getRef());
-	builtin->registerBuiltin("GraphicsBitmapFill","flash.display",Class<GraphicsBitmapFill>::getRef());
-	builtin->registerBuiltin("GraphicsEndFill","flash.display",Class<GraphicsEndFill>::getRef());
-	builtin->registerBuiltin("GraphicsGradientFill","flash.display",Class<GraphicsGradientFill>::getRef());
-	builtin->registerBuiltin("GraphicsPath","flash.display",Class<GraphicsPath>::getRef());
-	builtin->registerBuiltin("GraphicsPathCommand","flash.display",Class<GraphicsPathCommand>::getRef());
-	builtin->registerBuiltin("GraphicsPathWinding","flash.display",Class<GraphicsPathWinding>::getRef());
-	builtin->registerBuiltin("GraphicsShaderFill","flash.display",Class<GraphicsShaderFill>::getRef());
-	builtin->registerBuiltin("GraphicsSolidFill","flash.display",Class<GraphicsSolidFill>::getRef());
-	builtin->registerBuiltin("GraphicsStroke","flash.display",Class<GraphicsStroke>::getRef());
-	builtin->registerBuiltin("GraphicsTrianglePath","flash.display",Class<GraphicsTrianglePath>::getRef());
-	builtin->registerBuiltin("IGraphicsData","flash.display",InterfaceClass<IGraphicsData>::getRef());
-	builtin->registerBuiltin("IGraphicsFill","flash.display",InterfaceClass<IGraphicsFill>::getRef());
-	builtin->registerBuiltin("IGraphicsPath","flash.display",InterfaceClass<IGraphicsPath>::getRef());
-	builtin->registerBuiltin("IGraphicsStroke","flash.display",InterfaceClass<IGraphicsStroke>::getRef());
-	builtin->registerBuiltin("GradientType","flash.display",Class<GradientType>::getRef());
-	builtin->registerBuiltin("BlendMode","flash.display",Class<BlendMode>::getRef());
-	builtin->registerBuiltin("LineScaleMode","flash.display",Class<LineScaleMode>::getRef());
-	builtin->registerBuiltin("StageScaleMode","flash.display",Class<StageScaleMode>::getRef());
-	builtin->registerBuiltin("StageAlign","flash.display",Class<StageAlign>::getRef());
-	builtin->registerBuiltin("StageQuality","flash.display",Class<StageQuality>::getRef());
-	builtin->registerBuiltin("StageDisplayState","flash.display",Class<StageDisplayState>::getRef());
-	builtin->registerBuiltin("BitmapData","flash.display",Class<BitmapData>::getRef());
-	builtin->registerBuiltin("Bitmap","flash.display",Class<Bitmap>::getRef());
-	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef());
-	builtin->registerBuiltin("MorphShape","flash.display",Class<MorphShape>::getRef());
-	builtin->registerBuiltin("SpreadMethod","flash.display",Class<SpreadMethod>::getRef());
-	builtin->registerBuiltin("InterpolationMethod","flash.display",Class<InterpolationMethod>::getRef());
-	builtin->registerBuiltin("FrameLabel","flash.display",Class<FrameLabel>::getRef());
-	builtin->registerBuiltin("Scene","flash.display",Class<Scene>::getRef());
-	builtin->registerBuiltin("AVM1Movie","flash.display",Class<AVM1Movie>::getRef());
-	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef());
-	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef());
-	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef());
+	builtin->registerBuiltin("MovieClip","flash.display",Class<MovieClip>::getRef(m_sys));
+	builtin->registerBuiltin("DisplayObject","flash.display",Class<DisplayObject>::getRef(m_sys));
+	builtin->registerBuiltin("Loader","flash.display",Class<Loader>::getRef(m_sys));
+	builtin->registerBuiltin("LoaderInfo","flash.display",Class<LoaderInfo>::getRef(m_sys));
+	builtin->registerBuiltin("SimpleButton","flash.display",Class<SimpleButton>::getRef(m_sys));
+	builtin->registerBuiltin("InteractiveObject","flash.display",Class<InteractiveObject>::getRef(m_sys));
+	builtin->registerBuiltin("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getRef(m_sys));
+	builtin->registerBuiltin("Sprite","flash.display",Class<Sprite>::getRef(m_sys));
+	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef(m_sys));
+	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef(m_sys));
+	builtin->registerBuiltin("Graphics","flash.display",Class<Graphics>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsBitmapFill","flash.display",Class<GraphicsBitmapFill>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsEndFill","flash.display",Class<GraphicsEndFill>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsGradientFill","flash.display",Class<GraphicsGradientFill>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsPath","flash.display",Class<GraphicsPath>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsPathCommand","flash.display",Class<GraphicsPathCommand>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsPathWinding","flash.display",Class<GraphicsPathWinding>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsShaderFill","flash.display",Class<GraphicsShaderFill>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsSolidFill","flash.display",Class<GraphicsSolidFill>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsStroke","flash.display",Class<GraphicsStroke>::getRef(m_sys));
+	builtin->registerBuiltin("GraphicsTrianglePath","flash.display",Class<GraphicsTrianglePath>::getRef(m_sys));
+	builtin->registerBuiltin("IGraphicsData","flash.display",InterfaceClass<IGraphicsData>::getRef(m_sys));
+	builtin->registerBuiltin("IGraphicsFill","flash.display",InterfaceClass<IGraphicsFill>::getRef(m_sys));
+	builtin->registerBuiltin("IGraphicsPath","flash.display",InterfaceClass<IGraphicsPath>::getRef(m_sys));
+	builtin->registerBuiltin("IGraphicsStroke","flash.display",InterfaceClass<IGraphicsStroke>::getRef(m_sys));
+	builtin->registerBuiltin("GradientType","flash.display",Class<GradientType>::getRef(m_sys));
+	builtin->registerBuiltin("BlendMode","flash.display",Class<BlendMode>::getRef(m_sys));
+	builtin->registerBuiltin("LineScaleMode","flash.display",Class<LineScaleMode>::getRef(m_sys));
+	builtin->registerBuiltin("StageScaleMode","flash.display",Class<StageScaleMode>::getRef(m_sys));
+	builtin->registerBuiltin("StageAlign","flash.display",Class<StageAlign>::getRef(m_sys));
+	builtin->registerBuiltin("StageQuality","flash.display",Class<StageQuality>::getRef(m_sys));
+	builtin->registerBuiltin("StageDisplayState","flash.display",Class<StageDisplayState>::getRef(m_sys));
+	builtin->registerBuiltin("BitmapData","flash.display",Class<BitmapData>::getRef(m_sys));
+	builtin->registerBuiltin("Bitmap","flash.display",Class<Bitmap>::getRef(m_sys));
+	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef(m_sys));
+	builtin->registerBuiltin("MorphShape","flash.display",Class<MorphShape>::getRef(m_sys));
+	builtin->registerBuiltin("SpreadMethod","flash.display",Class<SpreadMethod>::getRef(m_sys));
+	builtin->registerBuiltin("InterpolationMethod","flash.display",Class<InterpolationMethod>::getRef(m_sys));
+	builtin->registerBuiltin("FrameLabel","flash.display",Class<FrameLabel>::getRef(m_sys));
+	builtin->registerBuiltin("Scene","flash.display",Class<Scene>::getRef(m_sys));
+	builtin->registerBuiltin("AVM1Movie","flash.display",Class<AVM1Movie>::getRef(m_sys));
+	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef(m_sys));
+	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef(m_sys));
+	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef(m_sys));
 
-	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef());
-	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef());
-	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef());
-	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef());
-	builtin->registerBuiltin("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef());
-	builtin->registerBuiltin("BevelFilter","flash.filters",Class<BevelFilter>::getRef());
-	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",Class<ColorMatrixFilter>::getRef());
-	builtin->registerBuiltin("BlurFilter","flash.filters",Class<BlurFilter>::getRef());
-	builtin->registerBuiltin("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef());
-	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef());
-	builtin->registerBuiltin("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef());
-	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef());
+	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys));
+	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef(m_sys));
+	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef(m_sys));
+	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef(m_sys));
+	builtin->registerBuiltin("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef(m_sys));
+	builtin->registerBuiltin("BevelFilter","flash.filters",Class<BevelFilter>::getRef(m_sys));
+	builtin->registerBuiltin("ColorMatrixFilter","flash.filters",Class<ColorMatrixFilter>::getRef(m_sys));
+	builtin->registerBuiltin("BlurFilter","flash.filters",Class<BlurFilter>::getRef(m_sys));
+	builtin->registerBuiltin("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef(m_sys));
+	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef(m_sys));
+	builtin->registerBuiltin("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef(m_sys));
+	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef(m_sys));
 
-	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef());
-	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef());
-	builtin->registerBuiltin("FontStyle","flash.text",Class<FontStyle>::getRef());
-	builtin->registerBuiltin("FontType","flash.text",Class<FontType>::getRef());
-	builtin->registerBuiltin("GridFitType","flash.text",Class<GridFitType>::getRef());
-	builtin->registerBuiltin("StyleSheet","flash.text",Class<StyleSheet>::getRef());
-	builtin->registerBuiltin("TextColorType","flash.text",Class<TextColorType>::getRef());
-	builtin->registerBuiltin("TextDisplayMode","flash.text",Class<TextDisplayMode>::getRef());
-	builtin->registerBuiltin("TextField","flash.text",Class<TextField>::getRef());
-	builtin->registerBuiltin("TextFieldType","flash.text",Class<TextFieldType>::getRef());
-	builtin->registerBuiltin("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getRef());
-	builtin->registerBuiltin("TextFormat","flash.text",Class<TextFormat>::getRef());
-	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef());
-	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef());
-	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef());
-	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef());
+	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef(m_sys));
+	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef(m_sys));
+	builtin->registerBuiltin("FontStyle","flash.text",Class<FontStyle>::getRef(m_sys));
+	builtin->registerBuiltin("FontType","flash.text",Class<FontType>::getRef(m_sys));
+	builtin->registerBuiltin("GridFitType","flash.text",Class<GridFitType>::getRef(m_sys));
+	builtin->registerBuiltin("StyleSheet","flash.text",Class<StyleSheet>::getRef(m_sys));
+	builtin->registerBuiltin("TextColorType","flash.text",Class<TextColorType>::getRef(m_sys));
+	builtin->registerBuiltin("TextDisplayMode","flash.text",Class<TextDisplayMode>::getRef(m_sys));
+	builtin->registerBuiltin("TextField","flash.text",Class<TextField>::getRef(m_sys));
+	builtin->registerBuiltin("TextFieldType","flash.text",Class<TextFieldType>::getRef(m_sys));
+	builtin->registerBuiltin("TextFieldAutoSize","flash.text",Class<TextFieldAutoSize>::getRef(m_sys));
+	builtin->registerBuiltin("TextFormat","flash.text",Class<TextFormat>::getRef(m_sys));
+	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef(m_sys));
+	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef(m_sys));
+	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef(m_sys));
+	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef(m_sys));
 
-	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef());
-	builtin->registerBuiltin("ElementFormat","flash.text.engine",Class<ElementFormat>::getRef());
-	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef());
-	builtin->registerBuiltin("FontMetrics","flash.text.engine",Class<FontMetrics>::getRef());
-	builtin->registerBuiltin("FontLookup","flash.text.engine",Class<FontLookup>::getRef());
-	builtin->registerBuiltin("FontPosture","flash.text.engine",Class<FontPosture>::getRef());
-	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef());
-	builtin->registerBuiltin("Kerning","flash.text.engine",Class<Kerning>::getRef());
-	builtin->registerBuiltin("LineJustification","flash.text.engine",Class<LineJustification>::getRef());
-	builtin->registerBuiltin("TextBaseline","flash.text.engine",Class<TextBaseline>::getRef());
-	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef());
-	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef());
-	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef());
-	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef());
-	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef());
-	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef());
-	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef());
+	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef(m_sys));
+	builtin->registerBuiltin("ElementFormat","flash.text.engine",Class<ElementFormat>::getRef(m_sys));
+	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef(m_sys));
+	builtin->registerBuiltin("FontMetrics","flash.text.engine",Class<FontMetrics>::getRef(m_sys));
+	builtin->registerBuiltin("FontLookup","flash.text.engine",Class<FontLookup>::getRef(m_sys));
+	builtin->registerBuiltin("FontPosture","flash.text.engine",Class<FontPosture>::getRef(m_sys));
+	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef(m_sys));
+	builtin->registerBuiltin("Kerning","flash.text.engine",Class<Kerning>::getRef(m_sys));
+	builtin->registerBuiltin("LineJustification","flash.text.engine",Class<LineJustification>::getRef(m_sys));
+	builtin->registerBuiltin("TextBaseline","flash.text.engine",Class<TextBaseline>::getRef(m_sys));
+	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef(m_sys));
+	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef(m_sys));
+	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef(m_sys));
+	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef(m_sys));
+	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef(m_sys));
+	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef(m_sys));
+	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef(m_sys));
 
-	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef());
-	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef());
+	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef(m_sys));
+	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef(m_sys));
 
-	builtin->registerBuiltin("ExternalInterface","flash.external",Class<ExternalInterface>::getRef());
+	builtin->registerBuiltin("ExternalInterface","flash.external",Class<ExternalInterface>::getRef(m_sys));
 
-	builtin->registerBuiltin("Endian","flash.utils",Class<Endian>::getRef());
-	builtin->registerBuiltin("ByteArray","flash.utils",Class<ByteArray>::getRef());
-	builtin->registerBuiltin("CompressionAlgorithm","flash.utils",Class<CompressionAlgorithm>::getRef());
-	builtin->registerBuiltin("Dictionary","flash.utils",Class<Dictionary>::getRef());
-	builtin->registerBuiltin("Proxy","flash.utils",Class<Proxy>::getRef());
-	builtin->registerBuiltin("Timer","flash.utils",Class<Timer>::getRef());
-	builtin->registerBuiltin("getQualifiedClassName","flash.utils",_MR(Class<IFunction>::getFunction(getQualifiedClassName)));
-	builtin->registerBuiltin("getQualifiedSuperclassName","flash.utils",_MR(Class<IFunction>::getFunction(getQualifiedSuperclassName)));
-	builtin->registerBuiltin("getDefinitionByName","flash.utils",_MR(Class<IFunction>::getFunction(getDefinitionByName)));
-	builtin->registerBuiltin("getTimer","flash.utils",_MR(Class<IFunction>::getFunction(getTimer)));
-	builtin->registerBuiltin("setInterval","flash.utils",_MR(Class<IFunction>::getFunction(setInterval)));
-	builtin->registerBuiltin("setTimeout","flash.utils",_MR(Class<IFunction>::getFunction(setTimeout)));
-	builtin->registerBuiltin("clearInterval","flash.utils",_MR(Class<IFunction>::getFunction(clearInterval)));
-	builtin->registerBuiltin("clearTimeout","flash.utils",_MR(Class<IFunction>::getFunction(clearTimeout)));
-	builtin->registerBuiltin("describeType","flash.utils",_MR(Class<IFunction>::getFunction(describeType)));
-	builtin->registerBuiltin("escapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(escapeMultiByte)));
-	builtin->registerBuiltin("unescapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(unescapeMultiByte)));
-	builtin->registerBuiltin("IExternalizable","flash.utils",InterfaceClass<IExternalizable>::getRef());
-	builtin->registerBuiltin("IDataInput","flash.utils",InterfaceClass<IDataInput>::getRef());
-	builtin->registerBuiltin("IDataOutput","flash.utils",InterfaceClass<IDataOutput>::getRef());
+	builtin->registerBuiltin("Endian","flash.utils",Class<Endian>::getRef(m_sys));
+	builtin->registerBuiltin("ByteArray","flash.utils",Class<ByteArray>::getRef(m_sys));
+	builtin->registerBuiltin("CompressionAlgorithm","flash.utils",Class<CompressionAlgorithm>::getRef(m_sys));
+	builtin->registerBuiltin("Dictionary","flash.utils",Class<Dictionary>::getRef(m_sys));
+	builtin->registerBuiltin("Proxy","flash.utils",Class<Proxy>::getRef(m_sys));
+	builtin->registerBuiltin("Timer","flash.utils",Class<Timer>::getRef(m_sys));
+	builtin->registerBuiltin("getQualifiedClassName","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedClassName)));
+	builtin->registerBuiltin("getQualifiedSuperclassName","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedSuperclassName)));
+	builtin->registerBuiltin("getDefinitionByName","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,getDefinitionByName)));
+	builtin->registerBuiltin("getTimer","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,getTimer)));
+	builtin->registerBuiltin("setInterval","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
+	builtin->registerBuiltin("setTimeout","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,setTimeout)));
+	builtin->registerBuiltin("clearInterval","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
+	builtin->registerBuiltin("clearTimeout","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,clearTimeout)));
+	builtin->registerBuiltin("describeType","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,describeType)));
+	builtin->registerBuiltin("escapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,escapeMultiByte)));
+	builtin->registerBuiltin("unescapeMultiByte","flash.utils",_MR(Class<IFunction>::getFunction(m_sys,unescapeMultiByte)));
+	builtin->registerBuiltin("IExternalizable","flash.utils",InterfaceClass<IExternalizable>::getRef(m_sys));
+	builtin->registerBuiltin("IDataInput","flash.utils",InterfaceClass<IDataInput>::getRef(m_sys));
+	builtin->registerBuiltin("IDataOutput","flash.utils",InterfaceClass<IDataOutput>::getRef(m_sys));
 
-	builtin->registerBuiltin("ColorTransform","flash.geom",Class<ColorTransform>::getRef());
-	builtin->registerBuiltin("Rectangle","flash.geom",Class<Rectangle>::getRef());
-	builtin->registerBuiltin("Matrix","flash.geom",Class<Matrix>::getRef());
-	builtin->registerBuiltin("Transform","flash.geom",Class<Transform>::getRef());
-	builtin->registerBuiltin("Point","flash.geom",Class<Point>::getRef());
-	builtin->registerBuiltin("Vector3D","flash.geom",Class<Vector3D>::getRef());
-	builtin->registerBuiltin("Matrix3D","flash.geom",Class<Matrix3D>::getRef());
-	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<PerspectiveProjection>::getRef());
+	builtin->registerBuiltin("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys));
+	builtin->registerBuiltin("Rectangle","flash.geom",Class<Rectangle>::getRef(m_sys));
+	builtin->registerBuiltin("Matrix","flash.geom",Class<Matrix>::getRef(m_sys));
+	builtin->registerBuiltin("Transform","flash.geom",Class<Transform>::getRef(m_sys));
+	builtin->registerBuiltin("Point","flash.geom",Class<Point>::getRef(m_sys));
+	builtin->registerBuiltin("Vector3D","flash.geom",Class<Vector3D>::getRef(m_sys));
+	builtin->registerBuiltin("Matrix3D","flash.geom",Class<Matrix3D>::getRef(m_sys));
+	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<PerspectiveProjection>::getRef(m_sys));
 
-	builtin->registerBuiltin("EventDispatcher","flash.events",Class<EventDispatcher>::getRef());
-	builtin->registerBuiltin("Event","flash.events",Class<Event>::getRef());
-	builtin->registerBuiltin("EventPhase","flash.events",Class<EventPhase>::getRef());
-	builtin->registerBuiltin("MouseEvent","flash.events",Class<MouseEvent>::getRef());
-	builtin->registerBuiltin("ProgressEvent","flash.events",Class<ProgressEvent>::getRef());
-	builtin->registerBuiltin("TimerEvent","flash.events",Class<TimerEvent>::getRef());
-	builtin->registerBuiltin("IOErrorEvent","flash.events",Class<IOErrorEvent>::getRef());
-	builtin->registerBuiltin("ErrorEvent","flash.events",Class<ErrorEvent>::getRef());
-	builtin->registerBuiltin("SecurityErrorEvent","flash.events",Class<SecurityErrorEvent>::getRef());
-	builtin->registerBuiltin("AsyncErrorEvent","flash.events",Class<AsyncErrorEvent>::getRef());
-	builtin->registerBuiltin("FullScreenEvent","flash.events",Class<FullScreenEvent>::getRef());
-	builtin->registerBuiltin("TextEvent","flash.events",Class<TextEvent>::getRef());
-	builtin->registerBuiltin("IEventDispatcher","flash.events",InterfaceClass<IEventDispatcher>::getRef());
-	builtin->registerBuiltin("FocusEvent","flash.events",Class<FocusEvent>::getRef());
-	builtin->registerBuiltin("NetStatusEvent","flash.events",Class<NetStatusEvent>::getRef());
-	builtin->registerBuiltin("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getRef());
-	builtin->registerBuiltin("KeyboardEvent","flash.events",Class<KeyboardEvent>::getRef());
-	builtin->registerBuiltin("StatusEvent","flash.events",Class<StatusEvent>::getRef());
-	builtin->registerBuiltin("DataEvent","flash.events",Class<DataEvent>::getRef());
-	builtin->registerBuiltin("DRMErrorEvent","flash.events",Class<DRMErrorEvent>::getRef());
-	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef());
-	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef());
-	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef());
-	builtin->registerBuiltin("TouchEvent","flash.events",Class<TouchEvent>::getRef());
-	builtin->registerBuiltin("GestureEvent","flash.events",Class<GestureEvent>::getRef());
-	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<PressAndTapGestureEvent>::getRef());
-	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<TransformGestureEvent>::getRef());
-	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ContextMenuEvent>::getRef());
-	builtin->registerBuiltin("UncaughtErrorEvent","flash.events",Class<UncaughtErrorEvent>::getRef());
-	builtin->registerBuiltin("UncaughtErrorEvents","flash.events",Class<UncaughtErrorEvents>::getRef());
-	builtin->registerBuiltin("VideoEvent","flash.events",Class<VideoEvent>::getRef());
+	builtin->registerBuiltin("EventDispatcher","flash.events",Class<EventDispatcher>::getRef(m_sys));
+	builtin->registerBuiltin("Event","flash.events",Class<Event>::getRef(m_sys));
+	builtin->registerBuiltin("EventPhase","flash.events",Class<EventPhase>::getRef(m_sys));
+	builtin->registerBuiltin("MouseEvent","flash.events",Class<MouseEvent>::getRef(m_sys));
+	builtin->registerBuiltin("ProgressEvent","flash.events",Class<ProgressEvent>::getRef(m_sys));
+	builtin->registerBuiltin("TimerEvent","flash.events",Class<TimerEvent>::getRef(m_sys));
+	builtin->registerBuiltin("IOErrorEvent","flash.events",Class<IOErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("ErrorEvent","flash.events",Class<ErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("SecurityErrorEvent","flash.events",Class<SecurityErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("AsyncErrorEvent","flash.events",Class<AsyncErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("FullScreenEvent","flash.events",Class<FullScreenEvent>::getRef(m_sys));
+	builtin->registerBuiltin("TextEvent","flash.events",Class<TextEvent>::getRef(m_sys));
+	builtin->registerBuiltin("IEventDispatcher","flash.events",InterfaceClass<IEventDispatcher>::getRef(m_sys));
+	builtin->registerBuiltin("FocusEvent","flash.events",Class<FocusEvent>::getRef(m_sys));
+	builtin->registerBuiltin("NetStatusEvent","flash.events",Class<NetStatusEvent>::getRef(m_sys));
+	builtin->registerBuiltin("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getRef(m_sys));
+	builtin->registerBuiltin("KeyboardEvent","flash.events",Class<KeyboardEvent>::getRef(m_sys));
+	builtin->registerBuiltin("StatusEvent","flash.events",Class<StatusEvent>::getRef(m_sys));
+	builtin->registerBuiltin("DataEvent","flash.events",Class<DataEvent>::getRef(m_sys));
+	builtin->registerBuiltin("DRMErrorEvent","flash.events",Class<DRMErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("DRMStatusEvent","flash.events",Class<DRMStatusEvent>::getRef(m_sys));
+	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef(m_sys));
+	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef(m_sys));
+	builtin->registerBuiltin("TouchEvent","flash.events",Class<TouchEvent>::getRef(m_sys));
+	builtin->registerBuiltin("GestureEvent","flash.events",Class<GestureEvent>::getRef(m_sys));
+	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<PressAndTapGestureEvent>::getRef(m_sys));
+	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<TransformGestureEvent>::getRef(m_sys));
+	builtin->registerBuiltin("ContextMenuEvent","flash.events",Class<ContextMenuEvent>::getRef(m_sys));
+	builtin->registerBuiltin("UncaughtErrorEvent","flash.events",Class<UncaughtErrorEvent>::getRef(m_sys));
+	builtin->registerBuiltin("UncaughtErrorEvents","flash.events",Class<UncaughtErrorEvents>::getRef(m_sys));
+	builtin->registerBuiltin("VideoEvent","flash.events",Class<VideoEvent>::getRef(m_sys));
 
-	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(navigateToURL)));
-	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(sendToURL)));
-	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef());
-	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef());
-	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef());
-	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef());
-	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef());
-	builtin->registerBuiltin("NetStreamInfo","flash.net",Class<NetStreamInfo>::getRef());
-	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef());
-	builtin->registerBuiltin("NetStreamPlayTransitions","flash.net",Class<NetStreamPlayTransitions>::getRef());
-	builtin->registerBuiltin("URLLoader","flash.net",Class<URLLoader>::getRef());
-	builtin->registerBuiltin("URLStream","flash.net",Class<URLStream>::getRef());
-	builtin->registerBuiltin("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getRef());
-	builtin->registerBuiltin("URLRequest","flash.net",Class<URLRequest>::getRef());
-	builtin->registerBuiltin("URLRequestHeader","flash.net",Class<URLRequestHeader>::getRef());
-	builtin->registerBuiltin("URLRequestMethod","flash.net",Class<URLRequestMethod>::getRef());
-	builtin->registerBuiltin("URLVariables","flash.net",Class<URLVariables>::getRef());
-	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef());
-	builtin->registerBuiltin("SharedObjectFlushStatus","flash.net",Class<SharedObjectFlushStatus>::getRef());
-	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef());
-	builtin->registerBuiltin("Socket","flash.net",Class<ASSocket>::getRef());
-	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef());
-	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef());
-	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(registerClassAlias)));
-	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(getClassByAlias)));
+	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
+	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
+	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef(m_sys));
+	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef(m_sys));
+	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef(m_sys));
+	builtin->registerBuiltin("NetStream","flash.net",Class<NetStream>::getRef(m_sys));
+	builtin->registerBuiltin("NetStreamAppendBytesAction","flash.net",Class<NetStreamAppendBytesAction>::getRef(m_sys));
+	builtin->registerBuiltin("NetStreamInfo","flash.net",Class<NetStreamInfo>::getRef(m_sys));
+	builtin->registerBuiltin("NetStreamPlayOptions","flash.net",Class<NetStreamPlayOptions>::getRef(m_sys));
+	builtin->registerBuiltin("NetStreamPlayTransitions","flash.net",Class<NetStreamPlayTransitions>::getRef(m_sys));
+	builtin->registerBuiltin("URLLoader","flash.net",Class<URLLoader>::getRef(m_sys));
+	builtin->registerBuiltin("URLStream","flash.net",Class<URLStream>::getRef(m_sys));
+	builtin->registerBuiltin("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getRef(m_sys));
+	builtin->registerBuiltin("URLRequest","flash.net",Class<URLRequest>::getRef(m_sys));
+	builtin->registerBuiltin("URLRequestHeader","flash.net",Class<URLRequestHeader>::getRef(m_sys));
+	builtin->registerBuiltin("URLRequestMethod","flash.net",Class<URLRequestMethod>::getRef(m_sys));
+	builtin->registerBuiltin("URLVariables","flash.net",Class<URLVariables>::getRef(m_sys));
+	builtin->registerBuiltin("SharedObject","flash.net",Class<SharedObject>::getRef(m_sys));
+	builtin->registerBuiltin("SharedObjectFlushStatus","flash.net",Class<SharedObjectFlushStatus>::getRef(m_sys));
+	builtin->registerBuiltin("ObjectEncoding","flash.net",Class<ObjectEncoding>::getRef(m_sys));
+	builtin->registerBuiltin("Socket","flash.net",Class<ASSocket>::getRef(m_sys));
+	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef(m_sys));
+	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef(m_sys));
+	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,registerClassAlias)));
+	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,getClassByAlias)));
 
-	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef());
+	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef(m_sys));
 
 
-	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(fscommand)));
-	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef());
-	builtin->registerBuiltin("Security","flash.system",Class<Security>::getRef());
-	builtin->registerBuiltin("ApplicationDomain","flash.system",Class<ApplicationDomain>::getRef());
-	builtin->registerBuiltin("SecurityDomain","flash.system",Class<SecurityDomain>::getRef());
-	builtin->registerBuiltin("LoaderContext","flash.system",Class<LoaderContext>::getRef());
-	builtin->registerBuiltin("System","flash.system",Class<System>::getRef());
-	builtin->registerBuiltin("Worker","flash.system",Class<ASWorker>::getRef());
-	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef());
+	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(m_sys,fscommand)));
+	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));
+	builtin->registerBuiltin("Security","flash.system",Class<Security>::getRef(m_sys));
+	builtin->registerBuiltin("ApplicationDomain","flash.system",Class<ApplicationDomain>::getRef(m_sys));
+	builtin->registerBuiltin("SecurityDomain","flash.system",Class<SecurityDomain>::getRef(m_sys));
+	builtin->registerBuiltin("LoaderContext","flash.system",Class<LoaderContext>::getRef(m_sys));
+	builtin->registerBuiltin("System","flash.system",Class<System>::getRef(m_sys));
+	builtin->registerBuiltin("Worker","flash.system",Class<ASWorker>::getRef(m_sys));
+	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef(m_sys));
 	
 
-	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef());
-	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef());
-	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef());
-	builtin->registerBuiltin("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getRef());
-	builtin->registerBuiltin("SoundChannel","flash.media",Class<SoundChannel>::getRef());
-	builtin->registerBuiltin("StageVideo","flash.media",Class<StageVideo>::getRef());
-	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef());
-	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef());
+	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef(m_sys));
+	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef(m_sys));
+	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef(m_sys));
+	builtin->registerBuiltin("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getRef(m_sys));
+	builtin->registerBuiltin("SoundChannel","flash.media",Class<SoundChannel>::getRef(m_sys));
+	builtin->registerBuiltin("StageVideo","flash.media",Class<StageVideo>::getRef(m_sys));
+	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef(m_sys));
+	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef(m_sys));
 
-	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef());
-	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef());
-	builtin->registerBuiltin("KeyLocation","flash.ui",Class<KeyLocation>::getRef());
-	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ContextMenu>::getRef());
-	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef());
-	builtin->registerBuiltin("ContextMenuBuiltInItems","flash.ui",Class<ContextMenuBuiltInItems>::getRef());
-	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef());
-	builtin->registerBuiltin("Multitouch","flash.ui",Class<Multitouch>::getRef());
+	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
+	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));
+	builtin->registerBuiltin("KeyLocation","flash.ui",Class<KeyLocation>::getRef(m_sys));
+	builtin->registerBuiltin("ContextMenu","flash.ui",Class<ContextMenu>::getRef(m_sys));
+	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef(m_sys));
+	builtin->registerBuiltin("ContextMenuBuiltInItems","flash.ui",Class<ContextMenuBuiltInItems>::getRef(m_sys));
+	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef(m_sys));
+	builtin->registerBuiltin("Multitouch","flash.ui",Class<Multitouch>::getRef(m_sys));
 
-	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef());
+	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef(m_sys));
 
-	builtin->registerBuiltin("IOError","flash.errors",Class<IOError>::getRef());
-	builtin->registerBuiltin("EOFError","flash.errors",Class<EOFError>::getRef());
-	builtin->registerBuiltin("IllegalOperationError","flash.errors",Class<IllegalOperationError>::getRef());
-	builtin->registerBuiltin("InvalidSWFError","flash.errors",Class<InvalidSWFError>::getRef());
-	builtin->registerBuiltin("MemoryError","flash.errors",Class<MemoryError>::getRef());
-	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef());
-	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef());
+	builtin->registerBuiltin("IOError","flash.errors",Class<IOError>::getRef(m_sys));
+	builtin->registerBuiltin("EOFError","flash.errors",Class<EOFError>::getRef(m_sys));
+	builtin->registerBuiltin("IllegalOperationError","flash.errors",Class<IllegalOperationError>::getRef(m_sys));
+	builtin->registerBuiltin("InvalidSWFError","flash.errors",Class<InvalidSWFError>::getRef(m_sys));
+	builtin->registerBuiltin("MemoryError","flash.errors",Class<MemoryError>::getRef(m_sys));
+	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef(m_sys));
+	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef(m_sys));
 
-	builtin->registerBuiltin("PrintJob","flash.printing",Class<PrintJob>::getRef());
-	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef());
-	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef());
+	builtin->registerBuiltin("PrintJob","flash.printing",Class<PrintJob>::getRef(m_sys));
+	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef(m_sys));
+	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef(m_sys));
 
-	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(isNaN,1)));
-	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(isFinite,1)));
-	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(_isXMLName)));
+	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(m_sys,isNaN,1)));
+	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(m_sys,isFinite,1)));
+	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(m_sys,_isXMLName)));
 
 	//If needed add AIR definitions
-	if(getSys()->flashMode==SystemState::AIR)
+	if(m_sys->flashMode==SystemState::AIR)
 	{
-		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef());
+		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
 
-		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef());
+		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
 
-		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef());
+		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));
 	}
 
 	// if needed add AVMPLUS definitions
-	if(getSys()->flashMode==SystemState::AVMPLUS)
+	if(m_sys->flashMode==SystemState::AVMPLUS)
 	{
-		builtin->registerBuiltin("getQualifiedClassName","avmplus",_MR(Class<IFunction>::getFunction(getQualifiedClassName)));
-		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(Class<IFunction>::getFunction(getQualifiedSuperclassName)));
-		builtin->registerBuiltin("getTimer","",_MR(Class<IFunction>::getFunction(getTimer)));
-		builtin->registerBuiltin("FLASH10_FLAGS","avmplus",_MR(abstract_ui(0x7FF)));
-		builtin->registerBuiltin("describeType","avmplus",_MR(Class<IFunction>::getFunction(describeType)));
+		builtin->registerBuiltin("getQualifiedClassName","avmplus",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedClassName)));
+		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedSuperclassName)));
+		builtin->registerBuiltin("getTimer","",_MR(Class<IFunction>::getFunction(m_sys,getTimer)));
+		builtin->registerBuiltin("FLASH10_FLAGS","avmplus",_MR(abstract_ui(m_sys,0x7FF)));
+		builtin->registerBuiltin("describeType","avmplus",_MR(Class<IFunction>::getFunction(m_sys,describeType)));
 
-		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef());
-		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef());
-		builtin->registerBuiltin("File","avmplus",Class<avmplusFile>::getRef());
+		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef(m_sys));
+		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef(m_sys));
+		builtin->registerBuiltin("File","avmplus",Class<avmplusFile>::getRef(m_sys));
 
-		builtin->registerBuiltin("AbstractBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("AbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("NativeBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("NativeBaseAS3","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("NativeSubclassOfAbstractBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("NativeSubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("NativeSubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("RestrictedBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("SubclassOfAbstractBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("SubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef());
-		builtin->registerBuiltin("SubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef());
+		builtin->registerBuiltin("AbstractBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("AbstractRestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("NativeBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("NativeBaseAS3","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("NativeSubclassOfAbstractBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("NativeSubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("NativeSubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("RestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("SubclassOfAbstractBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("SubclassOfAbstractRestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
+		builtin->registerBuiltin("SubclassOfRestrictedBase","avmshell",Class<ASObject>::getRef(m_sys));
 	}
 
-	Class_object::getRef()->getClass()->prototype = _MNR(new_objectPrototype());
-	Class_object::getRef()->getClass()->initStandardProps();
+	Class_object::getRef(m_sys)->getClass(m_sys)->prototype = _MNR(new_objectPrototype(m_sys));
+	Class_object::getRef(m_sys)->getClass(m_sys)->initStandardProps();
 
-	getSys()->systemDomain->registerGlobalScope(builtin);
+	m_sys->systemDomain->registerGlobalScope(builtin);
 }
 
 
@@ -572,7 +572,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 	multiname_info* m=&th->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+		m->cached=new (getVm(th->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->context->root->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -624,7 +624,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 	multiname_info* m=&th->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+		m->cached=new (getVm(th->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->context->root->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -716,13 +716,13 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 	/* If this multiname is not cached, resolve its static parts */
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+		m->cached=new (getVm(root->getSystemState())->vmDataMemory) multiname(getVm(root->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		if(midx==0)
 		{
-			ret->name_s_id=getSys()->getUniqueStringId("any");
+			ret->name_s_id=root->getSystemState()->getUniqueStringId("any");
 			ret->name_type=multiname::NAME_STRING;
-			ret->ns.emplace_back("",NAMESPACE);
+			ret->ns.emplace_back(root->getSystemState(),"",NAMESPACE);
 			ret->isAttribute=false;
 			return ret;
 		}
@@ -735,7 +735,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.emplace_back(this, m->ns);
 				if (m->name)
 				{
-					ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
+					ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
 					ret->name_type=multiname::NAME_STRING;
 				}
 				break;
@@ -753,7 +753,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 
 				if (m->name)
 				{
-					ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
+					ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
 					ret->name_type=multiname::NAME_STRING;
 				}
 				break;
@@ -774,7 +774,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x10: //RTQNameA
 			{
 				ret->name_type=multiname::NAME_STRING;
-				ret->name_s_id=getSys()->getUniqueStringId(getString(m->name));
+				ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
 				break;
 			}
 			case 0x11: //RTQNameL
@@ -806,7 +806,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					name += getString(p->name);
 				}
 				ret->ns.emplace_back(this, td->ns);
-				ret->name_s_id=getSys()->getUniqueStringId(name);
+				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -844,11 +844,11 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ASQName *qname = n->as<ASQName>();
 				// don't overwrite any static parts
 				if (!m->dynamic)
-					m->dynamic=new (getVm()->vmDataMemory) multiname(getVm()->vmDataMemory);
+					m->dynamic=new (getVm(root->getSystemState())->vmDataMemory) multiname(getVm(root->getSystemState())->vmDataMemory);
 				ret=m->dynamic;
 				ret->isAttribute=m->cached->isAttribute;
 				ret->ns.clear();
-				ret->ns.emplace_back(qname->getURI(),NAMESPACE);
+				ret->ns.emplace_back(n->getSystemState(),qname->getURI(),NAMESPACE);
 			}
 			else
 				n->applyProxyProperty(*ret);
@@ -860,10 +860,10 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		case 0x10: //RTQNameA
 		{
 			assert(n && !n2);
-			assert_and_throw(n->classdef==Class<Namespace>::getClass());
+			assert_and_throw(n->classdef==Class<Namespace>::getClass(n->getSystemState()));
 			Namespace* tmpns=static_cast<Namespace*>(n);
 			ret->ns.clear();
-			ret->ns.emplace_back(tmpns->uri,tmpns->nskind);
+			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
 			n->decRef();
 			break;
 		}
@@ -871,10 +871,10 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		case 0x12: //RTQNameLA
 		{
 			assert(n && n2);
-			assert_and_throw(n2->classdef==Class<Namespace>::getClass());
+			assert_and_throw(n2->classdef==Class<Namespace>::getClass(n->getSystemState()));
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
-			ret->ns.emplace_back(tmpns->uri,tmpns->nskind);
+			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->setName(n);
 			n->decRef();
 			n2->decRef();
@@ -965,7 +965,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 
 	hasRunScriptInit.resize(scripts.size(),false);
 #ifdef PROFILING_SUPPORT
-	getSys()->contextes.push_back(this);
+	root->getSystemState()->contextes.push_back(this);
 #endif
 }
 
@@ -1080,7 +1080,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	bool doTarget = true;
 
 	//capture phase
-	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass()))
+	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		dispatcher->incRef();
@@ -1244,7 +1244,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				ExternalCallEvent* ev=static_cast<ExternalCallEvent*>(e.second.getPtr());
 				try
 				{
-					*(ev->result) = ev->f->call(getSys()->getNullRef(),ev->args,ev->numArgs);
+					*(ev->result) = ev->f->call(m_sys->getNullRef(),ev->args,ev->numArgs);
 				}
 				catch(ASObject* exception)
 				{
@@ -1442,7 +1442,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	LOG(LOG_CALLS, _("isinstance ") << *name);
 
 	//TODO: Should check against multiname index being 0, not the name!
-	if(name->qualifiedString() == "any")
+	if(name->qualifiedString(obj->getSystemState()) == "any")
 		return true;
 	
 	ASObject* target;
@@ -1460,7 +1460,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
-		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		real_ret=(c==Class<Integer>::getClass(obj->getSystemState()) || c==Class<Number>::getClass(obj->getSystemState()) || c==Class<UInteger>::getClass(obj->getSystemState()));
 		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
 		return real_ret;
 	}
@@ -1494,7 +1494,7 @@ void ABCContext::exec(bool lazy)
 		LOG(LOG_CALLS, _("Script N: ") << i );
 
 		//Creating a new global for this script
-		Global* global=Class<Global>::getInstanceS(this, i);
+		Global* global=Class<Global>::getInstanceS(root->getSystemState(),this, i);
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
@@ -1515,7 +1515,7 @@ void ABCContext::exec(bool lazy)
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	//Creating a new global for the last script
-	Global* global=Class<Global>::getInstanceS(this, i);
+	Global* global=Class<Global>::getInstanceS(root->getSystemState(),this, i);
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
@@ -1545,7 +1545,7 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(g->getSystemState(),m);
 	
 	g->incRef();
 	entry->addToScope(scope_entry(_MR(g),false));
@@ -1577,7 +1577,7 @@ void ABCVm::Run(ABCVm* th)
 {
 	//Spin wait until the VM is aknowledged by the SystemState
 	setTLSSys(th->m_sys);
-	while(getVm()!=th);
+	while(getVm(th->m_sys)!=th);
 
 	/* set TLS variable for isVmThread() */
         tls_set(&is_vm_thread, GINT_TO_POINTER(1));
@@ -1765,11 +1765,11 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		//invoked on the client object
 		multiname headerName(NULL);
 		headerName.name_type=multiname::NAME_STRING;
-		headerName.ns.emplace_back("",NAMESPACE);
+		headerName.ns.emplace_back(m_sys,"",NAMESPACE);
 		tiny_string headerNameString;
 		if(!message->readUTF(headerNameString))
 			return;
-		headerName.name_s_id=getSys()->getUniqueStringId(headerNameString);
+		headerName.name_s_id=m_sys->getUniqueStringId(headerNameString);
 		//Read the must understand flag
 		uint8_t mustUnderstand;
 		if(!message->readByte(mustUnderstand))
@@ -1831,8 +1831,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 	{
 		multiname onResultName(NULL);
 		onResultName.name_type=multiname::NAME_STRING;
-		onResultName.name_s_id=getSys()->getUniqueStringId("onResult");
-		onResultName.ns.emplace_back("",NAMESPACE);
+		onResultName.name_s_id=m_sys->getUniqueStringId("onResult");
+		onResultName.ns.emplace_back(m_sys,"",NAMESPACE);
 		_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
 		if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
 		{
@@ -1906,7 +1906,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->var)
 			{
 				assert_and_throw(var->var && var->var->getObjectType()==T_FUNCTION);
@@ -1931,7 +1931,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->getter)
 			{
 				assert_and_throw(var->getter);
@@ -1955,7 +1955,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind("",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && var->setter)
 			{
 				assert_and_throw(var->setter);
@@ -1985,27 +1985,27 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	switch(kind)
 	{
 		case 0x00: //Undefined
-			return getSys()->getUndefinedRef();
+			return root->getSystemState()->getUndefinedRef();
 		case 0x01: //String
-			return abstract_s(constant_pool.strings[index]);
+			return abstract_s(root->getSystemState(),constant_pool.strings[index]);
 		case 0x03: //Int
-			return abstract_i(constant_pool.integer[index]);
+			return abstract_i(root->getSystemState(),constant_pool.integer[index]);
 		case 0x06: //Double
-			return abstract_d(constant_pool.doubles[index]);
+			return abstract_d(root->getSystemState(),constant_pool.doubles[index]);
 		case 0x08: //Namespace
 		{
 			assert_and_throw(constant_pool.namespaces[index].name);
-			Namespace* ret = Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
+			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name));
 			if (constant_pool.namespaces[index].kind != 0)
 				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
 			return ret;
 		}
 		case 0x0a: //False
-			return abstract_b(false);
+			return abstract_b(root->getSystemState(),false);
 		case 0x0b: //True
-			return abstract_b(true);
+			return abstract_b(root->getSystemState(),true);
 		case 0x0c: //Null
-			return getSys()->getNullRef();
+			return root->getSystemState()->getNullRef();
 		default:
 		{
 			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
@@ -2061,15 +2061,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 			ASObject* ret;
 
-			QName className(getSys()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl().name);
+			QName className(obj->getSystemState()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl(obj->getSystemState()).name);
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
 
-				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
-				Class_inherit* ci=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				MemoryAccount* memoryAccount = obj->getSystemState()->allocateMemoryAccount(className.name);
+				Class_inherit* ci=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, memoryAccount);
 				ci->isInterface = true;
-				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
 					buildTrait(ci,&classes[t->classi].traits[i],false);
@@ -2121,8 +2121,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 			else
 			{
-				MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(className.name);
-				Class_inherit* c=new (getSys()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				MemoryAccount* memoryAccount = obj->getSystemState()->allocateMemoryAccount(className.name);
+				Class_inherit* c=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, memoryAccount);
 				c->context = this;
 
 				if(instances[t->classi].supername)
@@ -2160,7 +2160,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else if(kind == traits_info::Method)
 				LOG(LOG_CALLS,"Method trait: " << *mname << _(" #") << t->method);
 			method_info* m=&methods[t->method];
-			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m);
 
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
@@ -2211,7 +2211,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->vindex)
 				ret=getConstant(t->vkind,t->vindex);
 			else
-				ret=getSys()->getUndefinedRef();
+				ret=obj->getSystemState()->getUndefinedRef();
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
 
@@ -2254,7 +2254,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		}
 		default:
 			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
-			obj->setVariableByMultiname(*mname, getSys()->getUndefinedRef(), ASObject::CONST_NOT_ALLOWED);
+			obj->setVariableByMultiname(*mname, obj->getSystemState()->getUndefinedRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 }
 

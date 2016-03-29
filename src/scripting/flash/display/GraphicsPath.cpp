@@ -36,15 +36,15 @@ void GraphicsPath::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, commands);
 	REGISTER_GETTER_SETTER(c, data);
 	REGISTER_GETTER_SETTER(c, winding);
-	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wideLineTo","",Class<IFunction>::getFunction(wideLineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wideMoveTo","",Class<IFunction>::getFunction(wideMoveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(c->getSystemState(),curveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),moveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wideLineTo","",Class<IFunction>::getFunction(c->getSystemState(),wideLineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wideMoveTo","",Class<IFunction>::getFunction(c->getSystemState(),wideMoveTo),NORMAL_METHOD,true);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsPath>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsPath>::getClass(c->getSystemState()));
 	IGraphicsPath::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 
@@ -79,9 +79,9 @@ void GraphicsPath::finalize()
 void GraphicsPath::ensureValid()
 {
 	if (commands.isNull())
-		commands = _MNR(Template<Vector>::getInstanceS(Class<Integer>::getClass(),NullRef));
+		commands = _MNR(Template<Vector>::getInstanceS(Class<Integer>::getClass(getSystemState()),NullRef));
 	if (data.isNull())
-		data = _MNR(Template<Vector>::getInstanceS(Class<Number>::getClass(),NullRef));
+		data = _MNR(Template<Vector>::getInstanceS(Class<Number>::getClass(getSystemState()),NullRef));
 }
 
 ASFUNCTIONBODY(GraphicsPath, curveTo)
@@ -94,11 +94,11 @@ ASFUNCTIONBODY(GraphicsPath, curveTo)
 	ARG_UNPACK (cx) (cy) (ax) (ay);
 
 	th->ensureValid();
-	th->commands->append(abstract_i(GraphicsPathCommand::CURVE_TO));
-	th->data->append(abstract_d(ax));
-	th->data->append(abstract_d(ay));
-	th->data->append(abstract_d(cx));
-	th->data->append(abstract_d(cy));
+	th->commands->append(abstract_i(obj->getSystemState(),GraphicsPathCommand::CURVE_TO));
+	th->data->append(abstract_d(obj->getSystemState(),ax));
+	th->data->append(abstract_d(obj->getSystemState(),ay));
+	th->data->append(abstract_d(obj->getSystemState(),cx));
+	th->data->append(abstract_d(obj->getSystemState(),cy));
 
 	return NULL;
 }
@@ -111,9 +111,9 @@ ASFUNCTIONBODY(GraphicsPath, lineTo)
 	ARG_UNPACK (x) (y);
 
 	th->ensureValid();
-	th->commands->append(abstract_i(GraphicsPathCommand::LINE_TO));
-	th->data->append(abstract_d(x));
-	th->data->append(abstract_d(y));
+	th->commands->append(abstract_i(obj->getSystemState(),GraphicsPathCommand::LINE_TO));
+	th->data->append(abstract_d(obj->getSystemState(),x));
+	th->data->append(abstract_d(obj->getSystemState(),y));
 
 	return NULL;
 }
@@ -126,9 +126,9 @@ ASFUNCTIONBODY(GraphicsPath, moveTo)
 	ARG_UNPACK (x) (y);
 
 	th->ensureValid();
-	th->commands->append(abstract_i(GraphicsPathCommand::MOVE_TO));
-	th->data->append(abstract_d(x));
-	th->data->append(abstract_d(y));
+	th->commands->append(abstract_i(obj->getSystemState(),GraphicsPathCommand::MOVE_TO));
+	th->data->append(abstract_d(obj->getSystemState(),x));
+	th->data->append(abstract_d(obj->getSystemState(),y));
 
 	return NULL;
 }
@@ -141,11 +141,11 @@ ASFUNCTIONBODY(GraphicsPath, wideLineTo)
 	ARG_UNPACK (x) (y);
 
 	th->ensureValid();
-	th->commands->append(abstract_i(GraphicsPathCommand::LINE_TO));
-	th->data->append(abstract_d(0));
-	th->data->append(abstract_d(0));
-	th->data->append(abstract_d(x));
-	th->data->append(abstract_d(y));
+	th->commands->append(abstract_i(obj->getSystemState(),GraphicsPathCommand::LINE_TO));
+	th->data->append(abstract_d(obj->getSystemState(),0));
+	th->data->append(abstract_d(obj->getSystemState(),0));
+	th->data->append(abstract_d(obj->getSystemState(),x));
+	th->data->append(abstract_d(obj->getSystemState(),y));
 
 	return NULL;
 }
@@ -158,11 +158,11 @@ ASFUNCTIONBODY(GraphicsPath, wideMoveTo)
 	ARG_UNPACK (x) (y);
 
 	th->ensureValid();
-	th->commands->append(abstract_i(GraphicsPathCommand::MOVE_TO));
-	th->data->append(abstract_d(0));
-	th->data->append(abstract_d(0));
-	th->data->append(abstract_d(x));
-	th->data->append(abstract_d(y));
+	th->commands->append(abstract_i(obj->getSystemState(),GraphicsPathCommand::MOVE_TO));
+	th->data->append(abstract_d(obj->getSystemState(),0));
+	th->data->append(abstract_d(obj->getSystemState(),0));
+	th->data->append(abstract_d(obj->getSystemState(),x));
+	th->data->append(abstract_d(obj->getSystemState(),y));
 
 	return NULL;
 }

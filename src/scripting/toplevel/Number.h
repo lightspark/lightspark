@@ -40,8 +40,8 @@ public:
 	Number(Class_base* c, double v=(std::numeric_limits<double>::quiet_NaN())):ASObject(c),val(v){type=T_NUMBER;}
 	static const number_t NaN;
 	double val;
-	number_t toNumber() { return val; }
-	void finalize() { val=std::numeric_limits<double>::quiet_NaN();}
+	inline number_t toNumber() { return val; }
+	inline void finalize() { val=std::numeric_limits<double>::quiet_NaN();}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toExponential);

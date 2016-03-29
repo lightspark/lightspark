@@ -31,8 +31,8 @@ JSON::JSON(Class_base* c):ASObject(c)
 void JSON::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(_parse,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("stringify","",Class<IFunction>::getFunction(_stringify,3),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),_parse,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("stringify","",Class<IFunction>::getFunction(c->getSystemState(),_stringify,3),NORMAL_METHOD,false);
 }
 void JSON::buildTraits(ASObject* o)
 {
@@ -127,7 +127,7 @@ ASFUNCTIONBODY(JSON,_stringify)
 	}
 	tiny_string res = value->toJSON(path,replacer,spaces,filter);
 
-	return Class<ASString>::getInstanceS(res);
+	return abstract_s(obj->getSystemState(),res);
 }
 void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, IFunction *reviver)
 {
@@ -202,7 +202,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 		
 		if (haskey)
 		{
-			params[0] = Class<ASString>::getInstanceS(key.normalizedName());
+			params[0] = abstract_s(getSys(),key.normalizedName(getSys()));
 			if ((*parent)->hasPropertyByMultiname(key,true,false))
 			{
 				params[1] = (*parent)->getVariableByMultiname(key).getPtr();
@@ -213,7 +213,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 		}
 		else
 		{
-			params[0] = Class<ASString>::getInstanceS("");
+			params[0] = abstract_s(getSys(),"");
 			params[1] = *parent;
 			params[1]->incRef();
 		}
@@ -251,9 +251,9 @@ int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,con
 		{
 			pos += 4;
 			if (*parent == NULL)
-				*parent = abstract_b(true);
+				*parent = abstract_b(getSys(),true);
 			else 
-				(*parent)->setVariableByMultiname(key,abstract_b(true),ASObject::CONST_NOT_ALLOWED);
+				(*parent)->setVariableByMultiname(key,abstract_b((*parent)->getSystemState(),true),ASObject::CONST_NOT_ALLOWED);
 		}
 		else
 			throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -275,9 +275,9 @@ int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,co
 		{
 			pos += 5;
 			if (*parent == NULL)
-				*parent = abstract_b(false);
+				*parent = abstract_b(getSys(),false);
 			else 
-				(*parent)->setVariableByMultiname(key,abstract_b(false),ASObject::CONST_NOT_ALLOWED);
+				(*parent)->setVariableByMultiname(key,abstract_b((*parent)->getSystemState(),false),ASObject::CONST_NOT_ALLOWED);
 		}
 		else
 			throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -418,9 +418,9 @@ int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,c
 	if (parent != NULL)
 	{
 		if (*parent == NULL)
-			*parent = Class<ASString>::getInstanceS(res);
+			*parent = abstract_s(getSys(),res);
 		else 
-			(*parent)->setVariableByMultiname(key,Class<ASString>::getInstanceS(res),ASObject::CONST_NOT_ALLOWED);
+			(*parent)->setVariableByMultiname(key,abstract_s(getSys(),res),ASObject::CONST_NOT_ALLOWED);
 	}
 	if (result)
 		*result =res;
@@ -459,17 +459,17 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 				break;
 		}
 	}
-	ASString* numstr = Class<ASString>::getInstanceS(res);
+	ASString* numstr = abstract_s(getSys(),res);
 	number_t num = numstr->toNumber();
 
 	if (std::isnan(num))
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 
 	if (*parent == NULL)
-		*parent = Class<Number>::getInstanceS(num);
+		*parent = abstract_d(getSys(),num);
 	else 
 	{
-		(*parent)->setVariableByMultiname(key,Class<Number>::getInstanceS(num),ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,abstract_d(getSys(),num),ASObject::CONST_NOT_ALLOWED);
 	}
 	return pos;
 }
@@ -477,14 +477,14 @@ int JSON::parseObject(const tiny_string &jsonstring, int pos,ASObject** parent,c
 {
 	int len = jsonstring.numChars();
 	pos++; // ignore '{' or ','
-	ASObject* subobj = Class<ASObject>::getInstanceS();
+	ASObject* subobj = Class<ASObject>::getInstanceS(getSys());
 	if (*parent == NULL)
 		*parent = subobj;
 	else 
 		(*parent)->setVariableByMultiname(key,subobj,ASObject::CONST_NOT_ALLOWED);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.push_back(nsNameAndKind(getSys(),"",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
 	bool bfirst = true;
@@ -544,7 +544,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 {
 	int len = jsonstring.numChars();
 	pos++; // ignore '['
-	ASObject* subobj = Class<Array>::getInstanceS();
+	ASObject* subobj = Class<Array>::getInstanceS(getSys());
 	if (*parent == NULL)
 		*parent = subobj;
 	else 
@@ -552,7 +552,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_INT;
 	name.name_i = 0;
-	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	name.ns.push_back(nsNameAndKind(getSys(),"",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
 	bool needdata = false;

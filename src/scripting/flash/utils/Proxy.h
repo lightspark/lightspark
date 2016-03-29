@@ -46,7 +46,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value)
 	{
-		setVariableByMultiname(name,abstract_i(value),CONST_NOT_ALLOWED);
+		setVariableByMultiname(name,abstract_i(getSystemState(),value),CONST_NOT_ALLOWED);
 	}
 	
 	bool deleteVariableByMultiname(const multiname& name);

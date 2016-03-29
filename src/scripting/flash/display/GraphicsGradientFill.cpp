@@ -45,9 +45,9 @@ void GraphicsGradientFill::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, spreadMethod);
 	REGISTER_GETTER_SETTER(c, type);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass(c->getSystemState()));
 	IGraphicsFill::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 

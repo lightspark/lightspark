@@ -72,13 +72,14 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 	}
 	if (Log::getLevel() >= LOG_INFO)
 	{
+		SystemState* sys = getSys();
 		tiny_string stacktrace;
-		for (auto it = getVm()->stacktrace.crbegin(); it != getVm()->stacktrace.crend(); it++)
+		for (auto it = getVm(sys)->stacktrace.crbegin(); it != getVm(sys)->stacktrace.crend(); it++)
 		{
 			stacktrace += "    at ";
 			stacktrace += (*it).second->getClassName();
 			stacktrace += "/";
-			stacktrace += getSys()->getStringFromUniqueId((*it).first);
+			stacktrace += sys->getStringFromUniqueId((*it).first);
 			stacktrace += "()\n";
 		}
 		LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
@@ -90,12 +91,12 @@ ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const 
 	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
 	stacktrace = "";
-	for (auto it = getVm()->stacktrace.crbegin(); it != getVm()->stacktrace.crend(); it++)
+	for (auto it = getVm(c->getSystemState())->stacktrace.crbegin(); it != getVm(c->getSystemState())->stacktrace.crend(); it++)
 	{
 		stacktrace += "    at ";
 		stacktrace += (*it).second->getClassName();
 		stacktrace += "/";
-		stacktrace += getSys()->getStringFromUniqueId((*it).first);
+		stacktrace += c->getSystemState()->getStringFromUniqueId((*it).first);
 		stacktrace += "()\n";
 	}
 }
@@ -104,7 +105,7 @@ ASFUNCTIONBODY(ASError,_getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);
 
-	ASString* ret=Class<ASString>::getInstanceS(th->getStackTraceString());
+	ASString* ret=abstract_s(obj->getSystemState(),th->getStackTraceString());
 	return ret;
 }
 tiny_string ASError::getStackTraceString()
@@ -129,7 +130,7 @@ tiny_string ASError::toString()
 ASFUNCTIONBODY(ASError,_toString)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->ASError::toString());
+	return abstract_s(obj->getSystemState(),th->ASError::toString());
 }
 
 ASFUNCTIONBODY(ASError,_constructor)
@@ -149,7 +150,7 @@ ASFUNCTIONBODY(ASError,_constructor)
 
 ASFUNCTIONBODY(ASError,generator)
 {
-	ASError* th=Class<ASError>::getInstanceS();
+	ASError* th=Class<ASError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -170,9 +171,9 @@ void ASError::errorGenerator(ASError* obj, ASObject* const* args, const unsigned
 void ASError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("getStackTrace","",Class<IFunction>::getFunction(_getStackTrace),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStackTrace","",Class<IFunction>::getFunction(c->getSystemState(),_getStackTrace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, errorID);
 	REGISTER_GETTER_SETTER(c, message);
 	REGISTER_GETTER_SETTER(c, name);
@@ -199,7 +200,7 @@ ASFUNCTIONBODY(SecurityError,_constructor)
 
 ASFUNCTIONBODY(SecurityError,generator)
 {
-	ASError* th=Class<SecurityError>::getInstanceS();
+	ASError* th=Class<SecurityError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -226,7 +227,7 @@ ASFUNCTIONBODY(ArgumentError,_constructor)
 
 ASFUNCTIONBODY(ArgumentError,generator)
 {
-	ASError* th=Class<ArgumentError>::getInstanceS();
+	ASError* th=Class<ArgumentError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -253,7 +254,7 @@ ASFUNCTIONBODY(DefinitionError,_constructor)
 
 ASFUNCTIONBODY(DefinitionError,generator)
 {
-	ASError* th=Class<DefinitionError>::getInstanceS();
+	ASError* th=Class<DefinitionError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -280,7 +281,7 @@ ASFUNCTIONBODY(EvalError,_constructor)
 
 ASFUNCTIONBODY(EvalError,generator)
 {
-	ASError* th=Class<EvalError>::getInstanceS();
+	ASError* th=Class<EvalError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -307,7 +308,7 @@ ASFUNCTIONBODY(RangeError,_constructor)
 
 ASFUNCTIONBODY(RangeError,generator)
 {
-	ASError* th=Class<RangeError>::getInstanceS();
+	ASError* th=Class<RangeError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -334,7 +335,7 @@ ASFUNCTIONBODY(ReferenceError,_constructor)
 
 ASFUNCTIONBODY(ReferenceError,generator)
 {
-	ASError* th=Class<ReferenceError>::getInstanceS();
+	ASError* th=Class<ReferenceError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -361,7 +362,7 @@ ASFUNCTIONBODY(SyntaxError,_constructor)
 
 ASFUNCTIONBODY(SyntaxError,generator)
 {
-	ASError* th=Class<SyntaxError>::getInstanceS();
+	ASError* th=Class<SyntaxError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -388,7 +389,7 @@ ASFUNCTIONBODY(TypeError,_constructor)
 
 ASFUNCTIONBODY(TypeError,generator)
 {
-	ASError* th=Class<TypeError>::getInstanceS();
+	ASError* th=Class<TypeError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -415,7 +416,7 @@ ASFUNCTIONBODY(URIError,_constructor)
 
 ASFUNCTIONBODY(URIError,generator)
 {
-	ASError* th=Class<URIError>::getInstanceS();
+	ASError* th=Class<URIError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -442,7 +443,7 @@ ASFUNCTIONBODY(VerifyError,_constructor)
 
 ASFUNCTIONBODY(VerifyError,generator)
 {
-	ASError* th=Class<VerifyError>::getInstanceS();
+	ASError* th=Class<VerifyError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }
@@ -469,7 +470,7 @@ ASFUNCTIONBODY(UninitializedError,_constructor)
 
 ASFUNCTIONBODY(UninitializedError,generator)
 {
-	ASError* th=Class<UninitializedError>::getInstanceS();
+	ASError* th=Class<UninitializedError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
 	return th;
 }

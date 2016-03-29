@@ -31,37 +31,37 @@ using namespace lightspark;
 void Multitouch::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("inputMode","",Class<IFunction>::getFunction(getInputMode),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("maxTouchPoints","",Class<IFunction>::getFunction(getMaxTouchPoints),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportedGestures","",Class<IFunction>::getFunction(getSupportedGestures),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsGestureEvents","",Class<IFunction>::getFunction(getSupportsGestureEvents),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsTouchEvents","",Class<IFunction>::getFunction(getSupportsTouchEvents),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("inputMode","",Class<IFunction>::getFunction(c->getSystemState(),getInputMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("maxTouchPoints","",Class<IFunction>::getFunction(c->getSystemState(),getMaxTouchPoints),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportedGestures","",Class<IFunction>::getFunction(c->getSystemState(),getSupportedGestures),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsGestureEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsGestureEvents),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsTouchEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsTouchEvents),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY(Multitouch, getInputMode)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return Class<ASString>::getInstanceS("gesture");
+	return abstract_s(getSys(),"gesture");
 }
 
 ASFUNCTIONBODY(Multitouch, getMaxTouchPoints)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return abstract_i(1);
+	return abstract_i(getSys(),1);
 }
 
 ASFUNCTIONBODY(Multitouch, getSupportedGestures)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return Class<Vector>::getInstanceS(); 
+	return Class<Vector>::getInstanceS(getSys()); 
 }
 ASFUNCTIONBODY(Multitouch, getSupportsGestureEvents)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return abstract_b(false); 
+	return abstract_b(getSys(),false); 
 }
 ASFUNCTIONBODY(Multitouch, getSupportsTouchEvents)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return abstract_b(false); 
+	return abstract_b(getSys(),false); 
 }

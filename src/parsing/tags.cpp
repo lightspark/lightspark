@@ -347,7 +347,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 ASObject* DefineEditTextTag::instance(Class_base* c) const
 {
 	if(c==NULL)
-		c=Class<TextField>::getClass();
+		c=Class<TextField>::getClass(loadedFrom->getSystemState());
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
 	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly);
@@ -437,7 +437,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<MovieClip>::getClass();
+		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
 
 	return new (retClass->memoryAccount) MovieClip(retClass, *this, true);
 }
@@ -484,7 +484,7 @@ ASObject* DefineFontTag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<ASFont>::getClass();
+		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
 	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontTag::instance doesn't handle all font properties");
@@ -589,7 +589,7 @@ ASObject* DefineFont2Tag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<ASFont>::getClass();
+		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
 	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFont2Tag::instance doesn't handle all font properties");
@@ -721,7 +721,7 @@ ASObject* DefineFont3Tag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<ASFont>::getClass();
+		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
 	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFont3Tag::instance doesn't handle all font properties");
@@ -807,7 +807,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<ASFont>::getClass();
+		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
 	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag::instance doesn't handle all font properties");
@@ -815,7 +815,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c) const
 	return ret;
 }
 
-BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(getSys()->tagsMemory)))
+BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(root->getSystemState()->tagsMemory)))
 {
 }
 
@@ -895,19 +895,19 @@ ASObject* BitmapTag::instance(Class_base* c) const
 	//Also BitmapData is used in the wild though, so support both cases
 
 	Class_base* realClass=(c)?c:bindedTo;
-	Class_base* classRet = Class<BitmapData>::getClass();
+	Class_base* classRet = Class<BitmapData>::getClass(loadedFrom->getSystemState());
 
 	if(!realClass)
 		return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 
-	if(realClass->isSubClass(Class<Bitmap>::getClass()))
+	if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
 	{
 		BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
 		return bitmapRet;
 	}
 
-	if(realClass->isSubClass(Class<BitmapData>::getClass()))
+	if(realClass->isSubClass(Class<BitmapData>::getClass(realClass->getSystemState())))
 	{
 		classRet = realClass;
 	}
@@ -916,7 +916,7 @@ ASObject* BitmapTag::instance(Class_base* c) const
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),
-	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory)),version(v)
+	tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory)),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 	assert(v==1 || v==2);
@@ -944,7 +944,7 @@ ASObject* DefineTextTag::instance(Class_base* c) const
 		computeCached();
 
 	if(c==NULL)
-		c=Class<StaticText>::getClass();
+		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
 	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens);
 	return ret;
@@ -1026,12 +1026,12 @@ void DefineTextTag::computeCached() const
 }
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v),
-	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory))
+	tokens(reporter_allocator<GeomToken>(root->getSystemState()->tagsMemory))
 {
 }
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1),
-	tokens(reporter_allocator<GeomToken>(getSys()->tagsMemory))
+	tokens(reporter_allocator<GeomToken>(root->getSystemState()->tagsMemory))
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
@@ -1085,9 +1085,9 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c) const
 {
 	assert_and_throw(bindedTo==NULL);
 	if(c==NULL)
-		c=Class<MorphShape>::getClass();
+		c=Class<MorphShape>::getClass(loadedFrom->getSystemState());
 	LOG(LOG_NOT_IMPLEMENTED, _("MorphShape not really supported"));
-	return Class<MorphShape>::getInstanceS(c);
+	return Class<MorphShape>::getInstanceS(c->getSystemState(),c);
 }
 
 DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineMorphShapeTag(h, root, 2)
@@ -1512,7 +1512,7 @@ ASObject* DefineButtonTag::instance(Class_base* c) const
 			{
 				if(!isSprite[j])
 				{
-					Sprite* spr = Class<Sprite>::getInstanceS();
+					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getSystemState());
 					spr->insertLegacyChildAt(curDepth[j],states[j]);
 					states[j] = spr;
 					//spr->name = "Button_spr";
@@ -1526,7 +1526,7 @@ ASObject* DefineButtonTag::instance(Class_base* c) const
 	Class_base* realClass=(c)?c:bindedTo;
 
 	if(realClass==NULL)
-		realClass=Class<SimpleButton>::getClass();
+		realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
 	SimpleButton* ret=new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3]);
 	return ret;
 }
@@ -1550,7 +1550,7 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c) const
 	else if(bindedTo)
 		classRet=bindedTo;
 	else
-		classRet=Class<Video>::getClass();
+		classRet=Class<Video>::getClass(loadedFrom->getSystemState());
 
 	Video* ret=new (classRet->memoryAccount) Video(classRet, Width, Height);
 	return ret;
@@ -1578,7 +1578,7 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c) const
 	else if(bindedTo)
 		classRet=bindedTo;
 	else
-		classRet=Class<ByteArray>::getClass();
+		classRet=Class<ByteArray>::getClass(loadedFrom->getSystemState());
 
 	ByteArray* ret=new (classRet->memoryAccount) ByteArray(classRet, b, len);
 	return ret;
@@ -1625,7 +1625,7 @@ ASObject* DefineSoundTag::instance(Class_base* c) const
 	else if(bindedTo)
 		retClass=bindedTo;
 	else
-		retClass=Class<Sound>::getClass();
+		retClass=Class<Sound>::getClass(loadedFrom->getSystemState());
 
 	return new (retClass->memoryAccount) Sound(retClass, SoundData,
 		AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
@@ -1694,7 +1694,7 @@ void StartSoundTag::execute(RootMovieClip* root) const
 
 void StartSoundTag::play(const DefineSoundTag *soundTag) const
 {
-	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(
+	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
 		soundTag->getSoundData(),
 		AudioFormat(soundTag->getAudioCodec(),
 			    soundTag->getSampleRate(),

@@ -57,9 +57,9 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
-	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
-	parameters = _MR(Class<ASObject>::getInstanceS());
-	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
+	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
@@ -69,9 +69,9 @@ LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicati
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
-	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS());
-	parameters = _MR(Class<ASObject>::getInstanceS());
-	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
+	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
@@ -79,17 +79,17 @@ void LoaderInfo::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(_getLoader),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(_getURL),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytes","",Class<IFunction>::getFunction(_getBytes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderURL),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(c->getSystemState(),_getLoader),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(c->getSystemState(),_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytes","",Class<IFunction>::getFunction(c->getSystemState(),_getBytes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDomain),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(c->getSystemState(),_getSharedEvents),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	REGISTER_GETTER(c,parameters);
 	REGISTER_GETTER(c,actionScriptVersion);
 	REGISTER_GETTER(c,swfVersion);
@@ -152,18 +152,18 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 	{
 		SpinlockLocker l(spinlock);
 		bytesLoaded=b;
-		if(getVm())
+		if(getVm(getSystemState()))
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal)));
 		}
 		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
-			if(getVm())
+			if(getVm(getSystemState()))
 			{
 				this->incRef();
-				getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 			}
 			loadStatus=COMPLETE;
 		}
@@ -173,14 +173,14 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 void LoaderInfo::sendInit()
 {
 	this->incRef();
-	getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("init")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"init")));
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
 		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 		loadStatus=COMPLETE;
 	}
 }
@@ -214,14 +214,14 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 	//uses AS3. See specs.
 	if (setParameters)
 	{
-		parameters = _MR(Class<ASObject>::getInstanceS());
+		parameters = _MR(Class<ASObject>::getInstanceS(getSystemState()));
 		SystemState::parseParametersFromURLIntoObject(url, parameters);
 	}
 }
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
+	//LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	return NULL;
 }
@@ -229,7 +229,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return abstract_s(th->loaderURL);
+	return abstract_s(obj->getSystemState(),th->loaderURL);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getContent)
@@ -237,7 +237,7 @@ ASFUNCTIONBODY(LoaderInfo,_getContent)
 	//Use Loader::getContent
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if(th->loader.isNull())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	else
 		return Loader::_getContent(th->loader.getPtr(),NULL,0);
 }
@@ -246,7 +246,7 @@ ASFUNCTIONBODY(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if(th->loader.isNull())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	else
 	{
 		th->loader->incRef();
@@ -264,26 +264,26 @@ ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 ASFUNCTIONBODY(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return abstract_s(th->url);
+	return abstract_s(obj->getSystemState(),th->url);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return abstract_i(th->bytesLoaded);
+	return abstract_i(obj->getSystemState(),th->bytesLoaded);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return abstract_i(th->bytesTotal);
+	return abstract_i(obj->getSystemState(),th->bytesTotal);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytes)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if (th->bytesData.isNull())
-		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(obj->getSystemState()));
 	if (!th->loader->getContent().isNull())
 		th->bytesData->writeObject(th->loader->getContent().getPtr());
 
@@ -294,7 +294,7 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	if(th->applicationDomain.isNull())
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->applicationDomain->incRef();
 	return th->applicationDomain.getPtr();
@@ -305,12 +305,12 @@ ASFUNCTIONBODY(LoaderInfo,_getWidth)
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
-		return abstract_d(0);
+		return abstract_d(obj->getSystemState(),0);
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
-		return abstract_d(0);
+		return abstract_d(obj->getSystemState(),0);
 
-	return abstract_d(o->getNominalWidth());
+	return abstract_d(obj->getSystemState(),o->getNominalWidth());
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getHeight)
@@ -318,12 +318,12 @@ ASFUNCTIONBODY(LoaderInfo,_getHeight)
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
-		return abstract_d(0);
+		return abstract_d(obj->getSystemState(),0);
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
-		return abstract_d(0);
+		return abstract_d(obj->getSystemState(),0);
 
-	return abstract_d(o->getNominalHeight());
+	return abstract_d(obj->getSystemState(),o->getNominalHeight());
 }
 
 LoaderThread::LoaderThread(_R<URLRequest> request, _R<Loader> ldr)
@@ -361,22 +361,22 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			loaderInfo->incRef();
-			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
 			loader->incRef();
-			getVm()->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
 		}
 		loaderInfo->incRef();
-		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getSystemState(),"open")));
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
 
 		loaderInfo->incRef();
-		getVm()->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS("open")));
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getSystemState(),"open")));
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
@@ -394,7 +394,7 @@ void LoaderThread::execute()
 		//Acquire the lock to ensure consistency in threadAbort
 		SpinlockLocker l(downloaderLock);
 		if(downloader)
-			getSys()->downloadManager->destroy(downloader);
+			loaderInfo->getSystemState()->downloadManager->destroy(downloader);
 		downloader=NULL;
 	}
 
@@ -407,7 +407,7 @@ void LoaderThread::execute()
 		if(!threadAborting)
 		{
 			loaderInfo->incRef();
-			getVm()->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
 		}
 		return;
 	}
@@ -417,8 +417,8 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo->setLoaderURL(getSys()->mainClip->getOrigin().getParsedURL());
-	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS());
+	th->contentLoaderInfo->setLoaderURL(obj->getSystemState()->mainClip->getOrigin().getParsedURL());
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(obj->getSystemState()));
 	return NULL;
 }
 
@@ -428,7 +428,7 @@ ASFUNCTIONBODY(Loader,_getContent)
 	SpinlockLocker l(th->spinlock);
 	_NR<ASObject> ret=th->content;
 	if(ret.isNull())
-		ret=_MR(getSys()->getUndefinedRef());
+		ret=_MR(obj->getSystemState()->getUndefinedRef());
 
 	ret->incRef();
 	return ret.getPtr();
@@ -464,14 +464,14 @@ ASFUNCTIONBODY(Loader,load)
 	th->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
 	_NR<SecurityDomain> secDomain;
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(th->getSystemState())->currentCallContext);
 	if(!context.isNull())
 	{
 		if (!context->securityDomain.isNull())
 		{
 			//The passed domain must be the current one. See Loader::load specs.
 			if(context->securityDomain!=curSecDomain)
-				throw Class<SecurityError>::getInstanceS("SecurityError: securityDomain must be current one");
+				throw Class<SecurityError>::getInstanceS(obj->getSystemState(),"SecurityError: securityDomain must be current one");
 			secDomain=curSecDomain;
 		}
 
@@ -484,7 +484,7 @@ ASFUNCTIONBODY(Loader,load)
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	_R<RootMovieClip> currentRoot=getVm()->currentCallContext->context->root;
+	_R<RootMovieClip> currentRoot=getVm(th->getSystemState())->currentCallContext->context->root;
 	// empty origin is possible if swf is loaded by loadBytes()
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
 	{
@@ -492,7 +492,7 @@ ASFUNCTIONBODY(Loader,load)
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
 		//Support for LoaderContext
 		if(context.isNull() || context->applicationDomain.isNull())
-			th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+			th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(obj->getSystemState(),parentDomain));
 		else
 			th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 		th->contentLoaderInfo->securityDomain = curSecDomain;
@@ -500,16 +500,16 @@ ASFUNCTIONBODY(Loader,load)
 	else
 	{
 		//Different domain
-		_NR<ApplicationDomain> parentDomain =  getSys()->systemDomain;
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
-		th->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS());
+		_NR<ApplicationDomain> parentDomain =  obj->getSystemState()->systemDomain;
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(obj->getSystemState(),parentDomain));
+		th->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(obj->getSystemState()));
 	}
 
 	if(!th->url.isValid())
 	{
 		//Notify an error during loading
 		th->incRef();
-		getSys()->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		obj->getSystemState()->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(obj->getSystemState())));
 		return NULL;
 	}
 
@@ -520,11 +520,11 @@ ASFUNCTIONBODY(Loader,load)
 	{
 		//TODO: this should be async as it could block if invoked from ExternalInterface
 		SecurityManager::EVALUATIONRESULT evaluationResult;
-		evaluationResult = getSys()->securityManager->evaluatePoliciesURL(th->url, true);
+		evaluationResult = obj->getSystemState()->securityManager->evaluatePoliciesURL(th->url, true);
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			// should this dispatch SecurityErrorEvent instead of throwing?
-			throw Class<SecurityError>::getInstanceS(
+			throw Class<SecurityError>::getInstanceS(obj->getSystemState(),
 				"SecurityError: connection to domain not allowed by securityManager");
 		}
 	}
@@ -535,7 +535,7 @@ ASFUNCTIONBODY(Loader,load)
 
 	SpinlockLocker l(th->spinlock);
 	th->jobs.push_back(thread);
-	getSys()->addJob(thread);
+	obj->getSystemState()->addJob(thread);
 
 	return NULL;
 }
@@ -550,13 +550,13 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	_NR<LoaderContext> context;
 	ARG_UNPACK (bytes)(context, NullRef);
 
-	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
+	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm(th->getSystemState())->currentCallContext);
 	if(context.isNull() || context->applicationDomain.isNull())
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(parentDomain));
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(obj->getSystemState(),parentDomain));
 	else
 		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	//Always loaded in the current security domain
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(th->getSystemState())->currentCallContext);
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
 	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
@@ -570,7 +570,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
 		SpinlockLocker l(th->spinlock);
 		th->jobs.push_back(thread);
-		getSys()->addJob(thread);
+		obj->getSystemState()->addJob(thread);
 	}
 	else
 		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
@@ -615,7 +615,7 @@ void Loader::unload()
 	if(loaded)
 	{
 		contentLoaderInfo->incRef();
-		getVm()->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS("unload")));
+		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS(getSystemState(),"unload")));
 		loaded=false;
 	}
 
@@ -637,7 +637,7 @@ void Loader::finalize()
 Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
 	incRef();
-	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(_MR(this)));
+	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(c->getSystemState(),_MR(this)));
 }
 
 Loader::~Loader()
@@ -647,13 +647,13 @@ Loader::~Loader()
 void Loader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(_getContent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(_unload),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unloadAndStop","",Class<IFunction>::getFunction(_unloadAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getContentLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(c->getSystemState(),_getContent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(c->getSystemState(),loadBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unload","",Class<IFunction>::getFunction(c->getSystemState(),_unload),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unloadAndStop","",Class<IFunction>::getFunction(c->getSystemState(),_unloadAndStop),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,uncaughtErrorEvents);
 }
 
@@ -705,9 +705,9 @@ void Sprite::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(_startDrag),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(_stopDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(c->getSystemState(),_startDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(c->getSystemState(),_stopDrag),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, buttonMode);
 	REGISTER_GETTER_SETTER(c, hitArea);
 	REGISTER_GETTER_SETTER(c, useHandCursor);
@@ -731,7 +731,7 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 	{
 		Rectangle* rect = Class<Rectangle>::cast(args[1]);
 		if(!rect)
-			throw Class<ArgumentError>::getInstanceS("Wrong type");
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong type");
 		bounds = new RECT(rect->getRect());
 	}
 
@@ -743,14 +743,14 @@ ASFUNCTIONBODY(Sprite,_startDrag)
 	}
 
 	th->incRef();
-	getSys()->getInputThread()->startDrag(_MR(th), bounds, offset);
+	obj->getSystemState()->getInputThread()->startDrag(_MR(th), bounds, offset);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Sprite,_stopDrag)
 {
 	Sprite* th=Class<Sprite>::cast(obj);
-	getSys()->getInputThread()->stopDrag(th);
+	obj->getSystemState()->getInputThread()->stopDrag(th);
 	return NULL;
 }
 
@@ -946,7 +946,7 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	Sprite* th=static_cast<Sprite*>(obj);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics.isNull())
-		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
+		th->graphics=_MR(Class<Graphics>::getInstanceS(obj->getSystemState(),th));
 
 	th->graphics->incRef();
 	return th->graphics.getPtr();
@@ -963,8 +963,8 @@ FrameLabel::FrameLabel(Class_base* c, const FrameLabel_data& data):ASObject(c),F
 void FrameLabel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(_getFrame),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(c->getSystemState(),_getFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName),GETTER_METHOD,true);
 }
 
 void FrameLabel::buildTraits(ASObject* o)
@@ -974,13 +974,13 @@ void FrameLabel::buildTraits(ASObject* o)
 ASFUNCTIONBODY(FrameLabel,_getFrame)
 {
 	FrameLabel* th=static_cast<FrameLabel*>(obj);
-	return abstract_i(th->frame);
+	return abstract_i(obj->getSystemState(),th->frame);
 }
 
 ASFUNCTIONBODY(FrameLabel,_getName)
 {
 	FrameLabel* th=static_cast<FrameLabel*>(obj);
-	return abstract_s(th->name);
+	return abstract_s(obj->getSystemState(),th->name);
 }
 
 /*
@@ -1020,19 +1020,19 @@ Scene::Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames):ASObjec
 void Scene::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("labels","",Class<IFunction>::getFunction(_getLabels),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(_getName),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numFrames","",Class<IFunction>::getFunction(_getNumFrames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("labels","",Class<IFunction>::getFunction(c->getSystemState(),_getLabels),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numFrames","",Class<IFunction>::getFunction(c->getSystemState(),_getNumFrames),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY(Scene,_getLabels)
 {
 	Scene* th=static_cast<Scene*>(obj);
-	Array* ret = Class<Array>::getInstanceS();
+	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
 	ret->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
-		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(th->labels[i])));
+		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(obj->getSystemState(),th->labels[i])));
 	}
 	return ret;
 }
@@ -1040,13 +1040,13 @@ ASFUNCTIONBODY(Scene,_getLabels)
 ASFUNCTIONBODY(Scene,_getName)
 {
 	Scene* th=static_cast<Scene*>(obj);
-	return abstract_s(th->name);
+	return abstract_s(obj->getSystemState(),th->name);
 }
 
 ASFUNCTIONBODY(Scene,_getNumFrames)
 {
 	Scene* th=static_cast<Scene*>(obj);
-	return abstract_i(th->numFrames);
+	return abstract_i(obj->getSystemState(),th->numFrames);
 }
 
 void Frame::destroyTags()
@@ -1103,21 +1103,21 @@ void MovieClip::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Sprite, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentFrameLabel","",Class<IFunction>::getFunction(_getCurrentFrameLabel),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabel","",Class<IFunction>::getFunction(_getCurrentLabel),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabels","",Class<IFunction>::getFunction(_getCurrentLabels),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scenes","",Class<IFunction>::getFunction(_getScenes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentScene","",Class<IFunction>::getFunction(_getCurrentScene),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(gotoAndPlay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(prevFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(c->getSystemState(),_getTotalFrames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getFramesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrameLabel","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrameLabel),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabel","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentLabel),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabels","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentLabels),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scenes","",Class<IFunction>::getFunction(c->getSystemState(),_getScenes),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentScene","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentScene),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(c->getSystemState(),addFrameScript),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, enabled);
 }
 
@@ -1342,19 +1342,19 @@ ASFUNCTIONBODY(MovieClip,prevFrame)
 ASFUNCTIONBODY(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	return abstract_i(th->getFramesLoaded());
+	return abstract_i(obj->getSystemState(),th->getFramesLoaded());
 }
 
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	return abstract_i(th->totalFrames_unreliable);
+	return abstract_i(obj->getSystemState(),th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY(MovieClip,_getScenes)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	Array* ret = Class<Array>::getInstanceS();
+	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
 	ret->resize(th->scenes.size());
 	uint32_t numFrames;
 	for(size_t i=0; i<th->scenes.size(); ++i)
@@ -1363,7 +1363,7 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
-		ret->set(i, _MR(Class<Scene>::getInstanceS(th->scenes[i],numFrames)));
+		ret->set(i, _MR(Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[i],numFrames)));
 	}
 	return ret;
 }
@@ -1388,14 +1388,14 @@ ASFUNCTIONBODY(MovieClip,_getCurrentScene)
 	else
 		numFrames = th->scenes[curScene].startframe - th->scenes[curScene+1].startframe;
 
-	return Class<Scene>::getInstanceS(th->scenes[curScene],numFrames);
+	return Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[curScene],numFrames);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based and relative to current scene
-	return abstract_i(th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
+	return abstract_i(obj->getSystemState(),th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
@@ -1405,9 +1405,9 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrameLabel)
 	{
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
 			if(th->scenes[i].labels[j].frame == th->state.FP)
-				return abstract_s(th->scenes[i].labels[j].name);
+				return abstract_s(obj->getSystemState(),th->scenes[i].labels[j].name);
 	}
-	return getSys()->getNullRef();
+	return obj->getSystemState()->getNullRef();
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
@@ -1428,9 +1428,9 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabel)
 	}
 
 	if(label.empty())
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	else
-		return abstract_s(label);
+		return abstract_s(obj->getSystemState(),label);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
@@ -1438,11 +1438,11 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	Scene_data& sc = th->scenes[th->getCurrentScene()];
 
-	Array* ret = Class<Array>::getInstanceS();
+	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
 	ret->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
-		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(sc.labels[i])));
+		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(obj->getSystemState(),sc.labels[i])));
 	}
 	return ret;
 }
@@ -1450,8 +1450,8 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	Sprite::_constructor(obj,NULL,0);
-/*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(swapDepths));
-	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(createEmptyMovieClip));*/
+/*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
+	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 	return NULL;
 }
 
@@ -1475,19 +1475,19 @@ void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(_getChildIndex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(_setChildIndex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(addChild),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(removeChild),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(swapChildren),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(contains),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_setMouseChildren),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(_getMouseChildren),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numChildren","",Class<IFunction>::getFunction(c->getSystemState(),_getNumChildren),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getChildIndex","",Class<IFunction>::getFunction(c->getSystemState(),_getChildIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(c->getSystemState(),_setChildIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(c->getSystemState(),getChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(c->getSystemState(),getChildByName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(c->getSystemState(),addChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(c->getSystemState(),removeChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(c->getSystemState(),removeChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(c->getSystemState(),addChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(c->getSystemState(),swapChildren),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(c->getSystemState(),contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(c->getSystemState(),_setMouseChildren),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseChildren),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c, tabChildren);
 }
 
@@ -1521,9 +1521,9 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		//This is a tested behavior
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=getSys()->getUniqueStringId(obj->name);
-		objName.ns.emplace_back("",NAMESPACE);
-		setVariableByMultiname(objName,getSys()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
+		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
+		objName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+		setVariableByMultiname(objName,getSystemState()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 
 	obj->incRef();
@@ -1545,8 +1545,8 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		obj->incRef();
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=getSys()->getUniqueStringId(obj->name);
-		objName.ns.emplace_back("",NAMESPACE);
+		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
+		objName.ns.emplace_back(getSystemState(),"",NAMESPACE);
 		setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 	}
 
@@ -1588,8 +1588,8 @@ InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnable
 
 InteractiveObject::~InteractiveObject()
 {
-	if(getSys()->getInputThread())
-		getSys()->getInputThread()->removeListener(this);
+	if(getSystemState()->getInputThread())
+		getSystemState()->getInputThread()->removeListener(this);
 }
 
 ASFUNCTIONBODY(InteractiveObject,_constructor)
@@ -1597,8 +1597,8 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	//Object registered very early are not supported this way (Stage for example)
-	if(getSys()->getInputThread())
-		getSys()->getInputThread()->addListener(th);
+	if(obj->getSystemState()->getInputThread())
+		obj->getSystemState()->getInputThread()->addListener(th);
 
 	return NULL;
 }
@@ -1614,7 +1614,7 @@ ASFUNCTIONBODY(InteractiveObject,_setMouseEnabled)
 ASFUNCTIONBODY(InteractiveObject,_getMouseEnabled)
 {
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
-	return abstract_b(th->mouseEnabled);
+	return abstract_b(obj->getSystemState(),th->mouseEnabled);
 }
 
 ASFUNCTIONBODY(InteractiveObject,_setDoubleClickEnabled)
@@ -1628,7 +1628,7 @@ ASFUNCTIONBODY(InteractiveObject,_setDoubleClickEnabled)
 ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
 {
 	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
-	return abstract_b(th->doubleClickEnabled);
+	return abstract_b(obj->getSystemState(),th->doubleClickEnabled);
 }
 
 void InteractiveObject::finalize()
@@ -1650,10 +1650,10 @@ void InteractiveObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_setMouseEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(_getMouseEnabled),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(_getDoubleClickEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_setMouseEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_setDoubleClickEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getDoubleClickEnabled),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c, accessibilityImplementation);
 	REGISTER_GETTER_SETTER(c, contextMenu);
 	REGISTER_GETTER_SETTER(c, tabEnabled);
@@ -1718,13 +1718,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
-	return abstract_i(th->dynamicDisplayList.size());
+	return abstract_i(obj->getSystemState(),th->dynamicDisplayList.size());
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getMouseChildren)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
-	return abstract_b(th->mouseChildren);
+	return abstract_b(obj->getSystemState(),th->mouseChildren);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_setMouseChildren)
@@ -1816,17 +1816,17 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType() == T_CLASS)
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 	if (!args[0]->getClass())
-		return abstract_b(false);
-	if (!args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()))
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
+	if (!args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())))
+		return abstract_b(obj->getSystemState(),false);
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
 	d->incRef();
 	bool ret=th->_contains(_MR(d));
-	return abstract_b(ret);
+	return abstract_b(obj->getSystemState(),ret);
 }
 
 //Only from VM context
@@ -1836,11 +1836,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert_and_throw(argslen==2);
 	if(args[0]->getObjectType() == T_CLASS)
 	{
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0]->getClass() &&
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 
 	int index=args[1]->toInt();
 
@@ -1852,7 +1852,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 
 	//Notify the object
 	d->incRef();
-	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
+	getVm(obj->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(obj->getSystemState(),"added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
@@ -1865,11 +1865,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType() == T_CLASS)
 	{
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() && 
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 
 	//Cast to object
 	args[0]->incRef();
@@ -1878,7 +1878,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Notify the object
 	d->incRef();
-	getVm()->addEvent(d,_MR(Class<Event>::getInstanceS("added")));
+	getVm(obj->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(obj->getSystemState(),"added")));
 
 	d->incRef();
 	return d.getPtr();
@@ -1893,16 +1893,16 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	   args[0]->getObjectType() == T_UNDEFINED ||
 	   args[0]->getObjectType() == T_NULL)
 	{
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	}
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() && 
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	d->incRef();
 	if(!th->_removeChild(_MR(d)))
-		throw Class<ArgumentError>::getInstanceS("removeChild: child not in list", 2025);
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"removeChild: child not in list", 2025);
 
 	//As we return the child we have to incRef it
 	d->incRef();
@@ -1921,7 +1921,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
-			throw Class<RangeError>::getInstanceS("removeChildAt: invalid index", 2025);
+			throw Class<RangeError>::getInstanceS(obj->getSystemState(),"removeChildAt: invalid index", 2025);
 		list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
@@ -1944,7 +1944,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_setChildIndex)
 
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() &&
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 	args[0]->incRef();
 	_R<DisplayObject> child = _MR(Class<DisplayObject>::cast(args[0]));
 
@@ -1977,9 +1977,9 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 	
 	//Validate object type
 	assert_and_throw(args[0] && args[0]->getClass() && 
-		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 	assert_and_throw(args[1] && args[1]->getClass() && 
-		args[1]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+		args[1]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 
 	if (args[0] == args[1])
 	{
@@ -1999,7 +1999,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 		std::list<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
 		std::list<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS("Argument is not child of this object", 2025);
+			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Argument is not child of this object", 2025);
 
 		th->dynamicDisplayList.insert(it1, child2);
 		th->dynamicDisplayList.insert(it2, child1);
@@ -2029,7 +2029,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
 	if(ret)
 		ret->incRef();
 	else
-		ret=getSys()->getUndefinedRef();
+		ret=obj->getSystemState()->getUndefinedRef();
 	return ret;
 }
 
@@ -2040,7 +2040,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	assert_and_throw(argslen==1);
 	unsigned int index=args[0]->toInt();
 	if(index>=th->dynamicDisplayList.size())
-		throw Class<RangeError>::getInstanceS("getChildAt: invalid index", 2025);
+		throw Class<RangeError>::getInstanceS(obj->getSystemState(),"getChildAt: invalid index", 2025);
 	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
@@ -2060,7 +2060,7 @@ int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
 		ret++;
 		++it;
 		if(it == dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS("getChildIndex: child not in list", 2025);
+			throw Class<ArgumentError>::getInstanceS(getSystemState(),"getChildIndex: child not in list", 2025);
 	}
 	while(1);
 	return ret;
@@ -2072,13 +2072,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getChildIndex)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	//Validate object type
-	assert_and_throw(args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0]->getClass()->isSubClass(Class<DisplayObject>::getClass(obj->getSystemState())));
 
 	//Cast to object
 	_R<DisplayObject> d= _MR(static_cast<DisplayObject*>(args[0]));
 	d->incRef();
 
-	return abstract_i(th->getChildIndex(d));
+	return abstract_i(obj->getSystemState(),th->getChildIndex(d));
 }
 
 Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef)
@@ -2099,7 +2099,7 @@ void Shape::finalize()
 void Shape::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(_getGraphics),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
 }
 
 void Shape::buildTraits(ASObject* o)
@@ -2116,7 +2116,7 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 {
 	Shape* th=static_cast<Shape*>(obj);
 	if(th->graphics.isNull())
-		th->graphics=_MR(Class<Graphics>::getInstanceS(th));
+		th->graphics=_MR(Class<Graphics>::getInstanceS(obj->getSystemState(),th));
 	th->graphics->incRef();
 	return th->graphics.getPtr();
 }
@@ -2147,31 +2147,31 @@ _NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, 
 void Stage::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("allowFullScreen","",Class<IFunction>::getFunction(_getAllowFullScreen),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("allowFullScreenInteractive","",Class<IFunction>::getFunction(_getAllowFullScreenInteractive),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("colorCorrectionSupport","",Class<IFunction>::getFunction(_getColorCorrectionSupport),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(undefinedFunction),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(_getStageVideos),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_getFocus),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(_setFocus),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(_getFrameRate),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(_setFrameRate),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreen","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreen),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreenInteractive","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreenInteractive),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorCorrectionSupport","",Class<IFunction>::getFunction(c->getSystemState(),_getColorCorrectionSupport),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleMode),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(c->getSystemState(),_getStageVideos),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(c->getSystemState(),_getFocus),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(c->getSystemState(),_setFocus),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(c->getSystemState(),_getFrameRate),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(c->getSystemState(),_setFrameRate),SETTER_METHOD,true);
 	// override the setter from DisplayObjectContainer
-	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(_setTabChildren),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(_getWmodeGPU),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("invalidate","",Class<IFunction>::getFunction(_invalidate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(_getColor),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(_setColor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(c->getSystemState(),_setTabChildren),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(c->getSystemState(),_getWmodeGPU),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("invalidate","",Class<IFunction>::getFunction(c->getSystemState(),_invalidate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_getColor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_setColor),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,align);
 	REGISTER_GETTER_SETTER(c,colorCorrection);
 	REGISTER_GETTER_SETTER(c,displayState);
@@ -2227,7 +2227,7 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 		// StageVideoAvailabilityEvent is dispatched directly after an eventListener is added added
 		// see https://www.adobe.com/devnet/flashplayer/articles/stage_video.html 
 		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS()));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(getSystemState())));
 	}
 }
 
@@ -2269,11 +2269,11 @@ _NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;
-	if(getSys()->scaleMode==SystemState::NO_SCALE)
-		width=getSys()->getRenderThread()->windowWidth;
+	if(getSystemState()->scaleMode==SystemState::NO_SCALE)
+		width=getSystemState()->getRenderThread()->windowWidth;
 	else
 	{
-		RECT size=getSys()->mainClip->getFrameSize();
+		RECT size=getSystemState()->mainClip->getFrameSize();
 		width=size.Xmax/20;
 	}
 	return width;
@@ -2282,11 +2282,11 @@ uint32_t Stage::internalGetWidth() const
 uint32_t Stage::internalGetHeight() const
 {
 	uint32_t height;
-	if(getSys()->scaleMode==SystemState::NO_SCALE)
-		height=getSys()->getRenderThread()->windowHeight;
+	if(getSystemState()->scaleMode==SystemState::NO_SCALE)
+		height=getSystemState()->getRenderThread()->windowHeight;
 	else
 	{
-		RECT size=getSys()->mainClip->getFrameSize();
+		RECT size=getSystemState()->mainClip->getFrameSize();
 		height=size.Ymax/20;
 	}
 	return height;
@@ -2295,33 +2295,33 @@ uint32_t Stage::internalGetHeight() const
 ASFUNCTIONBODY(Stage,_getStageWidth)
 {
 	Stage* th=static_cast<Stage*>(obj);
-	return abstract_d(th->internalGetWidth());
+	return abstract_d(obj->getSystemState(),th->internalGetWidth());
 }
 
 ASFUNCTIONBODY(Stage,_getStageHeight)
 {
 	Stage* th=static_cast<Stage*>(obj);
-	return abstract_d(th->internalGetHeight());
+	return abstract_d(obj->getSystemState(),th->internalGetHeight());
 }
 
 ASFUNCTIONBODY(Stage,_getLoaderInfo)
 {
-	return RootMovieClip::_getLoaderInfo(getSys()->mainClip,NULL,0);
+	return RootMovieClip::_getLoaderInfo(obj->getSystemState()->mainClip,NULL,0);
 }
 
 ASFUNCTIONBODY(Stage,_getScaleMode)
 {
 	//Stage* th=static_cast<Stage*>(obj);
-	switch(getSys()->scaleMode)
+	switch(obj->getSystemState()->scaleMode)
 	{
 		case SystemState::EXACT_FIT:
-			return abstract_s("exactFit");
+			return abstract_s(obj->getSystemState(),"exactFit");
 		case SystemState::SHOW_ALL:
-			return abstract_s("showAll");
+			return abstract_s(obj->getSystemState(),"showAll");
 		case SystemState::NO_BORDER:
-			return abstract_s("noBorder");
+			return abstract_s(obj->getSystemState(),"noBorder");
 		case SystemState::NO_SCALE:
-			return abstract_s("noScale");
+			return abstract_s(obj->getSystemState(),"noScale");
 	}
 	return NULL;
 }
@@ -2331,15 +2331,15 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	//Stage* th=static_cast<Stage*>(obj);
 	const tiny_string& arg0=args[0]->toString();
 	if(arg0=="exactFit")
-		getSys()->scaleMode=SystemState::EXACT_FIT;
+		obj->getSystemState()->scaleMode=SystemState::EXACT_FIT;
 	else if(arg0=="showAll")
-		getSys()->scaleMode=SystemState::SHOW_ALL;
+		obj->getSystemState()->scaleMode=SystemState::SHOW_ALL;
 	else if(arg0=="noBorder")
-		getSys()->scaleMode=SystemState::NO_BORDER;
+		obj->getSystemState()->scaleMode=SystemState::NO_BORDER;
 	else if(arg0=="noScale")
-		getSys()->scaleMode=SystemState::NO_SCALE;
+		obj->getSystemState()->scaleMode=SystemState::NO_SCALE;
 
-	RenderThread* rt=getSys()->getRenderThread();
+	RenderThread* rt=obj->getSystemState()->getRenderThread();
 	rt->requestResize(rt->windowWidth, rt->windowHeight, true);
 	return NULL;
 }
@@ -2347,7 +2347,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 ASFUNCTIONBODY(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	return Template<Vector>::getInstanceS(Class<StageVideo>::getClass(),NullRef);
+	return Template<Vector>::getInstanceS(Class<StageVideo>::getClass(obj->getSystemState()),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()
@@ -2407,9 +2407,9 @@ ASFUNCTIONBODY(Stage,_getFrameRate)
 	Stage* th=obj->as<Stage>();
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		return abstract_d(getSys()->mainClip->getFrameRate());
+		return abstract_d(obj->getSystemState(),obj->getSystemState()->mainClip->getFrameRate());
 	else
-		return abstract_d(root->getFrameRate());
+		return abstract_d(obj->getSystemState(),root->getFrameRate());
 }
 
 ASFUNCTIONBODY(Stage,_setFrameRate)
@@ -2425,29 +2425,29 @@ ASFUNCTIONBODY(Stage,_setFrameRate)
 
 ASFUNCTIONBODY(Stage,_getAllowFullScreen)
 {
-	return abstract_b(false); // until fullscreen support is implemented
+	return abstract_b(obj->getSystemState(),false); // until fullscreen support is implemented
 }
 
 ASFUNCTIONBODY(Stage,_getAllowFullScreenInteractive)
 {
-	return abstract_b(false);
+	return abstract_b(obj->getSystemState(),false);
 }
 
 ASFUNCTIONBODY(Stage,_getColorCorrectionSupport)
 {
-	return abstract_b(false); // until color correction is implemented
+	return abstract_b(obj->getSystemState(),false); // until color correction is implemented
 }
 
 ASFUNCTIONBODY(Stage,_getWmodeGPU)
 {
-	return abstract_b(false);
+	return abstract_b(obj->getSystemState(),false);
 }
 ASFUNCTIONBODY(Stage,_invalidate)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"invalidate not implemented yet");
 	// TODO this crashes lightspark
 	//Stage* th=obj->as<Stage>();
-	//_R<FlushInvalidationQueueEvent> event=_MR(new (getSys()->unaccountedMemory) FlushInvalidationQueueEvent());
+	//_R<FlushInvalidationQueueEvent> event=_MR(new (obj->getSystemState()->unaccountedMemory) FlushInvalidationQueueEvent());
 	//getVm()->addEvent(_MR(th),event);
 	return NULL;
 }
@@ -2458,7 +2458,7 @@ ASFUNCTIONBODY(Stage,_getColor)
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
 		rgb = root->getBackground();
-	return abstract_ui(rgb.toUInt());
+	return abstract_ui(obj->getSystemState(),rgb.toUInt());
 }
 
 ASFUNCTIONBODY(Stage,_setColor)
@@ -2477,40 +2477,40 @@ ASFUNCTIONBODY(Stage,_setColor)
 void StageScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EXACT_FIT","",abstract_s("exactFit"),CONSTANT_TRAIT);
-	c->setVariableByQName("NO_BORDER","",abstract_s("noBorder"),CONSTANT_TRAIT);
-	c->setVariableByQName("NO_SCALE","",abstract_s("noScale"),CONSTANT_TRAIT);
-	c->setVariableByQName("SHOW_ALL","",abstract_s("showAll"),CONSTANT_TRAIT);
+	c->setVariableByQName("EXACT_FIT","",abstract_s(c->getSystemState(),"exactFit"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_BORDER","",abstract_s(c->getSystemState(),"noBorder"),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_SCALE","",abstract_s(c->getSystemState(),"noScale"),CONSTANT_TRAIT);
+	c->setVariableByQName("SHOW_ALL","",abstract_s(c->getSystemState(),"showAll"),CONSTANT_TRAIT);
 }
 
 void StageAlign::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BOTTOM","",abstract_s("B"),CONSTANT_TRAIT);
-	c->setVariableByQName("BOTTOM_LEFT","",abstract_s("BL"),CONSTANT_TRAIT);
-	c->setVariableByQName("BOTTOM_RIGHT","",abstract_s("BR"),CONSTANT_TRAIT);
-	c->setVariableByQName("LEFT","",abstract_s("L"),CONSTANT_TRAIT);
-	c->setVariableByQName("RIGHT","",abstract_s("R"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP","",abstract_s("T"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP_LEFT","",abstract_s("TL"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOP_RIGHT","",abstract_s("TR"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM","",abstract_s(c->getSystemState(),"B"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_LEFT","",abstract_s(c->getSystemState(),"BL"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOTTOM_RIGHT","",abstract_s(c->getSystemState(),"BR"),CONSTANT_TRAIT);
+	c->setVariableByQName("LEFT","",abstract_s(c->getSystemState(),"L"),CONSTANT_TRAIT);
+	c->setVariableByQName("RIGHT","",abstract_s(c->getSystemState(),"R"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP","",abstract_s(c->getSystemState(),"T"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_LEFT","",abstract_s(c->getSystemState(),"TL"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOP_RIGHT","",abstract_s(c->getSystemState(),"TR"),CONSTANT_TRAIT);
 }
 
 void StageQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("BEST","",abstract_s("best"),CONSTANT_TRAIT);
-	c->setVariableByQName("HIGH","",abstract_s("high"),CONSTANT_TRAIT);
-	c->setVariableByQName("LOW","",abstract_s("low"),CONSTANT_TRAIT);
-	c->setVariableByQName("MEDIUM","",abstract_s("medium"),CONSTANT_TRAIT);
+	c->setVariableByQName("BEST","",abstract_s(c->getSystemState(),"best"),CONSTANT_TRAIT);
+	c->setVariableByQName("HIGH","",abstract_s(c->getSystemState(),"high"),CONSTANT_TRAIT);
+	c->setVariableByQName("LOW","",abstract_s(c->getSystemState(),"low"),CONSTANT_TRAIT);
+	c->setVariableByQName("MEDIUM","",abstract_s(c->getSystemState(),"medium"),CONSTANT_TRAIT);
 }
 
 void StageDisplayState::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("FULL_SCREEN","",abstract_s("fullScreen"),CONSTANT_TRAIT);
-	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",abstract_s("fullScreenInteractive"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("FULL_SCREEN","",abstract_s(c->getSystemState(),"fullScreen"),CONSTANT_TRAIT);
+	c->setVariableByQName("FULL_SCREEN_INTERACTIVE","",abstract_s(c->getSystemState(),"fullScreenInteractive"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
@@ -2523,7 +2523,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 		loaderInfo->setWaitedObject(_MR(this));
 	}
 
-	bitmapData = _MR(Class<BitmapData>::getInstanceS());
+	bitmapData = _MR(Class<BitmapData>::getInstanceS(c->getSystemState()));
 	bitmapData->addUser(this);
 	if(!s)
 		return;
@@ -2655,7 +2655,7 @@ void Bitmap::updatedData()
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
 	if(onStage)
-		requestInvalidation(getSys());
+		requestInvalidation(getSystemState());
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
@@ -2684,18 +2684,18 @@ IntSize Bitmap::getBitmapSize() const
 void SimpleButton::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_getUpState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(_setUpState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(_getDownState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(_setDownState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(_getOverState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(_setOverState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(_getHitTestState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(_setHitTestState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_getEnabled),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(_setEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(_getUseHandCursor),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(_setUseHandCursor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_getUpState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_setUpState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(c->getSystemState(),_getDownState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(c->getSystemState(),_setDownState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(c->getSystemState(),_getOverState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(c->getSystemState(),_setOverState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(c->getSystemState(),_getHitTestState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(c->getSystemState(),_setHitTestState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_getEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_setEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),_getUseHandCursor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),_setUseHandCursor),SETTER_METHOD,true);
 }
 
 void SimpleButton::buildTraits(ASObject* o)
@@ -2825,7 +2825,7 @@ ASFUNCTIONBODY(SimpleButton,_getUpState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->upState)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->upState->incRef();
 	return th->upState.getPtr();
@@ -2845,7 +2845,7 @@ ASFUNCTIONBODY(SimpleButton,_getHitTestState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->hitTestState)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->hitTestState->incRef();
 	return th->hitTestState.getPtr();
@@ -2864,7 +2864,7 @@ ASFUNCTIONBODY(SimpleButton,_getOverState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->overState)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->overState->incRef();
 	return th->overState.getPtr();
@@ -2884,7 +2884,7 @@ ASFUNCTIONBODY(SimpleButton,_getDownState)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
 	if(!th->downState)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 
 	th->downState->incRef();
 	return th->downState.getPtr();
@@ -2911,7 +2911,7 @@ ASFUNCTIONBODY(SimpleButton,_setEnabled)
 ASFUNCTIONBODY(SimpleButton,_getEnabled)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	return abstract_b(th->enabled);
+	return abstract_b(obj->getSystemState(),th->enabled);
 }
 
 ASFUNCTIONBODY(SimpleButton,_setUseHandCursor)
@@ -2925,75 +2925,75 @@ ASFUNCTIONBODY(SimpleButton,_setUseHandCursor)
 ASFUNCTIONBODY(SimpleButton,_getUseHandCursor)
 {
 	SimpleButton* th=static_cast<SimpleButton*>(obj);
-	return abstract_b(th->useHandCursor);
+	return abstract_b(obj->getSystemState(),th->useHandCursor);
 }
 
 void GradientType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("LINEAR","",abstract_s("linear"),CONSTANT_TRAIT);
-	c->setVariableByQName("RADIAL","",abstract_s("radial"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINEAR","",abstract_s(c->getSystemState(),"linear"),CONSTANT_TRAIT);
+	c->setVariableByQName("RADIAL","",abstract_s(c->getSystemState(),"radial"),CONSTANT_TRAIT);
 }
 
 void BlendMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ADD","",abstract_s("add"),CONSTANT_TRAIT);
-	c->setVariableByQName("ALPHA","",abstract_s("alpha"),CONSTANT_TRAIT);
-	c->setVariableByQName("DARKEN","",abstract_s("darken"),CONSTANT_TRAIT);
-	c->setVariableByQName("DIFFERENCE","",abstract_s("difference"),CONSTANT_TRAIT);
-	c->setVariableByQName("ERASE","",abstract_s("erase"),CONSTANT_TRAIT);
-	c->setVariableByQName("HARDLIGHT","",abstract_s("hardlight"),CONSTANT_TRAIT);
-	c->setVariableByQName("INVERT","",abstract_s("invert"),CONSTANT_TRAIT);
-	c->setVariableByQName("LAYER","",abstract_s("layer"),CONSTANT_TRAIT);
-	c->setVariableByQName("LIGHTEN","",abstract_s("lighten"),CONSTANT_TRAIT);
-	c->setVariableByQName("MULTIPLY","",abstract_s("multiply"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
-	c->setVariableByQName("OVERLAY","",abstract_s("overlay"),CONSTANT_TRAIT);
-	c->setVariableByQName("SCREEN","",abstract_s("screen"),CONSTANT_TRAIT);
-	c->setVariableByQName("SUBTRACT","",abstract_s("subtract"),CONSTANT_TRAIT);
+	c->setVariableByQName("ADD","",abstract_s(c->getSystemState(),"add"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALPHA","",abstract_s(c->getSystemState(),"alpha"),CONSTANT_TRAIT);
+	c->setVariableByQName("DARKEN","",abstract_s(c->getSystemState(),"darken"),CONSTANT_TRAIT);
+	c->setVariableByQName("DIFFERENCE","",abstract_s(c->getSystemState(),"difference"),CONSTANT_TRAIT);
+	c->setVariableByQName("ERASE","",abstract_s(c->getSystemState(),"erase"),CONSTANT_TRAIT);
+	c->setVariableByQName("HARDLIGHT","",abstract_s(c->getSystemState(),"hardlight"),CONSTANT_TRAIT);
+	c->setVariableByQName("INVERT","",abstract_s(c->getSystemState(),"invert"),CONSTANT_TRAIT);
+	c->setVariableByQName("LAYER","",abstract_s(c->getSystemState(),"layer"),CONSTANT_TRAIT);
+	c->setVariableByQName("LIGHTEN","",abstract_s(c->getSystemState(),"lighten"),CONSTANT_TRAIT);
+	c->setVariableByQName("MULTIPLY","",abstract_s(c->getSystemState(),"multiply"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("OVERLAY","",abstract_s(c->getSystemState(),"overlay"),CONSTANT_TRAIT);
+	c->setVariableByQName("SCREEN","",abstract_s(c->getSystemState(),"screen"),CONSTANT_TRAIT);
+	c->setVariableByQName("SUBTRACT","",abstract_s(c->getSystemState(),"subtract"),CONSTANT_TRAIT);
 }
 
 void SpreadMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("PAD","",abstract_s("pad"),CONSTANT_TRAIT);
-	c->setVariableByQName("REFLECT","",abstract_s("reflect"),CONSTANT_TRAIT);
-	c->setVariableByQName("REPEAT","",abstract_s("repeat"),CONSTANT_TRAIT);
+	c->setVariableByQName("PAD","",abstract_s(c->getSystemState(),"pad"),CONSTANT_TRAIT);
+	c->setVariableByQName("REFLECT","",abstract_s(c->getSystemState(),"reflect"),CONSTANT_TRAIT);
+	c->setVariableByQName("REPEAT","",abstract_s(c->getSystemState(),"repeat"),CONSTANT_TRAIT);
 }
 
 void InterpolationMethod::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("RGB","",abstract_s("rgb"),CONSTANT_TRAIT);
-	c->setVariableByQName("LINEAR_RGB","",abstract_s("linearRGB"),CONSTANT_TRAIT);
+	c->setVariableByQName("RGB","",abstract_s(c->getSystemState(),"rgb"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINEAR_RGB","",abstract_s(c->getSystemState(),"linearRGB"),CONSTANT_TRAIT);
 }
 
 void GraphicsPathCommand::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("CUBIC_CURVE_TO","",abstract_i(6),CONSTANT_TRAIT);
-	c->setVariableByQName("CURVE_TO","",abstract_i(3),CONSTANT_TRAIT);
-	c->setVariableByQName("LINE_TO","",abstract_i(2),CONSTANT_TRAIT);
-	c->setVariableByQName("MOVE_TO","",abstract_i(1),CONSTANT_TRAIT);
-	c->setVariableByQName("NO_OP","",abstract_i(0),CONSTANT_TRAIT);
-	c->setVariableByQName("WIDE_LINE_TO","",abstract_i(5),CONSTANT_TRAIT);
-	c->setVariableByQName("WIDE_MOVE_TO","",abstract_i(4),CONSTANT_TRAIT);
+	c->setVariableByQName("CUBIC_CURVE_TO","",abstract_i(c->getSystemState(),6),CONSTANT_TRAIT);
+	c->setVariableByQName("CURVE_TO","",abstract_i(c->getSystemState(),3),CONSTANT_TRAIT);
+	c->setVariableByQName("LINE_TO","",abstract_i(c->getSystemState(),2),CONSTANT_TRAIT);
+	c->setVariableByQName("MOVE_TO","",abstract_i(c->getSystemState(),1),CONSTANT_TRAIT);
+	c->setVariableByQName("NO_OP","",abstract_i(c->getSystemState(),0),CONSTANT_TRAIT);
+	c->setVariableByQName("WIDE_LINE_TO","",abstract_i(c->getSystemState(),5),CONSTANT_TRAIT);
+	c->setVariableByQName("WIDE_MOVE_TO","",abstract_i(c->getSystemState(),4),CONSTANT_TRAIT);
 }
 
 void GraphicsPathWinding::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("EVEN_ODD","",abstract_s("evenOdd"),CONSTANT_TRAIT);
-	c->setVariableByQName("NON_ZERO","",abstract_s("nonZero"),CONSTANT_TRAIT);
+	c->setVariableByQName("EVEN_ODD","",abstract_s(c->getSystemState(),"evenOdd"),CONSTANT_TRAIT);
+	c->setVariableByQName("NON_ZERO","",abstract_s(c->getSystemState(),"nonZero"),CONSTANT_TRAIT);
 }
 
 void PixelSnapping::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ALWAYS","",abstract_s("always"),CONSTANT_TRAIT);
-	c->setVariableByQName("AUTO","",abstract_s("auto"),CONSTANT_TRAIT);
-	c->setVariableByQName("NEVER","",abstract_s("never"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALWAYS","",abstract_s(c->getSystemState(),"always"),CONSTANT_TRAIT);
+	c->setVariableByQName("AUTO","",abstract_s(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("NEVER","",abstract_s(c->getSystemState(),"never"),CONSTANT_TRAIT);
 
 }
 
@@ -3104,7 +3104,7 @@ void MovieClip::advanceFrame()
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
 	if((!dynamic_cast<RootMovieClip*>(this) && !fromDefineSpriteTag)
-	   || !getClass()->isSubClass(Class<MovieClip>::getClass()))
+	   || !getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState())))
 		return;
 
 	//If we have not yet loaded enough frames delay advancement
@@ -3169,10 +3169,10 @@ ASFUNCTIONBODY(Shader,_constructor)
 void BitmapDataChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ALPHA","",abstract_ui(8),CONSTANT_TRAIT);
-	c->setVariableByQName("BLUE","",abstract_ui(4),CONSTANT_TRAIT);
-	c->setVariableByQName("GREEN","",abstract_ui(2),CONSTANT_TRAIT);
-	c->setVariableByQName("RED","",abstract_ui(1),CONSTANT_TRAIT);
+	c->setVariableByQName("ALPHA","",abstract_ui(c->getSystemState(),8),CONSTANT_TRAIT);
+	c->setVariableByQName("BLUE","",abstract_ui(c->getSystemState(),4),CONSTANT_TRAIT);
+	c->setVariableByQName("GREEN","",abstract_ui(c->getSystemState(),2),CONSTANT_TRAIT);
+	c->setVariableByQName("RED","",abstract_ui(c->getSystemState(),1),CONSTANT_TRAIT);
 }
 
 unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
@@ -3201,8 +3201,8 @@ unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)
 void LineScaleMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("HORIZONTAL","",abstract_s("horizontal"),CONSTANT_TRAIT);
-	c->setVariableByQName("NONE","",abstract_s("none"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",abstract_s("normal"),CONSTANT_TRAIT);
-	c->setVariableByQName("VERTICAL","",abstract_s("vertical"),CONSTANT_TRAIT);
+	c->setVariableByQName("HORIZONTAL","",abstract_s(c->getSystemState(),"horizontal"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("VERTICAL","",abstract_s(c->getSystemState(),"vertical"),CONSTANT_TRAIT);
 }

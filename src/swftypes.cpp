@@ -37,12 +37,12 @@
 using namespace std;
 using namespace lightspark;
 
-const tiny_string multiname::qualifiedString() const
+const tiny_string multiname::qualifiedString(SystemState* sys) const
 {
 	assert_and_throw(ns.size()>=1);
 	assert_and_throw(name_type==NAME_STRING);
-	const tiny_string nsName=ns[0].getImpl().name;
-	const tiny_string& name=getSys()->getStringFromUniqueId(name_s_id);
+	const tiny_string nsName=ns[0].getImpl(sys).name;
+	const tiny_string& name=sys->getStringFromUniqueId(name_s_id);
 	if(nsName.empty())
 		return name;
 	else
@@ -54,7 +54,7 @@ const tiny_string multiname::qualifiedString() const
 	}
 }
 
-const tiny_string multiname::normalizedName() const
+const tiny_string multiname::normalizedName(SystemState* sys) const
 {
 	switch(name_type)
 	{
@@ -63,7 +63,7 @@ const tiny_string multiname::normalizedName() const
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
-			return getSys()->getStringFromUniqueId(name_s_id);
+			return sys->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
 			return name_o ? name_o->toString() : "*";
 		default:
@@ -73,7 +73,7 @@ const tiny_string multiname::normalizedName() const
 	}
 }
 
-uint32_t multiname::normalizedNameId() const
+uint32_t multiname::normalizedNameId(SystemState* sys) const
 {
 	switch(name_type)
 	{
@@ -82,7 +82,7 @@ uint32_t multiname::normalizedNameId() const
 		case multiname::NAME_INT:
 		case multiname::NAME_NUMBER:
 		case multiname::NAME_OBJECT:
-			return getSys()->getUniqueStringId(normalizedName());
+			return sys->getUniqueStringId(normalizedName(sys));
 		default:
 			assert("Unexpected name kind" && false);
 			//Should never reach this
@@ -90,7 +90,7 @@ uint32_t multiname::normalizedNameId() const
 	}
 }
 
-const tiny_string multiname::normalizedNameUnresolved() const
+const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 {
 	switch(name_type)
 	{
@@ -99,7 +99,7 @@ const tiny_string multiname::normalizedNameUnresolved() const
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
-			return getSys()->getStringFromUniqueId(name_s_id);
+			return sys->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
 			return name_o ? name_o->getClassName() : "*";
 		default:
@@ -134,13 +134,13 @@ void multiname::setName(ASObject* n)
 	else if(n->getObjectType()==T_QNAME)
 	{
 		ASQName* qname=static_cast<ASQName*>(n);
-		name_s_id=getSys()->getUniqueStringId(qname->local_name);
+		name_s_id=n->getSystemState()->getUniqueStringId(qname->local_name);
 		name_type = NAME_STRING;
 	}
 	else if(n->getObjectType()==T_STRING)
 	{
 		ASString* o=static_cast<ASString*>(n);
-		name_s_id=getSys()->getUniqueStringId(o->data);
+		name_s_id=n->getSystemState()->getUniqueStringId(o->data);
 		name_type = NAME_STRING;
 	}
 	else
@@ -160,7 +160,7 @@ void multiname::resetNameIfObject()
 	}
 }
 
-bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
+bool multiname::toUInt(SystemState* sys,uint32_t& index, bool acceptStringFractions) const
 {
 	switch(name_type)
 	{
@@ -170,7 +170,7 @@ bool multiname::toUInt(uint32_t& index, bool acceptStringFractions) const
 		{
 			tiny_string str;
 			if(name_type==multiname::NAME_STRING)
-				str=getSys()->getStringFromUniqueId(name_s_id);
+				str=sys->getStringFromUniqueId(name_s_id);
 			else
 				str=name_o->toString();
 
@@ -243,7 +243,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 {
 	const char* prefix;
-	switch(r.getImpl().kind)
+	switch(r.getImpl(getSys()).kind)
 	{
 		case NAMESPACE:
 			prefix="ns:";
@@ -272,7 +272,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 			prefix="";
 			break;
 	}
-	s << prefix << r.getImpl().name;
+	s << prefix << r.getImpl(getSys()).name;
 	return s;
 }
 
@@ -1339,45 +1339,45 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	}
 	return s;
 }
-ASString* lightspark::abstract_s()
+ASString* lightspark::abstract_s(SystemState *sys)
 {
-	return Class<ASString>::getInstanceSNoArgs();
+	return Class<ASString>::getInstanceSNoArgs(sys);
 }
-ASString* lightspark::abstract_s(const char* s, uint32_t len)
+ASString* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = std::string(s,len);
 	return ret;
 }
-ASString* lightspark::abstract_s(const char* s)
+ASString* lightspark::abstract_s(SystemState *sys, const char* s)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
 	return ret;
 }
-ASString* lightspark::abstract_s(const tiny_string& s)
+ASString* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs();
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
 	return ret;
 }
 
-ASObject* lightspark::abstract_d(number_t i)
+ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 {
-	Number* ret=Class<Number>::getInstanceSNoArgs();
+	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->val = i;
 	return ret;
 }
-ASObject* lightspark::abstract_i(int32_t i)
+ASObject* lightspark::abstract_i(SystemState *sys, int32_t i)
 {
-	Integer* ret=Class<Integer>::getInstanceSNoArgs();
+	Integer* ret=Class<Integer>::getInstanceSNoArgs(sys);
 	ret->val = i;
 	return ret;
 }
 
-ASObject* lightspark::abstract_ui(uint32_t i)
+ASObject* lightspark::abstract_ui(SystemState *sys, uint32_t i)
 {
-	UInteger* ret=Class<UInteger>::getInstanceSNoArgs();
+	UInteger* ret=Class<UInteger>::getInstanceSNoArgs(sys);
 	ret->val = i;
 	return ret;
 }
@@ -1436,7 +1436,7 @@ QName::operator multiname() const
 	multiname ret(NULL);
 	ret.name_type = multiname::NAME_STRING;
 	ret.name_s_id = getSys()->getUniqueStringId(name);
-	ret.ns.emplace_back(ns, NAMESPACE);
+	ret.ns.emplace_back(getSys(),ns, NAMESPACE);
 	ret.isAttribute = false;
 	return ret;
 }
@@ -1466,27 +1466,27 @@ FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 	return *this;
 }
 
-nsNameAndKind::nsNameAndKind(const tiny_string& _name, NS_KIND _kind)
+nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nameIsEmpty=_name.empty();
 }
 
-nsNameAndKind::nsNameAndKind(const char* _name, NS_KIND _kind)
+nsNameAndKind::nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_name, _kind);
-	getSys()->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nameIsEmpty=(_name[0]=='\0');
 }
 
-nsNameAndKind::nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
+nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
 	nsNameAndKindImpl tmp(_name, _kind, nsId);
 	uint32_t tmpId;
-	getSys()->getUniqueNamespaceId(tmp, nsRealId, tmpId);
+	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
 	nameIsEmpty=_name.empty();
 }
@@ -1497,16 +1497,16 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 	const tiny_string& nsName=c->getString(ns.name);
 	nsNameAndKindImpl tmp(nsName, (NS_KIND)(int)ns.kind);
 	//Give an id hint, in case the namespace is created in the map
-	getSys()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
+	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
 	nameIsEmpty=nsName.empty();
 }
 
-const nsNameAndKindImpl& nsNameAndKind::getImpl() const
+const nsNameAndKindImpl& nsNameAndKind::getImpl(SystemState* sys) const
 {
-	return getSys()->getNamespaceFromUniqueId(nsRealId);
+	return sys->getNamespaceFromUniqueId(nsRealId);
 }
 
 nsNameAndKindImpl::nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b)

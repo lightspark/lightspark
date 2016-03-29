@@ -143,7 +143,7 @@ public:
 	
 	static bool getPrettyPrinting();
 	static unsigned int getParseMode();
-	static XML* createFromString(const tiny_string& s);
+	static XML* createFromString(SystemState *sys, const tiny_string& s);
 	static XML* createFromNode(const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
 
 	const tiny_string getName() const { return nodename;}
@@ -157,7 +157,7 @@ public:
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);
-	static bool isValidMultiname(const multiname& name, uint32_t& index);
+	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
 
 	void setTextContent(const tiny_string& content);
 	tiny_string toString();

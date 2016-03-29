@@ -34,7 +34,7 @@ void Timer::tick()
 	//This will be executed once if repeatCount was originally 1
 	//Otherwise it's executed until stopMe is set to true
 	this->incRef();
-	getVm()->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timer")));
+	getVm(getSys())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSys(),"timer")));
 
 	currentCount++;
 	if(repeatCount!=0)
@@ -42,7 +42,7 @@ void Timer::tick()
 		if(currentCount==repeatCount)
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS("timerComplete")));
+			getVm(getSys())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSys(),"timerComplete")));
 			stopMe=true;
 			running=false;
 		}
@@ -58,15 +58,15 @@ void Timer::tickFence()
 void Timer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(_getCurrentCount),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_getRepeatCount),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(_setRepeatCount),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("running","",Class<IFunction>::getFunction(_getRunning),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(_getDelay),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(_setDelay),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(start),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("reset","",Class<IFunction>::getFunction(reset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentCount),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(c->getSystemState(),_getRepeatCount),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(c->getSystemState(),_setRepeatCount),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("running","",Class<IFunction>::getFunction(c->getSystemState(),_getRunning),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(c->getSystemState(),_getDelay),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(c->getSystemState(),_setDelay),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),start),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reset","",Class<IFunction>::getFunction(c->getSystemState(),reset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
@@ -84,13 +84,13 @@ ASFUNCTIONBODY(Timer,_constructor)
 ASFUNCTIONBODY(Timer,_getCurrentCount)
 {
 	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(th->currentCount);
+	return abstract_i(obj->getSystemState(),th->currentCount);
 }
 
 ASFUNCTIONBODY(Timer,_getRepeatCount)
 {
 	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(th->repeatCount);
+	return abstract_i(obj->getSystemState(),th->repeatCount);
 }
 
 ASFUNCTIONBODY(Timer,_setRepeatCount)
@@ -111,13 +111,13 @@ ASFUNCTIONBODY(Timer,_setRepeatCount)
 ASFUNCTIONBODY(Timer,_getRunning)
 {
 	Timer* th=static_cast<Timer*>(obj);
-	return abstract_b(th->running);
+	return abstract_b(obj->getSystemState(),th->running);
 }
 
 ASFUNCTIONBODY(Timer,_getDelay)
 {
 	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(th->delay);
+	return abstract_i(obj->getSystemState(),th->delay);
 }
 
 ASFUNCTIONBODY(Timer,_setDelay)
@@ -125,7 +125,7 @@ ASFUNCTIONBODY(Timer,_setDelay)
 	assert_and_throw(argslen==1);
 	int32_t newdelay = args[0]->toInt();
 	if (newdelay<=0)
-		throw Class<RangeError>::getInstanceS("delay must be positive", 2066);
+		throw Class<RangeError>::getInstanceS(obj->getSystemState(),"delay must be positive", 2066);
 
 	Timer* th=static_cast<Timer*>(obj);
 	th->delay=newdelay;

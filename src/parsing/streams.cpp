@@ -27,6 +27,9 @@
 #include <cstring>
 #include <assert.h>
 
+
+extern lightspark::SystemState* getSys();
+
 #define LZMA_PROP_LENGTH 5
 
 using namespace std;
@@ -208,5 +211,5 @@ int liblzma_filter::fillBuffer()
 
 void memorystream::handleError(const char* msg)
 {
-	throw lightspark::Class<lightspark::VerifyError>::getInstanceS(msg);
+	throw lightspark::Class<lightspark::VerifyError>::getInstanceS(lightspark::getSys(),msg);
 }

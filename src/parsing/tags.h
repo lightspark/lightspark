@@ -121,7 +121,7 @@ public:
 	ASObject* instance(Class_base* c=NULL) const
 	{
 		if(c==NULL)
-			c=Class<Shape>::getClass();
+			c=Class<Shape>::getClass(loadedFrom->getSystemState());
 		Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
 		return ret;
 	}

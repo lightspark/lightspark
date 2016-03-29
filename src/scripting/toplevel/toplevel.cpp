@@ -134,22 +134,16 @@ IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL),function
 	type=T_FUNCTION;
 }
 
-void IFunction::finalize()
-{
-	ASObject::finalize();
-	closure_this.reset();
-}
-
 void IFunction::sinit(Class_base* c)
 {
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_toString),DYNAMIC_TRAIT);
 
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(IFunction::_call,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(IFunction::apply,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(IFunction::_getter_length),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(IFunction::_toString),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_call,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(c->getSystemState(),IFunction::_call,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::apply,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(c->getSystemState(),IFunction::apply,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_getter_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_toString),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
@@ -168,7 +162,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
 		//get the current global object
-		newObj=getVm()->currentCallContext->scope_stack[0].object->as<Global>();
+		newObj=getVm(obj->getSystemState())->currentCallContext->scope_stack[0].object->as<Global>();
 		newObj->incRef();
 	}
 	else
@@ -203,7 +197,7 @@ ASFUNCTIONBODY(IFunction,_call)
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
 		//get the current global object
-		newObj=getVm()->currentCallContext->scope_stack[0].object->as<Global>();
+		newObj=getVm(obj->getSystemState())->currentCallContext->scope_stack[0].object->as<Global>();
 		newObj->incRef();
 	}
 	else
@@ -227,7 +221,7 @@ ASFUNCTIONBODY(IFunction,_call)
 
 ASFUNCTIONBODY(IFunction,_toString)
 {
-	return abstract_s("function Function() {}");
+	return abstract_s(obj->getSystemState(),"function Function() {}");
 }
 
 ASObject* Class<IFunction>::generator(ASObject* const* args, const unsigned int argslen)
@@ -264,16 +258,6 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),
 		length = mi->numArgs();
 }
 
-SyntheticFunction::~SyntheticFunction()
-{
-}
-
-void SyntheticFunction::finalize()
-{
-	IFunction::finalize();
-	func_scope.clear();
-}
-
 /**
  * This prepares a new call_context and then executes the ABC bytecode function
  * by ABCVm::executeFunction() or through JIT.
@@ -284,13 +268,13 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	const uint32_t opt_hit_threshold=1;
 	const uint32_t jit_hit_threshold=20;
 	if (!mi->body)
-		return getSys()->getUndefinedRef();
+		return getSystemState()->getUndefinedRef();
 
 	const uint16_t hit_count = mi->body->hit_count;
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 
-	uint32_t& cur_recursion = getVm()->cur_recursion;
-	if(cur_recursion == getVm()->limits.max_recursion)
+	uint32_t& cur_recursion = getVm(getSystemState())->cur_recursion;
+	if(cur_recursion == getVm(getSystemState())->limits.max_recursion)
 	{
 		for(uint32_t i=0;i<numArgs;i++)
 			args[i]->decRef();
@@ -329,16 +313,16 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	//For sufficiently hot methods, optimize them to the internal bytecode
-	if(hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL && getSys()->useFastInterpreter)
+	if(hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL && getSystemState()->useFastInterpreter)
 	{
 		ABCVm::optimizeFunction(this);
 	}
 
 	//Temporarily disable JITting
-	if(mi->body->exceptions.size()==0 && getSys()->useJit && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSys()->useInterpreter==false))
+	if(mi->body->exceptions.size()==0 && getSystemState()->useJit && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
-		val=mi->synt_method();
+		val=mi->synt_method(getSystemState());
 		assert(val);
 	}
 	mi->body->hit_count++;
@@ -354,7 +338,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	{
 		//The arguments does not contain default values of optional parameters,
 		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
-		argumentsArray=Class<Array>::getInstanceS();
+		argumentsArray=Class<Array>::getInstanceS(obj->getSystemState());
 		argumentsArray->resize(numArgs);
 		for(uint32_t j=0;j<numArgs;j++)
 		{
@@ -383,7 +367,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.scope_stack=func_scope;
 	cc.initialScopeStack=func_scope.size();
 	cc.exec_pos=0;
-	call_context* saved_cc = getVm()->currentCallContext;
+	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
 	if (saved_cc)
 	{
 		if (!saved_cc->defaultNamespaceUri.isNull())
@@ -392,7 +376,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	}
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	getVm()->currentCallContext = &cc;
+	getVm(getSystemState())->currentCallContext = &cc;
 
 	if(isBound())
 	{ /* closure_this can never been overriden */
@@ -423,7 +407,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			cc.locals[i+1]=mi->paramTypes[i]->coerce(mi->getOptional(iOptional));
 		else {
 			assert(mi->paramTypes[i] == Type::anyType);
-			cc.locals[i+1]=getSys()->getUndefinedRef();
+			cc.locals[i+1]=getSystemState()->getUndefinedRef();
 		}
 	}
 	cc.argarrayposition = -1;
@@ -436,7 +420,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	else if(mi->needsRest()|| passedToRest > 0) // it seems that Adobe allows additional parameters without setting "needsRest"
 	{
 		assert_and_throw(argumentsArray==NULL);
-		Array* rest=Class<Array>::getInstanceS();
+		Array* rest=Class<Array>::getInstanceS(getSystemState());
 		rest->resize(passedToRest);
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
@@ -458,14 +442,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cur_recursion++; //increment current recursion depth
 	Log::calls_indent++;
 
-	getVm()->stacktrace.push_back(std::pair<uint32_t,ASObject*>(this->functionname,obj));
+	getVm(getSystemState())->stacktrace.push_back(std::pair<uint32_t,ASObject*>(this->functionname,obj));
 	while (true)
 	{
 		try
 		{
-			if(mi->body->exceptions.size() || (val==NULL && getSys()->useInterpreter))
+			if(mi->body->exceptions.size() || (val==NULL && getSystemState()->useInterpreter))
 			{
-				if(codeStatus == method_body_info::OPTIMIZED && getSys()->useFastInterpreter)
+				if(codeStatus == method_body_info::OPTIMIZED && getSystemState()->useFastInterpreter)
 				{
 					//This is a mildy hot function, execute it using the fast interpreter
 					ret=ABCVm::executeFunctionFast(this,&cc,obj);
@@ -512,8 +496,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			{
 				cur_recursion--; //decrement current recursion depth
 				Log::calls_indent--;
-				getVm()->stacktrace.pop_back();
-				getVm()->currentCallContext = saved_cc;
+				getVm(getSystemState())->stacktrace.pop_back();
+				getVm(getSystemState())->currentCallContext = saved_cc;
 				throw;
 			}
 			continue;
@@ -521,15 +505,15 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		break;
 	}
 	cur_recursion--; //decrement current recursion depth
-	getVm()->stacktrace.pop_back();
+	getVm(getSystemState())->stacktrace.pop_back();
 	Log::calls_indent--;
-	getVm()->currentCallContext = saved_cc;
+	getVm(getSystemState())->currentCallContext = saved_cc;
 
 	this->decRef(); //free local ref
 	obj->decRef();
 
 	if(ret==NULL)
-		ret=getSys()->getUndefinedRef();
+		ret=obj->getSystemState()->getUndefinedRef();
 
 	return mi->returnType->coerce(ret);
 }
@@ -574,7 +558,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 		args[i]->decRef();
 	obj->decRef();
 	if(ret==NULL)
-		ret=getSys()->getUndefinedRef();
+		ret=getSystemState()->getUndefinedRef();
 	return ret;
 }
 bool Function::isEqual(ASObject* r)
@@ -691,7 +675,7 @@ void Null::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLO
 ASObject* Void::coerce(ASObject* o) const
 {
 	if(!o->is<Undefined>())
-		throw Class<TypeError>::getInstanceS("Trying to coerce o!=undefined to void");
+		throw Class<TypeError>::getInstanceS(o->getSystemState(),"Trying to coerce o!=undefined to void");
 	return o;
 }
 
@@ -755,23 +739,23 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 	if(!typeObject)
 	{
-		if (mn->ns.size() >= 1 && mn->ns[0].getImpl().name == "__AS3__.vec")
+		if (mn->ns.size() >= 1 && mn->ns[0].getImpl(context->root->getSystemState()).name == "__AS3__.vec")
 		{
-			QName qname(getSys()->getStringFromUniqueId(mn->name_s_id),mn->ns[0].getImpl().name);
-			typeObject = Template<Vector>::getTemplateInstance(qname,context,context->root->applicationDomain).getPtr();
+			QName qname(getSys()->getStringFromUniqueId(mn->name_s_id),mn->ns[0].getImpl(context->root->getSystemState()).name);
+			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 		}
 	}
 	return typeObject->as<Type>();
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass()),protected_ns("",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys())),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
 	borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns("",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
 	borrowedVariables(NULL),
 	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
@@ -818,7 +802,7 @@ void Class_base::initStandardProps()
 	constructorprop->incRef();
 	addConstructorGetter();
 	
-	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(Class_base::_toString),NORMAL_METHOD,false);
+	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 	incRef();
 	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
 
@@ -834,13 +818,13 @@ ASObject* Class_base::coerce(ASObject* o) const
 	if (o->is<Undefined>())
 	{
 		o->decRef();
-		return getSys()->getNullRef();
+		return o->getSystemState()->getNullRef();
 	}
 	if(o->is<Null>())
 		return o;
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */
-		if(this == Class<ASObject>::getClass()
+		if(this == Class<ASObject>::getClass(o->getSystemState())
 		|| (class_name.name=="Class" && class_name.ns==""))
 			return o; /* 'this' is the type of a class */
 		else
@@ -871,22 +855,22 @@ ASFUNCTIONBODY(Class_base,_toString)
 	ret = "[class ";
 	ret += th->class_name.name;
 	ret += "]";
-	return abstract_s(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 
 void Class_base::addConstructorGetter()
 {
-	setDeclaredMethodByQName("constructor","",Class<IFunction>::getFunction(_getter_constructorprop),GETTER_METHOD,false);
+	setDeclaredMethodByQName("constructor","",Class<IFunction>::getFunction(getSystemState(),_getter_constructorprop),GETTER_METHOD,false);
 }
 
 void Class_base::addPrototypeGetter()
 {
-	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(_getter_prototype),GETTER_METHOD,false);
+	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(getSystemState(),_getter_prototype),GETTER_METHOD,false);
 }
 
 void Class_base::addLengthGetter()
 {
-	setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getter_length),GETTER_METHOD,false);
+	setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(getSystemState(),_getter_length),GETTER_METHOD,false);
 }
 
 Class_base::~Class_base()
@@ -903,7 +887,7 @@ ASObject* Class_base::_getter_constructorprop(ASObject* obj, ASObject* const* ar
 	else
 		th = obj->getClass();
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS("Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter");
 	ASObject* ret=th->constructorprop.getPtr();
 	ret->incRef();
 	return ret;
@@ -912,10 +896,10 @@ ASObject* Class_base::_getter_constructorprop(ASObject* obj, ASObject* const* ar
 ASObject* Class_base::_getter_prototype(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 {
 	if(!obj->is<Class_base>())
-		throw Class<ArgumentError>::getInstanceS("Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object");
 	Class_base* th = obj->as<Class_base>();
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS("Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter");
 	ASObject* ret=th->prototype->getObj();
 	ret->incRef();
 	return ret;
@@ -1035,7 +1019,7 @@ void Class_base::finalize()
 	borrowedVariables.destroyContents();
 	super.reset();
 	prototype.reset();
-	protected_ns = nsNameAndKind("",NAMESPACE);
+	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
 	constructor = NULL;
 	context = NULL;
 	length = 1;
@@ -1052,18 +1036,19 @@ Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),templat
 	type = T_TEMPLATE;
 }
 
-Class_object* Class_object::getClass()
+Class_object* Class_object::getClass(SystemState *sys)
 {
 	//We check if we are registered already
 	//if not we register ourselves (see also Class<T>::getClass)
 	//Class object position in the map is hardwired to 0
 	uint32_t classId=0;
 	Class_object* ret=NULL;
-	Class_base** retAddr=&getSys()->builtinClasses[classId];
+	Class_base** retAddr=&sys->builtinClasses[classId];
 	if(*retAddr==NULL)
 	{
 		//Create the class
-		ret=new (getSys()->unaccountedMemory) Class_object();
+		ret=new (sys->unaccountedMemory) Class_object();
+		ret->setSystemState(sys);
 		ret->incRef();
 		*retAddr=ret;
 	}
@@ -1071,20 +1056,6 @@ Class_object* Class_object::getClass()
 		ret=static_cast<Class_object*>(*retAddr);
 
 	return ret;
-}
-
-_R<Class_object> Class_object::getRef()
-{
-	Class_object* ret = getClass();
-	ret->incRef();
-	return _MR(ret);
-}
-
-void Class_object::finalize()
-{
-	//Remove the cyclic reference to itself
-	setClass(NULL);
-	Class_base::finalize();
 }
 
 const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) const
@@ -1153,7 +1124,7 @@ void Class_base::linkInterface(Class_base* c) const
 bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) const
 {
 	check();
-	if(cls==this || cls==Class<ASObject>::getClass())
+	if(cls==this || cls==Class<ASObject>::getClass(cls->getSystemState()))
 		return true;
 
 	//Now check the interfaces
@@ -1184,7 +1155,7 @@ tiny_string Class_base::getQualifiedClassName() const
 		int name_index=context->instances[class_index].name;
 		assert_and_throw(name_index);
 		const multiname* mname=context->getMultiname(name_index,NULL);
-		return mname->qualifiedString();
+		return mname->qualifiedString(getSystemState());
 	}
 }
 
@@ -1289,7 +1260,7 @@ void Class_base::describeVariables(pugi::xml_node& root,const Class_base* c, std
 			default:
 				continue;
 		}
-		tiny_string name = getSys()->getStringFromUniqueId(it->first.nameId);
+		tiny_string name = getSystemState()->getStringFromUniqueId(it->first.nameId);
 		auto existing=instanceNodes.find(name);
 		if(existing != instanceNodes.cend())
 			continue;
@@ -1311,7 +1282,7 @@ void Class_base::describeTraits(pugi::xml_node &root,
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && (!mname->ns[0].hasEmptyName() || mname->ns[0].getImpl().kind == PRIVATE_NAMESPACE)) ||
+		    (mname->ns.size()==1 && (!mname->ns[0].hasEmptyName() || mname->ns[0].getImpl(getSystemState()).kind == PRIVATE_NAMESPACE)) ||
 		    mname->ns.size() > 1)
 			continue;
 		
@@ -1320,20 +1291,20 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			multiname* type=context->getMultiname(t.type_name,NULL);
 			const char *nodename=kind==traits_info::Const?"constant":"variable";
 			pugi::xml_node node=root.append_child(nodename);
-			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
-			node.append_attribute("type").set_value(type->qualifiedString().raw_buf());
+			node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node.append_attribute("type").set_value(type->qualifiedString(getSystemState()).raw_buf());
 
 			describeMetadata(node, t);
 		}
 		else if (kind==traits_info::Method)
 		{
 			pugi::xml_node node=root.append_child("method");
-			node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+			node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
 
 			method_info& method=context->methods[t.method];
 			const multiname* rtname=method.returnTypeName();
-			node.append_attribute("returnType").set_value(rtname->qualifiedString().raw_buf());
+			node.append_attribute("returnType").set_value(rtname->qualifiedString(getSystemState()).raw_buf());
 
 			assert(method.numArgs() >= method.numOptions());
 			uint32_t firstOpt=method.numArgs() - method.numOptions();
@@ -1341,7 +1312,7 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			{
 				pugi::xml_node param=node.append_child("parameter");
 				param.append_attribute("index").set_value(UInteger::toString(j+1).raw_buf());
-				param.append_attribute("type").set_value(method.paramTypeName(j)->qualifiedString().raw_buf());
+				param.append_attribute("type").set_value(method.paramTypeName(j)->qualifiedString(getSystemState()).raw_buf());
 				param.append_attribute("optional").set_value(j>=firstOpt?"true":"false");
 			}
 
@@ -1359,7 +1330,7 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			if(existing==accessorNodes.end())
 			{
 				node=root.append_child("accessor");
-				node.append_attribute("name").set_value(getSys()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+				node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
 			}
 			else
 			{
@@ -1386,11 +1357,11 @@ void Class_base::describeTraits(pugi::xml_node &root,
 			if(kind==traits_info::Getter)
 			{
 				const multiname* rtname=method.returnTypeName();
-				type=rtname->qualifiedString();
+				type=rtname->qualifiedString(getSystemState());
 			}
 			else if(method.numArgs()>0) // setter
 			{
-				type=method.paramTypeName(0)->qualifiedString();
+				type=method.paramTypeName(0)->qualifiedString(getSystemState());
 			}
 			if(!type.empty())
 			{
@@ -1441,14 +1412,14 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
 	}
 	if(baseNs==NULL)
-		protected_ns=nsNameAndKind(name,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),name,(NS_KIND)(int)ns.kind);
 	else
-		protected_ns=nsNameAndKind(name,baseNs->nsId,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),name,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
 {
-	return ASObject::findSettableImpl(borrowedVariables,name,has_getter);
+	return ASObject::findSettableImpl(getSystemState(),borrowedVariables,name,has_getter);
 }
 
 variable* Class_base::findSettableInPrototype(const multiname& name)
@@ -1488,9 +1459,9 @@ void ASQName::setByXML(XML* node)
 void ASQName::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(_getLocalName),GETTER_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_getURI),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(c->getSystemState(),_getLocalName),GETTER_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY(ASQName,_constructor)
@@ -1505,7 +1476,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	{
 		th->local_name="";
 		th->uri_is_null=false;
-		th->uri=getVm()->getDefaultXMLNamespace();
+		th->uri=getVm(obj->getSystemState())->getDefaultXMLNamespace();
 		return NULL;
 	}
 	if(argslen==1)
@@ -1547,7 +1518,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 		}
 		else
 		{
-			th->uri=getVm()->getDefaultXMLNamespace();
+			th->uri=getVm(obj->getSystemState())->getDefaultXMLNamespace();
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)
@@ -1571,7 +1542,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 }
 ASFUNCTIONBODY(ASQName,generator)
 {
-	ASQName* th=Class<ASQName>::getInstanceS();
+	ASQName* th=Class<ASQName>::getInstanceS(getSys());
 	assert_and_throw(argslen<3);
 
 	ASObject *nameval;
@@ -1581,7 +1552,7 @@ ASFUNCTIONBODY(ASQName,generator)
 	{
 		th->local_name="";
 		th->uri_is_null=false;
-		th->uri=getVm()->getDefaultXMLNamespace();
+		th->uri=getVm(getSys())->getDefaultXMLNamespace();
 		return th;
 	}
 	if(argslen==1)
@@ -1623,7 +1594,7 @@ ASFUNCTIONBODY(ASQName,generator)
 		}
 		else
 		{
-			th->uri=getVm()->getDefaultXMLNamespace();
+			th->uri=getVm(getSys())->getDefaultXMLNamespace();
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)
@@ -1649,23 +1620,23 @@ ASFUNCTIONBODY(ASQName,_getURI)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
 	if(th->uri_is_null)
-		return getSys()->getNullRef();
+		return obj->getSystemState()->getNullRef();
 	else
-		return abstract_s(th->uri);
+		return abstract_s(obj->getSystemState(),th->uri);
 }
 
 ASFUNCTIONBODY(ASQName,_getLocalName)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
-	return abstract_s(th->local_name);
+	return abstract_s(obj->getSystemState(),th->local_name);
 }
 
 ASFUNCTIONBODY(ASQName,_toString)
 {
 	if(!obj->is<ASQName>())
-		throw Class<TypeError>::getInstanceS("QName.toString is not generic");
+		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"QName.toString is not generic");
 	ASQName* th=static_cast<ASQName*>(obj);
-	return abstract_s(th->toString());
+	return abstract_s(obj->getSystemState(),th->toString());
 }
 
 bool ASQName::isEqual(ASObject* o)
@@ -1713,9 +1684,9 @@ _R<ASObject> ASQName::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(abstract_s("uri"));
+			return _MR(abstract_s(getSystemState(),"uri"));
 		case 2:
-			return _MR(abstract_s("localName"));
+			return _MR(abstract_s(getSystemState(),"localName"));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1728,11 +1699,11 @@ _R<ASObject> ASQName::nextValue(uint32_t index)
 	{
 		case 1:
 			if (uri_is_null)
-				return _MR(getSys()->getNullRef());
+				return _MR(getSystemState()->getNullRef());
 			else
-				return _MR(abstract_s(this->uri));
+				return _MR(abstract_s(getSystemState(),this->uri));
 		case 2:
-			return _MR(abstract_s(this->local_name));
+			return _MR(abstract_s(getSystemState(),this->local_name));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1754,13 +1725,13 @@ Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& 
 void Namespace::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	//c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_setURI),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(_getURI),GETTER_METHOD,true);
-	//c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_setPrefix),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(_getPrefix),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(_valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(_ECMA_valueOf),DYNAMIC_TRAIT);
+	//c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_setURI),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_getURI),GETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(c->getSystemState(),_setPrefix),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(c->getSystemState(),_getPrefix),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_ECMA_valueOf),DYNAMIC_TRAIT);
 }
 
 void Namespace::buildTraits(ASObject* o)
@@ -1837,7 +1808,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 			   prefixval->toString()=="")
 				th->prefix="";
 			else
-				throw Class<TypeError>::getInstanceS("Namespace prefix for empty uri not allowed");
+				throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace prefix for empty uri not allowed");
 		}
 		else if(prefixval->getObjectType()==T_UNDEFINED ||
 			!isXMLName(prefixval))
@@ -1855,7 +1826,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 }
 ASFUNCTIONBODY(Namespace,generator)
 {
-	Namespace* th=Class<Namespace>::getInstanceS();
+	Namespace* th=Class<Namespace>::getInstanceS(getSys());
 	ASObject *urival;
 	ASObject *prefixval;
 	assert_and_throw(argslen<3);
@@ -1925,7 +1896,7 @@ ASFUNCTIONBODY(Namespace,generator)
 			   prefixval->toString()=="")
 				th->prefix="";
 			else
-				throw Class<TypeError>::getInstanceS("Namespace prefix for empty uri not allowed");
+				throw Class<TypeError>::getInstanceS(getSys(),"Namespace prefix for empty uri not allowed");
 		}
 		else if(prefixval->getObjectType()==T_UNDEFINED ||
 			!isXMLName(prefixval))
@@ -1951,7 +1922,7 @@ ASFUNCTIONBODY(Namespace,_setURI)
 ASFUNCTIONBODY(Namespace,_getURI)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(th->uri);
+	return abstract_s(obj->getSystemState(),th->uri);
 }
 /*
 ASFUNCTIONBODY(Namespace,_setPrefix)
@@ -1974,30 +1945,30 @@ ASFUNCTIONBODY(Namespace,_getPrefix)
 {
 	Namespace* th=static_cast<Namespace*>(obj);
 	if(th->prefix_is_undefined)
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	else
-		return abstract_s(th->prefix);
+		return abstract_s(obj->getSystemState(),th->prefix);
 }
 
 ASFUNCTIONBODY(Namespace,_toString)
 {
 	if(!obj->is<Namespace>())
-		throw Class<TypeError>::getInstanceS("Namespace.toString is not generic");
+		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace.toString is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(th->uri);
+	return abstract_s(obj->getSystemState(),th->uri);
 }
 
 ASFUNCTIONBODY(Namespace,_valueOf)
 {
-	return abstract_s(obj->as<Namespace>()->uri);
+	return abstract_s(obj->getSystemState(),obj->as<Namespace>()->uri);
 }
 
 ASFUNCTIONBODY(Namespace,_ECMA_valueOf)
 {
 	if(!obj->is<Namespace>())
-		throw Class<TypeError>::getInstanceS("Namespace.valueOf is not generic");
+		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace.valueOf is not generic");
 	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(th->uri);
+	return abstract_s(obj->getSystemState(),th->uri);
 }
 
 bool Namespace::isEqual(ASObject* o)
@@ -2034,9 +2005,9 @@ _R<ASObject> Namespace::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(abstract_s("uri"));
+			return _MR(abstract_s(getSystemState(),"uri"));
 		case 2:
-			return _MR(abstract_s("prefix"));
+			return _MR(abstract_s(getSystemState(),"prefix"));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -2048,12 +2019,12 @@ _R<ASObject> Namespace::nextValue(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return _MR(abstract_s(this->uri));
+			return _MR(abstract_s(getSystemState(),this->uri));
 		case 2:
 			if(prefix_is_undefined)
-				return _MR(getSys()->getUndefinedRef());
+				return _MR(getSystemState()->getUndefinedRef());
 			else
-				return _MR(abstract_s(this->prefix));
+				return _MR(abstract_s(getSystemState(),this->prefix));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -2061,14 +2032,14 @@ _R<ASObject> Namespace::nextValue(uint32_t index)
 
 ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 {
-	return getSys()->getUndefinedRef();
+	return obj->getSystemState()->getUndefinedRef();
 }
 
 IFunction* Class<IFunction>::getNopFunction()
 {
 	IFunction* ret=new (this->memoryAccount) Function(this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
-	ret->prototype = _MR(new_asobject());
+	ret->prototype = _MR(new_asobject(ret->getSystemState()));
 	return ret;
 }
 
@@ -2082,21 +2053,23 @@ ASObject* Class<IFunction>::getInstance(bool construct, ASObject* const* args, c
 	return ret;
 }
 
-Class<IFunction>* Class<IFunction>::getClass()
+Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 {
 	uint32_t classId=ClassName<IFunction>::id;
 	Class<IFunction>* ret=NULL;
-	Class_base** retAddr=&getSys()->builtinClasses[classId];
+	SystemState* s = sys ? sys : getSys();
+	Class_base** retAddr=&s->builtinClasses[classId];
 	if(*retAddr==NULL)
 	{
 		//Create the class
-		MemoryAccount* memoryAccount = getSys()->allocateMemoryAccount(ClassName<IFunction>::name);
-		ret=new (getSys()->unaccountedMemory) Class<IFunction>(memoryAccount);
+		MemoryAccount* memoryAccount = s->allocateMemoryAccount(ClassName<IFunction>::name);
+		ret=new (s->unaccountedMemory) Class<IFunction>(memoryAccount);
+		ret->setSystemState(s);
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
 		//declared methods yet! Therefore, set super will not copy
 		//up any borrowed traits from there. We do that by ourself.
-		ret->setSuper(Class<ASObject>::getRef());
+		ret->setSuper(Class<ASObject>::getRef(s));
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
 		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
 		ret->incRef();
@@ -2115,8 +2088,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 
 		ret->addConstructorGetter();
 
-		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_getter_prototype),GETTER_METHOD,true);
-		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(IFunction::_setter_prototype),SETTER_METHOD,true);
+		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(ret->getSystemState(),IFunction::_getter_prototype),GETTER_METHOD,true);
+		ret->setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(ret->getSystemState(),IFunction::_setter_prototype),SETTER_METHOD,true);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(*retAddr);
@@ -2131,7 +2104,7 @@ Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb),scriptId(s),co
 
 void Global::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef());
+	c->setSuper(Class<ASObject>::getRef(c->getSystemState()));
 }
 
 _NR<ASObject> Global::getVariableByMultinameOpportunistic(const multiname& name)
@@ -2158,14 +2131,14 @@ _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 {
 	o->incRef();
-	setVariableByQName(name,nsNameAndKind(ns,NAMESPACE),o.getPtr(),DECLARED_TRAIT);
+	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,NAMESPACE),o.getPtr(),DECLARED_TRAIT);
 	//setVariableByQName(name,nsNameAndKind(ns,PACKAGE_NAMESPACE),o.getPtr(),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY(lightspark,eval)
 {
     // eval is not allowed in AS3, but an exception should be thrown
-	throw Class<EvalError>::getInstanceS("EvalError");
+	throw Class<EvalError>::getInstanceS(getSys(),"EvalError");
 }
 
 ASFUNCTIONBODY(lightspark,parseInt)
@@ -2175,19 +2148,19 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	ARG_UNPACK (str, "") (radix, 0);
 
 	if(radix != 0 && (radix < 2 || radix > 36))
-		return abstract_d(numeric_limits<double>::quiet_NaN());
+		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
 
 	const char* cur=str.raw_buf();
 	int64_t ret;
 	bool valid=Integer::fromStringFlashCompatible(cur,ret,radix);
 
 	if(valid==false)
-		return abstract_d(numeric_limits<double>::quiet_NaN());
+		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
 	if(ret==INT64_MAX)
-		return abstract_d(numeric_limits<double>::infinity());
+		return abstract_d(obj->getSystemState(),numeric_limits<double>::infinity());
 	if(ret==INT64_MIN)
-		return abstract_d(-numeric_limits<double>::infinity());
-	return abstract_d(ret);
+		return abstract_d(obj->getSystemState(),-numeric_limits<double>::infinity());
+	return abstract_d(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
@@ -2207,61 +2180,61 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	double d=strtod(p, &end);
 
 	if (end==p)
-		return abstract_d(numeric_limits<double>::quiet_NaN());
+		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
 
-	return abstract_d(d);
+	return abstract_d(obj->getSystemState(),d);
 }
 
 ASFUNCTIONBODY(lightspark,isNaN)
 {
 	if(argslen==0)
-		return abstract_b(true);
+		return abstract_b(getSys(),true);
 	else if(args[0]->getObjectType()==T_UNDEFINED)
-		return abstract_b(true);
+		return abstract_b(args[0]->getSystemState(),true);
 	else if(args[0]->getObjectType()==T_INTEGER)
-		return abstract_b(false);
+		return abstract_b(args[0]->getSystemState(),false);
 	else if(args[0]->getObjectType()==T_BOOLEAN)
-		return abstract_b(false);
+		return abstract_b(args[0]->getSystemState(),false);
 	else if(args[0]->getObjectType()==T_NULL)
-		return abstract_b(false); // because Number(null) == 0
+		return abstract_b(args[0]->getSystemState(),false); // because Number(null) == 0
 	else
-		return abstract_b(std::isnan(args[0]->toNumber()));
+		return abstract_b(args[0]->getSystemState(),std::isnan(args[0]->toNumber()));
 }
 
 ASFUNCTIONBODY(lightspark,isFinite)
 {
 	if(argslen==0)
-		return abstract_b(false);
+		return abstract_b(getSys(),false);
 	else
-		return abstract_b(isfinite(args[0]->toNumber()));
+		return abstract_b(args[0]->getSystemState(),isfinite(args[0]->toNumber()));
 }
 
 ASFUNCTIONBODY(lightspark,encodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_URI));
+	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_URI));
+	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_URI));
 }
 
 ASFUNCTIONBODY(lightspark,encodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
+	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,decodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
-	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
+	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
 }
 
 ASFUNCTIONBODY(lightspark,escape)
@@ -2269,8 +2242,8 @@ ASFUNCTIONBODY(lightspark,escape)
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
 	if (argslen > 0 && args[0]->is<Undefined>())
-		return abstract_s("null");
-	return abstract_s(URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+		return abstract_s(getSys(),"null");
+	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,unescape)
@@ -2278,8 +2251,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 	tiny_string str;
 	ARG_UNPACK (str, "undefined");
 	if (argslen > 0 && args[0]->is<Undefined>())
-		return abstract_s("null");
-	return abstract_s(URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+		return abstract_s(getSys(),"null");
+	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
 }
 
 ASFUNCTIONBODY(lightspark,print)
@@ -2511,9 +2484,9 @@ ASFUNCTIONBODY(lightspark,_isXMLName)
 {
 	assert_and_throw(argslen <= 1);
 	if(argslen==0)
-		return abstract_b(false);
+		return abstract_b(getSys(),false);
 
-	return abstract_b(isXMLName(args[0]));
+	return abstract_b(args[0]->getSystemState(),isXMLName(args[0]));
 }
 
 ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
@@ -2529,11 +2502,6 @@ bool ObjectPrototype::isEqual(ASObject* r)
 		return this->getClass() == r->getClass();
 	return ASObject::isEqual(r);
 }
-void ObjectPrototype::finalize()
-{
-	ASObject::finalize();
-	prevPrototype.reset();
-}
 
 _NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
@@ -2547,27 +2515,27 @@ _NR<ASObject> ObjectPrototype::getVariableByMultiname(const multiname& name, GET
 void ObjectPrototype::setVariableByMultiname(const multiname &name, ASObject *o, ASObject::CONST_ALLOWED_FLAG allowConst)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
-		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(), "");
+		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(o->getSystemState()), "");
 	ASObject::setVariableByMultiname(name, o, allowConst);
 }
 
 
 ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c),_length(length)
 {
-	Class<ASObject>::getRef()->prototype->incRef();
-	this->prototype = Class<ASObject>::getRef()->prototype.getPtr();
+	Class<ASObject>::getRef(c->getSystemState())->prototype->incRef();
+	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
 }
 
 _NR<ASObject> ObjectConstructor::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if (name.normalizedName() == "prototype")
+	if (name.normalizedName(getSystemState()) == "prototype")
 	{
 		prototype->getObj()->incRef();
 		return _NR<ASObject>(prototype->getObj());
 	}
-	if (name.normalizedName() == "length")
+	if (name.normalizedName(getSystemState()) == "length")
 	{
-		return _NR<ASObject>(abstract_d(_length));
+		return _NR<ASObject>(abstract_d(getSystemState(),_length));
 	}
 	return getClass()->getVariableByMultiname(name, opt);
 }
@@ -2580,13 +2548,7 @@ FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function
 {
 	prevPrototype=p;
 	//Add the prototype to the Nop function
-	this->prototype = _MR(new_asobject());
-}
-
-void FunctionPrototype::finalize()
-{
-	Function::finalize();
-	prevPrototype.reset();
+	this->prototype = _MR(new_asobject(c->getSystemState()));
 }
 
 _NR<ASObject> FunctionPrototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
@@ -2603,12 +2565,6 @@ Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), f
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
-}
-
-void Function_object::finalize()
-{
-	functionPrototype.reset();
-	ASObject::finalize();
 }
 
 _NR<ASObject> Function_object::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
@@ -2630,7 +2586,7 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 		multiname* mname=mi->context->getMultiname(t->name,NULL);
 		std::cerr << "\t in " << *mname << std::endl;
 		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
-		if(mname->name_s_id!=name.normalizedNameId())
+		if(mname->name_s_id!=name.normalizedNameId(mi->context->root->getSystemState()))
 			continue;
 		if(find(name.ns.begin(),name.ns.end(),mname->ns[0])==name.ns.end())
 			continue;

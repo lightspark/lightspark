@@ -79,6 +79,7 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_LZMA_COMPRESSED_SWF
 
 typedef double number_t;
 
+class SystemState;
 class ASObject;
 class ASString;
 class ABCContext;
@@ -312,14 +313,14 @@ struct nsNameAndKind
 	uint32_t nsId;
 	uint32_t nsRealId;
 	bool nameIsEmpty;
-	nsNameAndKind(const tiny_string& _name, NS_KIND _kind);
-	nsNameAndKind(const char* _name, NS_KIND _kind);
+	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
 	nsNameAndKind(ABCContext * c, uint32_t nsContextIndex);
 	/*
 	 * Special constructor for protected namespace, which have
 	 * different representationId
 	 */
-	nsNameAndKind(const tiny_string& _name, uint32_t _baseId, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys,const tiny_string& _name, uint32_t _baseId, NS_KIND _kind);
 	/*
 	 * Special version to create the empty bultin namespace
 	 */
@@ -339,7 +340,7 @@ struct nsNameAndKind
 	{
 		return nsId==r.nsId;
 	}
-	const nsNameAndKindImpl& getImpl() const;
+	const nsNameAndKindImpl& getImpl(SystemState *sys) const;
 	bool hasEmptyName() const
 	{
 		return nameIsEmpty;
@@ -366,24 +367,24 @@ struct multiname: public memory_reporter
 	/*
 		Returns a string name whatever is the name type
 	*/
-	const tiny_string normalizedName() const;
+	const tiny_string normalizedName(SystemState *sys) const;
 	/*
 	 * 	Return a string id whatever is the name type
 	 */
-	uint32_t normalizedNameId() const;
+	uint32_t normalizedNameId(SystemState *sys) const;
 	/*
 		Returns a string name whatever is the name type, but does not resolve NAME_OBJECT names
 		this should be used for exception or debug messages to avoid calling 
 		overridden toString property of the object
 	*/
-	const tiny_string normalizedNameUnresolved() const;
+	const tiny_string normalizedNameUnresolved(SystemState *sys) const;
 
-	const tiny_string qualifiedString() const;
+	const tiny_string qualifiedString(SystemState *sys) const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);
 	void resetNameIfObject();
 	bool isQName() const { return ns.size() == 1; }
-	bool toUInt(uint32_t& out, bool acceptStringFractions=false) const;
+	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false) const;
 	bool isEmpty() const { return name_type == NAME_OBJECT && name_o == NULL;}
 };
 
@@ -1330,13 +1331,13 @@ public:
 	RunState();
 };
 
-ASObject* abstract_i(int32_t i);
-ASObject* abstract_ui(uint32_t i);
-ASObject* abstract_d(number_t i);
-ASString* abstract_s();
-ASString* abstract_s(const char* s, uint32_t len);
-ASString* abstract_s(const char* s);
-ASString* abstract_s(const tiny_string& s);
+ASObject* abstract_i(SystemState *sys, int32_t i);
+ASObject* abstract_ui(SystemState *sys, uint32_t i);
+ASObject* abstract_d(SystemState *sys, number_t i);
+ASString* abstract_s(SystemState *sys);
+ASString* abstract_s(SystemState *sys, const char* s, uint32_t len);
+ASString* abstract_s(SystemState *sys, const char* s);
+ASString* abstract_s(SystemState *sys, const tiny_string& s);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 

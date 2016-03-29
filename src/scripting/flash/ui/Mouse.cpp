@@ -30,12 +30,12 @@ using namespace lightspark;
 void Mouse::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(hide),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(show),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(getCursor),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(setCursor),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(getSupportsCursor),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(getSupportsNativeCursor),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(c->getSystemState(),hide),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(c->getSystemState(),show),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),getCursor),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),setCursor),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsCursor),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsNativeCursor),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY(Mouse, hide)
@@ -52,7 +52,7 @@ ASFUNCTIONBODY(Mouse, show)
 
 ASFUNCTIONBODY(Mouse, getCursor)
 {
-	return Class<ASString>::getInstanceS("auto");
+	return abstract_s(getSys(),"auto");
 }
 
 ASFUNCTIONBODY(Mouse, setCursor)
@@ -66,10 +66,10 @@ ASFUNCTIONBODY(Mouse, setCursor)
 
 ASFUNCTIONBODY(Mouse, getSupportsCursor)
 {
-	return abstract_b(true);
+	return abstract_b(getSys(),true);
 }
 
 ASFUNCTIONBODY(Mouse, getSupportsNativeCursor)
 {
-	return abstract_b(false); // until registerCursor() is implemented
+	return abstract_b(getSys(),false); // until registerCursor() is implemented
 }

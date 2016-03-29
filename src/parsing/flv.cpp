@@ -96,7 +96,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 
 	if (dataSize > 0)
 	{
-		_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS());
+		_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getSys()));
 		uint8_t* data =b->getBuffer(dataSize,true);
 		s.read((char*)data,dataSize);
 		b->setObjectEncoding(ObjectEncoding::AMF0);

@@ -66,7 +66,7 @@ ASFUNCTIONBODY(AccessibilityImplementation,_constructor)
 void Accessibility::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL);
-	c->setVariableByQName("active","",abstract_b(false),CONSTANT_TRAIT);
+	c->setVariableByQName("active","",abstract_b(c->getSystemState(),false),CONSTANT_TRAIT);
 }
 
 ASFUNCTIONBODY(Accessibility,updateProperties)

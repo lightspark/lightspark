@@ -27,12 +27,12 @@ using namespace lightspark;
 void BitmapFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 }
 
 BitmapFilter* BitmapFilter::cloneImpl() const
 {
-	return Class<BitmapFilter>::getInstanceS();
+	return Class<BitmapFilter>::getInstanceS(getSystemState());
 }
 
 ASFUNCTIONBODY(BitmapFilter,clone)
@@ -85,7 +85,7 @@ ASFUNCTIONBODY(GlowFilter, _constructor)
 
 BitmapFilter* GlowFilter::cloneImpl() const
 {
-	GlowFilter *cloned = Class<GlowFilter>::getInstanceS();
+	GlowFilter *cloned = Class<GlowFilter>::getInstanceS(getSystemState());
 	cloned->alpha = alpha;
 	cloned->blurX = blurX;
 	cloned->blurY = blurY;
@@ -151,7 +151,7 @@ ASFUNCTIONBODY(DropShadowFilter, _constructor)
 
 BitmapFilter* DropShadowFilter::cloneImpl() const
 {
-	DropShadowFilter *cloned = Class<DropShadowFilter>::getInstanceS();
+	DropShadowFilter *cloned = Class<DropShadowFilter>::getInstanceS(getSystemState());
 	cloned->alpha = alpha;
 	cloned->angle = angle;
 	cloned->blurX = blurX;
@@ -185,7 +185,7 @@ ASFUNCTIONBODY(GradientGlowFilter, _constructor)
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
 {
-	return Class<GradientGlowFilter>::getInstanceS();
+	return Class<GradientGlowFilter>::getInstanceS(getSystemState());
 }
 
 BevelFilter::BevelFilter(Class_base* c):
@@ -207,7 +207,7 @@ ASFUNCTIONBODY(BevelFilter, _constructor)
 
 BitmapFilter* BevelFilter::cloneImpl() const
 {
-	return Class<BevelFilter>::getInstanceS();
+	return Class<BevelFilter>::getInstanceS(getSystemState());
 }
 ColorMatrixFilter::ColorMatrixFilter(Class_base* c):
 	BitmapFilter(c),matrix(NULL)
@@ -231,7 +231,7 @@ ASFUNCTIONBODY(ColorMatrixFilter, _constructor)
 
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
 {
-	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS();
+	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS(getSystemState());
 	if (!matrix.isNull())
 	{
 		matrix->incRef();
@@ -258,7 +258,7 @@ ASFUNCTIONBODY(BlurFilter, _constructor)
 
 BitmapFilter* BlurFilter::cloneImpl() const
 {
-	return Class<BlurFilter>::getInstanceS();
+	return Class<BlurFilter>::getInstanceS(getSystemState());
 }
 
 ConvolutionFilter::ConvolutionFilter(Class_base* c):
@@ -280,7 +280,7 @@ ASFUNCTIONBODY(ConvolutionFilter, _constructor)
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
 {
-	return Class<ConvolutionFilter>::getInstanceS();
+	return Class<ConvolutionFilter>::getInstanceS(getSystemState());
 }
 
 DisplacementMapFilter::DisplacementMapFilter(Class_base* c):
@@ -302,7 +302,7 @@ ASFUNCTIONBODY(DisplacementMapFilter, _constructor)
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
 {
-	return Class<DisplacementMapFilter>::getInstanceS();
+	return Class<DisplacementMapFilter>::getInstanceS(getSystemState());
 }
 
 GradientBevelFilter::GradientBevelFilter(Class_base* c):
@@ -324,7 +324,7 @@ ASFUNCTIONBODY(GradientBevelFilter, _constructor)
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const
 {
-	return Class<GradientBevelFilter>::getInstanceS();
+	return Class<GradientBevelFilter>::getInstanceS(getSystemState());
 }
 
 ShaderFilter::ShaderFilter(Class_base* c):
@@ -346,13 +346,13 @@ ASFUNCTIONBODY(ShaderFilter, _constructor)
 
 BitmapFilter* ShaderFilter::cloneImpl() const
 {
-	return Class<ShaderFilter>::getInstanceS();
+	return Class<ShaderFilter>::getInstanceS(getSystemState());
 }
 
 void BitmapFilterQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("HIGH","",abstract_i(3),DECLARED_TRAIT);
-	c->setVariableByQName("LOW","",abstract_i(1),DECLARED_TRAIT);
-	c->setVariableByQName("MEDIUM","",abstract_i(3),DECLARED_TRAIT);
+	c->setVariableByQName("HIGH","",abstract_i(c->getSystemState(),3),DECLARED_TRAIT);
+	c->setVariableByQName("LOW","",abstract_i(c->getSystemState(),1),DECLARED_TRAIT);
+	c->setVariableByQName("MEDIUM","",abstract_i(c->getSystemState(),3),DECLARED_TRAIT);
 }

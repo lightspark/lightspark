@@ -29,12 +29,12 @@ NetStreamPlayTransitions::NetStreamPlayTransitions(Class_base* c):ASObject(c)
 void NetStreamPlayTransitions::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, NULL, CLASS_FINAL);
-	c->setVariableByQName("APPEND","",Class<ASString>::getInstanceS("append"),CONSTANT_TRAIT);
-	c->setVariableByQName("APPEND_AND_WAIT","",Class<ASString>::getInstanceS("appendAndWait"),CONSTANT_TRAIT);
-	c->setVariableByQName("RESET","",Class<ASString>::getInstanceS("reset"),CONSTANT_TRAIT);
-	c->setVariableByQName("RESUME","",Class<ASString>::getInstanceS("resume"),CONSTANT_TRAIT);
-	c->setVariableByQName("STOP","",Class<ASString>::getInstanceS("stop"),CONSTANT_TRAIT);
-	c->setVariableByQName("SWAP","",Class<ASString>::getInstanceS("swap"),CONSTANT_TRAIT);
-	c->setVariableByQName("SWITCH","",Class<ASString>::getInstanceS("switch"),CONSTANT_TRAIT);
+	c->setVariableByQName("APPEND","",abstract_s(c->getSystemState(),"append"),CONSTANT_TRAIT);
+	c->setVariableByQName("APPEND_AND_WAIT","",abstract_s(c->getSystemState(),"appendAndWait"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESET","",abstract_s(c->getSystemState(),"reset"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESUME","",abstract_s(c->getSystemState(),"resume"),CONSTANT_TRAIT);
+	c->setVariableByQName("STOP","",abstract_s(c->getSystemState(),"stop"),CONSTANT_TRAIT);
+	c->setVariableByQName("SWAP","",abstract_s(c->getSystemState(),"swap"),CONSTANT_TRAIT);
+	c->setVariableByQName("SWITCH","",abstract_s(c->getSystemState(),"switch"),CONSTANT_TRAIT);
 }
 

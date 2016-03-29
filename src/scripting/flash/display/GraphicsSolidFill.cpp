@@ -35,9 +35,9 @@ void GraphicsSolidFill::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, alpha);
 	REGISTER_GETTER_SETTER(c, color);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsFill>::getClass(c->getSystemState()));
 	IGraphicsFill::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 

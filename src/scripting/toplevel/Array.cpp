@@ -38,59 +38,59 @@ Array::Array(Class_base* c):ASObject(c),
 void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE),CONSTANT_TRAIT);
-	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING),CONSTANT_TRAIT);
-	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC),CONSTANT_TRAIT);
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
-	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT),CONSTANT_TRAIT);
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(c->getSystemState(),CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableByQName("DESCENDING","",abstract_d(c->getSystemState(),DESCENDING),CONSTANT_TRAIT);
+	c->setVariableByQName("NUMERIC","",abstract_d(c->getSystemState(),NUMERIC),CONSTANT_TRAIT);
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(c->getSystemState(),RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableByQName("UNIQUESORT","",abstract_d(c->getSystemState(),UNIQUESORT),CONSTANT_TRAIT);
 
 	// properties
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(_setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_setLength),SETTER_METHOD,true);
 
 	// public functions
-	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(every,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(join,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(_map,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(_push_as3,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(some,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(_sort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(splice,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(_toLocaleString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(unshift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("every",AS3,Class<IFunction>::getFunction(c->getSystemState(),every,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("filter",AS3,Class<IFunction>::getFunction(c->getSystemState(),filter,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("forEach",AS3,Class<IFunction>::getFunction(c->getSystemState(),forEach,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),indexOf,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("join",AS3,Class<IFunction>::getFunction(c->getSystemState(),join,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("map",AS3,Class<IFunction>::getFunction(c->getSystemState(),_map,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pop",AS3,Class<IFunction>::getFunction(c->getSystemState(),_pop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("push",AS3,Class<IFunction>::getFunction(c->getSystemState(),_push_as3,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("reverse",AS3,Class<IFunction>::getFunction(c->getSystemState(),_reverse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("shift",AS3,Class<IFunction>::getFunction(c->getSystemState(),shift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,Class<IFunction>::getFunction(c->getSystemState(),slice,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("some",AS3,Class<IFunction>::getFunction(c->getSystemState(),some,1),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sort",AS3,Class<IFunction>::getFunction(c->getSystemState(),_sort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sortOn",AS3,Class<IFunction>::getFunction(c->getSystemState(),sortOn),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toLocaleString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
 
-	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(_concat,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("every","",Class<IFunction>::getFunction(every,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("filter","",Class<IFunction>::getFunction(filter,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("forEach","",Class<IFunction>::getFunction(forEach,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("indexOf","",Class<IFunction>::getFunction(indexOf,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("lastIndexOf","",Class<IFunction>::getFunction(lastIndexOf,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("join","",Class<IFunction>::getFunction(join,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("map","",Class<IFunction>::getFunction(_map,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("filter","",Class<IFunction>::getFunction(c->getSystemState(),filter,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("forEach","",Class<IFunction>::getFunction(c->getSystemState(),forEach,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("indexOf","",Class<IFunction>::getFunction(c->getSystemState(),indexOf,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf","",Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("join","",Class<IFunction>::getFunction(c->getSystemState(),join,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("map","",Class<IFunction>::getFunction(c->getSystemState(),_map,1),DYNAMIC_TRAIT);
 	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
-	c->setDeclaredMethodByQName("pop","",Class<IFunction>::getFunction(_pop),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("push","",Class<IFunction>::getFunction(_push,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("reverse","",Class<IFunction>::getFunction(_reverse),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("shift","",Class<IFunction>::getFunction(shift),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(slice,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("some","",Class<IFunction>::getFunction(some,1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("sort","",Class<IFunction>::getFunction(_sort),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("sortOn","",Class<IFunction>::getFunction(sortOn),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("splice","",Class<IFunction>::getFunction(splice,2),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(_toLocaleString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(unshift),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("pop","",Class<IFunction>::getFunction(c->getSystemState(),_pop),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("pop","",Class<IFunction>::getFunction(c->getSystemState(),_pop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("push","",Class<IFunction>::getFunction(c->getSystemState(),_push,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("reverse","",Class<IFunction>::getFunction(c->getSystemState(),_reverse),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("shift","",Class<IFunction>::getFunction(c->getSystemState(),shift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice","",Class<IFunction>::getFunction(c->getSystemState(),slice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("some","",Class<IFunction>::getFunction(c->getSystemState(),some,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sort","",Class<IFunction>::getFunction(c->getSystemState(),_sort),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sortOn","",Class<IFunction>::getFunction(c->getSystemState(),sortOn),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("splice","",Class<IFunction>::getFunction(c->getSystemState(),splice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),_toLocaleString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(c->getSystemState(),unshift),DYNAMIC_TRAIT);
 }
 
 void Array::buildTraits(ASObject* o)
@@ -106,7 +106,7 @@ ASFUNCTIONBODY(Array,_constructor)
 
 ASFUNCTIONBODY(Array,generator)
 {
-	Array* th=Class<Array>::getInstanceS();
+	Array* th=Class<Array>::getInstanceS(getSys());
 	th->constructorImpl(args, argslen);
 	return th;
 }
@@ -136,7 +136,7 @@ void Array::constructorImpl(ASObject* const* args, const unsigned int argslen)
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
 	
 	// copy values into new array
 	ret->resize(th->size());
@@ -179,7 +179,7 @@ ASFUNCTIONBODY(Array,_concat)
 ASFUNCTIONBODY(Array,filter)
 {
 	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
 	_NR<IFunction> f;
 	ARG_UNPACK(f);
 	if (f.isNull())
@@ -197,8 +197,8 @@ ASFUNCTIONBODY(Array,filter)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(it->second.data_i);
-		params[1] = abstract_i(it->first);
+			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
 
@@ -207,7 +207,7 @@ ASFUNCTIONBODY(Array,filter)
 		origval->incRef();
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -232,7 +232,7 @@ ASFUNCTIONBODY(Array, some)
 	_NR<IFunction> f;
 	ARG_UNPACK(f);
 	if (f.isNull())
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 
 	ASObject* params[3];
 	ASObject *funcRet;
@@ -246,14 +246,14 @@ ASFUNCTIONBODY(Array, some)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(it->second.data_i);
-		params[1] = abstract_i(it->first);
+			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -269,7 +269,7 @@ ASFUNCTIONBODY(Array, some)
 			funcRet->decRef();
 		}
 	}
-	return abstract_b(false);
+	return abstract_b(obj->getSystemState(),false);
 }
 
 ASFUNCTIONBODY(Array, every)
@@ -278,7 +278,7 @@ ASFUNCTIONBODY(Array, every)
 	_NR<IFunction> f;
 	ARG_UNPACK(f);
 	if (f.isNull())
-		return abstract_b(true);
+		return abstract_b(obj->getSystemState(),true);
 
 	ASObject* params[3];
 	ASObject *funcRet;
@@ -292,14 +292,14 @@ ASFUNCTIONBODY(Array, every)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(it->second.data_i);
-		params[1] = abstract_i(it->first);
+			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(getSys()->getNullRef(), params, 3);
+			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -315,13 +315,13 @@ ASFUNCTIONBODY(Array, every)
 			funcRet->decRef();
 		}
 	}
-	return abstract_b(true);
+	return abstract_b(obj->getSystemState(),true);
 }
 
 ASFUNCTIONBODY(Array,_getLength)
 {
 	Array* th=static_cast<Array*>(obj);
-	return abstract_ui(th->size());
+	return abstract_ui(obj->getSystemState(),th->size());
 }
 
 ASFUNCTIONBODY(Array,_setLength)
@@ -354,25 +354,25 @@ ASFUNCTIONBODY(Array,forEach)
 		{
 			const data_slot& slot=th->data[i];
 			if(slot.type==DATA_INT)
-				params[0]=abstract_i(slot.data_i);
+				params[0]=abstract_i(obj->getSystemState(),slot.data_i);
 			else if(slot.type==DATA_OBJECT && slot.data)
 			{
 				params[0]=slot.data;
 				params[0]->incRef();
 			}
 			else
-				params[0]=getSys()->getUndefinedRef();
+				params[0]=obj->getSystemState()->getUndefinedRef();
 		}
 		else
 			continue;
-		params[1] = abstract_i(i);
+		params[1] = abstract_i(obj->getSystemState(),i);
 		params[2] = th;
 		th->incRef();
 
 		ASObject *funcret;
 		if( argslen == 1 )
 		{
-			funcret=f->call(getSys()->getNullRef(), params, 3);
+			funcret=f->call(obj->getSystemState()->getNullRef(), params, 3);
 		}
 		else
 		{
@@ -411,18 +411,18 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	int ret=-1;
 
 	if(argslen == 1 && th->data.empty())
-		return abstract_d(-1);
+		return abstract_d(obj->getSystemState(),-1);
 
 	size_t i = th->size()-1;
 
 	if(std::isnan(index))
-		return abstract_i(0);
+		return abstract_i(obj->getSystemState(),0);
 
 	int j = index; //Preserve sign
 	if(j < 0) //Negative offset, use it as offset from the end of the array
 	{
 		if((size_t)-j > th->size())
-			return abstract_i(-1);
+			return abstract_i(obj->getSystemState(),-1);
 		else
 			i = th->size()+j;
 	}
@@ -448,7 +448,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	}
 	while(i--);
 
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Array,shift)
@@ -463,28 +463,28 @@ ASFUNCTIONBODY(Array,shift)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=getSys()->getUniqueStringId("length");
-		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(res-1),CONST_NOT_ALLOWED);
-		return getSys()->getUndefinedRef();
+			obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res-1),CONST_NOT_ALLOWED);
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	if(!th->size())
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	ASObject* ret;
 	if(!th->data.count(0))
-		ret = getSys()->getUndefinedRef();
+		ret = obj->getSystemState()->getUndefinedRef();
 	else
 	{
 		if(th->data[0].type==DATA_OBJECT)
 			ret=th->data[0].data;
 		else
-			ret = abstract_i(th->data[0].data_i);
+			ret = abstract_i(obj->getSystemState(),th->data[0].data_i);
 	}
 	std::map<uint32_t,data_slot> tmp;
 	std::map<uint32_t,data_slot>::iterator it;
@@ -530,7 +530,7 @@ ASFUNCTIONBODY(Array,slice)
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
@@ -556,7 +556,7 @@ ASFUNCTIONBODY(Array,splice)
 	ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size());
 
 	int totalSize=th->size();
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
 
 	startIndex=th->capIndex(startIndex);
 
@@ -625,7 +625,7 @@ ASFUNCTIONBODY(Array,join)
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
-	return Class<ASString>::getInstanceS(ret);
+	return abstract_s(obj->getSystemState(),ret);
 }
 
 ASFUNCTIONBODY(Array,indexOf)
@@ -648,13 +648,13 @@ ASFUNCTIONBODY(Array,indexOf)
 		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && abstract_d(sl.data_i)->isEqualStrict(arg0.getPtr())))
+			(dtype == DATA_INT && abstract_d(obj->getSystemState(),sl.data_i)->isEqualStrict(arg0.getPtr())))
 		{
 			ret=it->first;
 			break;
 		}
 	}
-	return abstract_i(ret);
+	return abstract_i(obj->getSystemState(),ret);
 }
 
 
@@ -670,20 +670,20 @@ ASFUNCTIONBODY(Array,_pop)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=getSys()->getUniqueStringId("length");
-		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(res-1),CONST_NOT_ALLOWED);
-		return getSys()->getUndefinedRef();
+			obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res-1),CONST_NOT_ALLOWED);
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	uint32_t size =th->size();
 	if (size == 0)
-		return getSys()->getUndefinedRef();
+		return obj->getSystemState()->getUndefinedRef();
 	ASObject* ret;
 	
 	if (th->data.count(size-1))
@@ -691,11 +691,11 @@ ASFUNCTIONBODY(Array,_pop)
 		if(th->data[size-1].type==DATA_OBJECT)
 			ret=th->data[size-1].data;
 		else
-			ret = abstract_i(th->data[size-1].data_i);
+			ret = abstract_i(obj->getSystemState(),th->data[size-1].data_i);
 		th->data.erase(size-1);
 	}
 	else
-		ret = getSys()->getUndefinedRef();
+		ret = obj->getSystemState()->getUndefinedRef();
 
 	th->currentsize--;
 	return ret;
@@ -765,27 +765,27 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 {
 	ASObject* objs[2];
 	if(d1.type==DATA_INT)
-		objs[0]=abstract_i(d1.data_i);
+		objs[0]=abstract_i(comparator->getSystemState(),d1.data_i);
 	else if(d1.type==DATA_OBJECT && d1.data)
 	{
 		objs[0]=d1.data;
 		objs[0]->incRef();
 	}
 	else
-		objs[0]=getSys()->getUndefinedRef();
+		objs[0]=comparator->getSystemState()->getUndefinedRef();
 
 	if(d2.type==DATA_INT)
-		objs[1]=abstract_i(d2.data_i);
+		objs[1]=abstract_i(comparator->getSystemState(),d2.data_i);
 	else if(d2.type==DATA_OBJECT && d2.data)
 	{
 		objs[1]=d2.data;
 		objs[1]->incRef();
 	}
 	else
-		objs[1]=getSys()->getUndefinedRef();
+		objs[1]=comparator->getSystemState()->getUndefinedRef();
 
 	assert(comparator);
-	_NR<ASObject> ret=_MNR(comparator->call(getSys()->getNullRef(), objs, 2));
+	_NR<ASObject> ret=_MNR(comparator->call(comparator->getSystemState()->getNullRef(), objs, 2));
 	assert_and_throw(ret);
 	return (ret->toNumber()<0); //Less
 }
@@ -912,7 +912,7 @@ ASFUNCTIONBODY(Array,sortOn)
 		for(;it != obj->data.end();++it)
 		{
 			multiname sortfieldname(NULL);
-			sortfieldname.ns.push_back(nsNameAndKind("",NAMESPACE));
+			sortfieldname.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 			if (it->second.type == DATA_OBJECT)
 			{
 				sortfieldname.setName(it->second.data);
@@ -948,7 +948,7 @@ ASFUNCTIONBODY(Array,sortOn)
 	{
 		multiname sortfieldname(NULL);
 		sortfieldname.setName(args[0]);
-		sortfieldname.ns.push_back(nsNameAndKind("",NAMESPACE));
+		sortfieldname.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		sorton_field sf(sortfieldname);
 		if (argslen == 2)
 		{
@@ -998,14 +998,14 @@ ASFUNCTIONBODY(Array,unshift)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=getSys()->getUniqueStringId("length");
-		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
-		return getSys()->getUndefinedRef();
+		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	// Derived classes may be sealed!
@@ -1029,7 +1029,7 @@ ASFUNCTIONBODY(Array,unshift)
 		th->data.clear();
 		th->data.insert(tmp.begin(),tmp.end());
 	}
-	return abstract_i(th->size());
+	return abstract_i(obj->getSystemState(),th->size());
 }
 
 ASFUNCTIONBODY(Array,_push)
@@ -1044,14 +1044,14 @@ ASFUNCTIONBODY(Array,_push)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=getSys()->getUniqueStringId("length");
-		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
-		return getSys()->getUndefinedRef();
+		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
@@ -1059,7 +1059,7 @@ ASFUNCTIONBODY(Array,_push)
 		args[i]->incRef();
 		th->push(_MR(args[i]));
 	}
-	return abstract_i(th->size());
+	return abstract_i(obj->getSystemState(),th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
 ASFUNCTIONBODY(Array,_push_as3)
@@ -1074,14 +1074,14 @@ ASFUNCTIONBODY(Array,_push_as3)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=getSys()->getUniqueStringId("length");
-		lengthName.ns.push_back(nsNameAndKind("",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(AS3,NAMESPACE));
+		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
 		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
 		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(res+argslen),CONST_NOT_ALLOWED);
-		return getSys()->getUndefinedRef();
+		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
+		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
@@ -1091,7 +1091,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		args[i]->incRef();
 		th->push(_MR(args[i]));
 	}
-	return abstract_i(th->size());
+	return abstract_i(obj->getSystemState(),th->size());
 }
 
 ASFUNCTIONBODY(Array,_map)
@@ -1106,7 +1106,7 @@ ASFUNCTIONBODY(Array,_map)
 		assert_and_throw(args[0]->getObjectType()==T_FUNCTION);
 		func=static_cast<IFunction*>(args[0]);
 	}
-	Array* arrayRet=Class<Array>::getInstanceS();
+	Array* arrayRet=Class<Array>::getInstanceS(obj->getSystemState());
 
 	uint32_t s = th->size();
 	for (uint32_t i=0; i < s; i++ )
@@ -1116,18 +1116,18 @@ ASFUNCTIONBODY(Array,_map)
 		{
 			const data_slot& slot=th->data[i];
 			if(slot.type==DATA_INT)
-				funcArgs[0]=abstract_i(slot.data_i);
+				funcArgs[0]=abstract_i(obj->getSystemState(),slot.data_i);
 			else if(slot.type==DATA_OBJECT && slot.data)
 			{
 				funcArgs[0]=slot.data;
 				funcArgs[0]->incRef();
 			}
 			else
-				funcArgs[0]=getSys()->getUndefinedRef();
+				funcArgs[0]=obj->getSystemState()->getUndefinedRef();
 		}
 		else
-			funcArgs[0]=getSys()->getUndefinedRef();
-		funcArgs[1]=abstract_i(i);
+			funcArgs[0]=obj->getSystemState()->getUndefinedRef();
+		funcArgs[1]=abstract_i(obj->getSystemState(),i);
 		funcArgs[2]=th;
 		funcArgs[2]->incRef();
 		ASObject* funcRet= NULL;
@@ -1135,7 +1135,7 @@ ASFUNCTIONBODY(Array,_map)
 		{
 			if (argslen > 1)
 				args[1]->incRef();
-			funcRet = func->call(argslen > 1? args[1] : getSys()->getNullRef(), funcArgs, 3);
+			funcRet = func->call(argslen > 1? args[1] : obj->getSystemState()->getNullRef(), funcArgs, 3);
 		}
 		else
 			funcRet = RegExp::exec(args[0],funcArgs,1);
@@ -1148,37 +1148,37 @@ ASFUNCTIONBODY(Array,_map)
 
 ASFUNCTIONBODY(Array,_toString)
 {
-	if(Class<Number>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("");
+	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_s(obj->getSystemState(),"");
 	if(!obj->is<Array>())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toString");
-		return Class<ASString>::getInstanceS("");
+		return abstract_s(obj->getSystemState(),"");
 	}
 	
 	Array* th=obj->as<Array>();
-	return Class<ASString>::getInstanceS(th->toString_priv());
+	return abstract_s(obj->getSystemState(),th->toString_priv());
 }
 
 ASFUNCTIONBODY(Array,_toLocaleString)
 {
-	if(Class<Number>::getClass()->prototype->getObj() == obj)
-		return Class<ASString>::getInstanceS("");
+	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
+		return abstract_s(obj->getSystemState(),"");
 	if(!obj->is<Array>())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toLocaleString");
-		return Class<ASString>::getInstanceS("");
+		return abstract_s(obj->getSystemState(),"");
 	}
 	
 	Array* th=obj->as<Array>();
-	return Class<ASString>::getInstanceS(th->toString_priv(true));
+	return abstract_s(obj->getSystemState(),th->toString_priv(true));
 }
 
 int32_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
 	if(index<size())
@@ -1222,7 +1222,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		return ASObject::getVariableByMultiname(name,opt);
 
 	uint32_t index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 	if(index<size() && data.count(index))
 	{
@@ -1234,13 +1234,13 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 				ret=sl.data;
 				if(ret==NULL)
 				{
-					ret=getSys()->getUndefinedRef();
+					ret=getSystemState()->getUndefinedRef();
 					sl.data=ret;
 				}
 				ret->incRef();
 				break;
 			case DATA_INT:
-				ret=abstract_d(sl.data_i);
+				ret=abstract_d(this->getSystemState(),sl.data_i);
 				break;
 		}
 		return _MNR(ret);
@@ -1256,7 +1256,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		proto = proto->prevPrototype.getPtr();
 	}
 	if(index<size())
-		return _MNR(getSys()->getUndefinedRef());
+		return _MNR(getSystemState()->getUndefinedRef());
 	
 	return NullRef;
 }
@@ -1265,7 +1265,7 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 	{
 		ASObject::setVariableByMultiname_i(name,value);
 		return;
@@ -1292,13 +1292,13 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 		return false;
 
 	uint32_t index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	return (index<size()) && (data.count(index));
 }
 
-bool Array::isValidMultiname(const multiname& name, uint32_t& index)
+bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index)
 {
 	if(name.isEmpty())
 		return false;
@@ -1308,10 +1308,10 @@ bool Array::isValidMultiname(const multiname& name, uint32_t& index)
 	if(!name.ns[0].hasEmptyName())
 		return false;
 	if (name.name_type == multiname::NAME_STRING && 
-	    !isIntegerWithoutLeadingZeros(name.normalizedName()))
+	    !isIntegerWithoutLeadingZeros(name.normalizedName(sys)))
 		return false;
 
-	return name.toUInt(index);
+	return name.toUInt(sys,index);
 }
 
 bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
@@ -1337,7 +1337,7 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 	{
 		ASObject::setVariableByMultiname(name,o,allowConst);
 //		setIsEnumerable(name,false);
@@ -1346,7 +1346,7 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,
-					   name.normalizedNameUnresolved(),
+					   name.normalizedNameUnresolved(getSystemState()),
 					   getClass()->getQualifiedClassName());
 	if (index==0xFFFFFFFF)
 		return;
@@ -1376,7 +1376,7 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!isValidMultiname(name,index))
+	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::deleteVariableByMultiname(name);
 	if (getClass() && getClass()->isSealed)
 		return false;
@@ -1457,12 +1457,12 @@ _R<ASObject> Array::nextValue(uint32_t index)
 	{
 		index--;
 		if(!data.count(index))
-			return _MR(getSys()->getUndefinedRef());
+			return _MR(getSystemState()->getUndefinedRef());
 		data_slot sl = data[index];
 		if(sl.type==DATA_OBJECT)
 		{
 			if(sl.data==NULL)
-				return _MR(getSys()->getUndefinedRef());
+				return _MR(getSystemState()->getUndefinedRef());
 			else
 			{
 				sl.data->incRef();
@@ -1470,7 +1470,7 @@ _R<ASObject> Array::nextValue(uint32_t index)
 			}
 		}
 		else if(sl.type==DATA_INT)
-			return _MR(abstract_d(sl.data_i));
+			return _MR(abstract_d(getSystemState(),sl.data_i));
 		else
 			throw UnsupportedException("Unexpected data type");
 	}
@@ -1506,7 +1506,7 @@ _R<ASObject> Array::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		return _MR(abstract_i(index-1));
+		return _MR(abstract_i(getSystemState(),index-1));
 	else
 	{
 		//Fall back on object properties
@@ -1520,7 +1520,7 @@ _R<ASObject> Array::at(unsigned int index) const
 		outofbounds(index);
 
 	if (!data.count(index))
-		return _MR(getSys()->getUndefinedRef());
+		return _MR(getSystemState()->getUndefinedRef());
 	data_slot sl = data.at(index);
 	switch(sl.type)
 	{
@@ -1533,11 +1533,11 @@ _R<ASObject> Array::at(unsigned int index) const
 			}
 		}
 		case DATA_INT:
-			return _MR(abstract_d(sl.data_i));
+			return _MR(abstract_d(getSystemState(),sl.data_i));
 	}
 
 	//We should be here only if data is an object and is NULL
-	return _MR(getSys()->getUndefinedRef());
+	return _MR(getSystemState()->getUndefinedRef());
 }
 
 void Array::outofbounds(unsigned int index) const
@@ -1638,16 +1638,16 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 	for (it=data.begin() ; it != data.end(); ++it)
 	{
 		tiny_string subres;
-		ASObject* o = it->second.type==DATA_OBJECT ? it->second.data : abstract_i(it->second.data_i);
+		ASObject* o = it->second.type==DATA_OBJECT ? it->second.data : abstract_i(getSystemState(),it->second.data_i);
 		if (replacer != NULL)
 		{
 			ASObject* params[2];
 			
-			params[0] = Class<Number>::getInstanceS(it->first);
+			params[0] = abstract_d(getSystemState(),it->first);
 			params[0]->incRef();
 			params[1] = o;
 			params[1]->incRef();
-			ASObject *funcret=replacer->call(getSys()->getNullRef(), params, 2);
+			ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
 			if (funcret)
 				subres = funcret->toJSON(path,NULL,spaces,filter);
 		}

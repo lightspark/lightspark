@@ -28,8 +28,8 @@ using namespace lightspark;
 void NativeApplication::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("nativeApplication", "", Class<IFunction>::getFunction(_getNativeApplication), GETTER_METHOD, false);
-	c->setDeclaredMethodByQName("addEventListener", "", Class<IFunction>::getFunction(addEventListener), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("nativeApplication", "", Class<IFunction>::getFunction(c->getSystemState(),_getNativeApplication), GETTER_METHOD, false);
+	c->setDeclaredMethodByQName("addEventListener", "", Class<IFunction>::getFunction(c->getSystemState(),addEventListener), NORMAL_METHOD, true);
 }
 
 void NativeApplication::buildTraits(ASObject* o)
@@ -45,7 +45,7 @@ ASFUNCTIONBODY(NativeApplication,_constructor)
 //  Should actually be a Singleton
 ASFUNCTIONBODY(NativeApplication, _getNativeApplication)
 {
-	return Class<NativeApplication>::getInstanceS();
+	return Class<NativeApplication>::getInstanceS(getSys());
 }
 
 ASFUNCTIONBODY(NativeApplication, addEventListener)
@@ -55,7 +55,7 @@ ASFUNCTIONBODY(NativeApplication, addEventListener)
 	if (args[0]->toString() == "invoke")
 	{
 		th->incRef();
-		getVm()->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS()));
+		getVm(obj->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(obj->getSystemState())));
 	}
 
 	return NULL;

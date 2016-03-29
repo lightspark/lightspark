@@ -32,9 +32,9 @@ namespace lightspark
  */
 class ASString: public ASObject
 {
-	friend ASString* abstract_s();
-	friend ASString* abstract_s(const char* s, uint32_t len);
-	friend ASString* abstract_s(const tiny_string& s);
+	friend ASString* abstract_s(SystemState* sys);
+	friend ASString* abstract_s(SystemState* sys, const char* s, uint32_t len);
+	friend ASString* abstract_s(SystemState* sys, const tiny_string& s);
 private:
 	tiny_string toString_priv() const;
 	number_t parseStringInfinite(const char *s, char **end) const;
@@ -81,7 +81,7 @@ public:
 	std::string toDebugString() { return std::string("\"") + std::string(data) + "\""; }
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
-	void finalize() { data.clear(); }
+	inline void finalize() { data.clear(); }
 };
 
 template<>
@@ -95,13 +95,13 @@ inline ASObject* Class<ASString>::coerce(ASObject* o) const
 	if(o->is<Undefined>())
 	{
 		o->decRef();
-		return getSys()->getNullRef();
+		return o->getSystemState()->getNullRef();
 	}
 	if(!o->isConstructed())
 		return o;
 	tiny_string n = o->toString();
 	o->decRef();
-	return lightspark::abstract_s(n);
+	return lightspark::abstract_s(o->getSystemState(),n);
 }
 
 }

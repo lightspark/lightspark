@@ -29,9 +29,9 @@ ASMutex::ASMutex(Class_base* c):ASObject(c),lockcount(0)
 void ASMutex::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
-	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(_lock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(_unlock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("tryLock","",Class<IFunction>::getFunction(_trylock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(c->getSystemState(),_lock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(c->getSystemState(),_unlock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("tryLock","",Class<IFunction>::getFunction(c->getSystemState(),_trylock),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(ASMutex,_constructor)
@@ -55,6 +55,6 @@ ASFUNCTIONBODY(ASMutex,_unlock)
 ASFUNCTIONBODY(ASMutex,_trylock)
 {
 	ASMutex* th=obj->as<ASMutex>();
-	return abstract_b(th->mutex.trylock());
+	return abstract_b(obj->getSystemState(),th->mutex.trylock());
 }
 

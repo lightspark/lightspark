@@ -38,9 +38,9 @@ void GraphicsTrianglePath::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, uvtData);
 	REGISTER_GETTER_SETTER(c, vertices);
 
-	c->addImplementedInterface(InterfaceClass<IGraphicsPath>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsPath>::getClass(c->getSystemState()));
 	IGraphicsPath::linkTraits(c);
-	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass());
+	c->addImplementedInterface(InterfaceClass<IGraphicsData>::getClass(c->getSystemState()));
 	IGraphicsData::linkTraits(c);
 }
 

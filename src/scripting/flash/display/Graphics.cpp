@@ -36,27 +36,27 @@ using namespace lightspark;
 void Graphics::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(copyFrom),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(drawRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(drawRoundRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRoundRectComplex","",Class<IFunction>::getFunction(drawRoundRectComplex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(drawEllipse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawPath","",Class<IFunction>::getFunction(drawPath),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(drawTriangles),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawGraphicsData","",Class<IFunction>::getFunction(drawGraphicsData),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(moveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(curveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(cubicCurveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(lineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineBitmapStyle","",Class<IFunction>::getFunction(lineBitmapStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineGradientStyle","",Class<IFunction>::getFunction(lineGradientStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(lineStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(beginFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginBitmapFill","",Class<IFunction>::getFunction(beginBitmapFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(endFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(c->getSystemState(),drawRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(c->getSystemState(),drawRoundRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRectComplex","",Class<IFunction>::getFunction(c->getSystemState(),drawRoundRectComplex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(c->getSystemState(),drawCircle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(c->getSystemState(),drawEllipse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawPath","",Class<IFunction>::getFunction(c->getSystemState(),drawPath),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(c->getSystemState(),drawTriangles),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawGraphicsData","",Class<IFunction>::getFunction(c->getSystemState(),drawGraphicsData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),moveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(c->getSystemState(),curveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(c->getSystemState(),cubicCurveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineBitmapStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineBitmapStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineGradientStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineGradientStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),beginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),beginGradientFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginBitmapFill","",Class<IFunction>::getFunction(c->getSystemState(),beginBitmapFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),endFill),NORMAL_METHOD,true);
 }
 
 void Graphics::buildTraits(ASObject* o)
@@ -83,7 +83,7 @@ ASFUNCTIONBODY(Graphics,clear)
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->checkAndSetScaling();
 	th->owner->tokens.clear();
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 	return NULL;
 }
 
@@ -110,7 +110,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -130,7 +130,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -243,7 +243,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
 }
@@ -270,7 +270,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRectComplex)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
 }
@@ -314,7 +314,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       )));
 
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
 }
@@ -360,7 +360,7 @@ ASFUNCTIONBODY(Graphics,drawEllipse)
 	                        Vector2(left+width, top+height/2-ykappa),
 	                        Vector2(left+width, top+height/2)));
 
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -386,7 +386,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
 }
@@ -406,7 +406,7 @@ ASFUNCTIONBODY(Graphics,drawPath)
 
 	pathToTokens(commands, data, winding, th->owner->tokens);
 
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -420,8 +420,8 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 	if (winding != "evenOdd")
 		LOG(LOG_NOT_IMPLEMENTED, "Only event-odd winding implemented in Graphics.drawPath");
 
-	_R<Number> zeroRef = _MR(Class<Number>::getInstanceS(0));
-	Number *zero = zeroRef.getPtr();
+	_R<ASObject> zeroRef = _MR(abstract_d(commands->getSystemState(),0));
+	ASObject *zero = zeroRef.getPtr();
 
 	int k = 0;
 	for (unsigned int i=0; i<commands->size(); i++)
@@ -547,7 +547,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
 	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens);
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }
@@ -683,7 +683,7 @@ ASFUNCTIONBODY(Graphics,drawGraphicsData)
 		graphElement->appendToTokens(th->owner->tokens);
 	}
 
-	th->owner->owner->requestInvalidation(getSys());
+	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
 }

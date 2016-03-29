@@ -43,20 +43,20 @@ const char* Capabilities::MANUFACTURER = "Adobe Linux";
 void Capabilities::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(_getLanguage),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(_getPlayerType),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("version","",Class<IFunction>::getFunction(_getVersion),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("cpuArchitecture","",Class<IFunction>::getFunction(_getCPUArchitecture),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(_getIsDebugger),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("isEmbeddedInAcrobat","",Class<IFunction>::getFunction(_getIsEmbeddedInAcrobat),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("localFileReadDisable","",Class<IFunction>::getFunction(_getLocalFileReadDisable),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("manufacturer","",Class<IFunction>::getFunction(_getManufacturer),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("os","",Class<IFunction>::getFunction(_getOS),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(_getServerString),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(_getScreenResolutionX),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(_getScreenResolutionY),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("hasAccessibility","",Class<IFunction>::getFunction(_getHasAccessibility),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("screenDPI","",Class<IFunction>::getFunction(_getScreenDPI),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("language","",Class<IFunction>::getFunction(c->getSystemState(),_getLanguage),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("playerType","",Class<IFunction>::getFunction(c->getSystemState(),_getPlayerType),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("version","",Class<IFunction>::getFunction(c->getSystemState(),_getVersion),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cpuArchitecture","",Class<IFunction>::getFunction(c->getSystemState(),_getCPUArchitecture),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(c->getSystemState(),_getIsDebugger),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isEmbeddedInAcrobat","",Class<IFunction>::getFunction(c->getSystemState(),_getIsEmbeddedInAcrobat),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("localFileReadDisable","",Class<IFunction>::getFunction(c->getSystemState(),_getLocalFileReadDisable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("manufacturer","",Class<IFunction>::getFunction(c->getSystemState(),_getManufacturer),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("os","",Class<IFunction>::getFunction(c->getSystemState(),_getOS),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("serverString","",Class<IFunction>::getFunction(c->getSystemState(),_getServerString),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenResolutionX","",Class<IFunction>::getFunction(c->getSystemState(),_getScreenResolutionX),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(c->getSystemState(),_getScreenResolutionY),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("hasAccessibility","",Class<IFunction>::getFunction(c->getSystemState(),_getHasAccessibility),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("screenDPI","",Class<IFunction>::getFunction(c->getSystemState(),_getScreenDPI),GETTER_METHOD,false);
 	
 }
 
@@ -65,53 +65,53 @@ ASFUNCTIONBODY(Capabilities,_getPlayerType)
 	switch (getSys()->flashMode)
 	{
 		case SystemState::AVMPLUS:
-			return Class<ASString>::getInstanceS("AVMPlus");
+			return abstract_s(getSys(),"AVMPlus");
 		case SystemState::AIR:
-			return Class<ASString>::getInstanceS("Desktop");
+			return abstract_s(getSys(),"Desktop");
 		default:
-			return Class<ASString>::getInstanceS("PlugIn");
+			return abstract_s(getSys(),"PlugIn");
 	}
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)
 {
-	return Class<ASString>::getInstanceS("en");
+	return abstract_s(getSys(),"en");
 }
 
 ASFUNCTIONBODY(Capabilities,_getCPUArchitecture)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.cpuArchitecture is not implemented");
-	return Class<ASString>::getInstanceS("x86");
+	return abstract_s(getSys(),"x86");
 }
 
 ASFUNCTIONBODY(Capabilities,_getIsDebugger)
 {
-	return abstract_b(false);
+	return abstract_b(getSys(),false);
 }
 
 ASFUNCTIONBODY(Capabilities,_getIsEmbeddedInAcrobat)
 {
-	return abstract_b(false);
+	return abstract_b(getSys(),false);
 }
 
 ASFUNCTIONBODY(Capabilities,_getLocalFileReadDisable)
 {
-	return abstract_b(true);
+	return abstract_b(getSys(),true);
 }
 
 ASFUNCTIONBODY(Capabilities,_getManufacturer)
 {
-	return Class<ASString>::getInstanceS(MANUFACTURER);
+	return abstract_s(getSys(),MANUFACTURER);
 }
 
 ASFUNCTIONBODY(Capabilities,_getOS)
 {
-	return Class<ASString>::getInstanceS("Linux");
+	return abstract_s(getSys(),"Linux");
 }
 
 ASFUNCTIONBODY(Capabilities,_getVersion)
 {
-	return Class<ASString>::getInstanceS(EMULATED_VERSION);
+	return abstract_s(getSys(),EMULATED_VERSION);
 }
 
 ASFUNCTIONBODY(Capabilities,_getServerString)
@@ -165,34 +165,34 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 	supports DTS-HD High Resolution Audio	DTH
 	supports DTS-HD Master Audio	DTM
 	*/
-	return Class<ASString>::getInstanceS(res);
+	return abstract_s(getSys(),res);
 }
 ASFUNCTIONBODY(Capabilities,_getScreenResolutionX)
 {
 	GdkScreen*  screen = gdk_screen_get_default();
 	gint width = gdk_screen_get_width (screen);
-	return abstract_d(width);
+	return abstract_d(obj->getSystemState(),width);
 }
 ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
 {
 	GdkScreen*  screen = gdk_screen_get_default();
 	gint height = gdk_screen_get_height (screen);
-	return abstract_d(height);
+	return abstract_d(obj->getSystemState(),height);
 }
 ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
-	return abstract_b(false);
+	return abstract_b(getSys(),false);
 }
 ASFUNCTIONBODY(Capabilities,_getScreenDPI)
 {
 	GdkScreen*  screen = gdk_screen_get_default();
 	gdouble dpi = gdk_screen_get_resolution (screen);
-	return abstract_d(dpi);
+	return abstract_d(obj->getSystemState(),dpi);
 }
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),domainMemory(Class<ByteArray>::getInstanceS()),parentDomain(p)
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),domainMemory(Class<ByteArray>::getInstanceS(c->getSystemState())),parentDomain(p)
 {
 	domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 }
@@ -201,11 +201,11 @@ void ApplicationDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	//Static
-	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(_getMinDomainMemoryLength),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength),GETTER_METHOD,false);
 	//Instance
-	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(c->getSystemState(),hasDefinition),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(c->getSystemState(),getDefinition),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,domainMemory);
 	REGISTER_GETTER(c,parentDomain);
 }
@@ -240,7 +240,7 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 		// C++ constructor
 		return NULL;
 	else if(parentDomain.isNull())
-		th->parentDomain =  getSys()->systemDomain;
+		th->parentDomain =  obj->getSystemState()->systemDomain;
 	else
 		th->parentDomain = parentDomain;
 	return NULL;
@@ -248,12 +248,12 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	return abstract_ui(MIN_DOMAIN_MEMORY_LIMIT);
+	return abstract_ui(obj->getSystemState(),MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm()->currentCallContext);
+	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
 	ret->incRef();
 	return ret.getPtr();
 }
@@ -271,20 +271,20 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=getSys()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
+	name.ns.push_back(nsNameAndKind(obj->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o==NULL)
-		return abstract_b(false);
+		return abstract_b(obj->getSystemState(),false);
 	else
 	{
 		if(o->getObjectType()!=T_CLASS)
-			return abstract_b(false);
+			return abstract_b(obj->getSystemState(),false);
 
 		LOG(LOG_CALLS,_("Found definition for ") << name);
-		return abstract_b(true);
+		return abstract_b(obj->getSystemState(),true);
 	}
 }
 
@@ -301,13 +301,13 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=getSys()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(nsName,NAMESPACE));
+	name.ns.push_back(nsNameAndKind(obj->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o == NULL)
-		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved());
+		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(obj->getSystemState()));
 
 	//TODO: specs says that also namespaces and function may be returned
 	assert_and_throw(o->getObjectType()==T_CLASS);
@@ -330,12 +330,12 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	if(index==str.npos) //No dot
 	{
 		name.name_s_id=getSys()->getUniqueStringId(str);
-		name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: use ns kind
+		name.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE)); //TODO: use ns kind
 	}
 	else
 	{
 		name.name_s_id=getSys()->getUniqueStringId(str.substr(index+1));
-		name.ns.push_back(nsNameAndKind(str.substr(0,index),NAMESPACE));
+		name.ns.push_back(nsNameAndKind(getSystemState(),str.substr(0,index),NAMESPACE));
 	}
 	return getVariableAndTargetByMultiname(name, target);
 }
@@ -415,8 +415,8 @@ LoaderContext::LoaderContext(Class_base* c):
 void LoaderContext::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(_getter_allowCodeImport),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(_setter_allowCodeImport),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(c->getSystemState(),_getter_allowCodeImport),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("allowLoadBytesCodeExecution","",Class<IFunction>::getFunction(c->getSystemState(),_setter_allowCodeImport),SETTER_METHOD,false);
 	REGISTER_GETTER_SETTER(c, allowCodeImport);
 	REGISTER_GETTER_SETTER(c, applicationDomain);
 	REGISTER_GETTER_SETTER(c, checkPolicyFile);
@@ -462,7 +462,7 @@ void SecurityDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	//Static
-	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
 }
 
 void SecurityDomain::buildTraits(ASObject* o)
@@ -476,7 +476,7 @@ ASFUNCTIONBODY(SecurityDomain,_constructor)
 
 ASFUNCTIONBODY(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm()->currentCallContext);
+	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm(getSys())->currentCallContext);
 	ret->incRef();
 	return ret.getPtr();
 }
@@ -485,37 +485,37 @@ void Security::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	//Fully static class
-	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(c->getSystemState(),_getExactSettings),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(c->getSystemState(),_setExactSettings),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(c->getSystemState(),_getSandboxType),GETTER_METHOD,false);
 	c->setVariableByQName("LOCAL_TRUSTED","",
-			Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
+			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_FILE","",
-			Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
+			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
 	c->setVariableByQName("LOCAL_WITH_NETWORK","",
-			Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
+			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
 	c->setVariableByQName("REMOTE","",
-			Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("pageDomain","",Class<IFunction>::getFunction(pageDomain),GETTER_METHOD,false);
+			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowDomain),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowInsecureDomain),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(c->getSystemState(),loadPolicyFile),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("showSettings","",Class<IFunction>::getFunction(c->getSystemState(),showSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pageDomain","",Class<IFunction>::getFunction(c->getSystemState(),pageDomain),GETTER_METHOD,false);
 
 	getSys()->securityManager->setExactSettings(true, false);
 }
 
 ASFUNCTIONBODY(Security,_getExactSettings)
 {
-	return abstract_b(getSys()->securityManager->getExactSettings());
+	return abstract_b(getSys(),getSys()->securityManager->getExactSettings());
 }
 
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(getSys()->securityManager->getExactSettingsLocked())
+	if(args[0]->getSystemState()->securityManager->getExactSettingsLocked())
 	{
-		throw Class<SecurityError>::getInstanceS("SecurityError: Security.exactSettings already set");
+		throw Class<SecurityError>::getInstanceS(args[0]->getSystemState(),"SecurityError: Security.exactSettings already set");
 	}
 	getSys()->securityManager->setExactSettings(Boolean_concrete(args[0]));
 	return NULL;
@@ -524,13 +524,13 @@ ASFUNCTIONBODY(Security,_setExactSettings)
 ASFUNCTIONBODY(Security,_getSandboxType)
 {
 	if(getSys()->securityManager->getSandboxType() == SecurityManager::REMOTE)
-		return Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::REMOTE));
+		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::REMOTE));
 	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
-		return Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
+		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
 	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		return Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
+		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
 	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
-		return Class<ASString>::getInstanceS(getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
+		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
 	assert(false);
 	return NULL;
 }
@@ -565,7 +565,7 @@ ASFUNCTIONBODY(Security, showSettings)
 ASFUNCTIONBODY(Security, pageDomain)
 {
 	tiny_string s = getSys()->mainClip->getBaseURL().getProtocol()+"://"+getSys()->mainClip->getBaseURL().getHostname();
-	return Class<ASString>::getInstanceS(s);
+	return abstract_s(getSys(),s);
 }
 
 ASFUNCTIONBODY(lightspark, fscommand)
@@ -584,15 +584,15 @@ ASFUNCTIONBODY(lightspark, fscommand)
 void System::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(totalMemory),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(disposeXML),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(c->getSystemState(),totalMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(c->getSystemState(),disposeXML),NORMAL_METHOD,false);
 }
 
 
 ASFUNCTIONBODY(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	return abstract_d(1024);
+	return abstract_d(obj->getSystemState(),1024);
 }
 ASFUNCTIONBODY(System,disposeXML)
 {
@@ -619,24 +619,24 @@ ASWorker::ASWorker(Class_base* c):
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(_getCurrent),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(getSharedProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),getSharedProperty),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY(ASWorker,_getCurrent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
-	return Class<ASObject>::getInstanceS();
+	return Class<ASObject>::getInstanceS(getSys());
 }
 ASFUNCTIONBODY(ASWorker,getSharedProperty)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker.getSharedProperty not implemented");
-	return Class<ASObject>::getInstanceS();
+	return Class<ASObject>::getInstanceS(getSys());
 }
 
 void ImageDecodingPolicy::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ON_DEMAND","",Class<ASString>::getInstanceS("onDemand"),CONSTANT_TRAIT);
-	c->setVariableByQName("ON_LOAD	","",Class<ASString>::getInstanceS("onLoad"),CONSTANT_TRAIT);
+	c->setVariableByQName("ON_DEMAND","",abstract_s(c->getSystemState(),"onDemand"),CONSTANT_TRAIT);
+	c->setVariableByQName("ON_LOAD	","",abstract_s(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
 }
 

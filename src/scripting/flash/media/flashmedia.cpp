@@ -68,14 +68,14 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 void Video::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(Video::_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(Video::_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),Video::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),Video::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),Video::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),Video::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, deblocking);
 	REGISTER_GETTER_SETTER(c, smoothing);
 }
@@ -161,19 +161,19 @@ ASFUNCTIONBODY(Video,_constructor)
 ASFUNCTIONBODY(Video,_getVideoWidth)
 {
 	Video* th=Class<Video>::cast(obj);
-	return abstract_i(th->videoWidth);
+	return abstract_i(obj->getSystemState(),th->videoWidth);
 }
 
 ASFUNCTIONBODY(Video,_getVideoHeight)
 {
 	Video* th=Class<Video>::cast(obj);
-	return abstract_i(th->videoHeight);
+	return abstract_i(obj->getSystemState(),th->videoHeight);
 }
 
 ASFUNCTIONBODY(Video,_getWidth)
 {
 	Video* th=Class<Video>::cast(obj);
-	return abstract_i(th->width);
+	return abstract_i(obj->getSystemState(),th->width);
 }
 
 ASFUNCTIONBODY(Video,_setWidth)
@@ -188,7 +188,7 @@ ASFUNCTIONBODY(Video,_setWidth)
 ASFUNCTIONBODY(Video,_getHeight)
 {
 	Video* th=Class<Video>::cast(obj);
-	return abstract_i(th->height);
+	return abstract_i(obj->getSystemState(),th->height);
 }
 
 ASFUNCTIONBODY(Video,_setHeight)
@@ -212,7 +212,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	}
 
 	//Validate the parameter
-	if(!args[0]->getClass()->isSubClass(Class<NetStream>::getClass()))
+	if(!args[0]->getClass()->isSubClass(Class<NetStream>::getClass(obj->getSystemState())))
 		throw RunTimeException("Type mismatch in Video::attachNetStream");
 
 	//Acquire the netStream
@@ -260,9 +260,9 @@ Sound::~Sound()
 void Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
 	REGISTER_GETTER(c,length);
@@ -299,7 +299,7 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		getVm()->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm(obj->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(obj->getSystemState())));
 		return NULL;
 	}
 
@@ -322,7 +322,7 @@ ASFUNCTIONBODY(Sound,load)
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		getVm()->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS()));
+		getVm(obj->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(obj->getSystemState())));
 	}
 	return NULL;
 }
@@ -338,9 +338,9 @@ ASFUNCTIONBODY(Sound,play)
 
 	th->incRef();
 	if (th->container)
-		return Class<SoundChannel>::getInstanceS(th->soundData);
+		return Class<SoundChannel>::getInstanceS(obj->getSystemState(),th->soundData);
 	else
-		return Class<SoundChannel>::getInstanceS(th->soundData, th->format);
+		return Class<SoundChannel>::getInstanceS(obj->getSystemState(),th->soundData, th->format);
 }
 
 ASFUNCTIONBODY(Sound,close)
@@ -363,11 +363,11 @@ void Sound::setBytesLoaded(uint32_t b)
 	{
 		bytesLoaded=b;
 		this->incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(bytesLoaded,bytesTotal)));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal)));
 		if(bytesLoaded==bytesTotal)
 		{
 			this->incRef();
-			getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("complete")));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 		}
 	}
 }
@@ -401,7 +401,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
 : EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
-  format(_format),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS()))
+  format(_format),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState())))
 {
 	if (!stream.isNull())
 	{
@@ -419,7 +419,7 @@ SoundChannel::~SoundChannel()
 void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,position);
 	REGISTER_GETTER_SETTER(c,soundTransform);
@@ -544,7 +544,7 @@ void SoundChannel::playStream()
 	if (!ACQUIRE_READ(stopped))
 	{
 		incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("soundComplete")));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
 	}
 }
 
@@ -585,7 +585,7 @@ void SoundChannel::playRaw()
 	if (!ACQUIRE_READ(stopped))
 	{
 		incRef();
-		getVm()->addEvent(_MR(this),_MR(Class<Event>::getInstanceS("soundComplete")));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
 	}
 #endif //ENABLE_LIBAVCODEC
 }
@@ -610,9 +610,9 @@ void SoundChannel::threadAbort()
 void StageVideo::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
 }
 
 
@@ -624,13 +624,13 @@ void StageVideo::finalize()
 ASFUNCTIONBODY(StageVideo,_getVideoWidth)
 {
 	StageVideo* th=Class<StageVideo>::cast(obj);
-	return abstract_i(th->videoWidth);
+	return abstract_i(obj->getSystemState(),th->videoWidth);
 }
 
 ASFUNCTIONBODY(StageVideo,_getVideoHeight)
 {
 	StageVideo* th=Class<StageVideo>::cast(obj);
-	return abstract_i(th->videoHeight);
+	return abstract_i(obj->getSystemState(),th->videoHeight);
 }
 
 ASFUNCTIONBODY(StageVideo,attachNetStream)
@@ -645,7 +645,7 @@ ASFUNCTIONBODY(StageVideo,attachNetStream)
 	}
 
 	//Validate the parameter
-	if(!args[0]->getClass()->isSubClass(Class<NetStream>::getClass()))
+	if(!args[0]->getClass()->isSubClass(Class<NetStream>::getClass(obj->getSystemState())))
 		throw RunTimeException("Type mismatch in StageVideo::attachNetStream");
 
 	//Acquire the netStream
@@ -659,14 +659,14 @@ ASFUNCTIONBODY(StageVideo,attachNetStream)
 void StageVideoAvailability::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("AVAILABLE","",Class<ASString>::getInstanceS("available"),DECLARED_TRAIT);
-	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);
+	c->setVariableByQName("AVAILABLE","",abstract_s(c->getSystemState(),"available"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),DECLARED_TRAIT);
 }
 
 void VideoStatus::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ACCELERATED","",Class<ASString>::getInstanceS("accelerated"),DECLARED_TRAIT);
-	c->setVariableByQName("SOFTWARE","",Class<ASString>::getInstanceS("software"),DECLARED_TRAIT);
-	c->setVariableByQName("UNAVAILABLE","",Class<ASString>::getInstanceS("unavailable"),DECLARED_TRAIT);
+	c->setVariableByQName("ACCELERATED","",abstract_s(c->getSystemState(),"accelerated"),DECLARED_TRAIT);
+	c->setVariableByQName("SOFTWARE","",abstract_s(c->getSystemState(),"software"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),DECLARED_TRAIT);
 }

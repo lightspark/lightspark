@@ -822,13 +822,13 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 	if(checkPolicyFile)
 	{
 		SecurityManager::EVALUATIONRESULT evaluationResult = \
-			getSys()->securityManager->evaluatePoliciesURL(url, true);
+			dispatcher->getSystemState()->securityManager->evaluatePoliciesURL(url, true);
 		if(threadAborting)
 			return false;
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			dispatcher->incRef();
-			getVm()->addEvent(dispatcher,_MR(Class<SecurityErrorEvent>::getInstanceS("SecurityError: "
+			getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<SecurityErrorEvent>::getInstanceS(dispatcher->getSystemState(),"SecurityError: "
 												 "connection to domain not allowed by securityManager")));
 			return false;
 		}
@@ -841,11 +841,11 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 	if(postData.empty())
 	{
 		//This is a GET request
-		downloader=getSys()->downloadManager->download(url, cache, owner);
+		downloader=dispatcher->getSystemState()->downloadManager->download(url, cache, owner);
 	}
 	else
 	{
-		downloader=getSys()->downloadManager->downloadWithData(url, cache, postData, requestHeaders, owner);
+		downloader=dispatcher->getSystemState()->downloadManager->downloadWithData(url, cache, postData, requestHeaders, owner);
 	}
 
 	return true;

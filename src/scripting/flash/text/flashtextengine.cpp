@@ -60,8 +60,8 @@ ElementFormat::ElementFormat(Class_base *c): ASObject(c),
 void ElementFormat::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("GRAPHIC_ELEMENT","",abstract_ui(0xFDEF),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(_clone),NORMAL_METHOD,true);
+	c->setVariableByQName("GRAPHIC_ELEMENT","",abstract_ui(c->getSystemState(),0xFDEF),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,alignmentBaseline);
 	REGISTER_GETTER_SETTER(c,alpha);
@@ -114,7 +114,7 @@ ASFUNCTIONBODY(ElementFormat, _clone)
 {
 	ElementFormat* th=static_cast<ElementFormat*>(obj);
 
-	ElementFormat* newformat = Class<ElementFormat>::getInstanceS();
+	ElementFormat* newformat = Class<ElementFormat>::getInstanceS(obj->getSystemState());
 	newformat->fontDescription = th->fontDescription;
 	newformat->fontSize = th->fontSize;
 	newformat->color = th->color;
@@ -139,14 +139,14 @@ ASFUNCTIONBODY(ElementFormat, _clone)
 void FontLookup::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("DEVICE","",Class<ASString>::getInstanceS("device"),CONSTANT_TRAIT);
-	c->setVariableByQName("EMBEDDED_CFF","",Class<ASString>::getInstanceS("embeddedCFF"),CONSTANT_TRAIT);
+	c->setVariableByQName("DEVICE","",abstract_s(c->getSystemState(),"device"),CONSTANT_TRAIT);
+	c->setVariableByQName("EMBEDDED_CFF","",abstract_s(c->getSystemState(),"embeddedCFF"),CONSTANT_TRAIT);
 }
 
 void FontDescription::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(_clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,cffHinting);
 	REGISTER_GETTER_SETTER(c,fontLookup);
 	REGISTER_GETTER_SETTER(c,fontName);
@@ -173,7 +173,7 @@ ASFUNCTIONBODY(FontDescription, _clone)
 {
 	FontDescription* th=static_cast<FontDescription*>(obj);
 
-	FontDescription* newfontdescription = Class<FontDescription>::getInstanceS();
+	FontDescription* newfontdescription = Class<FontDescription>::getInstanceS(obj->getSystemState());
 	newfontdescription->cffHinting = th->cffHinting;
 	newfontdescription->fontLookup = th->fontLookup;
 	newfontdescription->fontName = th->fontName;
@@ -187,14 +187,14 @@ ASFUNCTIONBODY(FontDescription, _clone)
 void FontPosture::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("ITALIC","",Class<ASString>::getInstanceS("italic"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("ITALIC","",abstract_s(c->getSystemState(),"italic"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 }
 void FontWeight::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("BOLD","",Class<ASString>::getInstanceS("bold"),CONSTANT_TRAIT);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"),CONSTANT_TRAIT);
+	c->setVariableByQName("BOLD","",abstract_s(c->getSystemState(),"bold"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 }
 
 void FontMetrics::sinit(Class_base* c)
@@ -211,29 +211,29 @@ ASFUNCTIONBODY(FontMetrics, _constructor)
 void Kerning::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("AUTO","",Class<ASString>::getInstanceS("auto"),CONSTANT_TRAIT);
-	c->setVariableByQName("OFF","",Class<ASString>::getInstanceS("off"),CONSTANT_TRAIT);
-	c->setVariableByQName("ON","",Class<ASString>::getInstanceS("on"),CONSTANT_TRAIT);
+	c->setVariableByQName("AUTO","",abstract_s(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("OFF","",abstract_s(c->getSystemState(),"off"),CONSTANT_TRAIT);
+	c->setVariableByQName("ON","",abstract_s(c->getSystemState(),"on"),CONSTANT_TRAIT);
 }
 
 void LineJustification::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("ALL_BUT_LAST","",Class<ASString>::getInstanceS("allButLast"),CONSTANT_TRAIT);
-	c->setVariableByQName("ALL_BUT_MANDATORY_BREAK","",Class<ASString>::getInstanceS("allButMandatoryBreak"),CONSTANT_TRAIT);
-	c->setVariableByQName("ALL_INCLUDING_LAST","",Class<ASString>::getInstanceS("allIncludingLast"),CONSTANT_TRAIT);
-	c->setVariableByQName("UNJUSTIFIED","",Class<ASString>::getInstanceS("unjustified"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALL_BUT_LAST","",abstract_s(c->getSystemState(),"allButLast"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALL_BUT_MANDATORY_BREAK","",abstract_s(c->getSystemState(),"allButMandatoryBreak"),CONSTANT_TRAIT);
+	c->setVariableByQName("ALL_INCLUDING_LAST","",abstract_s(c->getSystemState(),"allIncludingLast"),CONSTANT_TRAIT);
+	c->setVariableByQName("UNJUSTIFIED","",abstract_s(c->getSystemState(),"unjustified"),CONSTANT_TRAIT);
 }
 void TextBaseline::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("ASCENT","",Class<ASString>::getInstanceS("ascent"),CONSTANT_TRAIT);
-	c->setVariableByQName("DESCENT","",Class<ASString>::getInstanceS("descent"),CONSTANT_TRAIT);
-	c->setVariableByQName("IDEOGRAPHIC_BOTTOM","",Class<ASString>::getInstanceS("ideographicBottom"),CONSTANT_TRAIT);
-	c->setVariableByQName("IDEOGRAPHIC_CENTER","",Class<ASString>::getInstanceS("ideographicCenter"),CONSTANT_TRAIT);
-	c->setVariableByQName("IDEOGRAPHIC_TOP","",Class<ASString>::getInstanceS("ideographicTop"),CONSTANT_TRAIT);
-	c->setVariableByQName("ROMAN","",Class<ASString>::getInstanceS("roman"),CONSTANT_TRAIT);
-	c->setVariableByQName("USE_DOMINANT_BASELINE","",Class<ASString>::getInstanceS("useDominantBaseline"),CONSTANT_TRAIT);
+	c->setVariableByQName("ASCENT","",abstract_s(c->getSystemState(),"ascent"),CONSTANT_TRAIT);
+	c->setVariableByQName("DESCENT","",abstract_s(c->getSystemState(),"descent"),CONSTANT_TRAIT);
+	c->setVariableByQName("IDEOGRAPHIC_BOTTOM","",abstract_s(c->getSystemState(),"ideographicBottom"),CONSTANT_TRAIT);
+	c->setVariableByQName("IDEOGRAPHIC_CENTER","",abstract_s(c->getSystemState(),"ideographicCenter"),CONSTANT_TRAIT);
+	c->setVariableByQName("IDEOGRAPHIC_TOP","",abstract_s(c->getSystemState(),"ideographicTop"),CONSTANT_TRAIT);
+	c->setVariableByQName("ROMAN","",abstract_s(c->getSystemState(),"roman"),CONSTANT_TRAIT);
+	c->setVariableByQName("USE_DOMINANT_BASELINE","",abstract_s(c->getSystemState(),"useDominantBaseline"),CONSTANT_TRAIT);
 }
 
 void TextJustifier::sinit(Class_base* c)
@@ -273,9 +273,9 @@ TextBlock::TextBlock(Class_base *c): ASObject(c),firstLine(NullRef),lastLine(Nul
 void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(createTextLine),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("recreateTextLine","",Class<IFunction>::getFunction(recreateTextLine),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("releaseLines","",Class<IFunction>::getFunction(releaseLines),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(c->getSystemState(),createTextLine),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("recreateTextLine","",Class<IFunction>::getFunction(c->getSystemState(),recreateTextLine),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("releaseLines","",Class<IFunction>::getFunction(c->getSystemState(),releaseLines),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, firstLine);
 	REGISTER_GETTER(c, lastLine);
 	REGISTER_GETTER_SETTER(c, content);
@@ -326,7 +326,7 @@ ASFUNCTIONBODY(TextBlock, createTextLine)
 	LOG(LOG_NOT_IMPLEMENTED,"splitting textblock in multiple lines not implemented");
 	th->content->as<TextElement>()->text = "";
 	th->incRef();
-	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(linetext, _MNR(th)));
+	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(obj->getSystemState(),linetext, _MNR(th)));
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
@@ -485,11 +485,11 @@ TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
 void TextLine::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("MAX_LINE_WIDTH","",abstract_ui(MAX_LINE_WIDTH),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(getDescent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(getAscent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(getTextWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(getTextHeight),GETTER_METHOD,true);
+	c->setVariableByQName("MAX_LINE_WIDTH","",abstract_ui(c->getSystemState(),MAX_LINE_WIDTH),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(c->getSystemState(),getDescent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(c->getSystemState(),getAscent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),getTextWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),getTextHeight),GETTER_METHOD,true);
 	REGISTER_GETTER(c, textBlock);
 	REGISTER_GETTER(c, nextLine);
 	REGISTER_GETTER(c, previousLine);
@@ -514,26 +514,26 @@ ASFUNCTIONBODY(TextLine, _constructor)
 ASFUNCTIONBODY(TextLine, getDescent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent");
-	return abstract_d(0);
+	return abstract_d(obj->getSystemState(),0);
 }
 
 ASFUNCTIONBODY(TextLine, getAscent)
 {
 	TextLine* th=static_cast<TextLine*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent");
-	return abstract_d(th->textHeight);
+	return abstract_d(obj->getSystemState(),th->textHeight);
 }
 
 ASFUNCTIONBODY(TextLine, getTextWidth)
 {
 	TextLine* th=static_cast<TextLine*>(obj);
-	return abstract_d(th->textWidth);
+	return abstract_d(obj->getSystemState(),th->textWidth);
 }
 
 ASFUNCTIONBODY(TextLine, getTextHeight)
 {
 	TextLine* th=static_cast<TextLine*>(obj);
-	return abstract_d(th->textHeight);
+	return abstract_d(obj->getSystemState(),th->textHeight);
 }
 
 
@@ -617,9 +617,9 @@ _NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, nu
 void TextLineValidity::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("INVALID","",Class<ASString>::getInstanceS("invalid"),CONSTANT_TRAIT);
-	c->setVariableByQName("POSSIBLY_INVALID","",Class<ASString>::getInstanceS("possiblyInvalid"),CONSTANT_TRAIT);
-	c->setVariableByQName("STATIC","",Class<ASString>::getInstanceS("static"),CONSTANT_TRAIT);
-	c->setVariableByQName("VALID","",Class<ASString>::getInstanceS("valid"),CONSTANT_TRAIT);
+	c->setVariableByQName("INVALID","",abstract_s(c->getSystemState(),"invalid"),CONSTANT_TRAIT);
+	c->setVariableByQName("POSSIBLY_INVALID","",abstract_s(c->getSystemState(),"possiblyInvalid"),CONSTANT_TRAIT);
+	c->setVariableByQName("STATIC","",abstract_s(c->getSystemState(),"static"),CONSTANT_TRAIT);
+	c->setVariableByQName("VALID","",abstract_s(c->getSystemState(),"valid"),CONSTANT_TRAIT);
 }
 

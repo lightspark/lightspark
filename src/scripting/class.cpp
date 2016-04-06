@@ -63,6 +63,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(nam
 #endif
 	this->getSystemState()->customClasses.insert(this).second;
 	assert(ret);
+	isReusable = true;
 }
 
 void Class_inherit::finalize()

@@ -1337,7 +1337,7 @@ void variables_map::destroyContents()
 }
 
 ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(c?c->sys:NULL),
-	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
 {
 	setClass(c);
 #ifndef NDEBUG
@@ -1347,7 +1347,7 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 }
 
 ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
-	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
 {
 	if(o.classdef)
 		setClass(o.classdef);

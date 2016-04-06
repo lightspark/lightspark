@@ -136,6 +136,7 @@ IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL),function
 
 void IFunction::sinit(Class_base* c)
 {
+	c->isReusable=true;
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_toString),DYNAMIC_TRAIT);
 
 	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_call,1),NORMAL_METHOD,true);
@@ -256,6 +257,7 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),
 {
 	if(mi)
 		length = mi->numArgs();
+	reusableListNumber = 1;
 }
 
 /**
@@ -968,14 +970,14 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 
 void Class_base::acquireObject(ASObject* ob)
 {
-	Locker l(referencedObjectsMutex);
+	SpinlockLocker l(referencedObjectsMutex);
 	assert_and_throw(!ob->is_linked());
 	referencedObjects.push_back(*ob);
 }
 
 void Class_base::abandonObject(ASObject* ob)
 {
-	Locker l(referencedObjectsMutex);
+	SpinlockLocker l(referencedObjectsMutex);
 	assert_and_throw(ob->is_linked());
 #ifdef EXPENSIVE_DEBUG
 	//Check that the object is really referenced by this class

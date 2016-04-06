@@ -361,7 +361,7 @@ private:
 	SystemState* sys;
 protected:
 	ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),sys(NULL),
-		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
 	{
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -378,6 +378,9 @@ protected:
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
+	// indicates which reusable list to use for classes with several subclasses
+	// currently only used for IFunction (Function/SyntheticFunction)
+	int reusableListNumber;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;

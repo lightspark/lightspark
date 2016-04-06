@@ -158,6 +158,7 @@ private:
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
 	void finalizeObjects();
 	std::forward_list<ASObject*> freelist;
+	std::forward_list<ASObject*> freelist2;
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
@@ -166,7 +167,7 @@ protected:
 public:
 	inline ASObject* getObjectFromFreeList()
 	{
-		Locker l(referencedObjectsMutex);
+		SpinlockLocker l(referencedObjectsMutex);
 		ASObject* ret = NULL;
 		if (!freelist.empty())
 		{
@@ -176,11 +177,27 @@ public:
 		}
 		return ret;
 	}
+	inline ASObject* getObjectFromFreeList2()
+	{
+		SpinlockLocker l(referencedObjectsMutex);
+		ASObject* ret = NULL;
+		if (!freelist2.empty())
+		{
+			ret=freelist2.front();
+			freelist2.pop_front();
+			ret->incRef();
+		}
+		return ret;
+	}
 	
 	inline void pushObjectToFreeList(ASObject *obj)
 	{
-		Locker l(referencedObjectsMutex);
-		freelist.push_front(obj);
+		assert(obj->getRefCount() == 0);
+		SpinlockLocker l(referencedObjectsMutex);
+		if (obj->reusableListNumber == 0)
+			freelist.push_front(obj);
+		else
+			freelist2.push_front(obj);
 	}
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
@@ -388,7 +405,12 @@ public:
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
 	bool isConstructed() const { return constructIndicator; }
-	inline void finalize() {closure_this.reset();}
+	inline void finalize() 
+	{
+		closure_this.reset();
+		inClass=NULL;
+		functionname=0;
+	}
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
 	ASFUNCTION(_toString);
@@ -450,7 +472,17 @@ protected:
 	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
 	{
-		return new (getClass()->memoryAccount) Function(*this);
+		Function*  ret = getClass()->getObjectFromFreeList()->as<Function>();
+		if (!ret)
+			ret=new (getClass()->memoryAccount) Function(*this);
+		else
+		{
+			ret->val = val;
+			ret->length = length;
+			ret->inClass = inClass;
+			ret->functionname = functionname;
+		}
+		return ret;
 	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
@@ -495,7 +527,22 @@ private:
 	
 	SyntheticFunction* clone()
 	{
-		return new (getClass()->memoryAccount) SyntheticFunction(*this);
+		SyntheticFunction*  ret = getClass()->getObjectFromFreeList2()->as<SyntheticFunction>();
+		if (!ret)
+		{
+			ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
+		}
+		else
+		{
+			ret->mi = mi;
+			ret->val = val;
+			ret->length = length;
+			ret->inClass = inClass;
+			ret->func_scope = func_scope;
+			ret->functionname = functionname;
+		}
+		ret->reusableListNumber=1;
+		return ret;
 	}
 	method_info* getMethodInfo() const { return mi; }
 public:
@@ -505,6 +552,8 @@ public:
 	{
 		IFunction::finalize();
 		func_scope.clear();
+		val = NULL;
+		mi = NULL;
 	}
 	
 	std::vector<scope_entry> func_scope;
@@ -549,7 +598,11 @@ public:
 	static Function* getFunction(SystemState* sys,Function::as_function v)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function* ret=new (c->memoryAccount) Function(c, v);
+		Function*  ret = c->getObjectFromFreeList()->as<Function>();
+		if (!ret)
+			ret=new (c->memoryAccount) Function(c, v);
+		else
+			ret->val = v;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;
@@ -557,7 +610,11 @@ public:
 	static Function* getFunction(SystemState* sys,Function::as_function v, int len)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function* ret=new (c->memoryAccount) Function(c, v);
+		Function*  ret = c->getObjectFromFreeList()->as<Function>();
+		if (!ret)
+			ret=new (c->memoryAccount) Function(c, v);
+		else
+			ret->val = v;
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
@@ -566,7 +623,18 @@ public:
 	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		SyntheticFunction* ret=new (c->memoryAccount) SyntheticFunction(c, m);
+		SyntheticFunction*  ret;
+		ret= c->getObjectFromFreeList2()->as<SyntheticFunction>();
+		if (!ret)
+		{
+			ret=new (c->memoryAccount) SyntheticFunction(c, m);
+		}
+		else
+		{
+			ret->mi = m;
+			ret->reusableListNumber=1;
+		}
+		
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		c->handleConstruction(ret,NULL,0,true);

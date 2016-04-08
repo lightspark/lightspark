@@ -410,6 +410,7 @@ public:
 		closure_this.reset();
 		inClass=NULL;
 		functionname=0;
+		length=0;
 	}
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);

@@ -570,11 +570,11 @@ ASFUNCTIONBODY(BitmapData,histogram)
 		}
 	}
 
-	Vector *result = Template<Vector>::getInstanceS(Template<Vector>::getTemplateInstance(obj->getSystemState(),Class<Number>::getClass(obj->getSystemState()),NullRef).getPtr(),NullRef);
+	Vector *result = Template<Vector>::getInstanceS(obj->getSystemState(),Template<Vector>::getTemplateInstance(obj->getSystemState(),Class<Number>::getClass(obj->getSystemState()),NullRef).getPtr(),NullRef);
 	int channelOrder[4] = {2, 1, 0, 3}; // red, green, blue, alpha
 	for (int j=0; j<4; j++)
 	{
-		Vector *histogram = Template<Vector>::getInstanceS(Class<Number>::getClass(obj->getSystemState()),NullRef);
+		Vector *histogram = Template<Vector>::getInstanceS(obj->getSystemState(),Class<Number>::getClass(obj->getSystemState()),NullRef);
 		for (int level=0; level<256; level++)
 		{
 			histogram->append(abstract_d(obj->getSystemState(),counts[channelOrder[j]][level]));
@@ -663,7 +663,7 @@ ASFUNCTIONBODY(BitmapData,getVector)
 	if (rect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 
-	Vector *result = Template<Vector>::getInstanceS(Class<UInteger>::getClass(obj->getSystemState()),NullRef);
+	Vector *result = Template<Vector>::getInstanceS(obj->getSystemState(),Class<UInteger>::getClass(obj->getSystemState()),NullRef);
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;
 	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)

@@ -537,9 +537,9 @@ public:
 		templ->decRef();
 		return ret;
 	}
-	static T* getInstanceS(const Type* type,_NR<ApplicationDomain> appdomain)
+	static T* getInstanceS(SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		return static_cast<T*>(getTemplateInstance(appdomain->getSystemState(),type,appdomain).getPtr()->getInstance(true,NULL,0));
+		return static_cast<T*>(getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(true,NULL,0));
 	}
 
 	static Template<T>* getTemplate(SystemState* sys,const QName& name)

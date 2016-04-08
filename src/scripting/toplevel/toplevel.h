@@ -32,7 +32,6 @@
 #include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <boost/intrusive/list.hpp>
-#include <forward_list>
 
 namespace lightspark
 {
@@ -157,8 +156,8 @@ private:
 	Mutex referencedObjectsMutex;
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
 	void finalizeObjects();
-	std::forward_list<ASObject*> freelist;
-	std::forward_list<ASObject*> freelist2;
+	std::vector<ASObject*> freelist;
+	std::vector<ASObject*> freelist2;
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
@@ -171,8 +170,8 @@ public:
 		ASObject* ret = NULL;
 		if (!freelist.empty())
 		{
-			ret=freelist.front();
-			freelist.pop_front();
+			ret=freelist.back();
+			freelist.pop_back();
 			ret->incRef();
 		}
 		return ret;
@@ -183,8 +182,8 @@ public:
 		ASObject* ret = NULL;
 		if (!freelist2.empty())
 		{
-			ret=freelist2.front();
-			freelist2.pop_front();
+			ret=freelist2.back();
+			freelist2.pop_back();
 			ret->incRef();
 		}
 		return ret;
@@ -195,9 +194,9 @@ public:
 		assert(obj->getRefCount() == 0);
 		SpinlockLocker l(referencedObjectsMutex);
 		if (obj->reusableListNumber == 0)
-			freelist.push_front(obj);
+			freelist.push_back(obj);
 		else
-			freelist2.push_front(obj);
+			freelist2.push_back(obj);
 	}
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);

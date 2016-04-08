@@ -1964,11 +1964,11 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
 	th->locals[m]->decRef();
-	th->locals[m]=abstract_i(obj->getSystemState(),newIndex);
+	th->locals[m]=abstract_i(th->context->root->getSystemState(),newIndex);
 	if(newIndex==0)
 	{
 		th->locals[n]->decRef();
-		th->locals[n]=obj->getSystemState()->getNullRef();
+		th->locals[n]=th->context->root->getSystemState()->getNullRef();
 		return false;
 	}
 	return true;
@@ -2221,7 +2221,13 @@ void ABCVm::newClass(call_context* th, int n)
 		assert_and_throw(baseClass->is<Class_base>());
 		Class_base* base = baseClass->as<Class_base>();
 		assert(!base->isFinal);
-		ret->setSuper(_MR(base));
+		if (ret->super.isNull())
+			ret->setSuper(_MR(base));
+		else if (base != ret->super.getPtr())
+		{
+			LOG(LOG_ERROR,"resetting super class from "<<ret->super->toDebugString() <<" to "<< base->toDebugString());
+			ret->setSuper(_MR(base));
+		}
 		i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
 		while (i != th->context->root->applicationDomain->classesBeingDefined.cend())
 		{

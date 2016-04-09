@@ -639,16 +639,20 @@ class Integer;
 class Boolean;
 class Template_base;
 class ASString;
+class IFunction;
 class Function;
 class Array;
 class Null;
 class Undefined;
 class Type;
+class ASQName;
+class Namespace;
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
+template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<Function>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
@@ -656,5 +660,7 @@ template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
+template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
 }
 #endif /* ASOBJECT_H */

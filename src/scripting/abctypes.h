@@ -245,10 +245,17 @@ struct method_info_simple
 	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 };
+struct method_body_info_cache
+{
+	bool iscached;
+	uint32_t value;
+	uint32_t nextpos;
+};
 
 struct method_body_info
 {
 	method_body_info():hit_count(0),codeStatus(ORIGINAL){}
+	~method_body_info() { delete[] codecache; }
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -263,6 +270,7 @@ struct method_body_info
 	//The code status
 	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED };
 	CODE_STATUS codeStatus;
+	method_body_info_cache* codecache;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

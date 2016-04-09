@@ -41,7 +41,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 	method_info* mi=function->mi;
 
 	const int code_len=mi->body->code.size();
-	memorystream code(mi->body->code.data(), code_len);
+	memorystream code(mi->body->code.data(), code_len,mi->body->codecache);
 	//This may be non-zero and point to the position of an exception handler
 	code.seekg(context->exec_pos);
 

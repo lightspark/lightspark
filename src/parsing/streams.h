@@ -102,12 +102,13 @@ private:
 	unsigned int len;
 	unsigned int pos;
 	bool read_past_end;
+	lightspark::method_body_info_cache* codecache;
 public:
 	// Create a stream from a buffer b.
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l): code(b), len(l), pos(0), read_past_end(false) {};
+	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), len(l), pos(0), read_past_end(false),codecache(cc) {};
 	static void handleError(const char *msg);
 	inline unsigned int size() const
 	{
@@ -158,6 +159,17 @@ public:
 	}
 	inline uint32_t readu30()
 	{
+		unsigned int currpos = pos;
+		if (codecache[currpos].iscached)
+		{
+			pos = codecache[currpos].nextpos;
+			if (pos >= len)
+			{
+				pos = len;
+				read_past_end = true;
+			}
+			return codecache[currpos].value;
+		}
 		uint32_t val = readu32();
 		if(val&0xc0000000)
 			memorystream::handleError("Invalid u30");
@@ -165,6 +177,8 @@ public:
 	}
 	inline uint32_t readu32()
 	{
+		unsigned int currpos = pos;
+		
 		int i=0;
 		uint32_t val=0;
 		uint8_t t;
@@ -187,6 +201,9 @@ public:
 			}
 		}
 		while(t&0x80);
+		codecache[currpos].iscached = true;
+		codecache[currpos].value = val;
+		codecache[currpos].nextpos = pos;
 		return val;
 	}
 	inline int32_t reads24()

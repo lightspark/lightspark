@@ -116,38 +116,39 @@ void multiname::setName(ASObject* n)
 		name_o = NULL;
 	}
 
-	if(n->is<Integer>())
+	switch(n->getObjectType())
 	{
+	case T_INTEGER:
 		name_i=n->as<Integer>()->val;
 		name_type = NAME_INT;
-	}
-	else if(n->is<UInteger>())
-	{
+		break;
+	case T_UINTEGER:
 		name_i=n->as<UInteger>()->val;
 		name_type = NAME_INT;
-	}
-	else if(n->is<Number>())
-	{
+		break;
+	case T_NUMBER:
 		name_d=n->as<Number>()->val;
 		name_type = NAME_NUMBER;
-	}
-	else if(n->getObjectType()==T_QNAME)
-	{
-		ASQName* qname=static_cast<ASQName*>(n);
-		name_s_id=n->getSystemState()->getUniqueStringId(qname->local_name);
-		name_type = NAME_STRING;
-	}
-	else if(n->getObjectType()==T_STRING)
-	{
-		ASString* o=static_cast<ASString*>(n);
-		name_s_id=n->getSystemState()->getUniqueStringId(o->data);
-		name_type = NAME_STRING;
-	}
-	else
-	{
+		break;
+	case T_QNAME:
+		{
+			ASQName* qname=static_cast<ASQName*>(n);
+			name_s_id=n->getSystemState()->getUniqueStringId(qname->local_name);
+			name_type = NAME_STRING;
+		}
+		break;
+	case T_STRING:
+		{
+			ASString* o=static_cast<ASString*>(n);
+			name_s_id=n->getSystemState()->getUniqueStringId(o->data);
+			name_type = NAME_STRING;
+		}
+		break;
+	default:
 		n->incRef();
 		name_o=n;
 		name_type = NAME_OBJECT;
+		break;
 	}
 }
 

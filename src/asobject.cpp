@@ -42,13 +42,13 @@ string ASObject::toDebugString()
 	if(this->is<Class_base>())
 	{
 		ret = "[class ";
-		ret+=this->as<Class_base>()->class_name.getQualifiedName().raw_buf();
+		ret+=this->as<Class_base>()->class_name.getQualifiedName(getSystemState()).raw_buf();
 		ret+="]";
 	}
 	else if(getClass())
 	{
 		ret="[object ";
-		ret+=getClass()->class_name.name.raw_buf();
+		ret+=getClass()->class_name.getQualifiedName(getSystemState()).raw_buf();
 		ret+="]";
 	}
 	else if(this->is<Undefined>())
@@ -892,7 +892,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				obj = type->coerce(obj);
 			}
 			else if(mainObj->is<Class_base>() &&
-				mainObj->as<Class_base>()->class_name.getQualifiedName() == typemname->qualifiedString(mainObj->getSystemState()))
+				mainObj->as<Class_base>()->class_name.getQualifiedName(mainObj->getSystemState()) == typemname->qualifiedString(mainObj->getSystemState()))
 			{
 				// avoid recursive construction
 				//obj = mainObj->getSystemState()->getNullRef();
@@ -951,13 +951,13 @@ ASFUNCTIONBODY(ASObject,_toString)
 	if (obj->is<Class_base>())
 	{
 		ret="[object ";
-		ret+=static_cast<Class_base*>(obj)->class_name.name;
+		ret+=obj->getSystemState()->getStringFromUniqueId(static_cast<Class_base*>(obj)->class_name.nameId);
 		ret+="]";
 	}
 	else if(obj->getClass())
 	{
 		ret="[object ";
-		ret+=obj->getClass()->class_name.name;
+		ret+=obj->getSystemState()->getStringFromUniqueId(obj->getClass()->class_name.nameId);
 		ret+="]";
 	}
 	else

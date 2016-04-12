@@ -314,7 +314,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 						{
 							conv.str("");
 							conv << ids[i]->getInt();
-							if(asobj->hasPropertyByMultiname(QName(conv.str(),""),true,true))
+							if(asobj->hasPropertyByMultiname(QName(getSys()->getUniqueStringId(conv.str()),BUILTIN_STRINGS::EMPTY),true,true))
 							{
 								LOG(LOG_NOT_IMPLEMENTED,"ExtVariant::getASObject: duplicate property " << conv.str());
 								continue;

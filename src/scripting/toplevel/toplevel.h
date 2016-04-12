@@ -246,7 +246,7 @@ public:
 	 */
 	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
 	tiny_string getQualifiedClassName() const;
-	tiny_string getName() const { return (class_name.ns.empty() ? class_name.name : class_name.ns +"$"+ class_name.name); }
+	tiny_string getName() const;
 	tiny_string toString();
 	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	ASObject *describeType() const;
@@ -584,7 +584,7 @@ template<>
 class Class<IFunction>: public Class_base
 {
 private:
-	Class<IFunction>(MemoryAccount* m):Class_base(QName("Function",""),m){}
+	Class<IFunction>(MemoryAccount* m):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),m){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 	IFunction* getNopFunction();
 public:
@@ -685,8 +685,8 @@ friend struct multiname;
 friend class Namespace;
 private:
 	bool uri_is_null;
-	tiny_string uri;
-	tiny_string local_name;
+	uint32_t uri;
+	uint32_t local_name;
 public:
 	ASQName(Class_base* c);
 	void setByXML(XML* node);
@@ -696,8 +696,8 @@ public:
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_getLocalName);
 	ASFUNCTION(_toString);
-	tiny_string getURI() const { return uri; }
-	tiny_string getLocalName() const { return local_name; }
+	uint32_t getURI() const { return uri; }
+	uint32_t getLocalName() const { return local_name; }
 	bool isEqual(ASObject* o);
 
 	tiny_string toString();

@@ -41,7 +41,7 @@ const tiny_string multiname::qualifiedString(SystemState* sys) const
 {
 	assert_and_throw(ns.size()>=1);
 	assert_and_throw(name_type==NAME_STRING);
-	const tiny_string nsName=ns[0].getImpl(sys).name;
+	const tiny_string nsName=sys->getStringFromUniqueId(ns[0].getImpl(sys).nameId);
 	const tiny_string& name=sys->getStringFromUniqueId(name_s_id);
 	if(nsName.empty())
 		return name;
@@ -133,7 +133,7 @@ void multiname::setName(ASObject* n)
 	case T_QNAME:
 		{
 			ASQName* qname=static_cast<ASQName*>(n);
-			name_s_id=n->getSystemState()->getUniqueStringId(qname->local_name);
+			name_s_id=qname->local_name;
 			name_type = NAME_STRING;
 		}
 		break;
@@ -230,7 +230,7 @@ bool multiname::toUInt(SystemState* sys,uint32_t& index, bool acceptStringFracti
 
 std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
 {
-	s << r.ns << ':' << r.name;
+	s << getSys()->getStringFromUniqueId(r.nsStringId) << ':' << getSys()->getStringFromUniqueId(r.nameId);
 	return s;
 }
 
@@ -273,7 +273,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const nsNameAndKind& r)
 			prefix="";
 			break;
 	}
-	s << prefix << r.getImpl(getSys()).name;
+	s << prefix << getSys()->getStringFromUniqueId(r.getImpl(getSys()).nameId);
 	return s;
 }
 
@@ -1420,15 +1420,15 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 {
 }
 
-tiny_string QName::getQualifiedName() const
+tiny_string QName::getQualifiedName(SystemState *sys) const
 {
 	tiny_string ret;
-	if(!ns.empty())
+	if(nsStringId != BUILTIN_STRINGS::EMPTY)
 	{
-		ret+=ns;
+		ret+=sys->getStringFromUniqueId(nsStringId);
 		ret+="::";
 	}
-	ret+=name;
+	ret+=sys->getStringFromUniqueId(nameId);
 	return ret;
 }
 
@@ -1436,8 +1436,8 @@ QName::operator multiname() const
 {
 	multiname ret(NULL);
 	ret.name_type = multiname::NAME_STRING;
-	ret.name_s_id = getSys()->getUniqueStringId(name);
-	ret.ns.emplace_back(getSys(),ns, NAMESPACE);
+	ret.name_s_id = nameId;
+	ret.ns.emplace_back(getSys(),nsStringId, NAMESPACE);
 	ret.isAttribute = false;
 	return ret;
 }
@@ -1469,23 +1469,29 @@ FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 
 nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, NS_KIND _kind)
 {
-	nsNameAndKindImpl tmp(_name, _kind);
+	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nameIsEmpty=_name.empty();
 }
 
 nsNameAndKind::nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind)
 {
-	nsNameAndKindImpl tmp(_name, _kind);
+	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nameIsEmpty=(_name[0]=='\0');
 }
 
+nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind)
+{
+	nsNameAndKindImpl tmp(_nameId, _kind);
+	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	nameIsEmpty=_nameId == BUILTIN_STRINGS::EMPTY;
+}
 nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
-	nsNameAndKindImpl tmp(_name, _kind, nsId);
+	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind, nsId);
 	uint32_t tmpId;
 	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
@@ -1496,7 +1502,7 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
 	const tiny_string& nsName=c->getString(ns.name);
-	nsNameAndKindImpl tmp(nsName, (NS_KIND)(int)ns.kind);
+	nsNameAndKindImpl tmp(c->root->getSystemState()->getUniqueStringId(nsName), (NS_KIND)(int)ns.kind);
 	//Give an id hint, in case the namespace is created in the map
 	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id
@@ -1510,8 +1516,8 @@ const nsNameAndKindImpl& nsNameAndKind::getImpl(SystemState* sys) const
 	return sys->getNamespaceFromUniqueId(nsRealId);
 }
 
-nsNameAndKindImpl::nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b)
-  : name(_name),kind(_kind),baseId(b)
+nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, uint32_t b)
+  : nameId(_nameId),kind(_kind),baseId(b)
 {
 	if (kind != NAMESPACE &&
 	    kind != PACKAGE_NAMESPACE &&
@@ -1523,26 +1529,7 @@ nsNameAndKindImpl::nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, ui
 	{
 		//I have seen empty namespace with kind 0. For other
 		//namespaces we should not get here.
-		if (!name.empty())
-			LOG(LOG_ERROR, "Invalid namespace kind, converting to public namespace");
-		kind = NAMESPACE;
-	}
-}
-
-nsNameAndKindImpl::nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b)
- : name(_name),kind(_kind),baseId(b)
-{
-	if (kind != NAMESPACE &&
-	    kind != PACKAGE_NAMESPACE &&
-	    kind != PACKAGE_INTERNAL_NAMESPACE &&
-	    kind != PROTECTED_NAMESPACE &&
-	    kind != EXPLICIT_NAMESPACE &&
-	    kind != STATIC_PROTECTED_NAMESPACE &&
-	    kind != PRIVATE_NAMESPACE)
-	{
-		//I have seen empty namespace with kind 0. For other
-		//namespaces we should not get here.
-		if (!name.empty())
+		if (nameId != BUILTIN_STRINGS::EMPTY)
 			LOG(LOG_ERROR, "Invalid namespace kind, converting to public namespace");
 		kind = NAMESPACE;
 	}

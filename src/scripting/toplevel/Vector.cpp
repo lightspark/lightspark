@@ -123,7 +123,7 @@ void Vector::setTypes(const std::vector<const Type *> &types)
 bool Vector::sameType(const Class_base *cls) const
 {
 	tiny_string clsname = this->getClass()->getQualifiedClassName();
-	return (clsname.startsWith(cls->class_name.getQualifiedName().raw_buf()));
+	return (clsname.startsWith(cls->class_name.getQualifiedName(getSystemState()).raw_buf()));
 }
 
 ASObject* Vector::generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen)

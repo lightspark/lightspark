@@ -40,6 +40,9 @@
 
 namespace lightspark
 {
+enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_WILDCARD,LAST_BUILTIN_STRING };
+enum BUILTIN_NAMESPACES { EMPTY_NS=0 };
+
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
 	/*UNUSED=7,*/ T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14, T_TEMPLATE=15};
@@ -89,17 +92,17 @@ struct multiname;
 class QName
 {
 public:
-	tiny_string ns;
-	tiny_string name;
-	QName(const tiny_string& _name, const tiny_string& _ns):ns(_ns),name(_name){}
+	uint32_t nsStringId;
+	uint32_t nameId;
+	QName(uint32_t _nameId, uint32_t _nsId):nsStringId(_nsId),nameId(_nameId){}
 	bool operator<(const QName& r) const
 	{
-		if(ns==r.ns)
-			return name<r.name;
+		if(nsStringId==r.nsStringId)
+			return nameId<r.nameId;
 		else
-			return ns<r.ns;
+			return nsStringId<r.nsStringId;
 	}
-	tiny_string getQualifiedName() const;
+	tiny_string getQualifiedName(SystemState* sys) const;
 	operator multiname() const;
 };
 
@@ -287,22 +290,21 @@ enum NS_KIND { NAMESPACE=0x08, PACKAGE_NAMESPACE=0x16, PACKAGE_INTERNAL_NAMESPAC
 
 struct nsNameAndKindImpl
 {
-	tiny_string name;
+	uint32_t nameId;
 	NS_KIND kind;
 	uint32_t baseId;
-	nsNameAndKindImpl(const tiny_string& _name, NS_KIND _kind, uint32_t b=-1);
-	nsNameAndKindImpl(const char* _name, NS_KIND _kind, uint32_t b=-1);
+	nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, uint32_t b=-1);
 	bool operator<(const nsNameAndKindImpl& r) const
 	{
 		if(kind==r.kind)
-			return name < r.name;
+			return nameId < r.nameId;
 		else
 			return kind < r.kind;
 	}
 	bool operator>(const nsNameAndKindImpl& r) const
 	{
 		if(kind==r.kind)
-			return name > r.name;
+			return nameId > r.nameId;
 		else
 			return kind > r.kind;
 	}
@@ -315,6 +317,7 @@ struct nsNameAndKind
 	bool nameIsEmpty;
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind);
 	nsNameAndKind(ABCContext * c, uint32_t nsContextIndex);
 	/*
 	 * Special constructor for protected namespace, which have

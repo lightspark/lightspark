@@ -741,9 +741,9 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 	if(!typeObject)
 	{
-		if (mn->ns.size() >= 1 && mn->ns[0].getImpl(context->root->getSystemState()).name == "__AS3__.vec")
+		if (mn->ns.size() >= 1 && mn->ns[0].getImpl(context->root->getSystemState()).nameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 		{
-			QName qname(getSys()->getStringFromUniqueId(mn->name_s_id),mn->ns[0].getImpl(context->root->getSystemState()).name);
+			QName qname(mn->name_s_id,mn->ns[0].getImpl(context->root->getSystemState()).nameId);
 			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 		}
 	}
@@ -757,9 +757,9 @@ Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_objec
 	type=T_CLASS;
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
 	borrowedVariables(NULL),
-	context(NULL),class_name("Class",""),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
+	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -827,7 +827,7 @@ ASObject* Class_base::coerce(ASObject* o) const
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */
 		if(this == Class<ASObject>::getClass(o->getSystemState())
-		|| (class_name.name=="Class" && class_name.ns==""))
+		|| (class_name.nameId==BUILTIN_STRINGS::STRING_CLASS && class_name.nsStringId==BUILTIN_STRINGS::EMPTY))
 			return o; /* 'this' is the type of a class */
 		else
 			throwError<TypeError>(kCheckTypeFailedError, o->getClassName(), getQualifiedClassName());
@@ -855,7 +855,7 @@ ASFUNCTIONBODY(Class_base,_toString)
 	Class_base* th = obj->as<Class_base>();
 	tiny_string ret;
 	ret = "[class ";
-	ret += th->class_name.name;
+	ret += obj->getSystemState()->getStringFromUniqueId(th->class_name.nameId);
 	ret += "]";
 	return abstract_s(obj->getSystemState(),ret);
 }
@@ -929,7 +929,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 tiny_string Class_base::toString()
 {
 	tiny_string ret="[class ";
-	ret+=class_name.name;
+	ret+=getSystemState()->getStringFromUniqueId(class_name.nameId);
 	ret+="]";
 	return ret;
 }
@@ -1150,7 +1150,7 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 tiny_string Class_base::getQualifiedClassName() const
 {
 	if(class_index==-1)
-		return class_name.getQualifiedName();
+		return class_name.getQualifiedName(getSystemState());
 	else
 	{
 		assert_and_throw(context);
@@ -1159,6 +1159,13 @@ tiny_string Class_base::getQualifiedClassName() const
 		const multiname* mname=context->getMultiname(name_index,NULL);
 		return mname->qualifiedString(getSystemState());
 	}
+}
+
+tiny_string Class_base::getName() const
+{
+	return (class_name.nsStringId == BUILTIN_STRINGS::EMPTY ? 
+				this->getSystemState()->getStringFromUniqueId(class_name.nameId)
+			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +"$"+ this->getSystemState()->getStringFromUniqueId(class_name.nameId)); 
 }
 
 ASObject *Class_base::describeType() const
@@ -1454,8 +1461,8 @@ ASQName::ASQName(Class_base* c):ASObject(c)
 void ASQName::setByXML(XML* node)
 {
 	uri_is_null=false;
-	local_name = node->getName();
-	uri=node->getNamespaceURI();
+	local_name = getSystemState()->getUniqueStringId(node->getName());
+	uri=getSystemState()->getUniqueStringId(node->getNamespaceURI());
 }
 
 void ASQName::sinit(Class_base* c)
@@ -1476,9 +1483,9 @@ ASFUNCTIONBODY(ASQName,_constructor)
 
 	if(argslen==0)
 	{
-		th->local_name="";
+		th->local_name=BUILTIN_STRINGS::EMPTY;
 		th->uri_is_null=false;
-		th->uri=getVm(obj->getSystemState())->getDefaultXMLNamespace();
+		th->uri=obj->getSystemState()->getUniqueStringId(getVm(obj->getSystemState())->getDefaultXMLNamespace());
 		return NULL;
 	}
 	if(argslen==1)
@@ -1505,28 +1512,28 @@ ASFUNCTIONBODY(ASQName,_constructor)
 		}
 	}
 	else if(nameval->getObjectType()==T_UNDEFINED)
-		th->local_name="";
+		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=nameval->toString();
+		th->local_name=obj->getSystemState()->getUniqueStringId(nameval->toString());
 
 	// Set uri
 	th->uri_is_null=false;
 	if(!namespaceval || namespaceval->getObjectType()==T_UNDEFINED)
 	{
-		if(th->local_name=="*")
+		if(th->local_name==BUILTIN_STRINGS::STRING_WILDCARD)
 		{
 			th->uri_is_null=true;
-			th->uri="";
+			th->uri=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->uri=getVm(obj->getSystemState())->getDefaultXMLNamespace();
+			th->uri=obj->getSystemState()->getUniqueStringId(getVm(obj->getSystemState())->getDefaultXMLNamespace());
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)
 	{
 		th->uri_is_null=true;
-		th->uri="";
+		th->uri=BUILTIN_STRINGS::EMPTY;
 	}
 	else
 	{
@@ -1537,7 +1544,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 			th->uri=q->uri;
 		}
 		else
-			th->uri=namespaceval->toString();
+			th->uri=obj->getSystemState()->getUniqueStringId(namespaceval->toString());
 	}
 
 	return NULL;
@@ -1552,9 +1559,9 @@ ASFUNCTIONBODY(ASQName,generator)
 
 	if(argslen==0)
 	{
-		th->local_name="";
+		th->local_name=BUILTIN_STRINGS::EMPTY;
 		th->uri_is_null=false;
-		th->uri=getVm(getSys())->getDefaultXMLNamespace();
+		th->uri=th->getSystemState()->getUniqueStringId(getVm(getSys())->getDefaultXMLNamespace());
 		return th;
 	}
 	if(argslen==1)
@@ -1581,28 +1588,28 @@ ASFUNCTIONBODY(ASQName,generator)
 		}
 	}
 	else if(nameval->getObjectType()==T_UNDEFINED)
-		th->local_name="";
+		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=nameval->toString();
+		th->local_name=th->getSystemState()->getUniqueStringId(nameval->toString());
 
 	// Set uri
 	th->uri_is_null=false;
 	if(!namespaceval || namespaceval->getObjectType()==T_UNDEFINED)
 	{
-		if(th->local_name=="*")
+		if(th->local_name==BUILTIN_STRINGS::STRING_WILDCARD)
 		{
 			th->uri_is_null=true;
-			th->uri="";
+			th->uri=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->uri=getVm(getSys())->getDefaultXMLNamespace();
+			th->uri=th->getSystemState()->getUniqueStringId(getVm(th->getSystemState())->getDefaultXMLNamespace());
 		}
 	}
 	else if(namespaceval->getObjectType()==T_NULL)
 	{
 		th->uri_is_null=true;
-		th->uri="";
+		th->uri=BUILTIN_STRINGS::EMPTY;
 	}
 	else
 	{
@@ -1613,7 +1620,7 @@ ASFUNCTIONBODY(ASQName,generator)
 			th->uri=q->uri;
 		}
 		else
-			th->uri=namespaceval->toString();
+			th->uri=th->getSystemState()->getUniqueStringId(namespaceval->toString());
 	}
 	return th;
 }
@@ -1624,13 +1631,13 @@ ASFUNCTIONBODY(ASQName,_getURI)
 	if(th->uri_is_null)
 		return obj->getSystemState()->getNullRef();
 	else
-		return abstract_s(obj->getSystemState(),th->uri);
+		return abstract_s(obj->getSystemState(),obj->getSystemState()->getStringFromUniqueId(th->uri));
 }
 
 ASFUNCTIONBODY(ASQName,_getLocalName)
 {
 	ASQName* th=static_cast<ASQName*>(obj);
-	return abstract_s(obj->getSystemState(),th->local_name);
+	return abstract_s(obj->getSystemState(),obj->getSystemState()->getStringFromUniqueId(th->local_name));
 }
 
 ASFUNCTIONBODY(ASQName,_toString)
@@ -1657,10 +1664,10 @@ tiny_string ASQName::toString()
 	tiny_string s;
 	if(uri_is_null)
 		s = "*::";
-	else if(uri!="")
-		s = uri + "::";
+	else if(uri!=BUILTIN_STRINGS::EMPTY)
+		s = getSystemState()->getStringFromUniqueId(uri) + "::";
 
-	return s + local_name;
+	return s + getSystemState()->getStringFromUniqueId(local_name);
 }
 
 uint32_t ASQName::nextNameIndex(uint32_t cur_index)
@@ -1703,9 +1710,9 @@ _R<ASObject> ASQName::nextValue(uint32_t index)
 			if (uri_is_null)
 				return _MR(getSystemState()->getNullRef());
 			else
-				return _MR(abstract_s(getSystemState(),this->uri));
+				return _MR(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(this->uri)));
 		case 2:
-			return _MR(abstract_s(getSystemState(),this->local_name));
+			return _MR(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(this->local_name)));
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1779,7 +1786,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->uri;
+			th->uri=q->getSystemState()->getStringFromUniqueId(q->uri);
 		}
 		else
 		{
@@ -1797,7 +1804,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->uri;
+			th->uri=q->getSystemState()->getStringFromUniqueId(q->uri);
 		}
 		else
 		{
@@ -1867,7 +1874,7 @@ ASFUNCTIONBODY(Namespace,generator)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->uri;
+			th->uri=th->getSystemState()->getStringFromUniqueId(q->uri);
 		}
 		else
 		{
@@ -1885,7 +1892,7 @@ ASFUNCTIONBODY(Namespace,generator)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->uri;
+			th->uri=th->getSystemState()->getStringFromUniqueId(q->uri);
 		}
 		else
 		{
@@ -2064,8 +2071,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 	if(*retAddr==NULL)
 	{
 		//Create the class
-		MemoryAccount* memoryAccount = s->allocateMemoryAccount(ClassName<IFunction>::name);
-		ret=new (s->unaccountedMemory) Class<IFunction>(memoryAccount);
+		ret=new (s->unaccountedMemory) Class<IFunction>(s->unaccountedMemory);
 		ret->setSystemState(s);
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
@@ -2296,7 +2302,7 @@ bool lightspark::isXMLName(ASObject *obj)
 	if(obj->getObjectType()==lightspark::T_QNAME)
 	{
 		ASQName *q=static_cast<ASQName*>(obj);
-		name=q->getLocalName();
+		name=obj->getSystemState()->getStringFromUniqueId(q->getLocalName());
 	}
 	else if(obj->getObjectType()==lightspark::T_UNDEFINED ||
 		obj->getObjectType()==lightspark::T_NULL)

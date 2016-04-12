@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype" };
+static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*" };
 
 extern uint32_t asClassCount;
 
@@ -197,7 +197,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 		(void)tmp; // silence warning about unused variable
 	}
 	//Forge the empty namespace and make sure it gets id 0
-	nsNameAndKindImpl emptyNs("", NAMESPACE);
+	nsNameAndKindImpl emptyNs(BUILTIN_STRINGS::EMPTY, NAMESPACE);
 	uint32_t nsId;
 	uint32_t baseId;
 	getUniqueNamespaceId(emptyNs, 0, nsId, baseId);
@@ -354,7 +354,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 				f << varName << endl << varValue << endl;
 
 			/* That does occur in the wild */
-			if(params->hasPropertyByMultiname(QName(varName,""), true, true))
+			if(params->hasPropertyByMultiname(QName(getUniqueStringId(varName),BUILTIN_STRINGS::EMPTY), true, true))
 				LOG(LOG_ERROR,"Flash parameters has duplicate key '" << varName << "' - ignoring");
 			else
 				params->setVariableByQName(varName,"",
@@ -403,7 +403,7 @@ void SystemState::parseParametersFromURLIntoObject(const URLInfo& url, _R<ASObje
 	std::list< std::pair<tiny_string, tiny_string> >::iterator it;
 	for (it=queries.begin(); it!=queries.end(); ++it)
 	{
-		if(outParams->hasPropertyByMultiname(QName(it->first,""), true, true))
+		if(outParams->hasPropertyByMultiname(QName(outParams->getSystemState()->getUniqueStringId(it->first),BUILTIN_STRINGS::EMPTY), true, true))
 			LOG(LOG_ERROR,"URL query parameters has duplicate key '" << it->first << "' - ignoring");
 		else
 			outParams->setVariableByQName(it->first,"",
@@ -2037,9 +2037,9 @@ void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 		return;
 
 	tiny_string clsname;
-	if (!classname.ns.empty())
-		clsname = classname.ns + ".";
-	clsname += classname.name;
+	if (!classname.nsStringId != BUILTIN_STRINGS::EMPTY)
+		clsname = getSystemState()->getStringFromUniqueId(classname.nsStringId) + ".";
+	clsname += getSystemState()->getStringFromUniqueId(classname.nameId);
 
 	auto it=classesToBeBound.begin();
 	for(;it!=classesToBeBound.end();++it)

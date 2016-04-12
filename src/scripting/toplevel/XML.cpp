@@ -308,7 +308,7 @@ ASFUNCTIONBODY(XML,descendants)
 	XMLVector ret;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].getImpl(obj->getSystemState()).name : "",mname.isAttribute,ret);
+	th->getDescendantsByQName(name->toString(),mname.isQName() ? obj->getSystemState()->getStringFromUniqueId(mname.ns[0].getImpl(obj->getSystemState()).nameId) : "",mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->getChildrenlist(),multiname(NULL));
 }
 
@@ -375,8 +375,8 @@ ASFUNCTIONBODY(XML,attribute)
 	tiny_string tmpns;
 	if(argslen > 0 && args[0]->is<ASQName>())
 	{
-		tmpns= args[0]->as<ASQName>()->getURI();
-		attrname = args[0]->as<ASQName>()->getLocalName();
+		tmpns= obj->getSystemState()->getStringFromUniqueId(args[0]->as<ASQName>()->getURI());
+		attrname = obj->getSystemState()->getStringFromUniqueId(args[0]->as<ASQName>()->getLocalName());
 			
 	}
 
@@ -746,7 +746,7 @@ ASFUNCTIONBODY(XML,children)
 	XMLVector ret;
 	th->childrenImpl(ret, "*");
 	multiname mname(NULL);
-	mname.name_s_id=obj->getSystemState()->getUniqueStringId("*");
+	mname.name_s_id=BUILTIN_STRINGS::STRING_WILDCARD;
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
 	XMLList* retObj=Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->getChildrenlist(),mname);
@@ -886,7 +886,7 @@ ASFUNCTIONBODY(XML,addNamespace)
 	}
 	else if (newNamespace->is<ASQName>())
 	{
-		ns_uri = newNamespace->as<ASQName>()->getURI();
+		ns_uri = obj->getSystemState()->getStringFromUniqueId(newNamespace->as<ASQName>()->getURI());
 	}
 	else
 		ns_uri = newNamespace->toString();
@@ -974,7 +974,7 @@ ASFUNCTIONBODY(XML,_setLocalName)
 	tiny_string new_name;
 	if(newName->is<ASQName>())
 	{
-		new_name=newName->as<ASQName>()->getLocalName();
+		new_name=obj->getSystemState()->getStringFromUniqueId(newName->as<ASQName>()->getLocalName());
 	}
 	else
 	{
@@ -1010,8 +1010,8 @@ ASFUNCTIONBODY(XML,_setName)
 	if(newName->is<ASQName>())
 	{
 		ASQName *qname=newName->as<ASQName>();
-		localname=qname->getLocalName();
-		ns_uri=qname->getURI();
+		localname=obj->getSystemState()->getStringFromUniqueId(qname->getLocalName());
+		ns_uri=obj->getSystemState()->getStringFromUniqueId(qname->getURI());
 	}
 	else if (!newName->is<Undefined>())
 	{
@@ -1047,7 +1047,7 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	else if(newNamespace->is<ASQName>())
 	{
 		ASQName *qname=newNamespace->as<ASQName>();
-		ns_uri=qname->getURI();
+		ns_uri=obj->getSystemState()->getStringFromUniqueId(qname->getURI());
 		for (uint32_t i = 0; i < th->namespacedefs.size(); i++)
 		{
 			bool b;
@@ -1255,12 +1255,12 @@ XML::XMLVector XML::getAttributesByMultiname(const multiname& name)
 	while (i < name.ns.size())
 	{
 		nsNameAndKindImpl ns=name.ns[i].getImpl(getSystemState());
-		if (ns.kind==NAMESPACE && ns.name != AS3)
+		if (ns.kind==NAMESPACE && ns.nameId != getSystemState()->getUniqueStringId(AS3))
 		{
-			if (ns.name.empty())
+			if (ns.nameId == BUILTIN_STRINGS::EMPTY)
 				namespace_uri +=getVm(getSystemState())->getDefaultXMLNamespace();
 			else
-				namespace_uri +=ns.name;
+				namespace_uri +=getSystemState()->getStringFromUniqueId(ns.nameId);
 			namespace_uri += "|";
 		}
 		i++;
@@ -1319,12 +1319,12 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 	while (i < name.ns.size())
 	{
 		nsNameAndKindImpl ns=name.ns[i].getImpl(getSystemState());
-		if (ns.kind==NAMESPACE && ns.name != AS3)
+		if (ns.kind==NAMESPACE && ns.nameId != getSystemState()->getUniqueStringId(AS3))
 		{
-			if (ns.name.empty())
+			if (ns.nameId == BUILTIN_STRINGS::EMPTY)
 				namespace_uri +=getVm(getSystemState())->getDefaultXMLNamespace();
 			else
-				namespace_uri +=ns.name;
+				namespace_uri +=getSystemState()->getStringFromUniqueId(ns.nameId);
 			namespace_uri += "|";
 		}
 		i++;
@@ -1450,7 +1450,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 		nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 		if (ns.kind==NAMESPACE)
 		{
-			ns_uri=ns.name;
+			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
 			ns_prefix=getNamespacePrefixByURI(ns_uri);
 		}
 	}
@@ -1654,7 +1654,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	{
 		nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 		assert_and_throw(ns.kind==NAMESPACE);
-		ns_uri=ns.name;
+		ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
 		ns_prefix=getNamespacePrefixByURI(ns_uri);
 	}
 
@@ -1721,7 +1721,7 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			assert_and_throw(ns.kind==NAMESPACE);
-			ns_uri=ns.name;
+			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
 			ns_prefix=getNamespacePrefixByURI(ns_uri);
 		}
 		if (ns_uri.empty() && ns_prefix.empty())
@@ -1758,7 +1758,7 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			assert_and_throw(ns.kind==NAMESPACE);
-			ns_uri=ns.name;
+			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
 		}
 		if (!childrenlist.isNull() && childrenlist->nodes.size() > 0)
 		{
@@ -2669,7 +2669,7 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 	for(itattr = srcnode.attributes_begin();itattr!=srcnode.attributes_end();++itattr)
 	{
 		tiny_string aname = tiny_string(itattr->name(),true);
-		if(aname == "xmlns" || aname.substr_bytes(0,6) == "xmlns:")
+		if(aname == "xmlns" || (aname.numBytes() >= 6 && aname.substr_bytes(0,6) == "xmlns:"))
 			continue;
 		_NR<XML> tmp = _MR<XML>(Class<XML>::getInstanceSNoArgs(node->getSystemState()));
 		node->incRef();
@@ -2779,8 +2779,8 @@ ASFUNCTIONBODY(XML,_replace)
 	name.name_type=multiname::NAME_STRING;
 	if (propertyName->is<ASQName>())
 	{
-		name.name_s_id=obj->getSystemState()->getUniqueStringId(propertyName->as<ASQName>()->getLocalName());
-		name.ns.emplace_back(obj->getSystemState(),propertyName->as<ASQName>()->getURI(),NAMESPACE);
+		name.name_s_id=propertyName->as<ASQName>()->getLocalName();
+		name.ns.emplace_back(obj->getSystemState(),obj->getSystemState()->getStringFromUniqueId(propertyName->as<ASQName>()->getURI()),NAMESPACE);
 	}
 	else if (propertyName->toString() == "*")
 	{

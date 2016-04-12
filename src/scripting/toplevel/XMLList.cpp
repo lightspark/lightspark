@@ -642,7 +642,7 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			if (ns.kind==NAMESPACE)
-				namespace_uri=ns.name;
+				namespace_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
 		}
 		
 		// namespace set by "default xml namespace = ..."

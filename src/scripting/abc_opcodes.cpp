@@ -414,7 +414,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		}
 		if (obj->is<Class_base>())
 		{
-			tiny_string clsname = obj->as<Class_base>()->class_name.getQualifiedName();
+			tiny_string clsname = obj->as<Class_base>()->class_name.getQualifiedName(th->context->root->getSystemState());
 			obj->decRef();
 			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(th->context->root->getSystemState()), clsname);
 		}
@@ -501,6 +501,7 @@ void ABCVm::pushWith(call_context* th)
 {
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushWith ") << t );
+	t->incRef();
 	th->scope_stack.emplace_back(scope_entry(_MR(t), true));
 }
 
@@ -508,6 +509,7 @@ void ABCVm::pushScope(call_context* th)
 {
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushScope ") << t );
+	t->incRef();
 	th->scope_stack.emplace_back(scope_entry(_MR(t), false));
 }
 
@@ -818,7 +820,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	if (!global->hasPropertyByMultiname(qname, false, false))
 	{
 		o_class->incRef();
-		global->setVariableByQName(qname.name,nsNameAndKind(global->getSystemState(),qname.ns,NAMESPACE),o_class,DECLARED_TRAIT);
+		global->setVariableByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),o_class,DECLARED_TRAIT);
 	}
 
 	for(int i=0;i<m;++i)
@@ -2008,7 +2010,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		tiny_string ns_uri = "";
 		if (name->ns.size() > 0)
 		{
-			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).name;
+			ns_uri = th->context->root->getSystemState()->getStringFromUniqueId(name->ns[0].getImpl(th->context->root->getSystemState()).nameId);
 			if (ns_uri.empty() && name->ns.size() == 1)
 				ns_uri="*";
 		}
@@ -2020,7 +2022,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		tiny_string ns_uri = "";
 		if (name->ns.size() > 0)
 		{
-			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).name;
+			ns_uri = th->context->root->getSystemState()->getStringFromUniqueId(name->ns[0].getImpl(th->context->root->getSystemState()).nameId);
 			if (ns_uri.empty() && name->ns.size() == 1)
 				ns_uri="*";
 		}
@@ -2167,7 +2169,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* baseClass=th->runtime_stack_pop();
 
 	assert_and_throw(mname->ns.size()==1);
-	QName className(th->context->root->getSystemState()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl(th->context->root->getSystemState()).name);
+	QName className(mname->name_s_id,mname->ns[0].getImpl(th->context->root->getSystemState()).nameId);
 
 	Class_inherit* ret = NULL;
 	auto i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
@@ -2200,8 +2202,7 @@ void ABCVm::newClass(call_context* th, int n)
 			return;
 		}
 		
-		MemoryAccount* memoryAccount = th->context->root->applicationDomain->getSystemState()->allocateMemoryAccount(className.name);
-		ret=new (th->context->root->applicationDomain->getSystemState()->unaccountedMemory) Class_inherit(className, memoryAccount);
+		ret=new (th->context->root->getSystemState()->unaccountedMemory) Class_inherit(className, th->context->root->getSystemState()->unaccountedMemory);
 
 		LOG(LOG_CALLS,"add classes defined:"<<*mname<<" "<<th->context);
 		//Add the class to the ones being currently defined in this context
@@ -2515,6 +2516,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
+	assert_and_throw(th->scope_stack.size() > (size_t)(n+th->initialScopeStack));
 	ASObject* ret=th->scope_stack[n+th->initialScopeStack].object.getPtr();
 	ret->incRef();
 	LOG(LOG_CALLS, _("getScopeObject: ") << ret );

@@ -177,9 +177,8 @@ public:
 		if(*retAddr==NULL)
 		{
 			//Create the class
-			QName name(ClassName<T>::name,ClassName<T>::ns);
-			MemoryAccount* memoryAccount = sys->allocateMemoryAccount(name.name);
-			ret=new (sys->unaccountedMemory) Class<T>(name, memoryAccount);
+			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
+			ret=new (sys->unaccountedMemory) Class<T>(name, sys->unaccountedMemory);
 			ret->setSystemState(sys);
 			ret->incRef();
 			*retAddr=ret;
@@ -345,9 +344,8 @@ public:
 		if(*retAddr==NULL)
 		{
 			//Create the class
-			QName name(ClassName<T>::name,ClassName<T>::ns);
-			MemoryAccount* memoryAccount = sys->allocateMemoryAccount(name.name);
-			ret=new (sys->unaccountedMemory) InterfaceClass<T>(name, memoryAccount);
+			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
+			ret=new (sys->unaccountedMemory) InterfaceClass<T>(name, sys->unaccountedMemory);
 			ret->isInterface = true;
 			ret->incRef();
 			*retAddr=ret;
@@ -450,34 +448,34 @@ class Template : public Template_base
 public:
 	Template(QName name) : Template_base(name) {};
 
-	QName getQName(const std::vector<const Type*>& types)
+	QName getQName(SystemState* sys, const std::vector<const Type*>& types)
 	{
 		//This is the naming scheme that the ABC compiler uses,
 		//and we need to stay in sync here
-		QName ret(ClassName<T>::name, ClassName<T>::ns);
+		tiny_string name = ClassName<T>::name;
 		for(size_t i=0;i<types.size();++i)
 		{
-			ret.name += "$";
-			ret.name += types[i]->getName();
+			name += "$";
+			name += types[i]->getName();
 		}
+		QName ret(sys->getUniqueStringId(name),sys->getUniqueStringId(ClassName<T>::ns));
 		return ret;
 	}
 
 	Class_base* applyType(const std::vector<const Type*>& types,_NR<ApplicationDomain> applicationDomain)
 	{
-		QName instantiatedQName = getQName(types);
 		_NR<ApplicationDomain> appdomain = applicationDomain;
 		
 		// if type is a builtin class, it is handled in the systemDomain
 		if (appdomain.isNull() || (types.size() > 0 && !dynamic_cast<const Class_inherit*>(types[0])))
 			appdomain = getSys()->systemDomain;
+		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
 
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* memoryAccount = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.name);
-			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,memoryAccount);
+			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,appdomain->getSystemState()->unaccountedMemory);
 			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
@@ -504,8 +502,7 @@ public:
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* memoryAccount = appdomain->getSystemState()->allocateMemoryAccount(qname.name);
-			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(qname,types,this,memoryAccount);
+			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(qname,types,this,appdomain->getSystemState()->unaccountedMemory);
 			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
 			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
@@ -560,7 +557,7 @@ public:
 
 	static Template<T>* getTemplate(SystemState* sys)
 	{
-		return getTemplate(sys,QName(ClassName<T>::name,ClassName<T>::ns));
+		return getTemplate(sys,QName(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns)));
 	}
 };
 

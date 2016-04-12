@@ -221,9 +221,8 @@ Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 	if(*retAddr==NULL)
 	{
 		//Create the class
-		QName name(ClassName<ASObject>::name,ClassName<ASObject>::ns);
-		MemoryAccount* memoryAccount = s->allocateMemoryAccount(name.name);
-		ret=new (s->unaccountedMemory) Class<ASObject>(name, memoryAccount);
+		QName name(s->getUniqueStringId(ClassName<ASObject>::name),s->getUniqueStringId(ClassName<ASObject>::ns));
+		ret=new (s->unaccountedMemory) Class<ASObject>(name, s->unaccountedMemory);
 		ret->setSystemState(s);
 		ret->incRef();
 		*retAddr=ret;

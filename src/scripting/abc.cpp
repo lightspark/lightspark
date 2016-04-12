@@ -720,9 +720,9 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		ret=m->cached;
 		if(midx==0)
 		{
-			ret->name_s_id=root->getSystemState()->getUniqueStringId("any");
+			ret->name_s_id=BUILTIN_STRINGS::ANY;
 			ret->name_type=multiname::NAME_STRING;
-			ret->ns.emplace_back(root->getSystemState(),"",NAMESPACE);
+			ret->ns.emplace_back(root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			ret->isAttribute=false;
 			return ret;
 		}
@@ -1765,7 +1765,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		//invoked on the client object
 		multiname headerName(NULL);
 		headerName.name_type=multiname::NAME_STRING;
-		headerName.ns.emplace_back(m_sys,"",NAMESPACE);
+		headerName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		tiny_string headerNameString;
 		if(!message->readUTF(headerNameString))
 			return;
@@ -1832,7 +1832,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		multiname onResultName(NULL);
 		onResultName.name_type=multiname::NAME_STRING;
 		onResultName.name_s_id=m_sys->getUniqueStringId("onResult");
-		onResultName.ns.emplace_back(m_sys,"",NAMESPACE);
+		onResultName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
 		if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
 		{
@@ -2061,13 +2061,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 			ASObject* ret;
 
-			QName className(obj->getSystemState()->getStringFromUniqueId(mname->name_s_id),mname->ns[0].getImpl(obj->getSystemState()).name);
+			QName className(mname->name_s_id,mname->ns[0].getImpl(obj->getSystemState()).nameId);
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{
 
-				MemoryAccount* memoryAccount = obj->getSystemState()->allocateMemoryAccount(className.name);
-				Class_inherit* ci=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				Class_inherit* ci=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, obj->getSystemState()->unaccountedMemory);
 				ci->isInterface = true;
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
@@ -2121,8 +2120,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 			else
 			{
-				MemoryAccount* memoryAccount = obj->getSystemState()->allocateMemoryAccount(className.name);
-				Class_inherit* c=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, memoryAccount);
+				Class_inherit* c=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, obj->getSystemState()->unaccountedMemory);
 				c->context = this;
 
 				if(instances[t->classi].supername)

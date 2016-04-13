@@ -49,7 +49,7 @@ class Any;
 class Void;
 class Class_object;
 class ApplicationDomain;
-
+extern bool isVmThread();
 // Enum used during early binding in abc_optimizer.cpp
 enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
 
@@ -166,7 +166,10 @@ protected:
 public:
 	inline ASObject* getObjectFromFreeList()
 	{
-		SpinlockLocker l(referencedObjectsMutex);
+#ifndef NDEBUG
+		// all ASObjects must be created in the VM thread
+		assert_and_throw(isVmThread());
+#endif
 		ASObject* ret = NULL;
 		if (!freelist.empty())
 		{
@@ -178,7 +181,10 @@ public:
 	}
 	inline ASObject* getObjectFromFreeList2()
 	{
-		SpinlockLocker l(referencedObjectsMutex);
+#ifndef NDEBUG
+		// all ASObjects must be created in the VM thread
+		assert_and_throw(isVmThread());
+#endif
 		ASObject* ret = NULL;
 		if (!freelist2.empty())
 		{
@@ -191,8 +197,11 @@ public:
 	
 	inline void pushObjectToFreeList(ASObject *obj)
 	{
+#ifndef NDEBUG
+		// all ASObjects must be created in the VM thread
+		assert_and_throw(isVmThread());
+#endif
 		assert(obj->getRefCount() == 0);
-		SpinlockLocker l(referencedObjectsMutex);
 		if (obj->reusableListNumber == 0)
 			freelist.push_back(obj);
 		else

@@ -130,9 +130,16 @@ using namespace std;
 using namespace lightspark;
 
 DEFINE_AND_INITIALIZE_TLS(is_vm_thread);
+#ifndef NDEBUG
+bool inStartupOrClose=true;
+#endif
 bool lightspark::isVmThread()
 {
+#ifndef NDEBUG
+	return inStartupOrClose || GPOINTER_TO_INT(tls_get(&is_vm_thread));
+#else
 	return GPOINTER_TO_INT(tls_get(&is_vm_thread));
+#endif
 }
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -1581,7 +1588,9 @@ void ABCVm::Run(ABCVm* th)
 
 	/* set TLS variable for isVmThread() */
         tls_set(&is_vm_thread, GINT_TO_POINTER(1));
-
+#ifndef NDEBUG
+	inStartupOrClose= false;
+#endif
 	if(th->m_sys->useJit)
 	{
 #ifdef LLVM_31
@@ -1733,6 +1742,9 @@ void ABCVm::Run(ABCVm* th)
 		th->ex->clearAllGlobalMappings();
 		delete th->module;
 	}
+#ifndef NDEBUG
+	inStartupOrClose= true;
+#endif
 }
 
 /* This breaks the lock on all enqueued events to prevent deadlocking */

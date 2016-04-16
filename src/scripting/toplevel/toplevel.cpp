@@ -163,7 +163,14 @@ ASFUNCTIONBODY(IFunction,apply)
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
 		//get the current global object
-		newObj=getVm(obj->getSystemState())->currentCallContext->scope_stack[0].object->as<Global>();
+		call_context* cc = getVm(obj->getSystemState())->currentCallContext;
+		if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+			newObj =cc->parent_scope_stack->scope[0].object.getPtr();
+		else
+		{
+			assert_and_throw(cc->scope_stack.size() > 0);
+			newObj =cc->scope_stack[0].object.getPtr();
+		}
 		newObj->incRef();
 	}
 	else
@@ -198,7 +205,14 @@ ASFUNCTIONBODY(IFunction,_call)
 	if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
 	{
 		//get the current global object
-		newObj=getVm(obj->getSystemState())->currentCallContext->scope_stack[0].object->as<Global>();
+		call_context* cc = getVm(obj->getSystemState())->currentCallContext;
+		if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+			newObj =cc->parent_scope_stack->scope[0].object.getPtr();
+		else
+		{
+			assert_and_throw(cc->scope_stack.size() > 0);
+			newObj =cc->scope_stack[0].object.getPtr();
+		}
 		newObj->incRef();
 	}
 	else
@@ -253,7 +267,7 @@ ASObject *IFunction::describeType() const
 	return XML::createFromNode(root);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),mi(m),val(NULL)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),mi(m),val(NULL),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -366,8 +380,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.stack_index=0;
 	cc.context=mi->context;
 	//cc.code= new istringstream(mi->body->code);
-	cc.scope_stack=func_scope;
-	cc.initialScopeStack=func_scope.size();
+	cc.parent_scope_stack=func_scope;
 	cc.exec_pos=0;
 	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
 	if (saved_cc)
@@ -489,8 +502,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					cc.runtime_stack_clear();
 					cc.runtime_stack_push(excobj);
 					cc.scope_stack.clear();
-					cc.scope_stack=func_scope;
-					cc.initialScopeStack=func_scope.size();
 					break;
 				}
 			}

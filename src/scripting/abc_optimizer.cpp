@@ -134,7 +134,7 @@ EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFun
 		const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData)
 {
 	//We try to find out the position on the scope stack where the name is found
-	uint32_t totalScopeStackLen = f->func_scope.size() + scopeStack.size();
+	uint32_t totalScopeStackLen = f->func_scope->scope.size() + scopeStack.size();
 
 	bool found=false;
 	//Traverse in reverse order the scope stack. Stops at the first any/unknown type.
@@ -170,7 +170,7 @@ EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFun
 		//TODO: We can also push directly those objects since they are fixed
 		std::cerr << "End of local stack" << std::endl;
 		//Now look in the objects that are stored in the function save scope stack
-		for(auto it=f->func_scope.rbegin();it!=f->func_scope.rend();++it)
+		for(auto it=f->func_scope->scope.rbegin();it!=f->func_scope->scope.rend();++it)
 		{
 			totalScopeStackLen--;
 			if(it->considerDynamic)
@@ -334,6 +334,8 @@ void ABCVm::writeBranchAddress(std::map<uint32_t,BasicBlock>& basicBlocks, int h
 void ABCVm::optimizeFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
+	SystemState* sys = function->getSystemState();
+	
 	ActivationType activationType(mi);
 
 	istringstream code(mi->body->code);
@@ -701,7 +703,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 			case 0x20:
 			{
 				//pushnull
-				ASObject* ret=function->getSystemState()->getNullRef();
+				ASObject* ret=sys->getNullRef();
 				//We don't really need a reference to it
 				ret->decRef();
 				curBlock->pushStack(InferenceData(ret));
@@ -730,7 +732,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code.read((char*)&t,1);
 				out << (uint8_t)opcode;
 				out << t;
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x25:
@@ -742,21 +744,21 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code >> t;
 				out << (uint8_t)opcode;
 				writeInt32(out, t);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x26:
 			{
 				//pushtrue
 				out << (uint8_t)opcode;
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0x27:
 			{
 				//pushfalse
 				out << (uint8_t)opcode;
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0x28:
@@ -811,7 +813,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				s32 val=mi->context->constant_pool.integer[t];
 				out << (uint8_t)opcode;
 				writeInt32(out, val);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x2e:
@@ -822,7 +824,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				u32 val=mi->context->constant_pool.uinteger[t];
 				out << (uint8_t)opcode;
 				writeInt32(out, val);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x2f:
@@ -833,7 +835,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				double val=mi->context->constant_pool.doubles[t];
 				out << (uint8_t)opcode;
 				writeDouble(out, val);
-				curBlock->pushStack(Class<Number>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Number>::getClass(sys));
 				break;
 			}
 			case 0x30:
@@ -864,7 +866,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				writeInt32(out,t);
 				writeInt32(out,t2);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			//Alchemy opcodes
@@ -877,7 +879,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//li32
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x3a:
@@ -1256,7 +1258,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 
 				int numRT=mi->context->getMultinameRTData(t);
 				curBlock->popStack(numRT+1);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0x6c:
@@ -1320,7 +1322,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<ASString>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<ASString>::getClass(sys));
 				break;
 			}
 			case 0x73:
@@ -1329,7 +1331,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0x74:
@@ -1338,7 +1340,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<UInteger>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<UInteger>::getClass(sys));
 				break;
 			}
 			case 0x75:
@@ -1347,7 +1349,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Number>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Number>::getClass(sys));
 				break;
 			}
 			case 0x76:
@@ -1356,7 +1358,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0x78:
@@ -1449,7 +1451,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//decrement
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Number>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Number>::getClass(sys));
 				break;
 			}
 			case 0x92:
@@ -1468,7 +1470,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//not
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0x97:
@@ -1482,7 +1484,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//negate_i
 				out << (uint8_t)opcode;
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0xa0:
@@ -1505,7 +1507,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//modulo
 				out << (uint8_t)opcode;
 				curBlock->popStack(2);
-				curBlock->pushStack(Class<Number>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Number>::getClass(sys));
 				break;
 			}
 			case 0xa5:
@@ -1529,7 +1531,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//multiply_i
 				out << (uint8_t)opcode;
 				curBlock->popStack(2);
-				curBlock->pushStack(Class<Integer>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Integer>::getClass(sys));
 				break;
 			}
 			case 0xab:
@@ -1553,7 +1555,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				//in
 				out << (uint8_t)opcode;
 				curBlock->popStack(2);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0xb2:
@@ -1568,7 +1570,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				if(numRT)
 					throw ParseException("Bad code in optimizer");
 				curBlock->popStack(1);
-				curBlock->pushStack(Class<Boolean>::getClass(function->getSystemState()));
+				curBlock->pushStack(Class<Boolean>::getClass(sys));
 				break;
 			}
 			case 0xc2:

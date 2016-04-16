@@ -547,6 +547,7 @@ private:
 			ret->val = val;
 			ret->length = length;
 			ret->inClass = inClass;
+			func_scope->incRef();
 			ret->func_scope = func_scope;
 			ret->functionname = functionname;
 		}
@@ -560,12 +561,12 @@ public:
 	inline void finalize()
 	{
 		IFunction::finalize();
-		func_scope.clear();
+		func_scope.reset();
 		val = NULL;
 		mi = NULL;
 	}
 	
-	std::vector<scope_entry> func_scope;
+	_NR<scope_entry_list> func_scope;
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -577,12 +578,17 @@ public:
 	}
 	void acquireScope(const std::vector<scope_entry>& scope)
 	{
-		assert_and_throw(func_scope.empty());
-		func_scope=scope;
+		if (func_scope.isNull())
+			func_scope = _NR<scope_entry_list>(new scope_entry_list());
+			
+		assert_and_throw(func_scope->scope.empty());
+		func_scope->scope=scope;
 	}
 	void addToScope(const scope_entry& s)
 	{
-		func_scope.emplace_back(s);
+		if (func_scope.isNull())
+			func_scope = _NR<scope_entry_list>(new scope_entry_list());
+		func_scope->scope.emplace_back(s);
 	}
 };
 

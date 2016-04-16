@@ -39,7 +39,11 @@ struct scope_entry
 	{
 	}
 };
-
+class scope_entry_list: public RefCountable
+{
+public:
+	std::vector<scope_entry> scope;
+};
 struct call_context
 {
 #include "packed_begin.h"
@@ -55,6 +59,7 @@ struct call_context
 	uint32_t locals_size;
 	uint32_t max_stack;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
+	_NR<scope_entry_list> parent_scope_stack;
 	std::vector<scope_entry> scope_stack;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
@@ -65,7 +70,6 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	_NR<ASString> defaultNamespaceUri;
-	int initialScopeStack;
 	~call_context();
 	static void handleError(int errorcode);
 	inline void runtime_stack_clear()

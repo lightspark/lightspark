@@ -140,7 +140,7 @@ void multiname::setName(ASObject* n)
 	case T_STRING:
 		{
 			ASString* o=static_cast<ASString*>(n);
-			name_s_id=o->idOnly ? o->stringId : n->getSystemState()->getUniqueStringId(o->getData());
+			name_s_id=o->hasId ? o->stringId : n->getSystemState()->getUniqueStringId(o->getData());
 			name_type = NAME_STRING;
 		}
 		break;
@@ -1348,28 +1348,32 @@ ASString* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = std::string(s,len);
-	ret->idOnly = false;
+	ret->hasId = false;
+	ret->datafilled=true;
 	return ret;
 }
 ASString* lightspark::abstract_s(SystemState *sys, const char* s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
-	ret->idOnly = false;
+	ret->hasId = false;
+	ret->datafilled=true;
 	return ret;
 }
 ASString* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
-	ret->idOnly = false;
+	ret->hasId = false;
+	ret->datafilled=true;
 	return ret;
 }
 ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->stringId = stringId;
-	ret->idOnly = true;
+	ret->hasId = true;
+	ret->datafilled=false;
 	return ret;
 }
 

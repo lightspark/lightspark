@@ -47,20 +47,21 @@ public:
 	ASString(Class_base* c, const Glib::ustring& s);
 	ASString(Class_base* c, const char* s);
 	ASString(Class_base* c, const char* s, uint32_t len);
-	bool idOnly;
+	bool hasId;
+	bool datafilled;
 	uint32_t stringId;
 	inline tiny_string& getData()
 	{
-		if (idOnly)
+		if (!datafilled)
 		{
 			data = getSystemState()->getStringFromUniqueId(stringId);
-			idOnly = false;
+			datafilled = true;
 		}
 		return data;
 	}
 	inline bool isEmpty() const
 	{
-		if (idOnly)
+		if (hasId)
 			return stringId == BUILTIN_STRINGS::EMPTY;
 		return data.empty();
 	}
@@ -100,7 +101,7 @@ public:
 	std::string toDebugString() { return std::string("\"") + std::string(getData()) + "\""; }
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
-	inline void finalize() { data.clear(); idOnly = true, stringId = BUILTIN_STRINGS::EMPTY; }
+	inline void finalize() { data.clear(); hasId = true, datafilled=true; stringId = BUILTIN_STRINGS::EMPTY; }
 };
 
 template<>

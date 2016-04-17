@@ -29,27 +29,27 @@
 using namespace std;
 using namespace lightspark;
 
-ASString::ASString(Class_base* c):ASObject(c),idOnly(true),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c):ASObject(c),hasId(true),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const string& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const string& s) : ASObject(c),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/true),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/true),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
@@ -57,8 +57,9 @@ ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/t
 ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c)
 {
 	data = std::string(s,len);
-	idOnly = false;
+	hasId = false;
 	stringId = BUILTIN_STRINGS::EMPTY;
+	datafilled=true;
 	type=T_STRING;
 }
 
@@ -68,8 +69,9 @@ ASFUNCTIONBODY(ASString,_constructor)
 	if(args && argslen==1)
 	{
 		th->data=args[0]->toString();
-		th->idOnly = false;
+		th->hasId = false;
 		th->stringId = BUILTIN_STRINGS::EMPTY;
+		th->datafilled = true;
 	}
 	return NULL;
 }
@@ -549,7 +551,7 @@ bool ASString::isEqual(ASObject* r)
 			if (!this->isConstructed())
 				return !r->isConstructed();
 			ASString* s=static_cast<ASString*>(r);
-			return s->idOnly && idOnly ? s->stringId == stringId : s->getData()==getData();
+			return s->hasId && hasId ? s->stringId == stringId : s->getData()==getData();
 		}
 		case T_INTEGER:
 		case T_UINTEGER:

@@ -165,7 +165,7 @@ public:
 	_R<RootMovieClip> root;
 
 	method_info* get_method(unsigned int m);
-	const tiny_string& getString(unsigned int s) const;
+	uint32_t getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	static multiname* s_getMultiname(ABCContext*, ASObject* rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);

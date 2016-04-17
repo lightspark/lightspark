@@ -323,7 +323,7 @@ struct nsNameAndKind
 	 * Special constructor for protected namespace, which have
 	 * different representationId
 	 */
-	nsNameAndKind(SystemState* sys,const tiny_string& _name, uint32_t _baseId, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys,uint32_t _nameId, uint32_t _baseId, NS_KIND _kind);
 	/*
 	 * Special version to create the empty bultin namespace
 	 */
@@ -1341,6 +1341,7 @@ ASString* abstract_s(SystemState *sys);
 ASString* abstract_s(SystemState *sys, const char* s, uint32_t len);
 ASString* abstract_s(SystemState *sys, const char* s);
 ASString* abstract_s(SystemState *sys, const tiny_string& s);
+ASString* abstract_s(SystemState *sys, uint32_t stringId);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 

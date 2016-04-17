@@ -29,27 +29,27 @@
 using namespace std;
 using namespace lightspark;
 
-ASString::ASString(Class_base* c):ASObject(c)
+ASString::ASString(Class_base* c):ASObject(c),idOnly(true),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const string& s) : ASObject(c),data(s)
+ASString::ASString(Class_base* c,const string& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c),data(s)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c),data(s)
+ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c),data(s),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
 
-ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/true)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/true),idOnly(false),stringId(BUILTIN_STRINGS::EMPTY)
 {
 	type=T_STRING;
 }
@@ -57,6 +57,8 @@ ASString::ASString(Class_base* c,const char* s) : ASObject(c),data(s, /*copy:*/t
 ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c)
 {
 	data = std::string(s,len);
+	idOnly = false;
+	stringId = BUILTIN_STRINGS::EMPTY;
 	type=T_STRING;
 }
 
@@ -64,7 +66,11 @@ ASFUNCTIONBODY(ASString,_constructor)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	if(args && argslen==1)
+	{
 		th->data=args[0]->toString();
+		th->idOnly = false;
+		th->stringId = BUILTIN_STRINGS::EMPTY;
+	}
 	return NULL;
 }
 
@@ -72,7 +78,7 @@ ASFUNCTIONBODY(ASString,_getLength)
 {
 	// fast path if obj is ASString
 	if (obj->is<ASString>())
-		return abstract_i(obj->getSystemState(),obj->as<ASString>()->data.numChars());
+		return abstract_i(obj->getSystemState(),obj->as<ASString>()->getData().numChars());
 	return abstract_i(obj->getSystemState(),obj->toString().numChars());
 }
 
@@ -453,16 +459,11 @@ ASFUNCTIONBODY(ASString,substring)
 	return abstract_s(obj->getSystemState(),data.substr(start,end-start));
 }
 
-tiny_string ASString::toString_priv() const
-{
-	return data;
-}
-
 number_t ASString::toNumber()
 {
 	assert_and_throw(implEnable);
 
-	const char *s = data.raw_buf();
+	const char *s = getData().raw_buf();
 	while (*s && isEcmaSpace(g_utf8_get_char(s)))
 		s = g_utf8_next_char(s);
 
@@ -529,7 +530,7 @@ number_t ASString::parseStringInfinite(const char *s, char **end) const
 int32_t ASString::toInt()
 {
 	assert_and_throw(implEnable);
-	return Integer::stringToASInteger(data.raw_buf(), 0);
+	return Integer::stringToASInteger(getData().raw_buf(), 0);
 }
 
 uint32_t ASString::toUInt()
@@ -547,8 +548,8 @@ bool ASString::isEqual(ASObject* r)
 		{
 			if (!this->isConstructed())
 				return !r->isConstructed();
-			const ASString* s=static_cast<const ASString*>(r);
-			return s->data==data;
+			ASString* s=static_cast<ASString*>(r);
+			return s->idOnly && idOnly ? s->stringId == stringId : s->getData()==getData();
 		}
 		case T_INTEGER:
 		case T_UINTEGER:
@@ -573,7 +574,7 @@ TRISTATE ASString::isLess(ASObject* r)
 	if(getObjectType()==T_STRING && rprim->getObjectType()==T_STRING)
 	{
 		ASString* rstr=static_cast<ASString*>(rprim.getPtr());
-		return (data<rstr->data)?TTRUE:TFALSE;
+		return (getData()<rstr->getData())?TTRUE:TFALSE;
 	}
 	number_t a=toNumber();
 	number_t b=rprim->toNumber();
@@ -589,12 +590,12 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
 	{
 		out->writeByte(amf0_string_marker);
-		out->writeStringAMF0(data);
+		out->writeStringAMF0(getData());
 	}
 	else
 	{
 		out->writeByte(string_marker);
-		out->writeStringVR(stringMap, data);
+		out->writeStringVR(stringMap, getData());
 	}
 }
 
@@ -635,11 +636,11 @@ ASFUNCTIONBODY(ASString,charAt)
 	// fast path if obj is ASString
 	if (obj->is<ASString>())
 	{
-		int maxIndex=obj->as<ASString>()->data.numChars();
+		int maxIndex=obj->as<ASString>()->getData().numChars();
 		
 		if(index<0 || index>=maxIndex || std::isinf(index))
 			return abstract_s(obj->getSystemState());
-		return abstract_s(obj->getSystemState(), tiny_string::fromChar(obj->as<ASString>()->data.charAt(index)) );
+		return abstract_s(obj->getSystemState(), tiny_string::fromChar(obj->as<ASString>()->getData().charAt(index)) );
 	}
 
 	tiny_string data = obj->toString();
@@ -657,9 +658,9 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 	// fast path if obj is ASString
 	if (obj->is<ASString>())
 	{
-		if(index<0 || index>=obj->as<ASString>()->data.numChars() || std::isinf(index) || std::isnan(index))
+		if(index<0 || index>=obj->as<ASString>()->getData().numChars() || std::isinf(index) || std::isnan(index))
 			return abstract_d(obj->getSystemState(),Number::NaN);
-		return abstract_i(obj->getSystemState(),obj->as<ASString>()->data.charAt(index));
+		return abstract_i(obj->getSystemState(),obj->as<ASString>()->getData().charAt(index));
 	}
 	tiny_string data = obj->toString();
 	if(index<0 || index>=data.numChars() || std::isinf(index) || std::isnan(index))
@@ -750,7 +751,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=abstract_s(obj->getSystemState());
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		ret->data += tiny_string::fromChar(args[i]->toUInt16());
+		ret->getData() += tiny_string::fromChar(args[i]->toUInt16());
 	}
 	return ret;
 }
@@ -803,14 +804,14 @@ ASFUNCTIONBODY(ASString,replace)
 		do
 		{
 			tiny_string replaceWithTmp = replaceWith;
-			int rc=pcre_exec(pcreRE, &extra, ret->data.raw_buf(), ret->data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+			int rc=pcre_exec(pcreRE, &extra, ret->getData().raw_buf(), ret->getData().numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 			if(rc<0)
 			{
 				//No matches or error
 				pcre_free(pcreRE);
 				return ret;
 			}
-			prevsubstring += ret->data.substr_bytes(offset,ovector[0]-offset);
+			prevsubstring += ret->getData().substr_bytes(offset,ovector[0]-offset);
 			if(type==FUNC)
 			{
 				//Get the replace for this match
@@ -853,23 +854,23 @@ ASFUNCTIONBODY(ASString,replace)
 									replaceWithTmp.replace(ipos,1,"");
 									break;
 								case '&':
-									replaceWithTmp.replace(ipos-1,2,ret->data.substr_bytes(ovector[0], ovector[1]-ovector[0]));
+									replaceWithTmp.replace(ipos-1,2,ret->getData().substr_bytes(ovector[0], ovector[1]-ovector[0]));
 									break;
 								case '`':
 									replaceWithTmp.replace(ipos-1,2,prevsubstring);
 									break;
 								case '\'':
-									replaceWithTmp.replace(ipos-1,2,ret->data.substr_bytes(ovector[1],ret->data.numBytes()-ovector[1]));
+									replaceWithTmp.replace(ipos-1,2,ret->getData().substr_bytes(ovector[1],ret->getData().numBytes()-ovector[1]));
 									break;
 							}
 							continue;
 						}
-						group = (i >= rc) ? "" : ret->data.substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
+						group = (i >= rc) ? "" : ret->getData().substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
 						replaceWithTmp.replace(pos, ipos-pos, group);
 					}
 			}
-			prevsubstring += ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]);
-			ret->data.replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);
+			prevsubstring += ret->getData().substr_bytes(ovector[0],ovector[1]-ovector[0]);
+			ret->getData().replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);
 			offset=ovector[0]+replaceWithTmp.numBytes();
 			if (ovector[0] == ovector[1])
 				offset+=1;
@@ -882,10 +883,10 @@ ASFUNCTIONBODY(ASString,replace)
 	else
 	{
 		const tiny_string& s=args[0]->toString();
-		int index=ret->data.find(s,0);
+		int index=ret->getData().find(s,0);
 		if(index==-1) //No result
 			return ret;
-		ret->data.replace(index,s.numChars(),replaceWith);
+		ret->getData().replace(index,s.numChars(),replaceWith);
 	}
 
 	return ret;
@@ -896,7 +897,7 @@ ASFUNCTIONBODY(ASString,concat)
 	tiny_string data = obj->toString();
 	ASString* ret=abstract_s(obj->getSystemState(),data);
 	for(unsigned int i=0;i<argslen;i++)
-		ret->data+=args[i]->toString().raw_buf();
+		ret->getData()+=args[i]->toString().raw_buf();
 
 	return ret;
 }

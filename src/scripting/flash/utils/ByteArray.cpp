@@ -508,7 +508,7 @@ ASFUNCTIONBODY(ByteArray,writeUTF)
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
 	th->lock();
-	th->writeUTF(str->data);
+	th->writeUTF(str->getData());
 	th->unlock();
 	return NULL;
 }
@@ -521,9 +521,9 @@ ASFUNCTIONBODY(ByteArray,writeUTFBytes)
 	assert_and_throw(args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
 	th->lock();
-	th->getBuffer(th->position+str->data.numBytes(),true);
-	memcpy(th->bytes+th->position,str->data.raw_buf(),str->data.numBytes());
-	th->position+=str->data.numBytes();
+	th->getBuffer(th->position+str->getData().numBytes(),true);
+	memcpy(th->bytes+th->position,str->getData().raw_buf(),str->getData().numBytes());
+	th->position+=str->getData().numBytes();
 	th->unlock();
 
 	return NULL;

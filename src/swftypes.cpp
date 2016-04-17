@@ -140,7 +140,7 @@ void multiname::setName(ASObject* n)
 	case T_STRING:
 		{
 			ASString* o=static_cast<ASString*>(n);
-			name_s_id=n->getSystemState()->getUniqueStringId(o->data);
+			name_s_id=o->idOnly ? o->stringId : n->getSystemState()->getUniqueStringId(o->getData());
 			name_type = NAME_STRING;
 		}
 		break;
@@ -1348,18 +1348,28 @@ ASString* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = std::string(s,len);
+	ret->idOnly = false;
 	return ret;
 }
 ASString* lightspark::abstract_s(SystemState *sys, const char* s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
+	ret->idOnly = false;
 	return ret;
 }
 ASString* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
+	ret->idOnly = false;
+	return ret;
+}
+ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
+{
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ret->stringId = stringId;
+	ret->idOnly = true;
 	return ret;
 }
 
@@ -1487,28 +1497,28 @@ nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind)
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nameIsEmpty=_nameId == BUILTIN_STRINGS::EMPTY;
 }
-nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, uint32_t _baseId, NS_KIND _kind)
+nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
-	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind, nsId);
+	nsNameAndKindImpl tmp(_nameId, _kind, nsId);
 	uint32_t tmpId;
 	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
-	nameIsEmpty=_name.empty();
+	nameIsEmpty=_nameId == BUILTIN_STRINGS::EMPTY;
 }
 
 nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
-	const tiny_string& nsName=c->getString(ns.name);
-	nsNameAndKindImpl tmp(c->root->getSystemState()->getUniqueStringId(nsName), (NS_KIND)(int)ns.kind);
+	uint32_t nsNameId=c->getString(ns.name);
+	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind);
 	//Give an id hint, in case the namespace is created in the map
 	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
-	nameIsEmpty=nsName.empty();
+	nameIsEmpty=nsNameId==BUILTIN_STRINGS::EMPTY;
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl(SystemState* sys) const

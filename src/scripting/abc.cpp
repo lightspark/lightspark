@@ -742,7 +742,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.emplace_back(this, m->ns);
 				if (m->name)
 				{
-					ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
+					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
 				}
 				break;
@@ -760,7 +760,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 
 				if (m->name)
 				{
-					ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
+					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
 				}
 				break;
@@ -781,7 +781,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x10: //RTQNameA
 			{
 				ret->name_type=multiname::NAME_STRING;
-				ret->name_s_id=root->getSystemState()->getUniqueStringId(getString(m->name));
+				ret->name_s_id=getString(m->name);
 				break;
 			}
 			case 0x11: //RTQNameL
@@ -795,7 +795,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				//builds a name by concating the templateName$TypeName1$TypeName2...
 				//this naming scheme is defined by the ABC compiler
-				tiny_string name = getString(td->name);
+				tiny_string name = root->getSystemState()->getStringFromUniqueId(getString(td->name));
 				for(size_t i=0;i<m->param_types.size();++i)
 				{
 					multiname_info* p=&constant_pool.multinames[m->param_types[i]];
@@ -806,11 +806,11 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 						// TODO there's no documentation about how to handle derived classes
 						// We just prepend the namespace to the template class, so we can find it when needed
 						namespace_info nsi = constant_pool.namespaces[p->ns];
-						nsname = getString(nsi.name);
+						nsname = root->getSystemState()->getStringFromUniqueId(getString(nsi.name));
 						if (nsname != "")
 							name += nsname+"$";
 					}
-					name += getString(p->name);
+					name += root->getSystemState()->getStringFromUniqueId(getString(p->name));
 				}
 				ret->ns.emplace_back(this, td->ns);
 				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
@@ -935,7 +935,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 		if(instances[i].isInterface())
 			LOG(LOG_CALLS,_("\tInterface"));
 		if(instances[i].isProtectedNs())
-			LOG(LOG_CALLS,_("\tProtectedNS ") << getString(constant_pool.namespaces[instances[i].protectedNs].name));
+			LOG(LOG_CALLS,_("\tProtectedNS ") << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
 		if(instances[i].supername)
 			LOG(LOG_CALLS,_("Super ") << *getMultiname(instances[i].supername,NULL));
 		if(instances[i].interface_count)
@@ -1873,10 +1873,10 @@ uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 
 tiny_string ABCVm::getDefaultXMLNamespace()
 {
-	return currentCallContext->defaultNamespaceUri == NULL ? tiny_string() : currentCallContext->defaultNamespaceUri->data;
+	return m_sys->getStringFromUniqueId(currentCallContext->defaultNamespaceUri);
 }
 
-const tiny_string& ABCContext::getString(unsigned int s) const
+uint32_t ABCContext::getString(unsigned int s) const
 {
 	return constant_pool.strings[s];
 }
@@ -2007,7 +2007,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x08: //Namespace
 		{
 			assert_and_throw(constant_pool.namespaces[index].name);
-			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name));
+			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[index].name)));
 			if (constant_pool.namespaces[index].kind != 0)
 				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
 			return ret;
@@ -2056,9 +2056,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		for(unsigned int i=0;i<t->metadata_count;i++)
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];
-			LOG(LOG_CALLS,"Metadata: " << getString(minfo.name));
+			LOG(LOG_CALLS,"Metadata: " << root->getSystemState()->getStringFromUniqueId(getString(minfo.name)));
 			for(unsigned int j=0;j<minfo.item_count;++j)
-				LOG(LOG_CALLS,"        : " << getString(minfo.items[j].key) << " " << getString(minfo.items[j].value));
+				LOG(LOG_CALLS,"        : " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key)) << " " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)));
 		}
 	}
 

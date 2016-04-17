@@ -147,7 +147,7 @@ private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	nsNameAndKind protected_ns;
-	void initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns);
+	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns);
 	IFunction* constructor;
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits) const;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;

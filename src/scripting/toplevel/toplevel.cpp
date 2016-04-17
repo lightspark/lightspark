@@ -383,12 +383,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	cc.parent_scope_stack=func_scope;
 	cc.exec_pos=0;
 	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
-	if (saved_cc)
-	{
-		if (!saved_cc->defaultNamespaceUri.isNull())
-			saved_cc->defaultNamespaceUri->incRef();
-		cc.defaultNamespaceUri = saved_cc->defaultNamespaceUri;
-	}
+	cc.defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
 	getVm(getSystemState())->currentCallContext = &cc;
@@ -1407,18 +1402,18 @@ void Class_base::describeMetadata(pugi::xml_node& root, const traits_info& trait
 	{
 		pugi::xml_node metadata_node=root.append_child("metadata");
 		metadata_info& minfo = context->metadata[trait.metadata[i]];
-		metadata_node.append_attribute("name").set_value(context->getString(minfo.name).raw_buf());
+		metadata_node.append_attribute("name").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.name)).raw_buf());
 
 		for(unsigned int j=0;j<minfo.item_count;++j)
 		{
 			pugi::xml_node arg_node=metadata_node.append_child("arg");
-			arg_node.append_attribute("key").set_value(context->getString(minfo.items[j].key).raw_buf());
-			arg_node.append_attribute("value").set_value(context->getString(minfo.items[j].value).raw_buf());
+			arg_node.append_attribute("key").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].key)).raw_buf());
+			arg_node.append_attribute("value").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].value)).raw_buf());
 		}
 	}
 }
 
-void Class_base::initializeProtectedNamespace(const tiny_string& name, const namespace_info& ns)
+void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns)
 {
 	Class_inherit* cur=dynamic_cast<Class_inherit*>(super.getPtr());
 	nsNameAndKind* baseNs=NULL;
@@ -1432,9 +1427,9 @@ void Class_base::initializeProtectedNamespace(const tiny_string& name, const nam
 		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
 	}
 	if(baseNs==NULL)
-		protected_ns=nsNameAndKind(getSystemState(),name,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind);
 	else
-		protected_ns=nsNameAndKind(getSystemState(),name,baseNs->nsId,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,baseNs->nsId,(NS_KIND)(int)ns.kind);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
@@ -2279,7 +2274,7 @@ ASFUNCTIONBODY(lightspark,print)
 	if(args[0]->getObjectType() == T_STRING)
 	{
 		ASString* str = static_cast<ASString*>(args[0]);
-		Log::print(str->data);
+		Log::print(str->getData());
 	}
 	else
 		Log::print(args[0]->toString());
@@ -2297,7 +2292,7 @@ ASFUNCTIONBODY(lightspark,trace)
 		if(args[i]->getObjectType() == T_STRING)
 		{
 			ASString* str = static_cast<ASString*>(args[i]);
-			s << str->data;
+			s << str->getData();
 		}
 		else
 			s << args[i]->toString();

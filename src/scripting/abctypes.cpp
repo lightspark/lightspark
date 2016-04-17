@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abctypes.h"
+#include "swf.h"
 
 using namespace std;
 using namespace lightspark;
@@ -113,7 +114,7 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 {
 	u30 size;
 	in >> size;
-	v.val=tiny_string(in,size);
+	v.val = getSys()->getUniqueStringId(tiny_string(in,size));
 	return in;
 }
 

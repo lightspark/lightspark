@@ -34,10 +34,12 @@ class ASString: public ASObject
 {
 	friend ASString* abstract_s(SystemState* sys);
 	friend ASString* abstract_s(SystemState* sys, const char* s, uint32_t len);
+	friend ASString* abstract_s(SystemState* sys, const char* s);
 	friend ASString* abstract_s(SystemState* sys, const tiny_string& s);
+	friend ASString* abstract_s(SystemState* sys, uint32_t stringId);
 private:
-	tiny_string toString_priv() const;
 	number_t parseStringInfinite(const char *s, char **end) const;
+	tiny_string data;
 public:
 	ASString(Class_base* c);
 	ASString(Class_base* c, const std::string& s);
@@ -45,7 +47,24 @@ public:
 	ASString(Class_base* c, const Glib::ustring& s);
 	ASString(Class_base* c, const char* s);
 	ASString(Class_base* c, const char* s, uint32_t len);
-	tiny_string data;
+	bool idOnly;
+	uint32_t stringId;
+	inline tiny_string& getData()
+	{
+		if (idOnly)
+		{
+			data = getSystemState()->getStringFromUniqueId(stringId);
+			idOnly = false;
+		}
+		return data;
+	}
+	inline bool isEmpty() const
+	{
+		if (idOnly)
+			return stringId == BUILTIN_STRINGS::EMPTY;
+		return data.empty();
+	}
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -78,10 +97,10 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	std::string toDebugString() { return std::string("\"") + std::string(data) + "\""; }
+	std::string toDebugString() { return std::string("\"") + std::string(getData()) + "\""; }
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
-	inline void finalize() { data.clear(); }
+	inline void finalize() { data.clear(); idOnly = true, stringId = BUILTIN_STRINGS::EMPTY; }
 };
 
 template<>

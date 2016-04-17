@@ -46,7 +46,7 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 	case T_BOOLEAN:
 		return o->as<Boolean>()->val;
 	case T_NUMBER:
-		return (o->as<Number>()->val != 0) && !std::isnan(o->as<Number>()->val);
+		return (o->as<Number>()->val != 0.0) && !std::isnan(o->as<Number>()->val);
 	case T_INTEGER:
 		return o->as<Integer>()->val != 0;
 	case T_UINTEGER:
@@ -54,7 +54,7 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 	case T_STRING:
 		if (!o->isConstructed())
 			return false;
-		return !o->as<ASString>()->data.empty();
+		return !o->as<ASString>()->isEmpty();
 	case T_FUNCTION:
 	case T_ARRAY:
 	case T_OBJECT:

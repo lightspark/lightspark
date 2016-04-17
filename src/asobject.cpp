@@ -122,7 +122,7 @@ tiny_string ASObject::toString()
 	case T_UINTEGER:
 		return as<UInteger>()->toString();
 	case T_STRING:
-		return as<ASString>()->data;
+		return as<ASString>()->getData();
 	default:
 		//everything else is an Object regarding to the spec
 		return toPrimitive(STRING_HINT)->toString();

@@ -2606,9 +2606,8 @@ ASObject* ABCVm::getScopeObject(call_context* th, int n)
 
 ASObject* ABCVm::pushString(call_context* th, int n)
 {
-	const tiny_string s=th->context->getString(n); 
-	LOG(LOG_CALLS, _("pushString ") << s );
-	return abstract_s(th->context->root->applicationDomain->getSystemState(),s);
+	LOG(LOG_CALLS, _("pushString ") << th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(n)) );
+	return abstract_s(th->context->root->applicationDomain->getSystemState(),th->context->getString(n));
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
@@ -2699,8 +2698,8 @@ Namespace* ABCVm::pushNamespace(call_context* th, int n)
 {
 	const namespace_info& ns_info=th->context->constant_pool.namespaces[n];
 	assert(ns_info.kind == NAMESPACE);
-	LOG(LOG_CALLS, _("pushNamespace ") << th->context->getString(ns_info.name) );
-	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->getString(ns_info.name));
+	LOG(LOG_CALLS, _("pushNamespace ") << th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(ns_info.name)) );
+	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(ns_info.name)));
 }
 
 /* @spec-checked avm2overview */
@@ -2709,7 +2708,7 @@ void ABCVm::dxns(call_context* th, int n)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS(th->context->root->getSystemState(),"dxns without SET_DXNS");
 
-	th->defaultNamespaceUri = _NR<ASString>(abstract_s(th->context->root->applicationDomain->getSystemState(),th->context->getString(n)));
+	th->defaultNamespaceUri = th->context->getString(n);
 }
 
 /* @spec-checked avm2overview */
@@ -2718,6 +2717,6 @@ void ABCVm::dxnslate(call_context* th, ASObject* o)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS(th->context->root->getSystemState(),"dxnslate without SET_DXNS");
 
-	th->defaultNamespaceUri = _NR<ASString>(abstract_s(th->context->root->applicationDomain->getSystemState(),o->toString()));
+	th->defaultNamespaceUri = th->context->root->getSystemState()->getUniqueStringId(o->toString());
 	o->decRef();
 }

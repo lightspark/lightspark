@@ -96,9 +96,9 @@ class string_info
 {
 friend std::istream& operator>>(std::istream& in, string_info& v);
 private:
-	tiny_string val;
+	uint32_t val;
 public:
-	operator const tiny_string&() const{return val;}
+	operator uint32_t() const{return val;}
 };
 
 struct namespace_info

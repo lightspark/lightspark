@@ -353,7 +353,7 @@ ASFUNCTIONBODY(XMLDocument,parseXML)
 	XMLDocument* th=Class<XMLDocument>::cast(obj);
 	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	ASString* str=Class<ASString>::cast(args[0]);
-	th->parseXMLImpl(str->data);
+	th->parseXMLImpl(str->getData());
 	return NULL;
 }
 

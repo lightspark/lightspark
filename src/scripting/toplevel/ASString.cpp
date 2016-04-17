@@ -753,6 +753,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	ASString* ret=abstract_s(obj->getSystemState());
 	for(uint32_t i=0;i<argslen;i++)
 	{
+		ret->hasId = false;
 		ret->getData() += tiny_string::fromChar(args[i]->toUInt16());
 	}
 	return ret;
@@ -872,6 +873,7 @@ ASFUNCTIONBODY(ASString,replace)
 					}
 			}
 			prevsubstring += ret->getData().substr_bytes(ovector[0],ovector[1]-ovector[0]);
+			ret->hasId = false;
 			ret->getData().replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);
 			offset=ovector[0]+replaceWithTmp.numBytes();
 			if (ovector[0] == ovector[1])
@@ -888,6 +890,7 @@ ASFUNCTIONBODY(ASString,replace)
 		int index=ret->getData().find(s,0);
 		if(index==-1) //No result
 			return ret;
+		ret->hasId = false;
 		ret->getData().replace(index,s.numChars(),replaceWith);
 	}
 
@@ -899,7 +902,10 @@ ASFUNCTIONBODY(ASString,concat)
 	tiny_string data = obj->toString();
 	ASString* ret=abstract_s(obj->getSystemState(),data);
 	for(unsigned int i=0;i<argslen;i++)
+	{
+		ret->hasId = false;
 		ret->getData()+=args[i]->toString().raw_buf();
+	}
 
 	return ret;
 }

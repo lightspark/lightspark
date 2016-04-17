@@ -243,13 +243,19 @@ const tiny_string tiny_string::operator+(const std::string& r) const
 bool tiny_string::operator<(const tiny_string& r) const
 {
 	//don't check trailing \0
-	return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))<0;
+	int ret = memcmp(buf,r.buf,std::min(stringSize,r.stringSize));
+	if (ret == 0)
+		return stringSize < r.stringSize;
+	return ret < 0;
 }
 
 bool tiny_string::operator>(const tiny_string& r) const
 {
 	//don't check trailing \0
-	return memcmp(buf,r.buf,std::min(stringSize,r.stringSize))>0;
+	int ret = memcmp(buf,r.buf,std::min(stringSize,r.stringSize));
+	if (ret == 0)
+		return stringSize > r.stringSize;
+	return ret > 0;
 }
 
 bool tiny_string::operator==(const tiny_string& r) const

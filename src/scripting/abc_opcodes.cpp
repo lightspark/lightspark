@@ -502,7 +502,10 @@ void ABCVm::pushWith(call_context* th)
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushWith ") << t );
 	t->incRef();
-	th->scope_stack.emplace_back(scope_entry(_MR(t), true));
+	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
+	th->scope_stack[th->curr_scope_stack] = t;
+	th->scope_stack_dynamic[th->curr_scope_stack] = true;
+	th->curr_scope_stack++;
 }
 
 void ABCVm::pushScope(call_context* th)
@@ -510,7 +513,10 @@ void ABCVm::pushScope(call_context* th)
 	ASObject* t=th->runtime_stack_pop();
 	LOG(LOG_CALLS, _("pushScope ") << t );
 	t->incRef();
-	th->scope_stack.emplace_back(scope_entry(_MR(t), false));
+	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
+	th->scope_stack[th->curr_scope_stack] = t;
+	th->scope_stack_dynamic[th->curr_scope_stack] = false;
+	th->curr_scope_stack++;
 }
 
 Global* ABCVm::getGlobalScope(call_context* th)
@@ -520,8 +526,8 @@ Global* ABCVm::getGlobalScope(call_context* th)
 		ret =th->parent_scope_stack->scope[0].object.getPtr();
 	else
 	{
-		assert_and_throw(th->scope_stack.size() > 0);
-		ret =th->scope_stack[0].object.getPtr();
+		assert_and_throw(th->curr_scope_stack > 0);
+		ret =th->scope_stack[0];
 	}
 	assert_and_throw(ret->is<Global>());
 	LOG(LOG_CALLS,_("getGlobalScope: ") << ret);
@@ -826,8 +832,8 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		global =th->parent_scope_stack->scope[0].object.getPtr();
 	else
 	{
-		assert_and_throw(th->scope_stack.size() > 0);
-		global =th->scope_stack[0].object.getPtr();
+		assert_and_throw(th->curr_scope_stack > 0);
+		global =th->scope_stack[0];
 	}
 	QName qname = o_class->class_name;
 	if (!global->hasPropertyByMultiname(qname, false, false))
@@ -1425,18 +1431,19 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* o = NULL;
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
-	for(it=th->scope_stack.rbegin();it!=th->scope_stack.rend();++it)
+	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
+		ASObject* s = th->scope_stack[i-1];
 		// XML_STRICT flag tells getVariableByMultiname to
 		// ignore non-existing properties in XML obejcts
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
 		ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
-		if(!it->considerDynamic)
+		if(!th->scope_stack_dynamic[i-1])
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 
-		checkDeclaredTraits(it->object.getPtr());
-		_NR<ASObject> prop=it->object->getVariableByMultiname(*name, opt);
+		checkDeclaredTraits(s);
+		_NR<ASObject> prop=s->getVariableByMultiname(*name, opt);
 		if(!prop.isNull())
 		{
 			prop->incRef();
@@ -1513,14 +1520,14 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	vector<scope_entry>::reverse_iterator it;
 	bool found=false;
 	ASObject* ret=NULL;
-	for(it =th->scope_stack.rbegin();it!=th->scope_stack.rend();++it)
+	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic, true);
+		found=th->scope_stack[i-1]->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
 
 		if(found)
 		{
 			//We have to return the object, not the property
-			ret=it->object.getPtr();
+			ret=th->scope_stack[i-1];
 			break;
 		}
 	}
@@ -1551,8 +1558,8 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 				ret =th->parent_scope_stack->scope[0].object.getPtr();
 			else
 			{
-				assert_and_throw(th->scope_stack.size() > 0);
-				ret =th->scope_stack[0].object.getPtr();
+				assert_and_throw(th->curr_scope_stack > 0);
+				ret =th->scope_stack[0];
 			}
 		}
 	}
@@ -1571,13 +1578,13 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	bool found=false;
 	ASObject* ret=NULL;
 
-	for(it =th->scope_stack.rbegin();it!=th->scope_stack.rend();++it)
+	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=it->object->hasPropertyByMultiname(*name, it->considerDynamic, true);
+		found=th->scope_stack[i-1]->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
 		if(found)
 		{
 			//We have to return the object, not the property
-			ret=it->object.getPtr();
+			ret=th->scope_stack[i-1];
 			break;
 		}
 	}
@@ -1603,9 +1610,9 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
-			for(it=th->scope_stack.rbegin();it!=th->scope_stack.rend();++it)
+			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 			{
-				_R<ASObject> r = it->object;
+				ASObject* r = th->scope_stack[i-1];
 				if (!r->is<Class_base>())
 					continue;
 				if (r->as<Class_base>()->findBorrowedGettable(*name))
@@ -2325,8 +2332,11 @@ void ABCVm::newClass(call_context* th, int n)
 
 	if (!th->parent_scope_stack.isNull())
 		ret->class_scope = th->parent_scope_stack->scope;
-	for (auto it = th->scope_stack.begin(); it != th->scope_stack.end(); it++)
-		ret->class_scope.push_back(*it);
+	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
+	{
+		th->scope_stack[i]->incRef();
+		ret->class_scope.push_back(scope_entry(_MR(th->scope_stack[i]),th->scope_stack_dynamic[i]));
+	}
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
@@ -2416,8 +2426,11 @@ void ABCVm::newClass(call_context* th, int n)
 	//cinit must inherit the current scope
 	if (!th->parent_scope_stack.isNull())
 		cinit->acquireScope(th->parent_scope_stack->scope);
-	for (auto it = th->scope_stack.begin(); it != th->scope_stack.end(); it++)
-		cinit->addToScope(*it);
+	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
+	{
+		th->scope_stack[i]->incRef();
+		cinit->addToScope(scope_entry(_MR(th->scope_stack[i]),th->scope_stack_dynamic[i]));
+	}
 	
 	ASObject* ret2=NULL;
 	try
@@ -2489,7 +2502,8 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi, ASObject* call
 void ABCVm::popScope(call_context* th)
 {
 	LOG(LOG_CALLS,_("popScope"));
-	th->scope_stack.pop_back();
+	assert_and_throw(th->curr_scope_stack);
+	th->curr_scope_stack--;
 }
 
 bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
@@ -2585,8 +2599,11 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
 	if (!th->parent_scope_stack.isNull())
 		f->func_scope->scope=th->parent_scope_stack->scope;
-	for (auto it = th->scope_stack.begin(); it != th->scope_stack.end(); it++)
-		f->addToScope(*it);
+	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
+	{
+		th->scope_stack[i]->incRef();
+		f->addToScope(scope_entry(_MR(th->scope_stack[i]),th->scope_stack_dynamic[i]));
+	}
 	
 	//Bind the function to null, as this is not a class method
 	f->bind(NullRef,-1);
@@ -2597,8 +2614,8 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
-	assert_and_throw(th->scope_stack.size() > (size_t)n);
-	ASObject* ret=th->scope_stack[(size_t)n].object.getPtr();
+	assert_and_throw(th->curr_scope_stack > (size_t)n);
+	ASObject* ret=th->scope_stack[(size_t)n];
 	ret->incRef();
 	LOG(LOG_CALLS, _("getScopeObject: ") << ret );
 	return ret;

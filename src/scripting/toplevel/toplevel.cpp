@@ -168,8 +168,8 @@ ASFUNCTIONBODY(IFunction,apply)
 			newObj =cc->parent_scope_stack->scope[0].object.getPtr();
 		else
 		{
-			assert_and_throw(cc->scope_stack.size() > 0);
-			newObj =cc->scope_stack[0].object.getPtr();
+			assert_and_throw(cc->curr_scope_stack > 0);
+			newObj =cc->scope_stack[0];
 		}
 		newObj->incRef();
 	}
@@ -210,8 +210,8 @@ ASFUNCTIONBODY(IFunction,_call)
 			newObj =cc->parent_scope_stack->scope[0].object.getPtr();
 		else
 		{
-			assert_and_throw(cc->scope_stack.size() > 0);
-			newObj =cc->scope_stack[0].object.getPtr();
+			assert_and_throw(cc->curr_scope_stack > 0);
+			newObj =cc->scope_stack[0];
 		}
 		newObj->incRef();
 	}
@@ -382,6 +382,15 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	//cc.code= new istringstream(mi->body->code);
 	cc.parent_scope_stack=func_scope;
 	cc.exec_pos=0;
+	
+	cc.max_scope_stack = mi->body->max_scope_depth;
+	cc.curr_scope_stack= 0;
+	cc.scope_stack=g_newa(ASObject*, cc.max_scope_stack);
+	cc.scope_stack_dynamic=g_newa(bool, cc.max_scope_stack);
+	
+	memset(cc.scope_stack,0,sizeof(ASObject*)*cc.max_scope_stack);
+	cc.stack_index=0;
+	
 	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
 	cc.defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 
@@ -496,7 +505,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					cc.exec_pos = exc.target;
 					cc.runtime_stack_clear();
 					cc.runtime_stack_push(excobj);
-					cc.scope_stack.clear();
+					while (cc.curr_scope_stack)
+					{
+						cc.scope_stack[--cc.curr_scope_stack]->decRef();
+					}
 					break;
 				}
 			}

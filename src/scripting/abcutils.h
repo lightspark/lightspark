@@ -60,7 +60,10 @@ struct call_context
 	uint32_t max_stack;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	_NR<scope_entry_list> parent_scope_stack;
-	std::vector<scope_entry> scope_stack;
+	uint32_t max_scope_stack;
+	uint32_t curr_scope_stack;
+	ASObject** scope_stack;
+	bool* scope_stack_dynamic;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
 	 * by {construct,call,get,set}Super
@@ -79,25 +82,25 @@ struct call_context
 	}
 	inline void runtime_stack_push(ASObject* s)
 	{
-		if(stack_index>=max_stack)
+		if(stack_index<max_stack)
+			stack[stack_index++]=s;
+		else
 			handleError(kStackOverflowError);
-		stack[stack_index++]=s;
 	}
 	inline ASObject* runtime_stack_pop()
 	{
-		if(stack_index==0)
+		if(stack_index)
+			return stack[--stack_index];
+		else
 			handleError(kStackUnderflowError);
-		ASObject* ret=stack[--stack_index];
-		return ret;
+		return NULL;
 	}
 	inline ASObject* runtime_stack_peek()
 	{
-		if(stack_index==0)
-		{
-			LOG(LOG_ERROR,_("Empty stack"));
-			return NULL;
-		}
-		return stack[stack_index-1];
+		if(stack_index)
+			return stack[stack_index-1];
+		LOG(LOG_ERROR,_("Empty stack"));
+		return NULL;
 	}
 };
 

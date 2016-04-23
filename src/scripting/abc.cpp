@@ -1437,6 +1437,10 @@ call_context::~call_context()
 		if(locals[i])
 			locals[i]->decRef();
 	}
+	while (curr_scope_stack)
+	{
+		scope_stack[--curr_scope_stack]->decRef();
+	}
 }
 
 void call_context::handleError(int errorcode)

@@ -1593,8 +1593,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 					obj = context->parent_scope_stack->scope[t].object.getPtr();
 				else
 				{
-					assert_and_throw(t-parentsize <context->scope_stack.size());
-					obj=context->scope_stack[t-parentsize].object.getPtr();
+					assert_and_throw(t-parentsize <context->curr_scope_stack);
+					obj=context->scope_stack[t-parentsize];
 				}
 				obj->incRef();
 				context->runtime_stack_push(obj);

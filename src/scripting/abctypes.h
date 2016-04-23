@@ -105,6 +105,19 @@ struct namespace_info
 {
 	u8 kind;
 	u30 name;
+	bool cachefilled;
+	nsNameAndKind nscached;
+	namespace_info():cachefilled(false) {}
+	~namespace_info(){ cachefilled=false; }
+	const nsNameAndKind& getNS(ABCContext * c, uint32_t nsContextIndex)
+	{
+		if (!cachefilled)
+		{
+			cachefilled = true;
+			nscached = nsNameAndKind(c,nsContextIndex);
+		}
+		return nscached;
+	}
 };
 
 struct ns_set_info

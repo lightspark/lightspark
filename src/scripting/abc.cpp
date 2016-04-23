@@ -739,7 +739,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			case 0x07: //QName
 			case 0x0D: //QNameA
 			{
-				ret->ns.emplace_back(this, m->ns);
+				ret->ns.emplace_back(constant_pool.namespaces[m->ns].getNS(this,m->ns));
 				if (m->name)
 				{
 					ret->name_s_id=getString(m->name);
@@ -754,7 +754,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(this, s->ns[i]);
+					ret->ns.emplace_back(constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -772,7 +772,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(this, s->ns[i]);
+					ret->ns.emplace_back(constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				break;
@@ -812,7 +812,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					}
 					name += root->getSystemState()->getStringFromUniqueId(getString(p->name));
 				}
-				ret->ns.emplace_back(this, td->ns);
+				ret->ns.emplace_back(constant_pool.namespaces[td->ns].getNS(this,td->ns));
 				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;

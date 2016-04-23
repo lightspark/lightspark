@@ -315,6 +315,7 @@ struct nsNameAndKind
 	uint32_t nsId;
 	uint32_t nsRealId;
 	bool nameIsEmpty;
+	nsNameAndKind():nsId(0),nsRealId(0),nameIsEmpty(true) {}
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind);

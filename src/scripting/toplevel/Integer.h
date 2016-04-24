@@ -46,6 +46,10 @@ public:
 	{
 		return val;
 	}
+	int64_t toInt64()
+	{
+		return val;
+	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(_constructor);

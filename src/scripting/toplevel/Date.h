@@ -35,7 +35,7 @@ private:
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
 	ASObject *msSinceEpoch();
-	number_t getMsSinceEpoch();
+	int64_t getMsSinceEpoch();
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
 	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
 	static number_t parse(tiny_string str);

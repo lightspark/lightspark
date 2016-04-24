@@ -1954,7 +1954,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 			/* yield t = locals[i+1] */
 			LOAD_LOCALPTR
 			/*calc n+offsetof(Number,val) = &n->val*/
-			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(Number,val)));
+			t=Builder.CreateGEP(t, llvm::ConstantInt::get(int_type, offsetof(Number,dval)));
 			t=Builder.CreateBitCast(t,numberptr_type); //cast t from int8* to number*
 			blocks[0].locals_start[i+1] = STACK_NUMBER;
 			//locals_start_obj should hold the pointer to the local's value

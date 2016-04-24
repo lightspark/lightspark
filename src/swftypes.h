@@ -1338,6 +1338,7 @@ public:
 ASObject* abstract_i(SystemState *sys, int32_t i);
 ASObject* abstract_ui(SystemState *sys, uint32_t i);
 ASObject* abstract_d(SystemState *sys, number_t i);
+ASObject* abstract_di(SystemState *sys, int64_t i);
 ASString* abstract_s(SystemState *sys);
 ASString* abstract_s(SystemState *sys, const char* s, uint32_t len);
 ASString* abstract_s(SystemState *sys, const char* s);

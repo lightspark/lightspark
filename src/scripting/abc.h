@@ -455,6 +455,7 @@ private:
 	static void label();
 	static void lookupswitch();
 	static int32_t convert_i(ASObject*);
+	static int64_t convert_di(ASObject*);
 	static uint32_t convert_u(ASObject*);
 	static number_t convert_d(ASObject*);
 	static ASObject* convert_s(ASObject*);
@@ -466,9 +467,11 @@ private:
 	static ASObject* nextName(ASObject* index, ASObject* obj);
 	static ASObject* nextValue(ASObject* index, ASObject* obj);
 	static uint32_t increment_i(ASObject*);
+	static uint64_t increment_di(ASObject*);
 	static number_t increment(ASObject*);
 	static number_t decrement(ASObject*);
 	static uint32_t decrement_i(ASObject*);
+	static uint64_t decrement_di(ASObject*);
 	static bool strictEquals(ASObject*,ASObject*);
 	static ASObject* esc_xattr(ASObject* o);
 	static ASObject* esc_xelem(ASObject* o);

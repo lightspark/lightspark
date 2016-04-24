@@ -534,7 +534,14 @@ int32_t ASString::toInt()
 	assert_and_throw(implEnable);
 	return Integer::stringToASInteger(getData().raw_buf(), 0);
 }
-
+int64_t ASString::toInt64()
+{
+	int64_t value;
+	bool valid=Integer::fromStringFlashCompatible(getData().raw_buf(), value, 0);
+	if (!valid)
+		return 0;
+	return value;
+}
 uint32_t ASString::toUInt()
 {
 	assert_and_throw(implEnable);
@@ -654,18 +661,19 @@ ASFUNCTIONBODY(ASString,charAt)
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	number_t index;
+	int64_t index;
+	
 	ARG_UNPACK (index, 0);
 
 	// fast path if obj is ASString
 	if (obj->is<ASString>())
 	{
-		if(index<0 || index>=obj->as<ASString>()->getData().numChars() || std::isinf(index) || std::isnan(index))
+		if(index<0 || index>=(int64_t)obj->as<ASString>()->getData().numChars())
 			return abstract_d(obj->getSystemState(),Number::NaN);
 		return abstract_i(obj->getSystemState(),obj->as<ASString>()->getData().charAt(index));
 	}
 	tiny_string data = obj->toString();
-	if(index<0 || index>=data.numChars() || std::isinf(index) || std::isnan(index))
+	if(index<0 || index>=(int64_t)data.numChars())
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	else
 	{

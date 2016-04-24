@@ -276,6 +276,11 @@ int32_t ASObject::toInt()
 	return toPrimitive()->toInt();
 }
 
+int64_t ASObject::toInt64()
+{
+	return toPrimitive()->toInt64();
+}
+
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 {
@@ -1168,10 +1173,10 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 
 	if(!obj)
 		return NullRef;
-	if (this->is<Class_base>() && 
+	if ( 
 			(!obj->var || !obj->var->isConstructed() ||
 			 obj->var->getObjectType() == T_UNDEFINED ||
-			 obj->var->getObjectType() == T_NULL))
+			 obj->var->getObjectType() == T_NULL) && this->is<Class_base>())
 	{
 		if (obj->kind == INSTANCE_TRAIT &&
 				getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
@@ -1323,8 +1328,9 @@ variables_map::~variables_map()
 
 void variables_map::destroyContents()
 {
-	const_var_iterator it=Variables.begin();
-	while(it!=Variables.end())
+	const_var_iterator it=Variables.cbegin();
+	const_var_iterator itend=Variables.cend();
+	while(it!=itend)
 	{
 		if(it->second.var)
 			it->second.var->decRef();

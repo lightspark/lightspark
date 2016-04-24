@@ -520,18 +520,18 @@ public:
 	void initSlot(unsigned int n, const multiname& name);
 	void appendSlot(const multiname& name);
 	unsigned int numVariables() const;
-	tiny_string getNameAt(int i) const
+	inline tiny_string getNameAt(int i) const
 	{
 		return Variables.getNameAt(sys,i);
 	}
 	_R<ASObject> getValueAt(int i);
-	SWFOBJECT_TYPE getObjectType() const
+	inline SWFOBJECT_TYPE getObjectType() const
 	{
 		return type;
 	}
-	SystemState* getSystemState() const
+	inline SystemState* getSystemState() const
 	{
-		assert_and_throw(sys);
+		assert(sys);
 		return sys;
 	}
 	void setSystemState(SystemState* s)
@@ -544,6 +544,7 @@ public:
 	tiny_string toLocaleString();
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
+	virtual int64_t toInt64();
 	uint16_t toUInt16();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	virtual number_t toNumber();

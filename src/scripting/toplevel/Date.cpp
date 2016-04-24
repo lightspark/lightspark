@@ -313,7 +313,7 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
 	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
-	return abstract_d(obj->getSystemState(),-diff/G_TIME_SPAN_MINUTE);
+	return abstract_di(obj->getSystemState(),-diff/G_TIME_SPAN_MINUTE);
 }
 
 ASFUNCTIONBODY(Date,getUTCFullYear)
@@ -322,7 +322,7 @@ ASFUNCTIONBODY(Date,getUTCFullYear)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetimeUTC));
+	return abstract_di(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMonth)
@@ -331,7 +331,7 @@ ASFUNCTIONBODY(Date,getUTCMonth)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_month(th->datetimeUTC)-1);
+	return abstract_di(obj->getSystemState(),g_date_time_get_month(th->datetimeUTC)-1);
 }
 
 ASFUNCTIONBODY(Date,getUTCDate)
@@ -340,7 +340,7 @@ ASFUNCTIONBODY(Date,getUTCDate)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_month(th->datetimeUTC));
+	return abstract_di(obj->getSystemState(),g_date_time_get_day_of_month(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCDay)
@@ -349,7 +349,7 @@ ASFUNCTIONBODY(Date,getUTCDay)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_week(th->datetimeUTC)%7);
+	return abstract_di(obj->getSystemState(),g_date_time_get_day_of_week(th->datetimeUTC)%7);
 }
 
 ASFUNCTIONBODY(Date,getUTCHours)
@@ -358,7 +358,7 @@ ASFUNCTIONBODY(Date,getUTCHours)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_hour(th->datetimeUTC));
+	return abstract_di(obj->getSystemState(),g_date_time_get_hour(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMinutes)
@@ -367,7 +367,7 @@ ASFUNCTIONBODY(Date,getUTCMinutes)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_minute(th->datetimeUTC));
+	return abstract_di(obj->getSystemState(),g_date_time_get_minute(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCSeconds)
@@ -376,7 +376,7 @@ ASFUNCTIONBODY(Date,getUTCSeconds)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_second(th->datetimeUTC));
+	return abstract_di(obj->getSystemState(),g_date_time_get_second(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY(Date,getUTCMilliseconds)
@@ -385,7 +385,7 @@ ASFUNCTIONBODY(Date,getUTCMilliseconds)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),th->milliseconds % 1000);
+	return abstract_di(obj->getSystemState(),th->milliseconds % 1000);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)
@@ -394,7 +394,7 @@ ASFUNCTIONBODY(Date,getFullYear)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetime));
+	return abstract_di(obj->getSystemState(),th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMonth)
@@ -403,7 +403,7 @@ ASFUNCTIONBODY(Date,getMonth)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_month(th->datetime)-1);
+	return abstract_di(obj->getSystemState(),g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY(Date,getDate)
@@ -412,7 +412,7 @@ ASFUNCTIONBODY(Date,getDate)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_month(th->datetime));
+	return abstract_di(obj->getSystemState(),g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getDay)
@@ -421,7 +421,7 @@ ASFUNCTIONBODY(Date,getDay)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_day_of_week(th->datetime)%7);
+	return abstract_di(obj->getSystemState(),g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY(Date,getHours)
@@ -430,7 +430,7 @@ ASFUNCTIONBODY(Date,getHours)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_hour(th->datetime));
+	return abstract_di(obj->getSystemState(),g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
@@ -439,7 +439,7 @@ ASFUNCTIONBODY(Date,getMinutes)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_minute(th->datetime));
+	return abstract_di(obj->getSystemState(),g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getSeconds)
@@ -448,7 +448,7 @@ ASFUNCTIONBODY(Date,getSeconds)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),g_date_time_get_second(th->datetime));
+	return abstract_di(obj->getSystemState(),g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY(Date,getMilliseconds)
@@ -457,7 +457,7 @@ ASFUNCTIONBODY(Date,getMilliseconds)
 	if(th->nan) {
 		return abstract_d(obj->getSystemState(),Number::NaN);
 	}
-	return abstract_d(obj->getSystemState(),th->milliseconds % 1000);
+	return abstract_di(obj->getSystemState(),th->milliseconds % 1000);
 }
 
 ASFUNCTIONBODY(Date,getTime)
@@ -831,9 +831,9 @@ ASFUNCTIONBODY(Date,valueOf)
 
 ASObject* Date::msSinceEpoch()
 {
-	return abstract_d(getSystemState(),getMsSinceEpoch());
+	return abstract_di(getSystemState(),getMsSinceEpoch());
 }
-number_t Date::getMsSinceEpoch()
+int64_t Date::getMsSinceEpoch()
 {
 	return milliseconds+extrayears/400*MS_IN_400_YEARS;
 }

@@ -103,7 +103,11 @@ bool Undefined::isEqual(ASObject* r)
 	}
 }
 
-int Undefined::toInt()
+int32_t Undefined::toInt()
+{
+	return 0;
+}
+int64_t Undefined::toInt64()
 {
 	return 0;
 }
@@ -670,7 +674,11 @@ _NR<ASObject> Null::getVariableByMultiname(const multiname& name, GET_VARIABLE_O
 	return NullRef;
 }
 
-int Null::toInt()
+int32_t Null::toInt()
+{
+	return 0;
+}
+int64_t Null::toInt64()
 {
 	return 0;
 }
@@ -2561,7 +2569,7 @@ _NR<ASObject> ObjectConstructor::getVariableByMultiname(const multiname& name, G
 	}
 	if (name.normalizedName(getSystemState()) == "length")
 	{
-		return _NR<ASObject>(abstract_d(getSystemState(),_length));
+		return _NR<ASObject>(abstract_di(getSystemState(),_length));
 	}
 	return getClass()->getVariableByMultiname(name, opt);
 }

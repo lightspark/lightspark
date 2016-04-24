@@ -1035,59 +1035,77 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			}case 0x73:
 			{
 				//convert_i
-				ASObject* val=context->runtime_stack_pop();
-				if (val->is<Integer>())
-					context->runtime_stack_push(val);
-				else
+				ASObject* val=context->runtime_stack_peek();
+				if (!val || !val->is<Integer>())
+				{
+					context->runtime_stack_pop();
 					context->runtime_stack_push(abstract_i(function->getSystemState(),convert_i(val)));
+				}
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
-				ASObject* val=context->runtime_stack_pop();
-				if (val->is<UInteger>())
-					context->runtime_stack_push(val);
-				else
+				ASObject* val=context->runtime_stack_peek();
+				if (!val || !val->is<UInteger>())
+				{
+					context->runtime_stack_pop(); // force exception
 					context->runtime_stack_push(abstract_ui(function->getSystemState(),convert_u(val)));
+				}
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
-				ASObject* val=context->runtime_stack_pop();
-				if (val->is<Number>())
-					context->runtime_stack_push(val);
-				else
-					context->runtime_stack_push(abstract_d(function->getSystemState(),convert_d(val)));
+				ASObject* val=context->runtime_stack_peek();
+				if (!val)
+					context->runtime_stack_pop(); // force exception
+				switch (val->getObjectType())
+				{
+					case T_INTEGER:
+					case T_BOOLEAN:
+					case T_UINTEGER:
+						val =context->runtime_stack_pop();
+						context->runtime_stack_push(abstract_di(function->getSystemState(),convert_di(val)));
+						break;
+					case T_NUMBER:
+						break;
+					default:
+						val =context->runtime_stack_pop();
+						context->runtime_stack_push(abstract_d(function->getSystemState(),convert_d(val)));
+						break;
+				}
 				break;
 			}
 			case 0x76:
 			{
 				//convert_b
-				ASObject* val=context->runtime_stack_pop();
-				if (val->is<Boolean>())
-					context->runtime_stack_push(val);
-				else
+				ASObject* val=context->runtime_stack_peek();
+				if (!val || !val->is<Boolean>())
+				{
+					context->runtime_stack_pop();
 					context->runtime_stack_push(abstract_b(function->getSystemState(),convert_b(val)));
+				}
 				break;
 			}
 			case 0x77:
 			{
 				//convert_o
-				ASObject* val=context->runtime_stack_pop();
+				ASObject* val=context->runtime_stack_peek();
+				if (!val)
+					context->runtime_stack_pop(); // force exception
 				if (val->is<Null>())
 				{
+					context->runtime_stack_pop();
 					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
 				}
 				if (val->is<Undefined>())
 				{
+					context->runtime_stack_pop();
 					LOG(LOG_ERROR,"trying to call convert_o on undefined");
 					throwError<TypeError>(kConvertUndefinedToObjectError);
 				}
-					
-				context->runtime_stack_push(val);
 				break;
 			}
 			case 0x78:
@@ -1160,7 +1178,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//negate
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_d(function->getSystemState(),negate(val));
+				ASObject* ret;
+				if ((val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat)) && val->toInt64() != 0 && val->toInt64() == val->toInt())
+					ret=abstract_di(function->getSystemState(),negate_i(val));
+				else
+					ret=abstract_d(function->getSystemState(),negate(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1168,7 +1190,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//increment
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_d(function->getSystemState(),increment(val));
+				ASObject* ret;
+				if (val->is<Integer>() || (val->is<Number>() && !val->as<Number>()->isfloat))
+					ret=abstract_di(function->getSystemState(),increment_i(val));
+				else
+					ret=abstract_d(function->getSystemState(),increment(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1184,7 +1210,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//decrement
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_d(function->getSystemState(),decrement(val));
+				ASObject* ret;
+				if (val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat))
+					ret=abstract_di(function->getSystemState(),decrement_di(val));
+				else
+					ret=abstract_d(function->getSystemState(),decrement(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1237,7 +1267,20 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_d(function->getSystemState(),subtract(v2, v1));
+				ASObject* ret;
+				// if both values are Integers or int Numbers the result is also an int Number
+				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
+				{
+					int64_t num1=v1->toInt64();
+					int64_t num2=v2->toInt64();
+					LOG(LOG_CALLS,_("subtractI ")  << num1 << '-' << num2);
+					v1->decRef();
+					v2->decRef();
+					ret = abstract_di(function->getSystemState(), num1-num2);
+				}
+				else
+					ret=abstract_d(function->getSystemState(),subtract(v2, v1));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1247,7 +1290,20 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_d(function->getSystemState(),multiply(v2, v1));
+				ASObject* ret;
+				// if both values are Integers or int Numbers the result is also an int Number
+				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
+				{
+					int64_t num1=v1->toInt64();
+					int64_t num2=v2->toInt64();
+					LOG(LOG_CALLS,_("multiplyI ")  << num1 << '*' << num2);
+					v1->decRef();
+					v2->decRef();
+					ret = abstract_di(function->getSystemState(), num1*num2);
+				}
+				else
+					ret=abstract_d(function->getSystemState(),multiply(v2, v1));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1267,7 +1323,23 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=abstract_d(function->getSystemState(),modulo(v1, v2));
+				ASObject* ret;
+				// if both values are Integers or int Numbers the result is also an int Number
+				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
+				{
+					int64_t num1=v1->toInt64();
+					int64_t num2=v2->toInt64();
+					LOG(LOG_CALLS,_("moduloI ")  << num1 << '%' << num2);
+					v1->decRef();
+					v2->decRef();
+					if (num2 == 0)
+						ret=abstract_d(function->getSystemState(),Number::NaN);
+					else
+						ret = abstract_di(function->getSystemState(), num1%num2);
+				}
+				else
+					ret=abstract_d(function->getSystemState(),modulo(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}

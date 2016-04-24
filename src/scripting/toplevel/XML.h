@@ -163,6 +163,7 @@ public:
 	tiny_string toString();
 	const tiny_string toXMLString_internal(bool pretty=true, tiny_string defaultnsprefix = "", const char* indent = "", bool bfirst = true);
 	int32_t toInt();
+	int64_t toInt64();
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	pugi::xml_node_type getNodeKind() const;

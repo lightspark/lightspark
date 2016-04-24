@@ -39,7 +39,7 @@ number_t ASObject::toNumber()
 	case T_BOOLEAN:
 		return as<Boolean>()->val ? 1 : 0;
 	case T_NUMBER:
-		return as<Number>()->val;
+		return as<Number>()->toNumber();
 	case T_INTEGER:
 		return as<Integer>()->val;
 	case T_UINTEGER:
@@ -58,10 +58,11 @@ bool Number::isEqual(ASObject* o)
 	{
 		case T_INTEGER:
 		case T_UINTEGER:
+		case T_BOOLEAN:
+			return isfloat ? toNumber()==o->toNumber() : toInt() == o->toInt();
 		case T_NUMBER:
 		case T_STRING:
-		case T_BOOLEAN:
-			return val==o->toNumber();
+			return toNumber()==o->toNumber();
 		case T_NULL:
 		case T_UNDEFINED:
 			return false;
@@ -72,22 +73,32 @@ bool Number::isEqual(ASObject* o)
 
 TRISTATE Number::isLess(ASObject* o)
 {
-	if(std::isnan(val))
+	if(isfloat && std::isnan(dval))
 		return TUNDEFINED;
 	switch(o->getObjectType())
 	{
 		case T_INTEGER:
-			return (val<o->as<Integer>()->val)?TTRUE:TFALSE;
+			if(isfloat)
+				return (dval<o->as<Integer>()->val)?TTRUE:TFALSE;
+			else
+				return (ival<o->as<Integer>()->val)?TTRUE:TFALSE;
 		case T_UINTEGER:
-			return (val<o->as<UInteger>()->val)?TTRUE:TFALSE;
+			if(isfloat)
+				return (dval<o->as<UInteger>()->val)?TTRUE:TFALSE;
+			else
+				return (ival<o->as<UInteger>()->val)?TTRUE:TFALSE;
 		case T_NUMBER:
 		{
 			const Number* i=static_cast<const Number*>(o);
-			if(std::isnan(i->val)) return TUNDEFINED;
-			return (val<i->val)?TTRUE:TFALSE;
+			if(i->isfloat)
+			{
+				if (std::isnan(i->dval)) return TUNDEFINED;
+				return (toNumber()<i->dval)?TTRUE:TFALSE;
+			}
+			return (toInt64()<i->ival)?TTRUE:TFALSE;
 		}
 		case T_BOOLEAN:
-			return (val<o->toNumber())?TTRUE:TFALSE;
+			return (isfloat ? dval<o->toNumber() : ival < o->toInt())?TTRUE:TFALSE;
 		case T_UNDEFINED:
 			//Undefined is NaN, so the result is undefined
 			return TUNDEFINED;
@@ -95,15 +106,17 @@ TRISTATE Number::isLess(ASObject* o)
 		{
 			double val2=o->toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
-			return (val<val2)?TTRUE:TFALSE;
+			return (toNumber()<val2)?TTRUE:TFALSE;
 		}
 		case T_NULL:
-			return (val<0)?TTRUE:TFALSE;
+			if(isfloat)
+				return (dval<0)?TTRUE:TFALSE;
+			return (ival<0)?TTRUE:TFALSE;
 		default:
 		{
 			double val2=o->toPrimitive()->toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
-			return (val<val2)?TTRUE:TFALSE;
+			return (toNumber()<val2)?TTRUE:TFALSE;
 		}
 	}
 }
@@ -174,28 +187,36 @@ ASFUNCTIONBODY(Number,_toString)
 	int radix=10;
 	ARG_UNPACK (radix,10);
 
-	if(radix==10 || std::isnan(th->val) || std::isinf(th->val))
+	if(radix==10 || (th->isfloat && std::isnan(th->dval)) || (th->isfloat && std::isinf(th->dval)))
 	{
 		//see e 15.7.4.2
 		return abstract_s(obj->getSystemState(),th->toString());
 	}
 	else
 	{
-		return abstract_s(obj->getSystemState(),Number::toStringRadix(th->val, radix));
+		return abstract_s(obj->getSystemState(),Number::toStringRadix(th->toNumber(), radix));
 	}
 }
 
 ASFUNCTIONBODY(Number,generator)
 {
 	if(argslen==0)
-		return abstract_d(getSys(),0.);
-	else
-		return abstract_d(args[0]->getSystemState(),args[0]->toNumber());
+		return abstract_di(getSys(),0);
+
+	switch (args[0]->getObjectType())
+	{
+		case T_INTEGER:
+		case T_BOOLEAN:
+		case T_UINTEGER:
+			return abstract_di(args[0]->getSystemState(),args[0]->toInt());
+		default:
+			return abstract_d(args[0]->getSystemState(),args[0]->toNumber());
+	}
 }
 
 tiny_string Number::toString()
 {
-	return Number::toString(val);
+	return Number::toString(isfloat ? dval : ival);
 }
 
 /* static helper function */
@@ -309,11 +330,26 @@ ASFUNCTIONBODY(Number,_constructor)
 	if(argslen==0)
 	{
 		// not constructed Numbers are set to NaN, so we have to set it to the default value during dynamic construction
-		if (std::isnan(th->val))
-			th->val = 0.;
+		if (std::isnan(th->dval))
+		{
+			th->ival = 0;
+			th->isfloat =false;
+		}
 		return NULL;
 	}
-	th->val=args[0]->toNumber();
+	switch (args[0]->getObjectType())
+	{
+		case T_INTEGER:
+		case T_BOOLEAN:
+		case T_UINTEGER:
+			th->ival = args[0]->toInt();
+			th->isfloat = false;
+			break;
+		default:
+			th->dval=args[0]->toNumber();
+			th->isfloat = true;
+			break;
+	}
 	return NULL;
 }
 
@@ -362,7 +398,7 @@ tiny_string Number::toFixedString(double v, int32_t fractiondigits)
 ASFUNCTIONBODY(Number,toExponential)
 {
 	Number* th=obj->as<Number>();
-	double v = th->val;
+	double v = th->toNumber();
 	int32_t fractionDigits;
 	ARG_UNPACK(fractionDigits, 0);
 	if (argslen == 0 || args[0]->is<Undefined>())
@@ -469,7 +505,7 @@ int32_t Number::countSignificantDigits(double v) {
 ASFUNCTIONBODY(Number,toPrecision)
 {
 	Number* th=obj->as<Number>();
-	double v = th->val;
+	double v = th->toNumber();
 	if (argslen == 0 || args[0]->is<Undefined>())
 		return abstract_s(obj->getSystemState(),toString(v));
 
@@ -509,12 +545,13 @@ tiny_string Number::toPrecisionString(double v, int32_t precision)
 ASFUNCTIONBODY(Number,_valueOf)
 {
 	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_d(obj->getSystemState(),0.);
+		return abstract_di(obj->getSystemState(),0);
 
 	if(!obj->is<Number>())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
-	return abstract_d(obj->getSystemState(),obj->as<Number>()->val);
+	return obj->as<Number>()->isfloat ? abstract_d(obj->getSystemState(),obj->as<Number>()->dval) 
+									  : abstract_d(obj->getSystemState(),obj->as<Number>()->ival);
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -524,9 +561,9 @@ void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
 	{
 		out->writeByte(amf0_number_marker);
-		out->serializeDouble(val);
+		out->serializeDouble(toNumber());
 		return;
 	}
 	out->writeByte(double_marker);
-	out->serializeDouble(val);
+	out->serializeDouble(toNumber());
 }

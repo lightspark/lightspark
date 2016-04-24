@@ -190,7 +190,9 @@ ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, co
 		case T_BOOLEAN:
 			return abstract_b(this->getSystemState(),Boolean_concrete(args[0]));
 		case T_NUMBER:
-			return abstract_d(this->getSystemState(),args[0]->toNumber());
+			if (!args[0]->as<Number>()->isfloat)
+				return abstract_di(this->getSystemState(), args[0]->toInt64());
+			return abstract_d(this->getSystemState(), args[0]->toNumber());
 		case T_INTEGER:
 			return abstract_i(this->getSystemState(),args[0]->toInt());
 		case T_UINTEGER:

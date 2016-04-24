@@ -93,6 +93,8 @@ public:
 	number_t toNumber();
 	int32_t toInt();
 	uint32_t toUInt();
+	int64_t toInt64();
+	
 	ASFUNCTION(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

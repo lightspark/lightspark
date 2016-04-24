@@ -667,6 +667,7 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	int32_t toInt();
+	int64_t toInt64();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	ASObject *describeType() const;
@@ -684,6 +685,7 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
+	int64_t toInt64();
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);

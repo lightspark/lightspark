@@ -2365,6 +2365,18 @@ int32_t XML::toInt()
 	tiny_string str = toString_priv();
 	return Integer::stringToASInteger(str.raw_buf(), 0);
 }
+int64_t XML::toInt64()
+{
+	if (!hasSimpleContent())
+		return 0;
+
+	tiny_string str = toString_priv();
+	int64_t value;
+	bool valid=Integer::fromStringFlashCompatible(str.raw_buf(), value, 0);
+	if (!valid)
+		return 0;
+	return value;
+}
 
 bool XML::nodesEqual(XML *a, XML *b) const
 {

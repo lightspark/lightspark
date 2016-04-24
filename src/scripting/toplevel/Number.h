@@ -29,7 +29,8 @@ namespace lightspark
 
 class Number : public ASObject
 {
-friend ASObject* abstract_d(number_t i);
+friend ASObject* abstract_d(SystemState* sys,number_t i);
+friend ASObject* abstract_di(SystemState* sys,int32_t i);
 friend class ABCContext;
 friend class ABCVm;
 private:
@@ -37,11 +38,15 @@ private:
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
 public:
-	Number(Class_base* c, double v=(std::numeric_limits<double>::quiet_NaN())):ASObject(c),val(v){type=T_NUMBER;}
+	Number(Class_base* c, double v=Number::NaN):ASObject(c),dval(v),isfloat(true){type=T_NUMBER;}
 	static const number_t NaN;
-	double val;
-	inline number_t toNumber() { return val; }
-	inline void finalize() { val=std::numeric_limits<double>::quiet_NaN();}
+	union {
+		number_t dval;
+		int64_t ival;
+	};
+	bool isfloat;
+	inline number_t toNumber() { return isfloat ? dval : ival; }
+	inline void finalize() { dval=Number::NaN; isfloat = true;}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toExponential);
@@ -56,41 +61,50 @@ public:
 	static tiny_string toPrecisionString(double v, int32_t precision);
 	static bool isInteger(number_t val)
 	{
-		return floor(val) == val;
+		return trunc(val) == val;
 	}
 	unsigned int toUInt()
 	{
-		return (unsigned int)(val);
+		return isfloat ? (unsigned int)(dval) : ival;
 	}
+	int64_t toInt64()
+	{
+		if (!isfloat) return ival;
+		if(std::isnan(dval) || std::isinf(dval))
+			return INT64_MAX;
+		return (int64_t)dval;
+	}
+
 	/* ECMA-262 9.5 ToInt32 */
 	int32_t toInt()
 	{
+		if (!isfloat) return ival;
 		double posInt;
 
 		/* step 2 */
-		if(std::isnan(val) || std::isinf(val) || val == 0)
+		if(std::isnan(dval) || std::isinf(dval) || dval == 0.0)
 			return 0;
 		/* step 3 */
-		posInt = floor(fabs(val));
+		posInt = floor(fabs(dval));
 		/* step 4 */
 		if (posInt > 4294967295.0)
 			posInt = fmod(posInt, 4294967296.0);
 		/* step 5 */
 		if (posInt >= 2147483648.0) {
 			// follow tamarin
-			if(val < 0.0)
+			if(dval < 0.0)
 				return 0x80000000 - (int32_t)(posInt - 2147483648.0);
 			else
 				return 0x80000000 + (int32_t)(posInt - 2147483648.0);
 		}
-		return (int32_t)copysign(posInt, val);
+		return (int32_t)(dval < 0.0 ? -posInt : posInt);
 	}
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(generator);
-	std::string toDebugString() { return toString()+"d"; }
+	std::string toDebugString() { return toString()+(isfloat ? "d" : "di"); }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

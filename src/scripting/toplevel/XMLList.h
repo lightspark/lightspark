@@ -107,6 +107,7 @@ public:
 	tiny_string toString();
 	tiny_string toXMLString_internal(bool pretty=true);
 	int32_t toInt();
+	int64_t toInt64();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

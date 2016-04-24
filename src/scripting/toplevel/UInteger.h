@@ -38,6 +38,7 @@ public:
 	inline number_t toNumber() { return val; }
 	inline void finalize() { val=0; }
 	inline int32_t toInt() { return val; }
+	inline int64_t toInt64() { return val; }
 	inline uint32_t toUInt() { return val; }
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);

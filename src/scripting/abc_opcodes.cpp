@@ -119,6 +119,14 @@ int32_t ABCVm::convert_i(ASObject* o)
 	return ret;
 }
 
+int64_t ABCVm::convert_di(ASObject* o)
+{
+	LOG(LOG_CALLS, _("convert_di") );
+	int64_t ret=o->toInt64();
+	o->decRef();
+	return ret;
+}
+
 ASObject* ABCVm::convert_s(ASObject* o)
 {
 	LOG(LOG_CALLS, _("convert_s") );
@@ -548,7 +556,16 @@ uint32_t ABCVm::decrement_i(ASObject* o)
 {
 	LOG(LOG_CALLS,_("decrement_i"));
 
-	int n=o->toInt();
+	int32_t n=o->toInt();
+	o->decRef();
+	return n-1;
+}
+
+uint64_t ABCVm::decrement_di(ASObject* o)
+{
+	LOG(LOG_CALLS,_("decrement_di"));
+
+	int64_t n=o->toInt64();
 	o->decRef();
 	return n-1;
 }
@@ -1006,10 +1023,22 @@ void ABCVm::kill(int n)
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
-	if(val1->is<Number>() && val2->is<Number>())
+	
+	// if both values are Integers or int Numbers the result is also an int Number
+	if( (val1->is<Integer>() || val1->is<UInteger>() || (val1->is<Number>() && !val1->as<Number>()->isfloat)) &&
+		(val2->is<Integer>() || val1->is<UInteger>() || (val2->is<Number>() && !val2->as<Number>()->isfloat)))
 	{
-		double num1=val1->as<Number>()->val;
-		double num2=val2->as<Number>()->val;
+		int64_t num1=val1->toInt64();
+		int64_t num2=val2->toInt64();
+		LOG(LOG_CALLS,"addI " << num1 << '+' << num2);
+		val1->decRef();
+		val2->decRef();
+		return abstract_di(val1->getSystemState(), num1+num2);
+	}
+	else if(val1->is<Number>() && val2->is<Number>())
+	{
+		double num1=val1->as<Number>()->toNumber();
+		double num2=val2->as<Number>()->toNumber();
 		LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
@@ -2028,7 +2057,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ret->setConstructorCallComplete();
 
 	obj->decRef();
-	LOG(LOG_CALLS,_("End of constructing ") << ret);
+	LOG(LOG_CALLS,_("End of constructing ") << ret->toDebugString());
 }
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
@@ -2169,6 +2198,15 @@ uint32_t ABCVm::increment_i(ASObject* o)
 	LOG(LOG_CALLS,_("increment_i"));
 
 	int n=o->toInt();
+	o->decRef();
+	return n+1;
+}
+
+uint64_t ABCVm::increment_di(ASObject* o)
+{
+	LOG(LOG_CALLS,_("increment_di"));
+
+	int64_t n=o->toInt64();
 	o->decRef();
 	return n+1;
 }

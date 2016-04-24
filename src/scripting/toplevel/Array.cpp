@@ -38,11 +38,11 @@ Array::Array(Class_base* c):ASObject(c),
 void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(c->getSystemState(),CASEINSENSITIVE),CONSTANT_TRAIT);
-	c->setVariableByQName("DESCENDING","",abstract_d(c->getSystemState(),DESCENDING),CONSTANT_TRAIT);
-	c->setVariableByQName("NUMERIC","",abstract_d(c->getSystemState(),NUMERIC),CONSTANT_TRAIT);
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(c->getSystemState(),RETURNINDEXEDARRAY),CONSTANT_TRAIT);
-	c->setVariableByQName("UNIQUESORT","",abstract_d(c->getSystemState(),UNIQUESORT),CONSTANT_TRAIT);
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_di(c->getSystemState(),CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableByQName("DESCENDING","",abstract_di(c->getSystemState(),DESCENDING),CONSTANT_TRAIT);
+	c->setVariableByQName("NUMERIC","",abstract_di(c->getSystemState(),NUMERIC),CONSTANT_TRAIT);
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_di(c->getSystemState(),RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableByQName("UNIQUESORT","",abstract_di(c->getSystemState(),UNIQUESORT),CONSTANT_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,true);
@@ -197,7 +197,7 @@ ASFUNCTIONBODY(Array,filter)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
 		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
@@ -246,7 +246,7 @@ ASFUNCTIONBODY(Array, some)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
 		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
@@ -292,7 +292,7 @@ ASFUNCTIONBODY(Array, every)
 			it->second.data->incRef();
 		}
 		else
-			params[0] =abstract_d(obj->getSystemState(),it->second.data_i);
+			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
 		params[1] = abstract_i(obj->getSystemState(),it->first);
 		params[2] = th;
 		th->incRef();
@@ -411,7 +411,7 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	int ret=-1;
 
 	if(argslen == 1 && th->data.empty())
-		return abstract_d(obj->getSystemState(),-1);
+		return abstract_di(obj->getSystemState(),-1);
 
 	size_t i = th->size()-1;
 
@@ -648,7 +648,7 @@ ASFUNCTIONBODY(Array,indexOf)
 		dtype = sl.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && abstract_d(obj->getSystemState(),sl.data_i)->isEqualStrict(arg0.getPtr())))
+			(dtype == DATA_INT && abstract_di(obj->getSystemState(),sl.data_i)->isEqualStrict(arg0.getPtr())))
 		{
 			ret=it->first;
 			break;
@@ -1240,7 +1240,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 				ret->incRef();
 				break;
 			case DATA_INT:
-				ret=abstract_d(this->getSystemState(),sl.data_i);
+				ret=abstract_di(this->getSystemState(),sl.data_i);
 				break;
 		}
 		return _MNR(ret);
@@ -1470,7 +1470,7 @@ _R<ASObject> Array::nextValue(uint32_t index)
 			}
 		}
 		else if(sl.type==DATA_INT)
-			return _MR(abstract_d(getSystemState(),sl.data_i));
+			return _MR(abstract_di(getSystemState(),sl.data_i));
 		else
 			throw UnsupportedException("Unexpected data type");
 	}
@@ -1533,7 +1533,7 @@ _R<ASObject> Array::at(unsigned int index) const
 			}
 		}
 		case DATA_INT:
-			return _MR(abstract_d(getSystemState(),sl.data_i));
+			return _MR(abstract_di(getSystemState(),sl.data_i));
 	}
 
 	//We should be here only if data is an object and is NULL
@@ -1643,7 +1643,7 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 		{
 			ASObject* params[2];
 			
-			params[0] = abstract_d(getSystemState(),it->first);
+			params[0] = abstract_di(getSystemState(),it->first);
 			params[0]->incRef();
 			params[1] = o;
 			params[1]->incRef();

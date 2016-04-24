@@ -155,6 +155,12 @@ inline int32_t lightspark::ArgumentConversion<int32_t>::toConcrete(ASObject* obj
 }
 
 template<>
+inline int64_t lightspark::ArgumentConversion<int64_t>::toConcrete(ASObject* obj)
+{
+	return obj->toInt64();
+}
+
+template<>
 inline tiny_string lightspark::ArgumentConversion<tiny_string>::toConcrete(ASObject* obj)
 {
 	return obj->toString();

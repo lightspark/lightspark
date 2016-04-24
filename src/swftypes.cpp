@@ -127,8 +127,25 @@ void multiname::setName(ASObject* n)
 		name_type = NAME_INT;
 		break;
 	case T_NUMBER:
-		name_d=n->as<Number>()->val;
-		name_type = NAME_NUMBER;
+		if (n->as<Number>()->isfloat)
+		{
+			name_d=n->as<Number>()->toNumber();
+			name_type = NAME_NUMBER;
+		}
+		else
+		{
+			int64_t di = n->as<Number>()->toInt64();
+			if (di > INT32_MAX || di < INT32_MIN)
+			{
+				name_d=n->as<Number>()->toNumber();
+				name_type = NAME_NUMBER;
+			}
+			else
+			{
+				name_i= di;
+				name_type = NAME_INT;
+			}
+		}
 		break;
 	case T_QNAME:
 		{
@@ -1380,7 +1397,15 @@ ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 {
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
-	ret->val = i;
+	ret->dval = i;
+	ret->isfloat = true;
+	return ret;
+}
+ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)
+{
+	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
+	ret->ival = i;
+	ret->isfloat = false;
 	return ret;
 }
 ASObject* lightspark::abstract_i(SystemState *sys, int32_t i)

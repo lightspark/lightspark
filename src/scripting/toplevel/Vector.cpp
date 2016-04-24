@@ -508,7 +508,7 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	ASObject* arg0=args[0];
 
 	if(th->vec.size() == 0)
-		return abstract_d(obj->getSystemState(),-1);
+		return abstract_di(obj->getSystemState(),-1);
 
 	size_t i = th->size()-1;
 
@@ -1117,7 +1117,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, c
 		{
 			ASObject* params[2];
 			
-			params[0] = abstract_d(getSystemState(),i);
+			params[0] = abstract_di(getSystemState(),i);
 			params[0]->incRef();
 			params[1] = o;
 			params[1]->incRef();

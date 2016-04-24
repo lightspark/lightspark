@@ -46,7 +46,7 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 	case T_BOOLEAN:
 		return o->as<Boolean>()->val;
 	case T_NUMBER:
-		return (o->as<Number>()->val != 0.0) && !std::isnan(o->as<Number>()->val);
+		return (o->as<Number>()->isfloat ? o->as<Number>()->dval != 0.0 && !std::isnan(o->as<Number>()->dval) : o->as<Number>()->ival != 0);
 	case T_INTEGER:
 		return o->as<Integer>()->val != 0;
 	case T_UINTEGER:

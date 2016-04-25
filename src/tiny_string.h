@@ -149,8 +149,14 @@ public:
 	bool operator!=(const char* r) const;
 	bool operator==(const Glib::ustring&) const;
 	bool operator!=(const Glib::ustring&) const;
-	const char* raw_buf() const;
-	bool empty() const;
+	inline const char* raw_buf() const
+	{
+		return buf;
+	}
+	inline bool empty() const
+	{
+		return stringSize == 1;
+	}
 	inline void clear()
 	{
 		resetToStatic();
@@ -160,9 +166,16 @@ public:
 	}
 	
 	/* returns the length in bytes, not counting the trailing \0 */
-	uint32_t numBytes() const;
+	inline uint32_t numBytes() const
+	{
+		return stringSize-1;
+	}
 	/* returns the length in utf-8 characters, not counting the trailing \0 */
-	uint32_t numChars() const;
+	inline uint32_t numChars() const
+	{
+		return numchars;
+	}
+	
 	/* start and len are indices of utf8-characters */
 	tiny_string substr(uint32_t start, uint32_t len) const;
 	tiny_string substr(uint32_t start, const CharIterator& end) const;

@@ -307,44 +307,6 @@ bool tiny_string::operator!=(const char* r) const
 	return !(*this==r);
 }
 
-const char* tiny_string::raw_buf() const
-{
-	return buf;
-}
-
-bool tiny_string::empty() const
-{
-	return stringSize == 1;
-}
-
-/* returns the length in bytes, not counting the trailing \0 */
-uint32_t tiny_string::numBytes() const
-{
-	return stringSize-1;
-}
-
-/* returns the length in utf-8 characters, not counting the trailing \0 */
-uint32_t tiny_string::numChars() const
-{
-	return numchars;
-	/*
-	if (isASCII)
-		return stringSize-1;
-	if (!hasNull)
-		return g_utf8_strlen(buf,stringSize-1);
-	//we cannot use g_utf8_strlen, as we may have '\0' inside our string
-	uint32_t len = 0;
-	char* end = buf+numBytes();
-	char* p = buf;
-	while(p < end)
-	{
-		p = g_utf8_next_char(p);
-		++len;
-	}
-	return len;
-	*/
-}
-
 char* tiny_string::strchr(char c) const
 {
 	//TODO: does this handle '\0' in middle of buf gracefully?

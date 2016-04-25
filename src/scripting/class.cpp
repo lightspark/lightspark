@@ -66,12 +66,6 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(nam
 	isReusable = true;
 }
 
-void Class_inherit::finalize()
-{
-	Class_base::finalize();
-	class_scope.clear();
-}
-
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
 {
 	//We override the classdef

@@ -31,15 +31,10 @@ XMLNode::XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n):ASObject(
 {
 }
 
-void XMLNode::finalize()
-{
-	ASObject::finalize();
-	root.reset();
-}
-
 void XMLNode::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(c->getSystemState(),attributes),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(c->getSystemState(),XMLNode::childNodes),GETTER_METHOD,true);

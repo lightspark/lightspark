@@ -34,12 +34,6 @@ Dictionary::Dictionary(Class_base* c):ASObject(c),
 {
 }
 
-void Dictionary::finalize()
-{
-	ASObject::finalize();
-	data.clear();
-}
-
 void Dictionary::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);

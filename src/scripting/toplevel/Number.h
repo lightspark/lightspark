@@ -46,7 +46,7 @@ public:
 	};
 	bool isfloat;
 	inline number_t toNumber() { return isfloat ? dval : ival; }
-	inline void finalize() { dval=Number::NaN; isfloat = true;}
+	inline void destruct() { dval=Number::NaN; isfloat = true; ASObject::destruct(); }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toExponential);

@@ -38,7 +38,7 @@ public:
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);
 	inline number_t toNumber() { return val; }
-	inline void finalize() { val=0;}
+	inline void destruct() { val=0; ASObject::destruct(); }
 	ASFUNCTION(_toString);
 	tiny_string toString();
 	static tiny_string toString(int32_t val);

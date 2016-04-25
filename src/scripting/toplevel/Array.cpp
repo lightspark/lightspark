@@ -38,6 +38,7 @@ Array::Array(Class_base* c):ASObject(c),
 void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->isReusable = true;
 	c->setVariableByQName("CASEINSENSITIVE","",abstract_di(c->getSystemState(),CASEINSENSITIVE),CONSTANT_TRAIT);
 	c->setVariableByQName("DESCENDING","",abstract_di(c->getSystemState(),DESCENDING),CONSTANT_TRAIT);
 	c->setVariableByQName("NUMERIC","",abstract_di(c->getSystemState(),NUMERIC),CONSTANT_TRAIT);
@@ -1683,19 +1684,6 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 
 Array::~Array()
 {
-	Array::finalize();
-}
-
-void Array::finalize()
-{
-	ASObject::finalize();
-	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=data.begin() ; it != data.end(); ++it)
-	{
-		if(it->second.type==DATA_OBJECT && it->second.data)
-			it->second.data->decRef();
-	}
-	data.clear();
 }
 
 void Array::set(unsigned int index, _R<ASObject> o)

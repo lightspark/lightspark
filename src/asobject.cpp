@@ -1396,8 +1396,10 @@ void ASObject::destroy()
 
 void ASObject::destruct()
 {
-	finalize();
-	Variables.destroyContents();
+	if (!classdef || !classdef->isReusable)
+		finalize();
+	if (Variables.size())
+		Variables.destroyContents();
 	if (proxyMultiName)
 		delete proxyMultiName;
 	proxyMultiName = NULL;

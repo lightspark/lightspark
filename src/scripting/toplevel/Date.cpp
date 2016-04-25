@@ -35,18 +35,6 @@ Date::~Date()
 {
 }
 
-void Date::finalize()
-{
-	if (datetimeUTC)
-		g_date_time_unref(datetimeUTC);
-	if (datetime)
-		g_date_time_unref(datetime);
-	datetime = NULL;
-	datetimeUTC = NULL;
-	extrayears = 0;
-	nan = false;
-}
-
 void Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);

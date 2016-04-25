@@ -413,12 +413,13 @@ public:
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
 	bool isConstructed() const { return constructIndicator; }
-	inline void finalize() 
+	inline void destruct() 
 	{
 		closure_this.reset();
 		inClass=NULL;
 		functionname=0;
 		length=0;
+		ASObject::destruct();
 	}
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -506,10 +507,10 @@ class FunctionPrototype: public Function, public Prototype
 {
 public:
 	FunctionPrototype(Class_base* c, _NR<Prototype> p);
-	inline void finalize()
+	inline void destruct()
 	{
-		Function::finalize();
 		prevPrototype.reset();
+		Function::destruct();
 	}
 	
 	void incRef() { ASObject::incRef(); }
@@ -558,12 +559,12 @@ private:
 public:
 	~SyntheticFunction() {}
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
-	inline void finalize()
+	inline void destruct()
 	{
-		IFunction::finalize();
 		func_scope.reset();
 		val = NULL;
 		mi = NULL;
+		IFunction::destruct();
 	}
 	
 	_NR<scope_entry_list> func_scope;
@@ -790,7 +791,7 @@ ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen)
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 bool isXMLName(ASObject* obj);
 ASObject* _isXMLName(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-
+number_t parseNumber(const tiny_string str);
 };
 
 #endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

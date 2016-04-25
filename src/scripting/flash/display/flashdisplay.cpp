@@ -113,9 +113,8 @@ void LoaderInfo::buildTraits(ASObject* o)
 {
 }
 
-void LoaderInfo::finalize()
+void LoaderInfo::destruct()
 {
-	EventDispatcher::finalize();
 	sharedEvents.reset();
 	loader.reset();
 	applicationDomain.reset();
@@ -134,6 +133,7 @@ void LoaderInfo::finalize()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
+	EventDispatcher::finalize();
 }
 
 void LoaderInfo::resetState()
@@ -691,14 +691,14 @@ Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),gra
 {
 }
 
-void Sprite::finalize()
+void Sprite::destruct()
 {
-	DisplayObjectContainer::finalize();
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
 	buttonMode = false;
 	useHandCursor = false;
+	DisplayObjectContainer::destruct();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -1137,14 +1137,14 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTa
 	//For the root movie, it's the frame count from the header
 }
 
-void MovieClip::finalize()
+void MovieClip::destruct()
 {
-	Sprite::finalize();
 	frames.clear();
 	frameScripts.clear();
 	fromDefineSpriteTag = false;
 	totalFrames_unreliable = 1;
 	enabled = true;
+	Sprite::destruct();
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -1573,13 +1573,13 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	}
 }
 
-void DisplayObjectContainer::finalize()
+void DisplayObjectContainer::destruct()
 {
-	InteractiveObject::finalize();
 	//Release every child
 	dynamicDisplayList.clear();
 	mouseChildren = true;
 	tabChildren = true;
+	InteractiveObject::destruct();
 }
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
@@ -1631,15 +1631,15 @@ ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
 	return abstract_b(obj->getSystemState(),th->doubleClickEnabled);
 }
 
-void InteractiveObject::finalize()
+void InteractiveObject::destruct()
 {
-	DisplayObject::finalize();
 	contextMenu.reset();
 	mouseEnabled = true;
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
 	tabEnabled = false;
 	tabIndex = -1;
+	DisplayObject::destruct();
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -2568,13 +2568,13 @@ Bitmap::~Bitmap()
 {
 }
 
-void Bitmap::finalize()
+void Bitmap::destruct()
 {
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
 	smoothing = false;
-	DisplayObject::finalize();
+	DisplayObject::destruct();
 }
 
 void Bitmap::sinit(Class_base* c)

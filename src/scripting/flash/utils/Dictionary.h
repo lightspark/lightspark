@@ -37,7 +37,12 @@ private:
 	dictType::iterator findKey(ASObject *);
 public:
 	Dictionary(Class_base* c);
-	void finalize();
+	void destruct()
+	{
+		data.clear();
+		ASObject::destruct();
+	}
+	
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

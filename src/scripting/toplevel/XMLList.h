@@ -50,7 +50,8 @@ public:
 	XMLList(Class_base* c,const XML::XMLVector& r);
 	XMLList(Class_base* c,const XML::XMLVector& r,XMLList* targetobject,const multiname& targetproperty);
 	XMLList(Class_base* c,const std::string& str);
-	void finalize();
+	void destruct();
+	
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
@@ -108,6 +109,7 @@ public:
 	tiny_string toXMLString_internal(bool pretty=true);
 	int32_t toInt();
 	int64_t toInt64();
+	number_t toNumber();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

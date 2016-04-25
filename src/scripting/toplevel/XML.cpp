@@ -63,7 +63,7 @@ XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList)
 	createTree(_n,fromXMLList);
 }
 
-void XML::finalize()
+void XML::destruct()
 {
 	xmldoc.reset();
 	parentNode.reset();
@@ -78,7 +78,7 @@ void XML::finalize()
 	attributelist.reset();
 	procinstlist.reset();
 	namespacedefs.clear();
-
+	ASObject::destruct();
 }
 
 void XML::sinit(Class_base* c)
@@ -2376,6 +2376,13 @@ int64_t XML::toInt64()
 	if (!valid)
 		return 0;
 	return value;
+}
+
+number_t XML::toNumber()
+{
+	if (!hasSimpleContent())
+		return 0;
+	return parseNumber(toString_priv());
 }
 
 bool XML::nodesEqual(XML *a, XML *b) const

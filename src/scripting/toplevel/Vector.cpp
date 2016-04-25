@@ -29,6 +29,7 @@ using namespace lightspark;
 void Vector::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),getLength),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
@@ -100,18 +101,6 @@ Vector::Vector(Class_base* c, const Type *vtype):ASObject(c),vec_type(vtype),fix
 
 Vector::~Vector()
 {
-	finalize();
-}
-
-void Vector::finalize()
-{
-	for(unsigned int i=0;i<size();i++)
-	{
-		if(vec[i])
-			vec[i]->decRef();
-	}
-	vec.clear();
-	ASObject::finalize();
 }
 
 void Vector::setTypes(const std::vector<const Type *> &types)

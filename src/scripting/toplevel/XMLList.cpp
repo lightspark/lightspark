@@ -80,7 +80,7 @@ XMLList::XMLList(Class_base* c, const XML::XMLVector& r, XMLList *targetobject, 
 	}
 }
 
-void XMLList::finalize()
+void XMLList::destruct()
 {
 	if (targetobject)
 		targetobject->decRef();
@@ -88,6 +88,7 @@ void XMLList::finalize()
 	constructed = false;
 	targetobject = NULL;
 	targetproperty = multiname(this->getClass()->memoryAccount);
+	ASObject::destruct();
 }
 
 void XMLList::sinit(Class_base* c)
@@ -1111,6 +1112,12 @@ int64_t XMLList::toInt64()
 	if (!valid)
 		return 0;
 	return value;
+}
+number_t XMLList::toNumber()
+{
+	if (!hasSimpleContent())
+		return 0;
+	return parseNumber(toString_priv());
 }
 
 ASFUNCTIONBODY(XMLList,_toString)

@@ -2200,9 +2200,14 @@ ASFUNCTIONBODY(lightspark,parseInt)
 ASFUNCTIONBODY(lightspark,parseFloat)
 {
 	tiny_string str;
+	ARG_UNPACK (str, "");
+
+	return abstract_d(obj->getSystemState(),parseNumber(str));
+}
+number_t lightspark::parseNumber(const tiny_string str)
+{
 	const char *p;
 	char *end;
-	ARG_UNPACK (str, "");
 
 	// parsing of hex numbers is not allowed
 	char* p1 = str.strchr('x');
@@ -2214,9 +2219,9 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	double d=strtod(p, &end);
 
 	if (end==p)
-		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
+		return numeric_limits<double>::quiet_NaN();
 
-	return abstract_d(obj->getSystemState(),d);
+	return d;
 }
 
 ASFUNCTIONBODY(lightspark,isNaN)

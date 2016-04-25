@@ -80,7 +80,8 @@ public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
 	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
-	void finalize();
+	void destruct();
+	
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(toXMLString);
@@ -164,6 +165,7 @@ public:
 	const tiny_string toXMLString_internal(bool pretty=true, tiny_string defaultnsprefix = "", const char* indent = "", bool bfirst = true);
 	int32_t toInt();
 	int64_t toInt64();
+	number_t toNumber();
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	pugi::xml_node_type getNodeKind() const;

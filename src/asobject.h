@@ -399,7 +399,15 @@ protected:
 		return ret;
 	}
 	
-	//overridden from RefCountable
+	/*
+	   overridden from RefCountable
+	   The destruct function is called when the reference count reaches 0 and the object is added to the free list of the class.
+	   It should be implemented in all derived classes.
+	   It should decRef all referenced objects.
+	   It has to reset all data to their default state.
+	   It has to call ASObject::destruct() as last instruction
+	   The destruct method must be callable multiple time with the same effects (no double frees).
+	*/
 	void destruct();
 	// called when object is really destroyed
 	virtual void destroy();
@@ -438,8 +446,8 @@ public:
 			o->decRef();
 	}
 	/*
-	   The finalize function is called when the reference count reaches 0 and the objects is added to the free list of the class.
-	   It should be implemented in all derived class.
+	   The finalize function is used only for classes that don't have the reusable flag set
+	   if a class is made reusable, it should implement destruct() instead
 	   It should decRef all referenced objects.
 	   It has to reset all data to their default state.
 	   The finalize method must be callable multiple time with the same effects (no double frees).

@@ -41,7 +41,19 @@ private:
 	static number_t parse(tiny_string str);
 public:
 	Date(Class_base* c);
-	void finalize();
+	void destruct()
+	{
+		if (datetimeUTC)
+			g_date_time_unref(datetimeUTC);
+		if (datetime)
+			g_date_time_unref(datetime);
+		datetime = NULL;
+		datetimeUTC = NULL;
+		extrayears = 0;
+		nan = false;
+		ASObject::destruct();
+	}
+
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

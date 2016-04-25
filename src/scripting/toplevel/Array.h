@@ -92,7 +92,18 @@ private:
 public:
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);
-	void finalize();
+	void destruct()
+	{
+		std::map<uint32_t,data_slot>::iterator it;
+		for ( it=data.begin() ; it != data.end(); ++it)
+		{
+			if(it->second.type==DATA_OBJECT && it->second.data)
+				it->second.data->decRef();
+		}
+		data.clear();
+		ASObject::destruct();
+	}
+	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);

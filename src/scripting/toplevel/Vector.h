@@ -54,7 +54,18 @@ class Vector: public ASObject
 public:
 	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
-	void finalize();
+	void destruct()
+	{
+		for(unsigned int i=0;i<size();i++)
+		{
+			if(vec[i])
+				vec[i]->decRef();
+		}
+		vec.clear();
+		ASObject::destruct();
+	}
+	
+	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {};
 	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);

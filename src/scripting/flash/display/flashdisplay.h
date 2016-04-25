@@ -78,7 +78,7 @@ public:
 	ASFUNCTION(_getMouseEnabled);
 	ASFUNCTION(_setDoubleClickEnabled);
 	ASFUNCTION(_getDoubleClickEnabled);
-	void finalize();
+	void destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -107,7 +107,7 @@ public:
 	bool _removeChild(_R<DisplayObject> child);
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
-	void finalize();
+	void destruct();
 	bool hasLegacyChildAt(uint32_t depth);
 	void deleteLegacyChildAt(uint32_t depth);
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
@@ -257,7 +257,7 @@ public:
 	ASPROPERTY_GETTER(number_t,frameRate);
 	LoaderInfo(Class_base* c);
 	LoaderInfo(Class_base* c, _R<Loader> l);
-	void finalize();
+	void destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -358,7 +358,7 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite(Class_base* c);
-	void finalize();
+	void destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -481,7 +481,7 @@ public:
 	RunState state;
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
-	void finalize();
+	void destruct();
 	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -687,7 +687,7 @@ public:
 	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(Class_base* c, _R<BitmapData> data);
 	~Bitmap();
-	void finalize();
+	void destruct();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;

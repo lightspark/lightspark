@@ -38,6 +38,7 @@ public:
 #ifndef NDEBUG
 	int getRefCount() const { return ref_count; }
 #endif
+	inline bool isLastRef() const { return ref_count == 1; }
 	inline void incRef()
 	{
 		ATOMIC_INCREMENT(ref_count);
@@ -106,7 +107,7 @@ public:
 
 		return *this;
 	}
-	template<class D> Ref<T>& operator=(const Ref<D>& r)
+	template<class D> inline Ref<T>& operator=(const Ref<D>& r)
 	{
 		//incRef before decRef to make sure this works even if the pointer is the same
 		r.m->incRef();
@@ -118,25 +119,25 @@ public:
 
 		return *this;
 	}
-	template<class D> bool operator==(const Ref<D>& r) const
+	template<class D> inline bool operator==(const Ref<D>& r) const
 	{
 		return m==r.getPtr();
 	}
-	template<class D> bool operator!=(const Ref<D>& r) const
+	template<class D> inline bool operator!=(const Ref<D>& r) const
 	{
 		return m!=r.getPtr();
 	}
-	template<class D> bool operator==(const NullableRef<D>&r) const;
-	bool operator==(T* r) const
+	template<class D> inline bool operator==(const NullableRef<D>&r) const;
+	inline bool operator==(T* r) const
 	{
 		return m==r;
 	}
 	//Order operator for Dictionary map
-	bool operator<(const Ref<T>& r) const
+	inline bool operator<(const Ref<T>& r) const
 	{
 		return m<r.m;
 	}
-	template<class D> Ref<D> cast() const
+	template<class D> inline Ref<D> cast() const
 	{
 		D* p = static_cast<D*>(m);
 		p->incRef();
@@ -201,7 +202,7 @@ public:
 		//The right hand Ref object is guaranteed to be valid
 		m->incRef();
 	}
-	NullableRef<T>& operator=(const NullableRef<T>& r)
+	inline NullableRef<T>& operator=(const NullableRef<T>& r)
 	{
 		if(r.m)
 			r.m->incRef();
@@ -212,7 +213,7 @@ public:
 			old->decRef();
 		return *this;
 	}
-	template<class D> NullableRef<T>& operator=(const NullableRef<D>& r)
+	template<class D> inline NullableRef<T>& operator=(const NullableRef<D>& r)
 	{
 		if(r.getPtr())
 			r->incRef();
@@ -223,7 +224,7 @@ public:
 			old->decRef();
 		return *this;
 	}
-	template<class D> NullableRef<T>& operator=(const Ref<D>& r)
+	template<class D> inline NullableRef<T>& operator=(const Ref<D>& r)
 	{
 		r.getPtr()->incRef();
 
@@ -233,37 +234,37 @@ public:
 			old->decRef();
 		return *this;
 	}
-	template<class D> bool operator==(const NullableRef<D>& r) const
+	template<class D> inline bool operator==(const NullableRef<D>& r) const
 	{
 		return m==r.getPtr();
 	}
-	template<class D> bool operator==(const Ref<D>& r) const
+	template<class D> inline bool operator==(const Ref<D>& r) const
 	{
 		return m==r.getPtr();
 	}
 	template<class D>
-	bool operator==(const D* r) const
+	inline bool operator==(const D* r) const
 	{
 		return m==r;
 	}
-	bool operator==(NullRef_t) const
+	inline bool operator==(NullRef_t) const
 	{
 		return m==NULL;
 	}
-	template<class D> bool operator!=(const NullableRef<D>& r) const
+	template<class D> inline bool operator!=(const NullableRef<D>& r) const
 	{
 		return m!=r.getPtr();
 	}
-	template<class D> bool operator!=(const Ref<D>& r) const
+	template<class D> inline bool operator!=(const Ref<D>& r) const
 	{
 		return m!=r.getPtr();
 	}
 	template<class D>
-	bool operator!=(const D* r) const
+	inline bool operator!=(const D* r) const
 	{
 		return m!=r;
 	}
-	bool operator!=(NullRef_t) const
+	inline bool operator!=(NullRef_t) const
 	{
 		return m!=NULL;
 	}
@@ -276,27 +277,27 @@ public:
 		if(m)
 			m->decRef();
 	}
-	T* operator->() const
+	inline T* operator->() const
 	{
 		if(m != NULL)
 			return m;
 		else
 			throw std::runtime_error("LS smart pointer: NULL pointer access");
 	}
-	T* getPtr() const { return m; }
-	bool isNull() const { return m==NULL; }
-	void reset()
+	inline T* getPtr() const { return m; }
+	inline bool isNull() const { return m==NULL; }
+	inline void reset()
 	{
 		T* old=m;
 		m=NULL;
 		if(old)
 			old->decRef();
 	}
-	void fakeRelease()
+	inline void fakeRelease()
 	{
 		m=NULL;
 	}
-	template<class D> NullableRef<D> cast() const
+	template<class D> inline NullableRef<D> cast() const
 	{
 		if(!m)
 			return NullRef;

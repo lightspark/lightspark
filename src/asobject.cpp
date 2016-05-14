@@ -1090,11 +1090,6 @@ void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	Variables.initSlot(n,name.name_s_id,name.ns[0]);
 }
-void ASObject::appendSlot(const multiname& name)
-{
-	Variables.appendSlot(name.name_s_id,name.ns[0]);
-}
-
 int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
@@ -1396,8 +1391,6 @@ void ASObject::destroy()
 
 void ASObject::destruct()
 {
-	if (!classdef || !classdef->isReusable)
-		finalize();
 	if (Variables.size())
 		Variables.destroyContents();
 	if (proxyMultiName)
@@ -1411,12 +1404,14 @@ void ASObject::destruct()
 	//Stuff only used in debugging
 	initialized=false;
 #endif
+	bool dodestruct = true;
 	if (classdef && classdef->isReusable)
 	{
-		classdef->pushObjectToFreeList(this);
+		dodestruct = !classdef->pushObjectToFreeList(this);
 	}
-	else
+	if (dodestruct)
 	{
+		finalize();
 		RefCountable::destruct();
 	}
 }

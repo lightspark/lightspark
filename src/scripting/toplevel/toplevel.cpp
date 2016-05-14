@@ -777,14 +777,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys())),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
-	borrowedVariables(m),
+	freelistsize(0),freelistsize2(0),borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
-	borrowedVariables(NULL),
+	freelistsize(0),freelistsize2(0),borrowedVariables(NULL),
 	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	type=T_CLASS;
@@ -1057,6 +1057,8 @@ void Class_base::finalize()
 	isInterface = false;
 	isProxy = false;
 	use_protected = false;
+	freelistsize = 0;
+	freelistsize2 = 0;
 }
 
 Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),template_name(name)

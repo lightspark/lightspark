@@ -138,6 +138,7 @@ public:
 class Prototype;
 class ObjectConstructor;
 
+#define FREELIST_SIZE 16
 class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
@@ -156,8 +157,10 @@ private:
 	Mutex referencedObjectsMutex;
 	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
 	void finalizeObjects();
-	std::vector<ASObject*> freelist;
-	std::vector<ASObject*> freelist2;
+	ASObject* freelist[FREELIST_SIZE];
+	int freelistsize;
+	ASObject* freelist2[FREELIST_SIZE];
+	int freelistsize2;
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
@@ -171,10 +174,9 @@ public:
 		assert_and_throw(isVmThread());
 #endif
 		ASObject* ret = NULL;
-		if (!freelist.empty())
+		if (freelistsize)
 		{
-			ret=freelist.back();
-			freelist.pop_back();
+			ret=freelist[--freelistsize];
 			ret->incRef();
 		}
 		return ret;
@@ -186,16 +188,15 @@ public:
 		assert_and_throw(isVmThread());
 #endif
 		ASObject* ret = NULL;
-		if (!freelist2.empty())
+		if (freelistsize2)
 		{
-			ret=freelist2.back();
-			freelist2.pop_back();
+			ret=freelist2[--freelistsize2];
 			ret->incRef();
 		}
 		return ret;
 	}
 	
-	inline void pushObjectToFreeList(ASObject *obj)
+	inline bool pushObjectToFreeList(ASObject *obj)
 	{
 #ifndef NDEBUG
 		// all ASObjects must be created in the VM thread
@@ -203,9 +204,23 @@ public:
 #endif
 		assert(obj->getRefCount() == 0);
 		if (obj->reusableListNumber == 0)
-			freelist.push_back(obj);
+		{
+			if (freelistsize < FREELIST_SIZE)
+			{
+				freelist[freelistsize++]=obj;
+				return true;
+			}
+			return false;
+		}
 		else
-			freelist2.push_back(obj);
+		{
+			if (freelistsize2 < FREELIST_SIZE)
+			{
+				freelist2[freelistsize2++]=obj;
+				return true;
+			}
+			return false;
+		}
 	}
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);

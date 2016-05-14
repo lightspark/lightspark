@@ -294,10 +294,14 @@ void ABCVm::registerFunctions()
 	llvm::FunctionType* FT=NULL;
 
 	//Create types
+#ifdef LLVM_38
+	ptr_type=ex->getDataLayout().getIntPtrType(llvm_context());
+#else
 #if defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
 	ptr_type=ex->getDataLayout()->getIntPtrType(llvm_context());
 #else
 	ptr_type=ex->getTargetData()->getIntPtrType(llvm_context());
+#endif
 #endif
 	//Pointer to 8 bit type, needed for pointer arithmetic
 	voidptr_type=llvm::IntegerType::get(llvm_context(),8)->getPointerTo();
@@ -1885,7 +1889,11 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 
 	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
 	//The first and only argument to this function is the call_context*
+#ifdef LLVM_38
+	llvm::Value* context=&(*it);
+#else
 	llvm::Value* context=it;
+#endif
 
 	//let's give access to local data storage
 	value=Builder.CreateStructGEP(

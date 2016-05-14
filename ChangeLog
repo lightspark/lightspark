@@ -10,7 +10,7 @@ Version NEXT:
 	* fix serialization
 	* implement data generation mode
 	* support for avmplus classes (mostly stubs)
-	* Support LLVM up to version 3.6
+	* Support LLVM up to version 3.8
 	* fix event dispatcher handling
 	* several fixes for object initialization
 	* partially implement AMF0 decoding

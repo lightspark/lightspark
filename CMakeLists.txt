@@ -205,6 +205,7 @@ SET(ENABLE_RTMP TRUE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling support? (Causes performance issues)")
 SET(ENABLE_MEMORY_USAGE_PROFILING FALSE CACHE BOOL "Enable profiling of memory usage? (Causes performance issues)")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+SET(MANUAL_DIRECTORY "share/man/man1" CACHE STRING "Directory to install manual to (UNIX only)")
 
 IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})

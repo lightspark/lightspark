@@ -133,7 +133,7 @@ void LoaderInfo::destruct()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
-	EventDispatcher::finalize();
+	EventDispatcher::destruct();
 }
 
 void LoaderInfo::resetState()

@@ -290,6 +290,7 @@ std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);
 std::istream& operator>>(std::istream& in, u30& v);
 std::istream& operator>>(std::istream& in, u32& v);
+std::istream& operator>>(std::istream& in, s24& v);
 std::istream& operator>>(std::istream& in, s32& v);
 std::istream& operator>>(std::istream& in, d64& v);
 std::istream& operator>>(std::istream& in, string_info& v);

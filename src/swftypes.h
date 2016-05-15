@@ -86,6 +86,8 @@ class SystemState;
 class ASObject;
 class ASString;
 class ABCContext;
+class URLInfo;
+class DisplayObject;
 struct namespace_info;
 
 struct multiname;
@@ -387,9 +389,9 @@ struct multiname: public memory_reporter
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(ASObject* n);
 	void resetNameIfObject();
-	bool isQName() const { return ns.size() == 1; }
+	inline bool isQName() const { return ns.size() == 1; }
 	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false) const;
-	bool isEmpty() const { return name_type == NAME_OBJECT && name_o == NULL;}
+	inline bool isEmpty() const { return name_type == NAME_OBJECT && name_o == NULL;}
 };
 
 class FLOAT 
@@ -1357,6 +1359,9 @@ std::ostream& operator<<(std::ostream& s, const nsNameAndKind& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
 std::ostream& operator<<(std::ostream& s, const tiny_string& r) DLL_PUBLIC;
 std::ostream& operator<<(std::ostream& s, const QName& r);
+std::ostream& operator<<(std::ostream& s, const MATRIX& r);
+std::ostream& operator<<(std::ostream& s, const URLInfo& u);
+std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 
 std::istream& operator>>(std::istream& s, RECT& v);
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);
@@ -1364,6 +1369,9 @@ std::istream& operator>>(std::istream& s, CLIPACTIONRECORD& v);
 std::istream& operator>>(std::istream& s, CLIPACTIONS& v);
 std::istream& operator>>(std::istream& s, RGB& v);
 std::istream& operator>>(std::istream& s, RGBA& v);
+std::istream& operator>>(std::istream& s, GRADRECORD& v);
+std::istream& operator>>(std::istream& s, GRADIENT& v);
+std::istream& operator>>(std::istream& s, FOCALGRADIENT& v);
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);

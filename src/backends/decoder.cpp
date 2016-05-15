@@ -293,7 +293,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 	}
 	if(frameOk)
 	{
-		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
+		//assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
@@ -323,7 +323,7 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	assert_and_throw(ret==(int)pkt->size);
 	if(frameOk)
 	{
-		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
+		//assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
@@ -956,7 +956,11 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 			}
 		}
 	}
+#ifdef HAVE_AV_PACKET_UNREF
+	av_packet_unref(&pkt);
+#else
 	av_free_packet(&pkt);
+#endif
 	return true;
 }
 

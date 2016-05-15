@@ -163,32 +163,39 @@ bool Boolean::isEqual(ASObject* r)
 
 TRISTATE Boolean::isLess(ASObject* r)
 {
-	if(r->getObjectType()==T_BOOLEAN)
+	switch (r->getObjectType())
 	{
-		const Boolean* b=static_cast<const Boolean*>(r);
-		return (val<b->val)?TTRUE:TFALSE;
-	}
-	else if(r->getObjectType()==T_INTEGER ||
-		r->getObjectType()==T_UINTEGER ||
-		r->getObjectType()==T_NUMBER ||
-		r->getObjectType()==T_STRING)
-	{
-		double d=r->toNumber();
-		if(std::isnan(d)) return TUNDEFINED;
-		return (val<d)?TTRUE:TFALSE;
-	}
-	else if(r->getObjectType()==T_NULL)
-	{
-		return (val<0)?TTRUE:TFALSE;
-	}
-	else if(r->getObjectType()==T_UNDEFINED)
-	{
-		return TUNDEFINED;
-	}
-	else
-	{
-		double val2=r->toPrimitive()->toNumber();
-		if(std::isnan(val2)) return TUNDEFINED;
-		return (val<val2)?TTRUE:TFALSE;
+		case T_BOOLEAN:
+		{
+			const Boolean* b=static_cast<const Boolean*>(r);
+			return (val<b->val)?TTRUE:TFALSE;
+		}
+		case T_INTEGER:
+		{
+			int32_t d=r->toInt();
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_UINTEGER:
+		{
+			uint32_t d=r->toUInt();
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_NUMBER:
+		case T_STRING:
+		{
+			double d=r->toNumber();
+			if(std::isnan(d)) return TUNDEFINED;
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_NULL:
+			return (val)?TFALSE:TTRUE;
+		case T_UNDEFINED:
+			return TUNDEFINED;
+		default:
+		{
+			double val2=r->toPrimitive()->toNumber();
+			if(std::isnan(val2)) return TUNDEFINED;
+			return (val<val2)?TTRUE:TFALSE;
+		}
 	}
 }

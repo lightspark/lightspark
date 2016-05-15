@@ -773,7 +773,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 		}
 	}
-	return typeObject->as<Type>();
+	return typeObject ? typeObject->as<Type>() : NULL;
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys())),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),

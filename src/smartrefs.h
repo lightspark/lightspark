@@ -47,7 +47,7 @@ public:
 	inline void decRef()
 	{
 		assert(ref_count>0);
-		uint32_t t=ATOMIC_DECREMENT(ref_count);
+		int32_t t=ATOMIC_DECREMENT(ref_count);
 		if(t==0)
 		{
 			destruct();

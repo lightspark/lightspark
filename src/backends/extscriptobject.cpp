@@ -248,20 +248,21 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 // Conversion to ASObject
 ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
 {
+	//don't create ASObjects from cache, as we are not in the vm thread
 	ASObject* asobj;
 	switch(getType())
 	{
 	case EV_STRING:
-		asobj = abstract_s(getSys(),getString().c_str());
+		asobj = Class<ASString>::getInstanceS(getSys(),getString().c_str());
 		break;
 	case EV_INT32:
-		asobj = abstract_i(getSys(),getInt());
+		asobj = Class<Integer>::getInstanceS(getSys(),getInt());
 		break;
 	case EV_DOUBLE:
-		asobj = abstract_d(getSys(),getDouble());
+		asobj = Class<Number>::getInstanceS(getSys(),getDouble());
 		break;
 	case EV_BOOLEAN:
-		asobj = abstract_b(getSys(),getBoolean());
+		asobj = Class<Boolean>::getInstanceS(getSys(),getBoolean());
 		break;
 	case EV_OBJECT:
 		{

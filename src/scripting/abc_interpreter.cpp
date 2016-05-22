@@ -492,19 +492,46 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			}
 			case 0x24:
 			{
-				//pushbyte
+				uint32_t pos = code.tellg();
+				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					context->runtime_stack_push(code.codecache[pos].obj);
+					code.seekg(code.codecache[pos].nextpos);
+					break;
+				}
+					
 				int8_t t = code.readbyte();
-				context->runtime_stack_push(abstract_i(function->getSystemState(),t));
+				code.codecache[pos].nextpos = pos+1;
 				pushByte(t);
+			
+				ASObject* d= abstract_i(function->getSystemState(),t);
+				d->setConstant();
+				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				code.codecache[pos].obj = d;
+				context->runtime_stack_push(d);
 				break;
 			}
 			case 0x25:
 			{
 				//pushshort
+				uint32_t pos = code.tellg();
+				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					context->runtime_stack_push(code.codecache[pos].obj);
+					code.seekg(code.codecache[pos].nextpos);
+					break;
+				}
 				// specs say pushshort is a u30, but it's really a u32
 				// see https://bugs.adobe.com/jira/browse/ASC-4181
 				uint32_t t = code.readu32();
-				context->runtime_stack_push(abstract_i(function->getSystemState(),t));
+				code.codecache[pos].nextpos = code.tellg();
+
+				ASObject* i= abstract_i(function->getSystemState(),t);
+				i->setConstant();
+				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				code.codecache[pos].obj = i;
+				context->runtime_stack_push(i);
+
 				pushShort(t);
 				break;
 			}
@@ -565,33 +592,65 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x2d:
 			{
 				//pushint
+				uint32_t pos = code.tellg();
+				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					context->runtime_stack_push(code.codecache[pos].obj);
+					code.seekg(code.codecache[pos].nextpos);
+					break;
+				}
+
 				uint32_t t = code.readu30();
 				s32 val=context->context->constant_pool.integer[t];
 				pushInt(context, val);
 
 				ASObject* i=abstract_i(function->getSystemState(),val);
+				i->setConstant();
+				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				code.codecache[pos].obj = i;
 				context->runtime_stack_push(i);
 				break;
 			}
 			case 0x2e:
 			{
 				//pushuint
+				uint32_t pos = code.tellg();
+				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					context->runtime_stack_push(code.codecache[pos].obj);
+					code.seekg(code.codecache[pos].nextpos);
+					break;
+				}
+
 				uint32_t t = code.readu30();
 				u32 val=context->context->constant_pool.uinteger[t];
 				pushUInt(context, val);
 
 				ASObject* i=abstract_ui(function->getSystemState(),val);
+				i->setConstant();
+				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				code.codecache[pos].obj = i;
 				context->runtime_stack_push(i);
 				break;
 			}
 			case 0x2f:
 			{
 				//pushdouble
+				uint32_t pos = code.tellg();
+				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					context->runtime_stack_push(code.codecache[pos].obj);
+					code.seekg(code.codecache[pos].nextpos);
+					break;
+				}
 				uint32_t t = code.readu30();
 				d64 val=context->context->constant_pool.doubles[t];
 				pushDouble(context, val);
-
-				ASObject* d=abstract_d(function->getSystemState(),val);
+			
+				ASObject* d= abstract_d(function->getSystemState(),val);
+				d->setConstant();
+				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				code.codecache[pos].obj = d;
 				context->runtime_stack_push(d);
 				break;
 			}

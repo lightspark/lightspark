@@ -29,8 +29,9 @@ namespace lightspark
 class RefCountable {
 private:
 	ATOMIC_INT32(ref_count);
+	ACQUIRE_RELEASE_FLAG(isConstant);
 protected:
-	RefCountable() : ref_count(1) {}
+	RefCountable() : ref_count(1),isConstant(false) {}
 
 public:
 	virtual ~RefCountable() {}
@@ -39,23 +40,31 @@ public:
 	int getRefCount() const { return ref_count; }
 #endif
 	inline bool isLastRef() const { return ref_count == 1; }
+	inline void setConstant()
+	{
+		RELEASE_WRITE(isConstant,true);
+	}
+	
 	inline void incRef()
 	{
-		ATOMIC_INCREMENT(ref_count);
+		if (!isConstant)
+			ATOMIC_INCREMENT(ref_count);
 		assert(ref_count>0);
 	}
 	inline void decRef()
 	{
 		assert(ref_count>0);
-		int32_t t=ATOMIC_DECREMENT(ref_count);
-		if(t==0)
+		if (!isConstant)
 		{
-			destruct();
+			int32_t t=ATOMIC_DECREMENT(ref_count);
+			if(t==0)
+				destruct();
 		}
 	}
 	inline void fake_decRef()
 	{
-		ATOMIC_DECREMENT(ref_count);
+		if (!isConstant)
+			ATOMIC_DECREMENT(ref_count);
 	}
 	virtual void destruct()
 	{

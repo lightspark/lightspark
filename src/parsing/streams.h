@@ -102,8 +102,8 @@ private:
 	unsigned int len;
 	unsigned int pos;
 	bool read_past_end;
-	lightspark::method_body_info_cache* codecache;
 public:
+	lightspark::method_body_info_cache* codecache;
 	// Create a stream from a buffer b.
 	//
 	// The buffer is not copied, so b must continue to exists for
@@ -160,15 +160,15 @@ public:
 	inline uint32_t readu30()
 	{
 		unsigned int currpos = pos;
-		if (codecache[currpos].iscached)
+		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
 		{
 			pos = codecache[currpos].nextpos;
-			if (pos >= len)
+			if (pos > len)
 			{
 				pos = len;
 				read_past_end = true;
 			}
-			return codecache[currpos].value;
+			return codecache[currpos].uvalue;
 		}
 		uint32_t val = readu32();
 		if(val&0xc0000000)
@@ -201,16 +201,31 @@ public:
 			}
 		}
 		while(t&0x80);
-		codecache[currpos].iscached = true;
-		codecache[currpos].value = val;
+		codecache[currpos].type = lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER;
+		codecache[currpos].uvalue = val;
 		codecache[currpos].nextpos = pos;
 		return val;
 	}
 	inline int32_t reads24()
 	{
+		unsigned int currpos = pos;
+		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
+		{
+			pos = codecache[currpos].nextpos;
+			if (pos > len)
+			{
+				pos = len;
+				read_past_end = true;
+			}
+			return codecache[currpos].ivalue;
+		}
 		uint32_t val=0;
 		read((char*)&val,3);
-		return LittleEndianToSignedHost24(val);
+		int32_t ret = LittleEndianToSignedHost24(val);
+		codecache[currpos].type = lightspark::method_body_info_cache::CACHE_TYPE_INTEGER;
+		codecache[currpos].ivalue = ret;
+		codecache[currpos].nextpos = pos;
+		return ret;
 	}
 	
 	inline bool eof() const

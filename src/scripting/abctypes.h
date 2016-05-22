@@ -260,8 +260,13 @@ struct method_info_simple
 };
 struct method_body_info_cache
 {
-	bool iscached;
-	uint32_t value;
+	enum method_body_info_cache_type { CACHE_TYPE_NONE = 0,CACHE_TYPE_UINTEGER,CACHE_TYPE_INTEGER, CACHE_TYPE_OBJECT };
+	method_body_info_cache_type type;
+	union {
+		uint32_t uvalue;
+		int32_t ivalue;
+		ASObject* obj;
+	};
 	uint32_t nextpos;
 };
 

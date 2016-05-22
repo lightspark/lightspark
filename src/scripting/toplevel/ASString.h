@@ -121,16 +121,18 @@ inline ASObject* Class<ASString>::coerce(ASObject* o) const
 	//Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
 	if(o->is<Null>())
 		return o;
+	ASObject* res = NULL;
 	if(o->is<Undefined>())
 	{
+		res = o->getSystemState()->getNullRef();
 		o->decRef();
-		return o->getSystemState()->getNullRef();
+		return res;
 	}
 	if(!o->isConstructed())
 		return o;
-	tiny_string n = o->toString();
+	res = lightspark::abstract_s(o->getSystemState(),o->toString());
 	o->decRef();
-	return lightspark::abstract_s(o->getSystemState(),n);
+	return res;
 }
 
 }

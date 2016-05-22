@@ -234,32 +234,36 @@ template<>
 inline ASObject* Class<Number>::coerce(ASObject* o) const
 {
 	number_t n = o->toNumber();
+	ASObject* res = abstract_d(o->getSystemState(),n);
 	o->decRef();
-	return abstract_d(o->getSystemState(),n);
+	return res;
 }
 
 template<>
 inline ASObject* Class<UInteger>::coerce(ASObject* o) const
 {
 	uint32_t n = o->toUInt();
+	ASObject* res = abstract_ui(o->getSystemState(),n);
 	o->decRef();
-	return abstract_ui(o->getSystemState(),n);
+	return res;
 }
 
 template<>
 inline ASObject* Class<Integer>::coerce(ASObject* o) const
 {
 	int32_t n = o->toInt();
+	ASObject* res = abstract_i(o->getSystemState(),n);
 	o->decRef();
-	return abstract_i(o->getSystemState(),n);
+	return res;
 }
 
 template<>
 inline ASObject* Class<Boolean>::coerce(ASObject* o) const
 {
 	bool n = Boolean_concrete(o);
+	ASObject* res = abstract_b(o->getSystemState(),n);
 	o->decRef();
-	return abstract_b(o->getSystemState(),n);
+	return res;
 }
 
 template<>
@@ -425,8 +429,9 @@ public:
 	{
 		if (o->is<Undefined>())
 		{
+			ASObject* res = o->getSystemState()->getNullRef();
 			o->decRef();
-			return o->getSystemState()->getNullRef();
+			return res;
 		}
 		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this)) || 
 				 o->is<Null>())
@@ -437,8 +442,9 @@ public:
 		}
 		else
 		{
+			tiny_string clsname = o->getClassName();
 			o->decRef();
-			throwError<TypeError>(kCheckTypeFailedError, o->getClassName(),
+			throwError<TypeError>(kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
 			return NULL; // not reached
 		}

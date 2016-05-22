@@ -276,10 +276,10 @@ private:
 	{
 		ASObject* arg1=th->runtime_stack_pop();
 		uint32_t addr=arg1->toUInt();
-		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
 		th->runtime_stack_push(abstract_i(arg1->getSystemState(),ret));
+		arg1->decRef();
 	}
 	template<class T>
 	static void storeIntN(call_context* th)
@@ -297,20 +297,20 @@ private:
 	{
 		ASObject* arg1=th->runtime_stack_pop();
 		float addr=arg1->toNumber();
-		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<float>(addr);
 		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
+		arg1->decRef();
 	}
 
 	static void loadDouble(call_context* th)
 	{
 		ASObject* arg1=th->runtime_stack_pop();
 		double addr=arg1->toNumber();
-		arg1->decRef();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<double>(addr);
 		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
+		arg1->decRef();
 	}
 	static void storeFloat(call_context* th)
 	{

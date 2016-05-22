@@ -695,8 +695,8 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 
 void Null::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
-	o->decRef();
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<o->toDebugString());
+	o->decRef();
 	throwError<TypeError>(kConvertNullToObjectError);
 }
 
@@ -845,8 +845,9 @@ ASObject* Class_base::coerce(ASObject* o) const
 {
 	if (o->is<Undefined>())
 	{
+		ASObject* res = o->getSystemState()->getNullRef();
 		o->decRef();
-		return o->getSystemState()->getNullRef();
+		return res;
 	}
 	if(o->is<Null>())
 		return o;

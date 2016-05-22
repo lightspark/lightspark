@@ -680,7 +680,7 @@ void ABCVm::incLocal(call_context* th, int n)
 	LOG(LOG_CALLS, _("incLocal ") << n );
 	number_t tmp=th->locals[n]->toNumber();
 	th->locals[n]->decRef();
-	th->locals[n]=abstract_d(th->locals[n]->getSystemState(),tmp+1);
+	th->locals[n]=abstract_d(th->context->root->getSystemState(),tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
@@ -688,7 +688,7 @@ void ABCVm::incLocal_i(call_context* th, int n)
 	LOG(LOG_CALLS, _("incLocal_i ") << n );
 	int32_t tmp=th->locals[n]->toInt();
 	th->locals[n]->decRef();
-	th->locals[n]=abstract_i(th->locals[n]->getSystemState(),tmp+1);
+	th->locals[n]=abstract_i(th->context->root->getSystemState(),tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
@@ -696,7 +696,7 @@ void ABCVm::decLocal(call_context* th, int n)
 	LOG(LOG_CALLS, _("decLocal ") << n );
 	number_t tmp=th->locals[n]->toNumber();
 	th->locals[n]->decRef();
-	th->locals[n]=abstract_d(th->locals[n]->getSystemState(),tmp-1);
+	th->locals[n]=abstract_d(th->context->root->getSystemState(),tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)
@@ -704,7 +704,7 @@ void ABCVm::decLocal_i(call_context* th, int n)
 	LOG(LOG_CALLS, _("decLocal_i ") << n );
 	int32_t tmp=th->locals[n]->toInt();
 	th->locals[n]->decRef();
-	th->locals[n]=abstract_i(th->locals[n]->getSystemState(),tmp-1);
+	th->locals[n]=abstract_i(th->context->root->getSystemState(),tmp-1);
 }
 
 /* This is called for expressions like
@@ -818,7 +818,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
 		obj->decRef();
-		obj = obj->getSystemState()->getUndefinedRef();
+		obj = th->context->root->getSystemState()->getUndefinedRef();
 		th->runtime_stack_push(obj);
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
@@ -905,8 +905,9 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 		default:
 			assert_and_throw(false);
 	}
+	ASObject* res = abstract_s(obj->getSystemState(),ret);
 	obj->decRef();
-	return abstract_s(obj->getSystemState(),ret);
+	return res;
 }
 
 void ABCVm::jump(int offset)
@@ -1024,6 +1025,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 	
+	ASObject* res = NULL;
 	// if both values are Integers or int Numbers the result is also an int Number
 	if( (val1->is<Integer>() || val1->is<UInteger>() || (val1->is<Number>() && !val1->as<Number>()->isfloat)) &&
 		(val2->is<Integer>() || val1->is<UInteger>() || (val2->is<Number>() && !val2->as<Number>()->isfloat)))
@@ -1031,27 +1033,30 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		int64_t num1=val1->toInt64();
 		int64_t num2=val2->toInt64();
 		LOG(LOG_CALLS,"addI " << num1 << '+' << num2);
+		res = abstract_di(val1->getSystemState(), num1+num2);
 		val1->decRef();
 		val2->decRef();
-		return abstract_di(val1->getSystemState(), num1+num2);
+		return res;
 	}
 	else if(val1->is<Number>() && val2->is<Number>())
 	{
 		double num1=val1->as<Number>()->toNumber();
 		double num2=val2->as<Number>()->toNumber();
 		LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
+		res = abstract_d(val1->getSystemState(), num1+num2);
 		val1->decRef();
 		val2->decRef();
-		return abstract_d(val1->getSystemState(), num1+num2);
+		return res;
 	}
 	else if(val1->is<ASString>() || val2->is<ASString>())
 	{
 		tiny_string a = val1->toString();
 		tiny_string b = val2->toString();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
+		res = abstract_s(val1->getSystemState(),a + b);
 		val1->decRef();
 		val2->decRef();
-		return abstract_s(val1->getSystemState(),a + b);
+		return res;
 	}
 	else if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 	{
@@ -1077,14 +1082,15 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	{//If none of the above apply, convert both to primitives with no hint
 		_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
 		_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
-		val1->decRef();
-		val2->decRef();
 		if(val1p->is<ASString>() || val2p->is<ASString>())
 		{//If one is String, convert both to strings and concat
 			string a(val1p->toString().raw_buf());
 			string b(val2p->toString().raw_buf());
 			LOG(LOG_CALLS,"add " << a << '+' << b);
-			return abstract_s(val1->getSystemState(),a+b);
+			res = abstract_s(val1->getSystemState(),a+b);
+			val1->decRef();
+			val2->decRef();
+			return res;
 		}
 		else
 		{//Convert both to numbers and add
@@ -1092,7 +1098,10 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 			number_t num2=val2p->toNumber();
 			LOG(LOG_CALLS,"addN " << num1 << '+' << num2);
 			number_t result = num1 + num2;
-			return abstract_d(val1->getSystemState(), result);
+			res = abstract_d(val1->getSystemState(),result);
+			val1->decRef();
+			val2->decRef();
+			return res;
 		}
 	}
 
@@ -1118,32 +1127,36 @@ int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 
 ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 {
+	ASObject* res =NULL;
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_INTEGER)
 	{
 		Integer* ip=static_cast<Integer*>(val2);
 		int32_t num2=ip->val;
 		int32_t num1=val1;
+		res = abstract_i(val2->getSystemState(),num1+num2);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
-		return abstract_i(val2->getSystemState(),num1+num2);
+		return res;
 	}
 	else if(val2->getObjectType()==T_NUMBER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
+		res = abstract_d(val2->getSystemState(),num1+num2);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
-		return abstract_d(val2->getSystemState(),num1+num2);
+		return res;
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
 		//Convert argument to int32_t
 		tiny_string a = Integer::toString(val1);
 		const tiny_string& b=val2->toString();
+		res = abstract_s(val2->getSystemState(), a+b);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
-		return abstract_s(val2->getSystemState(), a+b);
+		return res;
 	}
 	else
 	{
@@ -1154,30 +1167,34 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 
 ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 {
+	ASObject* res = NULL;
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_NUMBER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
+		res = abstract_d(val2->getSystemState(),num1+num2);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
-		return abstract_d(val2->getSystemState(),num1+num2);
+		return res;
 	}
 	else if(val2->getObjectType()==T_INTEGER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
+		res = abstract_d(val2->getSystemState(),num1+num2);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << num1 << '+' << num2);
-		return abstract_d(val2->getSystemState(),num1+num2);
+		return res;
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
 		tiny_string a = Number::toString(val1);
 		const tiny_string& b=val2->toString();
+		res = abstract_s(val2->getSystemState(),a+b);
 		val2->decRef();
 		LOG(LOG_CALLS,_("add ") << a << '+' << b);
-		return abstract_s(val2->getSystemState(),a+b);
+		return res;
 	}
 	else
 	{
@@ -1732,12 +1749,11 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	}
 	else
 	{
+		tiny_string clsname = obj->getClassName();
 		obj->decRef();
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
-		throwError<ReferenceError>(kCallNotFoundError, "?", obj->getClassName());
-		if(keepReturn)
-			th->runtime_stack_push(obj->getSystemState()->getUndefinedRef());
+		throwError<ReferenceError>(kCallNotFoundError, "?", clsname);
 	}
 	LOG(LOG_CALLS,"End of callStatic ");
 }
@@ -1782,8 +1798,6 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 			args[i]->decRef();
 		//LOG(LOG_ERROR,_("Calling an undefined function ") << th->context->root->getSystemState()->getStringFromUniqueId(name->name_s_id));
 		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(th->context->root->getSystemState()), clsname);
-		if(keepReturn)
-			th->runtime_stack_push(th->context->root->getSystemState()->getUndefinedRef());
 	}
 	LOG(LOG_CALLS,_("End of callSuper ") << *name);
 }
@@ -1809,19 +1823,19 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		case T_NUMBER:
 		case T_OBJECT:
 		case T_STRING:
+			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<obj->toDebugString());
 			obj->decRef();
 			type->decRef();
-			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<obj->toDebugString());
 			throwError<TypeError>(kIsTypeMustBeClassError);
 		case T_NULL:
+			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<obj->toDebugString());
 			obj->decRef();
 			type->decRef();
-			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<obj->toDebugString());
 			throwError<TypeError>(kConvertNullToObjectError);
 		case T_UNDEFINED:
+			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<obj->toDebugString());
 			obj->decRef();
 			type->decRef();
-			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<obj->toDebugString());
 			throwError<TypeError>(kConvertUndefinedToObjectError);
 		case T_CLASS:
 			break;
@@ -1879,8 +1893,9 @@ ASObject* ABCVm::asType(ABCContext* context, ASObject* obj, multiname* name)
 		return obj;
 	else
 	{
+		ASObject* res = obj->getSystemState()->getNullRef();
 		obj->decRef();
-		return obj->getSystemState()->getNullRef();
+		return res;
 	}
 }
 
@@ -1890,9 +1905,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 
 	if(!type->is<Class_base>())
 	{
+		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<obj->toDebugString());
 		obj->decRef();
 		type->decRef();
-		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<obj->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	Class_base* c=static_cast<Class_base*>(type);
@@ -1914,8 +1929,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 			return obj;
 		else
 		{
+			ASObject* res = obj->getSystemState()->getNullRef();
 			obj->decRef();
-			return obj->getSystemState()->getNullRef();
+			return res;
 		}
 	}
 
@@ -1924,9 +1940,10 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 		objc=obj->classdef;
 	else
 	{
+		ASObject* res = obj->getSystemState()->getNullRef();
 		obj->decRef();
 		type->decRef();
-		return obj->getSystemState()->getNullRef();
+		return res;
 	}
 
 	bool real_ret=objc->isSubClass(c);
@@ -1937,8 +1954,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 		return obj;
 	else
 	{
+		ASObject* res = obj->getSystemState()->getNullRef();
 		obj->decRef();
-		return obj->getSystemState()->getNullRef();
+		return res;
 	}
 }
 
@@ -2017,12 +2035,16 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		for(int i=0;i<m;++i)
 			args[i]->decRef();
-		obj->decRef();
 		if (obj->is<Undefined>())
+		{
+			obj->decRef();
 			throwError<TypeError>(kConvertUndefinedToObjectError);
+		}
 		if (obj->isPrimitive())
+		{
+			obj->decRef();
 			throwError<TypeError>(kConstructOfNonFunctionError);
-		
+		}
 		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved(th->context->root->getSystemState()));
 	}
 
@@ -2695,8 +2717,9 @@ ASObject* ABCVm::esc_xattr(ASObject* o)
 		t = o->as<XMLList>()->toXMLString_internal();
 	else
 		t = XML::encodeToXML(o->toString(),true);
+	ASObject* res = abstract_s(o->getSystemState(),t);
 	o->decRef();
-	return abstract_s(o->getSystemState(),t);
+	return res;
 }
 
 ASObject* ABCVm::esc_xelem(ASObject* o)
@@ -2708,8 +2731,9 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
 		t = o->as<XMLList>()->toXMLString_internal();
 	else
 		t = XML::encodeToXML(o->toString(),false);
+	ASObject* res = abstract_s(o->getSystemState(),t);
 	o->decRef();
-	return abstract_s(o->getSystemState(),t);
+	return res;
 }
 
 /* This should walk prototype chain of value, trying to find type. See ECMA.

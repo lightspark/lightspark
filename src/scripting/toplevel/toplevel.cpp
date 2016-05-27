@@ -2541,7 +2541,7 @@ ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
-
+	obj = this;
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
@@ -2596,6 +2596,7 @@ FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function
 	prevPrototype=p;
 	//Add the prototype to the Nop function
 	this->prototype = _MR(new_asobject(c->getSystemState()));
+	obj = this;
 }
 
 _NR<ASObject> FunctionPrototype::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)

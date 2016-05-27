@@ -340,13 +340,15 @@ public:
 
 class Prototype
 {
+protected:
+	ASObject* obj;
 public:
 	Prototype():isSealed(false) {}
 	virtual ~Prototype() {}
 	_NR<Prototype> prevPrototype;
-	virtual void incRef() = 0;
-	virtual void decRef() = 0;
-	virtual ASObject* getObj() = 0;
+	inline void incRef() { obj->incRef(); }
+	inline void decRef() { obj->decRef(); }
+	inline ASObject* getObj() {return obj; }
 	bool isSealed;
 	/*
 	 * This method is actually forwarded to the object. It's here as a shorthand.
@@ -365,9 +367,6 @@ class ObjectPrototype: public ASObject, public Prototype
 public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
-	void incRef() { ASObject::incRef(); }
-	void decRef() { ASObject::decRef(); }
-	inline ASObject* getObj() { return this; }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
@@ -526,9 +525,6 @@ public:
 		return Function::destruct();
 	}
 	
-	void incRef() { ASObject::incRef(); }
-	void decRef() { ASObject::decRef(); }
-	inline ASObject* getObj() { return this; }
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 

@@ -103,13 +103,13 @@ public:
 	std::string toDebugString() { return std::string("\"") + std::string(getData()) + "\""; }
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
-	inline void destruct() 
+	inline bool destruct() 
 	{ 
 		data.clear(); 
 		hasId = true;
 		datafilled=true; 
 		stringId = BUILTIN_STRINGS::EMPTY; 
-		ASObject::destruct(); 
+		return ASObject::destruct(); 
 	}
 };
 

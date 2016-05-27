@@ -51,10 +51,10 @@ private:
 	void recursiveBuild(ASObject* target) const;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m);
-	void destruct()
+	bool destruct()
 	{
 		class_scope.clear();
-		Class_base::destruct();
+		return Class_base::destruct();
 	}
 	void buildInstanceTraits(ASObject* o) const;
 	void setupDeclaredTraits(ASObject *target) const;

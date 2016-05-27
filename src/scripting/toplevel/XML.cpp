@@ -63,7 +63,7 @@ XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList)
 	createTree(_n,fromXMLList);
 }
 
-void XML::destruct()
+bool XML::destruct()
 {
 	xmldoc.reset();
 	parentNode.reset();
@@ -78,7 +78,7 @@ void XML::destruct()
 	attributelist.reset();
 	procinstlist.reset();
 	namespacedefs.clear();
-	ASObject::destruct();
+	return ASObject::destruct();
 }
 
 void XML::sinit(Class_base* c)

@@ -97,7 +97,7 @@ private:
 public:
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);
-	void destruct()
+	bool destruct()
 	{
 		for (auto it=data.begin() ; it != data.end(); ++it)
 		{
@@ -105,7 +105,7 @@ public:
 				it->second.data->decRef();
 		}
 		data.clear();
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 	
 	//These utility methods are also used by ByteArray

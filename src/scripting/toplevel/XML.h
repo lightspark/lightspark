@@ -80,7 +80,7 @@ public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
 	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
-	void destruct();
+	bool destruct();
 	
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);

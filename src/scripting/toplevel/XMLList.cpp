@@ -80,7 +80,7 @@ XMLList::XMLList(Class_base* c, const XML::XMLVector& r, XMLList *targetobject, 
 	}
 }
 
-void XMLList::destruct()
+bool XMLList::destruct()
 {
 	if (targetobject)
 		targetobject->decRef();
@@ -88,7 +88,7 @@ void XMLList::destruct()
 	constructed = false;
 	targetobject = NULL;
 	targetproperty = multiname(this->getClass()->memoryAccount);
-	ASObject::destruct();
+	return ASObject::destruct();
 }
 
 void XMLList::sinit(Class_base* c)

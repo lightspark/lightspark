@@ -1389,7 +1389,7 @@ void ASObject::destroy()
 	}
 }
 
-void ASObject::destruct()
+bool ASObject::destruct()
 {
 	if (Variables.size())
 		Variables.destroyContents();
@@ -1412,8 +1412,8 @@ void ASObject::destruct()
 	if (dodestruct)
 	{
 		finalize();
-		RefCountable::destruct();
 	}
+	return dodestruct;
 }
 
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)

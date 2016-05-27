@@ -54,7 +54,7 @@ class Vector: public ASObject
 public:
 	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
-	void destruct()
+	bool destruct()
 	{
 		for(unsigned int i=0;i<size();i++)
 		{
@@ -62,7 +62,7 @@ public:
 				vec[i]->decRef();
 		}
 		vec.clear();
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 	
 	

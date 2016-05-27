@@ -41,10 +41,10 @@ protected:
 public:
 	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
 	XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n);
-	void destruct()
+	bool destruct()
 	{
 		root.reset();
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

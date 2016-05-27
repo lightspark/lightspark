@@ -50,7 +50,7 @@ public:
 	XMLList(Class_base* c,const XML::XMLVector& r);
 	XMLList(Class_base* c,const XML::XMLVector& r,XMLList* targetobject,const multiname& targetproperty);
 	XMLList(Class_base* c,const std::string& str);
-	void destruct();
+	bool destruct();
 	
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);

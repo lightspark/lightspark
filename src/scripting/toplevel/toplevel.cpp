@@ -537,7 +537,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	obj->decRef();
 
 	if(ret==NULL)
-		ret=obj->getSystemState()->getUndefinedRef();
+		ret=getSystemState()->getUndefinedRef();
 
 	return mi->returnType->coerce(ret);
 }
@@ -1058,7 +1058,12 @@ void Class_base::finalize()
 	isInterface = false;
 	isProxy = false;
 	use_protected = false;
+	
+	for (int i = 0; i < freelistsize; i++)
+		delete freelist[i];
 	freelistsize = 0;
+	for (int i = 0; i < freelistsize2; i++)
+		delete freelist2[i];
 	freelistsize2 = 0;
 }
 

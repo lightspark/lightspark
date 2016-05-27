@@ -56,9 +56,17 @@ public:
 		assert(ref_count>0);
 		if (!isConstant)
 		{
-			int32_t t=ATOMIC_DECREMENT(ref_count);
-			if(t==0)
-				destruct();
+			if (ref_count == 1)
+			{
+				if (destruct())
+				{
+					//Let's make refcount very invalid
+					ref_count=-1024;
+					delete this;
+				}
+			}
+			else
+				ATOMIC_DECREMENT(ref_count);
 		}
 	}
 	inline void fake_decRef()
@@ -66,11 +74,9 @@ public:
 		if (!isConstant)
 			ATOMIC_DECREMENT(ref_count);
 	}
-	virtual void destruct()
+	virtual bool destruct()
 	{
-		//Let's make refcount very invalid
-		ref_count=-1024;
-		delete this;
+		return true;
 	}
 };
 

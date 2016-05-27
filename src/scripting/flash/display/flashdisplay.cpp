@@ -113,7 +113,7 @@ void LoaderInfo::buildTraits(ASObject* o)
 {
 }
 
-void LoaderInfo::destruct()
+bool LoaderInfo::destruct()
 {
 	sharedEvents.reset();
 	loader.reset();
@@ -133,7 +133,7 @@ void LoaderInfo::destruct()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
-	EventDispatcher::destruct();
+	return EventDispatcher::destruct();
 }
 
 void LoaderInfo::resetState()
@@ -691,14 +691,14 @@ Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),gra
 {
 }
 
-void Sprite::destruct()
+bool Sprite::destruct()
 {
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
 	buttonMode = false;
 	useHandCursor = false;
-	DisplayObjectContainer::destruct();
+	return DisplayObjectContainer::destruct();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -1137,14 +1137,14 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTa
 	//For the root movie, it's the frame count from the header
 }
 
-void MovieClip::destruct()
+bool MovieClip::destruct()
 {
 	frames.clear();
 	frameScripts.clear();
 	fromDefineSpriteTag = false;
 	totalFrames_unreliable = 1;
 	enabled = true;
-	Sprite::destruct();
+	return Sprite::destruct();
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -1573,13 +1573,13 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	}
 }
 
-void DisplayObjectContainer::destruct()
+bool DisplayObjectContainer::destruct()
 {
 	//Release every child
 	dynamicDisplayList.clear();
 	mouseChildren = true;
 	tabChildren = true;
-	InteractiveObject::destruct();
+	return InteractiveObject::destruct();
 }
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
@@ -1631,7 +1631,7 @@ ASFUNCTIONBODY(InteractiveObject,_getDoubleClickEnabled)
 	return abstract_b(obj->getSystemState(),th->doubleClickEnabled);
 }
 
-void InteractiveObject::destruct()
+bool InteractiveObject::destruct()
 {
 	contextMenu.reset();
 	mouseEnabled = true;
@@ -1639,7 +1639,7 @@ void InteractiveObject::destruct()
 	accessibilityImplementation.reset();
 	tabEnabled = false;
 	tabIndex = -1;
-	DisplayObject::destruct();
+	return DisplayObject::destruct();
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -2568,13 +2568,13 @@ Bitmap::~Bitmap()
 {
 }
 
-void Bitmap::destruct()
+bool Bitmap::destruct()
 {
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
 	smoothing = false;
-	DisplayObject::destruct();
+	return DisplayObject::destruct();
 }
 
 void Bitmap::sinit(Class_base* c)

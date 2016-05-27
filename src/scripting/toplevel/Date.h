@@ -41,7 +41,7 @@ private:
 	static number_t parse(tiny_string str);
 public:
 	Date(Class_base* c);
-	void destruct()
+	bool destruct()
 	{
 		if (datetimeUTC)
 			g_date_time_unref(datetimeUTC);
@@ -51,7 +51,7 @@ public:
 		datetimeUTC = NULL;
 		extrayears = 0;
 		nan = false;
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 
 	static void sinit(Class_base*);

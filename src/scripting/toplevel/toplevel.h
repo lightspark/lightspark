@@ -177,7 +177,6 @@ public:
 		if (freelistsize)
 		{
 			ret=freelist[--freelistsize];
-			ret->incRef();
 		}
 		return ret;
 	}
@@ -191,7 +190,6 @@ public:
 		if (freelistsize2)
 		{
 			ret=freelist2[--freelistsize2];
-			ret->incRef();
 		}
 		return ret;
 	}
@@ -202,7 +200,7 @@ public:
 		// all ASObjects must be created in the VM thread
 		assert_and_throw(isVmThread());
 #endif
-		assert(obj->getRefCount() == 0);
+		assert(obj->getRefCount() == 1);
 		if (obj->reusableListNumber == 0)
 		{
 			if (freelistsize < FREELIST_SIZE)
@@ -428,13 +426,13 @@ public:
 	bool isMethod() const { return inClass != NULL; }
 	bool isBound() const { return closure_this; }
 	bool isConstructed() const { return constructIndicator; }
-	inline void destruct() 
+	inline bool destruct() 
 	{
 		closure_this.reset();
 		inClass=NULL;
 		functionname=0;
 		length=0;
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -522,10 +520,10 @@ class FunctionPrototype: public Function, public Prototype
 {
 public:
 	FunctionPrototype(Class_base* c, _NR<Prototype> p);
-	inline void destruct()
+	inline bool destruct()
 	{
 		prevPrototype.reset();
-		Function::destruct();
+		return Function::destruct();
 	}
 	
 	void incRef() { ASObject::incRef(); }
@@ -574,12 +572,12 @@ private:
 public:
 	~SyntheticFunction() {}
 	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
-	inline void destruct()
+	inline bool destruct()
 	{
 		func_scope.reset();
 		val = NULL;
 		mi = NULL;
-		IFunction::destruct();
+		return IFunction::destruct();
 	}
 	
 	_NR<scope_entry_list> func_scope;

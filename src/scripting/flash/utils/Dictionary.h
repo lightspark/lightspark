@@ -37,10 +37,10 @@ private:
 	dictType::iterator findKey(ASObject *);
 public:
 	Dictionary(Class_base* c);
-	void destruct()
+	bool destruct()
 	{
 		data.clear();
-		ASObject::destruct();
+		return ASObject::destruct();
 	}
 	
 	static void sinit(Class_base*);

@@ -404,7 +404,7 @@ protected:
 	   It has to call ASObject::destruct() as last instruction
 	   The destruct method must be callable multiple time with the same effects (no double frees).
 	*/
-	void destruct();
+	bool destruct();
 	// called when object is really destroyed
 	virtual void destroy();
 public:

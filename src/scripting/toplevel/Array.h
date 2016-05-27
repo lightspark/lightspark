@@ -38,6 +38,11 @@ struct data_slot
 	explicit data_slot(ASObject* o):data(o),type(DATA_OBJECT){}
 	data_slot():data(NULL),type(DATA_OBJECT){}
 	explicit data_slot(int32_t i):data_i(i),type(DATA_INT){}
+	void clear() 
+	{
+		if (type == DATA_OBJECT && data)
+			data->decRef();
+	}
 };
 struct sorton_field
 {
@@ -94,8 +99,7 @@ public:
 	Array(Class_base* c);
 	void destruct()
 	{
-		std::map<uint32_t,data_slot>::iterator it;
-		for ( it=data.begin() ; it != data.end(); ++it)
+		for (auto it=data.begin() ; it != data.end(); ++it)
 		{
 			if(it->second.type==DATA_OBJECT && it->second.data)
 				it->second.data->decRef();

@@ -141,7 +141,7 @@ ASFUNCTIONBODY(Array,_concat)
 	
 	// copy values into new array
 	ret->resize(th->size());
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
 		ret->data[it->first]=it->second;
@@ -156,7 +156,7 @@ ASFUNCTIONBODY(Array,_concat)
 			// Insert the contents of the array argument
 			uint64_t oldSize=ret->size();
 			Array* otherArray=args[i]->as<Array>();
-			std::map<uint32_t, data_slot>::iterator itother=otherArray->data.begin();
+			auto itother=otherArray->data.begin();
 			for(;itother!=otherArray->data.end(); ++itother)
 			{
 				uint32_t newIndex=ret->size()+itother->first;
@@ -189,8 +189,7 @@ ASFUNCTIONBODY(Array,filter)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
-	for(;it != th->data.end();++it)
+	for(auto it=th->data.begin();it != th->data.end();++it)
 	{
 		if (it->second.type==DATA_OBJECT)
 		{
@@ -238,7 +237,7 @@ ASFUNCTIONBODY(Array, some)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
 		if (it->second.type==DATA_OBJECT)
@@ -284,7 +283,7 @@ ASFUNCTIONBODY(Array, every)
 	ASObject* params[3];
 	ASObject *funcRet;
 
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
 		if (it->second.type==DATA_OBJECT)
@@ -351,14 +350,14 @@ ASFUNCTIONBODY(Array,forEach)
 	uint32_t s = th->size();
 	for (uint32_t i=0; i < s; i++ )
 	{
-		if (th->data.count(i))
+		auto it = th->data.find(i);
+		if (it != th->data.end())
 		{
-			const data_slot& slot=th->data[i];
-			if(slot.type==DATA_INT)
-				params[0]=abstract_i(obj->getSystemState(),slot.data_i);
-			else if(slot.type==DATA_OBJECT && slot.data)
+			if(it->second.type==DATA_INT)
+				params[0]=abstract_i(obj->getSystemState(),it->second.data_i);
+			else if(it->second.type==DATA_OBJECT && it->second.data)
 			{
-				params[0]=slot.data;
+				params[0]=it->second.data;
 				params[0]->incRef();
 			}
 			else
@@ -394,7 +393,7 @@ ASFUNCTIONBODY(Array, _reverse)
 	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data.begin(),th->data.end());
 	uint32_t size = th->size();
 	th->data.clear();
-	std::map<uint32_t, data_slot>::iterator it=tmp.begin();
+	auto it=tmp.begin();
 	for(;it != tmp.end();++it)
  	{
 		th->data[size-(it->first+1)]=it->second;
@@ -436,12 +435,13 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 	}
 	do
 	{
-		if (!th->data.count(i))
+		auto it = th->data.find(i);
+		if (it == th->data.end())
 		    continue;
-		DATA_TYPE dtype = th->data[i].type;
+		DATA_TYPE dtype = it->second.type;
 		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && th->data[i].data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
+		if((dtype == DATA_OBJECT && it->second.data->isEqualStrict(arg0.getPtr())) ||
+			(dtype == DATA_INT && arg0->toInt() == it->second.data_i))
 		{
 			ret=i;
 			break;
@@ -478,18 +478,19 @@ ASFUNCTIONBODY(Array,shift)
 	if(!th->size())
 		return obj->getSystemState()->getUndefinedRef();
 	ASObject* ret;
-	if(!th->data.count(0))
+	auto it = th->data.find(0);
+	if(it == th->data.end())
 		ret = obj->getSystemState()->getUndefinedRef();
 	else
 	{
-		if(th->data[0].type==DATA_OBJECT)
-			ret=th->data[0].data;
+		if(it->second.type==DATA_OBJECT)
+			ret=it->second.data;
 		else
-			ret = abstract_i(obj->getSystemState(),th->data[0].data_i);
+			ret = abstract_i(obj->getSystemState(),it->second.data_i);
 	}
 	std::map<uint32_t,data_slot> tmp;
-	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=th->data.begin(); it != th->data.end(); ++it )
+	it=th->data.begin();
+	for (; it != th->data.end(); ++it )
 	{
 		if(it->first)
 		{
@@ -535,11 +536,12 @@ ASFUNCTIONBODY(Array,slice)
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
-		if (th->data.count(i))
+		auto it = th->data.find(i);
+		if (it != th->data.end())
 		{
-			if(th->data[i].type == DATA_OBJECT)
-				th->data[i].data->incRef();
-			ret->data[j]=th->data[i];
+			if(it->second.type == DATA_OBJECT)
+				it->second.data->incRef();
+			ret->data[j]=it->second;
 		}
 		j++;
 	}
@@ -570,15 +572,17 @@ ASFUNCTIONBODY(Array,splice)
 		// write deleted items to return array
 		for(int i=0;i<deleteCount;i++)
 		{
-			if (th->data.count(startIndex+i))
-				ret->data[i] = th->data[startIndex+i];
+			auto it = th->data.find(startIndex+i);
+			if (it != th->data.end())
+				ret->data[i] = it->second;
 		}
 		// delete items from current array
 		for (int i = 0; i < deleteCount; i++)
 		{
-			if(th->data.count(startIndex+i))
+			auto it = th->data.find(startIndex+i);
+			if (it != th->data.end())
 			{
-				th->data.erase(startIndex+i);
+				th->data.erase(it);
 			}
 		}
 	}
@@ -586,10 +590,11 @@ ASFUNCTIONBODY(Array,splice)
 	vector<data_slot> tmp = vector<data_slot>(totalSize- (startIndex+deleteCount));
 	for (int i = startIndex+deleteCount; i < totalSize ; i++)
 	{
-		if (th->data.count(i))
+		auto it = th->data.find(i);
+		if (it != th->data.end())
 		{
-			tmp[i-(startIndex+deleteCount)] = th->data[i];
-			th->data.erase(i);
+			tmp[i-(startIndex+deleteCount)] = it->second;
+			th->data.erase(it);
 		}
 	}
 	th->resize(startIndex);
@@ -640,8 +645,7 @@ ASFUNCTIONBODY(Array,indexOf)
 	if (index < 0) index = 0;
 
 	DATA_TYPE dtype;
-	std::map<uint32_t,data_slot>::iterator it;
-	for ( it=th->data.begin() ; it != th->data.end(); ++it )
+	for (auto it=th->data.begin() ; it != th->data.end(); ++it )
 	{
 		if (it->first < (uint32_t)index)
 			continue;
@@ -687,13 +691,14 @@ ASFUNCTIONBODY(Array,_pop)
 		return obj->getSystemState()->getUndefinedRef();
 	ASObject* ret;
 	
-	if (th->data.count(size-1))
+	auto it = th->data.find(size-1);
+	if (it != th->data.end())
 	{
-		if(th->data[size-1].type==DATA_OBJECT)
-			ret=th->data[size-1].data;
+		if(it->second.type==DATA_OBJECT)
+			ret=it->second.data;
 		else
-			ret = abstract_i(obj->getSystemState(),th->data[size-1].data_i);
-		th->data.erase(size-1);
+			ret = abstract_i(obj->getSystemState(),it->second.data_i);
+		th->data.erase(it);
 	}
 	else
 		ret = obj->getSystemState()->getUndefinedRef();
@@ -819,7 +824,7 @@ ASFUNCTIONBODY(Array,_sort)
 		}
 	}
 	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	auto it=th->data.begin();
 	int i = 0;
 	for(;it != th->data.end();++it)
 	{
@@ -909,7 +914,7 @@ ASFUNCTIONBODY(Array,sortOn)
 	{
 		Array* obj=static_cast<Array*>(args[0]);
 		int n = 0;
-		std::map<uint32_t, data_slot>::iterator it=obj->data.begin();
+		auto it=obj->data.begin();
 		for(;it != obj->data.end();++it)
 		{
 			multiname sortfieldname(NULL);
@@ -924,7 +929,7 @@ ASFUNCTIONBODY(Array,sortOn)
 		if (argslen == 2 && args[1]->is<Array>())
 		{
 			Array* opts=static_cast<Array*>(args[1]);
-			std::map<uint32_t, data_slot>::iterator itopt=opts->data.begin();
+			auto itopt=opts->data.begin();
 			int nopt = 0;
 			for(;itopt != opts->data.end() && nopt < n;++itopt)
 			{
@@ -967,7 +972,7 @@ ASFUNCTIONBODY(Array,sortOn)
 	}
 	
 	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
-	std::map<uint32_t, data_slot>::iterator it=th->data.begin();
+	auto it=th->data.begin();
 	int i = 0;
 	for(;it != th->data.end();++it)
 	{
@@ -1016,8 +1021,7 @@ ASFUNCTIONBODY(Array,unshift)
 	{
 		th->resize(th->size()+argslen);
 		std::map<uint32_t,data_slot> tmp;
-		std::map<uint32_t,data_slot>::reverse_iterator it;
-		for ( it=th->data.rbegin(); it != th->data.rend(); ++it )
+		for (auto it=th->data.rbegin(); it != th->data.rend(); ++it )
 		{
 			tmp[it->first+argslen]=it->second;
 		}
@@ -1113,14 +1117,14 @@ ASFUNCTIONBODY(Array,_map)
 	for (uint32_t i=0; i < s; i++ )
 	{
 		ASObject* funcArgs[3];
-		if (th->data.count(i))
+		auto it = th->data.find(i);
+		if (it != th->data.end())
 		{
-			const data_slot& slot=th->data[i];
-			if(slot.type==DATA_INT)
-				funcArgs[0]=abstract_i(obj->getSystemState(),slot.data_i);
-			else if(slot.type==DATA_OBJECT && slot.data)
+			if(it->second.type==DATA_INT)
+				funcArgs[0]=abstract_i(obj->getSystemState(),it->second.data_i);
+			else if(it->second.type==DATA_OBJECT && it->second.data)
 			{
-				funcArgs[0]=slot.data;
+				funcArgs[0]=it->second.data;
 				funcArgs[0]->incRef();
 			}
 			else
@@ -1184,9 +1188,10 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 
 	if(index<size())
 	{
-		if (!data.count(index))
+		auto it = data.find(index);
+		if (it == data.end())
 			return 0;
-		data_slot sl = data[index];
+		const data_slot& sl = it->second;
 		switch(sl.type)
 		{
 			case DATA_OBJECT:
@@ -1225,19 +1230,17 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	uint32_t index=0;
 	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname(name,opt);
-	if(index<size() && data.count(index))
+	auto it = data.find(index);
+	if(it != data.end())
 	{
 		ASObject* ret=NULL;
-		data_slot sl = data[index];
+		const data_slot& sl = it->second;
 		switch(sl.type)
 		{
 			case DATA_OBJECT:
 				ret=sl.data;
 				if(ret==NULL)
-				{
 					ret=getSystemState()->getUndefinedRef();
-					sl.data=ret;
-				}
 				ret->incRef();
 				break;
 			case DATA_INT:
@@ -1275,13 +1278,13 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 		return;
 	if(index>=size())
 		resize(index+1);
-
-	if(data.count(index) && data[index].type==DATA_OBJECT && data[index].data)
-		data[index].data->decRef();
-	if(!data.count(index))
-		data[index] = data_slot();
-	data[index].data_i=value;
-	data[index].type=DATA_INT;
+	auto it = data.find(index);
+	if(it != data.end())
+		it->second.clear();
+	data_slot ds;
+	ds.data_i=value;
+	ds.type=DATA_INT;
+	data[index] = ds;
 }
 
 
@@ -1296,11 +1299,16 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
-	return (index<size()) && (data.count(index));
+	return (data.find(index) != data.end());
 }
 
 bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index)
 {
+	if (name.name_type == multiname::NAME_INT && name.name_i >= 0)
+	{
+		index = name.name_i;
+		return true;
+	}
 	if(name.isEmpty())
 		return false;
 	//First of all the multiname has to contain the null namespace
@@ -1354,23 +1362,24 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	if(index>=size())
 		resize((uint64_t)index+1);
 
-	if(data.count(index) && data[index].type==DATA_OBJECT && data[index].data)
-		data[index].data->decRef();
-	if(!data.count(index))
-		data[index] = data_slot();
+	data_slot ds;
+	auto it = data.find(index);
+	if(it != data.end())
+		it->second.clear();
 
 	if(o->getObjectType()==T_INTEGER)
 	{
 		Integer* i=static_cast<Integer*>(o);
-		data[index].data_i=i->val;
-		data[index].type=DATA_INT;
+		ds.data_i=i->val;
+		ds.type=DATA_INT;
 		o->decRef();
 	}
 	else
 	{
-		data[index].data=o;
-		data[index].type=DATA_OBJECT;
+		ds.data=o;
+		ds.type=DATA_OBJECT;
 	}
+	data[index] = ds;
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name)
@@ -1384,12 +1393,11 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 
 	if(index>=size())
 		return true;
-	if (!data.count(index))
+	auto it = data.find(index);
+	if(it == data.end())
 		return true;
-	if(data[index].type==DATA_OBJECT && data[index].data)
-		data[index].data->decRef();
-
-	data.erase(index);
+	it->second.clear();
+	data.erase(it);
 	return true;
 }
 
@@ -1423,9 +1431,10 @@ tiny_string Array::toString_priv(bool localized) const
 	string ret;
 	for(uint32_t i=0;i<size();i++)
 	{
-		if (data.count(i))
+		auto it = data.find(i);
+		if(it != data.end())
 		{
-			data_slot sl = data.at(i);
+			const data_slot& sl = it->second;
 			if(sl.type==DATA_OBJECT)
 			{
 				if(sl.data && !sl.data->is<Undefined>() && !sl.data->is<Null>())
@@ -1457,9 +1466,10 @@ _R<ASObject> Array::nextValue(uint32_t index)
 	if(index<=size())
 	{
 		index--;
-		if(!data.count(index))
+		auto it = data.find(index);
+		if(it == data.end())
 			return _MR(getSystemState()->getUndefinedRef());
-		data_slot sl = data[index];
+		const data_slot& sl = it->second;
 		if(sl.type==DATA_OBJECT)
 		{
 			if(sl.data==NULL)
@@ -1520,9 +1530,10 @@ _R<ASObject> Array::at(unsigned int index) const
 	if(size()<=index)
 		outofbounds(index);
 
-	if (!data.count(index))
+	auto it = data.find(index);
+	if(it == data.end())
 		return _MR(getSystemState()->getUndefinedRef());
-	data_slot sl = data.at(index);
+	const data_slot& sl = it->second;
 	switch(sl.type)
 	{
 		case DATA_OBJECT:
@@ -1562,8 +1573,7 @@ void Array::resize(uint64_t n)
 			itstart = it.base();
 			break;
 		}
-		if (it->second.type==DATA_OBJECT && it->second.data)
-			it->second.data->decRef();
+		it->second.clear();
 	}
 	if (itstart != data.end())
 		data.erase(itstart,data.end());
@@ -1600,7 +1610,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		serializeDynamicProperties(out, stringMap, objMap, traitsMap);
 		for(uint32_t i=0;i<denseCount;i++)
 		{
-			if (!data.count(i))
+			if (data.find(i) == data.end())
 			{
 				out->writeByte(null_marker);
 			}
@@ -1633,10 +1643,9 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 	
 	path.push_back(this);
 	res += "[";
-	std::map<uint32_t,data_slot>::iterator it;
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
-	for (it=data.begin() ; it != data.end(); ++it)
+	for (auto it=data.begin() ; it != data.end(); ++it)
 	{
 		tiny_string subres;
 		ASObject* o = it->second.type==DATA_OBJECT ? it->second.data : abstract_i(getSystemState(),it->second.data_i);
@@ -1690,20 +1699,22 @@ void Array::set(unsigned int index, _R<ASObject> o)
 {
 	if(index<currentsize)
 	{
-		if(!data.count(index))
-			data[index]=data_slot();
+		data_slot ds;
+		if(data.find(index) != data.end())
+			data[index].clear();
 		if(o->getObjectType()==T_INTEGER)
 		{
 			Integer* i=o->as<Integer>();
-			data[index].data_i=i->val;
-			data[index].type=DATA_INT;
+			ds.data_i=i->val;
+			ds.type=DATA_INT;
 		}
 		else
 		{
 			o->incRef();
-			data[index].data=o.getPtr();
-			data[index].type=DATA_OBJECT;
+			ds.data=o.getPtr();
+			ds.type=DATA_OBJECT;
 		}
+		data[index]=ds;
 	}
 	else
 		outofbounds(index);

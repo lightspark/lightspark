@@ -101,14 +101,13 @@ private:
 	const char* const code;
 	unsigned int len;
 	unsigned int pos;
-	bool read_past_end;
 public:
 	lightspark::method_body_info_cache* codecache;
 	// Create a stream from a buffer b.
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), len(l), pos(0), read_past_end(false),codecache(cc) {};
+	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), len(l), pos(0),codecache(cc) {};
 	static void handleError(const char *msg);
 	inline unsigned int size() const
 	{
@@ -134,7 +133,6 @@ public:
 		{
 			memcpy(out, code+pos, len-pos);
 			pos = len;
-			read_past_end = true;
 		}
 		else
 		{
@@ -153,7 +151,6 @@ public:
 		else
 		{
 			pos = len;
-			read_past_end = true;
 			return 0;
 		}
 	}
@@ -163,11 +160,6 @@ public:
 		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
 		{
 			pos = codecache[currpos].nextpos;
-			if (pos > len)
-			{
-				pos = len;
-				read_past_end = true;
-			}
 			return codecache[currpos].uvalue;
 		}
 		uint32_t val = readu32();
@@ -212,11 +204,6 @@ public:
 		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
 		{
 			pos = codecache[currpos].nextpos;
-			if (pos > len)
-			{
-				pos = len;
-				read_past_end = true;
-			}
 			return codecache[currpos].ivalue;
 		}
 		uint32_t val=0;
@@ -227,11 +214,5 @@ public:
 		codecache[currpos].nextpos = pos;
 		return ret;
 	}
-	
-	inline bool eof() const
-	{
-		return read_past_end;
-	}
-	
 };
 #endif /* PARSING_STREAMS_H */

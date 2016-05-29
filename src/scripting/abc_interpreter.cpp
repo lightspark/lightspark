@@ -66,8 +66,6 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 		uint32_t instructionPointer=code.tellg();
 #endif
 		opcode = code.readbyte();
-		if(code.eof())
-			throw ParseException("End of code in interpreter");
 
 		//Save ip for exception handling in SyntheticFunction::callImpl
 		context->exec_pos = code.tellg();

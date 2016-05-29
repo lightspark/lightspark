@@ -780,6 +780,7 @@ Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_objec
 	freelistsize(0),freelistsize2(0),borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
+	setConstant();
 	type=T_CLASS;
 }
 
@@ -787,6 +788,7 @@ Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),prote
 	freelistsize(0),freelistsize2(0),borrowedVariables(NULL),
 	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
+	setConstant();
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
 	setClass(this);

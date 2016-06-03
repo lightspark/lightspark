@@ -869,7 +869,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 	if(ret<0)
 		return;
 
-	LOG(LOG_CALLS,_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
+	LOG_CALL(_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
 	for(uint32_t i=0;i<formatCtx->nb_streams;i++)
 	{
 		if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)

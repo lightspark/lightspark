@@ -28,6 +28,21 @@
 
 enum LOG_LEVEL { LOG_ERROR=0, LOG_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
+// LOG_CALL will only generate output in DEBUG builds
+// this is done because the LOG(LOG_CALLS...) macro creates measurable perfomance loss 
+// when used inside the ABCVm::executeFunction loop even on lower log levels
+#ifndef NDEBUG
+#define LOG_CALL(esp)					\
+do {							\
+	if(LOG_CALLS<=Log::getLevel())			\
+	{						\
+		Log l(level);				\
+		l() << esp << std::endl;		\
+	}						\
+} while(0)
+#else
+#define LOG_CALL(esp)
+#endif
 #define LOG(level,esp)					\
 do {							\
 	if(level<=Log::getLevel())			\

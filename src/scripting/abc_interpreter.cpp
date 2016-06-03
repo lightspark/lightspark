@@ -74,7 +74,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x01:
 			{
 				//bkpt
-				LOG(LOG_CALLS, _("bkpt") );
+				LOG_CALL( _("bkpt") );
 				break;
 			}
 			case 0x02:
@@ -120,7 +120,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//kill
 				uint32_t t = code.readu30();
-				LOG(LOG_CALLS, "kill " << t);
+				LOG_CALL( "kill " << t);
 				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
 				context->locals[t]=function->getSystemState()->getUndefinedRef();
@@ -425,13 +425,13 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
 				int32_t t = code.reads24();
 				int defaultdest=here+t;
-				LOG(LOG_CALLS,_("Switch default dest ") << defaultdest);
+				LOG_CALL(_("Switch default dest ") << defaultdest);
 				uint32_t count = code.readu30();
 				int32_t* offsets=g_newa(int32_t, count+1);
 				for(unsigned int i=0;i<count+1;i++)
 				{
 					offsets[i] = code.reads24();
-					LOG(LOG_CALLS,_("Switch dest ") << i << ' ' << offsets[i]);
+					LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i]);
 				}
 
 				ASObject* index_obj=context->runtime_stack_pop();
@@ -679,70 +679,70 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x35:
 			{
 				//li8
-				LOG(LOG_CALLS, "li8");
+				LOG_CALL( "li8");
 				loadIntN<uint8_t>(context);
 				break;
 			}
 			case 0x36:
 			{
 				//li16
-				LOG(LOG_CALLS, "li16");
+				LOG_CALL( "li16");
 				loadIntN<uint16_t>(context);
 				break;
 			}
 			case 0x37:
 			{
 				//li32
-				LOG(LOG_CALLS, "li32");
+				LOG_CALL( "li32");
 				loadIntN<uint32_t>(context);
 				break;
 			}
 			case 0x38:
 			{
 				//lf32
-				LOG(LOG_CALLS, "lf32");
+				LOG_CALL( "lf32");
 				loadFloat(context);
 				break;
 			}
 			case 0x39:
 			{
 				//lf32
-				LOG(LOG_CALLS, "lf64");
+				LOG_CALL( "lf64");
 				loadDouble(context);
 				break;
 			}
 			case 0x3a:
 			{
 				//si8
-				LOG(LOG_CALLS, "si8");
+				LOG_CALL( "si8");
 				storeIntN<uint8_t>(context);
 				break;
 			}
 			case 0x3b:
 			{
 				//si16
-				LOG(LOG_CALLS, "si16");
+				LOG_CALL( "si16");
 				storeIntN<uint16_t>(context);
 				break;
 			}
 			case 0x3c:
 			{
 				//si32
-				LOG(LOG_CALLS, "si32");
+				LOG_CALL( "si32");
 				storeIntN<uint32_t>(context);
 				break;
 			}
 			case 0x3d:
 			{
 				//sf32
-				LOG(LOG_CALLS, "sf32");
+				LOG_CALL( "sf32");
 				storeFloat(context);
 				break;
 			}
 			case 0x3e:
 			{
 				//sf32
-				LOG(LOG_CALLS, "sf64");
+				LOG_CALL( "sf64");
 				storeDouble(context);
 				break;
 			}
@@ -819,7 +819,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x47:
 			{
 				//returnvoid
-				LOG(LOG_CALLS,_("returnVoid"));
+				LOG_CALL(_("returnVoid"));
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return NULL;
 			}
@@ -827,7 +827,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//returnvalue
 				ASObject* ret=context->runtime_stack_pop();
-				LOG(LOG_CALLS,_("returnValue ") << ret);
+				LOG_CALL(_("returnValue ") << ret);
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return ret;
 			}
@@ -877,7 +877,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x50:
 			{
 				//sxi1
-				LOG(LOG_CALLS, "sxi1");
+				LOG_CALL( "sxi1");
 				ASObject* arg1=context->runtime_stack_pop();
 				int32_t ret=arg1->toUInt() >>31;
 				arg1->decRef();
@@ -887,7 +887,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x51:
 			{
 				//sxi8
-				LOG(LOG_CALLS, "sxi8");
+				LOG_CALL( "sxi8");
 				ASObject* arg1=context->runtime_stack_pop();
 				int32_t ret=(int8_t)arg1->toUInt();
 				arg1->decRef();
@@ -897,7 +897,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x52:
 			{
 				//sxi16
-				LOG(LOG_CALLS, "sxi16");
+				LOG_CALL( "sxi16");
 				ASObject* arg1=context->runtime_stack_pop();
 				int32_t ret=(int16_t)arg1->toUInt();
 				arg1->decRef();
@@ -1007,12 +1007,12 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				uint32_t i = code.readu30();
 				if (!context->locals[i])
 				{
-					LOG(LOG_CALLS, _("getLocal ") << i << " not set, pushing Undefined");
+					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
 					context->runtime_stack_push(function->getSystemState()->getUndefinedRef());
 					break;
 				}
 				context->locals[i]->incRef();
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
+				LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->runtime_stack_push(context->locals[i]);
 				break;
 			}
@@ -1020,7 +1020,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//setlocal
 				uint32_t i = code.readu30();
-				LOG(LOG_CALLS, _("setLocal ") << i );
+				LOG_CALL( _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				assert_and_throw(obj);
 				if ((int)i != context->argarrayposition || obj->is<Array>())
@@ -1363,7 +1363,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG(LOG_CALLS,_("subtractI ")  << num1 << '-' << num2);
+					LOG_CALL(_("subtractI ")  << num1 << '-' << num2);
 					v1->decRef();
 					v2->decRef();
 					ret = abstract_di(function->getSystemState(), num1-num2);
@@ -1386,7 +1386,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG(LOG_CALLS,_("multiplyI ")  << num1 << '*' << num2);
+					LOG_CALL(_("multiplyI ")  << num1 << '*' << num2);
 					v1->decRef();
 					v2->decRef();
 					ret = abstract_di(function->getSystemState(), num1*num2);
@@ -1419,7 +1419,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG(LOG_CALLS,_("moduloI ")  << num1 << '%' << num2);
+					LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
 					v1->decRef();
 					v2->decRef();
 					if (num2 == 0)
@@ -1670,11 +1670,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				int i=opcode&3;
 				if (!context->locals[i])
 				{
-					LOG(LOG_CALLS, _("getLocal ") << i << " not set, pushing Undefined");
+					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
 					context->runtime_stack_push(function->getSystemState()->getUndefinedRef());
 					break;
 				}
-				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
+				LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;
@@ -1686,7 +1686,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//setlocal_n
 				int i=opcode&3;
-				LOG(LOG_CALLS, _("setLocal ") << i);
+				LOG_CALL( _("setLocal ") << i);
 				ASObject* obj=context->runtime_stack_pop();
 				if ((int)i != context->argarrayposition || obj->is<Array>())
 				{
@@ -1699,7 +1699,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0xef:
 			{
 				//debug
-				LOG(LOG_CALLS, _("debug") );
+				LOG_CALL( _("debug") );
 				code.readbyte();
 				code.readu30();
 				code.readbyte();
@@ -1709,28 +1709,28 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0xf0:
 			{
 				//debugline
-				LOG(LOG_CALLS, _("debugline") );
+				LOG_CALL( _("debugline") );
 				code.readu30();
 				break;
 			}
 			case 0xf1:
 			{
 				//debugfile
-				LOG(LOG_CALLS, _("debugfile") );
+				LOG_CALL( _("debugfile") );
 				code.readu30();
 				break;
 			}
 			case 0xf2:
 			{
 				//bkptline
-				LOG(LOG_CALLS, _("bkptline") );
+				LOG_CALL( _("bkptline") );
 				code.readu30();
 				break;
 			}
 			case 0xf3:
 			{
 				//timestamp
-				LOG(LOG_CALLS, _("timestamp") );
+				LOG_CALL( _("timestamp") );
 				break;
 			}
 			default:

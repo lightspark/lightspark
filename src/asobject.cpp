@@ -249,9 +249,9 @@ bool ASObject::isEqual(ASObject* r)
 	if (r->is<ObjectConstructor>())
 		return this == r->getClass();
 
-	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
+	LOG_CALL(_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	if(classdef)
-		LOG(LOG_CALLS,_("Type ") << classdef->class_name);
+		LOG_CALL(_("Type ") << classdef->class_name);
 	return false;
 }
 
@@ -676,7 +676,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	if(obj->setter)
 	{
 		//Call the setter
-		LOG(LOG_CALLS,_("Calling the setter"));
+		LOG_CALL(_("Calling the setter"));
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
 		//One argument can be passed without creating an array
@@ -684,7 +684,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		target->incRef();
 		_R<ASObject> ret= _MR( setter->call(target,&o,1) );
 		assert_and_throw(ret->is<Undefined>());
-		LOG(LOG_CALLS,_("End of setter"));
+		LOG_CALL(_("End of setter"));
 	}
 	else
 	{
@@ -885,7 +885,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			if (type == Type::anyType)
 			{
 				// type could not be found, so it's stored as an uninitialized variable
-				LOG(LOG_CALLS,"add uninitialized var:"<<mname<<" "<<*typemname);
+				LOG_CALL("add uninitialized var:"<<mname<<" "<<*typemname);
 				uninitializedVar v;
 				mainObj->incRef();
 				v.mainObj = mainObj;
@@ -909,7 +909,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				//if (!((Class_base*)type)->super)
 				{
 					// super type could not be found, so the class is stored as an uninitialized variable
-					LOG(LOG_CALLS,"add uninitialized class var:"<<mname);
+					LOG_CALL("add uninitialized class var:"<<mname);
 					uninitializedVar v;
 					mainObj->incRef();
 					v.mainObj = mainObj;
@@ -942,7 +942,7 @@ ASFUNCTIONBODY(ASObject,generator)
 	//By default we assume it's a passthrough cast
 	if(argslen==1)
 	{
-		LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
+		LOG_CALL(_("Passthrough of ") << args[0]);
 		args[0]->incRef();
 		return args[0];
 	}
@@ -1184,16 +1184,16 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		ASObject* target=this;
 		if(target->classdef)
 		{
-			LOG(LOG_CALLS,_("Calling the getter on type ") << target->classdef->class_name<< " for "<<name);
+			LOG_CALL(_("Calling the getter on type ") << target->classdef->class_name<< " for "<<name);
 		}
 		else
 		{
-			LOG(LOG_CALLS,_("Calling the getter")<< " for "<<name);
+			LOG_CALL(_("Calling the getter")<< " for "<<name);
 		}
 		IFunction* getter=obj->getter;
 		target->incRef();
 		ASObject* ret=getter->call(target,NULL,0);
-		LOG(LOG_CALLS,_("End of getter"));
+		LOG_CALL(_("End of getter"));
 		// No incRef because ret is a new instance
 		return _MNR(ret);
 	}
@@ -1203,7 +1203,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		assert_and_throw(obj->var);
 		if(obj->var->getObjectType()==T_FUNCTION && obj->var->as<IFunction>()->isMethod())
 		{
-			LOG(LOG_CALLS,"Attaching this " << this << " to function " << name);
+			LOG_CALL("Attaching this " << this << " to function " << name);
 			//the obj reference is acquired by the smart reference
 			this->incRef();
 			IFunction* f=obj->var->as<IFunction>()->bind(_MR(this),-1);
@@ -1479,11 +1479,11 @@ _R<ASObject> ASObject::getValueAt(int index)
 	if(obj->getter)
 	{
 		//Call the getter
-		LOG(LOG_CALLS,_("Calling the getter"));
+		LOG_CALL(_("Calling the getter"));
 		IFunction* getter=obj->getter;
 		incRef();
 		_R<ASObject> ret(getter->call(this,NULL,0));
-		LOG(LOG_CALLS,_("End of getter"));
+		LOG_CALL(_("End of getter"));
 		return ret;
 	}
 	else

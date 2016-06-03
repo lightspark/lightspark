@@ -87,7 +87,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	args[1]=o;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,_("Proxy::setProperty"));
+	LOG_CALL(_("Proxy::setProperty"));
 	incRef();
 	_R<ASObject> ret=_MR( f->call(this,args,2) );
 	assert_and_throw(ret->is<Undefined>());
@@ -99,7 +99,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	_NR<ASObject> o;
-	LOG(LOG_CALLS,"Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true));
+	LOG_CALL("Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true));
 	if(ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		o = ASObject::getVariableByMultiname(name,opt);
 	if (!o.isNull() || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
@@ -124,7 +124,7 @@ _NR<ASObject> Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,"Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
+	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
 	incRef();
 	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
 	implEnable=true;
@@ -162,7 +162,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,_("Proxy::hasProperty"));
+	LOG_CALL(_("Proxy::hasProperty"));
 	incRef();
 	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
 	implEnable=true;
@@ -198,7 +198,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	ASObject* arg = namearg;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,_("Proxy::deleteProperty"));
+	LOG_CALL(_("Proxy::deleteProperty"));
 	incRef();
 	_NR<ASObject> ret=_MNR(f->call(this,&arg,1));
 	implEnable=true;
@@ -209,7 +209,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS,"Proxy::nextNameIndex");
+	LOG_CALL("Proxy::nextNameIndex");
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameIndexName(NULL);
 	nextNameIndexName.name_type=multiname::NAME_STRING;
@@ -229,7 +229,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 _R<ASObject> Proxy::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS, _("Proxy::nextName"));
+	LOG_CALL( _("Proxy::nextName"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextNameName(NULL);
 	nextNameName.name_type=multiname::NAME_STRING;
@@ -246,7 +246,7 @@ _R<ASObject> Proxy::nextName(uint32_t index)
 _R<ASObject> Proxy::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS, _("Proxy::nextValue"));
+	LOG_CALL( _("Proxy::nextValue"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	multiname nextValueName(NULL);
 	nextValueName.name_type=multiname::NAME_STRING;

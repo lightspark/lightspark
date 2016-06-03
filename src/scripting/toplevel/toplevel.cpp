@@ -70,7 +70,7 @@ Undefined::Undefined():ASObject((Class_base*)(NULL))
 
 ASFUNCTIONBODY(Undefined,call)
 {
-	LOG(LOG_CALLS,_("Undefined function"));
+	LOG_CALL(_("Undefined function"));
 	return NULL;
 }
 
@@ -403,7 +403,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	if(isBound())
 	{ /* closure_this can never been overriden */
-		LOG(LOG_CALLS,_("Calling with closure ") << this);
+		LOG_CALL(_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
 		obj=closure_this.getPtr();
@@ -558,7 +558,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 	ASObject* ret;
 	if(isBound())
 	{ /* closure_this can never been overriden */
-		LOG(LOG_CALLS,_("Calling with closure ") << this);
+		LOG_CALL(_("Calling with closure ") << this);
 		if(obj)
 			obj->decRef();
 		obj=closure_this.getPtr();
@@ -1153,7 +1153,7 @@ void Class_base::linkInterface(Class_base* c) const
 
 	if(constructor)
 	{
-		LOG(LOG_CALLS,_("Calling interface init for ") << class_name);
+		LOG_CALL(_("Calling interface init for ") << class_name);
 		ASObject* ret=constructor->call(c,NULL,0);
 		assert_and_throw(ret==NULL);
 	}
@@ -2167,7 +2167,7 @@ _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	 */
 	if(ret.isNull() || !context || context->hasRunScriptInit[scriptId])
 		return ret;
-	LOG(LOG_CALLS,"Access to " << name << ", running script init");
+	LOG_CALL("Access to " << name << ", running script init");
 	context->runScriptInit(scriptId, this);
 	return ASObject::getVariableByMultiname(name, opt);
 }

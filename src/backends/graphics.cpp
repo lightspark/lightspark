@@ -118,7 +118,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 		if(w>allocWidth || h>allocHeight) //Destination texture should be reallocated
 		{
 			glBindTexture(GL_TEXTURE_2D,texId);
-			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
+			LOG_CALL(_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 			if(GLRenderContext::handleGLErrors())

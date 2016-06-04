@@ -40,7 +40,7 @@
 
 namespace lightspark
 {
-enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_WILDCARD,LAST_BUILTIN_STRING };
+enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_WILDCARD,STRING_AS3NS,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0 };
 
 
@@ -316,8 +316,7 @@ struct nsNameAndKind
 {
 	uint32_t nsId;
 	uint32_t nsRealId;
-	bool nameIsEmpty;
-	nsNameAndKind():nsId(0),nsRealId(0),nameIsEmpty(true) {}
+	nsNameAndKind():nsId(0),nsRealId(0) {}
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind);
@@ -330,26 +329,26 @@ struct nsNameAndKind
 	/*
 	 * Special version to create the empty bultin namespace
 	 */
-	nsNameAndKind(uint32_t id):nsId(id),nsRealId(id),nameIsEmpty(true)
+	nsNameAndKind(uint32_t id):nsId(id),nsRealId(id)
 	{
 		assert(nsId==0);
 	}
-	bool operator<(const nsNameAndKind& r) const
+	inline bool operator<(const nsNameAndKind& r) const
 	{
 		return nsId < r.nsId;
 	}
-	bool operator>(const nsNameAndKind& r) const
+	inline bool operator>(const nsNameAndKind& r) const
 	{
 		return nsId > r.nsId;
 	}
-	bool operator==(const nsNameAndKind& r) const
+	inline bool operator==(const nsNameAndKind& r) const
 	{
 		return nsId==r.nsId;
 	}
 	const nsNameAndKindImpl& getImpl(SystemState *sys) const;
-	bool hasEmptyName() const
+	inline bool hasEmptyName() const
 	{
-		return nameIsEmpty;
+		return nsId==0;
 	}
 };
 

@@ -1510,21 +1510,18 @@ nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, NS_KIND 
 {
 	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
-	nameIsEmpty=_name.empty();
 }
 
 nsNameAndKind::nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(sys->getUniqueStringId(_name), _kind);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
-	nameIsEmpty=(_name[0]=='\0');
 }
 
 nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind)
 {
 	nsNameAndKindImpl tmp(_nameId, _kind);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
-	nameIsEmpty=_nameId == BUILTIN_STRINGS::EMPTY;
 }
 nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind)
 {
@@ -1534,7 +1531,6 @@ nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseI
 	uint32_t tmpId;
 	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
-	nameIsEmpty=_nameId == BUILTIN_STRINGS::EMPTY;
 }
 
 nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
@@ -1547,7 +1543,6 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 	//Special handling for private namespaces, they are always compared by id
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
-	nameIsEmpty=nsNameId==BUILTIN_STRINGS::EMPTY;
 }
 
 const nsNameAndKindImpl& nsNameAndKind::getImpl(SystemState* sys) const

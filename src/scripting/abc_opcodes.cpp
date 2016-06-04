@@ -487,8 +487,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		prop->incRef();
 		ret=prop.getPtr();
+		ret->incRef();
 	}
 	obj->decRef();
 	return ret;

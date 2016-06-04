@@ -233,15 +233,32 @@ Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const 
 template<>
 inline ASObject* Class<Number>::coerce(ASObject* o) const
 {
-	number_t n = o->toNumber();
-	ASObject* res = abstract_d(o->getSystemState(),n);
-	o->decRef();
-	return res;
+	switch (o->getObjectType())
+	{
+		case T_NUMBER:
+			return o;
+		case T_INTEGER:
+		case T_UINTEGER:
+		{
+			ASObject* res = abstract_di(o->getSystemState(),o->toInt64());
+			o->decRef();
+			return res;
+		}
+		default:
+		{
+			number_t n = o->toNumber();
+			ASObject* res = abstract_d(o->getSystemState(),n);
+			o->decRef();
+			return res;
+		}
+	}
 }
 
 template<>
 inline ASObject* Class<UInteger>::coerce(ASObject* o) const
 {
+	if (o->is<UInteger>())
+		return o;
 	uint32_t n = o->toUInt();
 	ASObject* res = abstract_ui(o->getSystemState(),n);
 	o->decRef();
@@ -251,6 +268,8 @@ inline ASObject* Class<UInteger>::coerce(ASObject* o) const
 template<>
 inline ASObject* Class<Integer>::coerce(ASObject* o) const
 {
+	if (o->is<Integer>())
+		return o;
 	int32_t n = o->toInt();
 	ASObject* res = abstract_i(o->getSystemState(),n);
 	o->decRef();
@@ -260,6 +279,8 @@ inline ASObject* Class<Integer>::coerce(ASObject* o) const
 template<>
 inline ASObject* Class<Boolean>::coerce(ASObject* o) const
 {
+	if (o->is<Boolean>())
+		return o;
 	bool n = Boolean_concrete(o);
 	ASObject* res = abstract_b(o->getSystemState(),n);
 	o->decRef();

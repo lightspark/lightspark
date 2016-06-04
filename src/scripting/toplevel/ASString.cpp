@@ -80,7 +80,14 @@ ASFUNCTIONBODY(ASString,_getLength)
 {
 	// fast path if obj is ASString
 	if (obj->is<ASString>())
-		return abstract_i(obj->getSystemState(),obj->as<ASString>()->getData().numChars());
+	{
+		ASString* th = obj->as<ASString>();
+		if (th->strlength.isNull())
+			th->strlength = _MNR(abstract_i(obj->getSystemState(),th->getData().numChars()));
+		th->strlength->incRef();
+		return th->strlength.getPtr();
+//		return abstract_i(obj->getSystemState(),th->getData().numChars());
+	}
 	return abstract_i(obj->getSystemState(),obj->toString().numChars());
 }
 

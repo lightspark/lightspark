@@ -40,6 +40,7 @@ class ASString: public ASObject
 private:
 	number_t parseStringInfinite(const char *s, char **end) const;
 	tiny_string data;
+	_NR<ASObject> strlength;
 public:
 	ASString(Class_base* c);
 	ASString(Class_base* c, const std::string& s);
@@ -47,8 +48,8 @@ public:
 	ASString(Class_base* c, const Glib::ustring& s);
 	ASString(Class_base* c, const char* s);
 	ASString(Class_base* c, const char* s, uint32_t len);
-	bool hasId;
-	bool datafilled;
+	bool hasId:1;
+	bool datafilled:1;
 	uint32_t stringId;
 	inline tiny_string& getData()
 	{
@@ -106,6 +107,7 @@ public:
 	inline bool destruct() 
 	{ 
 		data.clear(); 
+		strlength.reset();
 		hasId = true;
 		datafilled=true; 
 		stringId = BUILTIN_STRINGS::EMPTY; 

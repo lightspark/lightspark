@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*" };
+static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin" };
 
 extern uint32_t asClassCount;
 
@@ -202,6 +202,10 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	uint32_t baseId;
 	getUniqueNamespaceId(emptyNs, 0, nsId, baseId);
 	assert(nsId==0 && baseId==0);
+	//Forge the AS3 namespace and make sure it gets id 1
+	nsNameAndKindImpl as3Ns(BUILTIN_STRINGS::STRING_AS3NS, NAMESPACE);
+	getUniqueNamespaceId(as3Ns, 1, nsId, baseId);
+	assert(nsId==1 && baseId==1);
 
 	cookiesFileName = NULL;
 
@@ -1861,8 +1865,7 @@ const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id) cons
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t& nsId, uint32_t& baseId)
 {
-	int32_t hintedId=ATOMIC_DECREMENT(lastUsedNamespaceId);
-	getUniqueNamespaceId(s, hintedId, nsId, baseId);
+	getUniqueNamespaceId(s, 0xffffffff, nsId, baseId);
 }
 
 void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hintedId, uint32_t& nsId, uint32_t& baseId)
@@ -1871,6 +1874,9 @@ void SystemState::getUniqueNamespaceId(const nsNameAndKindImpl& s, uint32_t hint
 	auto it=uniqueNamespaceMap.left.find(s);
 	if(it==uniqueNamespaceMap.left.end())
 	{
+		if (hintedId == 0xffffffff)
+			hintedId=ATOMIC_DECREMENT(lastUsedNamespaceId);
+
 		auto ret=uniqueNamespaceMap.left.insert(make_pair(s,hintedId));
 		assert(ret.second);
 		it=ret.first;

@@ -1009,10 +1009,10 @@ void ABCContext::dumpProfilingData(ostream& f) const
 #endif
 
 /*
- * nextNamespaceBase is set to 1 since 0 is the empty namespace
+ * nextNamespaceBase is set to 2 since 0 is the empty namespace and 1 is the AS3 namespace
  */
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(1),currentCallContext(NULL),
+	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),currentCallContext(NULL),
 	vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;

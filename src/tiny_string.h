@@ -26,6 +26,7 @@
 #include <list>
 /* for utf8 handling */
 #include <glib.h>
+#include <glibmm/ustring.h>
 #include "compat.h"
 
 /* forward declare for tiny_string conversion */
@@ -190,7 +191,12 @@ public:
 	bool startsWith(const char* o) const;
         bool endsWith(const char* o) const;
 	/* idx is an index of utf-8 characters */
-	uint32_t charAt(uint32_t idx) const;
+	uint32_t charAt(uint32_t idx) const
+	{
+		if (isASCII)
+			return buf[idx];
+		return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
+	}
 	/* start is an index of characters.
 	 * returns index of character */
 	uint32_t find(const tiny_string& needle, uint32_t start = 0) const;

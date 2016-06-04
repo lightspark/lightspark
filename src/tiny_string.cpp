@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <glibmm/ustring.h>
 #include "tiny_string.h"
 #include "exceptions.h"
 #include "swf.h"
@@ -333,14 +332,6 @@ bool tiny_string::endsWith(const char* o) const
 	size_t olen = strlen(o);
 	return (numBytes() >= olen) && 
 		(strncmp(buf+numBytes()-olen,o,olen) == 0);
-}
-
-/* idx is an index of utf-8 characters */
-uint32_t tiny_string::charAt(uint32_t idx) const
-{
-	if (isASCII)
-		return buf[idx];
-	return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
 }
 
 /* start is an index of characters.

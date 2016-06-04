@@ -250,8 +250,6 @@ bool ASObject::isEqual(ASObject* r)
 		return this == r->getClass();
 
 	LOG_CALL(_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
-	if(classdef)
-		LOG_CALL(_("Type ") << classdef->class_name);
 	return false;
 }
 
@@ -526,6 +524,8 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		assert(this->is<Class_base>());
 		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		if (!this->is<Class_inherit>())
+			o->setConstant();
 	}
 	else
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);

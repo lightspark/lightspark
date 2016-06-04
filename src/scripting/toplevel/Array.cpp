@@ -28,7 +28,7 @@
 using namespace std;
 using namespace lightspark;
 
-Array::Array(Class_base* c):ASObject(c,T_ARRAY),
+Array::Array(Class_base* c):ASObject(c,T_ARRAY),currentsize(0),
 	data(std::less<arrayType::key_type>(), reporter_allocator<arrayType::value_type>(c->memoryAccount))
 {
 }

@@ -1337,10 +1337,9 @@ void variables_map::destroyContents()
 	}
 }
 
-ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(c?c->sys:NULL),
-	type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):Variables((c)?c->memoryAccount:NULL),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
+	type(t),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
 {
-	setClass(c);
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
@@ -1350,43 +1349,20 @@ ASObject::ASObject(Class_base* c):Variables((c)?c->memoryAccount:NULL),classdef(
 ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
 	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
 {
-	if(o.classdef)
-		setClass(o.classdef);
-
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
 #endif
-
-	assert_and_throw(o.Variables.size()==0);
+	assert(o.Variables.size()==0);
 }
 
 void ASObject::setClass(Class_base* c)
 {
 	if (classdef == c)
 		return;
-	if(classdef)
-	{
-		classdef->abandonObject(this);
-		classdef->decRef();
-	}
 	classdef=c;
-	if(classdef)
-	{
-		classdef->acquireObject(this);
-		classdef->incRef();
+	if(c)
 		this->sys = c->sys;
-	}
-}
-
-void ASObject::destroy()
-{
-	if(classdef)
-	{
-		classdef->abandonObject(this);
-		classdef->decRef();
-		classdef=NULL;
-	}
 }
 
 bool ASObject::destruct()

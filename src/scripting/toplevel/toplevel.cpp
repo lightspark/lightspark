@@ -52,20 +52,18 @@ using namespace lightspark;
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 
-Null::Null():ASObject((Class_base*)(NULL))
+Null::Null():ASObject((Class_base*)(NULL),T_NULL)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
-	type=T_NULL;
 }
 
-Undefined::Undefined():ASObject((Class_base*)(NULL))
+Undefined::Undefined():ASObject((Class_base*)(NULL),T_UNDEFINED)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
-	type=T_UNDEFINED;
 }
 
 ASFUNCTIONBODY(Undefined,call)
@@ -133,9 +131,8 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
-IFunction::IFunction(Class_base* c):ASObject(c),length(0),inClass(NULL),functionname(0)
+IFunction::IFunction(Class_base* c):ASObject(c,T_FUNCTION),length(0),inClass(NULL),functionname(0)
 {
-	type=T_FUNCTION;
 }
 
 void IFunction::sinit(Class_base* c)
@@ -776,12 +773,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 	return typeObject ? typeObject->as<Type>() : NULL;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys())),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
 	freelistsize(0),freelistsize2(0),borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	setConstant();
-	type=T_CLASS;
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
@@ -1490,9 +1486,8 @@ EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) 
 		return NOT_BINDED;
 }
 
-ASQName::ASQName(Class_base* c):ASObject(c)
+ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
 {
-	type=T_QNAME; uri_is_null=false;
 }
 void ASQName::setByXML(XML* node)
 {
@@ -1754,17 +1749,13 @@ _R<ASObject> ASQName::nextValue(uint32_t index)
 	}
 }
 
-Namespace::Namespace(Class_base* c):ASObject(c),nskind(NAMESPACE)
+Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false)
 {
-	type=T_NAMESPACE;
-	prefix_is_undefined=false;
 }
 
 Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix)
-  : ASObject(c),nskind(NAMESPACE),uri(_uri),prefix(_prefix)
+  : ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
 {
-	type=T_NAMESPACE;
-	prefix_is_undefined=false;
 }
 
 void Namespace::sinit(Class_base* c)

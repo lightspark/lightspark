@@ -38,13 +38,13 @@ private:
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
 public:
-	Number(Class_base* c, double v=Number::NaN):ASObject(c),dval(v),isfloat(true){type=T_NUMBER;}
+	Number(Class_base* c, double v=Number::NaN):ASObject(c,T_NUMBER),dval(v),isfloat(true){}
 	static const number_t NaN;
 	union {
 		number_t dval;
 		int64_t ival;
 	};
-	bool isfloat;
+	bool isfloat:1;
 	inline number_t toNumber() { return isfloat ? dval : ival; }
 	inline bool destruct() { dval=Number::NaN; isfloat = true; return ASObject::destruct(); }
 	ASFUNCTION(_constructor);

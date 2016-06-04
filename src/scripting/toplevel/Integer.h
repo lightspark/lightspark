@@ -33,7 +33,7 @@ friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(int32_t i);
 public:
-	Integer(Class_base* c,int32_t v=0):ASObject(c),val(v){type=T_INTEGER;}
+	Integer(Class_base* c,int32_t v=0):ASObject(c,T_INTEGER),val(v){}
 	int32_t val;
 	static void buildTraits(ASObject* o){};
 	static void sinit(Class_base* c);

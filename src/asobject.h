@@ -406,9 +406,10 @@ protected:
 	*/
 	bool destruct();
 	// called when object is really destroyed
-	virtual void destroy();
+	virtual void destroy(){}
 public:
-	ASObject(Class_base* c);
+	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT);
+	
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;

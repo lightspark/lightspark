@@ -30,7 +30,7 @@ class UInteger: public ASObject
 friend ASObject* abstract_ui(uint32_t i);
 public:
 	uint32_t val;
-	UInteger(Class_base* c,uint32_t v=0):ASObject(c),val(v){type=T_UINTEGER;}
+	UInteger(Class_base* c,uint32_t v=0):ASObject(c,T_UINTEGER),val(v){}
 
 	static void sinit(Class_base* c);
 	tiny_string toString();

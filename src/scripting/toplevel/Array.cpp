@@ -28,11 +28,9 @@
 using namespace std;
 using namespace lightspark;
 
-Array::Array(Class_base* c):ASObject(c),
+Array::Array(Class_base* c):ASObject(c,T_ARRAY),
 	data(std::less<arrayType::key_type>(), reporter_allocator<arrayType::value_type>(c->memoryAccount))
 {
-	currentsize=0;
-	type=T_ARRAY;
 }
 
 void Array::sinit(Class_base* c)

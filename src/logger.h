@@ -36,7 +36,7 @@ enum LOG_LEVEL { LOG_ERROR=0, LOG_INFO=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_
 do {							\
 	if(LOG_CALLS<=Log::getLevel())			\
 	{						\
-		Log l(level);				\
+		Log l(LOG_CALLS);			\
 		l() << esp << std::endl;		\
 	}						\
 } while(0)

@@ -102,6 +102,14 @@ struct call_context
 		LOG(LOG_ERROR,_("Empty stack"));
 		return NULL;
 	}
+	inline ASObject** runtime_stack_pointer()
+	{
+		if(stack_index)
+			return &stack[stack_index-1];
+		else
+			handleError(kStackUnderflowError);
+		return NULL;
+	}
 };
 
 }

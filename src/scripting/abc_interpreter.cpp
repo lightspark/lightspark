@@ -484,8 +484,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//nextvalue
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
-				context->runtime_stack_push(nextValue(v1,v2));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=nextValue(v1,*pval);
 				break;
 			}
 			case 0x24:
@@ -1084,9 +1084,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//getslot
 				uint32_t t = code.readu30();
-				ASObject* obj=context->runtime_stack_pop();
-				ASObject* ret=getSlot(obj, t);
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=getSlot(*pval, t);
 				break;
 			}
 			case 0x6d:
@@ -1121,63 +1120,52 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x70:
 			{
 				//convert_s
-				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(convert_s(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=convert_s(*pval);
 				break;
 			}
 			case 0x71:
 			{
-				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(esc_xelem(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval = esc_xelem(*pval);
 				break;
 			}
 			case 0x72:
 			{
-				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(esc_xattr(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval = esc_xattr(*pval);
 				break;
 			}case 0x73:
 			{
 				//convert_i
-				ASObject* val=context->runtime_stack_peek();
-				if (!val || !val->is<Integer>())
-				{
-					context->runtime_stack_pop();
-					context->runtime_stack_push(abstract_i(function->getSystemState(),convert_i(val)));
-				}
+				ASObject** pval=context->runtime_stack_pointer();
+				if (!(*pval)->is<Integer>())
+					*pval = abstract_i(function->getSystemState(),convert_i(*pval));
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
-				ASObject* val=context->runtime_stack_peek();
-				if (!val || !val->is<UInteger>())
-				{
-					context->runtime_stack_pop();
-					context->runtime_stack_push(abstract_ui(function->getSystemState(),convert_u(val)));
-				}
+				ASObject** pval=context->runtime_stack_pointer();
+				if (!(*pval)->is<UInteger>())
+					*pval = abstract_ui(function->getSystemState(),convert_u(*pval));
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
-				ASObject* val=context->runtime_stack_peek();
-				if (!val)
-					context->runtime_stack_pop(); // force exception
-				switch (val->getObjectType())
+				ASObject** pval=context->runtime_stack_pointer();
+				switch ((*pval)->getObjectType())
 				{
 					case T_INTEGER:
 					case T_BOOLEAN:
 					case T_UINTEGER:
-						val =context->runtime_stack_pop();
-						
-						context->runtime_stack_push(abstract_di(function->getSystemState(),convert_di(val)));
+						*pval = abstract_di(function->getSystemState(),convert_di(*pval));
 						break;
 					case T_NUMBER:
 						break;
 					default:
-						val =context->runtime_stack_pop();
-						context->runtime_stack_push(abstract_d(function->getSystemState(),convert_d(val)));
+						*pval = abstract_d(function->getSystemState(),convert_d(*pval));
 						break;
 				}
 				break;
@@ -1185,29 +1173,22 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x76:
 			{
 				//convert_b
-				ASObject* val=context->runtime_stack_peek();
-				if (!val || !val->is<Boolean>())
-				{
-					context->runtime_stack_pop();
-					context->runtime_stack_push(abstract_b(function->getSystemState(),convert_b(val)));
-				}
+				ASObject** pval=context->runtime_stack_pointer();
+				if (!(*pval)->is<Boolean>())
+					*pval = abstract_b(function->getSystemState(),convert_b(*pval));
 				break;
 			}
 			case 0x77:
 			{
 				//convert_o
-				ASObject* val=context->runtime_stack_peek();
-				if (!val)
-					context->runtime_stack_pop(); // force exception
-				if (val->is<Null>())
+				ASObject** pval=context->runtime_stack_pointer();
+				if ((*pval)->is<Null>())
 				{
-					context->runtime_stack_pop();
 					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
 				}
-				if (val->is<Undefined>())
+				if ((*pval)->is<Undefined>())
 				{
-					context->runtime_stack_pop();
 					LOG(LOG_ERROR,"trying to call convert_o on undefined");
 					throwError<TypeError>(kConvertUndefinedToObjectError);
 				}
@@ -1216,8 +1197,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x78:
 			{
 				//checkfilter
-				ASObject* val=context->runtime_stack_pop();
-				context->runtime_stack_push(checkfilter(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=checkfilter(*pval);
 				break;
 			}
 			case 0x80:
@@ -1236,11 +1217,9 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x85:
 			{
 				//coerce_s
-				ASObject* val=context->runtime_stack_pop();
-				if (val->is<ASString>())
-					context->runtime_stack_push(val);
-				else
-					context->runtime_stack_push(coerce_s(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				if (!(*pval)->is<ASString>())
+					*pval = coerce_s(*pval);
 				break;
 			}
 			case 0x86:
@@ -1249,44 +1228,36 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,NULL);
 
-				ASObject* v1=context->runtime_stack_pop();
-
-				ASObject* ret=asType(context->context, v1, name);
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=asType(context->context, *pval, name);
 				break;
 			}
 			case 0x87:
 			{
 				//astypelate
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
-
-				ASObject* ret=asTypelate(v1, v2);
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=asTypelate(v1, *pval);
 				break;
 			}
 			case 0x90:
 			{
 				//negate
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret;
-				if ((val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat)) && val->toInt64() != 0 && val->toInt64() == val->toInt())
-					ret=abstract_di(function->getSystemState(),negate_i(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				if (((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) && (*pval)->toInt64() != 0 && (*pval)->toInt64() == (*pval)->toInt())
+					*pval=abstract_di(function->getSystemState(),negate_i(*pval));
 				else
-					ret=abstract_d(function->getSystemState(),negate(val));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),negate(*pval));
 				break;
 			}
 			case 0x91:
 			{
 				//increment
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret;
-				if (val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat ))
-					ret=abstract_di(function->getSystemState(),increment_di(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				if ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat ))
+					*pval=abstract_di(function->getSystemState(),increment_di(*pval));
 				else
-					ret=abstract_d(function->getSystemState(),increment(val));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),increment(*pval));
 				break;
 			}
 			case 0x92:
@@ -1299,13 +1270,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x93:
 			{
 				//decrement
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret;
-				if (val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat))
-					ret=abstract_di(function->getSystemState(),decrement_di(val));
+				ASObject** pval=context->runtime_stack_pointer();
+				if ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat ))
+					*pval=abstract_di(function->getSystemState(),decrement_di(*pval));
 				else
-					ret=abstract_d(function->getSystemState(),decrement(val));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),decrement(*pval));
 				break;
 			}
 			case 0x94:
@@ -1318,35 +1287,30 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x95:
 			{
 				//typeof
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=typeOf(val);
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=typeOf(*pval);
 				break;
 			}
 			case 0x96:
 			{
 				//not
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_b(function->getSystemState(),_not(val));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_b(function->getSystemState(),_not(*pval));
 				break;
 			}
 			case 0x97:
 			{
 				//bitnot
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(function->getSystemState(),bitNot(val));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_i(function->getSystemState(),bitNot(*pval));
 				break;
 			}
 			case 0xa0:
 			{
 				//add
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
-
-				ASObject* ret=add(v2, v1);
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=add(v2, *pval);
 				break;
 			}
 			case 0xa1:
@@ -1354,211 +1318,190 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				//subtract
 				//Be careful, operands in subtract implementation are swapped
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
-				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+				if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
 					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
 				{
-					int64_t num1=v1->toInt64();
+					int64_t num1=(*pval)->toInt64();
 					int64_t num2=v2->toInt64();
 					LOG_CALL(_("subtractI ")  << num1 << '-' << num2);
-					v1->decRef();
+					(*pval)->decRef();
 					v2->decRef();
-					ret = abstract_di(function->getSystemState(), num1-num2);
+					*pval = abstract_di(function->getSystemState(), num1-num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),subtract(v2, v1));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),subtract(v2, *pval));
 				break;
 			}
 			case 0xa2:
 			{
 				//multiply
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
-				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+				if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
 					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
 				{
-					int64_t num1=v1->toInt64();
+					int64_t num1=(*pval)->toInt64();
 					int64_t num2=v2->toInt64();
 					LOG_CALL(_("multiplyI ")  << num1 << '*' << num2);
-					v1->decRef();
+					(*pval)->decRef();
 					v2->decRef();
-					ret = abstract_di(function->getSystemState(), num1*num2);
+					*pval = abstract_di(function->getSystemState(), num1*num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),multiply(v2, v1));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),multiply(v2, (*pval)));
 				break;
 			}
 			case 0xa3:
 			{
 				//divide
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
-
-				ASObject* ret=abstract_d(function->getSystemState(),divide(v2, v1));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_d(function->getSystemState(),divide(v2, *pval));
 				break;
 			}
 			case 0xa4:
 			{
 				//modulo
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
-				if( (v1->is<Integer>() || v1->is<UInteger>() || (v1->is<Number>() && !v1->as<Number>()->isfloat)) &&
+				if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
 					(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
 				{
-					int64_t num1=v1->toInt64();
+					int64_t num1=(*pval)->toInt64();
 					int64_t num2=v2->toInt64();
 					LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
-					v1->decRef();
+					(*pval)->decRef();
 					v2->decRef();
 					if (num2 == 0)
-						ret=abstract_d(function->getSystemState(),Number::NaN);
+						*pval=abstract_d(function->getSystemState(),Number::NaN);
 					else
-						ret = abstract_di(function->getSystemState(), num1%num2);
+						*pval = abstract_di(function->getSystemState(), num1%num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),modulo(v1, v2));
-				context->runtime_stack_push(ret);
+					*pval=abstract_d(function->getSystemState(),modulo(*pval, v2));
 				break;
 			}
 			case 0xa5:
 			{
 				//lshift
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),lShift(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),lShift(v1, *pval));
 				break;
 			}
 			case 0xa6:
 			{
 				//rshift
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),rShift(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),rShift(v1, *pval));
 				break;
 			}
 			case 0xa7:
 			{
 				//urshift
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_ui(function->getSystemState(),urShift(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_ui(function->getSystemState(),urShift(v1, *pval));
 				break;
 			}
 			case 0xa8:
 			{
 				//bitand
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitAnd(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),bitAnd(v1, *pval));
 				break;
 			}
 			case 0xa9:
 			{
 				//bitor
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitOr(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),bitOr(v1, *pval));
 				break;
 			}
 			case 0xaa:
 			{
 				//bitxor
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitXor(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),bitXor(v1, *pval));
 				break;
 			}
 			case 0xab:
 			{
 				//equals
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),equals(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),equals(*pval, v2));
 				break;
 			}
 			case 0xac:
 			{
 				//strictequals
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),strictEquals(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),strictEquals(*pval, v2));
 				break;
 			}
 			case 0xad:
 			{
 				//lessthan
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),lessThan(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),lessThan(*pval, v2));
 				break;
 			}
 			case 0xae:
 			{
 				//lessequals
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),lessEquals(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),lessEquals(*pval, v2));
 				break;
 			}
 			case 0xaf:
 			{
 				//greaterthan
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),greaterThan(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),greaterThan(*pval, v2));
 				break;
 			}
 			case 0xb0:
 			{
 				//greaterequals
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),greaterEquals(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),greaterEquals(*pval, v2));
 				break;
 			}
 			case 0xb1:
 			{
 				//instanceof
 				ASObject* type=context->runtime_stack_pop();
-				ASObject* value=context->runtime_stack_pop();
-				bool ret=instanceOf(value, type);
-				context->runtime_stack_push(abstract_b(function->getSystemState(),ret));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_b(function->getSystemState(),instanceOf(*pval, type));
 				break;
 			}
 			case 0xb2:
@@ -1567,46 +1510,41 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				uint32_t t = code.readu30();
 				multiname* name=context->context->getMultiname(t,NULL);
 
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),isType(context->context, v1, name));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),isType(context->context, *pval, name));
 				break;
 			}
 			case 0xb3:
 			{
 				//istypelate
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),isTypelate(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),isTypelate(v1, *pval));
 				break;
 			}
 			case 0xb4:
 			{
 				//in
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_b(function->getSystemState(),in(v1, v2));
-				context->runtime_stack_push(ret);
+				*pval=abstract_b(function->getSystemState(),in(v1, *pval));
 				break;
 			}
 			case 0xc0:
 			{
 				//increment_i
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(function->getSystemState(),increment_i(val));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_i(function->getSystemState(),increment_i(*pval));
 				break;
 			}
 			case 0xc1:
 			{
 				//decrement_i
-				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(function->getSystemState(),decrement_i(val));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_i(function->getSystemState(),decrement_i(*pval));
 				break;
 			}
 			case 0xc2:
@@ -1626,39 +1564,35 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0xc4:
 			{
 				//negate_i
-				ASObject *val=context->runtime_stack_pop();
-				ASObject* ret=abstract_i(function->getSystemState(),negate_i(val));
-				context->runtime_stack_push(ret);
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=abstract_i(function->getSystemState(),negate_i(*pval));
 				break;
 			}
 			case 0xc5:
 			{
 				//add_i
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),add_i(v2, v1));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),add_i(v2, *pval));
 				break;
 			}
 			case 0xc6:
 			{
 				//subtract_i
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),subtract_i(v2, v1));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),subtract_i(v2, *pval));
 				break;
 			}
 			case 0xc7:
 			{
 				//multiply_i
 				ASObject* v2=context->runtime_stack_pop();
-				ASObject* v1=context->runtime_stack_pop();
+				ASObject** pval=context->runtime_stack_pointer();
 
-				ASObject* ret=abstract_i(function->getSystemState(),multiply_i(v2, v1));
-				context->runtime_stack_push(ret);
+				*pval=abstract_i(function->getSystemState(),multiply_i(v2, *pval));
 				break;
 			}
 			case 0xd0:

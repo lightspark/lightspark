@@ -464,8 +464,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//nextname
 				ASObject* v1=context->runtime_stack_pop();
-				ASObject* v2=context->runtime_stack_pop();
-				context->runtime_stack_push(nextName(v1,v2));
+				ASObject** pval=context->runtime_stack_pointer();
+				*pval=nextName(v1,*pval);
 				break;
 			}
 			case 0x20:
@@ -490,44 +490,45 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			}
 			case 0x24:
 			{
-				uint32_t pos = code.tellg();
-				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				//pushbyte
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					context->runtime_stack_push(code.codecache[pos].obj);
-					code.seekg(code.codecache[pos].nextpos);
+					context->runtime_stack_push(cachepos->obj);
+					code.seekpos(cachepos->nextcodepos);
 					break;
 				}
 					
 				int8_t t = code.readbyte();
-				code.codecache[pos].nextpos = pos+1;
+				cachepos->nextcodepos = code.tellpos();
 				pushByte(t);
 			
 				ASObject* d= abstract_i(function->getSystemState(),t);
 				d->setConstant();
-				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				code.codecache[pos].obj = d;
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = d;
 				context->runtime_stack_push(d);
 				break;
 			}
 			case 0x25:
 			{
 				//pushshort
-				uint32_t pos = code.tellg();
-				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					context->runtime_stack_push(code.codecache[pos].obj);
-					code.seekg(code.codecache[pos].nextpos);
+					context->runtime_stack_push(cachepos->obj);
+					code.seekpos(cachepos->nextcodepos);
 					break;
 				}
 				// specs say pushshort is a u30, but it's really a u32
 				// see https://bugs.adobe.com/jira/browse/ASC-4181
 				uint32_t t = code.readu32();
-				code.codecache[pos].nextpos = code.tellg();
+				cachepos->nextcodepos = code.tellpos();
 
 				ASObject* i= abstract_i(function->getSystemState(),t);
 				i->setConstant();
-				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				code.codecache[pos].obj = i;
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = i;
 				context->runtime_stack_push(i);
 
 				pushShort(t);
@@ -590,11 +591,11 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x2d:
 			{
 				//pushint
-				uint32_t pos = code.tellg();
-				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					context->runtime_stack_push(code.codecache[pos].obj);
-					code.seekg(code.codecache[pos].nextpos);
+					context->runtime_stack_push(cachepos->obj);
+					code.seekpos(cachepos->nextcodepos);
 					break;
 				}
 
@@ -604,19 +605,19 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 				ASObject* i=abstract_i(function->getSystemState(),val);
 				i->setConstant();
-				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				code.codecache[pos].obj = i;
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = i;
 				context->runtime_stack_push(i);
 				break;
 			}
 			case 0x2e:
 			{
 				//pushuint
-				uint32_t pos = code.tellg();
-				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					context->runtime_stack_push(code.codecache[pos].obj);
-					code.seekg(code.codecache[pos].nextpos);
+					context->runtime_stack_push(cachepos->obj);
+					code.seekpos(cachepos->nextcodepos);
 					break;
 				}
 
@@ -626,19 +627,19 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 
 				ASObject* i=abstract_ui(function->getSystemState(),val);
 				i->setConstant();
-				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				code.codecache[pos].obj = i;
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = i;
 				context->runtime_stack_push(i);
 				break;
 			}
 			case 0x2f:
 			{
 				//pushdouble
-				uint32_t pos = code.tellg();
-				if (code.codecache[pos].type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					context->runtime_stack_push(code.codecache[pos].obj);
-					code.seekg(code.codecache[pos].nextpos);
+					context->runtime_stack_push(cachepos->obj);
+					code.seekpos(cachepos->nextcodepos);
 					break;
 				}
 				uint32_t t = code.readu30();
@@ -647,8 +648,8 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			
 				ASObject* d= abstract_d(function->getSystemState(),val);
 				d->setConstant();
-				code.codecache[pos].type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				code.codecache[pos].obj = d;
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = d;
 				context->runtime_stack_push(d);
 				break;
 			}

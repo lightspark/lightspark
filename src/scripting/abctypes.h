@@ -267,7 +267,7 @@ struct method_body_info_cache
 		int32_t ivalue;
 		ASObject* obj;
 	};
-	uint32_t nextpos;
+	const char* nextcodepos;
 };
 
 struct method_body_info

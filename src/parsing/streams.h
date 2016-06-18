@@ -99,68 +99,85 @@ class memorystream
 {
 private:
 	const char* const code;
-	unsigned int len;
-	unsigned int pos;
+	const char* lastcodepos;
+	const char* codepos;
+	lightspark::method_body_info_cache* cachepos;
 public:
 	lightspark::method_body_info_cache* codecache;
 	// Create a stream from a buffer b.
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), len(l), pos(0),codecache(cc) {};
+	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), lastcodepos(code+l), codepos(code),cachepos(cc),codecache(cc) {};
 	static void handleError(const char *msg);
 	inline unsigned int size() const
 	{
-		return len;
+		return lastcodepos-code;
 	}
 	
 	inline unsigned int tellg() const
 	{
-		return pos;
+		return codepos-code;
 	}
 	
 	inline void seekg(unsigned int offset)
 	{
-		if (offset > len)
-			pos = len;
+		if (offset >= lastcodepos-code)
+			codepos = lastcodepos;
 		else
-			pos = offset;
+			codepos = code+offset;
+		cachepos = codecache+ (codepos-code);
 	}
-	
+
+	inline lightspark::method_body_info_cache* tellcachepos() const
+	{
+		return cachepos;
+	}
+	inline const char* tellpos() const
+	{
+		return codepos;
+	}
+	inline void seekpos(const char* newpos)
+	{
+		codepos = newpos;
+		cachepos = codecache+ (codepos-code);
+	}
+
 	inline void read(char *out, unsigned int nbytes)
 	{
-		if (pos+nbytes > len)
+		if (codepos+nbytes >= lastcodepos)
 		{
-			memcpy(out, code+pos, len-pos);
-			pos = len;
+			memcpy(out, codepos, lastcodepos-codepos);
+			codepos = lastcodepos;
 		}
 		else
 		{
-			memcpy(out, code+pos, nbytes);
-			pos += nbytes;
+			memcpy(out, codepos, nbytes);
+			codepos += nbytes;
 		}
+		cachepos = codecache+ (codepos-code);
 	}
 	
 	inline uint8_t readbyte()
 	{
-		if (pos < len)
+		if (codepos < lastcodepos)
 		{
-			pos++;
-			return code[pos-1];
+			++cachepos;
+			return *codepos++;
 		}
 		else
 		{
-			pos = len;
 			return 0;
 		}
 	}
 	inline uint32_t readu30()
 	{
-		unsigned int currpos = pos;
-		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
+		lightspark::method_body_info_cache* currpos = cachepos;
+		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
 		{
-			pos = codecache[currpos].nextpos;
-			return codecache[currpos].uvalue;
+			codepos = cachepos->nextcodepos;
+			cachepos = codecache+ (codepos-code);
+			return currpos->uvalue;
 		}
 		uint32_t val = readu32();
 		if(val&0xc0000000)
@@ -169,7 +186,7 @@ public:
 	}
 	inline uint32_t readu32()
 	{
-		unsigned int currpos = pos;
+		lightspark::method_body_info_cache* currpos = cachepos;
 		
 		int i=0;
 		uint32_t val=0;
@@ -193,25 +210,26 @@ public:
 			}
 		}
 		while(t&0x80);
-		codecache[currpos].type = lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER;
-		codecache[currpos].uvalue = val;
-		codecache[currpos].nextpos = pos;
+		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER;
+		currpos->uvalue = val;
+		currpos->nextcodepos = codepos;
 		return val;
 	}
 	inline int32_t reads24()
 	{
-		unsigned int currpos = pos;
-		if (codecache[currpos].type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
+		lightspark::method_body_info_cache* currpos = cachepos;
+		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
 		{
-			pos = codecache[currpos].nextpos;
-			return codecache[currpos].ivalue;
+			codepos = cachepos->nextcodepos;
+			cachepos = codecache+ (codepos-code);
+			return currpos->ivalue;
 		}
 		uint32_t val=0;
 		read((char*)&val,3);
 		int32_t ret = LittleEndianToSignedHost24(val);
-		codecache[currpos].type = lightspark::method_body_info_cache::CACHE_TYPE_INTEGER;
-		codecache[currpos].ivalue = ret;
-		codecache[currpos].nextpos = pos;
+		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_INTEGER;
+		currpos->ivalue = ret;
+		currpos->nextcodepos = codepos;
 		return ret;
 	}
 };

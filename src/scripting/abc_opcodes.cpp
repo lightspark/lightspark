@@ -1028,7 +1028,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	ASObject* res = NULL;
 	// if both values are Integers or int Numbers the result is also an int Number
 	if( (val1->is<Integer>() || val1->is<UInteger>() || (val1->is<Number>() && !val1->as<Number>()->isfloat)) &&
-		(val2->is<Integer>() || val1->is<UInteger>() || (val2->is<Number>() && !val2->as<Number>()->isfloat)))
+		(val2->is<Integer>() || val2->is<UInteger>() || (val2->is<Number>() && !val2->as<Number>()->isfloat)))
 	{
 		int64_t num1=val1->toInt64();
 		int64_t num2=val2->toInt64();

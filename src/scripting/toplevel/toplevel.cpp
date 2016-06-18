@@ -459,9 +459,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	//obtain a local reference to this function, as it may delete itself
 	this->incRef();
 
-	cur_recursion++; //increment current recursion depth
+	++cur_recursion; //increment current recursion depth
+#ifndef NDEBUG
 	Log::calls_indent++;
-
+#endif
 	getVm(getSystemState())->stacktrace.push_back(std::pair<uint32_t,ASObject*>(this->functionname,obj));
 	while (true)
 	{
@@ -515,8 +516,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 			}
 			if (no_handler)
 			{
-				cur_recursion--; //decrement current recursion depth
+				--cur_recursion; //decrement current recursion depth
+#ifndef NDEBUG
 				Log::calls_indent--;
+#endif
 				getVm(getSystemState())->stacktrace.pop_back();
 				getVm(getSystemState())->currentCallContext = saved_cc;
 				throw;
@@ -525,9 +528,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		}
 		break;
 	}
-	cur_recursion--; //decrement current recursion depth
+	--cur_recursion; //decrement current recursion depth
 	getVm(getSystemState())->stacktrace.pop_back();
+#ifndef NDEBUG
 	Log::calls_indent--;
+#endif
 	getVm(getSystemState())->currentCallContext = saved_cc;
 
 	this->decRef(); //free local ref

@@ -467,7 +467,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
+	if(varcount && Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
 		return true;
 
 	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=NULL)
@@ -528,7 +528,10 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			o->setConstant();
 	}
 	else
+	{
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		++varcount;
+	}
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -556,7 +559,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 
 bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
-	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT) : NULL;
 	
 	if(obj==NULL)
 	{
@@ -580,6 +583,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 
 	//Now kill the variable
 	Variables.killObjVar(getSystemState(),name);
+	--varcount;
 	return true;
 }
 
@@ -671,6 +675,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 
 		//Create a new dynamic variable
 		obj=Variables.findObjVar(getSystemState(),name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
+		++varcount;
 	}
 
 	if(obj->setter)
@@ -709,6 +714,7 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o);
+	++varcount;
 }
 
 void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
@@ -728,6 +734,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 		}
 	}
 	Variables.initializeVar(name, o, typemname, context, traitKind,this);
+	++varcount;
 }
 
 variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
@@ -1131,7 +1138,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 
-	const variable* obj=Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1337,8 +1344,8 @@ void variables_map::destroyContents()
 	}
 }
 
-ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):Variables((c)?c->memoryAccount:NULL),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
-	type(t),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
+	type(t),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1346,8 +1353,8 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):Variables((c)?c->memoryAccoun
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):Variables((o.classdef)?o.classdef->memoryAccount:NULL),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
-	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
+ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
+	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1367,8 +1374,7 @@ void ASObject::setClass(Class_base* c)
 
 bool ASObject::destruct()
 {
-	if (Variables.size())
-		Variables.destroyContents();
+	destroyContents();
 	if (proxyMultiName)
 		delete proxyMultiName;
 	proxyMultiName = NULL;
@@ -1381,9 +1387,9 @@ bool ASObject::destruct()
 	initialized=false;
 #endif
 	bool dodestruct = true;
-	if (classdef && classdef->isReusable)
+	if (objfreelist)
 	{
-		dodestruct = !classdef->pushObjectToFreeList(this);
+		dodestruct = !objfreelist->pushObjectToFreeList(this);
 	}
 	if (dodestruct)
 	{
@@ -1487,7 +1493,7 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 
 unsigned int ASObject::numVariables() const
 {
-	return Variables.size();
+	return varcount;
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1896,7 +1902,10 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 					   prototypeName.normalizedNameUnresolved(getSystemState()),
 					   classdef ? classdef->as<Class_base>()->getQualifiedClassName() : "");
 	if(!ret)
+	{
 		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+		++varcount;
+	}
 	if(ret->setter)
 	{
 		this->incRef();

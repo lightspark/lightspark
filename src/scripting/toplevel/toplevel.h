@@ -139,6 +139,47 @@ class Prototype;
 class ObjectConstructor;
 
 #define FREELIST_SIZE 16
+struct asfreelist
+{
+	ASObject* freelist[FREELIST_SIZE];
+	int freelistsize;
+	asfreelist():freelistsize(0) {}
+	~asfreelist() 
+	{
+		for (int i = 0; i < freelistsize; i++)
+			delete freelist[i];
+		freelistsize = 0;
+	}
+
+	inline ASObject* getObjectFromFreeList()
+	{
+#ifndef NDEBUG
+		// all ASObjects must be created in the VM thread
+		assert_and_throw(isVmThread());
+#endif
+		ASObject* ret = NULL;
+		if (freelistsize)
+		{
+			ret=freelist[--freelistsize];
+		}
+		return ret;
+	}
+	inline bool pushObjectToFreeList(ASObject *obj)
+	{
+#ifndef NDEBUG
+		// all ASObjects must be created in the VM thread
+		assert_and_throw(isVmThread());
+#endif
+		assert(obj->getRefCount() == 1);
+		if (freelistsize < FREELIST_SIZE)
+		{
+			freelist[freelistsize++]=obj;
+			return true;
+		}
+		return false;
+	}
+};
+
 class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
@@ -153,73 +194,13 @@ private:
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits) const;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
 	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map) const;
-	//Naive garbage collection until reference cycles are detected
-	Mutex referencedObjectsMutex;
-	boost::intrusive::list<ASObject, boost::intrusive::constant_time_size<false> > referencedObjects;
-	void finalizeObjects();
-	ASObject* freelist[FREELIST_SIZE];
-	int freelistsize;
-	ASObject* freelist2[FREELIST_SIZE];
-	int freelistsize2;
 protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 	void initStandardProps();
 	void destroy();
 public:
-	inline ASObject* getObjectFromFreeList()
-	{
-#ifndef NDEBUG
-		// all ASObjects must be created in the VM thread
-		assert_and_throw(isVmThread());
-#endif
-		ASObject* ret = NULL;
-		if (freelistsize)
-		{
-			ret=freelist[--freelistsize];
-		}
-		return ret;
-	}
-	inline ASObject* getObjectFromFreeList2()
-	{
-#ifndef NDEBUG
-		// all ASObjects must be created in the VM thread
-		assert_and_throw(isVmThread());
-#endif
-		ASObject* ret = NULL;
-		if (freelistsize2)
-		{
-			ret=freelist2[--freelistsize2];
-		}
-		return ret;
-	}
-	
-	inline bool pushObjectToFreeList(ASObject *obj)
-	{
-#ifndef NDEBUG
-		// all ASObjects must be created in the VM thread
-		assert_and_throw(isVmThread());
-#endif
-		assert(obj->getRefCount() == 1);
-		if (obj->reusableListNumber == 0)
-		{
-			if (freelistsize < FREELIST_SIZE)
-			{
-				freelist[freelistsize++]=obj;
-				return true;
-			}
-			return false;
-		}
-		else
-		{
-			if (freelistsize2 < FREELIST_SIZE)
-			{
-				freelist2[freelistsize2++]=obj;
-				return true;
-			}
-			return false;
-		}
-	}
+	asfreelist freelist[2];
 	variables_map borrowedVariables;
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
@@ -274,9 +255,6 @@ public:
 	ASObject *describeType() const;
 	void describeInstance(pugi::xml_node &root) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
-	//DEPRECATED: naive garbage collector
-	void abandonObject(ASObject* ob) DLL_PUBLIC;
-	void acquireObject(ASObject* ob) DLL_PUBLIC;
 	/*
 	 * Converts the given object to an object of this Class_base's type.
 	 * It consumes one reference of 'o'.
@@ -494,7 +472,7 @@ protected:
 	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
 	Function* clone()
 	{
-		Function*  ret = getClass()->getObjectFromFreeList()->as<Function>();
+		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (getClass()->memoryAccount) Function(*this);
 		else
@@ -546,7 +524,7 @@ private:
 	
 	SyntheticFunction* clone()
 	{
-		SyntheticFunction*  ret = getClass()->getObjectFromFreeList2()->as<SyntheticFunction>();
+		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
 		if (!ret)
 		{
 			ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
@@ -561,7 +539,7 @@ private:
 			ret->func_scope = func_scope;
 			ret->functionname = functionname;
 		}
-		ret->reusableListNumber=1;
+		ret->objfreelist = &getClass()->freelist[1];
 		return ret;
 	}
 	method_info* getMethodInfo() const { return mi; }
@@ -623,7 +601,7 @@ public:
 	static Function* getFunction(SystemState* sys,Function::as_function v)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function*  ret = c->getObjectFromFreeList()->as<Function>();
+		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (c->memoryAccount) Function(c, v);
 		else
@@ -635,7 +613,7 @@ public:
 	static Function* getFunction(SystemState* sys,Function::as_function v, int len)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function*  ret = c->getObjectFromFreeList()->as<Function>();
+		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (c->memoryAccount) Function(c, v);
 		else
@@ -649,7 +627,7 @@ public:
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		SyntheticFunction*  ret;
-		ret= c->getObjectFromFreeList2()->as<SyntheticFunction>();
+		ret= c->freelist[1].getObjectFromFreeList()->as<SyntheticFunction>();
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) SyntheticFunction(c, m);
@@ -657,7 +635,7 @@ public:
 		else
 		{
 			ret->mi = m;
-			ret->reusableListNumber=1;
+			ret->objfreelist = &c->freelist[1];
 		}
 		
 		ret->constructIndicator = true;

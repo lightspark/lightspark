@@ -182,6 +182,7 @@ class Loader;
 class Type;
 class ABCContext;
 class SystemState;
+struct asfreelist;
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
@@ -328,7 +329,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 
-class ASObject: public memory_reporter, public boost::intrusive::list_base_hook<>, public RefCountable
+class ASObject: public memory_reporter, public RefCountable
 {
 friend class ABCVm;
 friend class ABCContext;
@@ -336,12 +337,16 @@ friend class Class_base; //Needed for forced cleanup
 friend class Class_inherit; 
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
+friend struct asfreelist;
+public:
+	asfreelist* objfreelist;
 private:
 	variables_map Variables;
+	uint varcount;
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
-		const variable* ret=Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=varcount ? Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId):NULL;
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -356,8 +361,8 @@ private:
 	multiname* proxyMultiName;
 	SystemState* sys;
 protected:
-	ASObject(MemoryAccount* m):Variables(m),classdef(NULL),proxyMultiName(NULL),sys(NULL),
-		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),reusableListNumber(0),implEnable(true)
+	ASObject(MemoryAccount* m):objfreelist(NULL),Variables(m),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(NULL),
+		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 	{
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -374,9 +379,6 @@ protected:
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
-	// indicates which reusable list to use for classes with several subclasses
-	// currently only used for IFunction (Function/SyntheticFunction)
-	int reusableListNumber;
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap) const;
@@ -633,7 +635,11 @@ public:
 	void setIsEnumerable(const multiname& name, bool isEnum);
 	inline void destroyContents()
 	{
-		Variables.destroyContents();
+		if (varcount)
+		{
+			Variables.destroyContents();
+			varcount=0;
+		}
 	}
 	
 };

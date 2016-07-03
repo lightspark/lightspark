@@ -127,7 +127,7 @@ protected:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret = realClass->getObjectFromFreeList()->as<T>();
+		T* ret = realClass->freelist[0].getObjectFromFreeList()->as<T>();
 		if (!ret)
 			ret=new (realClass->memoryAccount) T(realClass);
 		if(construct)
@@ -163,7 +163,7 @@ public:
 		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
 		if (!c)
 			c = getClass(sys);
-		T* ret = c->getObjectFromFreeList()->as<T>();
+		T* ret = c->freelist[0].getObjectFromFreeList()->as<T>();
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) T(c);
@@ -298,7 +298,7 @@ public:
 	static ASObject* getInstanceS(SystemState* sys)
 	{
 		Class<ASObject>* c=Class<ASObject>::getClass(sys);
-		ASObject* ret = c->getObjectFromFreeList();
+		ASObject* ret = c->freelist[0].getObjectFromFreeList();
 		if (!ret)
 			ret=new (c->memoryAccount) ASObject(c);
 		c->setupDeclaredTraits(ret);

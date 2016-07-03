@@ -272,7 +272,8 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),
 {
 	if(mi)
 		length = mi->numArgs();
-	reusableListNumber = 1;
+	// use second freelist, first is used by Function class
+	objfreelist = &c->freelist[1];
 }
 
 /**
@@ -779,14 +780,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
-	freelistsize(0),freelistsize2(0),borrowedVariables(m),
+	borrowedVariables(m),
 	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	setConstant();
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
-	freelistsize(0),freelistsize2(0),borrowedVariables(NULL),
+	borrowedVariables(NULL),
 	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
 {
 	setConstant();
@@ -907,8 +908,6 @@ void Class_base::addLengthGetter()
 
 Class_base::~Class_base()
 {
-	if(!referencedObjects.empty())
-		LOG(LOG_ERROR,_("Class destroyed without cleanUp called"));
 }
 
 ASObject* Class_base::_getter_constructorprop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
@@ -998,47 +997,9 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	}
 }
 
-void Class_base::acquireObject(ASObject* ob)
-{
-	SpinlockLocker l(referencedObjectsMutex);
-	assert_and_throw(!ob->is_linked());
-	referencedObjects.push_back(*ob);
-}
-
-void Class_base::abandonObject(ASObject* ob)
-{
-	SpinlockLocker l(referencedObjectsMutex);
-	assert_and_throw(ob->is_linked());
-#ifdef EXPENSIVE_DEBUG
-	//Check that the object is really referenced by this class
-	int count=0;
-	for (auto it=referencedObjects.cbegin(); it!=referencedObjects.cend(); ++it)
-	{
-		if ((&*it) == ob)
-			count++;
-	}
-	assert_and_throw(count==1);
-#endif
-
-	referencedObjects.erase(referencedObjects.iterator_to(*ob));
-}
-
-void Class_base::finalizeObjects()
-{
-	while(!referencedObjects.empty())
-	{
-		ASObject *tmp=&referencedObjects.front();
-		tmp->incRef();
-		//Finalizing the object does also release the classdef and call abandonObject
-		tmp->finalize();
-		tmp->decRef();
-	}
-}
 
 void Class_base::destroy()
 {
-	finalizeObjects();
-
 	if(constructor)
 	{
 		constructor->decRef();
@@ -1061,13 +1022,6 @@ void Class_base::finalize()
 	isInterface = false;
 	isProxy = false;
 	use_protected = false;
-	
-	for (int i = 0; i < freelistsize; i++)
-		delete freelist[i];
-	freelistsize = 0;
-	for (int i = 0; i < freelistsize2; i++)
-		delete freelist2[i];
-	freelistsize2 = 0;
 }
 
 Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),template_name(name)

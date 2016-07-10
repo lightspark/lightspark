@@ -409,7 +409,7 @@ void tiny_string::init()
 	isASCII = true;
 	hasNull = false;
 	unsigned char utfpos=0;
-	for (uint i = 0; i < stringSize-1; i++)
+	for (unsigned int i = 0; i < stringSize-1; i++)
 	{
 		if (buf[i] & 0x80)
 		{
@@ -518,7 +518,7 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 	tiny_string delimiterstring = tiny_string::fromChar(delimiter);
 
 	pos = 0;
-	uint len = numChars();
+	unsigned int len = numChars();
 	while (pos < len)
 	{
 		end = find(delimiterstring, pos);

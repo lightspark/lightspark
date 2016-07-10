@@ -733,7 +733,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
 	int sample_rate = getSys()->audioManager->forcedSampleRate() == -1 ? codecContext->sample_rate : getSys()->audioManager->forcedSampleRate();
-	uint channel_layout = getSys()->audioManager->forcedChannelLayout() == -1 ? frameIn->channel_layout : getSys()->audioManager->forcedChannelLayout();
+	unsigned int channel_layout = getSys()->audioManager->forcedChannelLayout() == -1 ? frameIn->channel_layout : getSys()->audioManager->forcedChannelLayout();
 	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == codecContext->sample_rate && channel_layout == frameIn->channel_layout)
 	{
 		//This is suboptimal but equivalent to what libavcodec

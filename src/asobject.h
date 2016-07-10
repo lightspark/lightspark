@@ -342,7 +342,7 @@ public:
 	asfreelist* objfreelist;
 private:
 	variables_map Variables;
-	uint varcount;
+	unsigned int varcount;
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{

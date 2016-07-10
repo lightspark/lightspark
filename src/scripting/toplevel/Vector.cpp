@@ -1096,7 +1096,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, IFunction *replacer, c
 	res += "[";
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
-	for (uint i =0;  i < vec.size(); i++)
+	for (unsigned int i =0;  i < vec.size(); i++)
 	{
 		tiny_string subres;
 		ASObject* o = vec[i];

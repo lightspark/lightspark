@@ -50,7 +50,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,alpha);
 	ASPROPERTY_GETTER_SETTER(number_t,baselineShift);
 	ASPROPERTY_GETTER_SETTER(tiny_string,breakOpportunity);
-	ASPROPERTY_GETTER_SETTER(uint,color);
+	ASPROPERTY_GETTER_SETTER(unsigned int,color);
 	ASPROPERTY_GETTER_SETTER(tiny_string,digitCase);
 	ASPROPERTY_GETTER_SETTER(tiny_string,digitWidth);
 	ASPROPERTY_GETTER_SETTER(tiny_string,dominantBaseline);

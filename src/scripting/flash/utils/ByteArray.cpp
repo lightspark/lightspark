@@ -1509,7 +1509,7 @@ void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		uint32_t value = (len << 1) | 1;
 		out->writeU29(value);
 		// TODO faster implementation
-		for (uint i = 0; i < len; i++)
+		for (unsigned int i = 0; i < len; i++)
 			out->writeByte(this->bytes[i]);
 	}
 }

@@ -854,9 +854,9 @@ ASFUNCTIONBODY(BitmapData,applyFilter)
 ASFUNCTIONBODY(BitmapData,noise)
 {
 	int randomSeed;
-	uint low;
-	uint high;
-	uint channelOptions;
+	unsigned int low;
+	unsigned int high;
+	unsigned int channelOptions;
 	bool grayScale;
 	ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false);
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.noise not implemented");

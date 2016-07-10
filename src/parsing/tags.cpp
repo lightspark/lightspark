@@ -756,7 +756,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 		else
 		{
 			bool found = false;
-			for (uint i = 0; i < CodeTable.size(); i++)
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
 			{
 				if (CodeTable[i] == *it)
 				{

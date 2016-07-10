@@ -1432,10 +1432,10 @@ call_context::~call_context()
 		}
 	}
 
-	for(uint32_t i=0;i<locals_size;i++)
+	for(uint32_t i=locals_size;--i;)
 	{
-		if(locals[i])
-			locals[i]->decRef();
+		if(locals[i-1])
+			locals[i-1]->decRef();
 	}
 	while (curr_scope_stack)
 	{

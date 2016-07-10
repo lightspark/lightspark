@@ -157,12 +157,7 @@ struct asfreelist
 		// all ASObjects must be created in the VM thread
 		assert_and_throw(isVmThread());
 #endif
-		ASObject* ret = NULL;
-		if (freelistsize)
-		{
-			ret=freelist[--freelistsize];
-		}
-		return ret;
+		return freelistsize ? freelist[--freelistsize] :NULL;
 	}
 	inline bool pushObjectToFreeList(ASObject *obj)
 	{

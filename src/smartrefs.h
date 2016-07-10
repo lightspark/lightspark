@@ -39,7 +39,7 @@ public:
 #ifndef NDEBUG
 	int getRefCount() const { return ref_count; }
 #endif
-	inline bool isLastRef() const { return ref_count == 1; }
+	inline bool isLastRef() const { return !isConstant && ref_count == 1; }
 	inline void setConstant()
 	{
 		RELEASE_WRITE(isConstant,true);
@@ -48,8 +48,7 @@ public:
 	inline void incRef()
 	{
 		if (!isConstant)
-			ATOMIC_INCREMENT(ref_count);
-		assert(ref_count>0);
+			++ref_count;
 	}
 	inline void decRef()
 	{
@@ -66,13 +65,8 @@ public:
 				}
 			}
 			else
-				ATOMIC_DECREMENT(ref_count);
+				--ref_count;
 		}
-	}
-	inline void fake_decRef()
-	{
-		if (!isConstant)
-			ATOMIC_DECREMENT(ref_count);
 	}
 	virtual bool destruct()
 	{

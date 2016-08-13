@@ -190,7 +190,11 @@ public:
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
+#if LIBAVFORMAT_VERSION_MAJOR > 56
+	FFMpegVideoDecoder(AVCodecID codecID, double frameRateHint);
+#else
 	FFMpegVideoDecoder(AVCodecContext* codecContext, double frameRateHint);
+#endif
 	~FFMpegVideoDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
@@ -314,7 +318,11 @@ public:
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
+#if LIBAVFORMAT_VERSION_MAJOR > 56
+	FFMpegAudioDecoder(AVCodecID codecID);
+#else
 	FFMpegAudioDecoder(AVCodecContext* codecContext);
+#endif
 	~FFMpegAudioDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder

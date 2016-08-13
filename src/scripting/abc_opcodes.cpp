@@ -342,7 +342,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			tmpcls = tmpcls->super;
 		}	
 	}
-	if(!o.isNull() && !(obj->classdef && obj->classdef->isProxy))
+	if(!o.isNull() && !obj->is<Proxy>())
 	{
 		o->incRef();
 		callImpl(th, o.getPtr(), obj, args, m, called_mi, keepReturn);
@@ -350,7 +350,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	else
 	{
 		//If the object is a Proxy subclass, try to invoke callProperty
-		if(obj->classdef && obj->classdef->isProxy)
+		if(obj->is<Proxy>())
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 			multiname callPropertyName(NULL);
@@ -2157,7 +2157,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		targetobject = xmlObj;
 		xmlObj->getDescendantsByQName(name->normalizedName(th->context->root->getSystemState()), ns_uri,name->isAttribute, ret);
 	}
-	else if(obj->getClass()->isProxy)
+	else if(obj->is<Proxy>())
 	{
 		multiname callPropertyName(NULL);
 		callPropertyName.name_type=multiname::NAME_STRING;
@@ -2591,9 +2591,9 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 
 void ABCVm::callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn)
 {
-	if(f->is<Function>())
+	if(f->is<IFunction>())
 	{
-		IFunction* func=f->as<Function>();
+		IFunction* func=f->as<IFunction>();
 		ASObject* ret=func->call(obj,args,m);
 		//call getMethodInfo only after the call, so it's updated
 		if(called_mi)

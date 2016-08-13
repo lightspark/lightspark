@@ -32,7 +32,7 @@ friend class ABCVm;
 private:
 	bool proxyconstructionCompleted;
 public:
-	Proxy(Class_base* c):ASObject(c),proxyconstructionCompleted(false){}
+	Proxy(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROXY),proxyconstructionCompleted(false){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);

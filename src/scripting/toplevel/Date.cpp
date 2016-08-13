@@ -27,7 +27,7 @@
 using namespace std;
 using namespace lightspark;
 
-Date::Date(Class_base* c):ASObject(c),extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
+Date::Date(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_DATE),extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
 {
 }
 

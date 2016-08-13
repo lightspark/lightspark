@@ -213,8 +213,6 @@ public:
 	
 	// indicates if objects can be reused after they have lost their last reference
 	bool isReusable:1;
-	// this is only set to true for Proxy and Proxy-derived classes
-	bool isProxy:1;
 private:
 	//TODO: move in Class_inherit
 	bool use_protected:1;

@@ -1344,8 +1344,8 @@ void variables_map::destroyContents()
 	}
 }
 
-ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
-	type(t),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
+	type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1354,7 +1354,7 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t):objfreelist(c && c->isReusabl
 }
 
 ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
-	type(o.type),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging

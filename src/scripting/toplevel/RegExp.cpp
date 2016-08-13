@@ -23,12 +23,12 @@
 using namespace std;
 using namespace lightspark;
 
-RegExp::RegExp(Class_base* c):ASObject(c),dotall(false),global(false),ignoreCase(false),
+RegExp::RegExp(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
 	extended(false),multiline(false),lastIndex(0)
 {
 }
 
-RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c),dotall(false),global(false),ignoreCase(false),
+RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
 	extended(false),multiline(false),lastIndex(0),source(_re)
 {
 }

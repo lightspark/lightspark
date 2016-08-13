@@ -781,14 +781,14 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
 	borrowedVariables(m),
-	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
+	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
 	setConstant();
 }
 
 Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
 	borrowedVariables(NULL),
-	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),isProxy(false),use_protected(false)
+	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
 	setConstant();
 	type=T_CLASS;
@@ -876,7 +876,6 @@ ASObject* Class_base::coerce(ASObject* o) const
 void Class_base::setSuper(Ref<Class_base> super_)
 {
 	assert(!super);
-	isProxy = super_->isProxy;
 	super = super_;
 	copyBorrowedTraitsFromSuper();
 }
@@ -1020,7 +1019,6 @@ void Class_base::finalize()
 	isFinal = false;
 	isSealed = false;
 	isInterface = false;
-	isProxy = false;
 	use_protected = false;
 }
 
@@ -2519,7 +2517,7 @@ void ObjectPrototype::setVariableByMultiname(const multiname &name, ASObject *o,
 }
 
 
-ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c),_length(length)
+ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c,T_OBJECT,SUBTYPE_OBJECTCONSTRUCTOR),_length(length)
 {
 	Class<ASObject>::getRef(c->getSystemState())->prototype->incRef();
 	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
@@ -2560,7 +2558,7 @@ _NR<ASObject> FunctionPrototype::getVariableByMultiname(const multiname& name, G
 	return prevPrototype->getObj()->getVariableByMultiname(name, opt);
 }
 
-Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c), functionPrototype(p)
+Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c,T_OBJECT,SUBTYPE_FUNCTIONOBJECT), functionPrototype(p)
 {
 	traitsInitialized = true;
 	constructIndicator = true;

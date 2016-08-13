@@ -217,7 +217,7 @@ struct varName
 	uint32_t nameId;
 	nsNameAndKind ns;
 	varName(uint32_t name, const nsNameAndKind& _ns):nameId(name),ns(_ns){}
-	bool operator<(const varName& r) const
+	inline bool operator<(const varName& r) const
 	{
 		//Sort by name first
 		if(nameId==r.nameId)
@@ -227,6 +227,10 @@ struct varName
 		}
 		else
 			return nameId<r.nameId;
+	}
+	inline bool operator==(const varName& r) const
+	{
+		return nameId==r.nameId && ns == r.ns;
 	}
 };
 
@@ -362,7 +366,7 @@ private:
 	SystemState* sys;
 protected:
 	ASObject(MemoryAccount* m):objfreelist(NULL),Variables(m),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(NULL),
-		type(T_OBJECT),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+		type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 	{
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -376,6 +380,8 @@ protected:
 		destroy();
 	}
 	SWFOBJECT_TYPE type;
+	CLASS_SUBTYPE subtype;
+	
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
@@ -410,7 +416,7 @@ protected:
 	// called when object is really destroyed
 	virtual void destroy(){}
 public:
-	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT);
+	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
 	
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -658,6 +664,15 @@ class Undefined;
 class Type;
 class ASQName;
 class Namespace;
+class Proxy;
+class RegExp;
+class XML;
+class XMLList;
+class Class_inherit;
+class ObjectConstructor;
+class Function_object;
+class Date;
+
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
@@ -673,5 +688,15 @@ template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMP
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
+template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
+template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
+template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
+template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
+template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
+template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
+template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
+template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
+
+
 }
 #endif /* ASOBJECT_H */

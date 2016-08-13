@@ -64,6 +64,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(nam
 	this->getSystemState()->customClasses.insert(this).second;
 	assert(ret);
 	isReusable = true;
+	subtype = SUBTYPE_INHERIT;
 }
 
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)

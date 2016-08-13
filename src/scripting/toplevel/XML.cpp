@@ -44,16 +44,16 @@ void setDefaultXMLSettings()
 	prettyPrinting = true;
 }
 
-XML::XML(Class_base* c):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
 }
 
-XML::XML(Class_base* c, const std::string &str):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c, const std::string &str):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
 	createTree(buildFromString(str, getParseMode()),false);
 }
 
-XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList):ASObject(c),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
 {
 	if (parent)
 	{

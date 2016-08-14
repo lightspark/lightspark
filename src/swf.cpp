@@ -1519,7 +1519,6 @@ void ParseThread::parseSWF(UI8 ver)
 	if (root->loaderInfo->getBytesLoaded() != root->loaderInfo->getBytesTotal())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
-		root->loaderInfo->setBytesLoaded(root->loaderInfo->getBytesTotal());
 	}
 	LOG(LOG_TRACE,_("End of parsing"));
 }
@@ -2010,6 +2009,9 @@ void RootMovieClip::initFrame()
 		vm->buildClassAndBindTag(it->first.raw_buf(), it->second);
 
 	MovieClip::initFrame();
+	
+	if (finishedLoading && (loaderInfo->getBytesTotal() != loaderInfo->getBytesLoaded()))
+		loaderInfo->setBytesLoaded(loaderInfo->getBytesTotal());
 }
 
 /* This is run in vm's thread context */

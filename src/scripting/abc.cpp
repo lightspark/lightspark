@@ -2075,6 +2075,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
 			if(!tmpo.isNull())
 				return;
+
+			//Check if this already defined in parent applicationdomains
+			ASObject* target;
+			ASObject* oldDefinition=root->applicationDomain->getVariableAndTargetByMultiname(*mname, target);
+			if(oldDefinition && oldDefinition->getObjectType()==T_CLASS)
+			{
+				return;
+			}
+			
 			ASObject* ret;
 
 			QName className(mname->name_s_id,mname->ns[0].getImpl(obj->getSystemState()).nameId);

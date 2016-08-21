@@ -238,12 +238,10 @@ bool ASObject::isEqual(ASObject* r)
 		}
 		default:
 		{
-			XMLList *xl=dynamic_cast<XMLList *>(r);
-			if(xl)
-				return xl->isEqual(this);
-			XML *x=dynamic_cast<XML *>(r);
-			if(x && x->hasSimpleContent())
-				return x->toString()==toString();
+			if (r->is<XMLList>())
+				return r->as<XMLList>()->isEqual(this);
+			if (r->is<XML>() && r->as<XML>()->hasSimpleContent())
+				return r->toString()==toString();
 		}
 	}
 	if (r->is<ObjectConstructor>())

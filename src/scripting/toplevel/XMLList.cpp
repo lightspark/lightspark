@@ -692,11 +692,10 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 		for(; it!=nodes.end(); ++it)
 		{
 			_NR<ASObject> o=(*it)->getVariableByMultiname(name,opt);
-			XMLList *x=dynamic_cast<XMLList *>(o.getPtr());
-			if(!x)
+			if(!o->is<XMLList>())
 				continue;
 
-			retnodes.insert(retnodes.end(), x->nodes.begin(), x->nodes.end());
+			retnodes.insert(retnodes.end(), o->as<XMLList>()->nodes.begin(), o->as<XMLList>()->nodes.end());
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
@@ -720,11 +719,10 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 		for(; it!=nodes.end(); ++it)
 		{
 			_NR<ASObject> o=(*it)->getVariableByMultiname(name,opt);
-			XMLList *x=dynamic_cast<XMLList *>(o.getPtr());
-			if(!x)
+			if(!o->is<XMLList>())
 				continue;
 
-			retnodes.insert(retnodes.end(), x->nodes.begin(), x->nodes.end());
+			retnodes.insert(retnodes.end(), o->as<XMLList>()->nodes.begin(), o->as<XMLList>()->nodes.end());
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
@@ -1159,14 +1157,13 @@ bool XMLList::isEqual(ASObject* r)
 	if(nodes.size()==0 && r->getObjectType()==T_UNDEFINED)
 		return true;
 
-	XMLList *x=dynamic_cast<XMLList *>(r);
-	if(x)
+	if(r->is<XMLList>())
 	{
-		if(nodes.size()!=x->nodes.size())
+		if(nodes.size()!=r->as<XMLList>()->nodes.size())
 			return false;
 
 		for(unsigned int i=0; i<nodes.size(); i++)
-			if(!nodes[i]->isEqual(x->nodes[i].getPtr()))
+			if(!nodes[i]->isEqual(r->as<XMLList>()->nodes[i].getPtr()))
 				return false;
 
 		return true;

@@ -2489,13 +2489,11 @@ bool XML::isEqual(ASObject* r)
 {
 	if (!isConstructed())
 		return !r->isConstructed() || r->getObjectType() == T_NULL || r->getObjectType() == T_UNDEFINED;
-	XML *x=dynamic_cast<XML *>(r);
-	if(x)
-		return nodesEqual(this, x);
+	if(r->is<XML>())
+		return nodesEqual(this, r->as<XML>());
 
-	XMLList *xl=dynamic_cast<XMLList *>(r);
-	if(xl)
-		return xl->isEqual(this);
+	if(r->is<XMLList>())
+		return r->as<XMLList>()->isEqual(this);
 
 	if(hasSimpleContent())
 		return toString()==r->toString();

@@ -39,8 +39,8 @@ private:
 	bool isAttribute;
 	tiny_string nodename;
 	tiny_string nodevalue;
-	tiny_string nodenamespace_uri;
-	tiny_string nodenamespace_prefix;
+	uint32_t nodenamespace_uri;
+	uint32_t nodenamespace_prefix;
 	_NR<XMLList> attributelist;
 	_NR<XMLList> procinstlist;
 	NSVector namespacedefs;
@@ -53,7 +53,7 @@ private:
 	bool constructed;
 	bool nodesEqual(XML *a, XML *b) const;
 	XMLVector getAttributes();
-	XMLVector getAttributesByMultiname(const multiname& name);
+	XMLVector getAttributesByMultiname(const multiname& name, const tiny_string &normalizedName) const;
 	XMLVector getValuesByMultiname(_NR<XMLList> nodelist, const multiname& name);
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
@@ -63,9 +63,9 @@ private:
 	 */
 	void childrenImpl(XMLVector& ret, const tiny_string& name);
 	void childrenImpl(XMLVector& ret, uint32_t index);
-	tiny_string getNamespacePrefixByURI(const tiny_string& uri, bool create=false);
+	uint32_t getNamespacePrefixByURI(uint32_t uri, bool create=false);
 	void setLocalName(const tiny_string& localname);
-	void setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix="");
+	void setNamespace(uint32_t ns_uri, uint32_t ns_prefix=BUILTIN_STRINGS::EMPTY);
 	// Append node or attribute to this. Concatenates adjacent
 	// text nodes.
 	void appendChild(_R<XML> child);
@@ -148,11 +148,11 @@ public:
 	static XML* createFromNode(const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
 
 	const tiny_string getName() const { return nodename;}
-	const tiny_string getNamespaceURI() const { return nodenamespace_uri;}
+	uint32_t getNamespaceURI() const { return nodenamespace_uri;}
 	XMLList* getChildrenlist() { return childrenlist ? childrenlist.getPtr() : NULL; }
 	
 	
-	void getDescendantsByQName(const tiny_string& name, const tiny_string& ns,bool bIsAttribute, XMLVector& ret);
+	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const;
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
@@ -162,7 +162,7 @@ public:
 
 	void setTextContent(const tiny_string& content);
 	tiny_string toString();
-	const tiny_string toXMLString_internal(bool pretty=true, tiny_string defaultnsprefix = "", const char* indent = "", bool bfirst = true);
+	const tiny_string toXMLString_internal(bool pretty=true, uint32_t defaultnsprefix = BUILTIN_STRINGS::EMPTY, const char* indent = "", bool bfirst = true);
 	int32_t toInt();
 	int64_t toInt64();
 	number_t toNumber();

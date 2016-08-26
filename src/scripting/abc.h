@@ -591,6 +591,7 @@ public:
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 
 	tiny_string getDefaultXMLNamespace();
+	uint32_t getDefaultXMLNamespaceID();
 
 	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 };

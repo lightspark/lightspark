@@ -248,7 +248,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("undefined","",_MR(m_sys->getUndefinedRef()));
 	builtin->registerBuiltin("Math","",Class<Math>::getRef(m_sys));
 	builtin->registerBuiltin("Namespace","",Class<Namespace>::getRef(m_sys));
-	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(m_sys,AS3)));
+	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(m_sys,BUILTIN_STRINGS::STRING_AS3NS)));
 	builtin->registerBuiltin("Date","",Class<Date>::getRef(m_sys));
 	builtin->registerBuiltin("JSON","",Class<JSON>::getRef(m_sys));
 	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef(m_sys));
@@ -1879,6 +1879,10 @@ tiny_string ABCVm::getDefaultXMLNamespace()
 {
 	return m_sys->getStringFromUniqueId(currentCallContext->defaultNamespaceUri);
 }
+uint32_t ABCVm::getDefaultXMLNamespaceID()
+{
+	return currentCallContext->defaultNamespaceUri;
+}
 
 uint32_t ABCContext::getString(unsigned int s) const
 {
@@ -2011,7 +2015,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x08: //Namespace
 		{
 			assert_and_throw(constant_pool.namespaces[index].name);
-			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[index].name)));
+			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name));
 			if (constant_pool.namespaces[index].kind != 0)
 				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
 			return ret;

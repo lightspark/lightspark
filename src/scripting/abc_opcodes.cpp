@@ -2135,24 +2135,24 @@ void ABCVm::getDescendants(call_context* th, int n)
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
 		targetobject = xmlObj->getChildrenlist();
-		tiny_string ns_uri = "";
+		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		if (name->ns.size() > 0)
 		{
-			ns_uri = th->context->root->getSystemState()->getStringFromUniqueId(name->ns[0].getImpl(th->context->root->getSystemState()).nameId);
-			if (ns_uri.empty() && name->ns.size() == 1)
-				ns_uri="*";
+			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).nameId;
+			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
+				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
 		}
 		xmlObj->getDescendantsByQName(name->normalizedName(th->context->root->getSystemState()), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass(th->context->root->getSystemState()))
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
-		tiny_string ns_uri = "";
+		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		if (name->ns.size() > 0)
 		{
-			ns_uri = th->context->root->getSystemState()->getStringFromUniqueId(name->ns[0].getImpl(th->context->root->getSystemState()).nameId);
-			if (ns_uri.empty() && name->ns.size() == 1)
-				ns_uri="*";
+			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).nameId;
+			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
+				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
 		}
 		targetobject = xmlObj;
 		xmlObj->getDescendantsByQName(name->normalizedName(th->context->root->getSystemState()), ns_uri,name->isAttribute, ret);
@@ -2778,7 +2778,7 @@ Namespace* ABCVm::pushNamespace(call_context* th, int n)
 	const namespace_info& ns_info=th->context->constant_pool.namespaces[n];
 	assert(ns_info.kind == NAMESPACE);
 	LOG_CALL( _("pushNamespace ") << th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(ns_info.name)) );
-	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(ns_info.name)));
+	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->getString(ns_info.name));
 }
 
 /* @spec-checked avm2overview */

@@ -1450,7 +1450,7 @@ void ASQName::setByXML(XML* node)
 {
 	uri_is_null=false;
 	local_name = getSystemState()->getUniqueStringId(node->getName());
-	uri=getSystemState()->getUniqueStringId(node->getNamespaceURI());
+	uri=node->getNamespaceURI();
 }
 
 void ASQName::sinit(Class_base* c)
@@ -1710,7 +1710,7 @@ Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),pr
 {
 }
 
-Namespace::Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix)
+Namespace::Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix)
   : ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
 {
 }
@@ -1754,8 +1754,9 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		urival = args[1];
 	}
 	th->prefix_is_undefined=false;
-	th->prefix = "";
-	th->uri = "";
+	th->prefix = BUILTIN_STRINGS::EMPTY;
+	th->uri = BUILTIN_STRINGS::EMPTY;
+;
 
 	if(!prefixval)
 	{
@@ -1770,15 +1771,15 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->getSystemState()->getStringFromUniqueId(q->uri);
+			th->uri=q->uri;
 		}
 		else
 		{
-			th->uri=urival->toString();
-			if(th->uri!="")
+			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
+			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
-				th->prefix="";
+				th->prefix=BUILTIN_STRINGS::EMPTY;
 			}
 		}
 	}
@@ -1788,18 +1789,18 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=q->getSystemState()->getStringFromUniqueId(q->uri);
+			th->uri=q->uri;
 		}
 		else
 		{
-			th->uri=urival->toString();
+			th->uri=urival->getSystemState()->getUniqueStringId(urival->toString());
 		}
 
-		if(th->uri=="")
+		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(prefixval->getObjectType()==T_UNDEFINED ||
 			   prefixval->toString()=="")
-				th->prefix="";
+				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
 				throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace prefix for empty uri not allowed");
 		}
@@ -1807,11 +1808,11 @@ ASFUNCTIONBODY(Namespace,_constructor)
 			!isXMLName(prefixval))
 		{
 			th->prefix_is_undefined=true;
-			th->prefix="";
+			th->prefix=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->prefix=prefixval->toString();
+			th->prefix=prefixval->getSystemState()->getUniqueStringId(prefixval->toString());
 		}
 	}
 
@@ -1827,8 +1828,8 @@ ASFUNCTIONBODY(Namespace,generator)
 	if (argslen == 0)
 	{
 		th->prefix_is_undefined=false;
-		th->prefix = "";
-		th->uri = "";
+		th->prefix = BUILTIN_STRINGS::EMPTY;
+		th->uri = BUILTIN_STRINGS::EMPTY;
 		return th;
 	}
 	else if (argslen == 1)
@@ -1842,8 +1843,8 @@ ASFUNCTIONBODY(Namespace,generator)
 		urival = args[1];
 	}
 	th->prefix_is_undefined=false;
-	th->prefix = "";
-	th->uri = "";
+	th->prefix = BUILTIN_STRINGS::EMPTY;
+	th->uri = BUILTIN_STRINGS::EMPTY;
 
 	if(!prefixval)
 	{
@@ -1858,15 +1859,15 @@ ASFUNCTIONBODY(Namespace,generator)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=th->getSystemState()->getStringFromUniqueId(q->uri);
+			th->uri=q->uri;
 		}
 		else
 		{
-			th->uri=urival->toString();
-			if(th->uri!="")
+			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
+			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
-				th->prefix="";
+				th->prefix=BUILTIN_STRINGS::EMPTY;
 			}
 		}
 	}
@@ -1876,18 +1877,18 @@ ASFUNCTIONBODY(Namespace,generator)
 		   !(static_cast<ASQName*>(urival)->uri_is_null))
 		{
 			ASQName* q=static_cast<ASQName*>(urival);
-			th->uri=th->getSystemState()->getStringFromUniqueId(q->uri);
+			th->uri=q->uri;
 		}
 		else
 		{
-			th->uri=urival->toString();
+			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
 		}
 
-		if(th->uri=="")
+		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(prefixval->getObjectType()==T_UNDEFINED ||
 			   prefixval->toString()=="")
-				th->prefix="";
+				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
 				throw Class<TypeError>::getInstanceS(getSys(),"Namespace prefix for empty uri not allowed");
 		}
@@ -1895,11 +1896,11 @@ ASFUNCTIONBODY(Namespace,generator)
 			!isXMLName(prefixval))
 		{
 			th->prefix_is_undefined=true;
-			th->prefix="";
+			th->prefix=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->prefix=prefixval->toString();
+			th->prefix=prefixval->getSystemState()->getUniqueStringId(prefixval->toString());
 		}
 	}
 	return th;

@@ -712,11 +712,11 @@ friend class ABCContext;
 private:
 	NS_KIND nskind;
 	bool prefix_is_undefined;
-	tiny_string uri;
-	tiny_string prefix;
+	uint32_t uri;
+	uint32_t prefix;
 public:
 	Namespace(Class_base* c);
-	Namespace(Class_base* c, const tiny_string& _uri, const tiny_string& _prefix="");
+	Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -730,8 +730,8 @@ public:
 	ASFUNCTION(_valueOf);
 	ASFUNCTION(_ECMA_valueOf);
 	bool isEqual(ASObject* o);
-	tiny_string getURI() { return uri; }
-	tiny_string getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
+	uint32_t getURI() const { return uri; }
+	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 
 	uint32_t nextNameIndex(uint32_t cur_index);
 	_R<ASObject> nextName(uint32_t index);

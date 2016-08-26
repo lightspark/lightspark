@@ -354,7 +354,7 @@ ASFUNCTIONBODY(XMLList,descendants)
 	XML::XMLVector ret;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),"",mname.isAttribute,ret);
+	th->getDescendantsByQName(name->toString(),BUILTIN_STRINGS::EMPTY,mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
 }
 
@@ -638,23 +638,23 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		tiny_string normalizedName=name.normalizedName(getSystemState());
 		
 		//Only the first namespace is used, is this right?
-		tiny_string namespace_uri;
+		uint32_t namespace_uri = BUILTIN_STRINGS::EMPTY;
 		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			if (ns.kind==NAMESPACE)
-				namespace_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
+				namespace_uri=ns.nameId;
 		}
 		
 		// namespace set by "default xml namespace = ..."
-		if(namespace_uri.empty())
-			namespace_uri=getVm(getSystemState())->getDefaultXMLNamespace();
+		if(namespace_uri==BUILTIN_STRINGS::EMPTY)
+			namespace_uri=getVm(getSystemState())->getDefaultXMLNamespaceID();
 
 		for (uint32_t i = 0; i < nodes.size(); i++)
 		{
 			_R<XML> child= nodes[i];
 			bool nameMatches = (normalizedName=="" || normalizedName==child->nodename  || normalizedName=="*");
-			bool nsMatches = (namespace_uri=="" || 
+			bool nsMatches = (namespace_uri==BUILTIN_STRINGS::EMPTY || 
 							  (child->nodenamespace_uri == namespace_uri));
 
 			if(nameMatches && nsMatches)
@@ -874,7 +874,7 @@ bool XMLList::deleteVariableByMultiname(const multiname& name)
 	return bdeleted;
 }
 
-void XMLList::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, bool bIsAttribute, XML::XMLVector& ret)
+void XMLList::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XML::XMLVector& ret)
 {
 	auto it=nodes.begin();
 	for(; it!=nodes.end(); ++it)
@@ -1024,8 +1024,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			tmp->parentNode = nodes[idx];
 			tmp->nodetype = pugi::node_pcdata;
 			tmp->nodename = "text";
-			tmp->nodenamespace_uri = "";
-			tmp->nodenamespace_prefix = "";
+			tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+			tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 			tmp->nodevalue = o->toString();
 			tmp->constructed = true;
 			nodes[idx]->childrenlist->append(tmp);
@@ -1048,8 +1048,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			tmp->parentNode = nodes[idx];
 			tmp->nodetype = pugi::node_pcdata;
 			tmp->nodename = "text";
-			tmp->nodenamespace_uri = "";
-			tmp->nodenamespace_prefix = "";
+			tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+			tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 			tmp->nodevalue = o->toString();
 			tmp->constructed = true;
 			nodes[idx]->childrenlist->append(tmp);

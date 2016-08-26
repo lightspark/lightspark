@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin" };
+static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml" };
 
 extern uint32_t asClassCount;
 
@@ -200,11 +200,11 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	nsNameAndKindImpl emptyNs(BUILTIN_STRINGS::EMPTY, NAMESPACE);
 	uint32_t nsId;
 	uint32_t baseId;
-	getUniqueNamespaceId(emptyNs, 0, nsId, baseId);
+	getUniqueNamespaceId(emptyNs, BUILTIN_NAMESPACES::EMPTY_NS, nsId, baseId);
 	assert(nsId==0 && baseId==0);
 	//Forge the AS3 namespace and make sure it gets id 1
 	nsNameAndKindImpl as3Ns(BUILTIN_STRINGS::STRING_AS3NS, NAMESPACE);
-	getUniqueNamespaceId(as3Ns, 1, nsId, baseId);
+	getUniqueNamespaceId(as3Ns, BUILTIN_NAMESPACES::AS3_NS, nsId, baseId);
 	assert(nsId==1 && baseId==1);
 
 	cookiesFileName = NULL;
@@ -1727,6 +1727,7 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 
 void SystemState::tick()
 {
+	if (showProfilingData)
 	{
 		SpinlockLocker l(profileDataSpinlock);
 		list<ThreadProfile*>::iterator it=profilingData.begin();

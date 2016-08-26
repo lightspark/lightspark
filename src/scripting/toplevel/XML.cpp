@@ -25,6 +25,7 @@
 #include "scripting/argconv.h"
 #include "abc.h"
 #include "parsing/amf3_generator.h"
+#include <unordered_set>
 
 using namespace std;
 using namespace lightspark;
@@ -44,16 +45,16 @@ void setDefaultXMLSettings()
 	prettyPrinting = true;
 }
 
-XML::XML(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),nodenamespace_uri(BUILTIN_STRINGS::EMPTY),nodenamespace_prefix(BUILTIN_STRINGS::EMPTY),constructed(false)
 {
 }
 
-XML::XML(Class_base* c, const std::string &str):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c, const std::string &str):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),nodenamespace_uri(BUILTIN_STRINGS::EMPTY),nodenamespace_prefix(BUILTIN_STRINGS::EMPTY),constructed(false)
 {
 	createTree(buildFromString(str, getParseMode()),false);
 }
 
-XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),constructed(false)
+XML::XML(Class_base* c, const pugi::xml_node& _n, XML* parent, bool fromXMLList):ASObject(c,T_OBJECT,SUBTYPE_XML),parentNode(0),nodetype((pugi::xml_node_type)0),isAttribute(false),nodenamespace_uri(BUILTIN_STRINGS::EMPTY),nodenamespace_prefix(BUILTIN_STRINGS::EMPTY),constructed(false)
 {
 	if (parent)
 	{
@@ -73,8 +74,8 @@ bool XML::destruct()
 	childrenlist.reset();
 	nodename.clear();
 	nodevalue.clear();
-	nodenamespace_uri.clear();
-	nodenamespace_prefix.clear();
+	nodenamespace_uri=BUILTIN_STRINGS::EMPTY;
+	nodenamespace_prefix=BUILTIN_STRINGS::EMPTY;
 	attributelist.reset();
 	procinstlist.reset();
 	namespacedefs.clear();
@@ -308,7 +309,7 @@ ASFUNCTIONBODY(XML,descendants)
 	XMLVector ret;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),mname.isQName() ? obj->getSystemState()->getStringFromUniqueId(mname.ns[0].getImpl(obj->getSystemState()).nameId) : "",mname.isAttribute,ret);
+	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].getImpl(obj->getSystemState()).nameId : (uint32_t)BUILTIN_STRINGS::EMPTY,mname.isAttribute,ret);
 	return Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->getChildrenlist(),multiname(NULL));
 }
 
@@ -372,10 +373,10 @@ ASFUNCTIONBODY(XML,attribute)
 	tiny_string attrname;
 	//see spec for QName handling
 	ARG_UNPACK (attrname);
-	tiny_string tmpns;
+	uint32_t tmpns = BUILTIN_STRINGS::EMPTY;
 	if(argslen > 0 && args[0]->is<ASQName>())
 	{
-		tmpns= obj->getSystemState()->getStringFromUniqueId(args[0]->as<ASQName>()->getURI());
+		tmpns= args[0]->as<ASQName>()->getURI();
 		attrname = obj->getSystemState()->getStringFromUniqueId(args[0]->as<ASQName>()->getLocalName());
 			
 	}
@@ -409,14 +410,14 @@ XMLList* XML::getAllAttributes()
 	return attributelist.getPtr();
 }
 
-const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnsprefix, const char *indent,bool bfirst)
+const tiny_string XML::toXMLString_internal(bool pretty, uint32_t defaultnsprefix, const char *indent,bool bfirst)
 {
 	tiny_string res;
-	set<tiny_string> seen_prefix;
+	set<uint32_t> seen_prefix;
 
 	if (bfirst)
 	{
-		tiny_string defns = getVm(getSystemState())->getDefaultXMLNamespace();
+		uint32_t defns = getVm(getSystemState())->getDefaultXMLNamespaceID();
 		XML* tmp = this;
 		bool bfound = false;
 		while(tmp)
@@ -481,21 +482,21 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 				break;
 			case pugi::node_element:
 			{
-				tiny_string curprefix = this->nodenamespace_prefix;
+				uint32_t curprefix = this->nodenamespace_prefix;
 				res += indent;
 				res += "<";
-				if (this->nodenamespace_prefix.empty())
+				if (this->nodenamespace_prefix == BUILTIN_STRINGS::EMPTY)
 				{
-					if (defaultnsprefix != "")
+					if (defaultnsprefix != BUILTIN_STRINGS::EMPTY)
 					{
-						res += defaultnsprefix;
+						res += getSystemState()->getStringFromUniqueId(defaultnsprefix);
 						res += ":";
 						curprefix = defaultnsprefix;
 					}
 				}
 				else
 				{
-					res += this->nodenamespace_prefix;
+					res += this->getSystemState()->getStringFromUniqueId(this->nodenamespace_prefix);
 					res += ":";
 				}
 				res +=this->nodename;
@@ -503,24 +504,14 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 				{
 					bool b;
 					_R<Namespace> tmpns = this->namespacedefs[i];
-					tiny_string tmpprefix = tmpns->getPrefix(b);
-					/*
-					if(tmpprefix == "")
-					{
-						seen_prefix.insert(tmpprefix);
-						res += " xmlns";
-						res += "=\"";
-						res += tmpns->getURI();
-						res += "\"";
-					}
-					*/
-					if(tmpprefix == "" || tmpprefix==this->nodenamespace_prefix || seen_prefix.find(tmpprefix)!=seen_prefix.end())
+					uint32_t tmpprefix = tmpns->getPrefix(b);
+					if(tmpprefix == BUILTIN_STRINGS::EMPTY || tmpprefix==this->nodenamespace_prefix || seen_prefix.find(tmpprefix)!=seen_prefix.end())
 						continue;
 					seen_prefix.insert(tmpprefix);
 					res += " xmlns:";
-					res += tmpprefix;
+					res += getSystemState()->getStringFromUniqueId(tmpprefix);
 					res += "=\"";
-					res += tmpns->getURI();
+					res += getSystemState()->getStringFromUniqueId(tmpns->getURI());
 					res += "\"";
 				}
 				if (this->parentNode)
@@ -534,14 +525,14 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 							{
 								bool b;
 								_R<Namespace> tmpns = tmp->namespacedefs[i];
-								tiny_string tmpprefix = tmpns->getPrefix(b);
-								if(tmpprefix != "" && seen_prefix.find(tmpprefix)==seen_prefix.end())
+								uint32_t tmpprefix = tmpns->getPrefix(b);
+								if(tmpprefix != BUILTIN_STRINGS::EMPTY && seen_prefix.find(tmpprefix)==seen_prefix.end())
 								{
 									seen_prefix.insert(tmpprefix);
 									res += " xmlns:";
-									res += tmpprefix;
+									res += getSystemState()->getStringFromUniqueId(tmpprefix);
 									res += "=\"";
-									res += tmpns->getURI();
+									res += getSystemState()->getStringFromUniqueId(tmpns->getURI());
 									res += "\"";
 								}
 							}
@@ -551,7 +542,7 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 								break;
 						}
 					}
-					else if (!curprefix.empty())
+					else if (curprefix != BUILTIN_STRINGS::EMPTY)
 					{
 						XML* tmp = this->parentNode.getPtr();
 						bool bfound = false;
@@ -561,7 +552,7 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 							{
 								bool b;
 								_R<Namespace> tmpns = tmp->namespacedefs[i];
-								tiny_string tmpprefix = tmpns->getPrefix(b);
+								uint32_t tmpprefix = tmpns->getPrefix(b);
 								if(tmpprefix == curprefix)
 								{
 									seen_prefix.insert(tmpprefix);
@@ -576,27 +567,27 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 						}
 					}
 				}
-				if (!this->nodenamespace_uri.empty() && 
-						((this->nodenamespace_prefix.empty() && defaultnsprefix == "") ||
-						 (!this->nodenamespace_prefix.empty() && seen_prefix.find(this->nodenamespace_prefix)==seen_prefix.end())))
+				if (this->nodenamespace_uri != BUILTIN_STRINGS::EMPTY && 
+						((this->nodenamespace_prefix==BUILTIN_STRINGS::EMPTY && defaultnsprefix == BUILTIN_STRINGS::EMPTY) ||
+						 (this->nodenamespace_prefix!=BUILTIN_STRINGS::EMPTY && seen_prefix.find(this->nodenamespace_prefix)==seen_prefix.end())))
 				{
-					if (!this->nodenamespace_prefix.empty())
+					if (this->nodenamespace_prefix!=BUILTIN_STRINGS::EMPTY)
 					{
 						seen_prefix.insert(this->nodenamespace_prefix);
 						res += " xmlns:";
-						res += this->nodenamespace_prefix;
+						res += getSystemState()->getStringFromUniqueId(this->nodenamespace_prefix);
 					}
 					else
 						res += " xmlns";
 					res += "=\"";
-					res += this->nodenamespace_uri;
+					res += getSystemState()->getStringFromUniqueId(this->nodenamespace_uri);
 					res += "\"";
 				}
-				else if (defaultnsprefix != "" && seen_prefix.find(defaultnsprefix)==seen_prefix.end())
+				else if (defaultnsprefix != BUILTIN_STRINGS::EMPTY && seen_prefix.find(defaultnsprefix)==seen_prefix.end())
 				{
 					seen_prefix.insert(defaultnsprefix);
 					res += " xmlns:";
-					res += defaultnsprefix;
+					res += getSystemState()->getStringFromUniqueId(defaultnsprefix);
 					res += "=\"";
 					res += getVm(getSystemState())->getDefaultXMLNamespace();
 					res += "\"";
@@ -607,9 +598,9 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 					{
 						_R<XML> attr = *it;
 						res += " ";
-						if (attr->nodenamespace_prefix != "")
+						if (attr->nodenamespace_prefix != BUILTIN_STRINGS::EMPTY)
 						{
-							res += attr->nodenamespace_prefix;
+							res += getSystemState()->getStringFromUniqueId(attr->nodenamespace_prefix);
 							res += ":";
 						}
 						res += attr->nodename;
@@ -655,17 +646,17 @@ const tiny_string XML::toXMLString_internal(bool pretty, tiny_string defaultnspr
 					res += indent;
 				}
 				res += "</";
-				if (this->nodenamespace_prefix.empty())
+				if (this->nodenamespace_prefix == BUILTIN_STRINGS::EMPTY)
 				{
-					if (defaultnsprefix != "")
+					if (defaultnsprefix != BUILTIN_STRINGS::EMPTY)
 					{
-						res += defaultnsprefix;
+						res += getSystemState()->getStringFromUniqueId(defaultnsprefix);
 						res += ":";
 					}
 				}
 				else
 				{
-					res += this->nodenamespace_prefix;
+					res += getSystemState()->getStringFromUniqueId(this->nodenamespace_prefix);
 					res += ":";
 				}
 				res += this->nodename;
@@ -844,7 +835,7 @@ ASFUNCTIONBODY(XML,inScopeNamespaces)
 {
 	XML *th = obj->as<XML>();
 	Array *namespaces = Class<Array>::getInstanceS(obj->getSystemState());
-	set<tiny_string> seen_prefix;
+	set<uint32_t> seen_prefix;
 
 	XML* tmp = th;
 	while(tmp)
@@ -875,8 +866,8 @@ ASFUNCTIONBODY(XML,addNamespace)
 	ARG_UNPACK(newNamespace);
 
 
-	tiny_string ns_uri;
-	tiny_string ns_prefix;
+	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if (newNamespace->is<Namespace>())
 	{
 		Namespace* tmpns = newNamespace->as<Namespace>();
@@ -886,12 +877,12 @@ ASFUNCTIONBODY(XML,addNamespace)
 	}
 	else if (newNamespace->is<ASQName>())
 	{
-		ns_uri = obj->getSystemState()->getStringFromUniqueId(newNamespace->as<ASQName>()->getURI());
+		ns_uri = newNamespace->as<ASQName>()->getURI();
 	}
 	else
-		ns_uri = newNamespace->toString();
+		ns_uri = th->getSystemState()->getUniqueStringId(newNamespace->toString());
 	if (th->nodenamespace_prefix == ns_prefix)
-		th->nodenamespace_prefix="";
+		th->nodenamespace_prefix=BUILTIN_STRINGS::EMPTY;
 	for (uint32_t i = 0; i < th->namespacedefs.size(); i++)
 	{
 		bool b;
@@ -954,9 +945,9 @@ ASFUNCTIONBODY(XML,_namespace)
 	{
 		bool b;
 		_R<Namespace> tmpns = th->namespacedefs[i];
-		if (tmpns->getPrefix(b) == prefix)
+		if (tmpns->getPrefix(b) == obj->getSystemState()->getUniqueStringId(prefix))
 		{
-			return Class<Namespace>::getInstanceS(obj->getSystemState(),tmpns->getURI(), prefix);
+			return Class<Namespace>::getInstanceS(obj->getSystemState(),tmpns->getURI(), obj->getSystemState()->getUniqueStringId(prefix));
 		}
 	}
 	return obj->getSystemState()->getUndefinedRef();
@@ -1005,18 +996,18 @@ ASFUNCTIONBODY(XML,_setName)
 		return NULL;
 
 	tiny_string localname;
-	tiny_string ns_uri;
-	tiny_string ns_prefix = th->nodenamespace_prefix;
+	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+	uint32_t ns_prefix = th->nodenamespace_prefix;
 	if(newName->is<ASQName>())
 	{
 		ASQName *qname=newName->as<ASQName>();
 		localname=obj->getSystemState()->getStringFromUniqueId(qname->getLocalName());
-		ns_uri=obj->getSystemState()->getStringFromUniqueId(qname->getURI());
+		ns_uri=qname->getURI();
 	}
 	else if (!newName->is<Undefined>())
 	{
 		localname=newName->toString();
-		ns_prefix= "";
+		ns_prefix= BUILTIN_STRINGS::EMPTY;
 	}
 
 	th->setLocalName(localname);
@@ -1035,8 +1026,8 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	   th->nodetype==pugi::node_comment ||
 	   th->nodetype==pugi::node_pi)
 		return NULL;
-	tiny_string ns_uri;
-	tiny_string ns_prefix;
+	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if(newNamespace->is<Namespace>())
 	{
 		Namespace *ns=newNamespace->as<Namespace>();
@@ -1047,7 +1038,7 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	else if(newNamespace->is<ASQName>())
 	{
 		ASQName *qname=newNamespace->as<ASQName>();
-		ns_uri=obj->getSystemState()->getStringFromUniqueId(qname->getURI());
+		ns_uri=qname->getURI();
 		for (uint32_t i = 0; i < th->namespacedefs.size(); i++)
 		{
 			bool b;
@@ -1061,7 +1052,7 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	}
 	else if (!newNamespace->is<Undefined>())
 	{
-		ns_uri=newNamespace->toString();
+		ns_uri=th->getSystemState()->getUniqueStringId(newNamespace->toString());
 		for (uint32_t i = 0; i < th->namespacedefs.size(); i++)
 		{
 			bool b;
@@ -1093,7 +1084,7 @@ ASFUNCTIONBODY(XML,_setNamespace)
 	return NULL;
 }
 
-void XML::setNamespace(const tiny_string& ns_uri, const tiny_string& ns_prefix)
+void XML::setNamespace(uint32_t ns_uri, uint32_t ns_prefix)
 {
 	this->nodenamespace_prefix = ns_prefix;
 	this->nodenamespace_uri = ns_uri;
@@ -1199,7 +1190,7 @@ pugi::xml_node_type XML::getNodeKind() const
 }
 
 
-void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, bool bIsAttribute, XMLVector& ret)
+void XML::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const
 {
 	if (!constructed)
 		return;
@@ -1208,7 +1199,7 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 		for (uint32_t i = 0; i < attributelist->nodes.size(); i++)
 		{
 			_R<XML> child= attributelist->nodes[i];
-			if(name=="" || name=="*" || (name == child->nodename && (ns == "*" || ns == child->nodenamespace_uri)))
+			if(name=="" || name=="*" || (name == child->nodename && (ns == BUILTIN_STRINGS::STRING_WILDCARD || ns == child->nodenamespace_uri)))
 			{
 				child->incRef();
 				ret.push_back(child);
@@ -1220,7 +1211,7 @@ void XML::getDescendantsByQName(const tiny_string& name, const tiny_string& ns, 
 	for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
 	{
 		_R<XML> child= childrenlist->nodes[i];
-		if(!bIsAttribute && (name=="" || name=="*" || (name == child->nodename && (ns == "*" || ns == child->nodenamespace_uri))))
+		if(!bIsAttribute && (name=="" || name=="*" || (name == child->nodename && (ns == BUILTIN_STRINGS::STRING_WILDCARD || ns == child->nodenamespace_uri))))
 		{
 			child->incRef();
 			ret.push_back(child);
@@ -1236,60 +1227,63 @@ XML::XMLVector XML::getAttributes()
 	mn.ns.emplace_back(getSystemState(),"",NAMESPACE);
 	mn.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
 	mn.isAttribute = true;
-	return getAttributesByMultiname(mn); 
+	return getAttributesByMultiname(mn,""); 
 }
-XML::XMLVector XML::getAttributesByMultiname(const multiname& name)
+XML::XMLVector XML::getAttributesByMultiname(const multiname& name, const tiny_string& normalizedName) const
 {
 	XMLVector ret;
 	if (attributelist.isNull())
 		return ret;
-	tiny_string defns = "|";
-	defns += getVm(getSystemState())->getDefaultXMLNamespace();
-	defns += "|";
-	tiny_string normalizedName= "";
-	if (!name.isEmpty()) normalizedName= name.normalizedName(getSystemState());
-	if (normalizedName.startsWith("@"))
-		normalizedName = normalizedName.substr(1,normalizedName.end());
-	tiny_string namespace_uri="|";
-	uint32_t i = 0;
-	while (i < name.ns.size())
+	uint32_t defns = getVm(getSystemState())->getDefaultXMLNamespaceID();
+	std::unordered_set<uint32_t> namespace_uri;
+	auto it = name.ns.cbegin();
+	while (it < name.ns.cend())
 	{
-		nsNameAndKindImpl ns=name.ns[i].getImpl(getSystemState());
-		if (ns.kind==NAMESPACE && ns.nameId != getSystemState()->getUniqueStringId(AS3))
+		switch (it->nsId)
 		{
-			if (ns.nameId == BUILTIN_STRINGS::EMPTY)
-				namespace_uri +=getVm(getSystemState())->getDefaultXMLNamespace();
-			else
-				namespace_uri +=getSystemState()->getStringFromUniqueId(ns.nameId);
-			namespace_uri += "|";
+			case BUILTIN_NAMESPACES::EMPTY_NS:
+				namespace_uri.insert(defns);
+				break;
+			case BUILTIN_NAMESPACES::AS3_NS:
+				break;
+			default:
+			{
+				nsNameAndKindImpl ns=it->getImpl(getSystemState());
+				if (ns.kind==NAMESPACE)
+				{
+					if (ns.nameId == BUILTIN_STRINGS::EMPTY)
+						namespace_uri.insert(defns);
+					else
+						namespace_uri.insert(ns.nameId);
+				}
+				break;
+			}
 		}
-		i++;
+		++it;
 	}
 	for (uint32_t i = 0; i < attributelist->nodes.size(); i++)
 	{
 		_R<XML> child= attributelist->nodes[i];
-		tiny_string childnamespace_uri = "|";
-		childnamespace_uri += child->nodenamespace_uri;
-		childnamespace_uri += "|";
+		uint32_t childnamespace_uri = child->nodenamespace_uri;
 		
 		bool bmatch = (
-					((normalizedName=="") &&
-					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					((normalizedName.empty()) &&
+					 ((namespace_uri.find(defns)!= namespace_uri.end()) ||
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)||
 					((normalizedName=="*") &&
-					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					 ((namespace_uri.find(defns)!= namespace_uri.end()) ||
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)||
 					((normalizedName==child->nodename) &&
 					 (
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri=="|" && childnamespace_uri=="||") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.size() == 0 && childnamespace_uri == BUILTIN_STRINGS::EMPTY) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)
 					);
@@ -1304,56 +1298,66 @@ XML::XMLVector XML::getAttributesByMultiname(const multiname& name)
 XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname& name)
 {
 	XMLVector ret;
-	tiny_string defns = "|";
-	if (nodenamespace_prefix == "" && nodenamespace_uri != "")
-		defns += nodenamespace_uri;
+	uint32_t defns = BUILTIN_STRINGS::EMPTY;
+	if (nodenamespace_prefix == BUILTIN_STRINGS::EMPTY && nodenamespace_uri != BUILTIN_STRINGS::EMPTY)
+		defns = nodenamespace_uri;
 	else
-		defns += getVm(getSystemState())->getDefaultXMLNamespace();
-	defns += "|";
+		defns = getVm(getSystemState())->getDefaultXMLNamespaceID();
 	tiny_string normalizedName= "";
 	normalizedName= name.normalizedName(getSystemState());
 	if (normalizedName.startsWith("@"))
 		normalizedName = normalizedName.substr(1,normalizedName.end());
-	tiny_string namespace_uri="|";
-	uint32_t i = 0;
-	while (i < name.ns.size())
+
+	std::unordered_set<uint32_t> namespace_uri;
+	auto it = name.ns.cbegin();
+	while (it < name.ns.cend())
 	{
-		nsNameAndKindImpl ns=name.ns[i].getImpl(getSystemState());
-		if (ns.kind==NAMESPACE && ns.nameId != getSystemState()->getUniqueStringId(AS3))
+		switch (it->nsId)
 		{
-			if (ns.nameId == BUILTIN_STRINGS::EMPTY)
-				namespace_uri +=getVm(getSystemState())->getDefaultXMLNamespace();
-			else
-				namespace_uri +=getSystemState()->getStringFromUniqueId(ns.nameId);
-			namespace_uri += "|";
+			case BUILTIN_NAMESPACES::EMPTY_NS:
+				namespace_uri.insert(defns);
+				break;
+			case BUILTIN_NAMESPACES::AS3_NS:
+				break;
+			default:
+			{
+				nsNameAndKindImpl ns=it->getImpl(getSystemState());
+				if (ns.kind==NAMESPACE)
+				{
+					if (ns.nameId == BUILTIN_STRINGS::EMPTY)
+						namespace_uri.insert(defns);
+					else
+						namespace_uri.insert(ns.nameId);
+				}
+				break;
+			}
 		}
-		i++;
+		++it;
 	}
 
 	for (uint32_t i = 0; i < nodelist->nodes.size(); i++)
 	{
 		_R<XML> child= nodelist->nodes[i];
-		tiny_string childnamespace_uri = "|";
-		childnamespace_uri += child->nodenamespace_uri;
-		childnamespace_uri += "|";
+		uint32_t childnamespace_uri = child->nodenamespace_uri;
+		
 		bool bmatch = (
-					((normalizedName=="") &&
-					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					((normalizedName.empty()) &&
+					 ((namespace_uri.find(defns)!= namespace_uri.end()) ||
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)||
 					((normalizedName=="*") &&
-					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					 ((namespace_uri.find(defns)!= namespace_uri.end()) ||
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)||
 					((normalizedName==child->nodename) &&
-					 ((namespace_uri.find(defns)!= tiny_string::npos) ||
-					  (namespace_uri=="|*|") ||
-					  (namespace_uri=="|" && childnamespace_uri=="||") ||
-					  (namespace_uri.find(childnamespace_uri) != tiny_string::npos)
+					 ((namespace_uri.find(defns)!= namespace_uri.end()) ||
+					  (namespace_uri.find(BUILTIN_STRINGS::STRING_WILDCARD)!= namespace_uri.end()) ||
+					  (namespace_uri.size() == 0 && childnamespace_uri == BUILTIN_STRINGS::EMPTY) ||
+					  (namespace_uri.find(childnamespace_uri) != namespace_uri.end())
 					 )
 					)
 					);
@@ -1390,12 +1394,13 @@ _NR<ASObject> XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 	tiny_string normalizedName=name.normalizedName(getSystemState());
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
+		normalizedName = normalizedName.substr(1,normalizedName.end());
 		isAttr=true;
 	}
 	if(isAttr)
 	{
 		//Lookup attribute
-		const XMLVector& attributes=getAttributesByMultiname(name);
+		const XMLVector& attributes=getAttributesByMultiname(name,normalizedName);
 		return _MNR(Class<XMLList>::getInstanceS(getSystemState(),attributes,attributelist.getPtr(),name));
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
@@ -1443,22 +1448,22 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	const tiny_string normalizedName=name.normalizedName(getSystemState());
 
 	//Only the first namespace is used, is this right?
-	tiny_string ns_uri;
-	tiny_string ns_prefix;
+	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 	{
 		nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 		if (ns.kind==NAMESPACE)
 		{
-			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
+			ns_uri=ns.nameId;
 			ns_prefix=getNamespacePrefixByURI(ns_uri);
 		}
 	}
 
 	// namespace set by "default xml namespace = ..."
-	if (ns_uri.empty() && ns_prefix.empty())
+	if (ns_uri == BUILTIN_STRINGS::EMPTY && ns_prefix == BUILTIN_STRINGS::EMPTY)
 	{
-		ns_uri = getVm(getSystemState())->getDefaultXMLNamespace();
+		ns_uri = getVm(getSystemState())->getDefaultXMLNamespaceID();
 	}
 
 	const char *buf=normalizedName.raw_buf();
@@ -1547,8 +1552,8 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 						tmp->incRef();
 						tmp->nodetype = pugi::node_pcdata;
 						tmp->nodename = "text";
-						tmp->nodenamespace_uri = "";
-						tmp->nodenamespace_prefix = "";
+						tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+						tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 						tmp->nodevalue = o->toString();
 						tmp->constructed = true;
 						tmpnode->childrenlist->clear();
@@ -1606,26 +1611,26 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 			else
 			{
 				tiny_string tmpstr = "<";
-				if (!this->nodenamespace_prefix.empty())
+				if (this->nodenamespace_prefix!=BUILTIN_STRINGS::EMPTY)
 				{
 					tmpstr += ns_prefix;
 					tmpstr += ":";
 				}
 				tmpstr += normalizedName;
-				if (!ns_prefix.empty() && !ns_uri.empty())
+				if (ns_prefix!=BUILTIN_STRINGS::EMPTY && ns_uri!= BUILTIN_STRINGS::EMPTY)
 				{
 					tmpstr += " xmlns:";
-					tmpstr += ns_prefix;
+					tmpstr += getSystemState()->getStringFromUniqueId(ns_prefix);
 					tmpstr += "=\"";
-					tmpstr += ns_uri;
+					tmpstr += getSystemState()->getStringFromUniqueId(ns_uri);
 					tmpstr += "\"";
 				}
 				tmpstr +=">";
 				tmpstr += encodeToXML(o->toString(),false);
 				tmpstr +="</";
-				if (!ns_prefix.empty())
+				if (ns_prefix != BUILTIN_STRINGS::EMPTY)
 				{
-					tmpstr += ns_prefix;
+					tmpstr += getSystemState()->getStringFromUniqueId(ns_prefix);
 					tmpstr += ":";
 				}
 				tmpstr += normalizedName;
@@ -1648,20 +1653,20 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 		return false;
 
 	//Only the first namespace is used, is this right?
-	tiny_string ns_uri;
-	tiny_string ns_prefix;
+	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 	{
 		nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 		assert_and_throw(ns.kind==NAMESPACE);
-		ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
+		ns_uri=ns.nameId;
 		ns_prefix=getNamespacePrefixByURI(ns_uri);
 	}
 
 	// namespace set by "default xml namespace = ..."
-	if (ns_uri.empty() && ns_prefix.empty())
+	if (ns_uri==BUILTIN_STRINGS::EMPTY && ns_prefix==BUILTIN_STRINGS::EMPTY)
 	{
-		ns_uri = getVm(getSystemState())->getDefaultXMLNamespace();
+		ns_uri = getVm(getSystemState())->getDefaultXMLNamespaceID();
 	}
 
 	bool isAttr=name.isAttribute;
@@ -1699,7 +1704,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 		{
 			_R<XML> child= childrenlist->nodes[i];
 			bool name_match=(child->nodename == buf);
-			bool ns_match=ns_uri.empty() || 
+			bool ns_match=ns_uri==BUILTIN_STRINGS::EMPTY || 
 				(child->nodenamespace_uri == ns_uri);
 			if(name_match && ns_match)
 				return true;
@@ -1715,18 +1720,18 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 	if(name.isAttribute)
 	{
 		//Only the first namespace is used, is this right?
-		tiny_string ns_uri;
-		tiny_string ns_prefix;
+		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+		uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			assert_and_throw(ns.kind==NAMESPACE);
-			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
+			ns_uri=ns.nameId;
 			ns_prefix=getNamespacePrefixByURI(ns_uri);
 		}
-		if (ns_uri.empty() && ns_prefix.empty())
+		if (ns_uri == BUILTIN_STRINGS::EMPTY && ns_prefix == BUILTIN_STRINGS::EMPTY)
 		{
-			ns_uri = getVm(getSystemState())->getDefaultXMLNamespace();
+			ns_uri = getVm(getSystemState())->getDefaultXMLNamespaceID();
 		}
 		if (!attributelist.isNull() && attributelist->nodes.size() > 0)
 		{
@@ -1735,8 +1740,8 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 			{
 				it--;
 				_R<XML> attr = *it;
-				if ((ns_uri=="" && name.normalizedName(getSystemState()) == "") ||
-						(ns_uri=="" && name.normalizedName(getSystemState()) == attr->nodename) ||
+				if ((ns_uri==BUILTIN_STRINGS::EMPTY && name.normalizedName(getSystemState()) == "") ||
+						(ns_uri==BUILTIN_STRINGS::EMPTY && name.normalizedName(getSystemState()) == attr->nodename) ||
 						(attr->nodenamespace_uri == ns_uri && name.normalizedName(getSystemState()) == "") ||
 						(attr->nodenamespace_uri == ns_uri && attr->nodename == name.normalizedName(getSystemState())))
 				{
@@ -1753,12 +1758,12 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 	else
 	{
 		//Only the first namespace is used, is this right?
-		tiny_string ns_uri;
+		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 		{
 			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
 			assert_and_throw(ns.kind==NAMESPACE);
-			ns_uri=getSystemState()->getStringFromUniqueId(ns.nameId);
+			ns_uri=ns.nameId;
 		}
 		if (!childrenlist.isNull() && childrenlist->nodes.size() > 0)
 		{
@@ -1767,8 +1772,8 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 			{
 				it--;
 				_R<XML> node = *it;
-				if ((ns_uri=="" && name.normalizedName(getSystemState()) == "") ||
-						(ns_uri=="" && name.normalizedName(getSystemState()) == node->nodename) ||
+				if ((ns_uri==BUILTIN_STRINGS::EMPTY && name.normalizedName(getSystemState()) == "") ||
+						(ns_uri==BUILTIN_STRINGS::EMPTY && name.normalizedName(getSystemState()) == node->nodename) ||
 						(node->nodenamespace_uri == ns_uri && name.normalizedName(getSystemState()) == "") ||
 						(node->nodenamespace_uri == ns_uri && node->nodename == name.normalizedName(getSystemState())))
 				{
@@ -1797,9 +1802,9 @@ bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& ind
 	return validIndex;
 }
 
-tiny_string XML::getNamespacePrefixByURI(const tiny_string& uri, bool create)
+uint32_t XML::getNamespacePrefixByURI(uint32_t uri, bool create)
 {
-	tiny_string prefix;
+	uint32_t prefix = BUILTIN_STRINGS::EMPTY;
 	bool found=false;
 
 
@@ -2182,7 +2187,7 @@ ASFUNCTIONBODY(XML,namespaceDeclarations)
 	{
 		_R<Namespace> tmpns = th->namespacedefs[i];
 		bool b;
-		if (tmpns->getPrefix(b) != "")
+		if (tmpns->getPrefix(b) != BUILTIN_STRINGS::EMPTY)
 		{
 			tmpns->incRef();
 			namespaces->push(tmpns);
@@ -2200,7 +2205,7 @@ ASFUNCTIONBODY(XML,removeNamespace)
 	if (arg1->is<Namespace>())
 		ns = arg1->as<Namespace>();
 	else
-		ns = Class<Namespace>::getInstanceS(obj->getSystemState(),arg1->toString(), "");
+		ns = Class<Namespace>::getInstanceS(obj->getSystemState(),th->getSystemState()->getUniqueStringId(arg1->toString()), BUILTIN_STRINGS::EMPTY);
 
 	th->RemoveNamespace(ns);
 	th->incRef();
@@ -2210,8 +2215,8 @@ void XML::RemoveNamespace(Namespace *ns)
 {
 	if (this->nodenamespace_uri == ns->getURI())
 	{
-		this->nodenamespace_uri = "";
-		this->nodenamespace_prefix = "";
+		this->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+		this->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 	}
 	for (auto it = namespacedefs.begin(); it !=  namespacedefs.end(); it++)
 	{
@@ -2625,10 +2630,10 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 	node->nodetype = srcnode.type();
 	node->nodename = srcnode.name();
 	node->nodevalue = srcnode.value();
-	if (!node->parentNode.isNull() && node->parentNode->nodenamespace_prefix == "")
+	if (!node->parentNode.isNull() && node->parentNode->nodenamespace_prefix == BUILTIN_STRINGS::EMPTY)
 		node->nodenamespace_uri = node->parentNode->nodenamespace_uri;
 	else
-		node->nodenamespace_uri = getVm(node->getSystemState())->getDefaultXMLNamespace();
+		node->nodenamespace_uri = getVm(node->getSystemState())->getDefaultXMLNamespaceID();
 	if (ignoreWhitespace && node->nodetype == pugi::node_pcdata)
 		node->nodevalue = node->removeWhitespace(node->nodevalue);
 	node->attributelist = _MR(Class<XMLList>::getInstanceSNoArgs(node->getSystemState()));
@@ -2638,16 +2643,16 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 		tiny_string aname = tiny_string(itattr->name(),true);
 		if(aname == "xmlns")
 		{
-			tiny_string uri = itattr->value();
-			Namespace* ns = Class<Namespace>::getInstanceS(node->getSystemState(),uri,"");
+			uint32_t uri = node->getSystemState()->getUniqueStringId(itattr->value());
+			Namespace* ns = Class<Namespace>::getInstanceS(node->getSystemState(),uri,BUILTIN_STRINGS::EMPTY);
 			node->namespacedefs.push_back(_MR(ns));
 			node->nodenamespace_uri = uri;
 		}
 		else if (aname.numBytes() >= 6 && aname.substr_bytes(0,6) == "xmlns:")
 		{
-			tiny_string uri = itattr->value();
+			uint32_t uri = node->getSystemState()->getUniqueStringId(itattr->value());
 			tiny_string prefix = aname.substr(6,aname.end());
-			Namespace* ns = Class<Namespace>::getInstanceS(node->getSystemState(),uri,prefix);
+			Namespace* ns = Class<Namespace>::getInstanceS(node->getSystemState(),uri,node->getSystemState()->getUniqueStringId(prefix));
 			node->namespacedefs.push_back(_MR(ns));
 		}
 	}
@@ -2655,10 +2660,10 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 	if (pos != tiny_string::npos)
 	{
 		// nodename has namespace
-		node->nodenamespace_prefix = node->nodename.substr(0,pos);
+		node->nodenamespace_prefix = node->getSystemState()->getUniqueStringId(node->nodename.substr(0,pos));
 		node->nodename = node->nodename.substr(pos+1,node->nodename.end());
-		if (node->nodenamespace_prefix == "xml")
-			node->nodenamespace_uri = "http://www.w3.org/XML/1998/namespace";
+		if (node->nodenamespace_prefix == BUILTIN_STRINGS::STRING_XML)
+			node->nodenamespace_uri = BUILTIN_STRINGS::STRING_NAMESPACENS;
 		else
 		{
 			XML* tmpnode = node;
@@ -2694,14 +2699,14 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 		tmp->nodetype = pugi::node_null;
 		tmp->isAttribute = true;
 		tmp->nodename = aname;
-		tmp->nodenamespace_uri = getVm(node->getSystemState())->getDefaultXMLNamespace();
+		tmp->nodenamespace_uri = getVm(node->getSystemState())->getDefaultXMLNamespaceID();
 		pos = tmp->nodename.find(":");
 		if (pos != tiny_string::npos)
 		{
-			tmp->nodenamespace_prefix = tmp->nodename.substr(0,pos);
+			tmp->nodenamespace_prefix = node->getSystemState()->getUniqueStringId(tmp->nodename.substr(0,pos));
 			tmp->nodename = tmp->nodename.substr(pos+1,tmp->nodename.end());
-			if (tmp->nodenamespace_prefix == "xml")
-				tmp->nodenamespace_uri = "http://www.w3.org/XML/1998/namespace";
+			if (tmp->nodenamespace_prefix == BUILTIN_STRINGS::STRING_XML)
+				tmp->nodenamespace_uri = BUILTIN_STRINGS::STRING_NAMESPACENS;
 			else
 			{
 				XML* tmpnode = node;

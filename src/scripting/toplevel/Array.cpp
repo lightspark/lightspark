@@ -105,7 +105,7 @@ ASFUNCTIONBODY(Array,_constructor)
 
 ASFUNCTIONBODY(Array,generator)
 {
-	Array* th=Class<Array>::getInstanceS(getSys());
+	Array* th=Class<Array>::getInstanceSNoArgs(getSys());
 	th->constructorImpl(args, argslen);
 	return th;
 }
@@ -135,7 +135,7 @@ void Array::constructorImpl(ASObject* const* args, const unsigned int argslen)
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	
 	// copy values into new array
 	ret->resize(th->size());
@@ -178,7 +178,7 @@ ASFUNCTIONBODY(Array,_concat)
 ASFUNCTIONBODY(Array,filter)
 {
 	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	_NR<IFunction> f;
 	ARG_UNPACK(f);
 	if (f.isNull())
@@ -530,7 +530,7 @@ ASFUNCTIONBODY(Array,slice)
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
@@ -557,7 +557,7 @@ ASFUNCTIONBODY(Array,splice)
 	ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size());
 
 	int totalSize=th->size();
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 
 	startIndex=th->capIndex(startIndex);
 
@@ -1109,7 +1109,7 @@ ASFUNCTIONBODY(Array,_map)
 		assert_and_throw(args[0]->getObjectType()==T_FUNCTION);
 		func=static_cast<IFunction*>(args[0]);
 	}
-	Array* arrayRet=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* arrayRet=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 
 	uint32_t s = th->size();
 	for (uint32_t i=0; i < s; i++ )

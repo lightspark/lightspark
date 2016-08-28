@@ -280,7 +280,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 			// We are converting an array, so lets set indexes
 			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
-				asobj = Class<Array>::getInstanceS(getSys());
+				asobj = Class<Array>::getInstanceSNoArgs(getSys());
 				objectsMap[objValue] = asobj;
 
 				count = objValue->getLength();

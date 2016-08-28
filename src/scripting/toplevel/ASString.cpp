@@ -220,7 +220,7 @@ ASFUNCTIONBODY(ASString,match)
 
 	if (re->global)
 	{
-		Array *resarr = Class<Array>::getInstanceS(obj->getSystemState());
+		Array *resarr = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 		int prevLastIndex = 0;
 		re->lastIndex = 0;
 
@@ -279,7 +279,7 @@ ASFUNCTIONBODY(ASString,_toString)
 ASFUNCTIONBODY(ASString,split)
 {
 	tiny_string data = obj->toString();
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	uint32_t limit = 0x7fffffff;
 	if(argslen == 0 )
 	{

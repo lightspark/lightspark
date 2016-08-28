@@ -2700,7 +2700,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG_CALL( _("newArray ") << n );
-	Array* ret=Class<Array>::getInstanceS(th->context->root->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(th->context->root->getSystemState());
 	ret->resize(n);
 	for(int i=0;i<n;i++)
 		ret->set(n-i-1,_MR(th->runtime_stack_pop()));

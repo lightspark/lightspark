@@ -36,7 +36,7 @@ using namespace std;
 using namespace lightspark;
 
 URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded"),
-	requestHeaders(Class<Array>::getInstanceS(c->getSystemState()))
+	requestHeaders(Class<Array>::getInstanceSNoArgs(c->getSystemState()))
 {
 }
 
@@ -817,7 +817,7 @@ ASFUNCTIONBODY(NetConnection,call)
 	//This function is supposed to be passed a array for the rest
 	//of the arguments. Since that is not supported for native methods
 	//just create it here
-	_R<Array> rest=_MR(Class<Array>::getInstanceS(obj->getSystemState()));
+	_R<Array> rest=_MR(Class<Array>::getInstanceSNoArgs(obj->getSystemState()));
 	for(uint32_t i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
@@ -2164,7 +2164,7 @@ void URLVariables::decode(const tiny_string& s)
 				Array* arr=NULL;
 				if(curValue->getObjectType()!=T_ARRAY)
 				{
-					arr=Class<Array>::getInstanceS(getSystemState());
+					arr=Class<Array>::getInstanceSNoArgs(getSystemState());
 					arr->push(curValue);
 					setVariableByMultiname(propName,arr,ASObject::CONST_NOT_ALLOWED);
 				}

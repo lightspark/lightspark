@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),customItems(Class<Array>::getInstanceS(c->getSystemState())),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(c->getSystemState()))
+ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),customItems(Class<Array>::getInstanceSNoArgs(c->getSystemState())),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(c->getSystemState()))
 {
 }
 

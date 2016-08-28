@@ -105,6 +105,7 @@ public:
 				it->second.data->decRef();
 		}
 		data.clear();
+		currentsize=0;
 		return ASObject::destruct();
 	}
 	

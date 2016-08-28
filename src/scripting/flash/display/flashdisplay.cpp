@@ -1028,7 +1028,7 @@ void Scene::sinit(Class_base* c)
 ASFUNCTIONBODY(Scene,_getLabels)
 {
 	Scene* th=static_cast<Scene*>(obj);
-	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	ret->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
@@ -1354,7 +1354,7 @@ ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 ASFUNCTIONBODY(MovieClip,_getScenes)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	ret->resize(th->scenes.size());
 	uint32_t numFrames;
 	for(size_t i=0; i<th->scenes.size(); ++i)
@@ -1438,7 +1438,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	Scene_data& sc = th->scenes[th->getCurrentScene()];
 
-	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	ret->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{

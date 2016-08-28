@@ -544,7 +544,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 {
 	int len = jsonstring.numChars();
 	pos++; // ignore '['
-	ASObject* subobj = Class<Array>::getInstanceS(getSys());
+	ASObject* subobj = Class<Array>::getInstanceSNoArgs(getSys());
 	if (*parent == NULL)
 		*parent = subobj;
 	else 

@@ -101,7 +101,7 @@ ASFUNCTIONBODY(XMLNode,lastChild)
 ASFUNCTIONBODY(XMLNode,childNodes)
 {
 	XMLNode* th=Class<XMLNode>::cast(obj);
-	Array* ret = Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null)
 		return ret;

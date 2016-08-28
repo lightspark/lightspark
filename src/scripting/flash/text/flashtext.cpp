@@ -74,7 +74,7 @@ ASFUNCTIONBODY(ASFont,enumerateFonts)
 
 	if (enumerateDeviceFonts)
 		LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
-	Array* ret = Class<Array>::getInstanceS(getSys());
+	Array* ret = Class<Array>::getInstanceSNoArgs(getSys());
 	std::vector<ASObject*>* fontlist = getFontList();
 	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
 	{
@@ -1307,7 +1307,7 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 {
 	StyleSheet* th=Class<StyleSheet>::cast(obj);
 	assert_and_throw(argslen==0);
-	Array* ret=Class<Array>::getInstanceS(obj->getSystemState());
+	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	map<tiny_string, _R<ASObject>>::const_iterator it=th->styles.begin();
 	for(;it!=th->styles.end();++it)
 		ret->push(_MR(abstract_s(obj->getSystemState(),it->first)));

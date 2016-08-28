@@ -356,7 +356,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	{
 		//The arguments does not contain default values of optional parameters,
 		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
-		argumentsArray=Class<Array>::getInstanceS(obj->getSystemState());
+		argumentsArray=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 		argumentsArray->resize(numArgs);
 		for(uint32_t j=0;j<numArgs;j++)
 		{
@@ -441,7 +441,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	else if(mi->needsRest()|| passedToRest > 0) // it seems that Adobe allows additional parameters without setting "needsRest"
 	{
 		assert_and_throw(argumentsArray==NULL);
-		Array* rest=Class<Array>::getInstanceS(getSystemState());
+		Array* rest=Class<Array>::getInstanceSNoArgs(getSystemState());
 		rest->resize(passedToRest);
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)

@@ -198,7 +198,7 @@ ASObject *RegExp::match(const tiny_string& str)
 		pcre_free(pcreRE);
 		return getSystemState()->getNullRef();
 	}
-	Array* a=Class<Array>::getInstanceS(getSystemState());
+	Array* a=Class<Array>::getInstanceSNoArgs(getSystemState());
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
 	{

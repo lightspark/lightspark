@@ -1999,7 +1999,7 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	name.name_type=multiname::NAME_OBJECT;
 	//Acquire the reference
 	name.name_o=val1;
-	name.ns.emplace_back(val2->getSystemState(),"",NAMESPACE);
+	name.ns.emplace_back(val2->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool ret=val2->hasPropertyByMultiname(name, true, true);
 	name.name_o=NULL;
 	val1->decRef();
@@ -2111,12 +2111,12 @@ void ABCVm::newObject(call_context* th, int n)
 	//Duplicated keys overwrite the previous value
 	multiname propertyName(NULL);
 	propertyName.name_type=multiname::NAME_STRING;
-	propertyName.ns.emplace_back(th->context->root->getSystemState(),"",NAMESPACE);
+	propertyName.ns.emplace_back(th->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
 		ASObject* name=th->runtime_stack_pop();
-		propertyName.name_s_id=ret->getSystemState()->getUniqueStringId(name->toString());
+		propertyName.name_s_id=name->toStringId();
 		name->decRef();
 		ret->setVariableByMultiname(propertyName, value, ASObject::CONST_NOT_ALLOWED);
 	}
@@ -2138,7 +2138,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		if (name->ns.size() > 0)
 		{
-			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).nameId;
+			ns_uri = name->ns[0].nsNameId;
 			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
 				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
 		}
@@ -2150,7 +2150,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		if (name->ns.size() > 0)
 		{
-			ns_uri = name->ns[0].getImpl(th->context->root->getSystemState()).nameId;
+			ns_uri = name->ns[0].nsNameId;
 			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
 				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
 		}
@@ -2201,7 +2201,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		obj->decRef();
 		throwError<TypeError>(kDescendentsError, objName);
 	}
-	XMLList* retObj=Class<XMLList>::getInstanceS(th->context->root->getSystemState(),ret,targetobject,*name);
+	XMLList* retObj=XMLList::create(th->context->root->getSystemState(),ret,targetobject,*name);
 	th->runtime_stack_push(retObj);
 	obj->decRef();
 }
@@ -2306,7 +2306,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* baseClass=th->runtime_stack_pop();
 
 	assert_and_throw(mname->ns.size()==1);
-	QName className(mname->name_s_id,mname->ns[0].getImpl(th->context->root->getSystemState()).nameId);
+	QName className(mname->name_s_id,mname->ns[0].nsNameId);
 
 	Class_inherit* ret = NULL;
 	auto i = th->context->root->applicationDomain->classesBeingDefined.cbegin();
@@ -2796,6 +2796,6 @@ void ABCVm::dxnslate(call_context* th, ASObject* o)
 	if(!th->mi->hasDXNS())
 		throw Class<VerifyError>::getInstanceS(th->context->root->getSystemState(),"dxnslate without SET_DXNS");
 
-	th->defaultNamespaceUri = th->context->root->getSystemState()->getUniqueStringId(o->toString());
+	th->defaultNamespaceUri = o->toStringId();
 	o->decRef();
 }

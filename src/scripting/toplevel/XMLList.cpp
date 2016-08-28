@@ -80,6 +80,24 @@ XMLList::XMLList(Class_base* c, const XML::XMLVector& r, XMLList *targetobject, 
 	}
 }
 
+XMLList* XMLList::create(SystemState* sys,const XML::XMLVector& r, XMLList *targetobject, const multiname &targetproperty)
+{
+	XMLList* res = Class<XMLList>::getInstanceSNoArgs(sys);
+	res->constructed = true;
+	res->nodes.assign(r.begin(),r.end());
+	res->targetobject = targetobject;
+	if (res->targetobject)
+		res->targetobject->incRef();
+	res->targetproperty.name_type = targetproperty.name_type;
+	res->targetproperty.isAttribute = targetproperty.isAttribute;
+	res->targetproperty.name_s_id = targetproperty.name_s_id;
+	for (auto it = targetproperty.ns.begin();it != targetproperty.ns.end(); it++)
+	{
+		res->targetproperty.ns.push_back(*it);
+	}
+	return res;
+}
+
 bool XMLList::destruct()
 {
 	if (targetobject)
@@ -355,7 +373,7 @@ ASFUNCTIONBODY(XMLList,descendants)
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
 	th->getDescendantsByQName(name->toString(),BUILTIN_STRINGS::EMPTY,mname.isAttribute,ret);
-	return Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
+	return create(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
 }
 
 ASFUNCTIONBODY(XMLList,elements)
@@ -370,7 +388,7 @@ ASFUNCTIONBODY(XMLList,elements)
 	{
 		(*it)->getElementNodes(name, elems);
 	}
-	return Class<XMLList>::getInstanceS(obj->getSystemState(),elems,th->targetobject,multiname(NULL));
+	return create(obj->getSystemState(),elems,th->targetobject,multiname(NULL));
 }
 
 ASFUNCTIONBODY(XMLList,parent)
@@ -425,8 +443,7 @@ ASFUNCTIONBODY(XMLList,child)
 			(*it)->childrenImpl(ret, arg0);
 		}
 	}
-	XMLList* retObj=Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
-	return retObj;
+	return create(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
 }
 
 ASFUNCTIONBODY(XMLList,children)
@@ -439,8 +456,7 @@ ASFUNCTIONBODY(XMLList,children)
 	{
 		(*it)->childrenImpl(ret, "*");
 	}
-	XMLList* retObj=Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
-	return retObj;
+	return create(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
 }
 
 ASFUNCTIONBODY(XMLList,text)
@@ -453,7 +469,7 @@ ASFUNCTIONBODY(XMLList,text)
 	{
 		(*it)->getText(ret);
 	}
-	return Class<XMLList>::getInstanceS(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
+	return create(obj->getSystemState(),ret,th->targetobject,multiname(NULL));
 }
 
 ASFUNCTIONBODY(XMLList,contains)
@@ -499,7 +515,7 @@ ASFUNCTIONBODY(XMLList,attribute)
 	multiname mname(NULL);
 	mname.name_type=multiname::NAME_STRING;
 	mname.name_s_id=obj->getSystemState()->getUniqueStringId(attrname);
-	mname.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+	mname.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mname.isAttribute = true;
 
 	_NR<ASObject> attr=th->getVariableByMultiname(mname, NONE);
@@ -641,9 +657,8 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		uint32_t namespace_uri = BUILTIN_STRINGS::EMPTY;
 		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 		{
-			nsNameAndKindImpl ns=name.ns[0].getImpl(getSystemState());
-			if (ns.kind==NAMESPACE)
-				namespace_uri=ns.nameId;
+			if (name.ns[0].kind==NAMESPACE)
+				namespace_uri=name.ns[0].nsNameId;
 		}
 		
 		// namespace set by "default xml namespace = ..."
@@ -701,8 +716,7 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
 			return NullRef;
 
-		this->incRef();
-		return _MNR(Class<XMLList>::getInstanceS(getSystemState(),retnodes,this,name));
+		return _MNR(create(getSystemState(),retnodes,this,name));
 	}
 	unsigned int index=0;
 	if(XML::isValidMultiname(getSystemState(),name,index))
@@ -729,7 +743,7 @@ _NR<ASObject> XMLList::getVariableByMultiname(const multiname& name, GET_VARIABL
 			return NullRef;
 
 		this->incRef();
-		return _MNR(Class<XMLList>::getInstanceS(getSystemState(),retnodes,this,name));
+		return _MNR(create(getSystemState(),retnodes,this,name));
 	}
 }
 
@@ -987,7 +1001,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 					multiname m(NULL);
 					m.name_type = multiname::NAME_INT;
 					m.name_i = i;
-					m.ns.emplace_back(getSystemState(),"",NAMESPACE);
+					m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 					targetobject->setVariableByMultiname(m,o,allowConst);
 					break;
 				}
@@ -1013,7 +1027,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			multiname m(NULL);
 			m.name_type = multiname::NAME_INT;
 			m.name_i = idx;
-			m.ns.emplace_back(getSystemState(),"",NAMESPACE);
+			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			targetobject->setVariableByMultiname(m,o,allowConst);
 		}
 		if (o->as<XML>()->getNodeKind() == pugi::node_pcdata)

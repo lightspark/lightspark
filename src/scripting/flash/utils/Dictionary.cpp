@@ -99,7 +99,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 				return;
 			case T_STRING:
 				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = getSystemState()->getUniqueStringId(name.name_o->toString());
+				tmpname.name_s_id = name.name_o->toStringId();
 				ASObject::setVariableByMultiname(tmpname, o, allowConst);
 				return;
 			default:
@@ -147,7 +147,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 				return ASObject::deleteVariableByMultiname(tmpname);
 			case T_STRING:
 				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = getSystemState()->getUniqueStringId(name.name_o->toString());
+				tmpname.name_s_id = name.name_o->toStringId();
 				return ASObject::deleteVariableByMultiname(tmpname);
 			default:
 				break;
@@ -196,7 +196,7 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 					return ASObject::getVariableByMultiname(tmpname, opt);
 				case T_STRING:
 					tmpname.name_type=multiname::NAME_STRING;
-					tmpname.name_s_id = getSystemState()->getUniqueStringId(name.name_o->toString());
+					tmpname.name_s_id = name.name_o->toStringId();
 					return ASObject::getVariableByMultiname(tmpname, opt);
 				default:
 					break;
@@ -253,7 +253,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
 			case T_STRING:
 				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = getSystemState()->getUniqueStringId(name.name_o->toString());
+				tmpname.name_s_id = name.name_o->toStringId();
 				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
 			default:
 				break;

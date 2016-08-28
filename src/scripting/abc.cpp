@@ -2090,7 +2090,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			
 			ASObject* ret;
 
-			QName className(mname->name_s_id,mname->ns[0].getImpl(obj->getSystemState()).nameId);
+			QName className(mname->name_s_id,mname->ns[0].nsNameId);
 			//check if this class has the 'interface' flag, i.e. it is an interface
 			if((instances[t->classi].flags)&0x04)
 			{

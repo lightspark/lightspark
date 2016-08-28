@@ -104,6 +104,12 @@ void ASObject::dumpVariables() const
 		this->as<Class_base>()->borrowedVariables.dumpVariables();
 	}
 }
+uint32_t ASObject::toStringId()
+{
+	if (stringId == UINT32_MAX)
+		stringId = getSystemState()->getUniqueStringId(toString());
+	return stringId;
+}
 tiny_string ASObject::toString()
 {
 	check();
@@ -324,9 +330,9 @@ bool ASObject::has_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s_id=getSystemState()->getUniqueStringId("valueOf");
-	valueOfName.ns.emplace_back(getSystemState(),"",NAMESPACE);
-	valueOfName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
+	valueOfName.name_s_id=BUILTIN_STRINGS::STRING_VALUEOF;
+	valueOfName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	valueOfName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	valueOfName.isAttribute = false;
 	return hasPropertyByMultiname(valueOfName, true, true);
 }
@@ -338,9 +344,9 @@ _R<ASObject> ASObject::call_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
-	valueOfName.name_s_id=getSystemState()->getUniqueStringId("valueOf");
-	valueOfName.ns.emplace_back(getSystemState(),"",NAMESPACE);
-	valueOfName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
+	valueOfName.name_s_id=BUILTIN_STRINGS::STRING_VALUEOF;
+	valueOfName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	valueOfName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
@@ -358,9 +364,9 @@ bool ASObject::has_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=getSystemState()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back(getSystemState(),"",NAMESPACE);
-	toStringName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
+	toStringName.name_s_id=BUILTIN_STRINGS::STRING_TOSTRING;
+	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	toStringName.isAttribute = false;
 	return ASObject::hasPropertyByMultiname(toStringName, true, true);
 }
@@ -372,9 +378,9 @@ _R<ASObject> ASObject::call_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=getSystemState()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back(getSystemState(),"",NAMESPACE);
-	toStringName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
+	toStringName.name_s_id=BUILTIN_STRINGS::STRING_TOSTRING;
+	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	toStringName.isAttribute = false;
 	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
@@ -394,8 +400,8 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunct
 	multiname toJSONName(NULL);
 	toJSONName.name_type=multiname::NAME_STRING;
 	toJSONName.name_s_id=getSystemState()->getUniqueStringId("toJSON");
-	toJSONName.ns.emplace_back(getSystemState(),"",NAMESPACE);
-	toJSONName.ns.emplace_back(getSystemState(),AS3,NAMESPACE);
+	toJSONName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	toJSONName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	toJSONName.isAttribute = false;
 	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
 		return res;
@@ -980,8 +986,8 @@ ASFUNCTIONBODY(ASObject,_toLocaleString)
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=obj->getSystemState()->getUniqueStringId("toString");
-	toStringName.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+	toStringName.name_s_id=BUILTIN_STRINGS::STRING_TOSTRING;
+	toStringName.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	toStringName.isAttribute = false;
 	if (obj->hasPropertyByMultiname(toStringName, true, false))
 	{
@@ -1001,8 +1007,8 @@ ASFUNCTIONBODY(ASObject,hasOwnProperty)
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+	name.name_s_id=args[0]->toStringId();
+	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	bool ret=obj->hasPropertyByMultiname(name, true, false);
 	return abstract_b(obj->getSystemState(),ret);
@@ -1041,8 +1047,8 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 		return abstract_b(obj->getSystemState(),false);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+	name.name_s_id=args[0]->toStringId();
+	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
@@ -1067,8 +1073,8 @@ ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
 	ARG_UNPACK(propname) (isEnum, true);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=obj->getSystemState()->getUniqueStringId(args[0]->toString());
-	name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
+	name.name_s_id=args[0]->toStringId();
+	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	obj->setIsEnumerable(name, isEnum);
 	return NULL;
@@ -1343,7 +1349,7 @@ void variables_map::destroyContents()
 }
 
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
-	type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1352,7 +1358,7 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(
 }
 
 ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
-	type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1375,6 +1381,7 @@ bool ASObject::destruct()
 	destroyContents();
 	if (proxyMultiName)
 		delete proxyMultiName;
+	stringId = UINT32_MAX;
 	proxyMultiName = NULL;
 	traitsInitialized =false;
 	constructIndicator = false;
@@ -1588,7 +1595,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		multiname writeExternalName(NULL);
 		writeExternalName.name_type=multiname::NAME_STRING;
 		writeExternalName.name_s_id=getSystemState()->getUniqueStringId("writeExternal");
-		writeExternalName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+		writeExternalName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		writeExternalName.isAttribute = false;
 
 		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
@@ -1892,7 +1899,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s_id=getSystemState()->getUniqueStringId("prototype");
-	prototypeName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+	prototypeName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)

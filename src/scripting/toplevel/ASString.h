@@ -50,7 +50,6 @@ public:
 	ASString(Class_base* c, const char* s, uint32_t len);
 	bool hasId:1;
 	bool datafilled:1;
-	uint32_t stringId;
 	inline tiny_string& getData()
 	{
 		if (!datafilled)
@@ -63,7 +62,7 @@ public:
 	inline bool isEmpty() const
 	{
 		if (hasId)
-			return stringId == BUILTIN_STRINGS::EMPTY;
+			return stringId == BUILTIN_STRINGS::EMPTY || stringId == UINT32_MAX;
 		return data.empty();
 	}
 
@@ -108,10 +107,16 @@ public:
 	{ 
 		data.clear(); 
 		strlength.reset();
-		hasId = true;
-		datafilled=true; 
-		stringId = BUILTIN_STRINGS::EMPTY; 
-		return ASObject::destruct(); 
+		hasId = false;
+		datafilled=false; 
+		if (!ASObject::destruct())
+		{
+			stringId = BUILTIN_STRINGS::EMPTY;
+			hasId = true;
+			datafilled = true;
+			return false;
+		}
+		return true;
 	}
 };
 

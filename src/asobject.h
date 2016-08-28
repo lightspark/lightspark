@@ -366,7 +366,7 @@ private:
 	SystemState* sys;
 protected:
 	ASObject(MemoryAccount* m):objfreelist(NULL),Variables(m),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(NULL),
-		type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+		stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 	{
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -379,6 +379,7 @@ protected:
 	{
 		destroy();
 	}
+	uint32_t stringId;
 	SWFOBJECT_TYPE type;
 	CLASS_SUBTYPE subtype;
 	
@@ -554,6 +555,7 @@ public:
 	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
 	tiny_string toString();
 	tiny_string toLocaleString();
+	uint32_t toStringId();
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	virtual int64_t toInt64();

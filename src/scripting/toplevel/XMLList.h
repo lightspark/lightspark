@@ -54,6 +54,7 @@ public:
 	
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
+	static XMLList* create(SystemState *sys, const XML::XMLVector& r, XMLList *targetobject, const multiname &targetproperty);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(attribute);

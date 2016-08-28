@@ -29,23 +29,24 @@
 using namespace std;
 using namespace lightspark;
 
-ASString::ASString(Class_base* c):ASObject(c,T_STRING),hasId(true),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c):ASObject(c,T_STRING),hasId(true),datafilled(true)
+{
+	stringId = BUILTIN_STRINGS::EMPTY;
+}
+
+ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
-{
-}
-
-ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),hasId(false),datafilled(true),stringId(BUILTIN_STRINGS::EMPTY)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),hasId(false),datafilled(true)
 {
 }
 
@@ -53,7 +54,6 @@ ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c,T_STR
 {
 	data = std::string(s,len);
 	hasId = false;
-	stringId = BUILTIN_STRINGS::EMPTY;
 	datafilled=true;
 }
 
@@ -64,7 +64,7 @@ ASFUNCTIONBODY(ASString,_constructor)
 	{
 		th->data=args[0]->toString();
 		th->hasId = false;
-		th->stringId = BUILTIN_STRINGS::EMPTY;
+		th->stringId = UINT32_MAX;
 		th->datafilled = true;
 	}
 	return NULL;

@@ -1522,7 +1522,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
-		objName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		setVariableByMultiname(objName,getSystemState()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
 	}
 
@@ -1546,7 +1546,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
-		objName.ns.emplace_back(getSystemState(),"",NAMESPACE);
+		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
 	}
 

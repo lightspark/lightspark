@@ -40,7 +40,7 @@
 
 namespace lightspark
 {
-enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_WILDCARD,STRING_AS3NS,STRING_NAMESPACENS,STRING_XML,LAST_BUILTIN_STRING };
+enum BUILTIN_STRINGS { EMPTY=0, ANY, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_WILDCARD,STRING_AS3NS,STRING_NAMESPACENS,STRING_XML,STRING_TOSTRING,STRING_VALUEOF,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
 
@@ -318,7 +318,9 @@ struct nsNameAndKind
 {
 	uint32_t nsId;
 	uint32_t nsRealId;
-	nsNameAndKind():nsId(0),nsRealId(0) {}
+	uint32_t nsNameId;
+	NS_KIND kind;
+	nsNameAndKind():nsId(0),nsRealId(0),nsNameId(BUILTIN_STRINGS::EMPTY),kind(NAMESPACE) {}
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind);
@@ -356,9 +358,9 @@ struct nsNameAndKind
 
 struct multiname: public memory_reporter
 {
+	uint32_t name_s_id;
 	union
 	{
-		uint32_t name_s_id;
 		int32_t name_i;
 		number_t name_d;
 		ASObject* name_o;
@@ -367,7 +369,7 @@ struct multiname: public memory_reporter
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	bool isAttribute;
-	multiname(MemoryAccount* m):name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false)
+	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false)
 	{
 	}
 	

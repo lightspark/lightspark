@@ -779,8 +779,8 @@ ASFUNCTIONBODY(Date,setTime)
 		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=obj->getSystemState()->getUniqueStringId("value");
-		name.ns.emplace_back(obj->getSystemState(),"",NAMESPACE);
-		name.ns.emplace_back(obj->getSystemState(),AS3,NAMESPACE);
+		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute = true;
 		obj->setVariableByMultiname(name,abstract_d(obj->getSystemState(),ms),CONST_NOT_ALLOWED);
 		return abstract_d(obj->getSystemState(),ms);

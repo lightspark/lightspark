@@ -770,9 +770,9 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 
 	if(!typeObject)
 	{
-		if (mn->ns.size() >= 1 && mn->ns[0].getImpl(context->root->getSystemState()).nameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
+		if (mn->ns.size() >= 1 && mn->ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 		{
-			QName qname(mn->name_s_id,mn->ns[0].getImpl(context->root->getSystemState()).nameId);
+			QName qname(mn->name_s_id,mn->ns[0].nsNameId);
 			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 		}
 	}
@@ -1280,7 +1280,7 @@ void Class_base::describeTraits(pugi::xml_node &root,
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && (!mname->ns[0].hasEmptyName() || mname->ns[0].getImpl(getSystemState()).kind == PRIVATE_NAMESPACE)) ||
+		    (mname->ns.size()==1 && (!mname->ns[0].hasEmptyName() || mname->ns[0].kind == PRIVATE_NAMESPACE)) ||
 		    mname->ns.size() > 1)
 			continue;
 		
@@ -1502,7 +1502,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	else if(nameval->getObjectType()==T_UNDEFINED)
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=obj->getSystemState()->getUniqueStringId(nameval->toString());
+		th->local_name=nameval->toStringId();
 
 	// Set uri
 	th->uri_is_null=false;
@@ -1532,7 +1532,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 			th->uri=q->uri;
 		}
 		else
-			th->uri=obj->getSystemState()->getUniqueStringId(namespaceval->toString());
+			th->uri=namespaceval->toStringId();
 	}
 
 	return NULL;
@@ -1578,7 +1578,7 @@ ASFUNCTIONBODY(ASQName,generator)
 	else if(nameval->getObjectType()==T_UNDEFINED)
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=th->getSystemState()->getUniqueStringId(nameval->toString());
+		th->local_name=nameval->toStringId();
 
 	// Set uri
 	th->uri_is_null=false;
@@ -1608,7 +1608,7 @@ ASFUNCTIONBODY(ASQName,generator)
 			th->uri=q->uri;
 		}
 		else
-			th->uri=th->getSystemState()->getUniqueStringId(namespaceval->toString());
+			th->uri=namespaceval->toStringId();
 	}
 	return th;
 }
@@ -1775,7 +1775,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		}
 		else
 		{
-			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
+			th->uri=urival->toStringId();
 			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
@@ -1793,7 +1793,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		}
 		else
 		{
-			th->uri=urival->getSystemState()->getUniqueStringId(urival->toString());
+			th->uri=urival->toStringId();
 		}
 
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
@@ -1812,7 +1812,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 		}
 		else
 		{
-			th->prefix=prefixval->getSystemState()->getUniqueStringId(prefixval->toString());
+			th->prefix=prefixval->toStringId();
 		}
 	}
 
@@ -1863,7 +1863,7 @@ ASFUNCTIONBODY(Namespace,generator)
 		}
 		else
 		{
-			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
+			th->uri=urival->toStringId();
 			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
@@ -1881,7 +1881,7 @@ ASFUNCTIONBODY(Namespace,generator)
 		}
 		else
 		{
-			th->uri=th->getSystemState()->getUniqueStringId(urival->toString());
+			th->uri=urival->toStringId();
 		}
 
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
@@ -1900,7 +1900,7 @@ ASFUNCTIONBODY(Namespace,generator)
 		}
 		else
 		{
-			th->prefix=prefixval->getSystemState()->getUniqueStringId(prefixval->toString());
+			th->prefix=prefixval->toStringId();
 		}
 	}
 	return th;

@@ -1770,7 +1770,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 	uint16_t version;
 	if(!message->readShort(version))
 		return;
-	assert_and_throw(version==0x0);
+	message->setCurrentObjectEncoding(version == 3 ? ObjectEncoding::AMF3 : ObjectEncoding::AMF0);
 	uint16_t numHeaders;
 	if(!message->readShort(numHeaders))
 		return;
@@ -1796,9 +1796,13 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			return;
 
 		uint8_t marker;
-		if(!message->readByte(marker))
+		if(!message->peekByte(marker))
 			return;
-		assert_and_throw(marker==0x11);
+		if (marker == 0x11 && message->getCurrentObjectEncoding() != ObjectEncoding::AMF3) // switch to AMF3
+		{
+			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+			message->readByte(marker);
+		}
 
 		_R<ASObject> obj=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
 
@@ -1824,38 +1828,44 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 	uint16_t numMessage;
 	if(!message->readShort(numMessage))
 		return;
-	assert_and_throw(numMessage==1);
-
-	tiny_string target;
-	if(!message->readUTF(target))
-		return;
-	tiny_string response;
-	if(!message->readUTF(response))
-		return;
-
-	//TODO: Really use the response to map request/responses and detect errors
-	uint32_t objLen;
-	if(!message->readUnsignedInt(objLen))
-		return;
-	uint8_t marker;
-	if(!message->readByte(marker))
-		return;
-	assert_and_throw(marker==0x11);
-	_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
-
-	if(!responder.isNull())
+	for(uint32_t i=0;i<numMessage;i++)
 	{
-		multiname onResultName(NULL);
-		onResultName.name_type=multiname::NAME_STRING;
-		onResultName.name_s_id=m_sys->getUniqueStringId("onResult");
-		onResultName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
-		if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
+	
+		tiny_string target;
+		if(!message->readUTF(target))
+			return;
+		tiny_string response;
+		if(!message->readUTF(response))
+			return;
+	
+		//TODO: Really use the response to map request/responses and detect errors
+		uint32_t objLen;
+		if(!message->readUnsignedInt(objLen))
+			return;
+		uint8_t marker;
+		if(!message->peekByte(marker))
+			return;
+		if (marker == 0x11 && message->getCurrentObjectEncoding() != ObjectEncoding::AMF3) // switch to AMF3
 		{
-			ret->incRef();
-			ASObject* const callbackArgs[1] {ret.getPtr()};
-			responder->incRef();
-			callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
+			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+			message->readByte(marker);
+		}
+		_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
+	
+		if(!responder.isNull())
+		{
+			multiname onResultName(NULL);
+			onResultName.name_type=multiname::NAME_STRING;
+			onResultName.name_s_id=m_sys->getUniqueStringId("onResult");
+			onResultName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			_NR<ASObject> callback = responder->getVariableByMultiname(onResultName);
+			if(!callback.isNull() && callback->getObjectType() == T_FUNCTION)
+			{
+				ret->incRef();
+				ASObject* const callbackArgs[1] {ret.getPtr()};
+				responder->incRef();
+				callback->as<IFunction>()->call(responder.getPtr(), callbackArgs, 1);
+			}
 		}
 	}
 }

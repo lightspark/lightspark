@@ -310,7 +310,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(obj->getSystemState()));
 
 	//TODO: specs says that also namespaces and function may be returned
-	assert_and_throw(o->getObjectType()==T_CLASS);
+	//assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	o->incRef();

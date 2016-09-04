@@ -2046,7 +2046,7 @@ void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 		return;
 
 	tiny_string clsname;
-	if (!classname.nsStringId != BUILTIN_STRINGS::EMPTY)
+	if (classname.nsStringId != BUILTIN_STRINGS::EMPTY)
 		clsname = getSystemState()->getStringFromUniqueId(classname.nsStringId) + ".";
 	clsname += getSystemState()->getStringFromUniqueId(classname.nameId);
 

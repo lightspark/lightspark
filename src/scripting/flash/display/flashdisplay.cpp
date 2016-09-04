@@ -1395,6 +1395,9 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based and relative to current scene
+	if (th->state.explicit_FP)
+		// if frame is set explicitly, the currentframe property should be set to next_FP, even if it is not displayed yet
+		return abstract_i(obj->getSystemState(),th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
 	return abstract_i(obj->getSystemState(),th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 

@@ -2776,9 +2776,8 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 Namespace* ABCVm::pushNamespace(call_context* th, int n)
 {
 	const namespace_info& ns_info=th->context->constant_pool.namespaces[n];
-	assert(ns_info.kind == NAMESPACE);
 	LOG_CALL( _("pushNamespace ") << th->context->root->getSystemState()->getStringFromUniqueId(th->context->getString(ns_info.name)) );
-	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->getString(ns_info.name));
+	return Class<Namespace>::getInstanceS(th->context->root->getSystemState(),th->context->getString(ns_info.name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)ns_info.kind);
 }
 
 /* @spec-checked avm2overview */

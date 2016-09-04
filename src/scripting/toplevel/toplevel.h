@@ -716,7 +716,7 @@ private:
 	uint32_t prefix;
 public:
 	Namespace(Class_base* c);
-	Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY);
+	Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY,NS_KIND _nskind = NAMESPACE);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

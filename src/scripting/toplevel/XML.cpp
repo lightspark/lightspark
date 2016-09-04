@@ -1707,7 +1707,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
 	{
-		assert_and_throw(name.ns[0].kind==NAMESPACE);
+		//assert_and_throw(name.ns[0].kind==NAMESPACE);
 		ns_uri=name.ns[0].nsNameId;
 		ns_prefix=getNamespacePrefixByURI(ns_uri);
 	}

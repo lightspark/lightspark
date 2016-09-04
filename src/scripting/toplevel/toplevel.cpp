@@ -1710,8 +1710,8 @@ Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),pr
 {
 }
 
-Namespace::Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix)
-  : ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
+Namespace::Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix, NS_KIND _nskind)
+  : ASObject(c,T_NAMESPACE),nskind(_nskind),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
 {
 }
 

@@ -186,7 +186,11 @@ _R<ASObject> ASObject::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	return _MR(abstract_s(getSystemState(),getNameAt(index-1)));
+	const tiny_string& name = getNameAt(index-1);
+	// not mentioned in the specs, but Adobe seems to convert string names to Integers, if possible
+	if (Array::isIntegerWithoutLeadingZeros(name))
+		return _MR(abstract_i(getSystemState(),Integer::stringToASInteger(name.raw_buf(), 0)));
+	return _MR(abstract_s(getSystemState(),name));
 }
 
 _R<ASObject> ASObject::nextValue(uint32_t index)

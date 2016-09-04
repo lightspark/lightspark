@@ -93,8 +93,8 @@ private:
 	void constructorImpl(ASObject* const* args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false) const;
 	int capIndex(int i) const;
-	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 public:
+	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);
 	bool destruct()

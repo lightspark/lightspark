@@ -184,11 +184,10 @@ void ABCVm::coerce(call_context* th, int n)
 	multiname* mn = th->context->getMultiname(n,NULL);
 	LOG_CALL("coerce " << *mn);
 
+	ASObject** o=th->runtime_stack_pointer();
+	
 	const Type* type = Type::getTypeFromMultiname(mn, th->context);
-
-	ASObject* o=th->runtime_stack_pop();
-	o=type->coerce(o);
-	th->runtime_stack_push(o);
+	*o=type->coerce(*o);
 }
 
 void ABCVm::pop()
@@ -1863,8 +1862,6 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 	if(obj->classdef)
 	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
 		objc=obj->classdef;
 	}
 	else
@@ -2551,7 +2548,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi, ASObject* call
 	act->initialized=false;
 #endif
 	for(unsigned int i=0;i<mi->body->trait_count;i++)
-		th->context->buildTrait(act,&mi->body->traits[i],false);
+		th->context->buildTrait(act,&mi->body->traits[i],false,-1,false);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif

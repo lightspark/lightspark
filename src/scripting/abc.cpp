@@ -684,7 +684,10 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 	ASObject* rt1 = NULL;
 	ASObject* rt2 = NULL;
 	if(fromStack > 0)
+	{
+		assert_and_throw(context);
 		rt1 = context->runtime_stack_pop();
+	}
 	if(fromStack > 1)
 		rt2 = context->runtime_stack_pop();
 	return getMultinameImpl(rt1,rt2,n);
@@ -844,6 +847,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		{
 			assert(n && !n2);
 
+			ret->isStatic = false;
 			//Testing shows that the namespace from a
 			//QName is used even in MultinameL
 			if (n->is<ASQName>())
@@ -868,6 +872,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		{
 			assert(n && !n2);
 			assert_and_throw(n->classdef==Class<Namespace>::getClass(n->getSystemState()));
+			ret->isStatic = false;
 			Namespace* tmpns=static_cast<Namespace*>(n);
 			ret->ns.clear();
 			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
@@ -879,6 +884,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 		{
 			assert(n && n2);
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass(n->getSystemState()));
+			ret->isStatic = false;
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
 			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
@@ -1569,18 +1575,6 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 
 	entry->decRef();
 	
-	// initialize vars where type was not known during script init
-	// this may happen for variables of private classes defined in this script
-	LOG(LOG_CALLS,"initialize uninitialized vars");
-	auto it = uninitializedVars.begin();
-	while (it != uninitializedVars.end())
-	{
-		uninitializedVar v = *it;
-		v.mainObj->initializeVariableByMultiname(*v.mname,NULL,v.typemname,this,v.traitKind,true);
-		v.mainObj->decRef();
-		uninitializedVars.pop_front();
-		it = uninitializedVars.begin();
-	}
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
@@ -2044,31 +2038,14 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
-void ABCContext::addUninitializedVar(uninitializedVar &v)
-{
-	auto it = uninitializedVars.begin();
-	bool bfound = false;
-	while (it != uninitializedVars.end())
-	{
-		if (it->mainObj == v.mainObj && it->mname == v.mname)
-		{
-			bfound = true;
-			break;
-		}
-		it++;
-	}
-	if (!bfound)
-		uninitializedVars.push_back(v);
-}
-
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)
 {
 	multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
 	assert_and_throw(mname->name_type==multiname::NAME_STRING);
+#ifndef NDEBUG
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
-
 	if(t->kind&traits_info::Metadata)
 	{
 		for(unsigned int i=0;i<t->metadata_count;i++)
@@ -2079,15 +2056,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				LOG(LOG_CALLS,"        : " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key)) << " " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)));
 		}
 	}
-
+#endif
 	uint32_t kind = t->kind&0xf;
 	switch(kind)
 	{
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(!tmpo.isNull())
+			if(obj->hasPropertyByMultiname(*mname,false,false))
 				return;
 
 			//Check if this already defined in parent applicationdomains
@@ -2226,7 +2202,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				obj->incRef();
 				f->addToScope(scope_entry(_MR(obj),false));
 			}
-			//TODO: Avoid string lookup
 			if(kind == traits_info::Getter)
 				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed);
 			else if(kind == traits_info::Setter)
@@ -2238,8 +2213,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(!tmpo.isNull())
+			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false))
 				return;
 
 			multiname* tname=getMultiname(t->type_name,NULL);
@@ -2252,19 +2226,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,false);
-
-			if(t->slot_id)
-				obj->initSlot(t->slot_id, *mname);
-			//else // slot_id 0 seems to mean appending new slot
-			//	obj->appendSlot(*mname);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id);
 			break;
 		}
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			_NR<ASObject> tmpo=obj->getVariableByMultiname(*mname,ASObject::SKIP_IMPL);
-			if(!tmpo.isNull())
+			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false))
 				return;
 
 			multiname* tname=getMultiname(t->type_name,NULL);
@@ -2272,26 +2240,22 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret->toDebugString() <<" "<<isBorrowed);
+				LOG_CALL(_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret->toDebugString() <<" "<<isBorrowed);
 			}
 			else
 			{
-				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname<<" "<<isBorrowed);
+				LOG_CALL(_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname<<" "<<isBorrowed);
 				ret = NULL;
 			}
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,false);
-
-			if(t->slot_id)
-				obj->initSlot(t->slot_id, *mname);
-			//else // slot_id 0 seems to mean appending new slot
-			//	obj->appendSlot(*mname);
-			
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id);
+;
 			break;
 		}
 		default:
 			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
 			obj->setVariableByMultiname(*mname, obj->getSystemState()->getUndefinedRef(), ASObject::CONST_NOT_ALLOWED);
+			break;
 	}
 }
 

@@ -710,8 +710,10 @@ ASObject* Void::coerce(ASObject* o) const
 	return o;
 }
 
-Type* Type::getBuiltinType(const multiname* mn)
+const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 {
+	if(mn->isStatic && mn->cachedType)
+		return mn->cachedType;
 	assert_and_throw(mn->isQName());
 	assert(mn->name_type == multiname::NAME_STRING);
 	if(mn == 0)
@@ -725,9 +727,9 @@ Type* Type::getBuiltinType(const multiname* mn)
 
 	//Check if the class has already been defined
 	ASObject* target;
-	ASObject* tmp=getSys()->systemDomain->getVariableAndTargetByMultiname(*mn, target);
+	ASObject* tmp=sys->systemDomain->getVariableAndTargetByMultiname(*mn, target);
 	if(tmp && tmp->getObjectType()==T_CLASS)
-		return static_cast<Class_base*>(tmp);
+		return static_cast<const Class_base*>(tmp);
 	else
 		return NULL;
 }
@@ -741,6 +743,9 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
+
+	if(mn->isStatic && mn->cachedType)
+		return mn->cachedType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
 		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())

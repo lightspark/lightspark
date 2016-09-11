@@ -295,7 +295,7 @@ public:
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id);
 	void killObjVar(SystemState* sys, const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
@@ -312,6 +312,7 @@ public:
 	 * this is verified at optimization time
 	 */
 	void setSlotNoCoerce(unsigned int n,ASObject* o);
+	void initSlot(unsigned int n, var_iterator &it);
 	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
 	inline unsigned int size() const
 	{
@@ -505,7 +506,7 @@ public:
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-			ABCContext* context, TRAIT_KIND traitKind,bool bOverwrite);
+			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id);
 	/*
 	 * Called by ABCVm::initProperty (implementation of ABC instruction), it is allowed to set CONSTANT_TRAIT
 	 */
@@ -531,6 +532,7 @@ public:
 	{
 		Variables.setSlotNoCoerce(n,o);
 	}
+	void initSlot(unsigned int n, variables_map::var_iterator it);
 	void initSlot(unsigned int n, const multiname& name);
 	unsigned int numVariables() const;
 	inline tiny_string getNameAt(int i) const

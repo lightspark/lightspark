@@ -726,22 +726,10 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 }
 
 void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-		ABCContext* context, TRAIT_KIND traitKind, bool bOverwrite)
+		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id)
 {
 	check();
-	if (!bOverwrite)
-	{
-		variable* obj=findSettable(name);
-		if(obj)
-		{
-			//Initializing an already existing variable
-			LOG(LOG_NOT_IMPLEMENTED,"Variable " << name << " already initialized, type:"<<*typemname);
-			if (o != NULL)
-				o->decRef();
-			return;
-		}
-	}
-	Variables.initializeVar(name, o, typemname, context, traitKind,this);
+	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id);
 	++varcount;
 }
 
@@ -865,14 +853,17 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id)
 {
 	const Type* type = NULL;
+	if (typemname->isStatic)
+		type = typemname->cachedType;
+	
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
 	if (type == NULL)
-		type = Type::getBuiltinType(typemname);
+		type = Type::getBuiltinType(mainObj->getSystemState(),typemname);
 	if (type == NULL)
 		type = Type::getTypeFromMultiname(typemname,context);
 	if(type==NULL)
@@ -888,7 +879,6 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			{
 				//Casting undefined to an object (of unknown class)
 				//results in Null
-				obj->decRef();
 				obj = mainObj->getSystemState()->getNullRef();
 			}
 		}
@@ -897,47 +887,13 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	{
 		if (obj == NULL) // create dynamic object
 		{
-			if (type == Type::anyType)
-			{
-				// type could not be found, so it's stored as an uninitialized variable
-				LOG_CALL("add uninitialized var:"<<mname<<" "<<*typemname);
-				uninitializedVar v;
-				mainObj->incRef();
-				v.mainObj = mainObj;
-				v.mname = &mname;
-				v.traitKind = traitKind;
-				v.typemname = typemname;
-				//context->addUninitializedVar(v);
-				obj = mainObj->getSystemState()->getUndefinedRef();
-				obj = type->coerce(obj);
-			}
-			else if(mainObj->is<Class_base>() &&
-				mainObj->as<Class_base>()->class_name.getQualifiedName(mainObj->getSystemState()) == typemname->qualifiedString(mainObj->getSystemState()))
+			if(mainObj->is<Class_base>() 
+				&& mainObj->as<Class_base>()->class_name.nameId == typemname->normalizedNameId(mainObj->getSystemState())
+				&& mainObj->as<Class_base>()->class_name.nsStringId == typemname->ns[0].nsNameId
+				&& typemname->ns[0].kind == NAMESPACE)
 			{
 				// avoid recursive construction
-				//obj = mainObj->getSystemState()->getNullRef();
 				obj = mainObj->getSystemState()->getUndefinedRef();
-			}
-			else if (dynamic_cast<const Class_base*>(type) 
-					 && type != Class_object::getClass(dynamic_cast<const Class_base*>(type)->getSystemState()))
-			{
-				//if (!((Class_base*)type)->super)
-				{
-					// super type could not be found, so the class is stored as an uninitialized variable
-					LOG_CALL("add uninitialized class var:"<<mname);
-					uninitializedVar v;
-					mainObj->incRef();
-					v.mainObj = mainObj;
-					v.mname = &mname;
-					v.traitKind = traitKind;
-					v.typemname = typemname;
-					//context->addUninitializedVar(v);
-					obj = mainObj->getSystemState()->getUndefinedRef();
-					//obj = mainObj->getSystemState()->getNullRef();
-					obj = type->coerce(obj);
-				}
-				//else
-				//	obj = ((Class_base*)type)->getInstance(false,NULL,0);
 			}
 			else
 			{
@@ -945,11 +901,15 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				obj = type->coerce(obj);
 			}
 		}
+		if (typemname->isStatic && typemname->cachedType == NULL)
+			typemname->cachedType = type;
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
+	auto inserted = Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
+	if (slot_id)
+		initSlot(slot_id,inserted.first);
 }
 
 ASFUNCTIONBODY(ASObject,generator)
@@ -1101,6 +1061,10 @@ ASFUNCTIONBODY(ASObject,_constructorNotInstantiatable)
 	return NULL;
 }
 
+void ASObject::initSlot(unsigned int n, variables_map::var_iterator it)
+{
+	Variables.initSlot(n,it);
+}
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	Variables.initSlot(n,name.name_s_id,name.ns[0]);
@@ -1407,10 +1371,17 @@ bool ASObject::destruct()
 	return dodestruct;
 }
 
+void variables_map::initSlot(unsigned int n, var_iterator& it)
+{
+	if(n>slots_vars.size())
+		slots_vars.resize(n+8,Variables.end());
+
+	slots_vars[n-1]=it;
+}
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
 {
 	if(n>slots_vars.size())
-		slots_vars.resize(n,Variables.end());
+		slots_vars.resize(n+8,Variables.end());
 
 	var_iterator ret=Variables.find(varName(nameId,ns));
 

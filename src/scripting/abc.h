@@ -148,15 +148,6 @@ struct typed_opcode_handler
 	ARGS_TYPE type;
 };
 
-struct uninitializedVar
-{
-	uninitializedVar():mname(NULL),mainObj(NULL),typemname(NULL),traitKind(NO_CREATE_TRAIT) {}
-	const multiname* mname;
-	ASObject* mainObj;
-	multiname* typemname;
-	TRAIT_KIND traitKind;
-};
-
 class ABCContext
 {
 friend class ABCVm;
@@ -189,9 +180,6 @@ public:
 	uint32_t namespaceBaseId;
 
 	std::vector<bool> hasRunScriptInit;
-	// list of vars that have to be initialized after script init is done
-	std::list<uninitializedVar> uninitializedVars;
-	void addUninitializedVar(uninitializedVar& v);
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -199,7 +187,7 @@ public:
 		@param isBorrowed True if we're building a trait on behalf of an object, False otherwise
 		@param deferred_initialization A pointer to a function that can be used to build the given trait later
 	*/
-	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1);
+	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1, bool checkExisting=true);
 	void runScriptInit(unsigned int scriptid, ASObject* g);
 
 	void linkTrait(Class_base* obj, const traits_info* t);

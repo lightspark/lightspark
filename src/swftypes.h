@@ -84,6 +84,7 @@ enum FILE_TYPE { FT_UNKNOWN=0, FT_SWF, FT_COMPRESSED_SWF, FT_LZMA_COMPRESSED_SWF
 
 typedef double number_t;
 
+class Type;
 class SystemState;
 class ASObject;
 class ASString;
@@ -369,7 +370,9 @@ struct multiname: public memory_reporter
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	bool isAttribute;
-	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false)
+	bool isStatic;
+	const Type* cachedType;
+	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),cachedType(NULL)
 	{
 	}
 	

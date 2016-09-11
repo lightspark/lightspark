@@ -78,7 +78,7 @@ public:
 	/*
 	 * Checks if the type is already in sys->classes
 	 */
-	static Type* getBuiltinType(const multiname* mn);
+	static const Type *getBuiltinType(SystemState* sys, const multiname* mn);
 	/*
 	 * Converts the given object to an object of this type.
 	 * It consumes one reference of 'o'.

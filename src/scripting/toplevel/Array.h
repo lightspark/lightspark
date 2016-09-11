@@ -60,7 +60,10 @@ protected:
 	uint64_t currentsize;
 	typedef std::map<uint32_t,data_slot,std::less<uint32_t>,
 		reporter_allocator<std::pair<const uint32_t, data_slot>>> arrayType;
+	
+	typedef std::map<uint32_t,data_slot>::iterator data_iterator;
 	arrayType data;
+	data_iterator currentpos;
 	void outofbounds(unsigned int index) const;
 	~Array();
 private:
@@ -106,6 +109,7 @@ public:
 		}
 		data.clear();
 		currentsize=0;
+		currentpos = data.end();
 		return ASObject::destruct();
 	}
 	

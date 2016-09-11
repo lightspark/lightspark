@@ -676,6 +676,7 @@ class Class_inherit;
 class ObjectConstructor;
 class Function_object;
 class Date;
+class Global;
 
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
@@ -700,6 +701,8 @@ template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
 template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
+template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
+
 
 
 }

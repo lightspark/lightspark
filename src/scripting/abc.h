@@ -359,7 +359,7 @@ private:
 	static void setSlot(ASObject*, ASObject*, int n); 
 	static void kill(int n); 
 	static ASObject* pushString(call_context* th, int n); 
-	static void getLex(call_context* th, int n); 
+	static bool getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
 	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(ASObject* obj, ASObject* val, multiname* name);

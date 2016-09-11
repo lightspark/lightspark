@@ -1463,7 +1463,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	th->runtime_stack_push(ret.getPtr());
 }
 
-void ABCVm::getLex(call_context* th, int n)
+bool ABCVm::getLex(call_context* th, int n)
 {
 	//getlex is specified not to allow runtime multinames
 	assert_and_throw(th->context->getMultinameRTData(n)==0);
@@ -1475,6 +1475,8 @@ void ABCVm::getLex(call_context* th, int n)
 	// stack.
 	ASObject* o = NULL;
 
+	bool canCache = true;
+	
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
@@ -1486,6 +1488,8 @@ void ABCVm::getLex(call_context* th, int n)
 		ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
 		if(!th->scope_stack_dynamic[i-1])
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+		else
+			canCache = false;
 
 		checkDeclaredTraits(s);
 		_NR<ASObject> prop=s->getVariableByMultiname(*name, opt);
@@ -1507,6 +1511,8 @@ void ABCVm::getLex(call_context* th, int n)
 			ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
 			if(!it->considerDynamic)
 				opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+			else
+				canCache = false;
 	
 			checkDeclaredTraits(it->object.getPtr());
 			_NR<ASObject> prop=it->object->getVariableByMultiname(*name, opt);
@@ -1529,13 +1535,17 @@ void ABCVm::getLex(call_context* th, int n)
 			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
 			th->runtime_stack_push(th->context->root->getSystemState()->getUndefinedRef());
 			name->resetNameIfObject();
-			return;
+			return false;
 		}
 		o->incRef();
 	}
+	else
+		// TODO can we cache objects found in the scope_stack? 
+		canCache = false;
 
 	name->resetNameIfObject();
 	th->runtime_stack_push(o);
+	return canCache;
 }
 
 void ABCVm::constructSuper(call_context* th, int m)

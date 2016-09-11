@@ -45,9 +45,6 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 	//This may be non-zero and point to the position of an exception handler
 	code.seekg(context->exec_pos);
 
-
-	u8 opcode;
-
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
 		mi->profTime.resize(code_len,0);
@@ -65,7 +62,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		opcode = code.readbyte();
+		uint8_t opcode = code.readbyte();
 
 		//Save ip for exception handling in SyntheticFunction::callImpl
 		context->exec_pos = code.tellg();
@@ -984,8 +981,22 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x60:
 			{
 				//getlex
+				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
+				{
+					code.seekpos(cachepos->nextcodepos);
+					context->runtime_stack_push(cachepos->obj);
+					cachepos->obj->incRef();
+					break;
+				}
 				uint32_t t = code.readu30();
-				getLex(context,t);
+				if (getLex(context,t))
+				{
+					// put object in cache
+					cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+					cachepos->obj = context->runtime_stack_peek();
+					cachepos->obj->incRef();
+				}
 				break;
 			}
 			case 0x61:

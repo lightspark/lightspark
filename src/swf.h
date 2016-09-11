@@ -313,10 +313,25 @@ public:
 	ThreadProfile* allocateProfiler(const RGB& color);
 	std::list<ThreadProfile*> profilingData;
 	
-	Null* getNullRef() const;
-	Undefined* getUndefinedRef() const;
-	Boolean* getTrueRef() const;
-	Boolean* getFalseRef() const;
+	inline Null* getNullRef() const
+	{
+		return null.getPtr();
+	}
+	
+	inline Undefined* getUndefinedRef() const
+	{
+		return undefined.getPtr();
+	}
+	
+	inline Boolean* getTrueRef() const
+	{
+		return trueRef.getPtr();
+	}
+	
+	inline Boolean* getFalseRef() const
+	{
+		return falseRef.getPtr();
+	}
 
 	RootMovieClip* mainClip;
 	Stage* stage;

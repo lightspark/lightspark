@@ -221,8 +221,10 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	null=_MR(new (unaccountedMemory) Null);
 	null->setSystemState(this);
+	null->setConstant();
 	undefined=_MR(new (unaccountedMemory) Undefined);
 	undefined->setSystemState(this);
+	undefined->setConstant();
 
 	builtinClasses = new Class_base*[asClassCount];
 	memset(builtinClasses,0,asClassCount*sizeof(Class_base*));
@@ -237,7 +239,9 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	classObject->decRef();
 
 	trueRef=_MR(Class<Boolean>::getInstanceS(this,true));
+	trueRef->setConstant();
 	falseRef=_MR(Class<Boolean>::getInstanceS(this,false));
+	falseRef->setConstant();
 
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS(this));
 	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
@@ -508,10 +512,6 @@ void SystemState::systemFinalize()
 	invalidateQueueTail.reset();
 	parameters.reset();
 	frameListeners.clear();
-	null.reset();
-	undefined.reset();
-	trueRef.reset();
-	falseRef.reset();
 	systemDomain.reset();
 
 	mainClip->decRef();
@@ -522,6 +522,10 @@ void SystemState::systemFinalize()
 SystemState::~SystemState()
 {
 	delete[] builtinClasses;
+	null.forceDestruct();
+	undefined.forceDestruct();
+	trueRef.forceDestruct();
+	falseRef.forceDestruct();
 }
 
 void SystemState::destroy()
@@ -1803,34 +1807,6 @@ void SystemState::resizeCompleted()
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(this)));
 	}
-}
-
-Null* SystemState::getNullRef() const
-{
-	Null* ret=null.getPtr();
-	ret->incRef();
-	return ret;
-}
-
-Undefined* SystemState::getUndefinedRef() const
-{
-	Undefined* ret=undefined.getPtr();
-	ret->incRef();
-	return ret;
-}
-
-Boolean* SystemState::getTrueRef() const
-{
-	Boolean* ret=trueRef.getPtr();
-	ret->incRef();
-	return ret;
-}
-
-Boolean* SystemState::getFalseRef() const
-{
-	Boolean* ret=falseRef.getPtr();
-	ret->incRef();
-	return ret;
 }
 
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const

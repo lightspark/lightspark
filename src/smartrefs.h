@@ -306,6 +306,13 @@ public:
 	{
 		m=NULL;
 	}
+	inline void forceDestruct()
+	{
+		assert(m->isConstant());
+		if (m)
+			delete m;
+		m = NULL;
+	}
 	template<class D> inline NullableRef<D> cast() const
 	{
 		if(!m)

@@ -1317,6 +1317,14 @@ public:
 	CLIPEVENTFLAGS AllEventFlags;
 };
 
+class SOUNDENVELOPE
+{
+public:
+	UI32_SWF Pos44;
+	UI16_SWF LeftLevel;
+	UI16_SWF RightLevel;
+};
+
 class SOUNDINFO
 {
 public:
@@ -1330,6 +1338,7 @@ public:
 	UI32_SWF OutPoint;
 	UI16_SWF LoopCount;
 	UI8 EnvPoints;
+	std::vector<SOUNDENVELOPE> SoundEnvelope;
 };
 
 class RunState

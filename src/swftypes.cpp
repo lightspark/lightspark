@@ -1635,8 +1635,20 @@ std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
 	if (v.HasLoops)
 		stream >> v.LoopCount;
 	if (v.HasEnvelope)
+	{
 		stream >> v.EnvPoints;
-	// TODO: EnvelopeRecords
+		if (v.EnvPoints)
+			LOG(LOG_NOT_IMPLEMENTED,"SOUNDENVELOPE settings are read but not used");
+			
+		for (unsigned int i = 0; i < v.EnvPoints;i++)
+		{
+			SOUNDENVELOPE env;
+			stream >> env.Pos44;
+			stream >> env.LeftLevel;
+			stream >> env.RightLevel;
+			v.SoundEnvelope.push_back(env);
+		}
+	}
 	return stream;
 }
 

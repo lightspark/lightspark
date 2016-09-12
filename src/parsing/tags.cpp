@@ -394,9 +394,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
 			case CONTROL_TAG:
-			case ACTION_TAG:
 				delete tag;
 				throw ParseException("Control tag inside a sprite. Should not happen.");
+			case ACTION_TAG:
+				delete tag;
+				break;
 			case FRAMELABEL_TAG:
 				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				delete tag;

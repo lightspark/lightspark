@@ -378,11 +378,13 @@ bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
 			{
 				GtkClipboard *clipboard;
 				clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-				gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
-						       m_sys->getErrorCause().size());
+				std::string s = "SWF file: ";
+				s.append(m_sys->mainClip->getOrigin().getParsedURL());
+				s.append("\n");
+				s.append(m_sys->getErrorCause());
+				gtk_clipboard_set_text(clipboard, s.c_str(),s.size());
 				clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-				gtk_clipboard_set_text(clipboard, m_sys->getErrorCause().c_str(),
-						       m_sys->getErrorCause().size());
+				gtk_clipboard_set_text(clipboard, s.c_str(), s.size());
 				LOG(LOG_INFO, "Copied error to clipboard");
 			}
 			else

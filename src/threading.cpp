@@ -118,6 +118,10 @@ bool CondTime::isInTheFuture() const
 void CondTime::addMilliseconds(long ms)
 {
 	timepoint+=(gint64)ms*G_TIME_SPAN_MILLISECOND;
+	// don't allow that next timepoint will be in the past
+	gint64 now=g_get_monotonic_time();
+	if (timepoint < now)
+		timepoint= now + (gint64)ms*G_TIME_SPAN_MILLISECOND;
 }
 
 bool CondTime::wait(Mutex& mutex, Cond& cond)

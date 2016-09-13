@@ -43,6 +43,7 @@ friend class GLRenderContext;
 friend class AsyncDrawJob;
 friend class Transform;
 friend class ParseThread;
+friend class Loader;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, // point is over the object
@@ -59,6 +60,8 @@ private:
 	number_t sx,sy,sz;
 	float alpha;
 	tiny_string blendMode;
+	// if true, this displayobject is the root object of a loaded file (swf or image)
+	bool isLoadedRoot;
 public:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
@@ -162,7 +165,8 @@ public:
 	virtual void setOnStage(bool staged);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
-	bool isVisible() const { return visible; };
+	bool isVisible() const { return visible; }
+	bool isLoadedRootObject() const { return isLoadedRoot; }
 	float clippedAlpha() const;
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();

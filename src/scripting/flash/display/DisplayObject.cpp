@@ -97,7 +97,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
+	sx(1),sy(1),alpha(1.0),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),cacheAsBitmap(false)
 {
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
@@ -815,7 +815,15 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	_NR<RootMovieClip> ret=th->getRoot();
+	_NR<DisplayObject> ret;
+	
+	if (th->isLoadedRootObject())
+		ret = _NR<DisplayObject>(th);
+	else if (th->is<Stage>())
+		// according to spec, the root of the stage is the stage itself
+		ret = _NR<DisplayObject>(th);
+	else
+		ret =th->getRoot();
 	if(ret.isNull())
 		return obj->getSystemState()->getUndefinedRef();
 

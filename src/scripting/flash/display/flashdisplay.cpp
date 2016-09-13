@@ -680,6 +680,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	{
 		SpinlockLocker l(spinlock);
 		content=o;
+		content->isLoadedRoot = true;
 		loaded=true;
 	}
 

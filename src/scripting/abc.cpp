@@ -57,6 +57,9 @@
 #  include <llvm/Analysis/Verifier.h>
 #endif
 #include <llvm/Transforms/Scalar.h> 
+#ifdef HAVE_TRANSFORMS_SCALAR_GVN_H
+#  include <llvm/Transforms/Scalar/GVN.h>
+#endif
 #include "logger.h"
 #include "swftypes.h"
 #include <sstream>

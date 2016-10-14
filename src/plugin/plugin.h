@@ -31,6 +31,8 @@
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
 #include "plugin/npscriptobject.h"
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 namespace lightspark
 {
@@ -75,25 +77,35 @@ class PluginEngineData:	public EngineData
 {
 private:
 	nsPluginInstance* instance;
+	gulong inputHandlerId;
+	gulong sizeHandlerId;
+	GtkWidget* widget_gtk;
 public:
-	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h) : instance(i)
+	SystemState* sys;
+	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),widget_gtk(NULL),sys(_sys)
 	{
 		width = w;
 		height = h;
 	}
-	/* The widget must not be gtk_widget_destroy'ed in the destructor. This is done
-	 * by firefox.
-	 */
-	~PluginEngineData() {}
+	~PluginEngineData() 
+	{
+		if(inputHandlerId)
+			g_signal_handler_disconnect(widget, inputHandlerId);
+		if(sizeHandlerId)
+			g_signal_handler_disconnect(widget, sizeHandlerId);
+	}
 
 	void stopMainDownload();
 	bool isSizable() const { return false; }
-	GdkNativeWindow getWindowForGnash();
-	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
-	GtkWidget* createGtkWidget();
-	/* must be called within the gtk_main() thread and within gdk_threads_enter/leave */
+	uint32_t getWindowForGnash();
+	/* must be called within mainLoopThread */
+	SDL_Window* createWidget(uint32_t w,uint32_t h);
+	/* must be called within mainLoopThread */
 	void grabFocus();
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
+	void setClipboardText(const std::string txt);
+	bool getScreenData(SDL_DisplayMode* screen);
+	double getScreenDPI();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

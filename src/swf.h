@@ -191,7 +191,7 @@ private:
 	*/
 	void stopEngines();
 
-	void delayedCreation();
+	static void delayedCreation(SystemState* sys);
 	void delayedStopping();
 
 	/* dumpedSWFPathAvailable is signaled after dumpedSWFPath has been set */
@@ -457,6 +457,7 @@ public:
 
 	void showMouseCursor(bool visible);
 	void waitRendering() DLL_PUBLIC;
+	EngineData* getEngineData() { return engineData;}
 };
 
 class ParseThread: public IThreadJob

@@ -268,6 +268,13 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
+
+	EngineData::userevent = SDL_RegisterEvents(3);
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_INIT;
+	event.user.data1 = this;
+	SDL_PushEvent(&event);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -634,6 +641,7 @@ void SystemState::destroy()
 	delete inputThread;
 	inputThread=NULL;
 	delete engineData;
+	engineData=NULL;
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
@@ -657,7 +665,10 @@ bool SystemState::shouldTerminate() const
 void SystemState::setError(const string& c, ERROR_TYPE type)
 {
 	if((exitOnError & type) != 0)
-		exit(1);
+	{
+		setShutdownFlag();
+		return;
+	}
 
 	//We record only the first error for easier fix and reporting
 	if(!error)
@@ -710,39 +721,33 @@ void SystemState::EngineCreator::threadAbort()
 }
 
 /*
- * This is run from the gtk main thread.
- * gtk/gdk functions may only be called from within that
- * gtk main thread for portability. Win32 does not support
- * gtk/gdk calls from other threads!
+ * This is run from mainLoopThread
  */
-void SystemState::delayedCreation()
+void SystemState::delayedCreation(SystemState* sys)
 {
-	gdk_threads_enter();
+	int32_t reqWidth=sys->mainClip->getFrameSize().Xmax/20;
+	int32_t reqHeight=sys->mainClip->getFrameSize().Ymax/20;
 
-	int32_t reqWidth=mainClip->getFrameSize().Xmax/20;
-	int32_t reqHeight=mainClip->getFrameSize().Ymax/20;
+	sys->engineData->showWindow(reqWidth, reqHeight);
 
-	engineData->showWindow(reqWidth, reqHeight);
-
-	inputThread->start(engineData);
+	sys->inputThread->start(sys->engineData);
 
 	if(Config::getConfig()->isRenderingEnabled())
 	{
-		renderThread->start(engineData);
+		sys->renderThread->start(sys->engineData);
 	}
 	else
 	{
-		getRenderThread()->windowWidth = reqWidth;
-		getRenderThread()->windowHeight = reqHeight;
-		resizeCompleted();
+		sys->getRenderThread()->windowWidth = reqWidth;
+		sys->getRenderThread()->windowHeight = reqHeight;
+		sys->resizeCompleted();
 		//This just signals the 'initalized' semaphore
-		renderThread->forceInitialization();
+		sys->renderThread->forceInitialization();
 		LOG(LOG_INFO,"Rendering is disabled by configuration");
 	}
 
-	if(renderRate)
-		startRenderTicks();
-	gdk_threads_leave();
+	if(sys->renderRate)
+		sys->startRenderTicks();
 }
 
 void SystemState::delayedStopping()
@@ -776,12 +781,12 @@ void SystemState::createEngines()
 		//      and this SystemState object has been deleted.
 		//      We cannot wait for that function to finish, because we run in a ThreadPool
 		//      and the function will wait for all ThreadPool jobs to finish.
-		//engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedStopping));
+		//engineData->runInMainThread(sigc::mem_fun(this, &SystemState::delayedStopping));
 		return;
 	}
 
 	//The engines must be created in the context of the main thread
-	engineData->runInGtkThread(sigc::mem_fun(this, &SystemState::delayedCreation));
+	engineData->runInMainThread(&SystemState::delayedCreation);
 
 	//Wait for delayedCreation to finish so it is protected by our 'mutex'
 	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
@@ -1960,9 +1965,9 @@ void SystemState::openPageInBrowser(const tiny_string& url, const tiny_string& w
 void SystemState::showMouseCursor(bool visible)
 {
 	if (visible)
-		EngineData::runInGtkThread(sigc::mem_fun(engineData, &EngineData::showMouseCursor));
+		EngineData::runInMainThread(&EngineData::showMouseCursor);
 	else
-		EngineData::runInGtkThread(sigc::mem_fun(engineData, &EngineData::hideMouseCursor));
+		EngineData::runInMainThread(&EngineData::hideMouseCursor);
 }
 
 void SystemState::waitRendering()

@@ -19,113 +19,167 @@
 **************************************************************************/
 
 #include "platforms/engineutils.h"
-
-#ifdef _WIN32
-#	include <gdk/gdkwin32.h>
-#else
-#	include <sys/resource.h>
-#	include <gdk/gdkx.h>
-#endif
-
+#include "swf.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mouse.h>
+#include "backends/input.h"
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
 
-EngineData::EngineData() : widget(0), inputHandlerId(0), sizeHandlerId(0), width(0), height(0), window(0)
+uint32_t EngineData::userevent = (uint32_t)-1;
+Thread* EngineData::mainLoopThread = NULL;
+bool EngineData::mainthread_running = false;
+Semaphore EngineData::mainthread_initialized(0);
+EngineData::EngineData() : widget(0), width(0), height(0),windowID(0),visual(0)
 {
 }
 
 EngineData::~EngineData()
 {
-	RecMutex::Lock l(mutex);
-	removeSizeChangeHandler();
-	removeInputHandler();
 }
-
-/* gtk main loop handling */
-static void gtk_main_runner()
+bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 {
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
+	if (event->type == LS_USEREVENT_INIT)
+	{
+		sys = (SystemState*)event->user.data1;
+		setTLSSys(sys);
+	}
+	else if (event->type == LS_USEREVENT_EXEC)
+	{
+		if (event->user.data1)
+			((void (*)(SystemState*))event->user.data1)(sys);
+	}
+	else if (event->type == LS_USEREVENT_QUIT)
+	{
+		setTLSSys(NULL);
+		SDL_Quit();
+		return true;
+	}
+	else
+	{
+		if (sys && sys->getInputThread() && sys->getInputThread()->handleEvent(event))
+			return false;
+		switch (event->type)
+		{
+			case SDL_WINDOWEVENT:
+			{
+				switch (event->window.event)
+				{
+					case SDL_WINDOWEVENT_RESIZED:
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						if (sys && sys->getRenderThread())
+							sys->getRenderThread()->requestResize(event->window.data1,event->window.data2,false);
+						break;
+					case SDL_WINDOWEVENT_EXPOSED:
+					{
+						//Signal the renderThread
+						if (sys && sys->getRenderThread())
+							sys->getRenderThread()->draw(false);
+						break;
+					}
+						
+					default:
+						break;
+				}
+				break;
+			}
+			case SDL_QUIT:
+				sys->setShutdownFlag();
+				break;
+		}
+	}
+	return false;
 }
 
-Thread* EngineData::gtkThread = NULL;
+/* main loop handling */
+static void mainloop_runner()
+{
+	bool sdl_available = false;
+	if (SDL_WasInit(0)) // some part of SDL already was initialized
+		sdl_available = SDL_InitSubSystem ( SDL_INIT_VIDEO );
+	else
+		sdl_available = SDL_Init ( SDL_INIT_VIDEO );
+	if (sdl_available)
+	{
+		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
+		EngineData::mainthread_initialized.signal();
+		return;
+	}
+	else
+	{
+		EngineData::mainthread_running = true;
+		EngineData::mainthread_initialized.signal();
+		SDL_Event event;
+		while (SDL_WaitEvent(&event))
+		{
+			SystemState* sys = getSys();
+			
+			if (EngineData::mainloop_handleevent(&event,sys))
+			{
+				EngineData::mainthread_running = false;
+				return;
+			}
+		}
+	}
+}
+gboolean EngineData::mainloop_from_plugin(SystemState* sys)
+{
+	SDL_Event event;
+	setTLSSys(sys);
+	while (SDL_PollEvent(&event))
+	{
+		mainloop_handleevent(&event,sys);
+	}
+	setTLSSys(NULL);
+	return G_SOURCE_CONTINUE;
+}
 
 /* This is not run in the linux plugin, as firefox
  * runs its own gtk_main, which we must not interfere with.
  */
-void EngineData::startGTKMain()
+bool EngineData::startSDLMain()
 {
-	assert(!gtkThread);
+	assert(!mainLoopThread);
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
-		gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner));
+	mainLoopThread = Thread::create(sigc::ptr_fun(&mainloop_runner));
 #else
-		gtkThread = Thread::create(sigc::ptr_fun(&gtk_main_runner),true);
+	mainLoopThread = Thread::create(sigc::ptr_fun(&mainloop_runner),true);
 #endif
+	mainthread_initialized.wait();
+	return mainthread_running;
 }
 
-void EngineData::quitGTKMain()
-{
-	assert(gtkThread);
-	gdk_threads_enter();
-	gtk_main_quit();
-	gdk_threads_leave();
-	gtkThread->join();
-	gtkThread = NULL;
-}
-
-/* This function must be called from the gtk main thread
-	 * and within gdk_threads_enter/leave */
 void EngineData::showWindow(uint32_t w, uint32_t h)
 {
 	RecMutex::Lock l(mutex);
 
 	assert(!widget);
-	widget = createGtkWidget();
-	/* create a window handle */
-	gtk_widget_realize(widget);
-#if _WIN32
-	window = GDK_WINDOW_HWND(gtk_widget_get_window(widget));
-#else
-	window = GDK_WINDOW_XID(gtk_widget_get_window(widget));
-#endif
-	if(isSizable())
-	{
-		gtk_widget_set_size_request(widget, w, h);
-		width = w;
-		height = h;
-	}
-	gtk_widget_show(widget);
-	gtk_widget_map(widget);
+	widget = createWidget(w,h);
+	this->width = w;
+	this->height = h;
+	SDL_ShowWindow(widget);
+	grabFocus();
+	
 }
 
-void EngineData::showMouseCursor()
+void EngineData::showMouseCursor(SystemState* /*sys*/)
 {
-	if (!widget)
-		return;
-
-	gdk_threads_enter();
-	GdkWindow* gdkwindow = gtk_widget_get_window(widget);
-	if (gdkwindow)
-		gdk_window_set_cursor(gdkwindow, NULL);
-	gdk_threads_leave();
+	SDL_ShowCursor(SDL_ENABLE);
 }
 
-void EngineData::hideMouseCursor()
+void EngineData::hideMouseCursor(SystemState* /*sys*/)
 {
-	if (!widget)
-		return;
+	SDL_ShowCursor(SDL_DISABLE);
+}
 
-	gdk_threads_enter();
-	GdkCursor* cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
-	if (cursor)
-	{
-		GdkWindow* gdkwindow = gtk_widget_get_window(widget);
-		if (gdkwindow)
-			gdk_window_set_cursor(gdkwindow, cursor);
-		gdk_cursor_unref(cursor);
-	}
-	gdk_threads_leave();
+void EngineData::setClipboardText(const std::string txt)
+{
+	int ret = SDL_SetClipboardText(txt.c_str());
+	if (ret == 0)
+		LOG(LOG_INFO, "Copied error to clipboard");
+	else
+		LOG(LOG_ERROR, "copying text to clipboard failed:"<<SDL_GetError());
 }
 

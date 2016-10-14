@@ -25,7 +25,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "backends/extscriptobject.h"
 #include <string>
-
+#include <SDL2/SDL_keyboard.h>
 #undef MOUSE_EVENT
 
 namespace lightspark
@@ -102,12 +102,12 @@ class KeyboardEvent: public Event
 private:
 	virtual Event* cloneImpl() const;
 
-	unsigned int modifiers;  // bitflags of GdkModifierType constants
+	uint32_t modifiers;
 	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
 public:
-	KeyboardEvent(Class_base* c, tiny_string type="", uint32_t charcode=0, uint32_t keycode=0, unsigned modifiers=0);
+	KeyboardEvent(Class_base* c, tiny_string type="", uint32_t charcode=0, uint32_t keycode=0, SDL_Keymod modifiers=KMOD_NONE);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -268,12 +268,13 @@ public:
 class MouseEvent: public Event
 {
 private:
-	unsigned int modifiers;  // bitflags of GdkModifierType constants
+	uint32_t modifiers; 
+	bool buttonDown;
 	Event* cloneImpl() const;
 public:
 	MouseEvent(Class_base* c);
 	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
-		   bool b=true, unsigned int buttonState=0,
+		   bool b=true, SDL_Keymod _modifiers=KMOD_NONE,bool _buttonDown = false,
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

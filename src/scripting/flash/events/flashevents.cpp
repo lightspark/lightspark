@@ -229,19 +229,19 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 }
 
 MouseEvent::MouseEvent(Class_base* c)
- : Event(c, "mouseEvent"), modifiers(0), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+ : Event(c, "mouseEvent"), modifiers(KMOD_NONE),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
 MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
-		       bool b, unsigned int buttonState, _NR<InteractiveObject> relObj, int32_t _delta)
-  : Event(c,t,b), modifiers(buttonState), delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
+		       bool b, SDL_Keymod _modifiers, bool _buttonDown, _NR<InteractiveObject> relObj, int32_t _delta)
+  : Event(c,t,b), modifiers(_modifiers), buttonDown(_buttonDown),delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
 Event* MouseEvent::cloneImpl() const
 {
-	return Class<MouseEvent>::getInstanceS(getSystemState(),type,localX,localY,bubbles,modifiers,relatedObject,delta);
+	return Class<MouseEvent>::getInstanceS(getSystemState(),type,localX,localY,bubbles,(SDL_Keymod)modifiers,buttonDown,relatedObject,delta);
 }
 
 ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
@@ -339,23 +339,27 @@ ASFUNCTIONBODY(MouseEvent,_constructor)
 		th->relatedObject=ArgumentConversion< _NR<InteractiveObject> >::toConcrete(args[5]);
 	if(argslen>=7)
 		if (ArgumentConversion<bool>::toConcrete(args[6]))
-			th->modifiers |= GDK_CONTROL_MASK;
+			th->modifiers |= KMOD_CTRL;
 	if(argslen>=8)
 		if (ArgumentConversion<bool>::toConcrete(args[7]))
-			th->modifiers |= GDK_MOD1_MASK;
+			th->modifiers |= KMOD_ALT;
 	if(argslen>=9)
 		if (ArgumentConversion<bool>::toConcrete(args[8]))
-			th->modifiers |= GDK_SHIFT_MASK;
+			th->modifiers |= KMOD_SHIFT;
 	if(argslen>=10)
 		if (ArgumentConversion<bool>::toConcrete(args[9]))
-			th->modifiers |= GDK_BUTTON1_MASK;
+			th->buttonDown = true;
 	if(argslen>=11)
 		th->delta=args[10]->toInt();
-	// TODO: args[11] = command
+	if(argslen>=12)
+		if (ArgumentConversion<bool>::toConcrete(args[11]))
+			th->modifiers |= KMOD_GUI;
 	if(argslen>=13)
 		if (ArgumentConversion<bool>::toConcrete(args[12]))
-			th->modifiers |= GDK_CONTROL_MASK;
+			th->modifiers |= KMOD_CTRL;
 	// TODO: args[13] = clickCount
+	if(argslen>=14)
+		LOG(LOG_NOT_IMPLEMENTED,"MouseEvent: clickcount");
 
 	return NULL;
 }
@@ -404,65 +408,65 @@ ASFUNCTIONBODY(MouseEvent,_setter_localY)
 ASFUNCTIONBODY(MouseEvent,_getter_buttonDown)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_BUTTON1_MASK);
+	return abstract_b(obj->getSystemState(),th->buttonDown);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_buttonDown)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->modifiers |= GDK_BUTTON1_MASK;
+	th->buttonDown = true;
 	return NULL;
 }
 
 ASFUNCTIONBODY(MouseEvent,_getter_altKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_MOD1_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_ALT);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_altKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->modifiers |= GDK_MOD1_MASK;
+	th->modifiers |= KMOD_ALT;
 	return NULL;
 }
 
 ASFUNCTIONBODY(MouseEvent,_getter_controlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_controlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->modifiers |= GDK_CONTROL_MASK;
+	th->modifiers |= KMOD_CTRL;
 	return NULL;
 }
 
 ASFUNCTIONBODY(MouseEvent,_getter_ctrlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_ctrlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->modifiers |= GDK_CONTROL_MASK;
+	th->modifiers |= KMOD_CTRL;
 	return NULL;
 }
 
 ASFUNCTIONBODY(MouseEvent,_getter_shiftKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_SHIFT_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_SHIFT);
 }
 
 ASFUNCTIONBODY(MouseEvent,_setter_shiftKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->modifiers |= GDK_SHIFT_MASK;
+	th->modifiers |= KMOD_SHIFT;
 	return NULL;
 }
 ASFUNCTIONBODY(MouseEvent,updateAfterEvent)
@@ -832,7 +836,7 @@ ASFUNCTIONBODY(FullScreenEvent,_constructor)
 	return NULL;
 }
 
-KeyboardEvent::KeyboardEvent(Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, unsigned _modifiers)
+KeyboardEvent::KeyboardEvent(Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers)
   : Event(c, _type), modifiers(_modifiers), charCode(_charcode), keyCode(_keycode), keyLocation(0)
 {
 }
@@ -870,21 +874,25 @@ ASFUNCTIONBODY(KeyboardEvent,_constructor)
 	}
 	if(argslen > 6) {
 		if (ArgumentConversion<bool>::toConcrete(args[6]))
-			th->modifiers |= GDK_CONTROL_MASK;
+			th->modifiers |= KMOD_CTRL;
 	}
 	if(argslen > 7) {
 		if (ArgumentConversion<bool>::toConcrete(args[7]))
-			th->modifiers |= GDK_MOD1_MASK;
+			th->modifiers |= KMOD_ALT;
 	}
 	if(argslen > 8) {
 		if (ArgumentConversion<bool>::toConcrete(args[8]))
-			th->modifiers |= GDK_SHIFT_MASK;
+			th->modifiers |= KMOD_SHIFT;
 	}
 	if(argslen > 9) {
 		if (ArgumentConversion<bool>::toConcrete(args[9]))
-			th->modifiers |= GDK_CONTROL_MASK;
+			th->modifiers |= KMOD_CTRL;
 	}
 	// args[10] (commandKeyValue) is only supported on Max OSX
+	if(argslen > 10) {
+		if (ArgumentConversion<bool>::toConcrete(args[10]))
+			LOG(LOG_NOT_IMPLEMENTED,"KeyboardEvent:commandKeyValue");
+	}
 
 	return NULL;
 }
@@ -896,13 +904,13 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
 ASFUNCTIONBODY(KeyboardEvent, _getter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_MOD1_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_ALT);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	th->modifiers |= GDK_MOD1_MASK;
+	th->modifiers |= KMOD_ALT;
 	return NULL;
 }
 
@@ -921,39 +929,39 @@ ASFUNCTIONBODY(KeyboardEvent, _setter_commandKey)
 ASFUNCTIONBODY(KeyboardEvent, _getter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	th->modifiers |= GDK_CONTROL_MASK;
+	th->modifiers |= KMOD_CTRL;
 	return NULL;
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _getter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_CONTROL_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	th->modifiers |= GDK_CONTROL_MASK;
+	th->modifiers |= KMOD_CTRL;
 	return NULL;
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _getter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & GDK_SHIFT_MASK);
+	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_SHIFT);
 }
 
 ASFUNCTIONBODY(KeyboardEvent, _setter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	th->modifiers |= GDK_SHIFT_MASK;
+	th->modifiers |= KMOD_SHIFT;
 	return NULL;
 }
 

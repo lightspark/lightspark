@@ -39,11 +39,6 @@ class InteractiveObject;
 class Sprite;
 class MouseEvent;
 
-struct KeyNameCodePair {
-	const char *keyname;
-	unsigned int keycode;
-};
-
 class InputThread
 {
 private:
@@ -52,13 +47,12 @@ private:
 	Thread* t;
 	bool terminated;
 	bool threaded;
-	bool worker(GdkEvent *event);
+	// this is called from mainloopthread
+	bool worker(SDL_Event *event);
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
 	Mutex mutexDragged;
-
-	std::vector<KeyNameCodePair> keyNamesAndCodes;
 
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
@@ -73,16 +67,15 @@ private:
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
 	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
-	void handleMouseDown(uint32_t x, uint32_t y, unsigned int buttonState);
-	void handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int buttonState);
-	void handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState);
-	void handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonState);
-	void handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection direction, unsigned int buttonState);
-        void handleMouseLeave();
+	void handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
+	void handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
+	void handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
+	void handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
+	void handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, SDL_Keymod buttonState,bool pressed);
+	void handleMouseLeave();
 
-	void initKeyTable();
-	bool handleKeyboardShortcuts(const GdkEventKey *keyevent);
-	void sendKeyEvent(const GdkEventKey *keyevent);
+	bool handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent);
+	void sendKeyEvent(const SDL_KeyboardEvent *keyevent);
 
 	Spinlock inputDataSpinlock;
 	Vector2 mousePos;
@@ -95,12 +88,15 @@ public:
 	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
 	void stopDrag(Sprite* s);
-	const std::vector<KeyNameCodePair>& getKeyNamesAndCodes();
 
 	Vector2 getMousePos()
 	{
 		SpinlockLocker locker(inputDataSpinlock);
 		return mousePos;
+	}
+	bool handleEvent(SDL_Event *event)
+	{
+		return worker(event);
 	}
 };
 

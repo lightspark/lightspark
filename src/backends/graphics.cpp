@@ -28,6 +28,7 @@
 #include "compat.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/display/BitmapData.h"
+#include <pango/pangocairo.h>
 
 using namespace lightspark;
 

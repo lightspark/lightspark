@@ -20,7 +20,7 @@
 #ifndef PLATFORMS_ENGINEUTILS_H
 #define PLATFORMS_ENGINEUTILS_H 1
 
-#include <gtk/gtk.h>
+#include <SDL2/SDL.h>
 #include "compat.h"
 #include "threading.h"
 #include "tiny_string.h"
@@ -31,36 +31,28 @@ namespace lightspark
 #ifndef _WIN32
 //taken from X11/X.h
 typedef unsigned long VisualID;
+typedef unsigned long XID;
 #endif
-
+#define LS_USEREVENT_INIT EngineData::userevent
+#define LS_USEREVENT_EXEC EngineData::userevent+1
+#define LS_USEREVENT_QUIT EngineData::userevent+2
+class SystemState;
 class DLL_PUBLIC EngineData
 {
+	friend class RenderThread;
 protected:
-	GtkWidget* widget;
 	/* use a recursive mutex, because g_signal_connect may directly call
 	 * the specific handler */
 	RecMutex mutex;
-	sigc::slot<bool,GdkEvent*> inputHandler;
-	gulong inputHandlerId;
-	sigc::slot<void,int32_t,int32_t,bool> sizeHandler;
-	gulong sizeHandlerId;
-	/* This function must be called from the gtk main thread
-	 * and within gdk_threads_enter/leave */
-	virtual GtkWidget* createGtkWidget()=0;
-	/* This functions runs in the thread of gtk_main() */
-	static int callHelper(sigc::slot<void>* slot)
-	{
-		(*slot)();
-		delete slot;
-		/* we must return 'false' or gtk will call this periodically */
-		return FALSE;
-	}
-	static Thread* gtkThread;
+	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
 public:
+	SDL_Window* widget;
+	static uint32_t userevent;
+	static Thread* mainLoopThread;
 	int width;
 	int height;
-	GdkNativeWindow window;
 #ifndef _WIN32
+	XID windowID;
 	VisualID visual;
 #endif
 	EngineData();
@@ -68,86 +60,37 @@ public:
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
-	virtual GdkNativeWindow getWindowForGnash()=0;
-	/* Runs 'func' in the thread of gtk_main() */
-	static void runInGtkThread(const sigc::slot<void>& func)
+	virtual uint32_t getWindowForGnash()=0;
+	/* Runs 'func' in the mainLoopThread */
+	static void runInMainThread(void (*func) (SystemState*) )
 	{
-		g_idle_add((GSourceFunc)callHelper,new sigc::slot<void>(func));
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = LS_USEREVENT_EXEC;
+		event.user.data1 = (void*)func;
+		SDL_PushEvent(&event);
 	}
-	/* This function must be called from the gtk main thread
-	 * and within gdk_threads_enter/leave.
+	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
+	static gboolean mainloop_from_plugin(SystemState* sys);
+	
+	/* This function must be called from mainLoopThread
 	 * It fills this->widget and this->window.
-         */
+	 */
 	void showWindow(uint32_t w, uint32_t h);
-	/* This function must be called within gdk_threads_enter/leave */
+	/* must be called within mainLoopThread */
 	virtual void grabFocus()=0;
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
-	static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, EngineData* e)
-	{
-		RecMutex::Lock l(e->mutex);
-		if(!e->inputHandler.empty())
-			return e->inputHandler(event);
-		return false;
-	}
-	/* This function must be called from the gtk_main() thread */
-	void setInputHandler(const sigc::slot<bool,GdkEvent*>& ic)
-	{
-		RecMutex::Lock l(mutex);
-		if(!widget)
-			return;
 
-		assert(!inputHandlerId);
-		inputHandler = ic;
-		gtk_widget_set_can_focus(widget,TRUE);
-		gtk_widget_add_events(widget,
-			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
-			GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-			GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK |
-			GDK_LEAVE_NOTIFY_MASK);
-		inputHandlerId = g_signal_connect(widget, "event", G_CALLBACK(inputDispatch), this);
-	}
-	void removeInputHandler()
-	{
-		RecMutex::Lock l(mutex);
-		if(!inputHandler.empty() && widget)
-		{
-			g_signal_handler_disconnect(widget, inputHandlerId);
-			inputHandler = sigc::slot<bool,GdkEvent*>();
-		}
-	}
-	static void sizeDispatch(GtkWidget* widget, GdkRectangle* allocation, EngineData* e)
-	{
-		RecMutex::Lock l(e->mutex);
-		if(!e->sizeHandler.empty() && widget)
-			e->sizeHandler(allocation->width, allocation->height, false);
-	}
-	/* This function must be called from the gtk_main() thread */
-	void setSizeChangeHandler(const sigc::slot<void,int32_t,int32_t,bool>& sc)
-	{
-		RecMutex::Lock l(mutex);
-		if(!widget)
-			return;
+	static bool mainthread_running;
+	static Semaphore mainthread_initialized;
+	static bool startSDLMain();
 
-		assert(!sizeHandlerId);
-		sizeHandler = sc;
-		sizeHandlerId = g_signal_connect(widget, "size-allocate", G_CALLBACK(sizeDispatch), this);
-	}
-	void removeSizeChangeHandler()
-	{
-		RecMutex::Lock l(mutex);
-		if(!sizeHandler.empty() && widget)
-		{
-			g_signal_handler_disconnect(widget, sizeHandlerId);
-			sizeHandler = sigc::slot<void,int32_t,int32_t,bool>();
-		}
-	}
-
-	static void startGTKMain();
-	static void quitGTKMain();
-
-	/* show/hide mouse cursor, must be called from the gtk thread */
-	void showMouseCursor();
-	void hideMouseCursor();
+	/* show/hide mouse cursor, must be called from mainLoopThread */
+	static void showMouseCursor(SystemState *sys);
+	static void hideMouseCursor(SystemState *sys);
+	virtual void setClipboardText(const std::string txt);
+	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
+	virtual double getScreenDPI() = 0;
 };
 
 };

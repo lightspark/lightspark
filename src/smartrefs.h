@@ -44,6 +44,7 @@ public:
 	{
 		RELEASE_WRITE(isConstant,true);
 	}
+	inline bool getConstant() const { return isConstant; }
 	
 	inline void incRef()
 	{
@@ -308,7 +309,7 @@ public:
 	}
 	inline void forceDestruct()
 	{
-		assert(m->isConstant());
+		assert(m->getConstant());
 		if (m)
 			delete m;
 		m = NULL;

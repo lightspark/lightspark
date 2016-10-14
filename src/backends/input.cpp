@@ -24,11 +24,8 @@
 #include "compat.h"
 #include "scripting/flash/ui/keycodes.h"
 
-#if GTK_CHECK_VERSION (2,21,8)
-#include <gdk/gdkkeysyms-compat.h> 
-#else
-#include <gdk/gdkkeysyms.h>
-#endif 
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_clipboard.h>
 
 using namespace lightspark;
 using namespace std;
@@ -42,15 +39,11 @@ InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(fa
 
 void InputThread::start(EngineData* e)
 {
-	initKeyTable();
 	engineData = e;
-	engineData->setInputHandler(sigc::mem_fun(this, &InputThread::worker));
 }
 
 InputThread::~InputThread()
 {
-	if(engineData)
-		engineData->removeInputHandler();
 	wait();
 }
 
@@ -63,15 +56,12 @@ void InputThread::wait()
 	terminated=true;
 }
 
-//This is guarded gdk_threads_enter/leave
-bool InputThread::worker(GdkEvent *event)
+bool InputThread::worker(SDL_Event *event)
 {
-	//Set sys to this SystemState
-	setTLSSys(m_sys);
 	gboolean ret=FALSE;
 	switch(event->type)
 	{
-		case GDK_KEY_PRESS:
+		case SDL_KEYDOWN:
 		{
 			bool handled = handleKeyboardShortcuts(&event->key);
 			if (!handled)
@@ -79,78 +69,60 @@ bool InputThread::worker(GdkEvent *event)
 			ret=TRUE;
 			break;
 		}
-		case GDK_KEY_RELEASE:
+		case SDL_KEYUP:
 		{
 			sendKeyEvent(&event->key);
 			ret=TRUE;
 			break;
 		}
-		case GDK_EXPOSE:
+		case SDL_MOUSEBUTTONDOWN:
 		{
-			//Signal the renderThread
-			m_sys->getRenderThread()->draw(false);
-			ret=TRUE;
-			break;
-		}
-		case GDK_BUTTON_PRESS:
-		{
-			if(event->button.button == 1)
+			if(event->button.button == SDL_BUTTON_LEFT)
 			{
 				//Grab focus, to receive keypresses
 				engineData->grabFocus();
 
 				int stageX, stageY;
 				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				handleMouseDown(stageX,stageY,event->button.state);
+				if (event->button.clicks == 1)
+					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
+				if (event->button.clicks == 2)
+					handleMouseDoubleClick(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 			}
 			ret=TRUE;
 			break;
 		}
-		case GDK_2BUTTON_PRESS:
-		{
-			if(event->button.button == 1)
-			{
-				int stageX, stageY;
-				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				handleMouseDoubleClick(stageX,stageY,event->button.state);
-			}
-			ret=TRUE;
-			break;
-		}
-		case GDK_BUTTON_RELEASE:
+		case SDL_MOUSEBUTTONUP:
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-			handleMouseUp(stageX,stageY,event->button.state);
+			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 			ret=TRUE;
 			break;
 		}
-		case GDK_MOTION_NOTIFY:
+		case SDL_MOUSEMOTION:
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
-			handleMouseMove(stageX,stageY,event->button.state);
+			handleMouseMove(stageX,stageY,SDL_GetModState(),event->motion.state == SDL_PRESSED);
 			ret=TRUE;
 			break;
 		}
-		case GDK_SCROLL:
+		case SDL_MOUSEWHEEL:
 		{
 			int stageX, stageY;
-			m_sys->windowToStageCoordinates(event->scroll.x,event->scroll.y,stageX,stageY);
-			handleScrollEvent(stageX,stageY,event->scroll.direction,event->scroll.state);
+			m_sys->windowToStageCoordinates(event->wheel.x,event->wheel.y,stageX,stageY);
+			handleScrollEvent(stageX,stageY,event->wheel.direction,SDL_GetModState(),false);
 			ret=TRUE;
 			break;
 		}
-		case GDK_LEAVE_NOTIFY:
+		case SDL_WINDOWEVENT_LEAVE:
 		{
 			handleMouseLeave();
 			ret=TRUE;
 			break;
 		}
 		default:
-//#ifdef EXPENSIVE_DEBUG
-//			LOG(LOG_INFO, "GDKTYPE " << event->type);
-//#endif
 			break;
 	}
 	return ret;
@@ -179,7 +151,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	return selected;
 }
 
-void InputThread::handleMouseDown(uint32_t x, uint32_t y, unsigned int buttonState)
+void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -188,11 +160,11 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, unsigned int buttonSta
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseDown",localX,localY,true,buttonState)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseDown",localX,localY,true,buttonState,pressed)));
 	lastMouseDownTarget=selected;
 }
 
-void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int buttonState)
+void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -201,10 +173,10 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, unsigned int bu
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys,"doubleClick",localX,localY,true,buttonState)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys,"doubleClick",localX,localY,true,buttonState,pressed)));
 }
 
-void InputThread::handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState)
+void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -213,17 +185,17 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, unsigned int buttonState
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseUp",localX,localY,true,buttonState)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseUp",localX,localY,true,buttonState,pressed)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
 		m_sys->currentVm->addEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys,"click",localX,localY,true,buttonState)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys,"click",localX,localY,true,buttonState,pressed)));
 	}
 	lastMouseDownTarget=NullRef;
 }
 
-void InputThread::handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonState)
+void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -256,7 +228,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonSta
 		selected->globalToLocal(x,y,localX,localY);
 		if(currentMouseOver == selected)
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseMove",localX,localY,true,buttonState)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseMove",localX,localY,true,buttonState,pressed)));
 		else
 		{
 			if(!currentMouseOver.isNull())
@@ -264,28 +236,28 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, unsigned int buttonSta
 				number_t clocalX, clocalY;
 				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 				m_sys->currentVm->addEvent(currentMouseOver,
-					_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOut",clocalX,clocalY,true,buttonState,selected)));
+					_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 				m_sys->currentVm->addEvent(currentMouseOver,
-					_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOut",clocalX,clocalY,true,buttonState,selected)));
+					_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 			}
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOver",localX,localY,true,buttonState,currentMouseOver)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			m_sys->currentVm->addEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOver",localX,localY,true,buttonState,currentMouseOver)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
 		}
 	}
 }
 
-void InputThread::handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection direction, unsigned int buttonState)
+void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, SDL_Keymod buttonState,bool pressed)
 {
 	if(m_sys->currentVm == NULL)
 		return;
 
 	int delta;
-	if(direction==GDK_SCROLL_UP)
+	if(direction==SDL_MOUSEWHEEL_NORMAL)
 		delta = 1;
-	else if(direction==GDK_SCROLL_DOWN)
+	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
 		delta = -1;
 	else
 		return;
@@ -295,7 +267,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, GdkScrollDirection d
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseWheel",localX,localY,true,buttonState,NullRef,delta)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseWheel",localX,localY,true,buttonState,pressed,NullRef,delta)));
 }
 
 void InputThread::handleMouseLeave()
@@ -309,60 +281,24 @@ void InputThread::handleMouseLeave()
 		_MR(Class<Event>::getInstanceS(m_sys,"mouseLeave")));
 }
 
-void InputThread::initKeyTable()
-{
-	int i = 0;
-	while (hardwareKeycodes[i].keyname)
-	{
-		// Map GDK keyvals to hardware keycodes.
-		//
-		// NOTE: The keycodes returned by GDK are different
-		// from the keycodes in the Flash documentation.
-		// Should add mapping from GDK codes to Flash codes
-		// for AS files that use raw numerical values instead
-		// of Keyboard.* constants.
-		GdkKeymapKey *keys;
-		int keys_len;
-		const char *keyname = hardwareKeycodes[i].keyname;
-		unsigned keyval = hardwareKeycodes[i].gdkKeyval;
-		if (gdk_keymap_get_entries_for_keyval(NULL, keyval, &keys, &keys_len))
-		{
-			KeyNameCodePair key;
-			key.keyname = keyname;
-			key.keycode = keys[0].keycode;
-			keyNamesAndCodes.push_back(key);
-			g_free(keys);
-		}
-
-		i++;
-	}
-}
-
-const std::vector<KeyNameCodePair>& InputThread::getKeyNamesAndCodes()
-{
-	// No locking needed, because keyNamesAndCodes is not modified
-	// after being initialized
-	return keyNamesAndCodes;
-}
-
-bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
+bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 {
 	bool handled = false;
-	if ((keyevent->state & GDK_CONTROL_MASK) != GDK_CONTROL_MASK)
+	if (!(keyevent->keysym.mod & KMOD_CTRL))
 		return handled;
 
-	switch(keyevent->keyval)
+	switch(keyevent->keysym.sym)
 	{
-		case GDK_q:
+		case SDLK_q:
 			handled = true;
 			if(m_sys->standalone)
 				m_sys->setShutdownFlag();
 			break;
-		case GDK_p:
+		case SDLK_p:
 			handled = true;
 			m_sys->showProfilingData=!m_sys->showProfilingData;
 			break;
-		case GDK_m:
+		case SDLK_m:
 			handled = true;
 			if (!m_sys->audioManager->pluginLoaded())
 				break;
@@ -372,20 +308,15 @@ bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
 			else
 				LOG(LOG_INFO, "All sounds unmuted");
 			break;
-		case GDK_c:
+		case SDLK_c:
 			handled = true;
 			if(m_sys->hasError())
 			{
-				GtkClipboard *clipboard;
-				clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 				std::string s = "SWF file: ";
 				s.append(m_sys->mainClip->getOrigin().getParsedURL());
 				s.append("\n");
 				s.append(m_sys->getErrorCause());
-				gtk_clipboard_set_text(clipboard, s.c_str(),s.size());
-				clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-				gtk_clipboard_set_text(clipboard, s.c_str(), s.size());
-				LOG(LOG_INFO, "Copied error to clipboard");
+				engineData->setClipboardText(s);
 			}
 			else
 				LOG(LOG_INFO, "No error to be copied to clipboard");
@@ -397,7 +328,151 @@ bool InputThread::handleKeyboardShortcuts(const GdkEventKey *keyevent)
 	return handled;
 }
 
-void InputThread::sendKeyEvent(const GdkEventKey *keyevent)
+AS3KeyCode getAS3KeyCode(SDL_Keycode sdlkey)
+{
+	switch (sdlkey)
+	{
+		case SDLK_RETURN: return AS3KEYCODE_ENTER;
+		case SDLK_ESCAPE: return AS3KEYCODE_ESCAPE;
+		case SDLK_BACKSPACE: return AS3KEYCODE_BACKSPACE;
+		case SDLK_TAB: return AS3KEYCODE_TAB;
+		case SDLK_SPACE: return AS3KEYCODE_SPACE;
+		case SDLK_QUOTE: return AS3KEYCODE_QUOTE;
+		case SDLK_COMMA: return AS3KEYCODE_COMMA;
+		case SDLK_MINUS: return AS3KEYCODE_MINUS;
+		case SDLK_PERIOD: return AS3KEYCODE_PERIOD;
+		case SDLK_SLASH: return AS3KEYCODE_SLASH;
+		case SDLK_0: return AS3KEYCODE_NUMBER_0;
+		case SDLK_1: return AS3KEYCODE_NUMBER_1;
+		case SDLK_2: return AS3KEYCODE_NUMBER_2;
+		case SDLK_3: return AS3KEYCODE_NUMBER_3;
+		case SDLK_4: return AS3KEYCODE_NUMBER_4;
+		case SDLK_5: return AS3KEYCODE_NUMBER_5;
+		case SDLK_6: return AS3KEYCODE_NUMBER_6;
+		case SDLK_7: return AS3KEYCODE_NUMBER_7;
+		case SDLK_8: return AS3KEYCODE_NUMBER_8;
+		case SDLK_9: return AS3KEYCODE_NUMBER_9;
+		case SDLK_COLON: return AS3KEYCODE_PERIOD;
+		case SDLK_SEMICOLON: return AS3KEYCODE_SEMICOLON;
+		case SDLK_EQUALS: return AS3KEYCODE_EQUAL;
+		case SDLK_LEFTBRACKET: return AS3KEYCODE_LEFTBRACKET;
+		case SDLK_BACKSLASH: return AS3KEYCODE_BACKSLASH;
+		case SDLK_RIGHTBRACKET: return AS3KEYCODE_RIGHTBRACKET;
+		case SDLK_BACKQUOTE: return AS3KEYCODE_BACKQUOTE;
+		case SDLK_a: return AS3KEYCODE_A;
+		case SDLK_b: return AS3KEYCODE_B;
+		case SDLK_c: return AS3KEYCODE_C;
+		case SDLK_d: return AS3KEYCODE_D;
+		case SDLK_e: return AS3KEYCODE_E;
+		case SDLK_f: return AS3KEYCODE_F;
+		case SDLK_g: return AS3KEYCODE_G;
+		case SDLK_h: return AS3KEYCODE_H;
+		case SDLK_i: return AS3KEYCODE_I;
+		case SDLK_j: return AS3KEYCODE_J;
+		case SDLK_k: return AS3KEYCODE_K;
+		case SDLK_l: return AS3KEYCODE_L;
+		case SDLK_m: return AS3KEYCODE_M;
+		case SDLK_n: return AS3KEYCODE_N;
+		case SDLK_o: return AS3KEYCODE_O;
+		case SDLK_p: return AS3KEYCODE_P;
+		case SDLK_q: return AS3KEYCODE_Q;
+		case SDLK_r: return AS3KEYCODE_R;
+		case SDLK_s: return AS3KEYCODE_S;
+		case SDLK_t: return AS3KEYCODE_T;
+		case SDLK_u: return AS3KEYCODE_U;
+		case SDLK_v: return AS3KEYCODE_V;
+		case SDLK_w: return AS3KEYCODE_W;
+		case SDLK_x: return AS3KEYCODE_X;
+		case SDLK_y: return AS3KEYCODE_Y;
+		case SDLK_z: return AS3KEYCODE_Z;
+		case SDLK_CAPSLOCK:return AS3KEYCODE_CAPS_LOCK;
+		case SDLK_F1: return AS3KEYCODE_F1;
+		case SDLK_F2: return AS3KEYCODE_F2;
+		case SDLK_F3: return AS3KEYCODE_F3;
+		case SDLK_F4: return AS3KEYCODE_F4;
+		case SDLK_F5: return AS3KEYCODE_F5;
+		case SDLK_F6: return AS3KEYCODE_F6;
+		case SDLK_F7: return AS3KEYCODE_F7;
+		case SDLK_F8: return AS3KEYCODE_F8;
+		case SDLK_F9: return AS3KEYCODE_F9;
+		case SDLK_F10: return AS3KEYCODE_F10;
+		case SDLK_F11: return AS3KEYCODE_F11;
+		case SDLK_F12: return AS3KEYCODE_F12;
+		case SDLK_PAUSE: return AS3KEYCODE_PAUSE;
+		case SDLK_INSERT: return AS3KEYCODE_INSERT;
+		case SDLK_HOME: return AS3KEYCODE_HOME;
+		case SDLK_PAGEUP: return AS3KEYCODE_PAGE_UP;
+		case SDLK_DELETE: return AS3KEYCODE_DELETE;
+		case SDLK_END: return AS3KEYCODE_END;
+		case SDLK_PAGEDOWN: return AS3KEYCODE_PAGE_DOWN;
+		case SDLK_RIGHT: return AS3KEYCODE_RIGHT;
+		case SDLK_LEFT: return AS3KEYCODE_LEFT;
+		case SDLK_DOWN: return AS3KEYCODE_DOWN;
+		case SDLK_UP: return AS3KEYCODE_UP;
+		case SDLK_NUMLOCKCLEAR: return AS3KEYCODE_NUMPAD;
+		case SDLK_KP_DIVIDE: return AS3KEYCODE_NUMPAD_DIVIDE;
+		case SDLK_KP_MULTIPLY: return AS3KEYCODE_NUMPAD_MULTIPLY;
+		case SDLK_KP_MINUS:return AS3KEYCODE_NUMPAD_SUBTRACT;
+		case SDLK_KP_PLUS: return AS3KEYCODE_NUMPAD_ADD;
+		case SDLK_KP_ENTER: return AS3KEYCODE_NUMPAD_ENTER;
+		case SDLK_KP_1: return AS3KEYCODE_NUMPAD_1;
+		case SDLK_KP_2: return AS3KEYCODE_NUMPAD_2;
+		case SDLK_KP_3: return AS3KEYCODE_NUMPAD_3;
+		case SDLK_KP_4: return AS3KEYCODE_NUMPAD_4;
+		case SDLK_KP_5: return AS3KEYCODE_NUMPAD_5;
+		case SDLK_KP_6: return AS3KEYCODE_NUMPAD_6;
+		case SDLK_KP_7: return AS3KEYCODE_NUMPAD_7;
+		case SDLK_KP_8: return AS3KEYCODE_NUMPAD_8;
+		case SDLK_KP_9: return AS3KEYCODE_NUMPAD_9;
+		case SDLK_KP_0: return AS3KEYCODE_NUMPAD_0;
+		case SDLK_KP_PERIOD: return AS3KEYCODE_NUMPAD_DECIMAL;
+		case SDLK_F13: return AS3KEYCODE_F13;
+		case SDLK_F14: return AS3KEYCODE_F14;
+		case SDLK_F15: return AS3KEYCODE_F15;
+		case SDLK_HELP: return AS3KEYCODE_HELP;
+		case SDLK_MENU: return AS3KEYCODE_MENU;
+		case SDLK_LCTRL: return AS3KEYCODE_CONTROL;
+		case SDLK_LSHIFT: return AS3KEYCODE_SHIFT;
+		case SDLK_LALT: return AS3KEYCODE_ALTERNATE;
+		case SDLK_RCTRL: return AS3KEYCODE_CONTROL;
+		case SDLK_RSHIFT: return AS3KEYCODE_SHIFT;
+		case SDLK_RALT: return AS3KEYCODE_ALTERNATE;
+		case SDLK_AC_SEARCH: return AS3KEYCODE_SEARCH;
+		case SDLK_AC_BACK: return AS3KEYCODE_BACK ;
+		case SDLK_AC_STOP:return AS3KEYCODE_STOP;
+	}
+	//AS3KEYCODE_AUDIO
+	//AS3KEYCODE_BLUE
+	//AS3KEYCODE_YELLOW
+	//AS3KEYCODE_CHANNEL_DOWN
+	//AS3KEYCODE_CHANNEL_UP
+	//AS3KEYCODE_COMMAND
+	//AS3KEYCODE_DVR
+	//AS3KEYCODE_EXIT
+	//AS3KEYCODE_FAST_FORWARD
+	//AS3KEYCODE_GREEN
+	//AS3KEYCODE_GUIDE
+	//AS3KEYCODE_INFO
+	//AS3KEYCODE_INPUT
+	//AS3KEYCODE_LAST
+	//AS3KEYCODE_LIVE
+	//AS3KEYCODE_MASTER_SHELL
+	//AS3KEYCODE_NEXT
+	//AS3KEYCODE_PLAY
+	//AS3KEYCODE_PREVIOUS
+	//AS3KEYCODE_RECORD
+	//AS3KEYCODE_RED
+	//AS3KEYCODE_REWIND
+	//AS3KEYCODE_SETUP
+	//AS3KEYCODE_SKIP_BACKWARD
+	//AS3KEYCODE_SKIP_FORWARD
+	//AS3KEYCODE_SUBTITLE
+	//AS3KEYCODE_VOD
+	return AS3KEYCODE_UNKNOWN;
+}
+
+
+void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -409,18 +484,15 @@ void InputThread::sendKeyEvent(const GdkEventKey *keyevent)
 		return;
 
 	tiny_string type;
-	if (keyevent->type == GDK_KEY_PRESS)
+	if (keyevent->type == SDL_KEYDOWN)
 		type = "keyDown";
 	else
 		type = "keyUp";
 
-	uint32_t charcode = keyevent->keyval;
-	if (keyevent->is_modifier)
-		charcode = 0;
-
 	target->incRef();
+	AS3KeyCode c = getAS3KeyCode(keyevent->keysym.sym);
 	m_sys->currentVm->addEvent(target,
-	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type, charcode, keyevent->hardware_keycode, keyevent->state)));
+	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,c,c, (SDL_Keymod)keyevent->keysym.mod)));
 }
 
 void InputThread::addListener(InteractiveObject* ob)

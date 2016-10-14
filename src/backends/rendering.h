@@ -24,7 +24,7 @@
 #include "backends/rendering_context.h"
 #include "timer.h"
 #include <glibmm/timeval.h>
-
+#include <SDL2/SDL.h>
 #ifdef _WIN32
 #	include <windef.h>
 #endif
@@ -77,6 +77,7 @@ private:
 	float scaleY;
 	int offsetX;
 	int offsetY;
+	SDL_GLContext mSDLContext;
 
 #ifdef _WIN32
 	HGLRC mRC;
@@ -117,7 +118,6 @@ private:
 	Semaphore initialized;
 	Mutex mutexRendering;
 
-	static void SizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, gpointer data);
 public:
 	RenderThread(SystemState* s);
 	~RenderThread();

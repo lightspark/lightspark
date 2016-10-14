@@ -32,10 +32,10 @@
 INCLUDE_DIRECTORIES(".")
 INCLUDE_DIRECTORIES("..")
 
-pkg_check_modules(SDL REQUIRED sdl)
-pkg_check_modules(SDL_mixer REQUIRED)
-INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${SDL_mixer_INCLUDE_DIRS})
+pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(SDL2MIXER REQUIRED SDL2_mixer)
+INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${SDL2MIXER_INCLUDE_DIRS})
 if(!Boost_FOUND)
   find_package(Boost COMPONENTS filesystem system regex)
   if(Boost_FOUND)
@@ -49,7 +49,7 @@ SET(SDLPLUGIN_SOURCES SDLPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
 # liblightsparkSDLplugin.so target
 ADD_LIBRARY(sdlplugin MODULE ${SDLPLUGIN_SOURCES})
 TARGET_LINK_LIBRARIES(sdlplugin spark) #Need to link some functions with the decoders
-TARGET_LINK_LIBRARIES(sdlplugin ${SDL_LIBRARIES} ${SDL_mixer_LIBRARIES} ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(sdlplugin ${SDL2_LIBRARIES} ${SDL2MIXER_LIBRARIES} ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(sdlplugin PROPERTIES OUTPUT_NAME lightsparksdlplugin)
 
 INSTALL(TARGETS sdlplugin DESTINATION ${PLUGINSDIR})

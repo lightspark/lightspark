@@ -22,11 +22,8 @@
 #include "swf.h"
 #include "logger.h"
 #include "platforms/engineutils.h"
-#ifndef _WIN32
-#	include <sys/resource.h>
-#	include <gdk/gdkx.h>
-#endif
 #include "compat.h"
+#include <SDL2/SDL.h>
 
 
 using namespace std;
@@ -34,56 +31,27 @@ using namespace lightspark;
 
 class StandaloneEngineData: public EngineData
 {
-	guint destroyHandlerId;
-	guint deleteHandlerId;
 public:
-	StandaloneEngineData() : destroyHandlerId(0),deleteHandlerId(0)
+	StandaloneEngineData()
 	{
-#ifndef _WIN32
-		visual = XVisualIDFromVisual(gdk_x11_visual_get_xvisual(gdk_visual_get_system()));
-#endif
-	}
-	static void destroyWidget(GtkWidget* widget)
-	{
-		gdk_threads_enter();
-		gtk_widget_destroy(widget);
-		gdk_threads_leave();
 	}
 	~StandaloneEngineData()
 	{
-		if(widget)
+	}
+	SDL_Window* createWidget(uint32_t w, uint32_t h)
+	{
+		SDL_Window* window = SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+		if (window == 0)
 		{
-			if(deleteHandlerId)
-				g_signal_handler_disconnect(widget, deleteHandlerId);
-			if(destroyHandlerId)
-				g_signal_handler_disconnect(widget, destroyHandlerId);
-
-			runInGtkThread(sigc::bind(&destroyWidget,widget));
+			// try creation of window without opengl support
+			window = SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_RESIZABLE);
+			if (window == 0)
+				LOG(LOG_ERROR,"createWidget failed:"<<SDL_GetError());
 		}
-	}
-	static void StandaloneDestroy(GtkWidget *widget, gpointer data)
-	{
-		StandaloneEngineData* e = reinterpret_cast<StandaloneEngineData*>(data);
-		RecMutex::Lock l(e->mutex);
-		/* no need to destroy it - it's already done */
-		e->widget = NULL;
-		getSys()->setShutdownFlag();
-	}
-	static gboolean StandaloneDelete(GtkWidget *widget, gpointer data)
-	{
-		// wait for rendering complete
-		getSys()->waitRendering();
-		return FALSE;
-	}
-	GtkWidget* createGtkWidget()
-	{
-		GtkWidget* window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-		gtk_window_set_title((GtkWindow*)window,"Lightspark");
-		deleteHandlerId = g_signal_connect(window,"delete_event",G_CALLBACK(StandaloneDelete),this);
-		destroyHandlerId = g_signal_connect(window,"destroy",G_CALLBACK(StandaloneDestroy),this);
 		return window;
 	}
-	GdkNativeWindow getWindowForGnash()
+	
+	uint32_t getWindowForGnash()
 	{
 		/* passing and invalid window id to gnash makes
 		 * it create its own window */
@@ -102,6 +70,22 @@ public:
         void openPageInBrowser(const tiny_string& url, const tiny_string& window)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "openPageInBrowser not implemented in the standalone mode");
+	}
+	bool getScreenData(SDL_DisplayMode* screen)
+	{
+		if (SDL_GetDesktopDisplayMode(0, screen) != 0) {
+			LOG(LOG_ERROR,"Capabilities: SDL_GetDesktopDisplayMode failed:"<<SDL_GetError());
+			return false;
+		}
+		return true;
+	}
+	double getScreenDPI()
+	{
+		float ddpi;
+		float hdpi;
+		float vdpi;
+		SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(widget),&ddpi,&hdpi,&vdpi);
+		return ddpi;
 	}
 };
 
@@ -132,14 +116,6 @@ int main(int argc, char* argv[])
 	textdomain("lightspark");
 
 	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
-
-	//Make GTK thread enabled
-#ifdef HAVE_G_THREAD_INIT
-	g_thread_init(NULL);
-#endif
-	gdk_threads_init();
-	//Give GTK a chance to parse its own options
-	gtk_init (&argc, &argv);
 
 	for(int i=1;i<argc;i++)
 	{
@@ -263,15 +239,6 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-#ifndef _WIN32
-	struct rlimit rl;
-	getrlimit(RLIMIT_AS,&rl);
-	rl.rlim_cur=400000000;
-	rl.rlim_max=rl.rlim_cur;
-	//setrlimit(RLIMIT_AS,&rl);
-
-#endif
-
 	Log::setLogLevel(log_level);
 	ifstream f(fileName, ios::in|ios::binary);
 	f.seekg(0, ios::end);
@@ -286,7 +253,12 @@ int main(int argc, char* argv[])
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
 	SystemState::staticInit();
-	EngineData::startGTKMain();
+	if (!EngineData::startSDLMain())
+	{
+		LOG(LOG_ERROR,"SDL initialization failed, aborting");
+		SystemState::staticDeinit();
+		exit(3);
+	}
 	//NOTE: see SystemState declaration
 	SystemState* sys = new SystemState(fileSize, flashMode);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
@@ -363,11 +335,18 @@ int main(int argc, char* argv[])
 	 * SystemState::setShutdownFlag.
 	 */
 	sys->destroy();
+
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_QUIT;
+	SDL_PushEvent(&event);
+	EngineData::mainLoopThread->join();
+
 	delete pt;
 	delete sys;
 
 	SystemState::staticDeinit();
-	EngineData::quitGTKMain();
+	
 	return 0;
 }
 

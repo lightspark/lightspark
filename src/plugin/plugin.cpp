@@ -32,6 +32,15 @@
 #include "backends/urlutils.h"
 
 #include "plugin/npscriptobject.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#if GTK_CHECK_VERSION (2,21,8)
+#include <gdk/gdkkeysyms-compat.h> 
+#else
+#include <gdk/gdkkeysyms.h>
+#endif 
 
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
@@ -257,13 +266,6 @@ NPError NS_PluginInitialize()
 	Log::setLogLevel(log_level);
 	lightspark::SystemState::staticInit();
 
-	/* On linux, firefox runs its own gtk main loop
-	 * which we can utilise through g_add_idle
-	 * but we must not create our own gtk_main.
-	 */
-#ifdef _WIN32
-	EngineData::startGTKMain();
-#endif
 	return NPERR_NO_ERROR;
 }
 
@@ -271,9 +273,6 @@ void NS_PluginShutdown()
 {
 	LOG(LOG_INFO,"Lightspark plugin shutdown");
 	lightspark::SystemState::staticDeinit();
-#ifdef _WIN32
-	EngineData::quitGTKMain();
-#endif
 }
 
 // get values per plugin
@@ -374,7 +373,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
-
+	EngineData::mainthread_running = true;
+	g_idle_add((GSourceFunc)EngineData::mainloop_from_plugin,m_sys);
 	//The sys var should be NULL in this thread
 	setTLSSys( NULL );
 }
@@ -455,62 +455,339 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 	return err;
 
 }
-
-#ifdef _WIN32
-/*
- * Create a GtkWidget and embed it into that mWindow. This unifies the other code,
- * because on any platform and standalone/plugin, we always handle GtkWidgets.
- * Additionally, firefox always crashed on me when trying to directly draw into
- * mWindow.
- * This must be run in the gtk_main() thread for AttachThreadInput to make sense.
- */
-GtkWidget* PluginEngineData::createGtkWidget()
+SDL_Keycode getSDLKeyCode(unsigned gdkKeyval)
 {
-	HWND parent_hwnd = (HWND)instance->mWindow;
-
-	GtkWidget* widget=gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	/* Remove window decorations */
-	gtk_window_set_decorated((GtkWindow*)widget, FALSE);
-	/* Realize to construct hwnd */
-	gtk_widget_realize(widget);
-	HWND window = (HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget));
-	/* Set WS_CHILD, remove WS_POPUP - see MSDN on SetParent */
-	DWORD dwStyle = GetWindowLong (window, GWL_STYLE);
-	dwStyle |= WS_CHILD;
-	dwStyle &= ~WS_POPUP;
-	SetWindowLong(window, GWL_STYLE, dwStyle);
-	SetForegroundWindow(window);
-	/* Re-parent */
-	SetParent(window, parent_hwnd);
-	/* Attach our thread to that of the parent.
-	 * This ensures that we get messages for input events*/
-	DWORD parentThreadId;
-	if(!(parentThreadId = GetWindowThreadProcessId(parent_hwnd, NULL)))
-		LOG(LOG_ERROR,"GetWindowThreadProcessId failed");
-	DWORD myThreadId;
-	if(!(myThreadId = GetCurrentThreadId()))
-		LOG(LOG_ERROR,"GetCurrentThreadId failed");
-	if(!AttachThreadInput(myThreadId, parentThreadId, TRUE))
-		LOG(LOG_ERROR,"AttachThreadInput failed");
-	/* Set window size */
-	gtk_widget_set_size_request(widget, width, height);
-
-	return widget;
-}
-#else
-GtkWidget* PluginEngineData::createGtkWidget()
+	switch (gdkKeyval)
+	{
+		case GDK_a: return SDLK_a;
+		case GDK_Alt_L: return SDLK_LALT;
+		case GDK_b: return SDLK_b;
+		case GDK_Back: return SDLK_AC_BACK;
+		case GDK_grave: return SDLK_BACKQUOTE;
+		case GDK_backslash: return SDLK_BACKSLASH;
+		case GDK_BackSpace: return SDLK_BACKSPACE;
+		case GDK_Blue: return SDLK_UNKNOWN; // TODO
+		case GDK_c: return SDLK_c;
+		case GDK_Caps_Lock: return SDLK_CAPSLOCK;
+		case GDK_comma: return SDLK_COMMA;
+		case GDK_Control_L: return SDLK_LCTRL;
+		case GDK_d: return SDLK_d;
+		case GDK_Delete: return SDLK_DELETE;
+		case GDK_Down: return SDLK_DOWN;
+		case GDK_e: return SDLK_e;
+		case GDK_End: return SDLK_END;
+		case GDK_Return: return SDLK_RETURN;
+		case GDK_equal: return SDLK_EQUALS;
+		case GDK_Escape: return SDLK_ESCAPE;
+		case GDK_f: return SDLK_f;
+		case GDK_F1: return SDLK_F1;
+		case GDK_F2: return SDLK_F2;
+		case GDK_F3: return SDLK_F3;
+		case GDK_F4: return SDLK_F4;
+		case GDK_F5: return SDLK_F5;
+		case GDK_F6: return SDLK_F6;
+		case GDK_F7: return SDLK_F7;
+		case GDK_F8: return SDLK_F8;
+		case GDK_F9: return SDLK_F9;
+		case GDK_F10: return SDLK_F10;
+		case GDK_F11: return SDLK_F11;
+		case GDK_F12: return SDLK_F12;
+		case GDK_F13: return SDLK_F13;
+		case GDK_F14: return SDLK_F14;
+		case GDK_F15: return SDLK_F15;
+		case GDK_g: return SDLK_g;
+		case GDK_Green: return SDLK_UNKNOWN; // TODO
+		case GDK_h: return SDLK_h;
+		case GDK_Help: return SDLK_HELP;
+		case GDK_Home: return SDLK_HOME;
+		case GDK_i: return SDLK_i;
+		case GDK_Insert: return SDLK_INSERT;
+		case GDK_j: return SDLK_j;
+		case GDK_k: return SDLK_k;
+		case GDK_l: return SDLK_l;
+		case GDK_Left: return SDLK_LEFT;
+		case GDK_bracketleft: return SDLK_LEFTBRACKET;
+		case GDK_m: return SDLK_m;
+		case GDK_minus: return SDLK_MINUS;
+		case GDK_n: return SDLK_n;
+		case GDK_0: return SDLK_0;
+		case GDK_1: return SDLK_1;
+		case GDK_2: return SDLK_2;
+		case GDK_3: return SDLK_3;
+		case GDK_4: return SDLK_4;
+		case GDK_5: return SDLK_5;
+		case GDK_6: return SDLK_6;
+		case GDK_7: return SDLK_7;
+		case GDK_8: return SDLK_8;
+		case GDK_9: return SDLK_9;
+		case GDK_KP_0: return SDLK_KP_0;
+		case GDK_KP_1: return SDLK_KP_1;
+		case GDK_KP_2: return SDLK_KP_2;
+		case GDK_KP_3: return SDLK_KP_3;
+		case GDK_KP_4: return SDLK_KP_4;
+		case GDK_KP_5: return SDLK_KP_5;
+		case GDK_KP_6: return SDLK_KP_6;
+		case GDK_KP_7: return SDLK_KP_7;
+		case GDK_KP_8: return SDLK_KP_8;
+		case GDK_KP_9: return SDLK_KP_9;
+		case GDK_KP_Add: return SDLK_KP_MEMADD;
+		case GDK_KP_Separator: return SDLK_KP_PERIOD; // TODO
+		case GDK_KP_Divide: return SDLK_KP_DIVIDE;
+		case GDK_KP_Enter: return SDLK_KP_ENTER;
+		case GDK_KP_Multiply: return SDLK_KP_MULTIPLY;
+		case GDK_KP_Subtract: return SDLK_KP_MINUS;
+		case GDK_o: return SDLK_o;
+		case GDK_p: return SDLK_p;
+		case GDK_Page_Down: return SDLK_PAGEDOWN;
+		case GDK_Page_Up: return SDLK_PAGEUP;
+		case GDK_Pause: return SDLK_PAUSE;
+		case GDK_period: return SDLK_PERIOD;
+		case GDK_q: return SDLK_q;
+		case GDK_quoteright: return SDLK_QUOTE;
+		case GDK_r: return SDLK_r;
+		case GDK_Red: return SDLK_UNKNOWN; // TODO
+		case GDK_Right: return SDLK_RIGHT;
+		case GDK_bracketright: return SDLK_RIGHTBRACKET;
+		case GDK_s: return SDLK_s;
+		case GDK_Search: return SDLK_AC_SEARCH;
+		case GDK_semicolon: return SDLK_SEMICOLON;
+		case GDK_Shift_L: return SDLK_LSHIFT;
+		case GDK_slash: return SDLK_SLASH;
+		case GDK_space: return SDLK_SPACE;
+		case GDK_Subtitle: return SDLK_UNKNOWN; // TODO
+		case GDK_t: return SDLK_t;
+		case GDK_Tab: return SDLK_TAB;
+		case GDK_u: return SDLK_u;
+		case GDK_Up: return SDLK_UP;
+		case GDK_v: return SDLK_v;
+		case GDK_w: return SDLK_w;
+		case GDK_x: return SDLK_x;
+		case GDK_y: return SDLK_y;
+		case GDK_Yellow: return SDLK_UNKNOWN; // TODO
+		case GDK_z: return SDLK_z;
+	}
+	return SDLK_UNKNOWN;
+};
+static uint16_t getKeyModifier(GdkEvent *event)
 {
-	return gtk_plug_new(instance->mWindow);
+	uint16_t res = KMOD_NONE;
+	if (event->key.state & GDK_CONTROL_MASK)
+		res |= KMOD_CTRL;
+	if (event->key.state & GDK_MOD1_MASK)
+		res |= KMOD_ALT;
+	if (event->key.state & GDK_SHIFT_MASK)
+		res |= KMOD_SHIFT;
+	return res;
 }
+
+static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, PluginEngineData* e)
+{
+	SDL_Event ev;
+	switch (event->type)
+	{
+		case GDK_EXPOSE:
+		{
+			ev.type = SDL_WINDOWEVENT;
+			ev.window.event = SDL_WINDOWEVENT_EXPOSED;
+			ev.window.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_KEY_PRESS:
+		{
+			ev.type = SDL_KEYDOWN;
+			ev.key.keysym.sym = getSDLKeyCode(event->key.keyval);
+			ev.key.keysym.mod = getKeyModifier(event);
+			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
+			ev.key.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_KEY_RELEASE:
+		{
+			ev.type = SDL_KEYUP;
+			ev.key.keysym.sym = getSDLKeyCode(event->key.keyval);
+			ev.key.keysym.mod = getKeyModifier(event);
+			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
+			ev.key.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_BUTTON_PRESS:
+		{
+			ev.type = SDL_MOUSEBUTTONDOWN;
+			switch (event->button.button)
+			{
+				case 1:
+					ev.button.button = SDL_BUTTON_LEFT;
+					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				case 2:
+					ev.button.button = SDL_BUTTON_RIGHT;
+					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				default:
+					ev.button.button = 0;
+					ev.button.state = SDL_RELEASED;
+					break;
+			}
+			ev.button.clicks = 1;
+			ev.button.x = event->button.x;
+			ev.button.y = event->button.y;
+			ev.button.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_2BUTTON_PRESS:
+		{
+			ev.type = SDL_MOUSEBUTTONDOWN;
+			switch (event->button.button)
+			{
+				case 1:
+					ev.button.button = SDL_BUTTON_LEFT;
+					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				case 2:
+					ev.button.button = SDL_BUTTON_RIGHT;
+					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				default:
+					ev.button.button = 0;
+					ev.button.state = SDL_RELEASED;
+					break;
+			}
+			ev.button.clicks = 2;
+			ev.button.x = event->button.x;
+			ev.button.y = event->button.y;
+			ev.button.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_BUTTON_RELEASE:
+		{
+			ev.type = SDL_MOUSEBUTTONUP;
+			switch (event->button.button)
+			{
+				case 1:
+					ev.button.button = SDL_BUTTON_LEFT;
+					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				case 2:
+					ev.button.button = SDL_BUTTON_RIGHT;
+					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				default:
+					ev.button.button = 0;
+					ev.button.state = SDL_RELEASED;
+					break;
+			}
+			ev.button.clicks = 0;
+			ev.button.x = event->button.x;
+			ev.button.y = event->button.y;
+			ev.button.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_MOTION_NOTIFY:
+		{
+			ev.type = SDL_MOUSEMOTION;
+			ev.motion.state = event->motion.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
+			ev.motion.x = event->motion.x;
+			ev.motion.y = event->motion.y;
+			ev.motion.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_SCROLL:
+		{
+			ev.type = SDL_MOUSEWHEEL;
+			ev.wheel.direction = event->scroll.state == GDK_SCROLL_UP ? SDL_MOUSEWHEEL_NORMAL : SDL_MOUSEWHEEL_FLIPPED ;
+			ev.wheel.x = event->scroll.x;
+			ev.wheel.y = event->scroll.y;
+			ev.wheel.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		case GDK_LEAVE_NOTIFY:
+		{
+			ev.type = SDL_WINDOWEVENT_LEAVE;
+			ev.wheel.windowID = SDL_GetWindowID(e->widget);
+			break;
+		}
+		default:
+#ifdef EXPENSIVE_DEBUG
+			LOG(LOG_INFO, "GDKTYPE " << event->type);
 #endif
+			return false;
+	}
+	EngineData::mainloop_handleevent(&ev,e->sys);
+	return true;
+}
+static void sizeDispatch(GtkWidget* widget, GdkRectangle* allocation, PluginEngineData* e)
+{
+	SDL_Event ev;
+	ev.type = SDL_WINDOWEVENT;
+	ev.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
+	ev.window.data1 = allocation->width;
+	ev.window.data2 = allocation->height;
+	ev.window.windowID = SDL_GetWindowID(e->widget);
+	
+	EngineData::mainloop_handleevent(&ev,e->sys);
+}
+
+
+SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
+{
+	widget_gtk = gtk_plug_new(instance->mWindow);
+	gdk_threads_enter();
+	gtk_widget_realize(widget_gtk);
+#if _WIN32
+	windowID = GDK_WINDOW_HWND(gtk_widget_get_window(widget_gtk));
+#else
+	windowID = GDK_WINDOW_XID(gtk_widget_get_window(widget_gtk));
+#endif
+	
+	gtk_widget_set_size_request(widget_gtk, w, h);
+	gtk_widget_show(widget_gtk);
+	gtk_widget_map(widget_gtk);
+	gtk_widget_set_can_focus(widget_gtk,TRUE);
+	gtk_widget_add_events(widget_gtk,
+		GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+		GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+		GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK |
+		GDK_LEAVE_NOTIFY_MASK);
+	inputHandlerId = g_signal_connect(widget_gtk, "event", G_CALLBACK(inputDispatch), this);
+	sizeHandlerId = g_signal_connect(widget_gtk, "size-allocate", G_CALLBACK(sizeDispatch), this);
+	
+	SDL_Window* sdlwin = SDL_CreateWindowFrom((const void*)gdk_x11_drawable_get_xid(gtk_widget_get_window(widget_gtk)));
+	gdk_threads_leave();
+	return sdlwin;
+}
 
 void PluginEngineData::grabFocus()
 {
-	if (!widget)
+	if (!widget_gtk)
 		return;
 
-	gtk_widget_grab_focus(widget);
+	gtk_widget_grab_focus(widget_gtk);
 }
+
+void PluginEngineData::setClipboardText(const std::string txt)
+{
+	GtkClipboard *clipboard;
+	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	gtk_clipboard_set_text(clipboard, txt.c_str(),txt.size());
+	clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+	gtk_clipboard_set_text(clipboard, txt.c_str(), txt.size());
+	LOG(LOG_INFO, "Copied error to clipboard");
+}
+
+bool PluginEngineData::getScreenData(SDL_DisplayMode *screen)
+{
+	GdkScreen*  s = gdk_screen_get_default();
+	screen->w = gdk_screen_get_width (s);
+	screen->h = gdk_screen_get_height (s);
+	return true;
+}
+
+double PluginEngineData::getScreenDPI()
+{
+	GdkScreen*  screen = gdk_screen_get_default();
+	return gdk_screen_get_resolution (screen);
+}
+
 
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
@@ -540,7 +817,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	}
 	assert(mWindow==0);
 
-	PluginEngineData* e = new PluginEngineData(this, width, height);
+	PluginEngineData* e = new PluginEngineData(this, width, height,m_sys);
 	mWindow = win;
 
 	LOG(LOG_INFO,"From Browser: Window " << mWindow << " Width: " << width << " Height: " << height);
@@ -783,7 +1060,7 @@ void PluginEngineData::stopMainDownload()
 		instance->mainDownloader->stop();
 }
 
-GdkNativeWindow PluginEngineData::getWindowForGnash()
+uint32_t PluginEngineData::getWindowForGnash()
 {
 	return instance->mWindow;
 }

@@ -27,7 +27,6 @@
 #include "scripting/toplevel/XMLList.h"
 
 #include <istream>
-#include <gdk/gdk.h>
 
 using namespace lightspark;
 
@@ -123,12 +122,14 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 	res +="&M=";
 	res += MANUFACTURER;
 
-	GdkScreen*  screen = gdk_screen_get_default();
-	gint width = gdk_screen_get_width (screen);
-	gint height = gdk_screen_get_height (screen);
-	char buf[40];
-	snprintf(buf,40,"&R=%ix%i",width,height);
-	res += buf;
+	SDL_DisplayMode screen;
+	if (obj->getSystemState()->getEngineData()->getScreenData(&screen)) {
+		gint width = screen.w;
+		gint height = screen.h;
+		char buf[40];
+		snprintf(buf,40,"&R=%ix%i",width,height);
+		res += buf;
+	}
 
 	/*
 	avHardwareDisable	AVD
@@ -169,15 +170,17 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 }
 ASFUNCTIONBODY(Capabilities,_getScreenResolutionX)
 {
-	GdkScreen*  screen = gdk_screen_get_default();
-	gint width = gdk_screen_get_width (screen);
-	return abstract_d(obj->getSystemState(),width);
+	SDL_DisplayMode screen;
+	if (!obj->getSystemState()->getEngineData()->getScreenData(&screen))
+		return abstract_di(obj->getSystemState(),0);
+	return abstract_di(obj->getSystemState(),screen.w);
 }
 ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
 {
-	GdkScreen*  screen = gdk_screen_get_default();
-	gint height = gdk_screen_get_height (screen);
-	return abstract_d(obj->getSystemState(),height);
+	SDL_DisplayMode screen;
+	if (!obj->getSystemState()->getEngineData()->getScreenData(&screen))
+		return abstract_di(obj->getSystemState(),0);
+	return abstract_di(obj->getSystemState(),screen.h);
 }
 ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
 {
@@ -186,8 +189,7 @@ ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
 }
 ASFUNCTIONBODY(Capabilities,_getScreenDPI)
 {
-	GdkScreen*  screen = gdk_screen_get_default();
-	gdouble dpi = gdk_screen_get_resolution (screen);
+	number_t dpi = obj->getSystemState()->getEngineData()->getScreenDPI();
 	return abstract_d(obj->getSystemState(),dpi);
 }
 

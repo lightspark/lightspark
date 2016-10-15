@@ -36,10 +36,6 @@ namespace lightspark
 		const char* const* systemConfigDirectories;
 		std::string userConfigDirectory;
 
-		//-- SETTINGS VALUES
-		enum AUDIOBACKEND { PULSEAUDIO=0, SDL, WINMM, NUM_AUDIO_BACKENDS, INVALID=1024 };
-		std::string audioBackendNames[NUM_AUDIO_BACKENDS];
-
 		//-- SETTINGS
 		//Specifies the default cache directory = "~/.cache/lightspark"
 		std::string defaultCacheDirectory;
@@ -49,10 +45,6 @@ namespace lightspark
 		std::string cachePrefix;
 		//Specifies the filename including full path of the gnash executable
 		std::string gnashPath;
-
-		//Specifies what audio backend should, default=PULSEAUDIO
-		AUDIOBACKEND audioBackend;
-		std::string audioBackendName;
 
 		//Specifies if rendering should be done
 		bool renderingEnabled;
@@ -65,9 +57,6 @@ namespace lightspark
 		const std::string& getCacheDirectory() const { return cacheDirectory; }
 		const std::string& getCachePrefix() const { return cachePrefix; }
 		const std::string& getGnashPath() const { return gnashPath; }
-
-		AUDIOBACKEND getAudioBackend() const { return audioBackend; }
-		const std::string& getAudioBackendName() const { return audioBackendName; }
 
 		bool isRenderingEnabled() const { return renderingEnabled; }
 	};

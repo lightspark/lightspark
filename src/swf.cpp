@@ -30,7 +30,6 @@
 #include "scripting/class.h"
 #include "backends/audio.h"
 #include "backends/config.h"
-#include "backends/pluginmanager.h"
 #include "backends/rendering.h"
 #include "backends/image.h"
 #include "backends/extscriptobject.h"
@@ -250,8 +249,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	frameTimerThread=new TimerThread(this);
-	pluginManager = new PluginManager;
-	audioManager=new AudioManager(pluginManager);
+	audioManager=new AudioManager();
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 
@@ -455,9 +453,6 @@ void SystemState::stopEngines()
 	//Now stop the managers
 	delete audioManager;
 	audioManager=NULL;
-	delete pluginManager;
-	pluginManager=NULL;
-	
 }
 
 #ifdef PROFILING_SUPPORT

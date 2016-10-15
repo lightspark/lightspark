@@ -496,9 +496,8 @@ void SoundChannel::playStream()
 			if(audioDecoder==NULL && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 
-			//TODO: Move the audio plugin check before
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
-				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder,false);
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
+				audioStream=getSys()->audioManager->createStream(audioDecoder,false);
 
 			// TODO: check the position only when the getter is called
 			if(audioStream)
@@ -559,8 +558,6 @@ void SoundChannel::playRaw()
 							     true);
 	if (!decoder)
 		return;
-	if(!getSys()->audioManager->pluginLoaded())
-		return;
 
 	AudioStream *audioStream = NULL;
 	std::streambuf *sbuf = stream->createReader();
@@ -569,7 +566,7 @@ void SoundChannel::playRaw()
 	{
 		decoder->decodeStreamSomePackets(stream, 0,this);
 		if (decoder->isValid() && (audioStream == NULL))
-			audioStream=getSys()->audioManager->createStreamPlugin(decoder,false);
+			audioStream=getSys()->audioManager->createStream(decoder,false);
 		if(threadAborting)
 			break;
 	}

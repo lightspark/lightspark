@@ -187,13 +187,6 @@ ELSE()
   SET(PLUGINSDIR ".")
 ENDIF(UNIX)
 
-# Setting variables
-IF(WIN32)
-  SET(AUDIO_BACKEND "winmm" CACHE STRING "Which audio backends should be built?")
-ELSE()
-  SET(AUDIO_BACKEND "pulseaudio" CACHE STRING "Which audio backends should be built?")
-ENDIF()
-
 SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
@@ -292,10 +285,6 @@ ENDIF(ENABLE_GLES2)
 IF(WIN32)
   SET(EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} ws2_32.lib imagehlp.lib)
 ENDIF(WIN32)
-
-IF(AUDIO_BACKEND)
-  ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}")
-ENDIF(AUDIO_BACKEND)
 
 IF(ENABLE_LIBAVCODEC)
 	pkg_check_modules(FFMPEG libavcodec libavutil libavformat)

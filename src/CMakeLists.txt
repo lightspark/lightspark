@@ -42,7 +42,6 @@ SET(LIBSPARK_SOURCES
   backends/image.cpp
   backends/input.cpp
   backends/netutils.cpp
-  backends/pluginmanager.cpp
   backends/rendering.cpp
   backends/rendering_context.cpp
   backends/rtmputils.cpp
@@ -237,4 +236,3 @@ IF(COMPILE_PLUGIN)
   ADD_SUBDIRECTORY(plugin)
 ENDIF(COMPILE_PLUGIN)
 
-ADD_SUBDIRECTORY(backends/interfaces)

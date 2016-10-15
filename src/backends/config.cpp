@@ -84,7 +84,6 @@ Config::Config():
 	//DEFAULT SETTINGS
 	defaultCacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),
 	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
-	audioBackend(INVALID),audioBackendName(""),
 	renderingEnabled(true)
 {
 #ifdef _WIN32
@@ -92,9 +91,6 @@ Config::Config():
 	if(exePath)
 		userConfigDirectory = exePath;
 #endif
-	audioBackendNames[PULSEAUDIO] = "pulseaudio";
-	audioBackendNames[SDL] = "sdl";
-	audioBackendNames[WINMM] = "winmm";
 
 	//Try system configs first
 	string sysDir;
@@ -140,18 +136,6 @@ Config::Config():
 			cacheDirectory = defaultCacheDirectory;
 		}
 	}
-
-	/* If no audio backend was specified, use a default */
-	if(audioBackend == INVALID)
-	{
-#ifdef _WIN32
-		audioBackend = WINMM;
-#else
-		audioBackend = PULSEAUDIO;
-#endif
-	}
-	//Set the audio backend name
-	audioBackendName = audioBackendNames[audioBackend];
 
 #ifdef _WIN32
 	std::string regGnashPath = readRegistryEntry("GnashPath");
@@ -202,15 +186,8 @@ void Config::handleEntry()
 	string group = parser->getGroup();
 	string key = parser->getKey();
 	string value = parser->getValue();
-	//Audio backend
-	if(group == "audio" && key == "backend" && value == audioBackendNames[PULSEAUDIO])
-		audioBackend = PULSEAUDIO;
-	else if(group == "audio" && key == "backend" && value == audioBackendNames[SDL])
-		audioBackend = SDL;
-	else if(group == "audio" && key == "backend" && value == audioBackendNames[WINMM])
-		 audioBackend = WINMM;
 	//Rendering
-	else if(group == "rendering" && key == "enabled")
+	if(group == "rendering" && key == "enabled")
 		renderingEnabled = atoi(value.c_str());
 	//Cache directory
 	else if(group == "cache" && key == "directory")
@@ -219,5 +196,5 @@ void Config::handleEntry()
 	else if(group == "cache" && key == "prefix")
 		cachePrefix = value;
 	else
-		throw ConfigException((string) _("Invalid entry encountered in configuration file") + ": '" + group + "/" + key + "'='" + value + "'");
+		LOG(LOG_ERROR,_("Invalid entry encountered in configuration file") << ": '" << group << "/" << key << "'='" << value << "'");
 }

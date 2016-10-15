@@ -2,6 +2,11 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* switch to SDL2/SDL2_mixer for everything except Firefox plugin.
+	  - the plugin uses gtk2 to interact with Firefox, so the gtk2 dependency is only needed when building the Firefox plugin
+	  - removes audio plugins as audio is now handled via SDL2_mixer for all platforms.
+	  - removes the pulseaudio dependency
+	  - the configuration setting [audio] is no longer needed
 	* implement rendering of embedded fonts in TextFields
 	* fix handling of multiple streams in SDL audio plugin, adds dependency on sdl_mixer
 	* switch to internal xml parsing (based on pugixml), removes dependency on libxml++

@@ -26,7 +26,6 @@
 #include "thread_pool.h"
 #include "backends/netutils.h"
 #include "timer.h"
-#include "backends/interfaces/audio/IAudioPlugin.h"
 
 namespace lightspark
 {

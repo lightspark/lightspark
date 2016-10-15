@@ -12,10 +12,10 @@ INSTALLATION
 To compile this software you need to install development packages for
 llvm (version 2.8 or >= 3.0), opengl, curl, zlib, libavcodec, libavresample
 libglew, pcre, librtmp, cairo, libboost-filesystem, 
-gtk-2, libjpeg, libavformat, pango, liblzma
+sdl2, sdl2_mixer, libjpeg, libavformat, pango, liblzma
 
-If sound is enabled (on by default), you will also need the
-development package for pulseaudio-libs and/or sdl_mixer.
+If compiling the Firefox plugin is enabled (on by default), you will also need the
+development package for gtk2.
 
 Install also cmake, nasm and gcc (version 4.6.0 or newer) or clang
 
@@ -33,10 +33,6 @@ To enable debug mode change the cmake command like this:
 4b) cmake -DCMAKE_BUILD_TYPE=Debug
 
 CMAKE_BUILD_TYPE available: Debug LeanDebug Release RelWithDebInfo Profile
-
-Sound support may be disabled using the following option:
--DENABLE_SOUND=0 The audio backend can be set using
--DAUDIO_BACKEND=<pulseaudio|sdl> (default is pulseaudio)
 
 EXECUTION
 =========

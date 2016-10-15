@@ -1678,7 +1678,7 @@ ASFUNCTIONBODY(NetStream,appendBytesAction)
 void NetStream::tick()
 {
 	//Check if the stream is paused
-	if(audioStream && audioStream->isValid())
+	if(audioStream)
 	{
 		//TODO: use soundTransform->pan
 		if(soundTransform && soundTransform->volume != oldVolume)
@@ -1689,14 +1689,14 @@ void NetStream::tick()
 	}
 	if(paused)
 		return;
-	if(audioStream && audioStream->isValid() && !audioStream->hasStarted)
+	if(audioStream && !audioStream->hasStarted)
 	{
 		audioStream->hasStarted = true;
 		audioStream->resume();
 	}
 	//Advance video and audio to current time, follow the audio stream time
 	countermutex.lock();
-	if(audioStream && getSys()->audioManager->isTimingAvailablePlugin())
+	if(audioStream)
 	{
 		assert(audioDecoder);
 		if (streamTime == 0)
@@ -1882,8 +1882,8 @@ void NetStream::execute()
 			if(audioDecoder==NULL && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 			
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid() && getSys()->audioManager->pluginLoaded())
-				audioStream=getSys()->audioManager->createStreamPlugin(audioDecoder,streamDecoder->hasVideo());
+			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
+				audioStream=getSys()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo());
 			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				tickStarted=true;

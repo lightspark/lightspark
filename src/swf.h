@@ -337,7 +337,6 @@ public:
 	Stage* stage;
 	ABCVm* currentVm;
 
-	PluginManager* pluginManager;
 	AudioManager* audioManager;
 
 	//Application starting time in milliseconds

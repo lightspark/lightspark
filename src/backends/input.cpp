@@ -300,8 +300,6 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			break;
 		case SDLK_m:
 			handled = true;
-			if (!m_sys->audioManager->pluginLoaded())
-				break;
 			m_sys->audioManager->toggleMuteAll();
 			if(m_sys->audioManager->allMuted())
 				LOG(LOG_INFO, "All sounds muted");

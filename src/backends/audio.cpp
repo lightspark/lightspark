@@ -22,118 +22,175 @@
 #include "backends/config.h"
 #include <iostream>
 #include "logger.h"
+#include <SDL2/SDL_mixer.h>
+#include <sys/time.h>
 
-//Needed or not with compat.h and compat.cpp?
-#ifdef _WIN32
-#	include <windows.h>
-#else
-#	include <dlfcn.h>
-#	include <sys/types.h>
-#endif
 
 using namespace lightspark;
 using namespace std;
 
-/****************
-AudioManager::AudioManager
-*****************
-It should search for a list of audio plugin lib files (liblightsparkAUDIOAPIplugin.so)
-Then, it should read a config file containing the user's defined audio API choosen as audio backend
-If no file or none selected
-  default to none
-Else
-  Select and load the good audio plugin lib files
-*****************/
-
-AudioManager::AudioManager ( PluginManager *sharedPluginManager ) :
-	oAudioPlugin(NULL), selectedAudioBackend(""), pluginManager(sharedPluginManager)
+void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 {
-//	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-	string DesiredAudio = Config::getConfig()->getAudioBackendName();
-	set_audiobackend ( DesiredAudio );
-}
+	AudioStream *s = (AudioStream*)udata;
+	if (!s)
+		return;
 
-bool AudioManager::pluginLoaded() const
-{
-	return oAudioPlugin != NULL;
-}
-
-AudioStream *AudioManager::createStreamPlugin (AudioDecoder *decoder , bool startpaused)
-{
-	if ( pluginLoaded() )
+	uint32_t readcount = 0;
+	while (readcount < ((uint32_t)len))
 	{
-		AudioStream * res = oAudioPlugin->createStream ( decoder );
-		if (startpaused)
-			res->pause();
-		else
-			res->hasStarted=true;
-		return res;
+		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)stream)+readcount), ((uint32_t)len)-readcount);
+		if (!ret)
+			break;
+		readcount += ret;
+	}
+}
+
+
+uint32_t AudioStream::getPlayedTime()
+{
+	uint32_t ret;
+	struct timeval now;
+	gettimeofday(&now, NULL);
+
+	ret = playedtime + (now.tv_sec * 1000 + now.tv_usec / 1000) - (starttime.tv_sec * 1000 + starttime.tv_usec / 1000);
+	return ret;
+}
+bool AudioStream::init()
+{
+	unmutevolume = curvolume = SDL_MIX_MAXVOLUME;
+	playedtime = 0;
+	gettimeofday(&starttime, NULL);
+	mixer_channel = -1;
+
+	uint32_t len = LIGHTSPARK_AUDIO_SDL_BUFFERSIZE;
+
+	uint8_t *buf = new uint8_t[len];
+	memset(buf,0,len);
+	Mix_Chunk* chunk = Mix_QuickLoad_RAW(buf, len);
+
+
+	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
+	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, NULL, this);
+	Mix_Resume(mixer_channel);
+
+	return true;
+}
+
+void AudioStream::SetPause(bool pause_on)
+{
+	if (pause_on)
+	{
+		playedtime = getPlayedTime();
+		if (mixer_channel != -1)
+			Mix_Pause(mixer_channel);
 	}
 	else
 	{
-		LOG ( LOG_ERROR, _ ( "No audio plugin loaded, can't create stream" ) );
+		gettimeofday(&starttime, NULL);
+		if (mixer_channel != -1)
+			Mix_Resume(mixer_channel);
+	}
+}
+
+bool AudioStream::ispaused()
+{
+	return Mix_Paused(mixer_channel);
+}
+
+void AudioStream::mute()
+{
+	unmutevolume = curvolume;
+	curvolume = 0;
+}
+void AudioStream::unmute()
+{
+	curvolume = unmutevolume;
+}
+void AudioStream::setVolume(double volume)
+{
+	curvolume = SDL_MIX_MAXVOLUME * volume;
+	if (mixer_channel != -1)
+		Mix_Volume(mixer_channel, curvolume);
+}
+
+AudioStream::~AudioStream()
+{
+	manager->streams.remove(this);
+	if (mixer_channel != -1)
+		Mix_HaltChannel(mixer_channel);
+}
+
+AudioManager::AudioManager():muteAllStreams(false),sdl_available(0),mixeropened(0)
+{
+	sdl_available = 0;
+	if (SDL_WasInit(0)) // some part of SDL already was initialized
+		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
+	else
+		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
+	mixeropened = 0;
+}
+void AudioManager::muteAll()
+{
+	muteAllStreams = true;
+	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	{
+		(*it)->mute();
+	}
+}
+void AudioManager::unmuteAll()
+{
+	muteAllStreams = false;
+	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	{
+		(*it)->unmute();
+	}
+}
+
+AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
+{
+	if (!sdl_available)
+		return NULL;
+	if (!mixeropened)
+	{
+		if (Mix_OpenAudio (LIGHTSPARK_AUDIO_SDL_SAMPLERATE, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFFERSIZE) < 0)
+		{
+			LOG(LOG_ERROR,"Couldn't open SDL_mixer");
+			sdl_available = 0;
+			return NULL;
+		}
+		mixeropened = 1;
+	}
+
+	AudioStream *stream = new AudioStream(this);
+	stream->decoder = decoder;
+	if (!stream->init())
+	{
+		delete stream;
 		return NULL;
 	}
-}
-
-bool AudioManager::isTimingAvailablePlugin() const
-{
-	if ( pluginLoaded() )
-	{
-		return oAudioPlugin->isTimingAvailable();
-	}
+	if (startpaused)
+		stream->pause();
 	else
-	{
-		LOG ( LOG_ERROR, _ ( "isTimingAvailablePlugin: No audio plugin loaded" ) );
-		return false;
-	}
+		stream->hasStarted=true;
+	streams.push_back(stream);
+
+	return stream;
 }
 
-void AudioManager::set_audiobackend ( string desired_backend )
-{
-	if ( selectedAudioBackend != desired_backend )  	//Load the desired backend only if it's not already loaded
-	{
-		load_audioplugin ( desired_backend );
-		selectedAudioBackend = desired_backend;
-	}
-}
 
-void AudioManager::get_audioBackendsList()
-{
-	audioplugins_list = pluginManager->get_backendsList ( AUDIO );
-}
-
-void AudioManager::refresh_audioplugins_list()
-{
-	audioplugins_list.clear();
-	get_audioBackendsList();
-}
-
-void AudioManager::release_audioplugin()
-{
-	if ( pluginLoaded() )
-	{
-		pluginManager->release_plugin ( oAudioPlugin );
-	}
-}
-
-void AudioManager::load_audioplugin ( string selected_backend )
-{
-	LOG ( LOG_INFO, _ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
-	release_audioplugin();
-	oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
-
-	if ( !pluginLoaded() )
-	{
-		LOG ( LOG_INFO, _ ( "Could not load the audiobackend" ) );
-	}
-}
-
-/**************************
-stop AudioManager
-***************************/
 AudioManager::~AudioManager()
 {
-	release_audioplugin();
-	pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
+	for (stream_iterator it = streams.begin(); it != streams.end(); ++it) {
+		delete *it;
+	}
+	if (mixeropened)
+	{
+		Mix_CloseAudio();
+	}
+	if (sdl_available)
+	{
+		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
+		if (!SDL_WasInit(0))
+			SDL_Quit ();
+	}
 }

@@ -27,7 +27,7 @@
 #include "backends/netutils.h"
 #include "timer.h"
 #include "backends/decoder.h"
-#include "backends/interfaces/audio/IAudioPlugin.h"
+#include "backends/audio.h"
 #include "NetStreamInfo.h"
 #include "scripting/flash/utils/ByteArray.h"
 

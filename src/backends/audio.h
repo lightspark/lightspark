@@ -25,46 +25,67 @@
 #include "backends/decoder.h"
 #include <iostream>
 
-#include "backends/pluginmanager.h"
-#include "backends/interfaces/audio/IAudioPlugin.h"
-
-
-//convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
-typedef IPlugin * ( *PLUGIN_FACTORY ) ();
-typedef void ( *PLUGIN_CLEANUP ) ( IPlugin * );
-
 namespace lightspark
 {
+#define LIGHTSPARK_AUDIO_SDL_BUFFERSIZE 4096
+#define LIGHTSPARK_AUDIO_SDL_SAMPLERATE 44100
+
+class AudioStream;
 
 class AudioManager
 {
+	friend class AudioStream;
 private:
-	std::vector<std::string *>audioplugins_list;
-	IAudioPlugin *oAudioPlugin;
-	std::string selectedAudioBackend;
-	void load_audioplugin ( std::string selected_backend );
-	void release_audioplugin();
-	PluginManager *pluginManager;
-
+	bool muteAllStreams;
+	int sdl_available;
+	int mixeropened;
+	std::list<AudioStream *> streams;
+	typedef std::list<AudioStream *>::iterator stream_iterator;
 public:
-	AudioManager ( PluginManager *sharePluginManager );
-	bool pluginLoaded() const;
-	AudioStream *createStreamPlugin ( AudioDecoder *decoder, bool startpaused );
-	bool isTimingAvailablePlugin() const;
-	void set_audiobackend ( std::string desired_backend );
-	void get_audioBackendsList();
-	void refresh_audioplugins_list();
+	AudioManager();
 
-	void muteAll() { oAudioPlugin->muteAll(); }
-	void unmuteAll() { oAudioPlugin->unmuteAll(); }
-	void toggleMuteAll() { oAudioPlugin->toggleMuteAll(); }
-	bool allMuted() { return oAudioPlugin->allMuted(); }
-	int forcedSampleRate() const { return oAudioPlugin->forcedSampleRate();}
-	int forcedChannelLayout() const { return oAudioPlugin->forcedChannelLayout();}
+	AudioStream *createStream(AudioDecoder *decoder, bool startpaused);
+
+	void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
+	bool allMuted() { return muteAllStreams; }
+	void muteAll();
+	void unmuteAll();
+	int forcedSampleRate() const { return LIGHTSPARK_AUDIO_SDL_SAMPLERATE;}
+	int forcedChannelLayout() const { return AV_CH_LAYOUT_STEREO;}
 
 	~AudioManager();
 };
 
+class AudioStream
+{
+friend class AudioManager;
+friend class NetStream;
+private:
+	AudioManager* manager;
+	AudioDecoder *decoder;
+	bool hasStarted;
+	int curvolume;
+	int unmutevolume;
+	uint32_t playedtime;
+	struct timeval starttime;
+	int mixer_channel;
+public:
+	bool init();
+	AudioStream(AudioManager* _manager):manager(_manager),decoder(NULL),hasStarted(false) { }
+
+	void SetPause(bool pause_on);
+	uint32_t getPlayedTime();
+	bool ispaused();
+	void mute();
+	void unmute();
+	void pause() { SetPause(true); }
+	void resume() { SetPause(false); }
+	void setVolume(double volume);
+	inline AudioDecoder *getDecoder() const { return decoder; }
+	~AudioStream();
 };
+
+
+}
 
 #endif /* BACKENDS_AUDIO_H */

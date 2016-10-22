@@ -85,7 +85,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(c->getSystemState(),compare),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(c->getSystemState(),applyFilter),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(c->getSystemState(),noise),NORMAL_METHOD,true);
-
+	c->setDeclaredMethodByQName("perlinNoise","",Class<IFunction>::getFunction(c->getSystemState(),perlinNoise),NORMAL_METHOD,true);
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
@@ -860,5 +860,21 @@ ASFUNCTIONBODY(BitmapData,noise)
 	bool grayScale;
 	ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false);
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.noise not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(BitmapData,perlinNoise)
+{
+	number_t baseX;
+	number_t baseY;
+	unsigned int numOctaves;
+	int randomSeed;
+	bool stitch;
+	bool fractalNoise;
+	unsigned int channelOptions;
+	bool grayScale;
+	_NR<Array> offsets;
+	ARG_UNPACK(baseX)(baseY)(numOctaves)(randomSeed)(stitch) (fractalNoise) (channelOptions, 7) (grayScale, false) (offsets, NullRef);
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.perlinNoise not implemented");
 	return NULL;
 }

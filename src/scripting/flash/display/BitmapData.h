@@ -85,6 +85,7 @@ public:
 	ASFUNCTION(compare);
 	ASFUNCTION(applyFilter);
 	ASFUNCTION(noise);
+	ASFUNCTION(perlinNoise);
 };
 
 };

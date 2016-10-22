@@ -81,11 +81,16 @@ public:
 	}
 	double getScreenDPI()
 	{
+#if SDL_VERSION_ATLEAST(2, 0, 4)
 		float ddpi;
 		float hdpi;
 		float vdpi;
 		SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(widget),&ddpi,&hdpi,&vdpi);
 		return ddpi;
+#else
+		LOG(LOG_NOT_IMPLEMENTED,"getScreenDPI needs SDL version >= 2.0.4");
+		return 96.0;
+#endif
 	}
 };
 

@@ -112,7 +112,11 @@ bool InputThread::worker(SDL_Event *event)
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->wheel.x,event->wheel.y,stageX,stageY);
+#if SDL_VERSION_ATLEAST(2, 0, 4)
 			handleScrollEvent(stageX,stageY,event->wheel.direction,SDL_GetModState(),false);
+#else
+			handleScrollEvent(stageX,stageY,1,SDL_GetModState(),false);
+#endif
 			ret=TRUE;
 			break;
 		}
@@ -254,13 +258,15 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 	if(m_sys->currentVm == NULL)
 		return;
 
-	int delta;
-	if(direction==SDL_MOUSEWHEEL_NORMAL)
-		delta = 1;
-	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
-		delta = -1;
-	else
-		return;
+	int delta = 1;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+ 	if(direction==SDL_MOUSEWHEEL_NORMAL)
+ 		delta = 1;
+ 	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
+ 		delta = -1;
+ 	else
+ 		return;
+#endif
 
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);

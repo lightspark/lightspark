@@ -694,7 +694,9 @@ static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, PluginEngineDa
 		case GDK_SCROLL:
 		{
 			ev.type = SDL_MOUSEWHEEL;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
 			ev.wheel.direction = event->scroll.state == GDK_SCROLL_UP ? SDL_MOUSEWHEEL_NORMAL : SDL_MOUSEWHEEL_FLIPPED ;
+#endif
 			ev.wheel.x = event->scroll.x;
 			ev.wheel.y = event->scroll.y;
 			ev.wheel.windowID = SDL_GetWindowID(e->widget);

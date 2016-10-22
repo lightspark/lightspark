@@ -1618,6 +1618,17 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 	unsigned int soundDataLength = h.getLength()-7;
 	unsigned char *tmp = (unsigned char *)alloca(soundDataLength);
 	in.read((char *)tmp, soundDataLength);
+	unsigned char *tmpp = tmp;
+	// it seems that adobe allows zeros at the beginning of the sound data
+	// at least for MP3 we ignore them, otherwise ffmpeg will not work properly
+	if (SoundFormat == LS_AUDIO_CODEC::MP3)
+	{
+		while (*tmpp == 0 && soundDataLength)
+		{
+			soundDataLength--;
+			tmpp++;
+		}
+	}
 	SoundData->append(tmp, in.gcount());
 	SoundData->markFinished();
 }

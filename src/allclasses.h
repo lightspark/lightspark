@@ -148,6 +148,7 @@ REGISTER_CLASS_NAME(VideoEvent,"flash.events")
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
 
 //filesystem
+REGISTER_CLASS_NAME2(ASFile,"File","flash.filesystem")
 REGISTER_CLASS_NAME(FileStream,"flash.filesystem")
 
 //Filters
@@ -186,6 +187,7 @@ REGISTER_CLASS_NAME(Video,"flash.media")
 REGISTER_CLASS_NAME(VideoStatus,"flash.media")
 
 //Net
+REGISTER_CLASS_NAME(FileReference,"flash.net")
 REGISTER_CLASS_NAME(LocalConnection,"flash.net")
 REGISTER_CLASS_NAME(NetConnection,"flash.net")
 REGISTER_CLASS_NAME(NetGroup,"flash.net")

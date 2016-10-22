@@ -411,6 +411,7 @@ public:
 	ASFUNCTION(send);
 	ASFUNCTION(connect);
 	ASFUNCTION(close);
+	ASFUNCTION(domain);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,client);
 };
 
@@ -422,6 +423,13 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class FileReference: public EventDispatcher
+{
+public:
+	FileReference(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
 class ASSocket: public EventDispatcher, IDataInput, IDataOutput
 {
 public:

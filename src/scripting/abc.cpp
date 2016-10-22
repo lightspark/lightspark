@@ -453,6 +453,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
+	builtin->registerBuiltin("FileReference","flash.net",Class<FileReference>::getRef(m_sys));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef(m_sys));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef(m_sys));
@@ -534,6 +535,7 @@ void ABCVm::registerClasses()
 
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
 
+		builtin->registerBuiltin("File","flash.filesystem",Class<ASFile>::getRef(m_sys));
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));
 	}
 
@@ -2178,7 +2180,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
 			{
-				m->profName=obj->getClassName()+"::"+mname->qualifiedString();
+				m->profName=obj->getClassName()+"::"+mname->qualifiedString(obj->getSystemState());
 				m->validProfName=true;
 			}
 #endif

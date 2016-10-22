@@ -25,18 +25,41 @@
 using namespace lightspark;
 
 FileStream::FileStream(Class_base* c):
-	EventDispatcher(c)
+	EventDispatcher(c),isSupported(false)
 {
 }
 
 void FileStream::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	REGISTER_GETTER(c,isSupported);
 }
+ASFUNCTIONBODY_GETTER(FileStream, isSupported);
+
 ASFUNCTIONBODY(FileStream, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 	//FileStream* th=Class<FileStream>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"FileStream is not implemented");
+	return NULL;
+}
+
+ASFile::ASFile(Class_base* c):
+	FileReference(c),exists(false)
+{
+}
+
+void ASFile::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, FileReference, _constructor, CLASS_SEALED);
+	REGISTER_GETTER(c,exists);
+}
+ASFUNCTIONBODY_GETTER(ASFile, exists);
+
+ASFUNCTIONBODY(ASFile, _constructor)
+{
+	FileReference::_constructor(obj, NULL, 0);
+	//ASFile* th=Class<FileReference>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"File is not implemented");
 	return NULL;
 }

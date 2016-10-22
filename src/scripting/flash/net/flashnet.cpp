@@ -2408,6 +2408,7 @@ void LocalConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),send),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("domain","",Class<IFunction>::getFunction(c->getSystemState(),domain),GETTER_METHOD,true);
 	REGISTER_GETTER(c,isSupported);
 	REGISTER_GETTER_SETTER(c,client);
 }
@@ -2422,6 +2423,12 @@ ASFUNCTIONBODY(LocalConnection, _constructor)
 	th->client = _NR<LocalConnection>(th);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
 	return NULL;
+}
+ASFUNCTIONBODY(LocalConnection, domain)
+{
+	//LocalConnection* th=Class<LocalConnection>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::domain is not implemented");
+	return abstract_s(obj->getSystemState());
 }
 ASFUNCTIONBODY(LocalConnection, allowDomain)
 {
@@ -2472,6 +2479,23 @@ ASFUNCTIONBODY(NetGroup, _constructor)
 	return NULL;
 }
 
+FileReference::FileReference(Class_base* c):
+	EventDispatcher(c)
+{
+}
+
+void FileReference::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(FileReference, _constructor)
+{
+	EventDispatcher::_constructor(obj, NULL, 0);
+	//FileReference* th=Class<FileReference>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"FileReference is not implemented");
+	return NULL;
+}
 
 ASSocket::ASSocket(Class_base* c):
 	EventDispatcher(c)

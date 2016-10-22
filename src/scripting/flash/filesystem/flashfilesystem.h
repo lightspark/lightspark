@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/net/flashnet.h"
 
 namespace lightspark
 {
@@ -36,6 +37,13 @@ public:
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 
-
+class ASFile: public FileReference
+{
+public:
+	ASFile(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER(bool,exists);
+};
 }
 #endif /* SCRIPTING_FLASH_FILESYSTEM_FLASHFILESYSTEM_H */

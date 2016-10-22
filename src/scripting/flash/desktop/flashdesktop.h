@@ -37,6 +37,15 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
+class NativeDragManager: public ASObject
+{
+public:
+	NativeDragManager(Class_base* c):ASObject(c),isSupported(false){}
+	static void sinit(Class_base* c);
+	ASPROPERTY_GETTER(bool,isSupported);
+};
+
+
 };
 
 #endif /* SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H */

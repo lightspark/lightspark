@@ -63,6 +63,8 @@ REGISTER_CLASS_NAME(ASCondition,"flash.concurrent")
 
 //Desktop (AIR)
 REGISTER_CLASS_NAME(NativeApplication,"flash.desktop")
+REGISTER_CLASS_NAME(NativeDragManager,"flash.desktop")
+
 
 //Display
 REGISTER_CLASS_NAME(AVM1Movie,"flash.display")
@@ -129,6 +131,7 @@ REGISTER_CLASS_NAME(IOErrorEvent,"flash.events")
 REGISTER_CLASS_NAME(InvokeEvent,"flash.events")
 REGISTER_CLASS_NAME(KeyboardEvent,"flash.events")
 REGISTER_CLASS_NAME(MouseEvent,"flash.events")
+REGISTER_CLASS_NAME(NativeDragEvent,"flash.events")
 REGISTER_CLASS_NAME(NetStatusEvent,"flash.events")
 REGISTER_CLASS_NAME(PressAndTapGestureEvent,"flash.events")
 REGISTER_CLASS_NAME(ProgressEvent,"flash.events")

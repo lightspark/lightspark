@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 
 #include "scripting/flash/desktop/flashdesktop.h"
+#include "scripting/argconv.h"
 
 using namespace std;
 using namespace lightspark;
@@ -60,3 +61,11 @@ ASFUNCTIONBODY(NativeApplication, addEventListener)
 
 	return NULL;
 }
+
+void NativeDragManager::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	REGISTER_GETTER(c,isSupported);
+}
+ASFUNCTIONBODY_GETTER(NativeDragManager,isSupported);
+

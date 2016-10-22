@@ -295,6 +295,15 @@ public:
 	ASFUNCTION(updateAfterEvent);
 };
 
+class NativeDragEvent: public MouseEvent
+{
+public:
+	NativeDragEvent(Class_base* c);
+	
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
 class InvokeEvent: public Event
 {
 public:

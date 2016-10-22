@@ -502,6 +502,25 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 	}
 }
 
+NativeDragEvent::NativeDragEvent(Class_base* c)
+ : MouseEvent(c)
+{
+}
+
+void NativeDragEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, MouseEvent, _constructor, CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(NativeDragEvent,_constructor)
+{
+	//NativeDragEvent* th=static_cast<NativeDragEvent*>(obj);
+	uint32_t baseClassArgs=imin(argslen,6);
+	MouseEvent::_constructor(obj,args,baseClassArgs);
+	LOG(LOG_NOT_IMPLEMENTED,"NativeDragEvent: constructor");
+	return NULL;
+}
+
 IOErrorEvent::IOErrorEvent(Class_base* c,const tiny_string& t, const std::string& e, int id) : ErrorEvent(c, t,e,id)
 {
 }

@@ -532,8 +532,11 @@ void ABCVm::registerClasses()
 	if(m_sys->flashMode==SystemState::AIR)
 	{
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
+		builtin->registerBuiltin("NativeDragManager","flash.desktop",Class<NativeDragManager>::getRef(m_sys));
+		
 
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
+		builtin->registerBuiltin("NativeDragEvent","flash.events",Class<NativeDragEvent>::getRef(m_sys));
 
 		builtin->registerBuiltin("File","flash.filesystem",Class<ASFile>::getRef(m_sys));
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));

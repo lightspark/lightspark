@@ -240,25 +240,36 @@ BitmapFilter* ColorMatrixFilter::cloneImpl() const
 	return cloned;
 }
 BlurFilter::BlurFilter(Class_base* c):
-	BitmapFilter(c)
+	BitmapFilter(c),blurX(4.0),blurY(4.0),quality(1)
 {
 }
 
 void BlurFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+	REGISTER_GETTER_SETTER(c, blurX);
+	REGISTER_GETTER_SETTER(c, blurY);
+	REGISTER_GETTER_SETTER(c, quality);
 }
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurX);
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurY);
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality);
 
 ASFUNCTIONBODY(BlurFilter, _constructor)
 {
-	//BlurFilter *th = obj->as<BlurFilter>();
+	BlurFilter *th = obj->as<BlurFilter>();
+	ARG_UNPACK(th->blurX,4.0)(th->blurY,4.0)(th->quality,1);
 	LOG(LOG_NOT_IMPLEMENTED,"BlurFilter is not implemented");
 	return NULL;
 }
 
 BitmapFilter* BlurFilter::cloneImpl() const
 {
-	return Class<BlurFilter>::getInstanceS(getSystemState());
+	BlurFilter* cloned = Class<BlurFilter>::getInstanceS(getSystemState());
+	cloned->blurX = blurX;
+	cloned->blurY = blurY;
+	cloned->quality = quality;
+	return cloned;
 }
 
 ConvolutionFilter::ConvolutionFilter(Class_base* c):

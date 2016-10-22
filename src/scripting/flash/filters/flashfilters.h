@@ -115,6 +115,9 @@ public:
 	BlurFilter(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t, blurX);
+	ASPROPERTY_GETTER_SETTER(number_t, blurY);
+	ASPROPERTY_GETTER_SETTER(int, quality);
 };
 class ConvolutionFilter: public BitmapFilter
 {

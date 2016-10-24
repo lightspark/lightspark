@@ -1629,7 +1629,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 			tmpp++;
 		}
 	}
-	SoundData->append(tmp, in.gcount());
+	SoundData->append(tmpp, soundDataLength);
 	SoundData->markFinished();
 }
 

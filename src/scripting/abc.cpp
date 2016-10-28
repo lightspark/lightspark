@@ -511,7 +511,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ContextMenuItem","flash.ui",Class<ContextMenuItem>::getRef(m_sys));
 	builtin->registerBuiltin("ContextMenuBuiltInItems","flash.ui",Class<ContextMenuBuiltInItems>::getRef(m_sys));
 	builtin->registerBuiltin("Mouse","flash.ui",Class<Mouse>::getRef(m_sys));
+	builtin->registerBuiltin("MouseCursor","flash.ui",Class<MouseCursor>::getRef(m_sys));
+	builtin->registerBuiltin("MouseCursorData","flash.ui",Class<MouseCursorData>::getRef(m_sys));
 	builtin->registerBuiltin("Multitouch","flash.ui",Class<Multitouch>::getRef(m_sys));
+	builtin->registerBuiltin("MultitouchInputMode","flash.ui",Class<MultitouchInputMode>::getRef(m_sys));
 
 	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef(m_sys));
 

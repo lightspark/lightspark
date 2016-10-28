@@ -27,15 +27,20 @@ namespace lightspark
 class Multitouch : public ASObject
 {
 public:
-	Multitouch(Class_base* c):ASObject(c){}
+	Multitouch(Class_base* c):ASObject(c),inputMode("gesture") {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(getInputMode);
+	ASPROPERTY_GETTER_SETTER(tiny_string,inputMode);
 	ASFUNCTION(getMaxTouchPoints);
 	ASFUNCTION(getSupportedGestures);
 	ASFUNCTION(getSupportsGestureEvents);
 	ASFUNCTION(getSupportsTouchEvents);
 };
-
+class MultitouchInputMode : public ASObject
+{
+public:
+	MultitouchInputMode(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
 }
 
 #endif /* SCRIPTING_FLASH_UI_MULTITOUCH_H */

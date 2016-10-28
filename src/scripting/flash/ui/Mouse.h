@@ -21,6 +21,8 @@
 #define SCRIPTING_FLASH_UI_MOUSE_H 1
 
 #include "asobject.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/toplevel/Vector.h"
 
 namespace lightspark
 {
@@ -36,6 +38,25 @@ public:
 	ASFUNCTION(setCursor);
 	ASFUNCTION(getSupportsCursor);
 	ASFUNCTION(getSupportsNativeCursor);
+	ASFUNCTION(registerCursor);
+};
+
+class MouseCursor : public ASObject
+{
+public:
+	MouseCursor(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
+class MouseCursorData : public ASObject
+{
+public:
+	MouseCursorData(Class_base* c):ASObject(c),frameRate(0){}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(_NR<Vector>,data);
+	ASPROPERTY_GETTER_SETTER(number_t,frameRate);
+	ASPROPERTY_GETTER_SETTER(_NR<Point>,hotSpot);
 };
 
 };

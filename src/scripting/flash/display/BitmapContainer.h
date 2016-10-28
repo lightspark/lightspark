@@ -50,6 +50,7 @@ public:
 	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);
+	bool fromPNG(uint8_t* data, int len);
 	bool fromPalette(uint8_t* inData, uint32_t width, uint32_t height, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP);
 	// Clip sourceRect coordinates to this BitmapContainer. The
 	// output coordinates can be used to access pixels in data

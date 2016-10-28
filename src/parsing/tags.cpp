@@ -774,7 +774,8 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 	
-					curPos.x += FontAdvanceTable[i];
+					if (FontFlagsHasLayout)
+						curPos.x += FontAdvanceTable[i];
 					found = true;
 					break;
 				}
@@ -827,7 +828,19 @@ BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),b
 _R<BitmapContainer> BitmapTag::getBitmap() const {
 	return bitmap;
 }
-
+void BitmapTag::loadBitmap(uint8_t* inData, int datasize)
+{
+	if (datasize < 4)
+		return;
+	else if((inData[0]&0x80) && inData[1]=='P' && inData[2]=='N' && inData[3]=='G')
+		bitmap->fromPNG(inData,datasize);
+	else if(inData[0]==0xff && inData[1]==0xd8 && inData[2]==0xff)
+		bitmap->fromJPEG(inData,datasize);
+	else if(inData[0]=='G' && inData[1]=='I' && inData[2]=='F' && inData[3]=='8')
+		LOG(LOG_ERROR,"GIF image found, not yet supported, ID :"<<getId());
+	else
+		LOG(LOG_ERROR,"unknown image format for ID "<<getId());
+}
 DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int version, RootMovieClip* root):BitmapTag(h,root),BitmapColorTableSize(0)
 {
 	int dest=in.tellg();
@@ -1371,8 +1384,11 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	PlaceFlagHasFilterList=UB(1,bs);
 
 	in >> Depth;
-	if(PlaceFlagHasClassName || (PlaceFlagHasImage && PlaceFlagHasCharacter))
-		throw ParseException("ClassName in PlaceObject3 not yet supported");
+	if(PlaceFlagHasClassName)
+	{
+		in >> ClassName;
+		LOG(LOG_NOT_IMPLEMENTED,"ClassName in PlaceObject3 not yet supported:"<<ClassName);
+	}
 
 	if(PlaceFlagHasCharacter)
 		in >> CharacterId;
@@ -1833,7 +1849,7 @@ DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in,RootMovieClip* roo
 	int dataSize=Header.getLength()-2;
 	uint8_t *inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
-	bitmap->fromJPEG(inData,dataSize,JPEGTablesTag::getJPEGTables(),JPEGTablesTag::getJPEGTableSize());
+	loadBitmap(inData,dataSize);
 	delete[] inData;
 }
 
@@ -1845,8 +1861,7 @@ DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in, RootMov
 	int dataSize=Header.getLength()-2;
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
-
-	bitmap->fromJPEG(inData,dataSize);
+	loadBitmap(inData,dataSize);
 	delete[] inData;
 }
 
@@ -1859,8 +1874,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 	uint8_t* inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
 
-	//TODO: check header. Could also be PNG or GIF
-	bitmap->fromJPEG(inData,dataSize);
+	loadBitmap(inData,dataSize);
 	delete[] inData;
 
 	//Read alpha data (if any)

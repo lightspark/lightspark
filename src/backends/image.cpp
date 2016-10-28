@@ -293,7 +293,10 @@ uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint
 		LOG(LOG_ERROR,"Couldn't initialize png read struct");
 		return NULL;
 	}
-	png_set_read_fn(pngPtr,(void*)inData, ReadPNGDataFromBuffer);
+	png_image_buffer b;
+	b.data = inData;
+	b.curpos = 0;
+	png_set_read_fn(pngPtr,(void*)&b, ReadPNGDataFromBuffer);
 
 	return decodePNGImpl(pngPtr, width, height);
 }

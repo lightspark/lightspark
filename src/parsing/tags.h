@@ -556,6 +556,7 @@ class BitmapTag: public DictionaryTag
 {
 protected:
         _R<BitmapContainer> bitmap;
+    void loadBitmap(uint8_t* inData, int datasize);
 public:
 	BitmapTag(RECORDHEADER h,RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL) const;

@@ -85,6 +85,14 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
 }
+bool BitmapContainer::fromPNG(uint8_t* data, int len)
+{
+	/* flash uses signed values for width and height */
+	uint32_t w,h;
+	uint8_t *rgb=ImageDecoder::decodePNG(data,len, &w, &h);
+	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
+}
 
 bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP)
 {

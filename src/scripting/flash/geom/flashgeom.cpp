@@ -917,7 +917,10 @@ ASFUNCTIONBODY(Point,polar)
 	return ret;
 }
 
-Transform::Transform(Class_base* c, _R<DisplayObject> o):ASObject(c),owner(o)
+Transform::Transform(Class_base* c):ASObject(c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
+{
+}
+Transform::Transform(Class_base* c, _R<DisplayObject> o):ASObject(c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
 {
 }
 
@@ -936,7 +939,11 @@ void Transform::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_getMatrix),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("concatenatedMatrix","",Class<IFunction>::getFunction(c->getSystemState(),_getConcatenatedMatrix),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c, perspectiveProjection);
+	REGISTER_GETTER_SETTER(c, matrix3D);
 }
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D);
 
 ASFUNCTIONBODY(Transform,_constructor)
 {
@@ -1717,6 +1724,7 @@ ASFUNCTIONBODY(Vector3D,subtract)
 void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY(Matrix3D,_constructor)
@@ -1725,11 +1733,23 @@ ASFUNCTIONBODY(Matrix3D,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D is not implemented");
 	return NULL;
 }
+ASFUNCTIONBODY(Matrix3D,clone)
+{
+	//Matrix3D * th=static_cast<Matrix3D*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D.clone is not implemented");
+	return Class<Matrix3D>::getInstanceS(obj->getSystemState());
+}
 
 void PerspectiveProjection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	REGISTER_GETTER_SETTER(c, fieldOfView);
+	REGISTER_GETTER_SETTER(c, focalLength);
+	REGISTER_GETTER_SETTER(c, projectionCenter);
 }
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, fieldOfView);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, focalLength);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, projectionCenter);
 
 ASFUNCTIONBODY(PerspectiveProjection,_constructor)
 {

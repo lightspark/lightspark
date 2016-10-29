@@ -186,12 +186,14 @@ public:
 };
 
 class DisplayObject;
+class PerspectiveProjection;
+class Matrix3D;
 class Transform: public ASObject
 {
 private:
 	_NR<DisplayObject> owner;
 public:
-	Transform(Class_base* c):ASObject(c){};
+	Transform(Class_base* c);
 	Transform(Class_base* c, _R<DisplayObject> o);
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
@@ -202,7 +204,9 @@ public:
 	ASFUNCTION(_getMatrix);
 	ASFUNCTION(_setMatrix);
 	ASFUNCTION(_getConcatenatedMatrix);
-	
+	ASPROPERTY_GETTER_SETTER(_NR<PerspectiveProjection>, perspectiveProjection);
+	ASPROPERTY_GETTER_SETTER(_NR<Matrix3D>, matrix3D);
+
 };
 
 class Vector3D: public ASObject
@@ -254,14 +258,18 @@ public:
 	static void sinit(Class_base* c);
 	
 	ASFUNCTION(_constructor);
+	ASFUNCTION(clone);
 };
 class PerspectiveProjection: public ASObject
 {
 public:
-	PerspectiveProjection(Class_base* c):ASObject(c){}
+	PerspectiveProjection(Class_base* c):ASObject(c),fieldOfView(0),focalLength(0) {}
 	static void sinit(Class_base* c);
 	
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t, fieldOfView);
+	ASPROPERTY_GETTER_SETTER(number_t, focalLength);
+	ASPROPERTY_GETTER_SETTER(_NR<Point>, projectionCenter);
 };
 
 }

@@ -784,7 +784,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		return false;
 
 	Locker l(mutexDisplayList);
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		number_t txmin,txmax,tymin,tymax;
@@ -846,7 +846,7 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 {
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		//Skip the drawing of masks
@@ -874,7 +874,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	_NR<DisplayObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
 	Locker l(mutexDisplayList);
-	list<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+	std::vector<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
 		//Don't check masks
@@ -1489,6 +1489,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(c->getSystemState(),removeChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(c->getSystemState(),addChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(c->getSystemState(),swapChildren),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("swapChildrenAt","",Class<IFunction>::getFunction(c->getSystemState(),swapChildrenAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains","",Class<IFunction>::getFunction(c->getSystemState(),contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(c->getSystemState(),_setMouseChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseChildren),GETTER_METHOD,true);
@@ -1674,7 +1675,7 @@ ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, focusRect); // stub
 void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 {
 	tiny_string indent(std::string(2*level, ' '));
-	list<_R<DisplayObject> >::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		Vector2f pos = (*it)->getXY();
@@ -1701,13 +1702,13 @@ void DisplayObjectContainer::setOnStage(bool staged)
 		//Notify childern
 		//Make a copy of display list, and release the mutex
 		//before calling setOnStage
-		list<_R<DisplayObject>> displayListCopy;
+		std::vector<_R<DisplayObject>> displayListCopy;
 		{
 			Locker l(mutexDisplayList);
 			displayListCopy.assign(dynamicDisplayList.begin(),
 					       dynamicDisplayList.end());
 		}
-		list<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
+		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
 			(*it)->setOnStage(staged);
 	}
@@ -1743,7 +1744,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
 {
 	DisplayObject::requestInvalidation(q);
 	Locker l(mutexDisplayList);
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 		(*it)->requestInvalidation(q);
 }
@@ -1761,6 +1762,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			child->getParent()->_removeChild(child);
 	}
 	this->incRef();
+	child->incRef();
 	child->setParent(_MR(this));
 	{
 		Locker l(mutexDisplayList);
@@ -1769,7 +1771,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			dynamicDisplayList.push_back(child);
 		else
 		{
-			list<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
+			std::vector<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
@@ -1785,7 +1787,7 @@ bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
 
 	{
 		Locker l(mutexDisplayList);
-		list<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 		if(it==dynamicDisplayList.end())
 			return false;
 		dynamicDisplayList.erase(it);
@@ -1803,7 +1805,7 @@ bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
 	if(d==this)
 		return true;
 
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		if(*it==d)
@@ -1926,7 +1928,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
 			throw Class<RangeError>::getInstanceS(obj->getSystemState(),"removeChildAt: invalid index", 2025);
-		list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+		std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
 		child=(*it).getPtr();
@@ -1959,17 +1961,21 @@ ASFUNCTIONBODY(DisplayObjectContainer,_setChildIndex)
 		return NULL;
 
 	Locker l(th->mutexDisplayList);
-	th->dynamicDisplayList.remove(child); //remove from old position
 
-	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	child->incRef();
+	th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+curIndex); //remove from old position
+
+	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	int i = 0;
 	for(;it != th->dynamicDisplayList.end(); ++it)
 		if(i++ == index)
 		{
+			child->incRef();
 			th->dynamicDisplayList.insert(it, child);
 			return NULL;
 		}
 
+	child->incRef();
 	th->dynamicDisplayList.push_back(child);
 	return NULL;
 }
@@ -2000,8 +2006,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 
 	{
 		Locker l(th->mutexDisplayList);
-		std::list<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
-		std::list<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
+		std::vector<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
+		std::vector<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
 			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Argument is not child of this object", 2025);
 
@@ -2014,13 +2020,36 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 	return NULL;
 }
 
+ASFUNCTIONBODY(DisplayObjectContainer,swapChildrenAt)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	int index1;
+	int index2;
+	ARG_UNPACK(index1)(index2);
+
+	if (index1 < 0 || index1 > (int)th->dynamicDisplayList.size() ||
+		index2 < 0 || index2 > (int)th->dynamicDisplayList.size())
+		throwError<RangeError>(kParamRangeError);
+	if (index1 == index2)
+	{
+		return NULL;
+	}
+
+	{
+		Locker l(th->mutexDisplayList);
+		std::iter_swap(th->dynamicDisplayList.begin() + index1, th->dynamicDisplayList.begin() + index2);
+	}
+
+	return NULL;
+}
+
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& wantedName=args[0]->toString();
-	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	ASObject* ret=NULL;
 	for(;it!=th->dynamicDisplayList.end();++it)
 	{
@@ -2045,7 +2074,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	unsigned int index=args[0]->toInt();
 	if(index>=th->dynamicDisplayList.size())
 		throw Class<RangeError>::getInstanceS(obj->getSystemState(),"getChildAt: invalid index", 2025);
-	list<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
 
@@ -2055,7 +2084,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 
 int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
 {
-	list<_R<DisplayObject>>::const_iterator it = dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it = dynamicDisplayList.begin();
 	int ret = 0;
 	do
 	{
@@ -3009,8 +3038,16 @@ void PixelSnapping::sinit(Class_base* c)
 void DisplayObjectContainer::initFrame()
 {
 	/* init the frames and call constructors of our children first */
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
+
+	// elements of the dynamicDisplayList may be removed during initFrame() calls,
+	// so we create a temporary list containing all elements
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
 	/* call our own constructor, if necassary */
 	DisplayObject::initFrame();
@@ -3088,7 +3125,7 @@ void MovieClip::initFrame()
 /* This is run in vm's thread context */
 void DisplayObjectContainer::advanceFrame()
 {
-	list<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 		(*it)->advanceFrame();
 }

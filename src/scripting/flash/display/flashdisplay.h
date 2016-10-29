@@ -92,7 +92,7 @@ private:
 protected:
 	void requestInvalidation(InvalidateQueue* q);
 	//This is shared between RenderThread and VM
-	std::list < _R<DisplayObject> > dynamicDisplayList;
+	std::vector < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
@@ -131,6 +131,7 @@ public:
 	ASFUNCTION(_getMouseChildren);
 	ASFUNCTION(_setMouseChildren);
 	ASFUNCTION(swapChildren);
+	ASFUNCTION(swapChildrenAt);
 };
 
 /* This is really ugly, but the parent of the current

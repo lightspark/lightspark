@@ -861,20 +861,27 @@ bool XMLList::deleteVariableByMultiname(const multiname& name)
 	if(XML::isValidMultiname(getSystemState(),name,index))
 	{
 		_R<XML> node = nodes[index];
-		if (node->parentNode)
+		if (!node->parentNode.isNull() && node->parentNode->childrenlist.getPtr() != this)
 		{
-			XMLList::XMLListVector::iterator it = node->parentNode->childrenlist->nodes.end();
-			while (it != node->parentNode->childrenlist->nodes.begin())
+			// the node to remove is also added to another list, so it has to be deleted there, too
+			if (node->parentNode)
 			{
-				it--;
-				_R<XML> n = *it;
-				if (n.getPtr() == node.getPtr())
+				XMLList::XMLListVector::iterator it = node->parentNode->childrenlist->nodes.end();
+				while (it != node->parentNode->childrenlist->nodes.begin())
 				{
-					node->parentNode->childrenlist->nodes.erase(it);
-					break;
+					it--;
+					_R<XML> n = *it;
+					if (n.getPtr() == node.getPtr())
+					{
+						node->parentNode->childrenlist->nodes.erase(it);
+						bdeleted = true;
+						break;
+					}
 				}
 			}
 		}
+		this->nodes.erase(this->nodes.begin()+index);
+		bdeleted = true;
 	}
 	else
 	{

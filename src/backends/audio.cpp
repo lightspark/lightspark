@@ -25,6 +25,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <sys/time.h>
 
+#define LIGHTSPARK_AUDIO_SDL_BUFFERSIZE 8192
 
 using namespace lightspark;
 using namespace std;
@@ -115,9 +116,9 @@ void AudioStream::setVolume(double volume)
 
 AudioStream::~AudioStream()
 {
-	manager->streams.remove(this);
 	if (mixer_channel != -1)
 		Mix_HaltChannel(mixer_channel);
+	manager->removeStream(this);
 }
 
 AudioManager::AudioManager():muteAllStreams(false),sdl_available(0),mixeropened(0)
@@ -131,6 +132,7 @@ AudioManager::AudioManager():muteAllStreams(false),sdl_available(0),mixeropened(
 }
 void AudioManager::muteAll()
 {
+	Locker l(streamMutex);
 	muteAllStreams = true;
 	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 	{
@@ -139,6 +141,7 @@ void AudioManager::muteAll()
 }
 void AudioManager::unmuteAll()
 {
+	Locker l(streamMutex);
 	muteAllStreams = false;
 	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 	{
@@ -146,13 +149,25 @@ void AudioManager::unmuteAll()
 	}
 }
 
+void AudioManager::removeStream(AudioStream *s)
+{
+	Locker l(streamMutex);
+	streams.remove(s);
+	if (streams.empty())
+	{
+		Mix_CloseAudio();
+		mixeropened = false;
+	}
+}
+
 AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
 {
+	Locker l(streamMutex);
 	if (!sdl_available)
 		return NULL;
 	if (!mixeropened)
 	{
-		if (Mix_OpenAudio (LIGHTSPARK_AUDIO_SDL_SAMPLERATE, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFFERSIZE) < 0)
+		if (Mix_OpenAudio (MIX_DEFAULT_FREQUENCY, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFFERSIZE) < 0)
 		{
 			LOG(LOG_ERROR,"Couldn't open SDL_mixer");
 			sdl_available = 0;
@@ -180,6 +195,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
 
 AudioManager::~AudioManager()
 {
+	Locker l(streamMutex);
 	for (stream_iterator it = streams.begin(); it != streams.end(); ++it) {
 		delete *it;
 	}

@@ -25,6 +25,7 @@
 #include "platforms/fastpaths.h"
 #include "swf.h"
 #include "backends/rendering.h"
+#include "SDL2/SDL_mixer.h"
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
@@ -318,7 +319,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 {
 	if(datalen==0)
 		return false;
-#if HAVE_AVCODEC_SEND_PACKET && HAVE_AVCODEC_RECEIVE_FRAME
+#if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
 	AVPacket pkt;
 	av_init_packet(&pkt);
 	pkt.data=data;
@@ -378,7 +379,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 
 bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
-#if HAVE_AVCODEC_SEND_PACKET && HAVE_AVCODEC_RECEIVE_FRAME
+#if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
 	int ret = avcodec_send_packet(codecContext, pkt);
 	while (ret == 0)
 	{
@@ -570,6 +571,9 @@ void AudioDecoder::skipAll()
 
 #ifdef ENABLE_LIBAVCODEC
 FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):ownedContext(true)
+#ifdef HAVE_LIBAVRESAMPLE
+	,resamplecontext(NULL)
+#endif
 {
 	switchCodec(audioCodec,initdata,datalen);
 #if HAVE_AVCODEC_DECODE_AUDIO4
@@ -580,6 +584,10 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 {
 	if (codecContext)
 		avcodec_close(codecContext);
+#ifdef HAVE_LIBAVRESAMPLE
+	if (resamplecontext)
+		avresample_free(&resamplecontext);
+#endif
 	AVCodec* codec=avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
 	assert(codec);
 
@@ -609,6 +617,9 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 }
 
 FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):ownedContext(true)
+#ifdef HAVE_LIBAVRESAMPLE
+	,resamplecontext(NULL)
+#endif
 {
 	status=INIT;
 
@@ -629,13 +640,16 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, i
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
 	frameIn=av_frame_alloc();
 #endif
 }
 
 #if LIBAVFORMAT_VERSION_MAJOR > 56
 FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecID codecID):ownedContext(true),codecContext(NULL)
+#ifdef HAVE_LIBAVRESAMPLE
+	,resamplecontext(NULL)
+#endif
 {
 	status=INIT;
 	AVCodec* codec=avcodec_find_decoder(codecID);
@@ -655,12 +669,15 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecID codecID):ownedContext(true),cod
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
 	frameIn=av_frame_alloc();
 #endif
 }
 #else
 FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):ownedContext(false),codecContext(_c)
+#ifdef HAVE_LIBAVRESAMPLE
+	,resamplecontext(NULL)
+#endif
 {
 	status=INIT;
 	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
@@ -688,6 +705,10 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 		av_free(codecContext);
 #if HAVE_AVCODEC_DECODE_AUDIO4
 	av_free(frameIn);
+#endif
+#ifdef HAVE_LIBAVRESAMPLE
+	if (resamplecontext)
+		avresample_free(&resamplecontext);
 #endif
 }
 
@@ -737,7 +758,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 
 uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
 {
-#if HAVE_AVCODEC_SEND_PACKET && HAVE_AVCODEC_RECEIVE_FRAME
+#if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
 	AVPacket pkt;
 	av_init_packet(&pkt);
 
@@ -801,7 +822,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #else
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if HAVE_AVCODEC_DECODE_AUDIO3 || HAVE_AVCODEC_DECODE_AUDIO4
+#if defined HAVE_AVCODEC_DECODE_AUDIO3 || defined HAVE_AVCODEC_DECODE_AUDIO4
 	AVPacket pkt;
 	av_init_packet(&pkt);
 
@@ -822,7 +843,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		pkt.size = combinedBuffer.size();
 		overflowBuffer.clear();
 	}
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
 	av_frame_unref(frameIn);
 	int frameOk=0;
 	int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
@@ -869,7 +890,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 
 uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
-#if HAVE_AVCODEC_SEND_PACKET && HAVE_AVCODEC_RECEIVE_FRAME
+#if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
 	av_frame_unref(frameIn);
 	int ret = avcodec_send_packet(codecContext, pkt);
 	int maxLen = 0;
@@ -943,12 +964,13 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	return maxLen;
 #endif
 }
-#if HAVE_AVCODEC_DECODE_AUDIO4 || (HAVE_AVCODEC_SEND_PACKET && HAVE_AVCODEC_RECEIVE_FRAME)
+#if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
-	int sample_rate = getSys()->audioManager->forcedSampleRate() == -1 ? codecContext->sample_rate : getSys()->audioManager->forcedSampleRate();
-	unsigned int channel_layout = getSys()->audioManager->forcedChannelLayout() == -1 ? frameIn->channel_layout : getSys()->audioManager->forcedChannelLayout();
-	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == codecContext->sample_rate && channel_layout == frameIn->channel_layout)
+	int sample_rate = MIX_DEFAULT_FREQUENCY;
+	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
+	int framesamplerate = av_frame_get_sample_rate(frameIn);
+	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == framesamplerate && channel_layout == frameIn->channel_layout)
 	{
 		//This is suboptimal but equivalent to what libavcodec
 		//does for the compatibility version of avcodec_decode_audio3
@@ -957,22 +979,25 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	}
 	int maxLen;
 #ifdef HAVE_LIBAVRESAMPLE
-	AVAudioResampleContext * avr = avresample_alloc_context();
-	av_opt_set_int(avr, "in_channel_layout",  frameIn->channel_layout, 0);
-	av_opt_set_int(avr, "out_channel_layout", channel_layout,  0);
-	av_opt_set_int(avr, "in_sample_rate",     codecContext->sample_rate,     0);
-	av_opt_set_int(avr, "out_sample_rate",    sample_rate,     0);
-	av_opt_set_int(avr, "in_sample_fmt",      frameIn->format,   0);
-	av_opt_set_int(avr, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
-	avresample_open(avr);
+	if (!resamplecontext)
+	{
+		resamplecontext = avresample_alloc_context();
+		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
+		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
+		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
+		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
+		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
+		av_opt_set_int(resamplecontext, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+		avresample_open(resamplecontext);
+	}
 
 	uint8_t *output;
 	int out_linesize;
-	int out_samples = avresample_available(avr) + av_rescale_rnd(avresample_get_delay(avr) + frameIn->linesize[0], sample_rate, sample_rate, AV_ROUND_UP);
+	int out_samples = avresample_available(resamplecontext) + av_rescale_rnd(avresample_get_delay(resamplecontext) + frameIn->linesize[0], sample_rate, sample_rate, AV_ROUND_UP);
 	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
 	if (res >= 0)
 	{
-		maxLen = avresample_convert(avr, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout); // 2 bytes in AV_SAMPLE_FMT_S16
+		maxLen = avresample_convert(resamplecontext, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout); // 2 bytes in AV_SAMPLE_FMT_S16
 		memcpy(curTail.samples, output, maxLen);
 		av_freep(&output);
 	}
@@ -982,8 +1007,6 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 		memset(curTail.samples, 0, frameIn->linesize[0]);
 		maxLen = frameIn->linesize[0];
 	}
-
-	avresample_free(&avr);
 #else
 	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libavresample");
 	memset(curTail.samples, 0, frameIn->linesize[0]);
@@ -992,32 +1015,6 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	return maxLen;
 }
 #endif
-
-uint32_t FFMpegAudioDecoder::decodeStreamSomePackets(std::istream& s, uint32_t time, IThreadJob* callingthread)
-{
-	const size_t BUF_SIZE = 4096;
-	uint32_t ret;
-	uint8_t inbuf[BUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
-	s.read((char*)inbuf, BUF_SIZE);
-	if (s.gcount() == 0)
-		return 0;
-
-	ret = decodeData(inbuf, s.gcount(), time);
-
-	// Keep the overflowBuffer from growing without bounds
-	size_t overflowSize = overflowBuffer.size();
-	while (overflowSize > BUF_SIZE)
-	{
-		if (callingthread->threadAborting)
-			break;
-		ret = decodeData(NULL, 0, time);
-		if (overflowBuffer.size() == overflowSize)
-			break;
-		overflowSize = overflowBuffer.size();
-	}
-
-	return ret;
-}
 
 #endif //ENABLE_LIBAVCODEC
 
@@ -1028,15 +1025,17 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
+FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, int streamsize)
  : audioFound(false),videoFound(false),stream(s),formatCtx(NULL),audioIndex(-1),
-   videoIndex(-1),customAudioDecoder(NULL),customVideoDecoder(NULL),avioContext(NULL)
+   videoIndex(-1),customAudioDecoder(NULL),customVideoDecoder(NULL),avioContext(NULL),availablestreamlength(streamsize)
 {
+	int aviobufsize = streamsize == -1 ? 4096 : min(4096, streamsize);
 	valid=false;
+	avioBuffer = (uint8_t*)av_malloc(aviobufsize);
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
-	avioContext=avio_alloc_context(avioBuffer,4096,0,this,avioReadPacket,NULL,NULL);
+	avioContext=avio_alloc_context(avioBuffer,aviobufsize,0,this,avioReadPacket,NULL,NULL);
 #else
-	avioContext=av_alloc_put_byte(avioBuffer,4096,0,this,avioReadPacket,NULL,NULL);
+	avioContext=av_alloc_put_byte(avioBuffer,aviobufsize,0,this,avioReadPacket,NULL,NULL);
 #endif
 	if(avioContext==NULL)
 		return;
@@ -1047,22 +1046,44 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 	avioContext->is_streamed=1;
 #endif
 
-	//Probe the stream format.
-	//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
-	AVProbeData probeData;
-	probeData.filename="lightspark_stream";
-	probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
-	memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
-	stream.read((char*)probeData.buf,8192);
-	int read=stream.gcount();
-	if(read!=8192)
-		LOG(LOG_ERROR,"Not sufficient data is available from the stream:"<<read);
-	probeData.buf_size=read;
-
-	stream.seekg(0);
-	AVInputFormat* fmt;
-	fmt=av_probe_input_format(&probeData,1);
-	delete[] probeData.buf;
+	AVInputFormat* fmt = NULL;
+	if (format)
+	{
+		switch (format->codec)
+		{
+			case LS_AUDIO_CODEC::MP3:
+				fmt = av_find_input_format("mp3");
+				break;
+			case LS_AUDIO_CODEC::AAC:
+				fmt = av_find_input_format("aac");
+				break;
+			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
+			case LS_AUDIO_CODEC::ADPCM:
+			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
+				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
+				break;
+			case LS_AUDIO_CODEC::CODEC_NONE:
+				break;
+		}
+	}
+	if (fmt == NULL)
+	{
+		//Probe the stream format.
+		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
+		AVProbeData probeData;
+		probeData.filename="lightspark_stream";
+		probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
+		memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
+		stream.read((char*)probeData.buf,8192);
+		int read=stream.gcount();
+		if(read!=8192)
+			LOG(LOG_ERROR,"Not sufficient data is available from the stream:"<<read);
+		probeData.buf_size=read;
+	
+		stream.seekg(0);
+		fmt=av_probe_input_format(&probeData,1);
+		delete[] probeData.buf;
+	}
 	if(fmt==NULL)
 		return;
 
@@ -1075,11 +1096,14 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 #endif
 	if(ret<0)
 		return;
+	if (!format)
+	{
 #ifdef HAVE_AVFORMAT_FIND_STREAM_INFO
-	ret=avformat_find_stream_info(formatCtx,NULL);
+		ret=avformat_find_stream_info(formatCtx,NULL);
 #else
-	ret=av_find_stream_info(formatCtx);
+		ret=av_find_stream_info(formatCtx);
 #endif
+	}
 	if(ret<0)
 		return;
 
@@ -1126,10 +1150,13 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s)
 
 	if(audioFound)
 	{
+		if (format)
+			customAudioDecoder=new FFMpegAudioDecoder(format->codec,format->sampleRate,format->channels,true);
+		else
 #if LIBAVFORMAT_VERSION_MAJOR > 56
-		customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codecpar->codec_id);
+			customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codecpar->codec_id);
 #else
-		customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codec);
+			customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codec);
 #endif
 		audioDecoder=customAudioDecoder;
 	}
@@ -1197,8 +1224,13 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 {
 	FFMpegStreamDecoder* th=static_cast<FFMpegStreamDecoder*>(t);
-	th->stream.read((char*)buf,buf_size);
+	// check for available bytes to avoid exception on eof
+	if (th->availablestreamlength == 0)
+		return 0;
+	th->stream.read((char*)buf,th->availablestreamlength == -1 ? buf_size : min(buf_size,th->availablestreamlength));
 	int ret=th->stream.gcount();
+	if (th->availablestreamlength != -1)
+		th->availablestreamlength -= ret;
 	return ret;
 }
 #endif //ENABLE_LIBAVCODEC

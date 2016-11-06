@@ -27,9 +27,6 @@
 
 namespace lightspark
 {
-#define LIGHTSPARK_AUDIO_SDL_BUFFERSIZE 4096
-#define LIGHTSPARK_AUDIO_SDL_SAMPLERATE 44100
-
 class AudioStream;
 
 class AudioManager
@@ -41,6 +38,7 @@ private:
 	int mixeropened;
 	std::list<AudioStream *> streams;
 	typedef std::list<AudioStream *>::iterator stream_iterator;
+	Mutex streamMutex;
 public:
 	AudioManager();
 
@@ -50,9 +48,7 @@ public:
 	bool allMuted() { return muteAllStreams; }
 	void muteAll();
 	void unmuteAll();
-	int forcedSampleRate() const { return LIGHTSPARK_AUDIO_SDL_SAMPLERATE;}
-	int forcedChannelLayout() const { return AV_CH_LAYOUT_STEREO;}
-
+	void removeStream(AudioStream* s);
 	~AudioManager();
 };
 

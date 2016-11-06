@@ -61,6 +61,15 @@ enum LS_VIDEO_CODEC { H264=0, H263, VP6 };
 // "Audio coding formats" from Chapter 11 in SWF documentation
 enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
 
+class AudioFormat
+{
+public:
+	AudioFormat(LS_AUDIO_CODEC co, int sr, int ch):codec(co),sampleRate(sr),channels(ch) {}
+	LS_AUDIO_CODEC codec;
+	int sampleRate;
+	int channels;
+};
+
 class Decoder
 {
 protected:
@@ -305,10 +314,13 @@ class FFMpegAudioDecoder: public AudioDecoder
 private:
 	bool ownedContext;
 	AVCodecContext* codecContext;
+#ifdef HAVE_LIBAVRESAMPLE
+	AVAudioResampleContext* resamplecontext;
+#endif
 	std::vector<uint8_t> overflowBuffer;
 	bool fillDataAndCheckValidity();
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
 	AVFrame* frameIn;
 	int resampleFrameToS16(FrameSamples& curTail);
 #endif
@@ -330,7 +342,6 @@ public:
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
 	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
-	uint32_t decodeStreamSomePackets(std::istream& s, uint32_t time, IThreadJob *callingthread);
 };
 #endif
 
@@ -363,7 +374,7 @@ private:
 	FFMpegAudioDecoder* customAudioDecoder;
 	FFMpegVideoDecoder* customVideoDecoder;
 	//Helpers for custom I/O of libavformat
-	uint8_t avioBuffer[4096];
+	uint8_t* avioBuffer;
 	static int avioReadPacket(void* t, uint8_t* buf, int buf_size);
 	//NOTE: this will become AVIOContext in FFMpeg 0.7
 #if LIBAVUTIL_VERSION_MAJOR < 51
@@ -371,8 +382,9 @@ private:
 #else
 	AVIOContext* avioContext;
 #endif
+	int availablestreamlength;
 public:
-	FFMpegStreamDecoder(std::istream& s);
+	FFMpegStreamDecoder(std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
 	~FFMpegStreamDecoder();
 	bool decodeNextFrame();
 };

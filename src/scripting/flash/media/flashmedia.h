@@ -36,15 +36,6 @@ class AudioDecoder;
 class NetStream;
 class StreamCache;
 
-class AudioFormat
-{
-public:
-	AudioFormat(LS_AUDIO_CODEC co, int sr, int ch):codec(co),sampleRate(sr),channels(ch) {}
-	LS_AUDIO_CODEC codec;
-	int sampleRate;
-	int channels;
-};
-
 class Sound: public EventDispatcher, public ILoadable
 {
 private:
@@ -102,7 +93,6 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
-	void playRaw();
 public:
 	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0));
 	~SoundChannel();

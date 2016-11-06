@@ -464,10 +464,7 @@ ASFUNCTIONBODY(SoundChannel, stop)
 
 void SoundChannel::execute()
 {
-	if (format.codec == CODEC_NONE)
-		playStream();
-	else
-		playRaw();
+	playStream();
 }
 
 void SoundChannel::playStream()
@@ -475,7 +472,7 @@ void SoundChannel::playStream()
 	assert(!stream.isNull());
 	std::streambuf *sbuf = stream->createReader();
 	istream s(sbuf);
-	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	s.exceptions ( istream::failbit | istream::badbit );
 
 	bool waitForFlush=true;
 	StreamDecoder* streamDecoder=NULL;
@@ -483,7 +480,7 @@ void SoundChannel::playStream()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(s);
+		streamDecoder=new FFMpegStreamDecoder(s,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 			threadAbort();
 
@@ -497,7 +494,7 @@ void SoundChannel::playStream()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
-				audioStream=getSys()->audioManager->createStream(audioDecoder,false);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false);
 
 			// TODO: check the position only when the getter is called
 			if(audioStream)
@@ -548,45 +545,6 @@ void SoundChannel::playStream()
 	}
 }
 
-void SoundChannel::playRaw()
-{
-	assert(!stream.isNull());
-#ifdef ENABLE_LIBAVCODEC
-	FFMpegAudioDecoder *decoder = new FFMpegAudioDecoder(format.codec,
-							     format.sampleRate,
-							     format.channels,
-							     true);
-	if (!decoder)
-		return;
-
-	AudioStream *audioStream = NULL;
-	std::streambuf *sbuf = stream->createReader();
-	istream stream(sbuf);
-	do
-	{
-		decoder->decodeStreamSomePackets(stream, 0,this);
-		if (decoder->isValid() && (audioStream == NULL))
-			audioStream=getSys()->audioManager->createStream(decoder,false);
-		if(threadAborting)
-			break;
-	}
-	while (!ACQUIRE_READ(stopped) && !stream.eof() && !stream.fail() && !stream.bad());
-
-	decoder->setFlushing();
-	decoder->waitFlushed();
-	sleep(1);
-
-	delete audioStream;
-	delete decoder;
-	delete sbuf;
-
-	if (!ACQUIRE_READ(stopped))
-	{
-		incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
-	}
-#endif //ENABLE_LIBAVCODEC
-}
 
 void SoundChannel::jobFence()
 {

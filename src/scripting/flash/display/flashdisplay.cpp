@@ -2011,10 +2011,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,swapChildren)
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
 			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Argument is not child of this object", 2025);
 
-		th->dynamicDisplayList.insert(it1, child2);
-		th->dynamicDisplayList.insert(it2, child1);
-		th->dynamicDisplayList.erase(it1);
-		th->dynamicDisplayList.erase(it2);
+		std::iter_swap(it1, it2);
 	}
 	
 	return NULL;

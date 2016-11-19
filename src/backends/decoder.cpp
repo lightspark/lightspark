@@ -969,7 +969,11 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
 	int sample_rate = MIX_DEFAULT_FREQUENCY;
 	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
-	int framesamplerate = av_frame_get_sample_rate(frameIn);
+#ifdef HAVE_AV_FRAME_GET_SAMPLE_RATE
+ 	int framesamplerate = av_frame_get_sample_rate(frameIn);
+#else
+	int framesamplerate = frameIn->sample_rate;
+#endif
 	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == framesamplerate && channel_layout == frameIn->channel_layout)
 	{
 		//This is suboptimal but equivalent to what libavcodec

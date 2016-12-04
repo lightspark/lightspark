@@ -23,7 +23,6 @@
 #define CHUNKSIZE 128
 
 #include "compat.h"
-#include "backends/lsopengl.h"
 #include <vector>
 #include "swftypes.h"
 #include "threading.h"
@@ -37,86 +36,6 @@ namespace lightspark
 
 class DisplayObject;
 class InvalidateQueue;
-
-class TextureBuffer
-{
-private:
-	GLuint texId;
-	GLenum filtering;
-	uint32_t allocWidth;
-	uint32_t allocHeight;
-	uint32_t width;
-	uint32_t height;
-	uint32_t horizontalAlignment;
-	uint32_t verticalAlignment;
-	bool inited;
-	uint32_t nearestPOT(uint32_t a) const;
-	void setAllocSize(uint32_t w, uint32_t h);
-public:
-	/**
-	  	TextureBuffer constructor
-
-		@param initNow Create right now the texture (can be true only if created inside the Render Thread)
-		@param width The requested width
-		@param height The requested height
-		@param filtering The requested texture filtering from OpenGL enumeration
-	*/
-	TextureBuffer(bool initNow, uint32_t width=0, uint32_t height=0, GLenum filtering=GL_NEAREST);
-	/**
-	  	TextureBuffer destructor
-
-		Destroys the GL resources allocated for this texture
-		@pre Should be run inside the RenderThread or shutdown should be already run
-	*/
-	~TextureBuffer();
-	/**
-	   	Return the texture id
-
-		@ret The OpenGL texture id
-	*/
-	GLuint getId() {return texId;}
-	/**
-	  	Initialize the texture using new values
-
-		@param width The requested width
-		@param height The requested height
-		@param filtering The requested texture filtering from OpenGL enumeration
-		@pre Running inside the RenderThread
-	*/
-	void init(uint32_t width, uint32_t height, GLenum filtering=GL_NEAREST);
-	/**
-	  	Frees the GL resources
-
-		@pre Running inside the RenderThread
-	*/
-	void shutdown();
-	/**
-		Bind as the current texture
-
-		@pre Running inside the RenderThread
-	*/
-	void bind();
-	/**
-		Unbind the current texture
-
-		@pre Running inside the RenderThread
-	*/
-	void unbind();
-	/**
-		Set the given uniform with the coordinate scale of the current texture
-
-		@pre Running inside the RenderThread
-	*/
-	void setTexScale(GLuint uniformLocation);
-
-	void resize(uint32_t width, uint32_t height);
-	/**
-		Request a minimum alignment for width and height
-	*/
-	void setRequestedAlignment(uint32_t w, uint32_t h);
-	uint32_t getAllocWidth() const { return allocWidth;}
-	uint32_t getAllocHeight() const { return allocHeight;}
-};
 
 class TextureChunk
 {

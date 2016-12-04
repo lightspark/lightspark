@@ -146,8 +146,9 @@ private:
 	RGB color;
 	int32_t len;
 	uint32_t tickCount;
+	EngineData* engineData;
 public:
-	ThreadProfile(const RGB& c,uint32_t l):color(c),len(l),tickCount(0){}
+	ThreadProfile(const RGB& c,uint32_t l,EngineData* _engineData):color(c),len(l),tickCount(0),engineData(_engineData){}
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();

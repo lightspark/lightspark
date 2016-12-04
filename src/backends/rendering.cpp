@@ -33,13 +33,6 @@
 #define None 0L
 #endif
 
-//The interpretation of texture data change with the endianness
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
-#else
-#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
-#endif
-
 using namespace lightspark;
 using namespace std;
 
@@ -67,12 +60,12 @@ void RenderThread::wait()
 	}
 }
 
-RenderThread::RenderThread(SystemState* s):
+RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),currentPixelBuffer(0),currentPixelBufferOffset(0),
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
-	hasNPOTTextures(false),cairoTextureContext(NULL)
+	cairoTextureContext(NULL)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
 #ifdef _WIN32
@@ -111,7 +104,7 @@ void RenderThread::handleNewTexture()
 	Locker l(mutexLargeTexture);
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{
-		if(largeTextures[i].id==(GLuint)-1)
+		if(largeTextures[i].id==(uint32_t)-1)
 			largeTextures[i].id=allocateNewGLTexture();
 	}
 	newTextureNeeded=false;
@@ -127,14 +120,14 @@ void RenderThread::finalizeUpload()
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
 	const TextureChunk& tex=u->getTexture();
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[currentPixelBuffer]);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[currentPixelBuffer]);
 #ifndef ENABLE_GLES2
 	//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
 	loadChunkBGRA(tex, w, h, (uint8_t*)currentPixelBufferOffset);
 #else
 	loadChunkBGRA(tex, w, h, pixelBuf);
 #endif
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 	u->uploadFence();
 	prevUploadJob=NULL;
 }
@@ -150,8 +143,8 @@ void RenderThread::handleUpload()
 	//Increment and wrap current buffer index
 #ifndef ENABLE_GLES2
 	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[nextBuffer]);
-	uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[nextBuffer]);
+	uint8_t* buf=(uint8_t*)engineData->exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
 	if(!buf)
 	{
 		handleGLErrors();
@@ -161,8 +154,8 @@ void RenderThread::handleUpload()
 
 	u->upload(alignedBuf, w, h);
 
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	engineData->exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER();
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 
 	currentPixelBufferOffset=alignedBuf-buf;
 	currentPixelBuffer=nextBuffer;
@@ -191,151 +184,11 @@ void RenderThread::init()
 
 	windowWidth=engineData->width;
 	windowHeight=engineData->height;
-	if (SDL_GetWindowFlags(engineData->widget) & SDL_WINDOW_OPENGL)
-	{
-#ifdef ENABLE_GLES2
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-#endif
-		mSDLContext = SDL_GL_CreateContext(engineData->widget);
-		if (!mSDLContext)
-			LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
-	}
-	else
-	{
-	
-#if defined(_WIN32)
-		PIXELFORMATDESCRIPTOR pfd =
-			{
-				sizeof(PIXELFORMATDESCRIPTOR),
-				1,
-				PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
-				PFD_TYPE_RGBA,            //The kind of framebuffer. RGBA or palette.
-				32,                        //Colordepth of the framebuffer.
-				0, 0, 0, 0, 0, 0,
-				0,
-				0,
-				0,
-				0, 0, 0, 0,
-				24,                        //Number of bits for the depthbuffer
-				0,                        //Number of bits for the stencilbuffer
-				0,                        //Number of Aux buffers in the framebuffer.
-				PFD_MAIN_PLANE,
-				0,
-				0, 0, 0
-			};
-		if(!(mDC = GetDC((HWND)engineData->window)))
-			throw RunTimeException("GetDC failed");
-		int PixelFormat;
-		if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))
-			throw RunTimeException("ChoosePixelFormat failed");
-		if(!SetPixelFormat(mDC,PixelFormat,&pfd))
-			throw RunTimeException("SetPixelFormat failed");
-		if (!(mRC=wglCreateContext(mDC)))
-			throw RunTimeException("wglCreateContext failed");
-		if(!wglMakeCurrent(mDC,mRC))
-			throw RunTimeException("wglMakeCurrent failed");
-#elif !defined(ENABLE_GLES2)
-		mDisplay = XOpenDisplay(NULL);
-		int a,b;
-		Bool glx_present=glXQueryVersion(mDisplay, &a, &b);
-		if(!glx_present)
-		{
-			XCloseDisplay(mDisplay);
-			throw RunTimeException("glX not present");
-		}
-	
-		int attrib[10]={GLX_DOUBLEBUFFER, True, None};
-		GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
-		if(!fb)
-		{
-			attrib[6]=None;
-			LOG(LOG_ERROR,_("Falling back to no double buffering"));
-			fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
-		}
-		if(!fb)
-		{
-			XCloseDisplay(mDisplay);
-			throw RunTimeException(_("Could not find any GLX configuration"));
-		}
-		int i;
-		for(i=0;i<a;i++)
-		{
-			int id;
-			glXGetFBConfigAttrib(mDisplay, fb[i],GLX_VISUAL_ID,&id);
-			if(id==(int)engineData->visual)
-				break;
-		}
-		if(i==a)
-		{
-			//No suitable id found
-			XCloseDisplay(mDisplay);
-			throw RunTimeException(_("No suitable graphics configuration available"));
-		}
-		mFBConfig=fb[i];
-		LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
-		XFree(fb);
-			mContext = glXCreateNewContext(mDisplay, mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-		glXMakeCurrent(mDisplay, engineData->windowID, mContext);
-		if(!glXIsDirect(mDisplay, mContext))
-			LOG(LOG_INFO, "Indirect!!");
-#else //egl
-		mDisplay = XOpenDisplay(NULL);
-		int a;
-		eglBindAPI(EGL_OPENGL_ES_API);
-		mEGLDisplay = eglGetDisplay(mDisplay);
-		if (mEGLDisplay == EGL_NO_DISPLAY)
-			throw RunTimeException(_("EGL not present"));
-			EGLint major, minor;
-		if (eglInitialize(mEGLDisplay, &major, &minor) == EGL_FALSE)
-			throw RunTimeException(_("EGL initialization failed"));
-	
-		LOG(LOG_INFO, _("EGL version: ") << eglQueryString(mEGLDisplay, EGL_VERSION));
-		EGLint config_attribs[] = {
-			EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-			EGL_RED_SIZE, 8,
-			EGL_GREEN_SIZE, 8,
-			EGL_BLUE_SIZE, 8,
-			EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-			EGL_NONE
-			};
-		EGLint context_attribs[] = {
-			EGL_CONTEXT_CLIENT_VERSION, 2,
-			EGL_NONE
-		};
-		if (!eglChooseConfig(mEGLDisplay, config_attribs, 0, 0, &a))
-			throw RunTimeException(_("Could not get number of EGL configurations"));
-		else
-			LOG(LOG_INFO, "Number of EGL configurations: " << a);
-		EGLConfig *conf = new EGLConfig[a];
-		if (!eglChooseConfig(mEGLDisplay, config_attribs, conf, a, &a))
-			throw RunTimeException(_("Could not find any EGL configuration"));
-	
-		int i;
-		for(i=0;i<a;i++)
-		{
-			EGLint id;
-			eglGetConfigAttrib(mEGLDisplay, conf[i], EGL_NATIVE_VISUAL_ID, &id);
-			if(id==(int)engineData->visual)
-				break;
-		}
-		if(i==a)
-		{
-			//No suitable id found
-			throw RunTimeException(_("No suitable graphics configuration available"));
-		}
-		mEGLConfig=conf[i];
-		LOG(LOG_INFO, "Chosen config " << hex << conf[i] << dec);
-		mEGLContext = eglCreateContext(mEGLDisplay, mEGLConfig, EGL_NO_CONTEXT, context_attribs);
-		if (mEGLContext == EGL_NO_CONTEXT)
-			throw RunTimeException(_("Could not create EGL context"));
-		mEGLSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, engineData->window, NULL);
-		if (mEGLSurface == EGL_NO_SURFACE)
-			throw RunTimeException(_("Could not create EGL surface"));
-		eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext);
-#endif
-	}
+
+	engineData->InitOpenGL();
 	commonGLInit(windowWidth, windowHeight);
 	commonGLResize();
+	
 }
 
 void RenderThread::worker()
@@ -353,69 +206,13 @@ void RenderThread::worker()
 		ThreadProfile* profile=m_sys->allocateProfiler(RGB(200,0,0));
 		profile->setTag("Render");
 
-		glEnable(GL_TEXTURE_2D);
+		engineData->exec_glEnable_GL_TEXTURE_2D();
 
 		Chronometer chronometer;
 		while(1)
 		{
-			event.wait();
-			if(m_sys->isShuttingDown())
+			if (!doRender(profile,&chronometer))
 				break;
-			chronometer.checkpoint();
-
-			if(resizeNeeded)
-			{
-				//Order of the operations here matters for requestResize
-				windowWidth=newWidth;
-				windowHeight=newHeight;
-				resizeNeeded=false;
-				newWidth=0;
-				newHeight=0;
-				//End of order critical part
-				LOG(LOG_INFO,_("Window resized to ") << windowWidth << 'x' << windowHeight);
-				commonGLResize();
-				m_sys->resizeCompleted();
-				profile->accountTime(chronometer.checkpoint());
-				continue;
-			}
-
-			if(newTextureNeeded)
-				handleNewTexture();
-
-			if(prevUploadJob)
-				finalizeUpload();
-
-			if(uploadNeeded)
-			{
-				handleUpload();
-				profile->accountTime(chronometer.checkpoint());
-				continue;
-			}
-
-			if(m_sys->isOnError())
-			{
-				renderErrorPage(this, m_sys->standalone);
-			}
-			if (engineData->widget && (SDL_GetWindowFlags(engineData->widget) & SDL_WINDOW_OPENGL))
-				SDL_GL_SwapWindow(engineData->widget);
-			else
-			{
-#if defined(_WIN32)
-				SwapBuffers(mDC);
-#elif !defined(ENABLE_GLES2)
-				glXSwapBuffers(mDisplay, engineData->windowID);
-#else
-				eglSwapBuffers(mEGLDisplay, mEGLSurface);
-#endif
-			}
-			if(!m_sys->isOnError())
-			{
-				coreRendering();
-				//Call glFlush to offload work on the GPU
-				glFlush();
-			}
-			profile->accountTime(chronometer.checkpoint());
-			renderNeeded=false;
 		}
 
 		deinit();
@@ -438,38 +235,72 @@ void RenderThread::worker()
 	for(auto i=uploadJobs.begin(); i != uploadJobs.end(); ++i)
 		(*i)->uploadFence();
 }
+bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
+{
+	event.wait();
+	if(m_sys->isShuttingDown())
+		return false;
+	if (chronometer)
+		chronometer->checkpoint();
 
+	if(resizeNeeded)
+	{
+		//Order of the operations here matters for requestResize
+		windowWidth=newWidth;
+		windowHeight=newHeight;
+		resizeNeeded=false;
+		newWidth=0;
+		newHeight=0;
+		//End of order critical part
+		LOG(LOG_INFO,_("Window resized to ") << windowWidth << 'x' << windowHeight);
+		commonGLResize();
+		m_sys->resizeCompleted();
+		if (profile && chronometer)
+			profile->accountTime(chronometer->checkpoint());
+		return true;
+	}
+	if(newTextureNeeded)
+		handleNewTexture();
+
+	if(prevUploadJob)
+		finalizeUpload();
+
+	if(uploadNeeded)
+	{
+		handleUpload();
+		if (profile && chronometer)
+			profile->accountTime(chronometer->checkpoint());
+		return true;
+	}
+
+	if(m_sys->isOnError())
+	{
+		renderErrorPage(this, m_sys->standalone);
+	}
+	engineData->SwapBuffers();
+	if(!m_sys->isOnError())
+	{
+		coreRendering();
+		//Call glFlush to offload work on the GPU
+		engineData->exec_glFlush();
+	}
+	if (profile && chronometer)
+		profile->accountTime(chronometer->checkpoint());
+	renderNeeded=false;
+	
+	return true;
+}
 void RenderThread::deinit()
 {
-	glDisable(GL_TEXTURE_2D);
+	engineData->exec_glDisable_GL_TEXTURE_2D();
 	commonGLDeinit();
-	if (engineData->widget && (SDL_GetWindowFlags(engineData->widget) & SDL_WINDOW_OPENGL))
-	{
-		SDL_GL_DeleteContext(mSDLContext);
-	}
-	else
-	{
-#if defined(_WIN32)
-		wglMakeCurrent(NULL,NULL);
-		wglDeleteContext(mRC);
-		/* Do not ReleaseDC(e->window,hDC); as our window does not have CS_OWNDC */
-#elif !defined(ENABLE_GLES2)
-		glXMakeCurrent(mDisplay, None, NULL);
-		glXDestroyContext(mDisplay, mContext);
-		XCloseDisplay(mDisplay);
-#else
-		eglMakeCurrent(mEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-		eglDestroyContext(mEGLDisplay, mEGLContext);
-		XCloseDisplay(mDisplay);
-#endif
-	}
+	engineData->DeinitOpenGL();
 }
 
 bool RenderThread::loadShaderPrograms()
 {
 	//Create render program
-	assert(glCreateShader);
-	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+	uint32_t f = engineData->exec_glCreateShader_GL_FRAGMENT_SHADER();
 	
 	const char *fs = NULL;
 	fs = dataFileRead("lightspark.frag");
@@ -478,21 +309,18 @@ bool RenderThread::loadShaderPrograms()
 		LOG(LOG_ERROR,_("Shader lightspark.frag not found"));
 		throw RunTimeException("Fragment shader code not found");
 	}
-	assert(glShaderSource);
-	glShaderSource(f, 1, &fs,NULL);
+	engineData->exec_glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
-	GLuint g = glCreateShader(GL_VERTEX_SHADER);
+	uint32_t g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
 	
 	bool ret=true;
 	char str[1024];
 	int a;
-	GLint stat;
-	assert(glCompileShader);
-	glCompileShader(f);
-	assert(glGetShaderInfoLog);
-	glGetShaderInfoLog(f,1024,&a,str);
+	int stat;
+	engineData->exec_glCompileShader(f);
+	engineData->exec_glGetShaderInfoLog(f,1024,&a,str);
 	LOG(LOG_INFO,_("Fragment shader compilation ") << str);
-	glGetShaderiv(f, GL_COMPILE_STATUS, &stat);
+	engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(f, &stat);
 	if (!stat)
 	{
 		throw RunTimeException("Could not compile fragment shader");
@@ -504,34 +332,30 @@ bool RenderThread::loadShaderPrograms()
 		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));
 		throw RunTimeException("Vertex shader code not found");
 	}
-	glShaderSource(g, 1, &fs,NULL);
+	engineData->exec_glShaderSource(g, 1, &fs,NULL);
 	free((void*)fs);
 
-	glGetShaderInfoLog(g,1024,&a,str);
+	engineData->exec_glGetShaderInfoLog(g,1024,&a,str);
 	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
 
-	glCompileShader(g);
-	glGetShaderiv(g, GL_COMPILE_STATUS, &stat);
+	engineData->exec_glCompileShader(g);
+	engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(g, &stat);
 	if (!stat)
 	{
 		throw RunTimeException("Could not compile vertex shader");
 	}
 
-	assert(glCreateProgram);
-	gpu_program = glCreateProgram();
-	glBindAttribLocation(gpu_program, VERTEX_ATTRIB, "ls_Vertex");
-	glBindAttribLocation(gpu_program, COLOR_ATTRIB, "ls_Color");
-	glBindAttribLocation(gpu_program, TEXCOORD_ATTRIB, "ls_TexCoord");
-	assert(glAttachShader);
-	glAttachShader(gpu_program,f);
-	glAttachShader(gpu_program,g);
+	gpu_program = engineData->exec_glCreateProgram();
+	engineData->exec_glBindAttribLocation(gpu_program, VERTEX_ATTRIB, "ls_Vertex");
+	engineData->exec_glBindAttribLocation(gpu_program, COLOR_ATTRIB, "ls_Color");
+	engineData->exec_glBindAttribLocation(gpu_program, TEXCOORD_ATTRIB, "ls_TexCoord");
+	engineData->exec_glAttachShader(gpu_program,f);
+	engineData->exec_glAttachShader(gpu_program,g);
 
-	assert(glLinkProgram);
-	glLinkProgram(gpu_program);
+	engineData->exec_glLinkProgram(gpu_program);
 
-	assert(glGetProgramiv);
-	glGetProgramiv(gpu_program,GL_LINK_STATUS,&a);
-	if(a==GL_FALSE)
+	engineData->exec_glGetProgramiv_GL_LINK_STATUS(gpu_program,&a);
+	if(!a)
 	{
 		ret=false;
 		return ret;
@@ -543,89 +367,61 @@ bool RenderThread::loadShaderPrograms()
 
 void RenderThread::commonGLDeinit()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{
-		glDeleteTextures(1,&largeTextures[i].id);
+		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
 		delete[] largeTextures[i].bitmap;
 	}
-	glDeleteBuffers(2,pixelBuffers);
-	glDeleteTextures(1, &cairoTextureID);
+	engineData->exec_glDeleteBuffers(2,pixelBuffers);
+	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 }
 
 void RenderThread::commonGLInit(int width, int height)
 {
-	GLenum err;
-//For now GLEW does not work with GLES2
-#ifndef ENABLE_GLES2
-	//Now we can initialize GLEW
-	glewExperimental = GL_TRUE;
-	err = glewInit();
-	if (GLEW_OK != err)
-	{
-		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));
-		throw RunTimeException("Rendering: Cannot initialize GLEW!");
-	}
-
-	if(!GLEW_VERSION_2_0)
-	{
-		LOG(LOG_ERROR,_("Video card does not support OpenGL 2.0... Aborting"));
-		throw RunTimeException("Rendering: OpenGL driver does not support OpenGL 2.0");
-	}
-	if(GLEW_ARB_texture_non_power_of_two)
-		hasNPOTTextures=true;
-	if(!GLEW_ARB_framebuffer_object)
-	{
-		LOG(LOG_ERROR,"OpenGL does not support framebuffer objects!");
-		throw RunTimeException("Rendering: OpenGL driver does not support framebuffer objects");
-	}
-#else
-		//Open GLES 2.0 has NPOT textures
-		hasNPOTTextures=true;
-#endif
 	//Load shaders
 	loadShaderPrograms();
 
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
+	engineData->exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
+	engineData->exec_glEnable_GL_BLEND();
 
-	glActiveTexture(GL_TEXTURE0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0();
 	//Viewport setup is left for GLResize	
 
 	//Get the maximum allowed texture size, up to 1024
 	int maxTexSize;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	engineData->exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(&maxTexSize);
 	assert(maxTexSize>0);
 	largeTextureSize=min(maxTexSize,1024);
 
 	//Create the PBOs
-	glGenBuffers(2,pixelBuffers);
+	engineData->exec_glGenBuffers(2,pixelBuffers);
 
 	//Set uniforms
-	glUseProgram(gpu_program);
-	int tex=glGetUniformLocation(gpu_program,"g_tex1");
+	engineData->exec_glUseProgram(gpu_program);
+	int tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex1");
 	if(tex!=-1)
-		glUniform1i(tex,0);
-	tex=glGetUniformLocation(gpu_program,"g_tex2");
+		engineData->exec_glUniform1i(tex,0);
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex2");
 	if(tex!=-1)
-		glUniform1i(tex,1);
+		engineData->exec_glUniform1i(tex,1);
 
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
-	yuvUniform =glGetUniformLocation(gpu_program,"yuv");
+	yuvUniform =engineData->exec_glGetUniformLocation(gpu_program,"yuv");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
-	alphaUniform =glGetUniformLocation(gpu_program,"alpha");
+	alphaUniform =engineData->exec_glGetUniformLocation(gpu_program,"alpha");
 	//The uniform that tells to draw directly using the selected color
-	directUniform =glGetUniformLocation(gpu_program,"direct");
+	directUniform =engineData->exec_glGetUniformLocation(gpu_program,"direct");
 	//The uniform that contains the coordinate matrix
-	projectionMatrixUniform =glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
-	modelviewMatrixUniform =glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
+	projectionMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
+	modelviewMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
 
-	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
+	fragmentTexScaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"texScale");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
-	glEnable(GL_TEXTURE_2D);
-	
-	glGenTextures(1, &cairoTextureID);
+	engineData->exec_glEnable_GL_TEXTURE_2D();
+
+	engineData->exec_glGenTextures(1, &cairoTextureID);
 
 	if(handleGLErrors())
 	{
@@ -636,7 +432,7 @@ void RenderThread::commonGLInit(int width, int height)
 void RenderThread::commonGLResize()
 {
 	m_sys->stageCoordinateMapping(windowWidth, windowHeight, offsetX, offsetY, scaleX, scaleY);
-	glViewport(0,0,windowWidth,windowHeight);
+	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
@@ -669,11 +465,11 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 {
 	//Add enough room to realign to 16
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[0]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[1]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[0]);
+	engineData->exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[1]);
+	engineData->exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
+	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
 #ifdef ENABLE_GLES2
@@ -715,22 +511,22 @@ void RenderThread::waitRendering()
 //Send the texture drawn by Cairo to the GPU
 void RenderThread::mapCairoTexture(int w, int h)
 {
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, cairoTextureID);
+	engineData->exec_glEnable_GL_TEXTURE_2D();
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(cairoTextureID);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, cairoTextureData);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, cairoTextureData);
 
-	GLfloat vertex_coords[] = {0,0, GLfloat(w),0, 0,GLfloat(h), GLfloat(w),GLfloat(h)};
-	GLfloat texture_coords[] = {0,0, 1,0, 0,1, 1,1};
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
+	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
+	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 2, 0, texture_coords);
+	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
+	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }
 
 void RenderThread::plotProfilingData()
@@ -742,13 +538,13 @@ void RenderThread::plotProfilingData()
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	glUniform1f(directUniform, 1);
+	engineData->exec_glUniform1f(directUniform, 1);
 
 	char frameBuf[20];
 	snprintf(frameBuf,20,"Frame %u",m_sys->mainClip->state.FP);
 
-	GLfloat vertex_coords[40];
-	GLfloat color_coords[80];
+	float vertex_coords[40];
+	float color_coords[80];
 
 	//Draw bars
 	for (int i=0;i<9;i++)
@@ -761,18 +557,18 @@ void RenderThread::plotProfilingData()
 	for (int i=0;i<80;i++)
 		color_coords[i] = 0.7;
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glEnableVertexAttribArray(COLOR_ATTRIB);
-	glDrawArrays(GL_LINES, 0, 20);
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-	glDisableVertexAttribArray(COLOR_ATTRIB);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
+	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 4, 0, color_coords);
+	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glEnableVertexAttribArray(COLOR_ATTRIB);
+	engineData->exec_glDrawArrays_GL_LINES(0, 20);
+	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glDisableVertexAttribArray(COLOR_ATTRIB);
  
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();++it)
 		(*it)->plot(1000000/m_sys->mainClip->getFrameRate(),cr);
-	glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(directUniform, 0);
 
 	mapCairoTexture(windowWidth, windowHeight);
 
@@ -787,12 +583,12 @@ void RenderThread::plotProfilingData()
 void RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glDrawBuffer_GL_BACK();
 	//Clear the back buffer
 	RGB bg=m_sys->mainClip->getBackground();
-	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-	glClear(GL_COLOR_BUFFER_BIT);
+	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+	engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
@@ -853,9 +649,9 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 				0,y);
 	}
 
-	glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform1f(alphaUniform, 1);
 	mapCairoTexture(windowWidth, windowHeight);
-	glFlush();
+	engineData->exec_glFlush();
 }
 
 void RenderThread::addUploadJob(ITextureUploadable* u)
@@ -925,18 +721,18 @@ void RenderThread::releaseTexture(const TextureChunk& chunk)
 	}
 }
 
-GLuint RenderThread::allocateNewGLTexture() const
+uint32_t RenderThread::allocateNewGLTexture() const
 {
 	//Set up the huge texture
-	GLuint tmp;
-	glGenTextures(1,&tmp);
+	uint32_t tmp;
+	engineData->exec_glGenTextures(1,&tmp);
 	assert(tmp!=0);
 	//If the previous call has not failed these should not fail (in specs, we trust)
-	glBindTexture(GL_TEXTURE_2D,tmp);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(tmp);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	//Allocate the texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, 0);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0, largeTextureSize, largeTextureSize, 0, 0);
 	if(handleGLErrors())
 	{
 		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
@@ -1095,7 +891,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	//Fast bailout if the TextureChunk is not valid
 	if(chunk.chunks==NULL)
 		return;
-	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	//TODO: Detect continuos
 	//The size is ok if doesn't grow over the allocated size
 	//this allows some alignment freedom
@@ -1104,19 +900,19 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
-	glPixelStorei(GL_UNPACK_ROW_LENGTH,w);
+	engineData->exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(w);
 	for(uint32_t i=0;i<numberOfChunks;i++)
 	{
 		uint32_t curX=(i%blocksW)*CHUNKSIZE;
 		uint32_t curY=(i/blocksW)*CHUNKSIZE;
 		uint32_t sizeX=min(int(w-curX),CHUNKSIZE);
 		uint32_t sizeY=min(int(h-curY),CHUNKSIZE);
-		glPixelStorei(GL_UNPACK_SKIP_PIXELS,curX);
-		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
+		engineData->exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(curX);
+		engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(curY);
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
 #ifndef ENABLE_GLES2
-		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, data);
+		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data);
 #else
 		//We need to copy the texture area to a contiguous memory region first,
 		//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
@@ -1124,11 +920,11 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		for(unsigned int j=0;j<sizeY;j++) {
 			memcpy(gdata+4*j*sizeX, data+4*w*(j+curY)+4*curX, sizeX*4);
 		}
-		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
+		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, gdata);
 		delete[] gdata;
 #endif
 	}
-	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
-	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
+	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(0);
+	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(0);
+	engineData->exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(0);
 }

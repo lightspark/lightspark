@@ -729,7 +729,8 @@ void SystemState::delayedCreation(SystemState* sys)
 
 	if(Config::getConfig()->isRenderingEnabled())
 	{
-		sys->renderThread->start(sys->engineData);
+		if (sys->engineData->needrenderthread)
+			sys->renderThread->start(sys->engineData);
 	}
 	else
 	{
@@ -1028,7 +1029,7 @@ void SystemState::removeJob(ITickJob* job)
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 {
 	SpinlockLocker l(profileDataSpinlock);
-	profilingData.push_back(new ThreadProfile(color,100));
+	profilingData.push_back(new ThreadProfile(color,100,engineData));
 	ThreadProfile* ret=profilingData.back();
 	return ret;
 }
@@ -1124,8 +1125,8 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
-	GLfloat *vertex_coords = new GLfloat[data.size()*2];
-	GLfloat *color_coords = new GLfloat[data.size()*4];
+	float *vertex_coords = new float[data.size()*2];
+	float *color_coords = new float[data.size()*4];
 
 	int32_t start=tickCount-len;
 	if(int32_t(data[0].index-start)>0)
@@ -1140,14 +1141,14 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		color_coords[i*4+2] = color.Blue;
 		color_coords[i*4+3] = 1;
 	}
-
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glVertexAttribPointer(COLOR_ATTRIB, 4, GL_FLOAT, GL_FALSE, 0, color_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glEnableVertexAttribArray(COLOR_ATTRIB);
-	glDrawArrays(GL_LINE_STRIP, 0, data.size());
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-	glDisableVertexAttribArray(COLOR_ATTRIB);
+	assert_and_throw(engineData);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
+	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 4, 0, color_coords);
+	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glEnableVertexAttribArray(COLOR_ATTRIB);
+	engineData->exec_glDrawArrays_GL_LINE_STRIP(0, data.size());
+	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glDisableVertexAttribArray(COLOR_ATTRIB);
 
 	cairo_set_source_rgb(cr, float(color.Red)/255, float(color.Green)/255, float(color.Blue)/255);
 

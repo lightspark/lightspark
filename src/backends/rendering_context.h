@@ -21,8 +21,8 @@
 #define BACKENDS_RENDERING_CONTEXT_H 1
 
 #include <stack>
-#include "backends/lsopengl.h"
 #include "backends/graphics.h"
+#include "platforms/engineutils.h"
 
 namespace lightspark
 {
@@ -36,11 +36,11 @@ class RenderContext
 {
 protected:
 	/* Modelview matrix manipulation */
-	static const GLfloat lsIdentityMatrix[16];
-	GLfloat lsMVPMatrix[16];
-	std::stack<GLfloat*> lsglMatrixStack;
+	static const float lsIdentityMatrix[16];
+	float lsMVPMatrix[16];
+	std::stack<float*> lsglMatrixStack;
 	~RenderContext(){}
-	void lsglMultMatrixf(const GLfloat *m);
+	void lsglMultMatrixf(const float *m);
 public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t);
@@ -48,9 +48,9 @@ public:
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();
-	void lsglLoadMatrixf(const GLfloat *m);
-	void lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ);
-	void lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ);
+	void lsglLoadMatrixf(const float *m);
+	void lsglScalef(float scaleX, float scaleY, float scaleZ);
+	void lsglTranslatef(float translateX, float translateY, float translateZ);
 
 	enum COLOR_MODE { RGB_MODE=0, YUV_MODE };
 	enum MASK_MODE { NO_MASK = 0, ENABLE_MASK };
@@ -68,12 +68,15 @@ public:
 
 class GLRenderContext: public RenderContext
 {
+private:
+	static int errorCount;
 protected:
-	GLint projectionMatrixUniform;
-	GLint modelviewMatrixUniform;
+	EngineData* engineData;
+	int projectionMatrixUniform;
+	int modelviewMatrixUniform;
 
-	GLint yuvUniform;
-	GLint alphaUniform;
+	int yuvUniform;
+	int alphaUniform;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -81,7 +84,7 @@ protected:
 	class LargeTexture
 	{
 	public:
-		GLuint id;
+		uint32_t id;
 		uint8_t* bitmap;
 		LargeTexture(uint8_t* b):id(-1),bitmap(b){}
 		~LargeTexture(){/*delete[] bitmap;*/}
@@ -96,10 +99,11 @@ protected:
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
 public:
-	GLRenderContext() : RenderContext(GL), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),engineData(NULL), largeTextureSize(0)
 	{
 	}
-	void lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f);
+	void SetEngineData(EngineData* data) { engineData = data;}
+	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode);
@@ -110,7 +114,7 @@ public:
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
 
 	/* Utility */
-	static bool handleGLErrors();
+	bool handleGLErrors() const;
 };
 
 class CairoRenderContext: public RenderContext

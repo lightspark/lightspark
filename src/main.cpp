@@ -31,6 +31,7 @@ using namespace lightspark;
 
 class StandaloneEngineData: public EngineData
 {
+	SDL_GLContext mSDLContext;
 public:
 	StandaloneEngineData()
 	{
@@ -91,6 +92,24 @@ public:
 		LOG(LOG_NOT_IMPLEMENTED,"getScreenDPI needs SDL version >= 2.0.4");
 		return 96.0;
 #endif
+	}
+	void SwapBuffers()
+	{
+		uint32_t err;
+		if (getGLError(err))
+			LOG(LOG_ERROR,"swapbuffers:"<<widget<<" "<<err);
+		SDL_GL_SwapWindow(widget);
+	}
+	void InitOpenGL()
+	{
+		mSDLContext = SDL_GL_CreateContext(widget);
+		if (!mSDLContext)
+			LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
+		initGLEW();
+	}
+	void DeinitOpenGL()
+	{
+		SDL_GL_DeleteContext(mSDLContext);
 	}
 };
 

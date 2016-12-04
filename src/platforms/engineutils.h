@@ -51,6 +51,7 @@ public:
 	static Thread* mainLoopThread;
 	int width;
 	int height;
+	bool needrenderthread;
 #ifndef _WIN32
 	XID windowID;
 	VisualID visual;
@@ -85,13 +86,72 @@ public:
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain();
 
+	void initGLEW();
+	
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
 	static void hideMouseCursor(SystemState *sys);
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;
+	
+	virtual void SwapBuffers() = 0;
+	virtual void InitOpenGL() = 0;
+	virtual void DeinitOpenGL() = 0;
+	virtual bool getGLError(uint32_t& errorCode) const;
+	virtual void exec_glUniform1f(int location,float v0);
+	virtual void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
+	virtual void exec_glVertexAttribPointer(uint32_t index,int32_t size, int32_t stride, const void* coords);
+	virtual void exec_glEnableVertexAttribArray(uint32_t index);
+	virtual void exec_glDrawArrays_GL_TRIANGLES(int32_t first, int32_t count);
+	virtual void exec_glDrawArrays_GL_LINE_STRIP(int32_t first, int32_t count);
+	virtual void exec_glDrawArrays_GL_TRIANGLE_STRIP(int32_t first, int32_t count);
+	virtual void exec_glDrawArrays_GL_LINES(int32_t first, int32_t count);
+	virtual void exec_glDisableVertexAttribArray(uint32_t index);
+	virtual void exec_glUniformMatrix4fv(int32_t location,int32_t count, bool transpose,const float* value);
+	virtual void exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer);
+	virtual uint8_t* exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
+	virtual void exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER();
+	virtual void exec_glEnable_GL_TEXTURE_2D();
+	virtual void exec_glEnable_GL_BLEND();
+	virtual void exec_glDisable_GL_TEXTURE_2D();
+	virtual void exec_glFlush();
+	virtual uint32_t exec_glCreateShader_GL_FRAGMENT_SHADER();
+	virtual uint32_t exec_glCreateShader_GL_VERTEX_SHADER();
+	virtual void exec_glShaderSource(uint32_t shader, int32_t count, const char **name, int32_t* length);
+	virtual void exec_glCompileShader(uint32_t shader);
+	virtual void exec_glGetShaderInfoLog(uint32_t shader,int32_t bufSize,int32_t* length,char* infoLog);
+	virtual void exec_glGetShaderiv_GL_COMPILE_STATUS(uint32_t shader,int32_t* params);
+	virtual uint32_t exec_glCreateProgram();
+	virtual void exec_glBindAttribLocation(uint32_t program,uint32_t index, const char* name);
+	virtual void exec_glAttachShader(uint32_t program, uint32_t shader);
+	virtual void exec_glLinkProgram(uint32_t program);
+	virtual void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
+	virtual void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
+	virtual void exec_glDeleteTextures(int32_t n,uint32_t* textures);
+	virtual void exec_glDeleteBuffers(int32_t n,uint32_t* buffers);
+	virtual void exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
+	virtual void exec_glActiveTexture_GL_TEXTURE0();
+	virtual void exec_glGenBuffers(int32_t n,uint32_t* buffers);
+	virtual void exec_glUseProgram(uint32_t program);
+	virtual int32_t exec_glGetUniformLocation(uint32_t program,const char* name);
+	virtual void exec_glUniform1i(int32_t location,int32_t v0);
+	virtual void exec_glGenTextures(int32_t n,uint32_t* textures);
+	virtual void exec_glViewport(int32_t x,int32_t y,int32_t width,int32_t height);
+	virtual void exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size, const void* data);
+	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
+	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
+	virtual void exec_glDrawBuffer_GL_BACK();
+	virtual void exec_glClearColor(float red,float green,float blue,float alpha);
+	virtual void exec_glClear_GL_COLOR_BUFFER_BIT();
+	virtual void exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param);
+	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param);
+	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
+	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels);
+	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 };
 
-};
+}
 #endif /* PLATFORMS_ENGINEUTILS_H */

@@ -20,7 +20,6 @@
 #ifndef BACKENDS_RENDERING_H
 #define BACKENDS_RENDERING_H 1
 
-#include "backends/lsopengl.h"
 #include "backends/rendering_context.h"
 #include "timer.h"
 #include <glibmm/timeval.h>
@@ -31,8 +30,9 @@
 
 namespace lightspark
 {
+class ThreadProfile;
 
-class RenderThread: public ITickJob, public GLRenderContext
+class DLL_PUBLIC RenderThread: public ITickJob, public GLRenderContext
 {
 friend class DisplayObject;
 private:
@@ -41,22 +41,19 @@ private:
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	volatile STATUS status;
 
-	EngineData* engineData;
 	void worker();
-	void init();
-	void deinit();
 
 	void commonGLInit(int width, int height);
 	void commonGLResize();
 	void commonGLDeinit();
-	GLuint pixelBuffers[2];
+	uint32_t pixelBuffers[2];
 	uint32_t currentPixelBuffer;
 	intptr_t currentPixelBufferOffset;
 	uint32_t pixelBufferWidth;
 	uint32_t pixelBufferHeight;
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
-	GLuint allocateNewGLTexture() const;
+	uint32_t allocateNewGLTexture() const;
 	LargeTexture& allocateNewTexture();
 	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	bool allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
@@ -77,24 +74,7 @@ private:
 	float scaleY;
 	int offsetX;
 	int offsetY;
-	SDL_GLContext mSDLContext;
 
-#ifdef _WIN32
-	HGLRC mRC;
-	HDC mDC;
-#else
-	Display* mDisplay;
-	Window mWindow;
-#ifndef ENABLE_GLES2
-	GLXFBConfig mFBConfig;
-	GLXContext mContext;
-#else
-	EGLDisplay mEGLDisplay;
-	EGLContext mEGLContext;
-	EGLConfig mEGLConfig;
-	EGLSurface mEGLSurface;
-#endif
-#endif
 	Glib::TimeVal time_s, time_d;
 	static const Glib::TimeVal FPS_time;
 
@@ -132,6 +112,10 @@ public:
 	void wait();
 	void draw(bool force);
 
+	void init();
+	void deinit();
+	bool doRender(ThreadProfile *profile=NULL, Chronometer *chronometer=NULL);
+
 	/**
 		Allocates a chunk from the shared texture
 	*/
@@ -163,16 +147,15 @@ public:
 	int gpu_program;
 	volatile uint32_t windowWidth;
 	volatile uint32_t windowHeight;
-	bool hasNPOTTextures;
-	GLint fragmentTexScaleUniform;
-	GLint directUniform;
+	int fragmentTexScaleUniform;
+	int directUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 
 	cairo_t *cairoTextureContext;
 	cairo_surface_t *cairoTextureSurface;
 	uint8_t *cairoTextureData;
-	GLuint cairoTextureID;
+	uint32_t cairoTextureID;
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);

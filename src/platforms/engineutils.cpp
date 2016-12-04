@@ -24,6 +24,14 @@
 #include <SDL2/SDL_mouse.h>
 #include "backends/input.h"
 #include "backends/rendering.h"
+#include "backends/lsopengl.h"
+
+//The interpretation of texture data change with the endianness
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
+#else
+#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
+#endif
 
 using namespace std;
 using namespace lightspark;
@@ -32,7 +40,7 @@ uint32_t EngineData::userevent = (uint32_t)-1;
 Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : widget(0), width(0), height(0),windowID(0),visual(0)
+EngineData::EngineData() : widget(0), width(0), height(0),needrenderthread(true),windowID(0),visual(0)
 {
 }
 
@@ -151,6 +159,31 @@ bool EngineData::startSDLMain()
 	return mainthread_running;
 }
 
+void EngineData::initGLEW()
+{
+//For now GLEW does not work with GLES2
+#ifndef ENABLE_GLES2
+	//Now we can initialize GLEW
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));
+		throw RunTimeException("Rendering: Cannot initialize GLEW!");
+	}
+
+	if(!GLEW_VERSION_2_0)
+	{
+		LOG(LOG_ERROR,_("Video card does not support OpenGL 2.0... Aborting"));
+		throw RunTimeException("Rendering: OpenGL driver does not support OpenGL 2.0");
+	}
+	if(!GLEW_ARB_framebuffer_object)
+	{
+		LOG(LOG_ERROR,"OpenGL does not support framebuffer objects!");
+		throw RunTimeException("Rendering: OpenGL driver does not support framebuffer objects");
+	}
+#endif
+}
+
 void EngineData::showWindow(uint32_t w, uint32_t h)
 {
 	RecMutex::Lock l(mutex);
@@ -159,7 +192,8 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	widget = createWidget(w,h);
 	this->width = w;
 	this->height = h;
-	SDL_ShowWindow(widget);
+	if (widget)
+		SDL_ShowWindow(widget);
 	grabFocus();
 	
 }
@@ -183,3 +217,258 @@ void EngineData::setClipboardText(const std::string txt)
 		LOG(LOG_ERROR, "copying text to clipboard failed:"<<SDL_GetError());
 }
 
+bool EngineData::getGLError(uint32_t &errorCode) const
+{
+	errorCode=glGetError();
+	return errorCode!=GL_NO_ERROR;
+}
+
+void EngineData::exec_glUniform1f(int location,float v0)
+{
+	glUniform1f(location,v0);
+}
+
+void EngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
+{
+	glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void EngineData::exec_glVertexAttribPointer(uint32_t index,int32_t size, int32_t stride, const void* coords)
+{
+	glVertexAttribPointer(index, size, GL_FLOAT, GL_FALSE, stride, coords);
+}
+
+void EngineData::exec_glEnableVertexAttribArray(uint32_t index)
+{
+	glEnableVertexAttribArray(index);
+}
+
+void EngineData::exec_glDrawArrays_GL_TRIANGLES(int32_t first,int32_t count)
+{
+	glDrawArrays(GL_TRIANGLES,first,count);
+}
+void EngineData::exec_glDrawArrays_GL_LINE_STRIP(int32_t first,int32_t count)
+{
+	glDrawArrays(GL_LINE_STRIP,first,count);
+}
+
+void EngineData::exec_glDrawArrays_GL_TRIANGLE_STRIP(int32_t first, int32_t count)
+{
+	glDrawArrays(GL_TRIANGLE_STRIP,first,count);
+}
+
+void EngineData::exec_glDrawArrays_GL_LINES(int32_t first, int32_t count)
+{
+	glDrawArrays(GL_LINES,first,count);
+}
+
+void EngineData::exec_glDisableVertexAttribArray(uint32_t index)
+{
+	glDisableVertexAttribArray(index);
+}
+
+void EngineData::exec_glUniformMatrix4fv(int32_t location,int32_t count, bool transpose,const float* value)
+{
+	glUniformMatrix4fv(location, count, transpose, value);
+}
+void EngineData::exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer)
+{
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER,buffer);
+}
+uint8_t* EngineData::exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY()
+{
+	return (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+}
+void EngineData::exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER()
+{
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+}
+void EngineData::exec_glEnable_GL_TEXTURE_2D()
+{
+	glEnable(GL_TEXTURE_2D);
+}
+void EngineData::exec_glEnable_GL_BLEND()
+{
+	glEnable(GL_BLEND);
+}
+
+void EngineData::exec_glDisable_GL_TEXTURE_2D()
+{
+	glDisable(GL_TEXTURE_2D);
+}
+void EngineData::exec_glFlush()
+{
+	glFlush();
+}
+
+uint32_t EngineData::exec_glCreateShader_GL_FRAGMENT_SHADER()
+{
+	return glCreateShader(GL_FRAGMENT_SHADER);
+}
+
+uint32_t EngineData::exec_glCreateShader_GL_VERTEX_SHADER()
+{
+	return glCreateShader(GL_VERTEX_SHADER);
+}
+
+void EngineData::exec_glShaderSource(uint32_t shader, int32_t count, const char** name, int32_t* length)
+{
+	glShaderSource(shader,count,name,length);
+}
+
+void EngineData::exec_glCompileShader(uint32_t shader)
+{
+	glCompileShader(shader);
+}
+
+void EngineData::exec_glGetShaderInfoLog(uint32_t shader,int32_t bufSize,int32_t* length,char* infoLog)
+{
+	glGetShaderInfoLog(shader,bufSize,length,infoLog);
+}
+
+void EngineData::exec_glGetShaderiv_GL_COMPILE_STATUS(uint32_t shader,int32_t* params)
+{
+	glGetShaderiv(shader,GL_COMPILE_STATUS,params);
+}
+
+uint32_t EngineData::exec_glCreateProgram()
+{
+	return glCreateProgram();
+}
+
+void EngineData::exec_glBindAttribLocation(uint32_t program,uint32_t index, const char* name)
+{
+	glBindAttribLocation(program,index,name);
+}
+
+void EngineData::exec_glAttachShader(uint32_t program, uint32_t shader)
+{
+	glAttachShader(program,shader);
+}
+
+void EngineData::exec_glLinkProgram(uint32_t program)
+{
+	glLinkProgram(program);
+}
+
+void EngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params)
+{
+	glGetProgramiv(program,GL_LINK_STATUS,params);
+}
+
+void EngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
+}
+
+void EngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
+{
+	glDeleteTextures(n,textures);
+}
+
+void EngineData::exec_glDeleteBuffers(int32_t n,uint32_t* buffers)
+{
+	glDeleteBuffers(n,buffers);
+}
+
+void EngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
+{
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void EngineData::exec_glActiveTexture_GL_TEXTURE0()
+{
+	glActiveTexture(GL_TEXTURE0);
+}
+
+void EngineData::exec_glGenBuffers(int32_t n,uint32_t* buffers)
+{
+	glGenBuffers(n,buffers);
+}
+
+void EngineData::exec_glUseProgram(uint32_t program)
+{
+	glUseProgram(program);
+}
+
+int32_t EngineData::exec_glGetUniformLocation(uint32_t program,const char* name)
+{
+	return glGetUniformLocation(program,name);
+}
+
+void EngineData::exec_glUniform1i(int32_t location,int32_t v0)
+{
+	glUniform1i(location,v0);
+}
+
+void EngineData::exec_glGenTextures(int32_t n,uint32_t* textures)
+{
+	glGenTextures(n,textures);
+}
+
+void EngineData::exec_glViewport(int32_t x,int32_t y,int32_t width,int32_t height)
+{
+	glViewport(x,y,width,height);
+}
+
+void EngineData::exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size,const void* data)
+{
+	glBufferData(GL_PIXEL_UNPACK_BUFFER,size, data,GL_STREAM_DRAW);
+}
+
+void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+{
+	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+}
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+{
+	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+}
+
+void EngineData::exec_glDrawBuffer_GL_BACK()
+{
+	glDrawBuffer(GL_BACK);
+}
+
+void EngineData::exec_glClearColor(float red,float green,float blue,float alpha)
+{
+	glClearColor(red,green,blue,alpha);
+}
+
+void EngineData::exec_glClear_GL_COLOR_BUFFER_BIT()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void EngineData::exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param)
+{
+	glPixelStorei(GL_UNPACK_ROW_LENGTH,param);
+}
+
+void EngineData::exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param)
+{
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS,param);
+}
+
+void EngineData::exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param)
+{
+	glPixelStorei(GL_UNPACK_SKIP_ROWS,param);
+}
+
+void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels)
+{
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+}
+void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
+{
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE,data);
+}

@@ -33,6 +33,7 @@
 #include "plugin/npscriptobject.h"
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#include "backends/lsopengl.h"
 
 namespace lightspark
 {
@@ -80,6 +81,22 @@ private:
 	gulong inputHandlerId;
 	gulong sizeHandlerId;
 	GtkWidget* widget_gtk;
+#ifdef _WIN32
+	HGLRC mRC;
+	HDC mDC;
+#else
+	Display* mDisplay;
+	Window mWindow;
+#ifndef ENABLE_GLES2
+	GLXFBConfig mFBConfig;
+	GLXContext mContext;
+#else
+	EGLDisplay mEGLDisplay;
+	EGLContext mEGLContext;
+	EGLConfig mEGLConfig;
+	EGLSurface mEGLSurface;
+#endif
+#endif
 public:
 	SystemState* sys;
 	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),widget_gtk(NULL),sys(_sys)
@@ -106,6 +123,9 @@ public:
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
+	void SwapBuffers();
+	void InitOpenGL();
+	void DeinitOpenGL();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

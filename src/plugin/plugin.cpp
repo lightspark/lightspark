@@ -829,7 +829,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	//mDisplay = ws_info->display;
 	//mDepth = ws_info->depth;
 	//mColormap = ws_info->colormap;
-	e->visual = XVisualIDFromVisual(ws_info->visual);
+	if (ws_info->visual)
+		e->visual = XVisualIDFromVisual(ws_info->visual);
 #endif
 	m_sys->setParamsAndEngine(e, false);
 	return NPERR_NO_ERROR;
@@ -1099,6 +1100,168 @@ void nsPluginInstance::asyncOpenPage(void *data)
 void PluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
 {
 	instance->openLink(url, window);
+}
+void PluginEngineData::SwapBuffers()
+{
+#if defined(_WIN32)
+	SwapBuffers(mDC);
+#elif !defined(ENABLE_GLES2)
+	glXSwapBuffers(mDisplay, windowID);
+#else
+	eglSwapBuffers(mEGLDisplay, mEGLSurface);
+#endif
+}
+void PluginEngineData::InitOpenGL()
+{
+#if defined(_WIN32)
+	PIXELFORMATDESCRIPTOR pfd =
+		{
+			sizeof(PIXELFORMATDESCRIPTOR),
+			1,
+			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+			PFD_TYPE_RGBA,            //The kind of framebuffer. RGBA or palette.
+			32,                        //Colordepth of the framebuffer.
+			0, 0, 0, 0, 0, 0,
+			0,
+			0,
+			0,
+			0, 0, 0, 0,
+			24,                        //Number of bits for the depthbuffer
+			0,                        //Number of bits for the stencilbuffer
+			0,                        //Number of Aux buffers in the framebuffer.
+			PFD_MAIN_PLANE,
+			0,
+			0, 0, 0
+		};
+	if(!(mDC = GetDC((HWND)engineData->window)))
+		throw RunTimeException("GetDC failed");
+	int PixelFormat;
+	if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))
+		throw RunTimeException("ChoosePixelFormat failed");
+	if(!SetPixelFormat(mDC,PixelFormat,&pfd))
+		throw RunTimeException("SetPixelFormat failed");
+	if (!(mRC=wglCreateContext(mDC)))
+		throw RunTimeException("wglCreateContext failed");
+	if(!wglMakeCurrent(mDC,mRC))
+		throw RunTimeException("wglMakeCurrent failed");
+#elif !defined(ENABLE_GLES2)
+	mDisplay = XOpenDisplay(NULL);
+	int a,b;
+	Bool glx_present=glXQueryVersion(mDisplay, &a, &b);
+	if(!glx_present)
+	{
+		XCloseDisplay(mDisplay);
+		throw RunTimeException("glX not present");
+	}
+
+	int attrib[10]={GLX_DOUBLEBUFFER, True, 0L};
+	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
+	if(!fb)
+	{
+		attrib[6]=0L;
+		LOG(LOG_ERROR,_("Falling back to no double buffering"));
+		fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
+	}
+	if(!fb)
+	{
+		XCloseDisplay(mDisplay);
+		throw RunTimeException(_("Could not find any GLX configuration"));
+	}
+	int i;
+	for(i=0;i<a;i++)
+	{
+		int id;
+		glXGetFBConfigAttrib(mDisplay, fb[i],GLX_VISUAL_ID,&id);
+		if(visual == 0 || id==(int)visual)
+			break;
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		XCloseDisplay(mDisplay);
+		throw RunTimeException(_("No suitable graphics configuration available"));
+	}
+	mFBConfig=fb[i];
+	LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
+	XFree(fb);
+		mContext = glXCreateNewContext(mDisplay, mFBConfig,GLX_RGBA_TYPE ,NULL,1);
+	glXMakeCurrent(mDisplay, windowID, mContext);
+	if(!glXIsDirect(mDisplay, mContext))
+		LOG(LOG_INFO, "Indirect!!");
+#else //egl
+	mDisplay = XOpenDisplay(NULL);
+	int a;
+	eglBindAPI(EGL_OPENGL_ES_API);
+	mEGLDisplay = eglGetDisplay(mDisplay);
+	if (mEGLDisplay == EGL_NO_DISPLAY)
+		throw RunTimeException(_("EGL not present"));
+	EGLint major, minor;
+	if (eglInitialize(mEGLDisplay, &major, &minor) == EGL_FALSE)
+		throw RunTimeException(_("EGL initialization failed"));
+
+	LOG(LOG_INFO, _("EGL version: ") << eglQueryString(mEGLDisplay, EGL_VERSION));
+	EGLint config_attribs[] = {
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_NONE
+		};
+	EGLint context_attribs[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+	if (!eglChooseConfig(mEGLDisplay, config_attribs, 0, 0, &a))
+		throw RunTimeException(_("Could not get number of EGL configurations"));
+	else
+		LOG(LOG_INFO, "Number of EGL configurations: " << a);
+	EGLConfig *conf = new EGLConfig[a];
+	if (!eglChooseConfig(mEGLDisplay, config_attribs, conf, a, &a))
+		throw RunTimeException(_("Could not find any EGL configuration"));
+
+	int i;
+	for(i=0;i<a;i++)
+	{
+		EGLint id;
+		eglGetConfigAttrib(mEGLDisplay, conf[i], EGL_NATIVE_VISUAL_ID, &id);
+		if(visual == 0 || id==(int)visual)
+			break;
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		throw RunTimeException(_("No suitable graphics configuration available"));
+	}
+	mEGLConfig=conf[i];
+	LOG(LOG_INFO, "Chosen config " << hex << conf[i] << dec);
+	mEGLContext = eglCreateContext(mEGLDisplay, mEGLConfig, EGL_NO_CONTEXT, context_attribs);
+	if (mEGLContext == EGL_NO_CONTEXT)
+		throw RunTimeException(_("Could not create EGL context"));
+	mEGLSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, windowID, NULL);
+	if (mEGLSurface == EGL_NO_SURFACE)
+		throw RunTimeException(_("Could not create EGL surface"));
+	eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext);
+#endif
+
+	initGLEW();
+}
+
+void PluginEngineData::DeinitOpenGL()
+{
+#if defined(_WIN32)
+	wglMakeCurrent(NULL,NULL);
+	wglDeleteContext(mRC);
+	/* Do not ReleaseDC(e->window,hDC); as our window does not have CS_OWNDC */
+#elif !defined(ENABLE_GLES2)
+	glXMakeCurrent(mDisplay, 0L, NULL);
+	glXDestroyContext(mDisplay, mContext);
+	XCloseDisplay(mDisplay);
+#else
+	eglMakeCurrent(mEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroyContext(mEGLDisplay, mEGLContext);
+	XCloseDisplay(mDisplay);
+#endif
 }
 
 #ifdef _WIN32

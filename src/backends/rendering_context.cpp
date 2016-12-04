@@ -38,9 +38,9 @@
 using namespace std;
 using namespace lightspark;
 
-#define LSGL_MATRIX_SIZE (16*sizeof(GLfloat))
+#define LSGL_MATRIX_SIZE (16*sizeof(float))
 
-const GLfloat RenderContext::lsIdentityMatrix[16] = {
+const float RenderContext::lsIdentityMatrix[16] = {
 								1, 0, 0, 0,
 								0, 1, 0, 0,
 								0, 0, 1, 0,
@@ -54,7 +54,7 @@ RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t)
 	lsglLoadIdentity();
 }
 
-void RenderContext::lsglLoadMatrixf(const GLfloat *m)
+void RenderContext::lsglLoadMatrixf(const float *m)
 {
 	memcpy(lsMVPMatrix, m, LSGL_MATRIX_SIZE);
 }
@@ -64,14 +64,14 @@ void RenderContext::lsglLoadIdentity()
 	lsglLoadMatrixf(lsIdentityMatrix);
 }
 
-void RenderContext::lsglMultMatrixf(const GLfloat *m)
+void RenderContext::lsglMultMatrixf(const float *m)
 {
-	GLfloat tmp[16];
+	float tmp[16];
 	for(int i=0;i<4;i++)
 	{
 		for(int j=0;j<4;j++)
 		{
-			GLfloat sum=0;
+			float sum=0;
 			for (int k=0;k<4;k++)
 			{
 				sum += lsMVPMatrix[i+k*4]*m[j*4+k];
@@ -82,9 +82,9 @@ void RenderContext::lsglMultMatrixf(const GLfloat *m)
 	memcpy(lsMVPMatrix, tmp, LSGL_MATRIX_SIZE);
 }
 
-void RenderContext::lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
+void RenderContext::lsglScalef(float scaleX, float scaleY, float scaleZ)
 {
-	static GLfloat scale[16];
+	static float scale[16];
 
 	memcpy(scale, lsIdentityMatrix, LSGL_MATRIX_SIZE);
 	scale[0] = scaleX;
@@ -93,9 +93,9 @@ void RenderContext::lsglScalef(GLfloat scaleX, GLfloat scaleY, GLfloat scaleZ)
 	lsglMultMatrixf(scale);
 }
 
-void RenderContext::lsglTranslatef(GLfloat translateX, GLfloat translateY, GLfloat translateZ)
+void RenderContext::lsglTranslatef(float translateX, float translateY, float translateZ)
 {
-	static GLfloat trans[16];
+	static float trans[16];
 
 	memcpy(trans, lsIdentityMatrix, LSGL_MATRIX_SIZE);
 	trans[12] = translateX;
@@ -104,9 +104,9 @@ void RenderContext::lsglTranslatef(GLfloat translateX, GLfloat translateY, GLflo
 	lsglMultMatrixf(trans);
 }
 
-void GLRenderContext::lsglOrtho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+void GLRenderContext::lsglOrtho(float l, float r, float b, float t, float n, float f)
 {
-	GLfloat ortho[16];
+	float ortho[16];
 	memset(ortho, 0, sizeof(ortho));
 	ortho[0] = 2/(r-l);
 	ortho[5] = 2/(t-b);
@@ -128,13 +128,13 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 			float alpha, COLOR_MODE colorMode)
 {
 	//Set color mode
-	glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
+	engineData->exec_glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
 	//Set alpha
-	glUniform1f(alphaUniform, alpha);
+	engineData->exec_glUniform1f(alphaUniform, alpha);
 	//Set matrix
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	glBindTexture(GL_TEXTURE_2D, largeTextures[chunk.texId].id);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	uint32_t startX, startY, endX, endY;
 	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE-1)/CHUNKSIZE)*((chunk.height+CHUNKSIZE-1)/CHUNKSIZE));
@@ -143,8 +143,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
 	//Allocate the data on the stack to reduce heap fragmentation
-	GLfloat *vertex_coords = g_newa(GLfloat,chunk.getNumberOfChunks()*12);
-	GLfloat *texture_coords = g_newa(GLfloat,chunk.getNumberOfChunks()*12);
+	float *vertex_coords = g_newa(float,chunk.getNumberOfChunks()*12);
+	float *texture_coords = g_newa(float,chunk.getNumberOfChunks()*12);
 	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
 	{
 		startY=h*i/chunk.height;
@@ -211,24 +211,23 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 		}
 	}
 
-	glVertexAttribPointer(VERTEX_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, vertex_coords);
-	glVertexAttribPointer(TEXCOORD_ATTRIB, 2, GL_FLOAT, GL_FALSE, 0, texture_coords);
-	glEnableVertexAttribArray(VERTEX_ATTRIB);
-	glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	glDrawArrays(GL_TRIANGLES, 0, curChunk*6);
-	glDisableVertexAttribArray(VERTEX_ATTRIB);
-	glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
+	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 2, 0, texture_coords);
+	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, curChunk*6);
+	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 	handleGLErrors();
 }
 
-bool GLRenderContext::handleGLErrors()
+int GLRenderContext::errorCount = 0;
+bool GLRenderContext::handleGLErrors() const
 {
-	int errorCount = 0;
-	GLenum err;
+	uint32_t err;
 	while(1)
 	{
-		err=glGetError();
-		if(err!=GL_NO_ERROR)
+		if(engineData && engineData->getGLError(err))
 		{
 			errorCount++;
 			LOG(LOG_ERROR,_("GL error ")<< err);
@@ -246,9 +245,9 @@ bool GLRenderContext::handleGLErrors()
 
 void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 {
-	GLint uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
+	int uni = (m == LSGL_MODELVIEW) ? modelviewMatrixUniform:projectionMatrixUniform;
 
-	glUniformMatrix4fv(uni, 1, GL_FALSE, lsMVPMatrix);
+	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
 CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height):RenderContext(CAIRO)

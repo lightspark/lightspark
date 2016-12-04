@@ -347,7 +347,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		val=mi->synt_method(getSystemState());
 		assert(val);
 	}
-	mi->body->hit_count++;
+	++mi->body->hit_count;
 
 	//Prepare arguments
 	uint32_t args_len=mi->numArgs();
@@ -403,7 +403,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	/* Set the current global object, each script in each DoABCTag has its own */
 	getVm(getSystemState())->currentCallContext = &cc;
 
-	if(isBound())
+	if(isBound() && obj != closure_this.getPtr())
 	{ /* closure_this can never been overriden */
 		LOG_CALL(_("Calling with closure ") << this);
 		if(obj)

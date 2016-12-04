@@ -231,6 +231,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 
 void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
+	getVm(root->getSystemState())->stacktrace.reserve(MaxRecursionDepth);
 	getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
 	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
 }

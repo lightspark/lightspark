@@ -567,7 +567,7 @@ public:
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
-	std::list<std::pair<uint32_t,ASObject*> > stacktrace;
+	std::vector<std::pair<uint32_t,ASObject*> > stacktrace;
 
 	struct abc_limits {
 		/* maxmium number of recursion allowed. See ScriptLimitsTag */

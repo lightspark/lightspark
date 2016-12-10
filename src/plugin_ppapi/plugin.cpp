@@ -52,6 +52,7 @@
 #include "ppapi/c/ppb_url_loader.h"
 #include "ppapi/c/ppb_url_request_info.h"
 #include "ppapi/c/ppb_url_response_info.h"
+#include "ppapi/c/trusted/ppb_url_loader_trusted.h"
 #include "ppapi/c/ppp.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
@@ -79,7 +80,7 @@ static const PPB_URLLoader* g_urlloader_interface = NULL;
 static const PPB_URLRequestInfo* g_urlrequestinfo_interface = NULL;
 static const PPB_URLResponseInfo* g_urlresponseinfo_interface = NULL;
 static const PPB_OpenGLES2* g_gles2_interface = NULL;
-
+static const PPB_URLLoaderTrusted* g_urlloadedtrusted_interface = NULL;
 
 ppDownloadManager::ppDownloadManager(PP_Instance _instance, SystemState *sys):instance(_instance),m_sys(sys)
 {
@@ -167,13 +168,8 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_HEADERS);
 	tiny_string headers = g_var_interface->VarToUtf8(v,&len);
 	LOG(LOG_INFO,"headers:"<<len<<" "<<headers);
-	//th->parseHeaders(headers.raw_buf(),true);
+	th->parseHeaders(headers.raw_buf(),true);
 	
-	int64_t bytes_received;
-	int64_t total_bytes_to_be_received;
-	g_urlloader_interface->GetDownloadProgress(th->ppurlloader,&bytes_received,&total_bytes_to_be_received);
-	if (total_bytes_to_be_received >0)
-		th->setLength(total_bytes_to_be_received);
 	if (th->isMainClipDownloader)
 	{
 		v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_URL);
@@ -181,6 +177,8 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 		LOG(LOG_INFO,"mainclip url:"<<url);
 		
 		th->m_sys->mainClip->setOrigin(url);
+		th->m_sys->parseParametersFromURL(th->m_sys->mainClip->getOrigin());
+		
 		th->m_sys->mainClip->setBaseURL(url);
 	}
 	 
@@ -223,18 +221,13 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _ins
 	btrue.value.as_bool = PP_TRUE;
 	
 	ppurlloader = g_urlloader_interface->Create(_instance);
+	g_urlloadedtrusted_interface->GrantUniversalAccess(ppurlloader);
 	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(_instance);
 	PP_Var url = g_var_interface->VarFromUtf8(_url.raw_buf(),_url.numBytes());
 	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_URL,url);
-	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_RECORDDOWNLOADPROGRESS,btrue);
+	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,btrue);
 	LOG(LOG_INFO,"constructing downloader:"<<_url);
-	
 
-	if (_url.startsWith("//"))
-	{
-		g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,btrue);
-	}
-	
 	struct PP_CompletionCallback cb;
 	cb.func = dlStartCallback;
 	cb.flags = 0;
@@ -275,6 +268,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 
+	m_sys->extScriptObject = NULL;
 //		scriptObject =
 //			(NPScriptObjectGW *) NPN_CreateObject(mInstance, &NPScriptObjectGW::npClass);
 //		m_sys->extScriptObject = scriptObject->getScriptObject();
@@ -303,7 +297,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	{
 		m_sys->downloadManager=new ppDownloadManager(m_ppinstance,m_sys);
 	
-		EngineData::startSDLMain();
+		//EngineData::startSDLMain();
 		mainDownloader=new ppDownloader(swffile,m_ppinstance,m_sys->mainClip->loaderInfo.getPtr(),m_sys);
 		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
 		mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
@@ -372,11 +366,9 @@ void ppPluginInstance::handleResize(PP_Resource view)
 				LOG(LOG_ERROR,"Instance_DidChangeView: couldn't create graphics");
 				 return;
 			}
+			LOG(LOG_INFO,"Instance_DidChangeView: create:"<<position.size.width<<" "<<position.size.height);
 			ppPluginEngineData* e = new ppPluginEngineData(this, position.size.width, position.size.height,m_sys);
 			m_sys->setParamsAndEngine(e, false);
-		}
-		else
-		{
 			g_graphics_3d_interface->ResizeBuffers(m_graphics,position.size.width, position.size.height);
 			m_sys->getRenderThread()->SetEngineData(m_sys->getEngineData());
 			m_sys->getRenderThread()->init();
@@ -385,6 +377,14 @@ void ppPluginInstance::handleResize(PP_Resource view)
 			cb.flags = 0;
 			cb.user_data = m_sys;
 			g_graphics_3d_interface->SwapBuffers(m_graphics,cb);
+		}
+		else
+		{
+			LOG(LOG_INFO,"Instance_DidChangeView: resize after creation:"<<position.size.width<<" "<<position.size.height);
+			g_graphics_3d_interface->ResizeBuffers(m_graphics,position.size.width, position.size.height);
+			m_sys->getEngineData()->width =position.size.width;
+			m_sys->getEngineData()->height =position.size.height;
+			m_sys->getRenderThread()->requestResize(position.size.width,position.size.height,true);
 		}
 		m_last_size.width = position.size.width;
 		m_last_size.height = position.size.height;
@@ -412,7 +412,6 @@ static void Instance_DidDestroy(PP_Instance instance)
 }
 static void Instance_DidChangeView(PP_Instance instance,PP_Resource view) 
 {
-	LOG(LOG_INFO,"Instance_DidChangeView:"<<instance);
 	auto it = all_instances.find(instance);
 	if (it == all_instances.end())
 	{
@@ -472,7 +471,8 @@ extern "C"
 		g_urlloader_interface = (const PPB_URLLoader*)get_browser_interface(PPB_URLLOADER_INTERFACE);
 		g_urlrequestinfo_interface = (const PPB_URLRequestInfo*)get_browser_interface(PPB_URLREQUESTINFO_INTERFACE);
 		g_urlresponseinfo_interface = (const PPB_URLResponseInfo*)get_browser_interface(PPB_URLRESPONSEINFO_INTERFACE);
-		g_gles2_interface = (PPB_OpenGLES2*)get_browser_interface(PPB_OPENGLES2_INTERFACE);
+		g_gles2_interface = (const PPB_OpenGLES2*)get_browser_interface(PPB_OPENGLES2_INTERFACE);
+		g_urlloadedtrusted_interface = (const PPB_URLLoaderTrusted*)get_browser_interface(PPB_URLLOADERTRUSTED_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -482,7 +482,8 @@ extern "C"
 				!g_urlloader_interface ||
 				!g_urlrequestinfo_interface ||
 				!g_urlresponseinfo_interface ||
-				!g_gles2_interface)
+				!g_gles2_interface ||
+				!g_urlloadedtrusted_interface)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -493,7 +494,8 @@ extern "C"
 				<< g_urlloader_interface<<" "
 				<< g_urlrequestinfo_interface<<" "
 				<< g_urlresponseinfo_interface<<" "
-				<< g_gles2_interface);
+				<< g_gles2_interface<<" "
+				<< g_urlloadedtrusted_interface);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;

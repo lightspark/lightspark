@@ -465,7 +465,6 @@ public:
 
 class MovieClip: public Sprite, public FrameContainer
 {
-friend class ParserThread;
 private:
 	uint32_t getCurrentScene() const;
 	const Scene_data *getScene(const tiny_string &sceneName) const;

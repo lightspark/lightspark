@@ -29,7 +29,7 @@ using namespace std;
 using namespace lightspark;
 
 StreamCache::StreamCache()
-  : receivedLength(0), failed(false), terminated(false)
+  : receivedLength(0), failed(false), terminated(false),notifyLoader(true)
 {
 }
 
@@ -66,6 +66,7 @@ void StreamCache::append(const unsigned char* buffer, size_t length)
 
 	handleAppend(buffer, length);
 
+	if (notifyLoader)
 	{
 		Locker locker(stateMutex);
 		receivedLength += length;

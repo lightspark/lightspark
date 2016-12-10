@@ -30,8 +30,10 @@ class ppDownloader: public lightspark::Downloader
 private:
 	bool isMainClipDownloader;
 	SystemState* m_sys;
+	uint32_t downloadedlength;
 	PP_Resource ppurlloader;
 	uint8_t buffer[4096];
+	
 	static void dlStartCallback(void* userdata,int result);
 	static void dlReadResponseCallback(void* userdata,int result);
 public:

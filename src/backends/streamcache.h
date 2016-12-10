@@ -56,6 +56,7 @@ protected:
 	// Has the stream been completely downloaded or failed?
 	bool failed:1;
 	bool terminated:1;
+	bool notifyLoader:1;
 
 	// Wait until more than currentOffset bytes has been received
 	// or until terminated
@@ -72,6 +73,8 @@ public:
 
 	bool hasTerminated() const { return terminated; }
 	bool hasFailed() const { return failed; }
+	bool getNotifyLoader() const { return notifyLoader; }
+	void setNotifyLoader(bool notify) { notifyLoader = notify; }
 
 	// Wait until the writer calls markTerminated
 	void waitForTermination();

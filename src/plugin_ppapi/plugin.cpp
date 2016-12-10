@@ -161,10 +161,8 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 	PP_Var v;
 	uint32_t len;
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_STATUSCODE);
-	LOG(LOG_INFO,"statuscode:"<<v.value.as_int);
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_STATUSLINE);
 	tiny_string statusline = g_var_interface->VarToUtf8(v,&len);
-	LOG(LOG_INFO,"statusline:"<<statusline);
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_HEADERS);
 	tiny_string headers = g_var_interface->VarToUtf8(v,&len);
 	LOG(LOG_INFO,"headers:"<<len<<" "<<headers);
@@ -193,18 +191,16 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 	ppDownloader* th = (ppDownloader*)userdata;
 	if (result < 0)
 	{
-		LOG(LOG_ERROR,"download failed:"<<result<<" "<<th->getURL()<<" "<<th->getReceivedLength()<<"/"<<th->getLength());
+		LOG(LOG_ERROR,"download failed:"<<result<<" "<<th->getURL()<<" "<<th->downloadedlength<<"/"<<th->getLength());
 		th->setFailed();
 		return;
 	}
-	bool haslength = th->getReceivedLength() < th->getLength();
+	th->downloadedlength += result;
 	th->append(th->buffer,result);
-	if ((haslength && th->getReceivedLength() == th->getLength())||
-		(!haslength && result == 0)) // no content-length header set and no bytes read => finish download
-			
+	if (th->downloadedlength == th->getLength())
 	{
 		th->setFinished();
-		LOG(LOG_INFO,"download done:"<<th->getURL()<<" "<<th->getReceivedLength()<<" "<<th->getLength());
+		LOG(LOG_INFO,"download done:"<<th->getURL()<<" "<<th->downloadedlength<<" "<<th->getLength());
 		return;
 	}
 	struct PP_CompletionCallback cb;
@@ -214,7 +210,7 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,cb);
 }
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _instance, lightspark::ILoadable* owner,SystemState* sys):
-	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(sys),state(INIT)
+	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(sys),downloadedlength(0),state(INIT)
 {
 	PP_Var btrue;
 	btrue.type = PP_VARTYPE_BOOL;
@@ -239,16 +235,18 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _ins
 }
 
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(NULL),state(INIT)
+	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(NULL),downloadedlength(0),state(INIT)
 {
+	LOG(LOG_ERROR,"Download constructor2 not implemented");
 	ppurlloader = g_urlloader_interface->Create(_instance);
 }
 
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache,
 		const std::vector<uint8_t>& _data,
 		const std::list<tiny_string>& headers, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(NULL),state(INIT)
+	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(NULL),downloadedlength(0),state(INIT)
 {
+	LOG(LOG_ERROR,"Download constructor3 not implemented");
 	ppurlloader = g_urlloader_interface->Create(_instance);
 }
 
@@ -297,9 +295,11 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	{
 		m_sys->downloadManager=new ppDownloadManager(m_ppinstance,m_sys);
 	
-		//EngineData::startSDLMain();
+		EngineData::startSDLMain();
 		mainDownloader=new ppDownloader(swffile,m_ppinstance,m_sys->mainClip->loaderInfo.getPtr(),m_sys);
 		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
+		// loader is notified through parsethread
+		mainDownloader->getCache()->setNotifyLoader(false);
 		mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
 		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
 		m_sys->addJob(m_pt);
@@ -523,6 +523,7 @@ extern "C"
 
 void ppPluginEngineData::stopMainDownload()
 {
+	LOG(LOG_NOT_IMPLEMENTED,"stopMainDownload");
 //	if(instance->mainDownloader)
 //		instance->mainDownloader->stop();
 }

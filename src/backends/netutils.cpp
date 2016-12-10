@@ -319,7 +319,8 @@ void Downloader::setLength(uint32_t _length)
 
 	cache->reserve(length);
 
-	notifyOwnerAboutBytesTotal();
+	if (cache->getNotifyLoader())
+		notifyOwnerAboutBytesTotal();
 }
 
 /**
@@ -339,6 +340,8 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		return;
 
 	cache->append((unsigned char *)buf, added);
+	if (!cache->getNotifyLoader())
+		return;
 	if (cache->getReceivedLength() > length)
 		setLength(cache->getReceivedLength());
 

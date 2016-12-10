@@ -947,6 +947,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		dl->setLength(stream->end);
 		mainDownloader=dl;
 		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
+		// loader is notified through parsethread
+		mainDownloader->getCache()->setNotifyLoader(false);
 		mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
 		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
 		m_sys->addJob(m_pt);

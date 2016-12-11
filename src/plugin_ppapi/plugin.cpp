@@ -1,8 +1,7 @@
 /**************************************************************************
     Lighspark, a free flash player implementation
 
-    Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2010-2011  Timon Van Overveldt (timonvo@gmail.com)
+    Copyright (C) 2016 Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -37,11 +36,12 @@
 #include <string>
 #include <algorithm>
 #include "threading.h"
+#include "scripting/toplevel/JSON.h"
 #include "plugin_ppapi/plugin.h"
+#include "plugin_ppapi/ppextscriptobject.h"
 
 #include "ppapi/c/pp_errors.h"
 #include "ppapi/c/pp_module.h"
-#include "ppapi/c/pp_var.h"
 #include "ppapi/c/pp_rect.h"
 #include "ppapi/c/ppb.h"
 #include "ppapi/c/ppb_core.h"
@@ -53,6 +53,8 @@
 #include "ppapi/c/ppb_url_request_info.h"
 #include "ppapi/c/ppb_url_response_info.h"
 #include "ppapi/c/trusted/ppb_url_loader_trusted.h"
+#include "ppapi/c/private/ppb_instance_private.h"
+#include "ppapi/c/private/ppp_instance_private.h"
 #include "ppapi/c/ppp.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
@@ -81,6 +83,7 @@ static const PPB_URLRequestInfo* g_urlrequestinfo_interface = NULL;
 static const PPB_URLResponseInfo* g_urlresponseinfo_interface = NULL;
 static const PPB_OpenGLES2* g_gles2_interface = NULL;
 static const PPB_URLLoaderTrusted* g_urlloadedtrusted_interface = NULL;
+static const PPB_Instance_Private* g_instance_private_interface = NULL;
 
 ppDownloadManager::ppDownloadManager(PP_Instance _instance, SystemState *sys):instance(_instance),m_sys(sys)
 {
@@ -160,9 +163,6 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 	PP_Resource response = g_urlloader_interface->GetResponseInfo(th->ppurlloader);
 	PP_Var v;
 	uint32_t len;
-	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_STATUSCODE);
-	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_STATUSLINE);
-	tiny_string statusline = g_var_interface->VarToUtf8(v,&len);
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_HEADERS);
 	tiny_string headers = g_var_interface->VarToUtf8(v,&len);
 	LOG(LOG_INFO,"headers:"<<len<<" "<<headers);
@@ -266,11 +266,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 
-	m_sys->extScriptObject = NULL;
-//		scriptObject =
-//			(NPScriptObjectGW *) NPN_CreateObject(mInstance, &NPScriptObjectGW::npClass);
-//		m_sys->extScriptObject = scriptObject->getScriptObject();
-//		scriptObject->m_sys = m_sys;
+	m_sys->extScriptObject = new ppExtScriptObject(this);
 	//Parse OBJECT/EMBED tag attributes
 	tiny_string swffile;
 	for(int i=0;i<argc;i++)
@@ -284,7 +280,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 		}
 		else if(strcasecmp(argn[i],"name")==0)
 		{
-			//m_sys->extScriptObject->setProperty(argn[i],argv[i]);
+			m_sys->extScriptObject->setProperty(argn[i],argv[i]);
 		}
 		else if(strcasecmp(argn[i],"src")==0)
 		{
@@ -319,8 +315,9 @@ ppPluginInstance::~ppPluginInstance()
 	if (mainDownloaderStreambuf)
 		delete mainDownloaderStreambuf;
 
-	// Kill all stuff relating to NPScriptObject which is still running
-//	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
+	if (m_sys->extScriptObject)
+		delete m_sys->extScriptObject;
+	m_sys->extScriptObject = NULL;
 
 	m_sys->setShutdownFlag();
 
@@ -392,6 +389,42 @@ void ppPluginInstance::handleResize(PP_Resource view)
 }
 
 
+ASObject* ppPluginInstance::executeScript(std::string script)
+{
+	PP_Var scr = g_var_interface->VarFromUtf8(script.c_str(),script.length());
+	PP_Var exception;
+	exception.type = PP_VARTYPE_UNDEFINED;
+	g_instance_private_interface->GetWindowObject(m_ppinstance);
+	PP_Var result = g_instance_private_interface->ExecuteScript(m_ppinstance,scr,&exception);
+	uint32_t len;
+	if (exception.type == PP_VARTYPE_STRING)
+		LOG(LOG_ERROR,"error calling script:"<<script<<" "<<g_var_interface->VarToUtf8(exception,&len));
+
+	ASObject* res = NULL;
+	switch (result.type)
+	{
+		case PP_VARTYPE_UNDEFINED:
+			res = m_sys->getUndefinedRef();
+			break;
+		case PP_VARTYPE_NULL:
+			res = m_sys->getNullRef();
+			break;
+		case PP_VARTYPE_STRING:
+		{
+			tiny_string jsonstring = g_var_interface->VarToUtf8(result,&len);
+			res = JSON::doParse(jsonstring,NULL);
+			break;
+		}
+		default:
+			LOG(LOG_ERROR,"unhandled script result type:"<<result.type);
+			return NULL;
+	}
+	
+	LOG(LOG_INFO,"executeScript:"<<script<<" "<<(int)exception.type<<" "<<(int)result.type);
+	return res;
+}
+
+
 std::map<PP_Instance,ppPluginInstance*> all_instances;
 
 static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char* argn[],const char* argv[]) 
@@ -433,6 +466,15 @@ static void Messaging_HandleMessage(PP_Instance instance, struct PP_Var message)
 {
 	LOG(LOG_INFO,"handleMessage:"<<(int)message.type);
 }
+
+static PP_Var Instance_Private_GetInstanceObject(PP_Instance instance)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Instance_Private_GetInstanceObject");
+	PP_Var v;
+	v.type = PP_VARTYPE_UNDEFINED;
+	return v;
+}
+
 static PPP_Instance instance_interface = {
   &Instance_DidCreate,
   &Instance_DidDestroy,
@@ -443,7 +485,9 @@ static PPP_Instance instance_interface = {
 static PPP_Messaging messaging_interface = {
 	&Messaging_HandleMessage,
 };
-
+static PPP_Instance_Private instance_private_interface = {
+	&Instance_Private_GetInstanceObject,
+};
 extern "C"
 {
 	PP_EXPORT int32_t PPP_InitializeModule(PP_Module module_id,PPB_GetInterface get_browser_interface) 
@@ -473,6 +517,7 @@ extern "C"
 		g_urlresponseinfo_interface = (const PPB_URLResponseInfo*)get_browser_interface(PPB_URLRESPONSEINFO_INTERFACE);
 		g_gles2_interface = (const PPB_OpenGLES2*)get_browser_interface(PPB_OPENGLES2_INTERFACE);
 		g_urlloadedtrusted_interface = (const PPB_URLLoaderTrusted*)get_browser_interface(PPB_URLLOADERTRUSTED_INTERFACE);
+		g_instance_private_interface = (const PPB_Instance_Private*)get_browser_interface(PPB_INSTANCE_PRIVATE_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -483,7 +528,8 @@ extern "C"
 				!g_urlrequestinfo_interface ||
 				!g_urlresponseinfo_interface ||
 				!g_gles2_interface ||
-				!g_urlloadedtrusted_interface)
+				!g_urlloadedtrusted_interface ||
+				!g_instance_private_interface)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -495,7 +541,8 @@ extern "C"
 				<< g_urlrequestinfo_interface<<" "
 				<< g_urlresponseinfo_interface<<" "
 				<< g_gles2_interface<<" "
-				<< g_urlloadedtrusted_interface);
+				<< g_urlloadedtrusted_interface<<" "
+				<< g_instance_private_interface);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;
@@ -515,6 +562,10 @@ extern "C"
 		if (strcmp(interface_name, PPP_MESSAGING_INTERFACE) == 0) 
 		{
 			return &messaging_interface;
+		}
+		if (strcmp(interface_name, PPP_INSTANCE_PRIVATE_INTERFACE) == 0) 
+		{
+			return &instance_private_interface;
 		}
 		return NULL;
 	}
@@ -536,6 +587,7 @@ uint32_t ppPluginEngineData::getWindowForGnash()
 
 void ppPluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
 {
+	LOG(LOG_NOT_IMPLEMENTED,"openPageInBrowser:"<<url<<" "<<window);
 	//instance->openLink(url, window);
 }
 

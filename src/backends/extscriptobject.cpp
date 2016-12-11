@@ -342,6 +342,11 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 }
 
 /* -- ExtASCallback -- */
+ExtASCallback::ExtASCallback(IFunction *_func):funcWasCalled(false), func(_func), result(NULL), asArgs(NULL)
+{
+	func->incRef();
+}
+
 ExtASCallback::~ExtASCallback() {
 	func->decRef();
 	if(asArgs)

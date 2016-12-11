@@ -22,6 +22,7 @@ include_directories(.)
 # PPAPI plugin target
 SET(PPAPI_PLUGIN_SOURCES ${PPAPI_PLUGIN_SOURCES}
 	plugin.cpp
+	ppextscriptobject.cpp
 	)
 
 ADD_LIBRARY(pepflashplayer MODULE ${PPAPI_PLUGIN_SOURCES})

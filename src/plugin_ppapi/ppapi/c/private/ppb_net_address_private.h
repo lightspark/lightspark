@@ -60,7 +60,7 @@ PP_COMPILE_ASSERT_SIZE_IN_BYTES(PP_NetAddressFamily_Private, 4);
  */
 struct PP_NetAddress_Private {
   uint32_t size;
-  int8_t data[128];
+  char data[128];
 };
 PP_COMPILE_ASSERT_STRUCT_SIZE_IN_BYTES(PP_NetAddress_Private, 132);
 /**

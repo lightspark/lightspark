@@ -37,6 +37,7 @@ void JSON::sinit(Class_base* c)
 void JSON::buildTraits(ASObject* o)
 {
 }
+
 ASFUNCTIONBODY(JSON,_constructor)
 {
 	throwError<ArgumentError>(kCantInstantiateError);
@@ -46,6 +47,15 @@ ASFUNCTIONBODY(JSON,generator)
 {
 	throwError<ArgumentError>(kCoerceArgumentCountError);
 	return NULL;
+}
+
+ASObject *JSON::doParse(const tiny_string &jsonstring, IFunction *reviver)
+{
+	ASObject* res = NULL;
+	multiname dummy(NULL);
+	
+	parseAll(jsonstring,&res,dummy,reviver);
+	return res;
 }
 
 ASFUNCTIONBODY(JSON,_parse)
@@ -62,11 +72,7 @@ ASFUNCTIONBODY(JSON,_parse)
 			throwError<TypeError>(kCheckTypeFailedError);
 		reviver = args[1]->as<IFunction>();
 	}
-	ASObject* res = NULL;
-	multiname dummy(NULL);
-	
-	parseAll(text,&res,dummy,reviver);
-	return res;
+	return doParse(text,reviver);
 }
 
 ASFUNCTIONBODY(JSON,_stringify)

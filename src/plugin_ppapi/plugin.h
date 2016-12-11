@@ -62,6 +62,7 @@ public:
 	ppPluginInstance(PP_Instance instance, int16_t argc,const char* argn[],const char* argv[]);
 	virtual ~ppPluginInstance();
 	void handleResize(PP_Resource view);
+	ASObject *executeScript(std::string script);
 };
 
 class ppPluginEngineData: public EngineData

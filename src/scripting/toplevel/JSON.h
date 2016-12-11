@@ -35,6 +35,7 @@ public:
 	ASFUNCTION(generator);
 	ASFUNCTION(_parse);
 	ASFUNCTION(_stringify);
+	static ASObject* doParse(const tiny_string &jsonstring, IFunction *reviver);
 private:
 	static void parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, IFunction *reviver);
 	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key,IFunction* reviver);

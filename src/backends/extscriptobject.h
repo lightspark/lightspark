@@ -27,7 +27,6 @@
 
 #include "asobject.h"
 #include "compat.h"
-#include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {
@@ -185,6 +184,7 @@ protected:
 };
 
 class ExternalCallEvent;
+class IFunction;
 /**
  * ExtCallback specialization for IFunctions
  */
@@ -197,7 +197,7 @@ private:
 	ASObject* result;
         ASObject** asArgs;
 public:
-	ExtASCallback(IFunction* _func) :funcWasCalled(false), func(_func), result(NULL), asArgs(NULL) { func->incRef(); }
+	ExtASCallback(IFunction* _func);
 	~ExtASCallback();
 
 	// Don't forget to delete this copy after use

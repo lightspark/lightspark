@@ -24,6 +24,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <stack>
 
 #include "asobject.h"
 #include "compat.h"
@@ -251,29 +252,145 @@ private:
 class DLL_PUBLIC ExtScriptObject
 {
 public:
-	virtual ~ExtScriptObject() {};
+	ExtScriptObject(SystemState* sys);
+	virtual ~ExtScriptObject();
+	// Stops all waiting external calls, should be called before destruction.
+	// Actual destruction should be initiated by the browser, as a last step of destruction.
+	void destroy();
 
-	virtual bool hasMethod(const ExtIdentifier& id) const = 0;
-	// There currently is no way to invoke the set methods. There's no need for it anyway.
-	virtual void setMethod(const ExtIdentifier& id, ExtCallback* func) = 0;
-	virtual bool removeMethod(const ExtIdentifier& id) = 0;
+	SystemState* getSystemState() const { return m_sys; }
+	
+	void assertThread() { assert(Thread::self() == mainThread); }
 
-	virtual bool hasProperty(const ExtIdentifier& id) const = 0;
-	/*
-	 * NOTE: The caller must make sure that the property exists
-	 * using hasProperty
-	 */
-	virtual const ExtVariant& getProperty(const ExtIdentifier& id) const = 0;
-	virtual void setProperty(const ExtIdentifier& id, const ExtVariant& value) = 0;
-	virtual bool removeProperty(const ExtIdentifier& id) = 0;
+	// Methods
+	bool hasMethod(const lightspark::ExtIdentifier& id) const
+	{
+		return methods.find(id) != methods.end();
+	}
+	void setMethod(const lightspark::ExtIdentifier& id, lightspark::ExtCallback* func)
+	{
+		methods[id] = func;
+	}
+	bool removeMethod(const lightspark::ExtIdentifier& id);
 
-	virtual bool enumerate(ExtIdentifier*** ids, uint32_t* count) const = 0;
+	// Properties
+	bool hasProperty(const lightspark::ExtIdentifier& id) const
+	{
+		return properties.find(id) != properties.end();
+	}
+	const ExtVariant& getProperty(const lightspark::ExtIdentifier& id) const;
+	void setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
+	{
+		properties[id] = value;
+	}
+	bool removeProperty(const lightspark::ExtIdentifier& id);
 
-	virtual bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ASObject** result) = 0;
+	bool enumerate(ExtIdentifier*** ids, uint32_t* count) const;
+	virtual ExtIdentifier* createEnumerationIdentifier(const ExtIdentifier& id) const = 0;
+
+	enum HOST_CALL_TYPE {EXTERNAL_CALL};
+	typedef struct {
+		ExtScriptObject* so;
+		Semaphore* callStatus;
+		HOST_CALL_TYPE type;
+		void* arg1;
+		void* arg2;
+		void* arg3;
+		void* arg4;
+		void* returnValue;
+	} HOST_CALL_DATA;
+	// This method allows calling some method, while making sure
+	// no unintended blocking occurs.
+	void doHostCall(HOST_CALL_TYPE type, void* returnValue,
+		void* arg1, void* arg2=NULL, void* arg3=NULL, void* arg4=NULL);
+	static void hostCallHandler(void* d);
+	
+	bool callExternal(const ExtIdentifier& id, const ExtVariant** args, uint32_t argc, ASObject** result);
 
 	virtual void setException(const std::string& message) const = 0;
-	virtual void setMarshallExceptions(bool marshall) = 0;
-	virtual bool getMarshallExceptions() const = 0;
+	
+	virtual void callAsync(HOST_CALL_DATA* data) = 0;
+
+	// This is called from hostCallHandler() via doHostCall(EXTERNAL_CALL, ...)
+	virtual bool callExternalHandler(const char* scriptString, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result) = 0;
+	
+	void setMarshallExceptions(bool marshall) { marshallExceptions = marshall; }
+	bool getMarshallExceptions() const { return marshallExceptions; }
+	// Standard methods
+	// These methods are standard to every flash instance.
+	// They provide features such as getting/setting internal variables,
+	// going to a frame, pausing etc... to the external container.
+	static bool stdGetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdSetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdGotoFrame(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdIsPlaying(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdLoadMovie(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdPan(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdPercentLoaded(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdRewind(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdStopPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdSetZoomRect(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdZoom(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+	static bool stdTotalFrames(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
+protected:
+	bool doinvoke(const ExtIdentifier &id, const ExtVariant**args, uint32_t argc, const ExtVariant *result);
+private:
+	SystemState* m_sys;
+	// Used to determine if a method is called in the main plugin thread
+	Thread* mainThread;
+
+	// Provides mutual exclusion for external calls
+	Mutex mutex;
+	std::stack<Semaphore*> callStatusses;
+	Mutex externalCall;
+	Mutex hostCall;
+
+	// The root callback currently being invoked. If this is not NULL
+	// when invoke() gets called, we can assume the invoke()
+	// is nested inside another one.
+	lightspark::ExtCallback* currentCallback;
+	// The data for the external call that needs to be made.
+	// If a callback is woken up and this is not NULL,
+	// it was a forced wake-up and we should call an external method.
+	HOST_CALL_DATA* hostCallData;
+
+	// This map stores this object's methods & properties
+	// If an entry is set with a ExtIdentifier or ExtVariant,
+	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
+	std::map<ExtIdentifier, ExtVariant> properties;
+	std::map<ExtIdentifier, lightspark::ExtCallback*> methods;
+
+	// True if this object is being shut down
+	bool shuttingDown;
+	// True if exceptions should be marshalled to the container
+	bool marshallExceptions;
 };
 
 };

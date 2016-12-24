@@ -24,8 +24,6 @@
 #include <typeinfo>
 #include <string.h>
 #include <string>
-#include <map>
-#include <stack>
 
 #include "plugin/include/npapi/npapi.h"
 #include "plugin/include/npapi/npruntime.h"
@@ -126,150 +124,26 @@ class NPScriptObjectGW;
 class DLL_PUBLIC NPScriptObject : public lightspark::ExtScriptObject
 {
 public:
-	NPScriptObject(NPScriptObjectGW* gw);
-	~NPScriptObject();
-	// Stops all waiting external calls, should be called before destruction.
-	// Actual destruction should be initiated by the browser, as a last step of destruction.
-	void destroy();
-
-	void assertThread() { assert(Thread::self() == mainThread); }
+	NPScriptObject(NPScriptObjectGW* gw,SystemState* sys);
 
 	// These methods are not part of the ExtScriptObject interface.
 	// ExtScriptObject does not provide a way to invoke the set methods.
 	bool invoke(NPIdentifier name, const NPVariant* args, uint32_t argc, NPVariant* result);
 	bool invokeDefault(const NPVariant* args, uint32_t argc, NPVariant* result);
 
-	/* ExtScriptObject interface */
-	// Methods
-	bool hasMethod(const lightspark::ExtIdentifier& id) const
-	{
-		return methods.find(id) != methods.end();
-	}
-	void setMethod(const lightspark::ExtIdentifier& id, lightspark::ExtCallback* func)
-	{
-		methods[id] = func;
-	}
-	bool removeMethod(const lightspark::ExtIdentifier& id);
-
-	// Properties
-	bool hasProperty(const lightspark::ExtIdentifier& id) const
-	{
-		return properties.find(id) != properties.end();
-	}
-	const ExtVariant& getProperty(const lightspark::ExtIdentifier& id) const;
-	void setProperty(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant& value)
-	{
-		properties[id] = value;
-	}
-	bool removeProperty(const lightspark::ExtIdentifier& id);
-
-	// Enumeration
-	bool enumerate(lightspark::ExtIdentifier*** ids, uint32_t* count) const;
+	virtual ExtIdentifier* createEnumerationIdentifier(const ExtIdentifier &id) const;
 	
 
-	enum HOST_CALL_TYPE {EXTERNAL_CALL};
-	typedef struct {
-		NPScriptObject* so;
-		Semaphore* callStatus;
-		HOST_CALL_TYPE type;
-		void* arg1;
-		void* arg2;
-		void* arg3;
-		void* arg4;
-		void* returnValue;
-	} HOST_CALL_DATA;
-	// This method allows calling some method, while making sure
-	// no unintended blocking occurs.
-	void doHostCall(HOST_CALL_TYPE type, void* returnValue,
-		void* arg1, void* arg2=NULL, void* arg3=NULL, void* arg4=NULL);
-	static void hostCallHandler(void* d);
-
-	// Calling methods in the external container
-	bool callExternal(const lightspark::ExtIdentifier& id, const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
-
+	void callAsync(HOST_CALL_DATA* data);
 	// This is called from hostCallHandler() via doHostCall(EXTERNAL_CALL, ...)
-	static bool callExternalHandler(NPP instance, const char* scriptString,
-		const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
+	bool callExternalHandler(const char* scriptString,const lightspark::ExtVariant** args, uint32_t argc, lightspark::ASObject** result);
 
 	// Throwing exceptions to the container
 	void setException(const std::string& message) const;
-	void setMarshallExceptions(bool marshall) { marshallExceptions = marshall; }
-	bool getMarshallExceptions() const { return marshallExceptions; }
 
-	// Standard methods
-	// These methods are standard to every flash instance.
-	// They provide features such as getting/setting internal variables,
-	// going to a frame, pausing etc... to the external container.
-	static bool stdGetVariable(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdSetVariable(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdGotoFrame(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdIsPlaying(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdLoadMovie(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdPan(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdPercentLoaded(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdPlay(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdRewind(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdStopPlay(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdSetZoomRect(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdZoom(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
-	static bool stdTotalFrames(const lightspark::ExtScriptObject& so,
-			const lightspark::ExtIdentifier& id,
-			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 private:
 	NPScriptObjectGW* gw;
 	NPP instance;
-	// Used to determine if a method is called in the main plugin thread
-	Thread* mainThread;
-
-	// Provides mutual exclusion for external calls
-	Mutex mutex;
-	std::stack<Semaphore*> callStatusses;
-	Mutex externalCall;
-	Mutex hostCall;
-
-	// The root callback currently being invoked. If this is not NULL
-	// when invoke() gets called, we can assume the invoke()
-	// is nested inside another one.
-	lightspark::ExtCallback* currentCallback;
-	// The data for the external call that needs to be made.
-	// If a callback is woken up and this is not NULL,
-	// it was a forced wake-up and we should call an external method.
-	HOST_CALL_DATA* hostCallData;
-
-	// True if this object is being shut down
-	bool shuttingDown;
-	// True if exceptions should be marshalled to the container
-	bool marshallExceptions;
-
-	// This map stores this object's methods & properties
-	// If an entry is set with a ExtIdentifier or ExtVariant,
-	// they get converted to NPIdentifierObject or NPVariantObject by copy-constructors.
-	std::map<ExtIdentifier, ExtVariant> properties;
-	std::map<ExtIdentifier, lightspark::ExtCallback*> methods;
 };
 
 /**
@@ -283,6 +157,7 @@ public:
 	NPScriptObjectGW(NPP inst);
 	~NPScriptObjectGW();
 
+	void createScriptObject(SystemState* sys);
 	NPScriptObject* getScriptObject() { return so; }
 	NPP getInstance() { return instance; }
 	

@@ -341,8 +341,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	if (n_minor >= 14) { // since NPAPI start to support
 		scriptObject =
 			(NPScriptObjectGW *) NPN_CreateObject(mInstance, &NPScriptObjectGW::npClass);
+		scriptObject->createScriptObject(m_sys);
 		m_sys->extScriptObject = scriptObject->getScriptObject();
-		scriptObject->m_sys = m_sys;
 		//Parse OBJECT/EMBED tag attributes
 		string baseURL;
 		for(int i=0;i<argc;i++)
@@ -390,7 +390,7 @@ nsPluginInstance::~nsPluginInstance()
 		delete mainDownloaderStreambuf;
 
 	// Kill all stuff relating to NPScriptObject which is still running
-	static_cast<NPScriptObject*>(m_sys->extScriptObject)->destroy();
+	m_sys->extScriptObject->destroy();
 
 	m_sys->setShutdownFlag();
 

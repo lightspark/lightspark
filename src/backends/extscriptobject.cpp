@@ -509,3 +509,446 @@ bool ExtBuiltinCallback::getResult(std::map<const ASObject*, std::unique_ptr<Ext
 	}
 	return success;
 }
+
+// This method allows calling a function on the main thread in a generic way.
+void ExtScriptObject::doHostCall(ExtScriptObject::HOST_CALL_TYPE type,
+	void* returnValue, void* arg1, void* arg2, void* arg3, void* arg4)
+{
+	// Used to signal completion of asynchronous external call
+	Semaphore callStatus(0);
+	HOST_CALL_DATA callData = {
+		this,
+		&callStatus,
+		type,
+		arg1,
+		arg2,
+		arg3,
+		arg4,
+		returnValue
+	};
+	// We are in the main thread,
+	// so we can call the method ourselves synchronously straight away
+	if(Thread::self() == mainThread)
+	{
+		hostCallHandler(&callData);
+		return;
+	}
+
+	// Make sure we are the only external call being executed
+	mutex.lock();
+	// If we are shutting down, then don't even continue
+	if(shuttingDown)
+	{
+		mutex.unlock();
+		return;
+	}
+
+	// If we are the first external call, then indicate that an external call is running
+	if(callStatusses.size() == 0)
+		hostCall.lock();
+
+	// Add this callStatus semaphore to the list of running call statuses to be cleaned up on shutdown
+	callStatusses.push(&callStatus);
+
+	// Main thread is not occupied by an invoked callback,
+	// so ask the browser to asynchronously call our external function.
+	if(currentCallback == NULL)
+		callAsync(&callData);
+	// Main thread is occupied by an invoked callback.
+	// Wake it up and ask it run our external call
+	else
+	{
+		hostCallData = &callData;
+		currentCallback->wakeUp();
+	}
+
+	// Called JS may invoke a callback, which in turn may invoke another external method, which needs this mutex
+	mutex.unlock();
+
+	// Wait for the (possibly asynchronously) called function to finish
+	callStatus.wait();
+
+	mutex.lock();
+
+	// This call status doesn't need to be cleaned up anymore on shutdown
+	callStatusses.pop();
+
+	// If we are the last external call, then indicate that all external calls are now finished
+	if(callStatusses.size() == 0)
+		hostCall.unlock();
+
+	mutex.unlock();
+}
+
+void ExtScriptObject::hostCallHandler(void* d)
+{
+	HOST_CALL_DATA* callData = static_cast<HOST_CALL_DATA*>(d);
+	
+	lightspark::SystemState* prevSys = getSys();
+	bool tlsSysSet = false;
+	if(callData->so->getSystemState())
+	{
+		tlsSysSet = true;
+		setTLSSys(callData->so->getSystemState());
+	}
+
+	// Assert we are in the main plugin thread
+	callData->so->assertThread();
+
+	switch(callData->type)
+	{
+	case EXTERNAL_CALL:
+		*static_cast<bool*>(callData->returnValue) = callData->so->callExternalHandler(
+			static_cast<const char*>(callData->arg1), static_cast<const ExtVariant**>(callData->arg2),
+			*static_cast<uint32_t*>(callData->arg3), static_cast<ASObject**>(callData->arg4));
+		break;
+	default:
+		LOG(LOG_ERROR, "Unimplemented host call requested");
+	}
+
+	callData->callStatus->signal();
+	if(tlsSysSet)
+		setTLSSys(prevSys);
+}
+
+bool ExtScriptObject::callExternal(const ExtIdentifier &id, const ExtVariant **args, uint32_t argc, ASObject **result)
+{
+	// Signals when the async has been completed
+	// True if NPN_Invoke succeeded
+	bool success = false;
+
+	// We forge an anonymous function with the right number of arguments
+	std::string argsString;
+	for(uint32_t i=0;i<argc;i++)
+	{
+		char buf[20];
+		if((i+1)==argc)
+			snprintf(buf,20,"a%u",i);
+		else
+			snprintf(buf,20,"a%u,",i);
+		argsString += buf;
+	}
+
+	std::string scriptString = "(function(";
+	scriptString += argsString;
+	scriptString += ") { return (" + id.getString();
+	scriptString += ")(" + argsString + "); })";
+
+	LOG(LOG_CALLS,"Invoking " << scriptString << " in the browser ");
+
+	doHostCall(EXTERNAL_CALL, &success, const_cast<char*>(scriptString.c_str()), const_cast<ExtVariant**>(args), &argc, result);
+	return success;
+}
+
+// ExtScriptObject interface: methods
+ExtScriptObject::ExtScriptObject(SystemState *sys):
+	m_sys(sys),currentCallback(NULL), hostCallData(NULL),
+	shuttingDown(false), marshallExceptions(false)
+{
+	// This object is always created in the main plugin thread, so lets save
+	// so that we can check if we are in the main plugin thread later on.
+	mainThread = Thread::self();
+
+	setProperty("$version", Capabilities::EMULATED_VERSION);
+
+	// Standard methods
+	setMethod("SetVariable", new lightspark::ExtBuiltinCallback(stdSetVariable));
+	setMethod("GetVariable", new lightspark::ExtBuiltinCallback(stdGetVariable));
+	setMethod("GotoFrame", new lightspark::ExtBuiltinCallback(stdGotoFrame));
+	setMethod("IsPlaying", new lightspark::ExtBuiltinCallback(stdIsPlaying));
+	setMethod("LoadMovie", new lightspark::ExtBuiltinCallback(stdLoadMovie));
+	setMethod("Pan", new lightspark::ExtBuiltinCallback(stdPan));
+	setMethod("PercentLoaded", new lightspark::ExtBuiltinCallback(stdPercentLoaded));
+	setMethod("Play", new lightspark::ExtBuiltinCallback(stdPlay));
+	setMethod("Rewind", new lightspark::ExtBuiltinCallback(stdRewind));
+	setMethod("SetZoomRect", new lightspark::ExtBuiltinCallback(stdSetZoomRect));
+	setMethod("StopPlay", new lightspark::ExtBuiltinCallback(stdStopPlay));
+	setMethod("Zoom", new lightspark::ExtBuiltinCallback(stdZoom));
+	setMethod("TotalFrames", new lightspark::ExtBuiltinCallback(stdTotalFrames));
+}
+
+ExtScriptObject::~ExtScriptObject()
+{
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator meth_it = methods.begin();
+	while(meth_it != methods.end())
+	{
+		delete (*meth_it).second;
+		methods.erase(meth_it++);
+	}
+}
+// Destructor preparator
+void ExtScriptObject::destroy()
+{
+	mutex.lock();
+	// Prevents new external calls from continuing
+	shuttingDown = true;
+
+	// If an external call is running, wake it up
+	if(callStatusses.size() > 0)
+		callStatusses.top()->signal();
+	mutex.unlock();
+	// Wait for all external calls to finish
+	Mutex::Lock l(externalCall);
+}
+bool ExtScriptObject::doinvoke(const ExtIdentifier& id, const ExtVariant **args, uint32_t argc, const lightspark::ExtVariant* result)
+{
+	// If the NPScriptObject is shutting down, don't even continue
+	if(shuttingDown)
+		return false;
+
+	// Check if the method exists
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator it;
+	it = methods.find(id);
+	if(it == methods.end())
+		return false;
+
+	LOG(LOG_CALLS,"Plugin callback from the browser: " << id.getString());
+
+	// Make sure we use a copy of the callback
+	lightspark::ExtCallback* callback = it->second->copy();
+
+	// Set the current root callback only if there isn't one already
+	bool rootCallback = false;
+
+	// We must avoid colliding with Flash code attemping an external call now
+	mutex.lock();
+
+	if(currentCallback == NULL)
+	{
+		// Remember to reset the current callback
+		rootCallback = true;
+		currentCallback = callback;
+	}
+
+	// Call the callback synchronously if:
+	// - We are not the root callback
+	//     (case: BROWSER -> invoke -> VM -> external call -> BROWSER -> invoke)
+	// - We are the root callback AND we are being called from within an external call
+	//     (case: VM -> external call -> BROWSER -> invoke)
+	bool synchronous = !rootCallback || (rootCallback && callStatusses.size() == 1);
+
+	//Now currentCallback have been set, the VM thread will notice this and invoke the code using
+	//a forced wake up
+	mutex.unlock();
+
+	// Call our callback.
+	// We can call it synchronously in the cases specified above.
+	// In both cases, the VM is suspended, waiting for the result from another external call.
+	// Thus we don't have to worry about synchronizing with the VM.
+	callback->call(*this, id, args, argc, synchronous);
+	// Wait for its result or a forced wake-up
+	callback->wait();
+
+	//Again, hostCallData is shared between the VM thread and the main thread and it should be protected
+	mutex.lock();
+
+	// As long as we get forced wake-ups, execute the requested external calls and keep waiting.
+	// Note that only the root callback can be forcibly woken up.
+	while(hostCallData != NULL)
+	{
+		// Copy the external call data pointer
+		HOST_CALL_DATA* data = hostCallData;
+		// Clear the external call data pointer BEFORE executing the call.
+		// This will make sure another nested external call will
+		// be handled properly.
+		hostCallData = NULL;
+		mutex.unlock();
+		// Execute the external call
+		hostCallHandler(data);
+		// Keep waiting
+		callback->wait();
+		mutex.lock();
+	}
+	// Get the result of our callback
+	std::map<const ASObject*, std::unique_ptr<ExtObject>> asObjectsMap;
+	bool res = callback->getResult(asObjectsMap, *this, &result);
+
+	// Reset the root current callback to NULL, if necessary
+	if(rootCallback)
+		currentCallback = NULL;
+
+	// No more shared data should be used hereafter
+	mutex.unlock();
+
+	// Delete our callback after use
+	delete callback;
+
+	return res;
+}
+
+
+bool ExtScriptObject::removeMethod(const lightspark::ExtIdentifier& id)
+{
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator it = methods.find(id);
+	if(it == methods.end())
+		return false;
+
+	delete (*it).second;
+	methods.erase(it);
+	return true;
+}
+
+// ExtScriptObject interface: properties
+const ExtVariant& ExtScriptObject::getProperty(const lightspark::ExtIdentifier& id) const
+{
+	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
+	assert(it != properties.end());
+	return it->second;
+}
+bool ExtScriptObject::removeProperty(const lightspark::ExtIdentifier& id)
+{
+	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
+	if(it == properties.end())
+		return false;
+
+	properties.erase(it);
+	return true;
+}
+
+bool ExtScriptObject::enumerate(ExtIdentifier ***ids, uint32_t *count) const
+{
+	*count = properties.size()+methods.size();
+	*ids = new lightspark::ExtIdentifier*[properties.size()+methods.size()];
+	std::map<ExtIdentifier, ExtVariant>::const_iterator prop_it;
+	int i = 0;
+	for(prop_it = properties.begin(); prop_it != properties.end(); ++prop_it)
+	{
+		(*ids)[i] = createEnumerationIdentifier(prop_it->first);
+		i++;
+	}
+	std::map<ExtIdentifier, lightspark::ExtCallback*>::const_iterator meth_it;
+	for(meth_it = methods.begin(); meth_it != methods.end(); ++meth_it)
+	{
+		(*ids)[i] = createEnumerationIdentifier(meth_it->first);
+		i++;
+	}
+
+	return true;
+}
+// Standard Flash methods
+bool ExtScriptObject::stdGetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	if(argc!=1 || args[0]->getType()!=lightspark::ExtVariant::EV_STRING)
+		return false;
+	//Only support properties currently
+	ExtIdentifier argId(args[0]->getString());
+	if(so.hasProperty(argId))
+	{
+		*result=new ExtVariant(so.getProperty(argId));
+		return true;
+	}
+
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdGetVariable");
+	*result = new ExtVariant();
+	return false;
+}
+
+bool ExtScriptObject::stdSetVariable(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdSetVariable");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdGotoFrame(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdGotoFrame");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdIsPlaying(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdIsPlaying");
+	*result = new ExtVariant(true);
+	return true;
+}
+
+bool ExtScriptObject::stdLoadMovie(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdLoadMovie");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdPan(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdPan");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdPercentLoaded(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdPercentLoaded");
+	*result = new ExtVariant(100);
+	return true;
+}
+
+bool ExtScriptObject::stdPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdPlay");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdRewind(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdRewind");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdStopPlay(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdStopPlay");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdSetZoomRect(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdSetZoomRect");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdZoom(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdZoom");
+	*result = new ExtVariant(false);
+	return false;
+}
+
+bool ExtScriptObject::stdTotalFrames(const lightspark::ExtScriptObject& so,
+			const lightspark::ExtIdentifier& id,
+			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "ExtScriptObject::stdTotalFrames");
+	*result = new ExtVariant(false);
+	return false;
+}

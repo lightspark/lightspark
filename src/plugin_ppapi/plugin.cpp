@@ -21,7 +21,6 @@
 // TODO
 // - download
 // - rendering
-// - javascript communication with browser
 // - sound
 // - keyboard/mouse handling
 // - run within sandbox
@@ -55,6 +54,8 @@
 #include "ppapi/c/trusted/ppb_url_loader_trusted.h"
 #include "ppapi/c/private/ppb_instance_private.h"
 #include "ppapi/c/private/ppp_instance_private.h"
+#include "ppapi/c/dev/ppb_var_deprecated.h"
+#include "ppapi/c/dev/ppp_class_deprecated.h"
 #include "ppapi/c/ppp.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
@@ -84,6 +85,218 @@ static const PPB_URLResponseInfo* g_urlresponseinfo_interface = NULL;
 static const PPB_OpenGLES2* g_gles2_interface = NULL;
 static const PPB_URLLoaderTrusted* g_urlloadedtrusted_interface = NULL;
 static const PPB_Instance_Private* g_instance_private_interface = NULL;
+static const PPB_Var_Deprecated* g_var_deprecated_interface = NULL;
+
+
+ppVariantObject::ppVariantObject(std::map<int64_t, std::unique_ptr<ExtObject> > &objectsMap, PP_Var& other)
+{
+	switch(other.type)
+	{
+		case PP_VARTYPE_UNDEFINED:
+			type = EV_VOID;
+			break;
+		case PP_VARTYPE_NULL:
+			type = EV_NULL;
+			break;
+		case PP_VARTYPE_BOOL:
+			type = EV_BOOLEAN;
+			booleanValue = other.value.as_bool;
+			break;
+		case PP_VARTYPE_INT32:
+			type = EV_INT32;
+			intValue = other.value.as_int;
+			break;
+		case PP_VARTYPE_DOUBLE:
+			type = EV_DOUBLE;
+			doubleValue = other.value.as_double;
+			break;
+		case PP_VARTYPE_STRING:
+		{
+			uint32_t len;
+			type = EV_STRING;
+			strValue = g_var_interface->VarToUtf8(other,&len);
+			break;
+		}
+		case PP_VARTYPE_OBJECT:
+		{
+			type = EV_OBJECT;
+			/*
+			auto it=objectsMap.find(npObj);
+			if(it!=objectsMap.end())
+				objectValue = it->second.get();
+			else
+			*/
+				objectValue = new ppObjectObject(objectsMap, other);
+			break;
+		}
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"ppVariantObject for type:"<<(int)other.type);
+			type = EV_VOID;
+			break;
+	}
+}
+void ppVariantObject::ExtVariantToppVariant(std::map<const ExtObject *, PP_Var> &objectsMap, PP_Instance instance, const ExtVariant& value, PP_Var& variant)
+{
+	switch(value.getType())
+	{
+		case EV_STRING:
+		{
+			const std::string& strValue = value.getString();
+			variant = g_var_interface->VarFromUtf8(strValue.c_str(),strValue.length());
+			break;
+		}
+		case EV_INT32:
+			variant = PP_MakeInt32(value.getInt());
+			break;
+		case EV_DOUBLE:
+			variant = PP_MakeDouble(value.getDouble());
+			break;
+		case EV_BOOLEAN:
+			variant = PP_MakeBool(value.getBoolean() ? PP_TRUE:PP_FALSE);
+			break;
+		case EV_OBJECT:
+		{
+			ExtObject* obj = value.getObject();
+			variant = ppObjectObject::getppObject(objectsMap,instance, obj);
+			break;
+		}
+		case EV_NULL:
+			variant = PP_MakeNull();
+			break;
+		case EV_VOID:
+		default:
+			variant = PP_MakeUndefined();
+			break;
+	}
+}
+
+// Type determination
+ExtVariant::EV_TYPE ppVariantObject::getTypeS(const PP_Var& variant)
+{
+	switch(variant.type)
+	{
+		case PP_VARTYPE_UNDEFINED:
+			return EV_VOID;
+		case PP_VARTYPE_NULL:
+			return EV_NULL;
+		case PP_VARTYPE_BOOL:
+			return EV_BOOLEAN;
+		case PP_VARTYPE_INT32:
+			return EV_INT32;
+		case PP_VARTYPE_DOUBLE:
+			return EV_DOUBLE;
+		case PP_VARTYPE_STRING:
+			return EV_STRING;
+		case PP_VARTYPE_OBJECT:
+			return EV_OBJECT;
+		default:
+			return EV_VOID;
+	}
+}
+
+ppObjectObject::ppObjectObject(std::map<int64_t, std::unique_ptr<ExtObject>>& objectsMap, PP_Var& obj)
+{
+	//First of all add this object to the map, so that recursive cycles may be broken
+	if(objectsMap.count(obj.value.as_id)==0)
+		objectsMap[obj.value.as_id] = move(unique_ptr<ExtObject>(this));
+
+	uint32_t property_count;
+	PP_Var* properties;
+	PP_Var exception = PP_MakeUndefined();
+	g_var_deprecated_interface->GetAllPropertyNames(obj,&property_count,&properties,&exception);
+	uint32_t len;
+	if (exception.type == PP_VARTYPE_STRING)
+	{
+		LOG(LOG_ERROR,"exception during ppObjectObject::ppObjectObject GetAllPropertyNames:"<<g_var_interface->VarToUtf8(exception,&len));
+		return;
+	}
+	ExtIdentifier id;
+	for (uint32_t i=0; i < property_count; i++)
+	{
+		PP_Var prop = properties[i];
+		PP_Var value = g_var_deprecated_interface->GetProperty(obj,prop,&exception);
+		if (exception.type == PP_VARTYPE_STRING)
+		{
+			LOG(LOG_ERROR,"exception during ppObjectObject::ppObjectObject: GetProperty"<<g_var_interface->VarToUtf8(exception,&len));
+			continue;
+		}
+		switch(prop.type)
+		{
+			case PP_VARTYPE_INT32:
+				id = ExtIdentifier(prop.value.as_int);
+				break;
+			case PP_VARTYPE_STRING:
+				id = ExtIdentifier(g_var_interface->VarToUtf8(prop,&len));
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"ppVariantObject::ppObjectObject for type:"<<(int)prop.type);
+				continue;
+		}
+		setProperty(id,ppVariantObject(objectsMap,value));
+	}
+}
+
+
+PP_Var ppObjectObject::getppObject(std::map<const ExtObject*, PP_Var>& objectsMap,PP_Instance instance, const ExtObject* obj)
+{
+	auto it=objectsMap.find(obj);
+	if(it!=objectsMap.end())
+	{
+		return it->second;
+	}
+	uint32_t count = obj->getLength();
+
+	tiny_string s("new Object()");
+	PP_Var exception = PP_MakeUndefined();
+	PP_Var scr = g_var_interface->VarFromUtf8(s.raw_buf(),s.numBytes());
+	PP_Var result =g_instance_private_interface->ExecuteScript(instance,scr,&exception);
+	uint32_t len;
+	if (exception.type == PP_VARTYPE_STRING)
+	{
+		LOG(LOG_ERROR,"exception during ppObjectObject::getppObject Construct:"<<g_var_interface->VarToUtf8(exception,&len));
+		return result;
+	}
+	
+	objectsMap[obj] = result;
+
+	PP_Var varProperty;
+	ExtIdentifier** ids = NULL;
+	// Set all values of the object
+	if(obj->enumerate(&ids, &count))
+	{
+		for(uint32_t i = 0; i < count; i++)
+		{
+			const ExtVariant& property = obj->getProperty(*ids[i]);
+			ppVariantObject::ExtVariantToppVariant(objectsMap,instance, property, varProperty);
+
+			PP_Var propname;
+			switch (ids[i]->getType())
+			{
+				case ExtVariant::EV_STRING:
+				{
+					std::string name = ids[i]->getString();
+					propname = g_var_interface->VarFromUtf8(name.c_str(),name.length());
+					break;
+				}
+				case ExtVariant::EV_INT32:
+					propname = PP_MakeInt32(ids[i]->getInt());
+					break;
+				default:
+					LOG(LOG_NOT_IMPLEMENTED,"ppObjectObject::getppObject for type "<<property.getType());
+					continue;
+			}
+			g_var_deprecated_interface->SetProperty(result,propname,varProperty,&exception);
+			if (exception.type == PP_VARTYPE_STRING)
+			{
+				LOG(LOG_ERROR,"exception during ppObjectObject::getppObject SetProperty:"<<g_var_interface->VarToUtf8(exception,&len));
+			}
+			delete ids[i];
+		}
+	}
+	if(ids != NULL)
+		delete[] ids;
+	return result;
+}
 
 ppDownloadManager::ppDownloadManager(PP_Instance _instance, SystemState *sys):instance(_instance),m_sys(sys)
 {
@@ -195,8 +408,11 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 		th->setFailed();
 		return;
 	}
-	th->downloadedlength += result;
 	th->append(th->buffer,result);
+	if (th->downloadedlength == 0 && th->isMainClipDownloader)
+		th->m_pluginInstance->startMainParser();
+	th->downloadedlength += result;
+	
 	if (th->downloadedlength == th->getLength())
 	{
 		th->setFinished();
@@ -209,19 +425,15 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 	cb.user_data = th;
 	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,cb);
 }
-ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _instance, lightspark::ILoadable* owner,SystemState* sys):
-	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(sys),downloadedlength(0),state(INIT)
+ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _instance, lightspark::ILoadable* owner, ppPluginInstance *ppinstance):
+	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
 {
-	PP_Var btrue;
-	btrue.type = PP_VARTYPE_BOOL;
-	btrue.value.as_bool = PP_TRUE;
-	
 	ppurlloader = g_urlloader_interface->Create(_instance);
 	g_urlloadedtrusted_interface->GrantUniversalAccess(ppurlloader);
 	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(_instance);
 	PP_Var url = g_var_interface->VarFromUtf8(_url.raw_buf(),_url.numBytes());
 	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_URL,url);
-	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,btrue);
+	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,PP_MakeBool(PP_TRUE));
 	LOG(LOG_INFO,"constructing downloader:"<<_url);
 
 	struct PP_CompletionCallback cb;
@@ -235,7 +447,7 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _ins
 }
 
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(NULL),downloadedlength(0),state(INIT)
+	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(NULL),m_pluginInstance(NULL),downloadedlength(0),state(INIT)
 {
 	LOG(LOG_ERROR,"Download constructor2 not implemented");
 	ppurlloader = g_urlloader_interface->Create(_instance);
@@ -244,7 +456,7 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> 
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache,
 		const std::vector<uint8_t>& _data,
 		const std::list<tiny_string>& headers, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(NULL),downloadedlength(0),state(INIT)
+	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(NULL),m_pluginInstance(NULL),downloadedlength(0),state(INIT)
 {
 	LOG(LOG_ERROR,"Download constructor3 not implemented");
 	ppurlloader = g_urlloader_interface->Create(_instance);
@@ -254,7 +466,6 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	m_ppinstance(instance),
 	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
 	mainDownloader(NULL),
-	//scriptObject(NULL),
 	m_pt(NULL)
 {
 	m_last_size.width = 0;
@@ -266,7 +477,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 
-	m_sys->extScriptObject = new ppExtScriptObject(this);
+	m_sys->extScriptObject = new ppExtScriptObject(this,m_sys);
 	//Parse OBJECT/EMBED tag attributes
 	tiny_string swffile;
 	for(int i=0;i<argc;i++)
@@ -292,18 +503,20 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 		m_sys->downloadManager=new ppDownloadManager(m_ppinstance,m_sys);
 	
 		EngineData::startSDLMain();
-		mainDownloader=new ppDownloader(swffile,m_ppinstance,m_sys->mainClip->loaderInfo.getPtr(),m_sys);
-		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
+		mainDownloader=new ppDownloader(swffile,m_ppinstance,m_sys->mainClip->loaderInfo.getPtr(),this);
 		// loader is notified through parsethread
 		mainDownloader->getCache()->setNotifyLoader(false);
-		mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
-		m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
-		m_sys->addJob(m_pt);
-	
-		//EngineData::mainthread_running = true;
 	}
 	//The sys var should be NULL in this thread
 	setTLSSys( NULL );
+}
+void ppPluginInstance::startMainParser()
+{
+	mainDownloaderStreambuf = mainDownloader->getCache()->createReader();
+	mainDownloaderStream.rdbuf(mainDownloaderStreambuf);
+	m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
+	m_sys->addJob(m_pt);
+	
 }
 
 ppPluginInstance::~ppPluginInstance()
@@ -316,8 +529,11 @@ ppPluginInstance::~ppPluginInstance()
 		delete mainDownloaderStreambuf;
 
 	if (m_sys->extScriptObject)
+	{
+		m_sys->extScriptObject->destroy();
 		delete m_sys->extScriptObject;
-	m_sys->extScriptObject = NULL;
+		m_sys->extScriptObject = NULL;
+	}
 
 	m_sys->setShutdownFlag();
 
@@ -328,17 +544,11 @@ ppPluginInstance::~ppPluginInstance()
 }
 void swapbuffer_callback(void* userdata,int result)
 {
-	SystemState* sys = (SystemState*)userdata;
-	setTLSSys(sys);
-	
-	sys->getRenderThread()->doRender();
-	
-	struct PP_CompletionCallback cb;
-	cb.func = swapbuffer_callback;
-	cb.flags = 0;
-	cb.user_data = sys;
-	g_graphics_3d_interface->SwapBuffers(((ppPluginEngineData*)sys->getEngineData())->getGraphics(),cb);
+	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
+	RELEASE_WRITE(data->inRendering,false);
 }
+
+
 void ppPluginInstance::handleResize(PP_Resource view)
 {
 	struct PP_Rect position;
@@ -372,7 +582,7 @@ void ppPluginInstance::handleResize(PP_Resource view)
 			struct PP_CompletionCallback cb;
 			cb.func = swapbuffer_callback;
 			cb.flags = 0;
-			cb.user_data = m_sys;
+			cb.user_data = m_sys->getEngineData();
 			g_graphics_3d_interface->SwapBuffers(m_graphics,cb);
 		}
 		else
@@ -388,40 +598,49 @@ void ppPluginInstance::handleResize(PP_Resource view)
 	}
 }
 
-
-ASObject* ppPluginInstance::executeScript(std::string script)
+void executescript_callback(void* userdata,int result)
+{
+	ExtScriptObject::hostCallHandler(userdata);
+}
+void ppPluginInstance::executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data)
+{
+	struct PP_CompletionCallback cb;
+	cb.func = executescript_callback;
+	cb.flags = 0;
+	cb.user_data = data;
+	g_core_interface->CallOnMainThread(0,cb,0);
+}
+bool ppPluginInstance::executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result)
 {
 	PP_Var scr = g_var_interface->VarFromUtf8(script.c_str(),script.length());
-	PP_Var exception;
-	exception.type = PP_VARTYPE_UNDEFINED;
-	g_instance_private_interface->GetWindowObject(m_ppinstance);
-	PP_Var result = g_instance_private_interface->ExecuteScript(m_ppinstance,scr,&exception);
+	PP_Var exception = PP_MakeUndefined();
+	PP_Var func = g_instance_private_interface->ExecuteScript(m_ppinstance,scr,&exception);
+	*result = NULL;
 	uint32_t len;
 	if (exception.type == PP_VARTYPE_STRING)
-		LOG(LOG_ERROR,"error calling script:"<<script<<" "<<g_var_interface->VarToUtf8(exception,&len));
-
-	ASObject* res = NULL;
-	switch (result.type)
 	{
-		case PP_VARTYPE_UNDEFINED:
-			res = m_sys->getUndefinedRef();
-			break;
-		case PP_VARTYPE_NULL:
-			res = m_sys->getNullRef();
-			break;
-		case PP_VARTYPE_STRING:
-		{
-			tiny_string jsonstring = g_var_interface->VarToUtf8(result,&len);
-			res = JSON::doParse(jsonstring,NULL);
-			break;
-		}
-		default:
-			LOG(LOG_ERROR,"unhandled script result type:"<<result.type);
-			return NULL;
+		LOG(LOG_ERROR,"error preparing script:"<<script<<" "<<g_var_interface->VarToUtf8(exception,&len));
+		return false;
 	}
-	
-	LOG(LOG_INFO,"executeScript:"<<script<<" "<<(int)exception.type<<" "<<(int)result.type);
-	return res;
+	PP_Var* variantArgs = g_newa(PP_Var,argc);
+	for(uint32_t i = 0; i < argc; i++)
+	{
+		std::map<const ExtObject *, PP_Var> objectsMap;
+		ppVariantObject::ExtVariantToppVariant(objectsMap,m_ppinstance, *(args[i]), variantArgs[i]);
+	}
+
+	PP_Var resultVariant = g_var_deprecated_interface->Call(func,PP_MakeUndefined(),argc,variantArgs,&exception);
+
+	if (exception.type == PP_VARTYPE_STRING)
+	{
+		LOG(LOG_ERROR,"error calling script:"<<script<<" "<<g_var_interface->VarToUtf8(exception,&len));
+		return false;
+	}
+	std::map<int64_t, std::unique_ptr<ExtObject>> ppObjectsMap;
+	ppVariantObject tmp(ppObjectsMap, resultVariant);
+	std::map<const ExtObject*, ASObject*> asObjectsMap;
+	*(result) = tmp.getASObject(asObjectsMap);
+	return true;
 }
 
 
@@ -467,12 +686,188 @@ static void Messaging_HandleMessage(PP_Instance instance, struct PP_Var message)
 	LOG(LOG_INFO,"handleMessage:"<<(int)message.type);
 }
 
+static bool PPP_Class_HasProperty(void* object,struct PP_Var name,struct PP_Var* exception)
+{
+	uint32_t len;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			return ((ppExtScriptObject*)object)->hasProperty(ExtIdentifier(name.value.as_int));
+		case PP_VARTYPE_STRING:
+			return ((ppExtScriptObject*)object)->hasProperty(g_var_interface->VarToUtf8(name,&len));
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_HasProperty for type "<<(int)name.type);
+			break;
+	}
+	return false;
+	
+}
+static bool PPP_Class_HasMethod(void* object,struct PP_Var name,struct PP_Var* exception)
+{
+	uint32_t len;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			return ((ppExtScriptObject*)object)->hasMethod(ExtIdentifier(name.value.as_int));
+		case PP_VARTYPE_STRING:
+			return ((ppExtScriptObject*)object)->hasMethod(g_var_interface->VarToUtf8(name,&len));
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_HasMethod for type "<<(int)name.type);
+			break;
+	}
+	return false;
+}
+static struct PP_Var PPP_Class_GetProperty(void* object,struct PP_Var name,struct PP_Var* exception)
+{
+	ExtVariant v;
+	uint32_t len;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			v = ((ppExtScriptObject*)object)->getProperty(ExtIdentifier(name.value.as_int));
+			break;
+		case PP_VARTYPE_STRING:
+			v = ((ppExtScriptObject*)object)->getProperty(g_var_interface->VarToUtf8(name,&len));
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_HasMethod for type "<<(int)name.type);
+			break;
+	}
+	PP_Var result;
+	std::map<const ExtObject*, PP_Var> objectsMap;
+	ppVariantObject::ExtVariantToppVariant(objectsMap,((ppExtScriptObject*)object)->getInstance()->getppInstance(),v, result);
+	return result;
+}
+static void PPP_Class_GetAllPropertyNames(void* object,uint32_t* property_count,struct PP_Var** properties,struct PP_Var* exception)
+{
+	ExtIdentifier** ids = NULL;
+	bool success = ((ppExtScriptObject*)object)->enumerate(&ids, property_count);
+	if(success)
+	{
+		*properties = new PP_Var[*property_count];
+		for(uint32_t i = 0; i < *property_count; i++)
+		{
+			switch (ids[i]->getType())
+			{
+				case ExtIdentifier::EI_STRING:
+					*properties[i] = g_var_interface->VarFromUtf8(ids[i]->getString().c_str(),ids[i]->getString().length());
+					break;
+				case ExtIdentifier::EI_INT32:
+					*properties[i] = PP_MakeInt32(ids[i]->getInt());
+					break;
+			}
+			delete ids[i];
+		}
+	}
+	else
+	{
+		properties = NULL;
+		property_count = 0;
+	}
+
+	if(ids != NULL)
+		delete ids;
+}
+
+static void PPP_Class_SetProperty(void* object,struct PP_Var name,struct PP_Var value,struct PP_Var* exception)
+{
+	uint32_t len;
+	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			((ppExtScriptObject*)object)->setProperty(ExtIdentifier(name.value.as_int),ppVariantObject(objectsMap,value));
+			break;
+		case PP_VARTYPE_STRING:
+			((ppExtScriptObject*)object)->setProperty(ExtIdentifier(g_var_interface->VarToUtf8(name,&len)),ppVariantObject(objectsMap,value));
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_setProperty for type "<<(int)name.type);
+			break;
+	}
+}
+
+static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_Var* exception)
+{
+	uint32_t len;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			((ppExtScriptObject*)object)->removeProperty(ExtIdentifier(name.value.as_int));
+			break;
+		case PP_VARTYPE_STRING:
+			((ppExtScriptObject*)object)->removeProperty(ExtIdentifier(g_var_interface->VarToUtf8(name,&len)));
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_removeProperty for type "<<(int)name.type);
+			break;
+	}
+}
+
+static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
+{
+	PP_Var objResult = PP_MakeUndefined();
+	uint32_t len;
+	ExtIdentifier method_name;
+	switch (name.type)
+	{
+		case PP_VARTYPE_INT32:
+			method_name=ExtIdentifier(name.value.as_int);
+			break;
+		case PP_VARTYPE_STRING:
+			method_name=ExtIdentifier(g_var_interface->VarToUtf8(name,&len));
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Call for method name type "<<(int)name.type);
+			return PP_MakeUndefined();
+	}
+	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
+	const ExtVariant** objArgs = g_newa(const ExtVariant*,argc);
+	for (uint32_t i = 0; i < argc; i++)
+	{
+		objArgs[i]=new ppVariantObject(objectsMap,argv[i]);
+	}
+	((ppExtScriptObject*)object)->invoke(method_name,argc,objArgs,&objResult);
+		
+	return objResult;
+}
+
+static struct PP_Var PPP_Class_Construct(void* object,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Construct:"<<object);
+	return PP_MakeUndefined();
+}
+
+static void PPP_Class_Deallocate(void* object)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Deallocate:"<<object);
+}
+
+static PPP_Class_Deprecated ppp_class_deprecated_scriptobject = {
+	&PPP_Class_HasProperty,
+	&PPP_Class_HasMethod,
+	&PPP_Class_GetProperty,
+	&PPP_Class_GetAllPropertyNames,
+	&PPP_Class_SetProperty,
+	&PPP_Class_RemoveProperty,
+	&PPP_Class_Call,
+	&PPP_Class_Construct,
+	&PPP_Class_Deallocate 
+}; 
+
 static PP_Var Instance_Private_GetInstanceObject(PP_Instance instance)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Instance_Private_GetInstanceObject");
-	PP_Var v;
-	v.type = PP_VARTYPE_UNDEFINED;
-	return v;
+	auto it = all_instances.find(instance);
+	if (it == all_instances.end())
+	{
+		LOG(LOG_ERROR,"Instance_Private_GetInstanceObject: no matching PPPluginInstance found");
+		return PP_MakeNull();
+	}
+	ppExtScriptObject* scr = (ppExtScriptObject*)it->second->getSystemState()->extScriptObject;
+	if (scr == NULL)
+		return PP_MakeNull();
+	scr->ppScriptObject = g_var_deprecated_interface->CreateObject(instance,&ppp_class_deprecated_scriptobject,(void*)it->second->getSystemState()->extScriptObject);
+	return scr->ppScriptObject;
 }
 
 static PPP_Instance instance_interface = {
@@ -518,6 +913,7 @@ extern "C"
 		g_gles2_interface = (const PPB_OpenGLES2*)get_browser_interface(PPB_OPENGLES2_INTERFACE);
 		g_urlloadedtrusted_interface = (const PPB_URLLoaderTrusted*)get_browser_interface(PPB_URLLOADERTRUSTED_INTERFACE);
 		g_instance_private_interface = (const PPB_Instance_Private*)get_browser_interface(PPB_INSTANCE_PRIVATE_INTERFACE);
+		g_var_deprecated_interface = (const PPB_Var_Deprecated*)get_browser_interface(PPB_VAR_DEPRECATED_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -529,7 +925,8 @@ extern "C"
 				!g_urlresponseinfo_interface ||
 				!g_gles2_interface ||
 				!g_urlloadedtrusted_interface ||
-				!g_instance_private_interface)
+				!g_instance_private_interface ||
+				!g_var_deprecated_interface)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -542,7 +939,8 @@ extern "C"
 				<< g_urlresponseinfo_interface<<" "
 				<< g_gles2_interface<<" "
 				<< g_urlloadedtrusted_interface<<" "
-				<< g_instance_private_interface);
+				<< g_instance_private_interface<<" "
+				<< g_var_deprecated_interface);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;
@@ -620,12 +1018,34 @@ bool ppPluginEngineData::getScreenData(SDL_DisplayMode *screen)
 double ppPluginEngineData::getScreenDPI()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"getScreenDPI");
-	return 0;
+	return 96.0;
 }
 
+void swapbuffer_ppPluginEngineData_callback(void* userdata,int result)
+{
+	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
+	if (ACQUIRE_READ(data->inRendering))
+		return;
+	RELEASE_WRITE(data->inRendering,true);
+	struct PP_CompletionCallback cb;
+	cb.func = swapbuffer_callback;
+	cb.flags = 0;
+	cb.user_data = userdata;
+	g_graphics_3d_interface->SwapBuffers(data->getGraphics(),cb);
+	
+}
 void ppPluginEngineData::SwapBuffers()
 {
-	//SwapBuffers is handled in callback
+	if (!g_core_interface->IsMainThread())
+	{
+		struct PP_CompletionCallback cb;
+		cb.func = swapbuffer_ppPluginEngineData_callback;
+		cb.flags = 0;
+		cb.user_data = this;
+		g_core_interface->CallOnMainThread(0,cb,0);
+	}
+	else
+		swapbuffer_ppPluginEngineData_callback(this,0);
 }
 
 void ppPluginEngineData::InitOpenGL()
@@ -710,7 +1130,9 @@ void ppPluginEngineData::exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER()
 
 void ppPluginEngineData::exec_glEnable_GL_TEXTURE_2D()
 {
-	g_gles2_interface->Enable(instance->m_graphics,GL_TEXTURE_2D);
+	// TODO calling this generates error in chromium:
+	// [.PPAPIContext]GL ERROR :GL_INVALID_ENUM : glEnable: cap was GL_TEXTURE_2D
+	//g_gles2_interface->Enable(instance->m_graphics,GL_TEXTURE_2D);
 }
 
 void ppPluginEngineData::exec_glEnable_GL_BLEND()

@@ -21,75 +21,47 @@
 
 using namespace lightspark;
 
-ppExtScriptObject::ppExtScriptObject(ppPluginInstance *_instance):instance(_instance),marshallExceptions(false)
+ppExtScriptObject::ppExtScriptObject(ppPluginInstance *_instance, SystemState *sys):ExtScriptObject(sys),instance(_instance)
 {
-    
+	ppScriptObject= PP_MakeUndefined();
 }
 
-bool ppExtScriptObject::removeMethod(const ExtIdentifier &id)
+ExtIdentifier *ppExtScriptObject::createEnumerationIdentifier(const ExtIdentifier &id) const
 {
-	std::map<ExtIdentifier, lightspark::ExtCallback*>::iterator it = methods.find(id);
-	if(it == methods.end())
-		return false;
-
-	delete (*it).second;
-	methods.erase(it);
-	return true;
-}
-
-const ExtVariant &ppExtScriptObject::getProperty(const ExtIdentifier &id) const
-{
-	std::map<ExtIdentifier, ExtVariant>::const_iterator it = properties.find(id);
-	assert(it != properties.end());
-	return it->second;
-}
-
-bool ppExtScriptObject::removeProperty(const ExtIdentifier &id)
-{
-	std::map<ExtIdentifier, ExtVariant>::iterator it = properties.find(id);
-	if(it == properties.end())
-		return false;
-
-	properties.erase(it);
-	return true;
-}
-
-bool ppExtScriptObject::enumerate(ExtIdentifier ***ids, uint32_t *count) const
-{
-    LOG(LOG_NOT_IMPLEMENTED,"ppExtScriptObject::enumerate");
-    return false;
-}
-
-bool ppExtScriptObject::callExternal(const ExtIdentifier &id, const ExtVariant **args, uint32_t argc, ASObject **result)
-{
-	std::map<const ExtObject*, ASObject*> asObjectsMap;
-	std::string argsString;
-	std::string argsString2;
-	for(uint32_t i=0;i<argc;i++)
-	{
-		char buf[20];
-		if((i+1)==argc)
-			snprintf(buf,20,"a%u",i);
-		else
-			snprintf(buf,20,"a%u,",i);
-		argsString2 += buf;
-		std::vector<ASObject *> path;
-		tiny_string spaces;
-		tiny_string filter;
-		argsString += args[i]->getASObject(asObjectsMap)->toJSON(path,NULL,spaces,filter);
-		if (i+1 < argc)
-			argsString += ",";
-	}
-	std::string scriptString = "JSON.stringify(";
-	scriptString += "function(";
-	scriptString += argsString2;
-	scriptString += ") { return (" + id.getString();
-	scriptString += ")(" + argsString + "); });";
-	*result = instance->executeScript(scriptString);
-	LOG(LOG_INFO,"result:"<<(*result)->toDebugString());
-	return true;
+	return new ExtIdentifier(id);
 }
 
 void ppExtScriptObject::setException(const std::string &message) const
 {
+	LOG(LOG_NOT_IMPLEMENTED,"ppExtScriptObject::setException:"<<message);
+}
+
+void ppExtScriptObject::callAsync(ExtScriptObject::HOST_CALL_DATA *data)
+{
+	instance->executeScriptAsync(data);
+}
+
+bool ppExtScriptObject::callExternalHandler(const char *scriptString, const ExtVariant **args, uint32_t argc, ASObject **result)
+{
+	return instance->executeScript(scriptString,args,argc,result);
+}
+
+bool ppExtScriptObject::invoke(const ExtIdentifier& method_name, uint32_t argc, const ExtVariant** objArgs, PP_Var *result)
+{
+	// This will hold our eventual callback result
+	const lightspark::ExtVariant* objResult = NULL;
+	bool res = doinvoke(method_name,objArgs,argc,objResult);
+
+	// Delete converted arguments
+	for(uint32_t i = 0; i < argc; i++)
+		delete objArgs[i];
+
+	if(objResult != NULL)
+	{
+		// Copy the result into the raw ppVariant result and delete intermediate result
+		std::map<const ExtObject*, PP_Var> objectsMap;
+		ppVariantObject::ExtVariantToppVariant(objectsMap,instance->getppInstance(),*objResult, *result);
+		delete objResult;
+	}
+	return res;
 }

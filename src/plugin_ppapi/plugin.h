@@ -3,33 +3,36 @@
 
 #include "swf.h"
 #include "ppapi/c/ppp_instance.h"
+#include "ppapi/c/pp_var.h"
 
 namespace lightspark
 {
 
 class ppDownloader;
+class ppPluginInstance;
 
-class ppDownloadManager: public lightspark::StandaloneDownloadManager
+class ppDownloadManager: public StandaloneDownloadManager
 {
 private:
 	PP_Instance instance;
 	SystemState* m_sys;
 public:
 	ppDownloadManager(PP_Instance _instance,SystemState* sys);
-	lightspark::Downloader* download(const lightspark::URLInfo& url,
+	Downloader* download(const URLInfo& url,
 					 _R<StreamCache> cache,
-					 lightspark::ILoadable* owner);
-	lightspark::Downloader* downloadWithData(const lightspark::URLInfo& url,
+					 ILoadable* owner);
+	Downloader* downloadWithData(const URLInfo& url,
 			_R<StreamCache> cache, const std::vector<uint8_t>& data,
-			const std::list<tiny_string>& headers, lightspark::ILoadable* owner);
-	void destroy(lightspark::Downloader* downloader);
+			const std::list<tiny_string>& headers, ILoadable* owner);
+	void destroy(Downloader* downloader);
 };
 
-class ppDownloader: public lightspark::Downloader
+class ppDownloader: public Downloader
 {
 private:
 	bool isMainClipDownloader;
 	SystemState* m_sys;
+	ppPluginInstance* m_pluginInstance;
 	uint32_t downloadedlength;
 	PP_Resource ppurlloader;
 	uint8_t buffer[4096];
@@ -40,10 +43,27 @@ public:
 	enum STATE { INIT=0, STREAM_DESTROYED, ASYNC_DESTROY };
 	STATE state;
 	//Constructor used for the main file
-	ppDownloader(const lightspark::tiny_string& _url, PP_Instance _instance, lightspark::ILoadable* owner, SystemState *sys);
-	ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, PP_Instance _instance, lightspark::ILoadable* owner);
-	ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& _data,
-			const std::list<tiny_string>& headers, PP_Instance _instance, lightspark::ILoadable* owner);
+	ppDownloader(const tiny_string& _url, PP_Instance _instance, ILoadable* owner, ppPluginInstance* ppinstance);
+	ppDownloader(const tiny_string& _url, _R<StreamCache> cache, PP_Instance _instance, ILoadable* owner);
+	ppDownloader(const tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& _data,
+			const std::list<tiny_string>& headers, PP_Instance _instance, ILoadable* owner);
+};
+
+class ppVariantObject : public ExtVariant
+{
+public:
+	ppVariantObject(std::map<int64_t, std::unique_ptr<ExtObject>>& objectsMap, PP_Var &other);
+	static void ExtVariantToppVariant(std::map<const ExtObject*, PP_Var>& objectsMap, PP_Instance instance, const ExtVariant& value, PP_Var& variant);
+
+	static EV_TYPE getTypeS(const PP_Var& variant);
+};
+
+class ppObjectObject : public ExtObject
+{
+public:
+	ppObjectObject(std::map<int64_t, std::unique_ptr<ExtObject> > &objectsMap, PP_Var& obj);
+	
+	static PP_Var getppObject(std::map<const ExtObject*, PP_Var>& objectsMap, PP_Instance instance, const ExtObject* obj);
 };
 
 class ppPluginInstance
@@ -52,17 +72,20 @@ friend class ppPluginEngineData;
 	PP_Instance m_ppinstance;
 	struct PP_Size m_last_size;
 	PP_Resource m_graphics;
-	lightspark::SystemState* m_sys;
+	SystemState* m_sys;
 	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;
 	ppDownloader* mainDownloader;
-	//NPScriptObjectGW* scriptObject;
-	lightspark::ParseThread* m_pt;
+	ParseThread* m_pt;
 public:
 	ppPluginInstance(PP_Instance instance, int16_t argc,const char* argn[],const char* argv[]);
 	virtual ~ppPluginInstance();
 	void handleResize(PP_Resource view);
-	ASObject *executeScript(std::string script);
+	bool executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result);
+	void executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data);
+	SystemState* getSystemState() const { return m_sys;}
+	void startMainParser();
+	PP_Instance getppInstance() { return m_ppinstance; }
 };
 
 class ppPluginEngineData: public EngineData
@@ -71,11 +94,12 @@ private:
 	ppPluginInstance* instance;
 public:
 	SystemState* sys;
-	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys)
+	ACQUIRE_RELEASE_FLAG(inRendering);
+	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),inRendering(false)
 	{
 		width = w;
 		height = h;
-		needrenderthread=false;
+		//needrenderthread=false;
 	}
 	PP_Resource getGraphics() { return instance->m_graphics;}
 	void stopMainDownload();

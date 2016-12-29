@@ -46,12 +46,6 @@ private:
 	void commonGLInit(int width, int height);
 	void commonGLResize();
 	void commonGLDeinit();
-	uint32_t pixelBuffers[2];
-	uint32_t currentPixelBuffer;
-	intptr_t currentPixelBufferOffset;
-	uint32_t pixelBufferWidth;
-	uint32_t pixelBufferHeight;
-	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
 	uint32_t allocateNewGLTexture() const;
 	LargeTexture& allocateNewTexture();

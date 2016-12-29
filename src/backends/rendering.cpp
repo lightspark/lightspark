@@ -61,8 +61,8 @@ void RenderThread::wait()
 }
 
 RenderThread::RenderThread(SystemState* s):GLRenderContext(),
-	m_sys(s),status(CREATED),currentPixelBuffer(0),currentPixelBufferOffset(0),
-	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),
+	m_sys(s),status(CREATED),
+	prevUploadJob(NULL),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
 	cairoTextureContext(NULL)
@@ -110,23 +110,14 @@ void RenderThread::handleNewTexture()
 	newTextureNeeded=false;
 }
 
-#ifdef ENABLE_GLES2
-uint8_t* pixelBuf = 0;
-#endif
-
 void RenderThread::finalizeUpload()
 {
 	ITextureUploadable* u=prevUploadJob;
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
 	const TextureChunk& tex=u->getTexture();
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[currentPixelBuffer]);
-#ifndef ENABLE_GLES2
-	//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
-	loadChunkBGRA(tex, w, h, (uint8_t*)currentPixelBufferOffset);
-#else
-	loadChunkBGRA(tex, w, h, pixelBuf);
-#endif
+	engineData->bindCurrentBuffer();
+	loadChunkBGRA(tex, w, h, engineData->getCurrentPixBuf());
 	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 	u->uploadFence();
 	prevUploadJob=NULL;
@@ -138,37 +129,20 @@ void RenderThread::handleUpload()
 	assert(u);
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
-	if(w>pixelBufferWidth || h>pixelBufferHeight)
-		resizePixelBuffers(w,h);
-	//Increment and wrap current buffer index
-#ifndef ENABLE_GLES2
-	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[nextBuffer]);
-	uint8_t* buf=(uint8_t*)engineData->exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
-	if(!buf)
+	engineData->resizePixelBuffers(w,h);
+	
+	uint8_t* buf= engineData->switchCurrentPixBuf(w,h);
+	if (!buf)
 	{
 		handleGLErrors();
 		return;
 	}
-	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
-
-	u->upload(alignedBuf, w, h);
-
+	u->upload(buf, w, h);
+	
 	engineData->exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER();
 	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 
-	currentPixelBufferOffset=alignedBuf-buf;
-	currentPixelBuffer=nextBuffer;
-#else
-	//TODO See if a more elegant way of handling the non-PBO case can be found.
-	//for now, each frame is uploaded one at a time synchronously to the server
-	if(!pixelBuf)
-		if(posix_memalign((void **)&pixelBuf, 16, w*h*4)) {
-			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return;
-		}
-	u->upload(pixelBuf, w, h);
-#endif
+	
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -277,13 +251,13 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	{
 		renderErrorPage(this, m_sys->standalone);
 	}
-	engineData->SwapBuffers();
 	if(!m_sys->isOnError())
 	{
 		coreRendering();
 		//Call glFlush to offload work on the GPU
 		engineData->exec_glFlush();
 	}
+	engineData->SwapBuffers();
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
 	renderNeeded=false;
@@ -373,7 +347,7 @@ void RenderThread::commonGLDeinit()
 		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
 		delete[] largeTextures[i].bitmap;
 	}
-	engineData->exec_glDeleteBuffers(2,pixelBuffers);
+	engineData->exec_glDeleteBuffers();
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 }
 
@@ -395,7 +369,7 @@ void RenderThread::commonGLInit(int width, int height)
 	largeTextureSize=min(maxTexSize,1024);
 
 	//Create the PBOs
-	engineData->exec_glGenBuffers(2,pixelBuffers);
+	engineData->exec_glGenBuffers();
 
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);
@@ -460,24 +434,6 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	newHeight=h;
 	resizeNeeded=true;
 	event.signal();
-}
-
-void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
-{
-	//Add enough room to realign to 16
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[0]);
-	engineData->exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[1]);
-	engineData->exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
-	pixelBufferWidth=w;
-	pixelBufferHeight=h;
-#ifdef ENABLE_GLES2
-	if (pixelBuf) {
-		free(pixelBuf);
-		pixelBuf = 0;
-	}
-#endif
 }
 
 cairo_t* RenderThread::getCairoContext(int w, int h)
@@ -911,18 +867,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(curY);
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
-#ifndef ENABLE_GLES2
-		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data);
-#else
-		//We need to copy the texture area to a contiguous memory region first,
-		//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
-		uint8_t *gdata = new uint8_t[4*sizeX*sizeY];
-		for(unsigned int j=0;j<sizeY;j++) {
-			memcpy(gdata+4*j*sizeX, data+4*w*(j+curY)+4*curX, sizeX*4);
-		}
-		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, gdata);
-		delete[] gdata;
-#endif
+		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data,w,curX,curY);
 	}
 	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(0);
 	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(0);

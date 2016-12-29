@@ -46,6 +46,12 @@ protected:
 	RecMutex mutex;
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
 public:
+	uint32_t pixelBuffers[2];
+	uint32_t currentPixelBuffer;
+	intptr_t currentPixelBufferOffset;
+	uint8_t* currentPixelBufPtr;
+	uint32_t pixelBufferWidth;
+	uint32_t pixelBufferHeight;
 	SDL_Window* widget;
 	static uint32_t userevent;
 	static Thread* mainLoopThread;
@@ -87,6 +93,8 @@ public:
 	static bool startSDLMain();
 
 	void initGLEW();
+	void resizePixelBuffers(uint32_t w, uint32_t h);
+	void bindCurrentBuffer();
 	
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
@@ -99,6 +107,8 @@ public:
 	virtual void InitOpenGL() = 0;
 	virtual void DeinitOpenGL() = 0;
 	virtual bool getGLError(uint32_t& errorCode) const;
+	virtual uint8_t* getCurrentPixBuf() const;
+	virtual uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
 	virtual void exec_glUniform1f(int location,float v0);
 	virtual void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
 	virtual void exec_glVertexAttribPointer(uint32_t index,int32_t size, int32_t stride, const void* coords);
@@ -129,10 +139,10 @@ public:
 	virtual void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
 	virtual void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
 	virtual void exec_glDeleteTextures(int32_t n,uint32_t* textures);
-	virtual void exec_glDeleteBuffers(int32_t n,uint32_t* buffers);
+	virtual void exec_glDeleteBuffers();
 	virtual void exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
 	virtual void exec_glActiveTexture_GL_TEXTURE0();
-	virtual void exec_glGenBuffers(int32_t n,uint32_t* buffers);
+	virtual void exec_glGenBuffers();
 	virtual void exec_glUseProgram(uint32_t program);
 	virtual int32_t exec_glGetUniformLocation(uint32_t program,const char* name);
 	virtual void exec_glUniform1i(int32_t location,int32_t v0);
@@ -149,7 +159,7 @@ public:
 	virtual void exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param);
 	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param);
 	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
-	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels);
+	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 };
 

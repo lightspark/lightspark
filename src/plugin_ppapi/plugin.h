@@ -117,6 +117,8 @@ public:
 	void InitOpenGL();
 	void DeinitOpenGL();
 	bool getGLError(uint32_t &errorCode) const;
+	uint8_t* getCurrentPixBuf() const;
+	uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
 	void exec_glUniform1f(int location,float v0);
 	void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
 	void exec_glVertexAttribPointer(uint32_t index,int32_t size, int32_t stride, const void* coords);
@@ -147,10 +149,10 @@ public:
 	void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
 	void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
 	void exec_glDeleteTextures(int32_t n,uint32_t* textures);
-	void exec_glDeleteBuffers(int32_t n,uint32_t* buffers);
+	void exec_glDeleteBuffers();
 	void exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
 	void exec_glActiveTexture_GL_TEXTURE0();
-	void exec_glGenBuffers(int32_t n,uint32_t* buffers);
+	void exec_glGenBuffers();
 	void exec_glUseProgram(uint32_t program);
 	int32_t exec_glGetUniformLocation(uint32_t program,const char* name);
 	void exec_glUniform1i(int32_t location,int32_t v0);
@@ -167,7 +169,7 @@ public:
 	void exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param);
 	void exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param);
 	void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
-	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels);
+	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 };
 

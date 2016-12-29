@@ -20,7 +20,6 @@
 
 // TODO
 // - download
-// - rendering
 // - sound
 // - keyboard/mouse handling
 // - run within sandbox
@@ -1064,6 +1063,23 @@ bool ppPluginEngineData::getGLError(uint32_t &errorCode) const
 	return errorCode!=GL_NO_ERROR;
 }
 
+uint8_t *ppPluginEngineData::getCurrentPixBuf() const
+{
+	return currentPixelBufPtr;
+}
+
+uint8_t *ppPluginEngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
+{
+	//TODO See if a more elegant way of handling the non-PBO case can be found.
+	//for now, each frame is uploaded one at a time synchronously to the server
+	if(!currentPixelBufPtr)
+		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+			return NULL;
+		}
+	return currentPixelBufPtr;
+}
+
 void ppPluginEngineData::exec_glUniform1f(int location, float v0)
 {
 	g_gles2_interface->Uniform1f(instance->m_graphics,location,v0);
@@ -1214,9 +1230,9 @@ void ppPluginEngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
 	g_gles2_interface->DeleteTextures(instance->m_graphics,n,textures);
 }
 
-void ppPluginEngineData::exec_glDeleteBuffers(int32_t n,uint32_t* buffers)
+void ppPluginEngineData::exec_glDeleteBuffers()
 {
-	g_gles2_interface->DeleteBuffers(instance->m_graphics,n,buffers);
+	g_gles2_interface->DeleteBuffers(instance->m_graphics,2,pixelBuffers);
 }
 
 void ppPluginEngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
@@ -1229,9 +1245,9 @@ void ppPluginEngineData::exec_glActiveTexture_GL_TEXTURE0()
 	g_gles2_interface->ActiveTexture(instance->m_graphics,GL_TEXTURE0);
 }
 
-void ppPluginEngineData::exec_glGenBuffers(int32_t n,uint32_t* buffers)
+void ppPluginEngineData::exec_glGenBuffers()
 {
-	g_gles2_interface->GenBuffers(instance->m_graphics,n,buffers);
+	g_gles2_interface->GenBuffers(instance->m_graphics,2,pixelBuffers);
 }
 
 void ppPluginEngineData::exec_glUseProgram(uint32_t program)
@@ -1318,9 +1334,16 @@ void ppPluginEngineData::exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param)
 	//g_gles2_interface->PixelStorei(instance->m_graphics,GL_UNPACK_SKIP_ROWS,param);
 }
 
-void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels)
+void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels, uint32_t w, uint32_t curX, uint32_t curY)
 {
-	g_gles2_interface->TexSubImage2D(instance->m_graphics,GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+	//We need to copy the texture area to a contiguous memory region first,
+	//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
+	uint8_t *gdata = new uint8_t[4*width*height];
+	for(int j=0;j<height;j++) {
+		memcpy(gdata+4*j*width, ((uint8_t *)pixels)+4*w*(j+curY)+4*curX, width*4);
+	}
+	g_gles2_interface->TexSubImage2D(instance->m_graphics,GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
+	delete[] gdata;
 }
 void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {

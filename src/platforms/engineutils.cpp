@@ -40,12 +40,16 @@ uint32_t EngineData::userevent = (uint32_t)-1;
 Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : widget(0), width(0), height(0),needrenderthread(true),windowID(0),visual(0)
+EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),windowID(0),visual(0)
 {
 }
 
 EngineData::~EngineData()
 {
+	if (currentPixelBufPtr) {
+		free(currentPixelBufPtr);
+		currentPixelBufPtr = 0;
+	}
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 {
@@ -223,6 +227,67 @@ bool EngineData::getGLError(uint32_t &errorCode) const
 	return errorCode!=GL_NO_ERROR;
 }
 
+uint8_t *EngineData::getCurrentPixBuf() const
+{
+#ifndef ENABLE_GLES2
+	return (uint8_t*)currentPixelBufferOffset;
+#else
+	return currentPixelBufPtr;
+#endif
+	
+}
+
+uint8_t *EngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
+{
+#ifndef ENABLE_GLES2
+	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
+	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[nextBuffer]);
+	uint8_t* buf=(uint8_t*)exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
+	if(!buf)
+		return NULL;
+	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+
+	currentPixelBufferOffset=alignedBuf-buf;
+	currentPixelBuffer=nextBuffer;
+	return alignedBuf;
+#else
+	//TODO See if a more elegant way of handling the non-PBO case can be found.
+	//for now, each frame is uploaded one at a time synchronously to the server
+	if(!currentPixelBufPtr)
+		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+			return NULL;
+		}
+	return currentPixelBufPtr;
+#endif
+	
+}
+
+void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
+{
+	if(w<=pixelBufferWidth && h<=pixelBufferHeight)
+		return;
+	
+	//Add enough room to realign to 16
+	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[0]);
+	exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
+	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[1]);
+	exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
+	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
+	pixelBufferWidth=w;
+	pixelBufferHeight=h;
+	if (currentPixelBufPtr) {
+		free(currentPixelBufPtr);
+		currentPixelBufPtr = 0;
+	}
+}
+
+void EngineData::bindCurrentBuffer()
+{
+	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[currentPixelBuffer]);
+}
+
+
 void EngineData::exec_glUniform1f(int location,float v0)
 {
 	glUniform1f(location,v0);
@@ -277,11 +342,17 @@ void EngineData::exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer)
 }
 uint8_t* EngineData::exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY()
 {
+#ifndef ENABLE_GLES2
 	return (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+#else
+	return NULL;
+#endif
 }
 void EngineData::exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER()
 {
+#ifndef ENABLE_GLES2
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+#endif
 }
 void EngineData::exec_glEnable_GL_TEXTURE_2D()
 {
@@ -366,9 +437,9 @@ void EngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
 	glDeleteTextures(n,textures);
 }
 
-void EngineData::exec_glDeleteBuffers(int32_t n,uint32_t* buffers)
+void EngineData::exec_glDeleteBuffers()
 {
-	glDeleteBuffers(n,buffers);
+	glDeleteBuffers(2,pixelBuffers);
 }
 
 void EngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
@@ -381,9 +452,9 @@ void EngineData::exec_glActiveTexture_GL_TEXTURE0()
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void EngineData::exec_glGenBuffers(int32_t n,uint32_t* buffers)
+void EngineData::exec_glGenBuffers()
 {
-	glGenBuffers(n,buffers);
+	glGenBuffers(2,pixelBuffers);
 }
 
 void EngineData::exec_glUseProgram(uint32_t program)
@@ -464,9 +535,20 @@ void EngineData::exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param)
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,param);
 }
 
-void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels)
+void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY)
 {
+#ifndef ENABLE_GLES2
 	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+#else
+	//We need to copy the texture area to a contiguous memory region first,
+	//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
+	uint8_t *gdata = new uint8_t[4*width*height];
+	for(int j=0;j<height;j++) {
+		memcpy(gdata+4*j*width, ((uint8_t *)pixels)+4*w*(j+curY)+4*curX, width*4);
+	}
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
+	delete[] gdata;
+#endif
 }
 void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {

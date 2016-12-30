@@ -81,6 +81,7 @@ public:
 	ppPluginInstance(PP_Instance instance, int16_t argc,const char* argn[],const char* argv[]);
 	virtual ~ppPluginInstance();
 	void handleResize(PP_Resource view);
+	PP_Bool handleInputEvent(PP_Resource input_event);
 	bool executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result);
 	void executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data);
 	SystemState* getSystemState() const { return m_sys;}

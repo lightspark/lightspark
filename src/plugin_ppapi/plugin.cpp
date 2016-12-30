@@ -21,7 +21,6 @@
 // TODO
 // - download
 // - sound
-// - keyboard/mouse handling
 // - run within sandbox
 // - register as separate plugin
 
@@ -33,6 +32,7 @@
 #include "backends/rendering.h"
 #include <string>
 #include <algorithm>
+#include <SDL2/SDL.h>
 #include "threading.h"
 #include "scripting/toplevel/JSON.h"
 #include "plugin_ppapi/plugin.h"
@@ -58,8 +58,11 @@
 #include "ppapi/c/ppp.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
+#include "ppapi/c/ppp_input_event.h"
 #include "ppapi/c/ppb_opengles2.h"
 #include "ppapi/c/ppb_graphics_3d.h"
+#include "ppapi/c/ppb_input_event.h"
+#include "ppapi/c/private/ppb_flash_clipboard.h"
 #include "GLES2/gl2.h"
 
 //The interpretation of texture data change with the endianness
@@ -85,6 +88,12 @@ static const PPB_OpenGLES2* g_gles2_interface = NULL;
 static const PPB_URLLoaderTrusted* g_urlloadedtrusted_interface = NULL;
 static const PPB_Instance_Private* g_instance_private_interface = NULL;
 static const PPB_Var_Deprecated* g_var_deprecated_interface = NULL;
+static const PPB_InputEvent* g_inputevent_interface = NULL;
+static const PPB_MouseInputEvent* g_mouseinputevent_interface = NULL;
+static const PPB_KeyboardInputEvent* g_keyboardinputevent_interface = NULL;
+static const PPB_WheelInputEvent* g_wheelinputevent_interface = NULL;
+static const PPB_Flash_Clipboard* g_flashclipboard_interface = NULL;
+
 
 
 ppVariantObject::ppVariantObject(std::map<int64_t, std::unique_ptr<ExtObject> > &objectsMap, PP_Var& other)
@@ -596,6 +605,252 @@ void ppPluginInstance::handleResize(PP_Resource view)
 		m_last_size.height = position.size.height;
 	}
 }
+typedef struct {
+	const char* ppkey;
+	SDL_Keycode sdlkeycode;
+} ppKeyMap;
+
+// the ppkey values are taken from https://www.w3.org/TR/uievents-key/
+ppKeyMap ppkeymap[] = {
+	{ "KeyA", SDLK_a },
+	{ "AltLeft", SDLK_LALT },
+	{ "KeyB", SDLK_b },
+	{ "BrowserBack", SDLK_AC_BACK },
+	{ "Backquote", SDLK_BACKQUOTE },
+	{ "Backslash", SDLK_BACKSLASH },
+	{ "Backspace", SDLK_BACKSPACE },
+//	{ "Blue", SDLK_UNKNOWN }, // TODO
+	{ "KeyC", SDLK_c },
+	{ "CapsLock", SDLK_CAPSLOCK },
+	{ "Comma", SDLK_COMMA },
+	{ "ControlLeft", SDLK_LCTRL },
+	{ "KeyD", SDLK_d },
+	{ "Delete", SDLK_DELETE },
+	{ "ArrowDown", SDLK_DOWN },
+	{ "KeyE", SDLK_e },
+	{ "End", SDLK_END },
+	{ "Enter", SDLK_RETURN },
+	{ "Equal", SDLK_EQUALS },
+	{ "Escape", SDLK_ESCAPE },
+	{ "KeyF", SDLK_f },
+	{ "F1", SDLK_F1 },
+	{ "F2", SDLK_F2 },
+	{ "F3", SDLK_F3 },
+	{ "F4", SDLK_F4 },
+	{ "F5", SDLK_F5 },
+	{ "F6", SDLK_F6 },
+	{ "F7", SDLK_F7 },
+	{ "F8", SDLK_F8 },
+	{ "F9", SDLK_F9 },
+	{ "F10", SDLK_F10 },
+	{ "F11", SDLK_F11 },
+	{ "F12", SDLK_F12 },
+//	{ "F13", SDLK_F13 },// TODO
+//	{ "F14", SDLK_F14 },// TODO
+//	{ "F15", SDLK_F15 },// TODO
+	{ "KeyG", SDLK_g },
+//	{ "Green", SDLK_UNKNOWN }, // TODO
+	{ "KeyH", SDLK_h },
+	{ "Help", SDLK_HELP },
+	{ "Home", SDLK_HOME },
+	{ "KeyI", SDLK_i },
+	{ "Insert", SDLK_INSERT },
+	{ "KeyJ", SDLK_j },
+	{ "KeyK", SDLK_k },
+	{ "KeyL", SDLK_l },
+	{ "ArrowLeft", SDLK_LEFT },
+	{ "BracketLeft", SDLK_LEFTBRACKET },
+	{ "KeyM", SDLK_m },
+	{ "Minus", SDLK_MINUS },
+	{ "KeyN", SDLK_n },
+	{ "Digit0", SDLK_0 },
+	{ "Digit1", SDLK_1 },
+	{ "Digit2", SDLK_2 },
+	{ "Digit3", SDLK_3 },
+	{ "Digit4", SDLK_4 },
+	{ "Digit5", SDLK_5 },
+	{ "Digit6", SDLK_6 },
+	{ "Digit7", SDLK_7 },
+	{ "Digit8", SDLK_8 },
+	{ "Digit9", SDLK_9 },
+	{ "Numpad0", SDLK_KP_0 },
+	{ "Numpad1", SDLK_KP_1 },
+	{ "Numpad2", SDLK_KP_2 },
+	{ "Numpad3", SDLK_KP_3 },
+	{ "Numpad4", SDLK_KP_4 },
+	{ "Numpad5", SDLK_KP_5 },
+	{ "Numpad6", SDLK_KP_6 },
+	{ "Numpad7", SDLK_KP_7 },
+	{ "Numpad8", SDLK_KP_8 },
+	{ "Numpad9", SDLK_KP_9 },
+	{ "NumpadAdd", SDLK_KP_MEMADD },
+	{ "NumpadDecimal", SDLK_KP_PERIOD },
+	{ "NumpadDivide", SDLK_KP_DIVIDE },
+	{ "NumpadEnter", SDLK_KP_ENTER },
+	{ "NumpadMultiply", SDLK_KP_MULTIPLY },
+	{ "NumpadSubtract", SDLK_KP_MINUS },
+	{ "KeyO", SDLK_o },
+	{ "KeyP", SDLK_p },
+	{ "PageDown", SDLK_PAGEDOWN },
+	{ "PageUp", SDLK_PAGEUP },
+	{ "Pause", SDLK_PAUSE },
+	{ "Period", SDLK_PERIOD },
+	{ "KeyQ", SDLK_q },
+	{ "Quote", SDLK_QUOTE },
+	{ "KeyR", SDLK_r },
+//	{ "Red", SDLK_UNKNOWN }, // TODO
+	{ "ArrowRight", SDLK_RIGHT },
+	{ "BracketRight", SDLK_RIGHTBRACKET },
+	{ "KeyS", SDLK_s },
+	{ "BrowserSearch", SDLK_AC_SEARCH },
+	{ "Semicolon", SDLK_SEMICOLON },
+	{ "ShiftLeft", SDLK_LSHIFT },
+	{ "Slash", SDLK_SLASH },
+	{ "Space", SDLK_SPACE },
+//	{ "Subtitle", SDLK_UNKNOWN }, // TODO
+	{ "KeyT", SDLK_t },
+	{ "Tab", SDLK_TAB },
+	{ "KeyU", SDLK_u },
+	{ "ArrowUp", SDLK_UP },
+	{ "KeyV", SDLK_v },
+	{ "KeyW", SDLK_w },
+	{ "KeyX", SDLK_x },
+	{ "KeyY", SDLK_y },
+//	{ "Yellow", SDLK_UNKNOWN }, // TODO
+	{ "KeyZ", SDLK_z },
+	{ "", SDLK_UNKNOWN } // indicator for last entry
+};
+SDL_Keycode getppSDLKeyCode(PP_Resource input_event)
+{
+	PP_Var v = g_keyboardinputevent_interface->GetCode(input_event);
+	uint32_t len;
+	const char* key = g_var_interface->VarToUtf8(v,&len);
+	int i = 0;
+	while (*ppkeymap[i].ppkey)
+	{
+		if (strcmp(ppkeymap[i].ppkey,key) == 0)
+			return ppkeymap[i].sdlkeycode;
+		++i;
+	}
+	LOG(LOG_NOT_IMPLEMENTED,"no matching keycode for input event found:"<<key);
+	return SDLK_UNKNOWN;
+};
+static uint16_t getppKeyModifier(PP_Resource input_event)
+{
+	uint32_t mod = g_inputevent_interface->GetModifiers(input_event);
+	uint16_t res = KMOD_NONE;
+	if (mod & PP_INPUTEVENT_MODIFIER_CONTROLKEY)
+		res |= KMOD_CTRL;
+	if (mod & PP_INPUTEVENT_MODIFIER_ALTKEY)
+		res |= KMOD_ALT;
+	if (mod & PP_INPUTEVENT_MODIFIER_SHIFTKEY)
+		res |= KMOD_SHIFT;
+	return res;
+}
+
+PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
+{
+	SDL_Event ev;
+	switch (g_inputevent_interface->GetType(input_event))
+	{
+		case PP_INPUTEVENT_TYPE_KEYDOWN:
+		{
+			
+			ev.type = SDL_KEYDOWN;
+			ev.key.keysym.sym = getppSDLKeyCode(input_event);
+			ev.key.keysym.mod = getppKeyModifier(input_event);
+			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_KEYUP:
+		{
+			ev.type = SDL_KEYUP;
+			ev.key.keysym.sym = getppSDLKeyCode(input_event);
+			ev.key.keysym.mod = getppKeyModifier(input_event);
+			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_MOUSEDOWN:
+		{
+			ev.type = SDL_MOUSEBUTTONDOWN;
+			
+			switch (g_mouseinputevent_interface->GetButton(input_event))
+			{
+				case PP_INPUTEVENT_MOUSEBUTTON_LEFT:
+					ev.button.button = SDL_BUTTON_LEFT;
+					ev.button.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_LEFTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				case PP_INPUTEVENT_MOUSEBUTTON_RIGHT:
+					ev.button.button = SDL_BUTTON_RIGHT;
+					ev.button.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_RIGHTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				default:
+					ev.button.button = 0;
+					ev.button.state = SDL_RELEASED;
+					break;
+			}
+			ev.button.clicks = g_mouseinputevent_interface->GetClickCount(input_event);
+			PP_Point p = g_mouseinputevent_interface->GetPosition(input_event);
+			ev.button.x = p.x;
+			ev.button.y = p.y;
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_MOUSEUP:
+		{
+			ev.type = SDL_MOUSEBUTTONUP;
+			switch (g_mouseinputevent_interface->GetButton(input_event))
+			{
+				case PP_INPUTEVENT_MOUSEBUTTON_LEFT:
+					ev.button.button = SDL_BUTTON_LEFT;
+					ev.button.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_LEFTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				case PP_INPUTEVENT_MOUSEBUTTON_RIGHT:
+					ev.button.button = SDL_BUTTON_RIGHT;
+					ev.button.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_RIGHTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+					break;
+				default:
+					ev.button.button = 0;
+					ev.button.state = SDL_RELEASED;
+					break;
+			}
+			ev.button.clicks = 0;
+			PP_Point p = g_mouseinputevent_interface->GetPosition(input_event);
+			ev.button.x = p.x;
+			ev.button.y = p.y;
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_MOUSEMOVE:
+		{
+			ev.type = SDL_MOUSEMOTION;
+			ev.motion.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_LEFTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+			PP_Point p = g_mouseinputevent_interface->GetMovement(input_event);
+			ev.motion.x = p.x;
+			ev.motion.y = p.y;
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_WHEEL:
+		{
+			PP_FloatPoint p = g_wheelinputevent_interface->GetDelta(input_event);
+			ev.type = SDL_MOUSEWHEEL;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+			ev.wheel.direction = p.y > 0 ? SDL_MOUSEWHEEL_NORMAL : SDL_MOUSEWHEEL_FLIPPED ;
+#endif
+			ev.wheel.x = p.x;
+			ev.wheel.y = p.y;
+			break;
+		}
+		case PP_INPUTEVENT_TYPE_MOUSELEAVE:
+		{
+			ev.type = SDL_WINDOWEVENT_LEAVE;
+			break;
+		}
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"ppp_inputevent:"<<(int)g_inputevent_interface->GetType(input_event));
+			return PP_FALSE;
+	}
+	EngineData::mainloop_handleevent(&ev,this->m_sys);
+	return PP_TRUE;
+}
 
 void executescript_callback(void* userdata,int result)
 {
@@ -651,6 +906,8 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
 	ppPluginInstance* newinstance = new ppPluginInstance(instance,argc,argn,argv);
 	
 	all_instances[instance] = newinstance;
+	g_inputevent_interface->RequestInputEvents(instance, PP_INPUTEVENT_CLASS_MOUSE);
+	g_inputevent_interface->RequestFilteringInputEvents(instance, PP_INPUTEVENT_CLASS_WHEEL | PP_INPUTEVENT_CLASS_KEYBOARD);
 	return PP_TRUE;
 }
 static void Instance_DidDestroy(PP_Instance instance)
@@ -882,6 +1139,21 @@ static PPP_Messaging messaging_interface = {
 static PPP_Instance_Private instance_private_interface = {
 	&Instance_Private_GetInstanceObject,
 };
+static PP_Bool InputEvent_HandleInputEvent(PP_Instance instance, PP_Resource input_event)
+{
+	auto it = all_instances.find(instance);
+	if (it == all_instances.end())
+	{
+		LOG(LOG_ERROR,"InputEvent_HandleInputEvent: no matching PPPluginInstance found");
+		return PP_FALSE;
+	}
+	ppPluginInstance* info = it->second;
+	return info->handleInputEvent(input_event);
+}
+
+static PPP_InputEvent input_event_interface = {
+	&InputEvent_HandleInputEvent,
+};
 extern "C"
 {
 	PP_EXPORT int32_t PPP_InitializeModule(PP_Module module_id,PPB_GetInterface get_browser_interface) 
@@ -913,6 +1185,11 @@ extern "C"
 		g_urlloadedtrusted_interface = (const PPB_URLLoaderTrusted*)get_browser_interface(PPB_URLLOADERTRUSTED_INTERFACE);
 		g_instance_private_interface = (const PPB_Instance_Private*)get_browser_interface(PPB_INSTANCE_PRIVATE_INTERFACE);
 		g_var_deprecated_interface = (const PPB_Var_Deprecated*)get_browser_interface(PPB_VAR_DEPRECATED_INTERFACE);
+		g_inputevent_interface = (const PPB_InputEvent*)get_browser_interface(PPB_INPUT_EVENT_INTERFACE);
+		g_mouseinputevent_interface = (const PPB_MouseInputEvent*)get_browser_interface(PPB_MOUSE_INPUT_EVENT_INTERFACE);
+		g_keyboardinputevent_interface = (const PPB_KeyboardInputEvent*)get_browser_interface(PPB_KEYBOARD_INPUT_EVENT_INTERFACE);
+		g_wheelinputevent_interface = (const PPB_WheelInputEvent*)get_browser_interface(PPB_WHEEL_INPUT_EVENT_INTERFACE);
+		g_flashclipboard_interface = (const PPB_Flash_Clipboard*)get_browser_interface(PPB_FLASH_CLIPBOARD_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -925,7 +1202,12 @@ extern "C"
 				!g_gles2_interface ||
 				!g_urlloadedtrusted_interface ||
 				!g_instance_private_interface ||
-				!g_var_deprecated_interface)
+				!g_var_deprecated_interface ||
+				!g_inputevent_interface ||
+				!g_mouseinputevent_interface ||
+				!g_keyboardinputevent_interface ||
+			    !g_wheelinputevent_interface ||
+				!g_flashclipboard_interface)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -939,7 +1221,12 @@ extern "C"
 				<< g_gles2_interface<<" "
 				<< g_urlloadedtrusted_interface<<" "
 				<< g_instance_private_interface<<" "
-				<< g_var_deprecated_interface);
+				<< g_var_deprecated_interface<<" "
+				<< g_inputevent_interface<<" "
+				<< g_mouseinputevent_interface<<" "
+				<< g_keyboardinputevent_interface<<" "
+				<< g_wheelinputevent_interface<<" "
+				<< g_flashclipboard_interface);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;
@@ -963,6 +1250,10 @@ extern "C"
 		if (strcmp(interface_name, PPP_INSTANCE_PRIVATE_INTERFACE) == 0) 
 		{
 			return &instance_private_interface;
+		}
+		if (strcmp(interface_name, PPP_INPUT_EVENT_INTERFACE) == 0) 
+		{
+			return &input_event_interface;
 		}
 		return NULL;
 	}
@@ -995,6 +1286,7 @@ SDL_Window* ppPluginEngineData::createWidget(uint32_t w,uint32_t h)
 
 void ppPluginEngineData::grabFocus()
 {
+	LOG(LOG_NOT_IMPLEMENTED,"grabFocus");
 	/*
 	if (!widget_gtk)
 		return;
@@ -1005,7 +1297,11 @@ void ppPluginEngineData::grabFocus()
 
 void ppPluginEngineData::setClipboardText(const std::string txt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"setCLipboardText");
+	uint32_t formats[1];
+	formats[0] = PP_FLASH_CLIPBOARD_FORMAT_PLAINTEXT;
+	PP_Var data[1];
+	data[0] = g_var_interface->VarFromUtf8(txt.c_str(),txt.length());
+	g_flashclipboard_interface->WriteData(this->instance->getppInstance(),PP_FLASH_CLIPBOARD_TYPE_STANDARD,1,formats,data);
 }
 
 bool ppPluginEngineData::getScreenData(SDL_DisplayMode *screen)

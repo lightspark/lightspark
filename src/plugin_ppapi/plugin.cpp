@@ -19,7 +19,6 @@
 
 
 // TODO
-// - download
 // - sound
 // - run within sandbox
 // - register as separate plugin
@@ -306,7 +305,7 @@ PP_Var ppObjectObject::getppObject(std::map<const ExtObject*, PP_Var>& objectsMa
 	return result;
 }
 
-ppDownloadManager::ppDownloadManager(PP_Instance _instance, SystemState *sys):instance(_instance),m_sys(sys)
+ppDownloadManager::ppDownloadManager(ppPluginInstance *_instance, SystemState *sys):m_instance(_instance),m_sys(sys)
 {
 	type = NPAPI;
 }
@@ -328,7 +327,7 @@ lightspark::Downloader* ppDownloadManager::download(const lightspark::URLInfo& u
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
-	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, instance, owner);
+	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, m_instance, owner);
 	addDownloader(downloader);
 	return downloader;
 }
@@ -344,7 +343,7 @@ lightspark::Downloader* ppDownloadManager::downloadWithData(const lightspark::UR
 
 	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
 	//Register this download
-	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, data, headers, instance, owner);
+	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, data, headers, m_instance, owner);
 	addDownloader(downloader);
 	return downloader;
 }
@@ -375,6 +374,8 @@ void ppDownloadManager::destroy(lightspark::Downloader* downloader)
 void ppDownloader::dlStartCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
+	setTLSSys(th->m_sys);
+	
 	if (result < 0)
 	{
 		LOG(LOG_ERROR,"download failed:"<<result<<" "<<th->getURL());
@@ -386,7 +387,6 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 	uint32_t len;
 	v = g_urlresponseinfo_interface->GetProperty(response,PP_URLRESPONSEPROPERTY_HEADERS);
 	tiny_string headers = g_var_interface->VarToUtf8(v,&len);
-	LOG(LOG_INFO,"headers:"<<len<<" "<<headers);
 	th->parseHeaders(headers.raw_buf(),true);
 	
 	if (th->isMainClipDownloader)
@@ -400,7 +400,12 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 		
 		th->m_sys->mainClip->setBaseURL(url);
 	}
-	 
+	if (th->hasEmptyAnswer())
+	{
+		th->setFinished();
+		g_urlloader_interface->Close(th->ppurlloader);
+		return;
+	}
 	struct PP_CompletionCallback cb;
 	cb.func = dlReadResponseCallback;
 	cb.flags = 0;
@@ -410,10 +415,12 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
+	setTLSSys(th->m_sys);
 	if (result < 0)
 	{
 		LOG(LOG_ERROR,"download failed:"<<result<<" "<<th->getURL()<<" "<<th->downloadedlength<<"/"<<th->getLength());
 		th->setFailed();
+		g_urlloader_interface->Close(th->ppurlloader);
 		return;
 	}
 	th->append(th->buffer,result);
@@ -421,10 +428,11 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 		th->m_pluginInstance->startMainParser();
 	th->downloadedlength += result;
 	
-	if (th->downloadedlength == th->getLength())
+	if (result == 0)
 	{
 		th->setFinished();
-		LOG(LOG_INFO,"download done:"<<th->getURL()<<" "<<th->downloadedlength<<" "<<th->getLength());
+		g_urlloader_interface->Close(th->ppurlloader);
+		LOG_CALL("download done:"<<th->getURL()<<" "<<th->downloadedlength<<" "<<th->getLength());
 		return;
 	}
 	struct PP_CompletionCallback cb;
@@ -433,41 +441,66 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 	cb.user_data = th;
 	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,cb);
 }
-ppDownloader::ppDownloader(const lightspark::tiny_string& _url, PP_Instance _instance, lightspark::ILoadable* owner, ppPluginInstance *ppinstance):
-	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
+void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 {
-	ppurlloader = g_urlloader_interface->Create(_instance);
-	g_urlloadedtrusted_interface->GrantUniversalAccess(ppurlloader);
-	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(_instance);
-	PP_Var url = g_var_interface->VarFromUtf8(_url.raw_buf(),_url.numBytes());
+	ppDownloader* th = (ppDownloader*)userdata;
+	setTLSSys(th->m_sys);
+	const tiny_string strurl = th->getURL();
+	th->ppurlloader = g_urlloader_interface->Create(th->m_pluginInstance->getppInstance());
+	g_urlloadedtrusted_interface->GrantUniversalAccess(th->ppurlloader);
+	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(th->m_pluginInstance->getppInstance());
+	PP_Var url = g_var_interface->VarFromUtf8(strurl.raw_buf(),strurl.numBytes());
 	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_URL,url);
 	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,PP_MakeBool(PP_TRUE));
-	LOG(LOG_INFO,"constructing downloader:"<<_url);
+	
+	if (th->data.size() > 0)
+	{
+		PP_Var v = g_var_interface->VarFromUtf8("POST",4);
+		g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_METHOD,v);
+		g_urlrequestinfo_interface->AppendDataToBody(pprequest_info,&th->data.front(),th->data.size());
+	}
+	LOG_CALL("starting download:"<<th->data.size()<<" "<<strurl);
 
 	struct PP_CompletionCallback cb;
 	cb.func = dlStartCallback;
 	cb.flags = 0;
-	cb.user_data = this;
-	
-	int res = g_urlloader_interface->Open(ppurlloader,pprequest_info,cb);
+	cb.user_data = th;
+	int res = g_urlloader_interface->Open(th->ppurlloader,pprequest_info,cb);
 	if (res != PP_OK_COMPLETIONPENDING)
-		LOG(LOG_ERROR,"url opening failed:"<<res<<" "<<_url);
+		LOG(LOG_ERROR,"url opening failed:"<<res<<" "<<strurl);
+}
+void ppDownloader::startDownload()
+{
+	if (!g_core_interface->IsMainThread())
+	{
+		struct PP_CompletionCallback cb;
+		cb.func = dlStartDownloadCallback;
+		cb.flags = 0;
+		cb.user_data = this;
+		g_core_interface->CallOnMainThread(0,cb,0);
+	}
+	else
+		dlStartDownloadCallback(this,0);
+	
+}
+ppDownloader::ppDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner, ppPluginInstance *ppinstance):
+	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
+{
+	startDownload();
 }
 
-ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(NULL),m_pluginInstance(NULL),downloadedlength(0),state(INIT)
+ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache, ppPluginInstance *ppinstance, lightspark::ILoadable* owner):
+	Downloader(_url, _cache, owner),isMainClipDownloader(false),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
 {
-	LOG(LOG_ERROR,"Download constructor2 not implemented");
-	ppurlloader = g_urlloader_interface->Create(_instance);
+	startDownload();
 }
 
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> _cache,
 		const std::vector<uint8_t>& _data,
-		const std::list<tiny_string>& headers, PP_Instance _instance, lightspark::ILoadable* owner):
-	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(NULL),m_pluginInstance(NULL),downloadedlength(0),state(INIT)
+		const std::list<tiny_string>& headers, ppPluginInstance *ppinstance, lightspark::ILoadable* owner):
+	Downloader(_url, _cache, _data, headers, owner),isMainClipDownloader(false),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
 {
-	LOG(LOG_ERROR,"Download constructor3 not implemented");
-	ppurlloader = g_urlloader_interface->Create(_instance);
+	startDownload();
 }
 
 ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const char *argn[], const char *argv[]) : 
@@ -508,10 +541,10 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	}
 	if (!swffile.empty())
 	{
-		m_sys->downloadManager=new ppDownloadManager(m_ppinstance,m_sys);
+		m_sys->downloadManager=new ppDownloadManager(this,m_sys);
 	
 		EngineData::startSDLMain();
-		mainDownloader=new ppDownloader(swffile,m_ppinstance,m_sys->mainClip->loaderInfo.getPtr(),this);
+		mainDownloader=new ppDownloader(swffile,m_sys->mainClip->loaderInfo.getPtr(),this);
 		// loader is notified through parsethread
 		mainDownloader->getCache()->setNotifyLoader(false);
 	}
@@ -553,12 +586,13 @@ ppPluginInstance::~ppPluginInstance()
 void swapbuffer_callback(void* userdata,int result)
 {
 	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
-	RELEASE_WRITE(data->inRendering,false);
+	data->swapbuffer_rendering.signal();
 }
 
 
 void ppPluginInstance::handleResize(PP_Resource view)
 {
+	setTLSSys(m_sys);
 	struct PP_Rect position;
 	if (g_view_interface->GetRect(view, &position) == PP_FALSE)
 	{
@@ -587,11 +621,6 @@ void ppPluginInstance::handleResize(PP_Resource view)
 			g_graphics_3d_interface->ResizeBuffers(m_graphics,position.size.width, position.size.height);
 			m_sys->getRenderThread()->SetEngineData(m_sys->getEngineData());
 			m_sys->getRenderThread()->init();
-			struct PP_CompletionCallback cb;
-			cb.func = swapbuffer_callback;
-			cb.flags = 0;
-			cb.user_data = m_sys->getEngineData();
-			g_graphics_3d_interface->SwapBuffers(m_graphics,cb);
 		}
 		else
 		{
@@ -750,6 +779,7 @@ static uint16_t getppKeyModifier(PP_Resource input_event)
 
 PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 {
+	setTLSSys(m_sys);
 	SDL_Event ev;
 	switch (g_inputevent_interface->GetType(input_event))
 	{
@@ -866,6 +896,7 @@ void ppPluginInstance::executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data)
 }
 bool ppPluginInstance::executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result)
 {
+	setTLSSys(m_sys);
 	PP_Var scr = g_var_interface->VarFromUtf8(script.c_str(),script.length());
 	PP_Var exception = PP_MakeUndefined();
 	PP_Var func = g_instance_private_interface->ExecuteScript(m_ppinstance,scr,&exception);
@@ -944,6 +975,8 @@ static void Messaging_HandleMessage(PP_Instance instance, struct PP_Var message)
 
 static bool PPP_Class_HasProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_HasProperty");
 	uint32_t len;
 	switch (name.type)
 	{
@@ -960,6 +993,8 @@ static bool PPP_Class_HasProperty(void* object,struct PP_Var name,struct PP_Var*
 }
 static bool PPP_Class_HasMethod(void* object,struct PP_Var name,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_Method");
 	uint32_t len;
 	switch (name.type)
 	{
@@ -975,6 +1010,8 @@ static bool PPP_Class_HasMethod(void* object,struct PP_Var name,struct PP_Var* e
 }
 static struct PP_Var PPP_Class_GetProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_GetProperty");
 	ExtVariant v;
 	uint32_t len;
 	switch (name.type)
@@ -996,6 +1033,8 @@ static struct PP_Var PPP_Class_GetProperty(void* object,struct PP_Var name,struc
 }
 static void PPP_Class_GetAllPropertyNames(void* object,uint32_t* property_count,struct PP_Var** properties,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_GetAllPropertyNames");
 	ExtIdentifier** ids = NULL;
 	bool success = ((ppExtScriptObject*)object)->enumerate(&ids, property_count);
 	if(success)
@@ -1027,6 +1066,8 @@ static void PPP_Class_GetAllPropertyNames(void* object,uint32_t* property_count,
 
 static void PPP_Class_SetProperty(void* object,struct PP_Var name,struct PP_Var value,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_SetProperty");
 	uint32_t len;
 	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
 	switch (name.type)
@@ -1045,6 +1086,8 @@ static void PPP_Class_SetProperty(void* object,struct PP_Var name,struct PP_Var 
 
 static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	LOG_CALL("PPP_Class_RemoveProperty");
 	uint32_t len;
 	switch (name.type)
 	{
@@ -1062,6 +1105,7 @@ static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_V
 
 static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
 {
+	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
 	PP_Var objResult = PP_MakeUndefined();
 	uint32_t len;
 	ExtIdentifier method_name;
@@ -1077,6 +1121,7 @@ static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t arg
 			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Call for method name type "<<(int)name.type);
 			return PP_MakeUndefined();
 	}
+	LOG_CALL("PPP_Class_Call:"<<((ppExtScriptObject*)object)->getInstance()->getSystemState()<<" "<< method_name.getString());
 	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
 	const ExtVariant** objArgs = g_newa(const ExtVariant*,argc);
 	for (uint32_t i = 0; i < argc; i++)
@@ -1085,6 +1130,7 @@ static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t arg
 	}
 	((ppExtScriptObject*)object)->invoke(method_name,argc,objArgs,&objResult);
 		
+	LOG_CALL("PPP_Class_Call done:"<<method_name.getString());
 	return objResult;
 }
 
@@ -1319,9 +1365,6 @@ double ppPluginEngineData::getScreenDPI()
 void swapbuffer_ppPluginEngineData_callback(void* userdata,int result)
 {
 	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
-	if (ACQUIRE_READ(data->inRendering))
-		return;
-	RELEASE_WRITE(data->inRendering,true);
 	struct PP_CompletionCallback cb;
 	cb.func = swapbuffer_callback;
 	cb.flags = 0;
@@ -1338,6 +1381,7 @@ void ppPluginEngineData::SwapBuffers()
 		cb.flags = 0;
 		cb.user_data = this;
 		g_core_interface->CallOnMainThread(0,cb,0);
+		swapbuffer_rendering.wait();
 	}
 	else
 		swapbuffer_ppPluginEngineData_callback(this,0);

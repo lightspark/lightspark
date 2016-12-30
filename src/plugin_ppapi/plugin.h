@@ -14,10 +14,10 @@ class ppPluginInstance;
 class ppDownloadManager: public StandaloneDownloadManager
 {
 private:
-	PP_Instance instance;
+	ppPluginInstance* m_instance;
 	SystemState* m_sys;
 public:
-	ppDownloadManager(PP_Instance _instance,SystemState* sys);
+	ppDownloadManager(ppPluginInstance* _instance,SystemState* sys);
 	Downloader* download(const URLInfo& url,
 					 _R<StreamCache> cache,
 					 ILoadable* owner);
@@ -39,14 +39,16 @@ private:
 	
 	static void dlStartCallback(void* userdata,int result);
 	static void dlReadResponseCallback(void* userdata,int result);
+	static void dlStartDownloadCallback(void* userdata,int result);
+	void startDownload();
 public:
 	enum STATE { INIT=0, STREAM_DESTROYED, ASYNC_DESTROY };
 	STATE state;
 	//Constructor used for the main file
-	ppDownloader(const tiny_string& _url, PP_Instance _instance, ILoadable* owner, ppPluginInstance* ppinstance);
-	ppDownloader(const tiny_string& _url, _R<StreamCache> cache, PP_Instance _instance, ILoadable* owner);
+	ppDownloader(const tiny_string& _url, ILoadable* owner, ppPluginInstance* ppinstance);
+	ppDownloader(const tiny_string& _url, _R<StreamCache> cache, ppPluginInstance* ppinstance, ILoadable* owner);
 	ppDownloader(const tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& _data,
-			const std::list<tiny_string>& headers, PP_Instance _instance, ILoadable* owner);
+			const std::list<tiny_string>& headers, ppPluginInstance* ppinstance, ILoadable* owner);
 };
 
 class ppVariantObject : public ExtVariant
@@ -95,8 +97,8 @@ private:
 	ppPluginInstance* instance;
 public:
 	SystemState* sys;
-	ACQUIRE_RELEASE_FLAG(inRendering);
-	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),inRendering(false)
+	Semaphore swapbuffer_rendering;
+	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),swapbuffer_rendering(0)
 	{
 		width = w;
 		height = h;

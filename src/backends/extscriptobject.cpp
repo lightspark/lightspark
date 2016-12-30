@@ -377,9 +377,9 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	if(!synchronous)
 	{
 		func->incRef();
-		funcEvent = _MR(new (getSys()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
+		funcEvent = _MR(new (func->getSystemState()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
 		// Add the callback function event to the VM event queue
-		funcWasCalled=getVm(getSys())->addEvent(NullRef,funcEvent);
+		funcWasCalled=getVm(func->getSystemState())->addEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
 			funcEvent = NullRef;
 	}

@@ -268,11 +268,14 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	inputThread=new InputThread(this);
 
 	EngineData::userevent = SDL_RegisterEvents(3);
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_INIT;
-	event.user.data1 = this;
-	SDL_PushEvent(&event);
+	if (EngineData::sdl_needinit)
+	{
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = LS_USEREVENT_INIT;
+		event.user.data1 = this;
+		SDL_PushEvent(&event);
+	}
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -782,7 +785,7 @@ void SystemState::createEngines()
 	}
 
 	//The engines must be created in the context of the main thread
-	engineData->runInMainThread(&SystemState::delayedCreation);
+	engineData->runInMainThread(this,&SystemState::delayedCreation);
 
 	//Wait for delayedCreation to finish so it is protected by our 'mutex'
 	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
@@ -1395,18 +1398,18 @@ void ParseThread::parseSWF(UI8 ver)
 			return;
 		}
 		//Check if this clip is the main clip then honour its FileAttributesTag
-		if(root == getSys()->mainClip)
+		if(root == root->getSystemState()->mainClip)
 		{
-			getSys()->needsAVM2(fat->ActionScript3);
+			root->getSystemState()->needsAVM2(fat->ActionScript3);
 			if(!fat->ActionScript3)
 			{
-                                delete fat;
+				delete fat;
 				return; /* no more parsing necessary, handled by fallback */
-                        }
+			}
 			if(fat->UseNetwork
-			&& getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+					&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 			{
-				getSys()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+				root->getSystemState()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
 				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 			}
 		}
@@ -1512,7 +1515,7 @@ void ParseThread::parseSWF(UI8 ver)
 					delete tag;
 					break;
 			}
-			if(getSys()->shouldTerminate() || threadAborting)
+			if(root->getSystemState()->shouldTerminate() || threadAborting)
 				break;
 		}
 	}
@@ -1961,9 +1964,9 @@ void SystemState::openPageInBrowser(const tiny_string& url, const tiny_string& w
 void SystemState::showMouseCursor(bool visible)
 {
 	if (visible)
-		EngineData::runInMainThread(&EngineData::showMouseCursor);
+		engineData->runInMainThread(this,&EngineData::showMouseCursor);
 	else
-		EngineData::runInMainThread(&EngineData::hideMouseCursor);
+		engineData->runInMainThread(this,&EngineData::hideMouseCursor);
 }
 
 void SystemState::waitRendering()

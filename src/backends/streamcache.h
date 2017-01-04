@@ -43,7 +43,7 @@ namespace lightspark
  */
 class DLL_PUBLIC StreamCache : public RefCountable {
 protected:
-	StreamCache() DLL_LOCAL;
+	StreamCache();
 
 	// stateMutex must be held while receivedLength, failed or
 	// terminated are accessed
@@ -60,7 +60,7 @@ protected:
 
 	// Wait until more than currentOffset bytes has been received
 	// or until terminated
-	void waitForData(size_t currentOffset) DLL_LOCAL;
+	void waitForData(size_t currentOffset);
 
 	// Derived class implements this to store received data
 	virtual void handleAppend(const unsigned char* buffer, size_t length)=0;
@@ -96,6 +96,8 @@ public:
 	// thread). Every call returns a new, independent streambuf.
 	// The caller must delete the returned value.
 	virtual std::streambuf *createReader()=0;
+	
+	virtual void openForWriting() = 0;
 };
 
 class MemoryChunk;
@@ -151,6 +153,8 @@ public:
 	virtual void reserve(size_t expectedLength);
 
 	virtual std::streambuf *createReader();
+	
+	void openForWriting();
 };
 
 /*

@@ -4,12 +4,51 @@
 #include "swf.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/pp_var.h"
+#include "ppapi/c/pp_resource.h"
 
 namespace lightspark
 {
-
 class ppDownloader;
 class ppPluginInstance;
+
+
+class ppFileStreamCache : public StreamCache {
+private:
+	class ppFileStreamCacheReader : public std::streambuf {
+	private:
+		std::streampos curpos;
+		_R<ppFileStreamCache> buffer;
+		virtual int underflow();
+		virtual std::streamsize xsgetn(char* s, std::streamsize n);
+		
+		std::streampos seekoff (std::streamoff off, std::ios_base::seekdir way,std::ios_base::openmode which);
+		std::streampos seekpos (std::streampos sp, std::ios_base::openmode which);
+	public:
+		ppFileStreamCacheReader(_R<ppFileStreamCache> buffer);
+	};
+
+	//Cache filename
+	PP_Resource cache;
+	PP_Resource cacheref;
+	int64_t writeoffset;
+	ppPluginInstance* m_instance;
+
+	void openCache();
+	void openExistingCache(const tiny_string& filename, bool forWriting=true);
+
+	// Block until the cache file is opened by the writer stream
+	bool waitForCache();
+
+	virtual void handleAppend(const unsigned char* buffer, size_t length);
+
+public:
+	ppFileStreamCache(ppPluginInstance* instance);
+	virtual ~ppFileStreamCache();
+
+	virtual std::streambuf *createReader();
+
+	void openForWriting();
+};
 
 class ppDownloadManager: public StandaloneDownloadManager
 {
@@ -74,11 +113,14 @@ friend class ppPluginEngineData;
 	PP_Instance m_ppinstance;
 	struct PP_Size m_last_size;
 	PP_Resource m_graphics;
+	PP_Resource m_cachefilesystem;
+	ATOMIC_INT32(m_cachefilename);
 	SystemState* m_sys;
 	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;
 	ppDownloader* mainDownloader;
 	ParseThread* m_pt;
+	
 public:
 	ppPluginInstance(PP_Instance instance, int16_t argc,const char* argn[],const char* argv[]);
 	virtual ~ppPluginInstance();
@@ -89,6 +131,8 @@ public:
 	SystemState* getSystemState() const { return m_sys;}
 	void startMainParser();
 	PP_Instance getppInstance() { return m_ppinstance; }
+	PP_Resource getFileSystem() { return m_cachefilesystem; }
+	PP_Resource createCacheFileRef();
 };
 
 class ppPluginEngineData: public EngineData
@@ -108,6 +152,7 @@ public:
 	void stopMainDownload();
 	bool isSizable() const { return false; }
 	uint32_t getWindowForGnash();
+	void runInMainThread(SystemState* sys, void (*func) (SystemState*) );
 	/* must be called within mainLoopThread */
 	SDL_Window* createWidget(uint32_t w,uint32_t h);
 	/* must be called within mainLoopThread */
@@ -116,6 +161,8 @@ public:
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
+	StreamCache* createFileStreamCache();
+	
 	void SwapBuffers();
 	void InitOpenGL();
 	void DeinitOpenGL();

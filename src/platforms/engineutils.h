@@ -37,6 +37,8 @@ typedef unsigned long XID;
 #define LS_USEREVENT_EXEC EngineData::userevent+1
 #define LS_USEREVENT_QUIT EngineData::userevent+2
 class SystemState;
+class StreamCache;
+
 class DLL_PUBLIC EngineData
 {
 	friend class RenderThread;
@@ -69,7 +71,7 @@ public:
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
 	virtual uint32_t getWindowForGnash()=0;
 	/* Runs 'func' in the mainLoopThread */
-	static void runInMainThread(void (*func) (SystemState*) )
+	virtual void runInMainThread(SystemState* sys, void (*func) (SystemState*) )
 	{
 		SDL_Event event;
 		SDL_zero(event);
@@ -88,6 +90,7 @@ public:
 	virtual void grabFocus()=0;
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
 
+	static bool sdl_needinit;
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain();
@@ -102,6 +105,7 @@ public:
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;
+	virtual StreamCache* createFileStreamCache();
 	
 	virtual void SwapBuffers() = 0;
 	virtual void InitOpenGL() = 0;

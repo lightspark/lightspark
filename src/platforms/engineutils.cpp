@@ -39,6 +39,7 @@ using namespace lightspark;
 uint32_t EngineData::userevent = (uint32_t)-1;
 Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
+bool EngineData::sdl_needinit = true;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),windowID(0),visual(0)
 {
@@ -108,12 +109,16 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 /* main loop handling */
 static void mainloop_runner()
 {
-	bool sdl_available = false;
-	if (SDL_WasInit(0)) // some part of SDL already was initialized
-		sdl_available = SDL_InitSubSystem ( SDL_INIT_VIDEO );
-	else
-		sdl_available = SDL_Init ( SDL_INIT_VIDEO );
-	if (sdl_available)
+	bool sdl_available = !EngineData::sdl_needinit;
+	
+	if (EngineData::sdl_needinit)
+	{
+		if (SDL_WasInit(0)) // some part of SDL already was initialized
+			sdl_available = !SDL_InitSubSystem ( SDL_INIT_VIDEO );
+		else
+			sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
+	}
+	if (!sdl_available)
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
 		EngineData::mainthread_initialized.signal();
@@ -219,6 +224,11 @@ void EngineData::setClipboardText(const std::string txt)
 		LOG(LOG_INFO, "Copied error to clipboard");
 	else
 		LOG(LOG_ERROR, "copying text to clipboard failed:"<<SDL_GetError());
+}
+
+StreamCache *EngineData::createFileStreamCache()
+{
+	return new FileStreamCache();
 }
 
 bool EngineData::getGLError(uint32_t &errorCode) const

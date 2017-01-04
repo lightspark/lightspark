@@ -264,7 +264,7 @@ private:
 	AudioDecoder* audioDecoder;
 	AudioStream *audioStream;
 	// only used when in DataGenerationMode
-	FileStreamCache* datagenerationfile;
+	StreamCache* datagenerationfile;
 	bool datagenerationthreadstarted;
 	Mutex mutex;
 	Mutex countermutex;

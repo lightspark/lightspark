@@ -66,7 +66,6 @@ void StreamCache::append(const unsigned char* buffer, size_t length)
 
 	handleAppend(buffer, length);
 
-	if (notifyLoader)
 	{
 		Locker locker(stateMutex);
 		receivedLength += length;
@@ -173,6 +172,11 @@ std::streambuf *MemoryStreamCache::createReader()
 {
 	incRef();
 	return new MemoryStreamCache::Reader(_MR(this));
+}
+
+void MemoryStreamCache::openForWriting()
+{
+	LOG(LOG_ERROR,"openForWriting not implemented in MemoryStreamCache");
 }
 
 MemoryStreamCache::Reader::Reader(_R<MemoryStreamCache> b) :

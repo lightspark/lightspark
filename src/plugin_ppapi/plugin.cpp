@@ -20,7 +20,7 @@
 
 // TODO
 // - sound
-// - run within sandbox
+// - font loading
 // - register as separate plugin
 
 #include "version.h"
@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <SDL2/SDL.h>
 #include "threading.h"
-#include "scripting/toplevel/JSON.h"
 #include "plugin_ppapi/plugin.h"
 #include "plugin_ppapi/ppextscriptobject.h"
 
@@ -62,6 +61,10 @@
 #include "ppapi/c/ppb_graphics_3d.h"
 #include "ppapi/c/ppb_input_event.h"
 #include "ppapi/c/private/ppb_flash_clipboard.h"
+#include "ppapi/c/ppb_file_io.h"
+#include "ppapi/c/ppb_file_ref.h"
+#include "ppapi/c/ppb_file_system.h"
+
 #include "GLES2/gl2.h"
 
 //The interpretation of texture data change with the endianness
@@ -92,7 +95,158 @@ static const PPB_MouseInputEvent* g_mouseinputevent_interface = NULL;
 static const PPB_KeyboardInputEvent* g_keyboardinputevent_interface = NULL;
 static const PPB_WheelInputEvent* g_wheelinputevent_interface = NULL;
 static const PPB_Flash_Clipboard* g_flashclipboard_interface = NULL;
+static const PPB_FileIO* g_fileio_interface = NULL;
+static const PPB_FileRef* g_fileref_interface = NULL;
+static const PPB_FileSystem* g_filesystem_interface = NULL;
 
+
+
+ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance):cache(0),cacheref(0),writeoffset(0),m_instance(instance)
+{
+}
+
+ppFileStreamCache::~ppFileStreamCache()
+{
+	if (cache != 0)
+	{
+		g_fileio_interface->Close(cache);
+		g_fileref_interface->Delete(cacheref,PP_MakeCompletionCallback(NULL,NULL));
+	}
+}
+
+void ppFileStreamCache::handleAppend(const unsigned char* buffer, size_t length)
+{
+	if (cache == 0)
+		openCache();
+
+	int written = g_fileio_interface->Write(cache,writeoffset,(const char*)buffer,length,PP_MakeCompletionCallback(NULL,NULL));
+	if (written < 0)
+	{
+		LOG(LOG_ERROR,"writing cache file failed, error code:"<<written);
+		return;
+	}
+	writeoffset += written;
+}
+
+/**
+ * \brief Creates & opens a temporary cache file
+ *
+ * Creates a temporary cache file in /tmp and calls \c openExistingCache() with that file.
+ * Waits for mutex at start and releases mutex when finished.
+ * \throw RunTimeException Temporary file could not be created
+ * \throw RunTimeException Called when  the cache is already open
+ * \see Downloader::openExistingCache()
+ */
+void ppFileStreamCache::openCache()
+{
+	if (cache != 0)
+	{
+		markFinished(true);
+		throw RunTimeException("ppFileStreamCache::openCache called twice");
+	}
+
+	//Create a temporary file(name)
+	
+	cacheref = m_instance->createCacheFileRef();
+	cache = g_fileio_interface->Create(m_instance->getFileSystem());
+	int res = g_fileio_interface->Open(cache,cacheref,PP_FileOpenFlags::PP_FILEOPENFLAG_READ|PP_FileOpenFlags::PP_FILEOPENFLAG_WRITE,PP_MakeCompletionCallback(NULL,NULL));
+	if (res != PP_OK)
+	{
+		LOG(LOG_ERROR,"opening cache file failed, error code:"<<res);
+		cache = 0;
+	}
+
+}
+
+void ppFileStreamCache::openForWriting()
+{
+	if (cache != 0)
+		return;
+	openCache();
+}
+
+bool ppFileStreamCache::waitForCache()
+{
+	if (cache != 0)
+		return true;
+
+	// Cache file will be opened when the first byte is received
+	waitForData(0);
+
+	return cache != 0;
+}
+
+std::streambuf *ppFileStreamCache::createReader()
+{
+	if (!waitForCache())
+	{
+		LOG(LOG_ERROR,"could not open cache file");
+		return NULL;
+	}
+
+	incRef();
+	ppFileStreamCache::ppFileStreamCacheReader *fbuf = new ppFileStreamCache::ppFileStreamCacheReader(_MR(this));
+	return fbuf;
+}
+
+ppFileStreamCache::ppFileStreamCacheReader::ppFileStreamCacheReader(_R<ppFileStreamCache> b) : curpos(-1),buffer(b)
+{
+}
+
+int ppFileStreamCache::ppFileStreamCacheReader::underflow()
+{
+	if (!buffer->hasTerminated())
+		buffer->waitForData(seekoff(0, ios_base::cur, ios_base::in));
+
+	return streambuf::underflow();
+}
+
+streamsize ppFileStreamCache::ppFileStreamCacheReader::xsgetn(char* s, streamsize n)
+{
+	streamsize read= g_fileio_interface->Read(buffer->cache,curpos,s,n,PP_MakeCompletionCallback(NULL,NULL));
+	curpos += read;
+	// If not enough data was available, wait for writer
+	while (read < n)
+	{
+		buffer->waitForData(seekoff(0, ios_base::cur, ios_base::in));
+
+		streamsize b = g_fileio_interface->Read(buffer->cache,curpos,s+read,n-read,PP_MakeCompletionCallback(NULL,NULL));
+		curpos += b;
+
+		// No more data after waiting, this must be EOF
+		if (b == 0)
+			return read;
+
+		read += b;
+	}
+
+	return read;
+}
+
+streampos ppFileStreamCache::ppFileStreamCacheReader::seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which)
+{
+	switch (way)
+	{
+		case ios_base::beg:
+			curpos = off;
+			break;
+		case ios_base::cur:
+			curpos += off;
+			break;
+		case ios_base::end:
+			curpos = buffer->getReceivedLength() + off;
+			break;
+		default:
+			break;
+	}
+	return curpos;
+}
+
+streampos ppFileStreamCache::ppFileStreamCacheReader::seekpos(streampos sp, ios_base::openmode which)
+{
+	curpos = sp;
+	return curpos;
+}
 
 
 ppVariantObject::ppVariantObject(std::map<int64_t, std::unique_ptr<ExtObject> > &objectsMap, PP_Var& other)
@@ -406,11 +560,7 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 		g_urlloader_interface->Close(th->ppurlloader);
 		return;
 	}
-	struct PP_CompletionCallback cb;
-	cb.func = dlReadResponseCallback;
-	cb.flags = 0;
-	cb.user_data = th;
-	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,cb);
+	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,PP_MakeCompletionCallback(dlReadResponseCallback,th));
 }
 void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 {
@@ -435,11 +585,7 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 		LOG_CALL("download done:"<<th->getURL()<<" "<<th->downloadedlength<<" "<<th->getLength());
 		return;
 	}
-	struct PP_CompletionCallback cb;
-	cb.func = dlReadResponseCallback;
-	cb.flags = 0;
-	cb.user_data = th;
-	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,cb);
+	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,PP_MakeCompletionCallback(dlReadResponseCallback,th));
 }
 void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 {
@@ -461,24 +607,14 @@ void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 	}
 	LOG_CALL("starting download:"<<th->data.size()<<" "<<strurl);
 
-	struct PP_CompletionCallback cb;
-	cb.func = dlStartCallback;
-	cb.flags = 0;
-	cb.user_data = th;
-	int res = g_urlloader_interface->Open(th->ppurlloader,pprequest_info,cb);
+	int res = g_urlloader_interface->Open(th->ppurlloader,pprequest_info,PP_MakeCompletionCallback(dlStartCallback,th));
 	if (res != PP_OK_COMPLETIONPENDING)
 		LOG(LOG_ERROR,"url opening failed:"<<res<<" "<<strurl);
 }
 void ppDownloader::startDownload()
 {
 	if (!g_core_interface->IsMainThread())
-	{
-		struct PP_CompletionCallback cb;
-		cb.func = dlStartDownloadCallback;
-		cb.flags = 0;
-		cb.user_data = this;
-		g_core_interface->CallOnMainThread(0,cb,0);
-	}
+		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(dlStartDownloadCallback,this),0);
 	else
 		dlStartDownloadCallback(this,0);
 	
@@ -502,17 +638,22 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> 
 {
 	startDownload();
 }
-
+void openfilesystem_callback(void* userdata,int result)
+{
+	LOG(LOG_INFO,"filesystem opened");
+}
 ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const char *argn[], const char *argv[]) : 
 	m_ppinstance(instance),
 	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
 	mainDownloader(NULL),
 	m_pt(NULL)
 {
+	m_cachefilesystem = g_filesystem_interface->Create(instance,PP_FileSystemType::PP_FILESYSTEMTYPE_LOCALTEMPORARY);
+	m_cachefilename = 0;
+	g_filesystem_interface->Open(m_cachefilesystem, 1024*1024,PP_MakeCompletionCallback(openfilesystem_callback,NULL));
 	m_last_size.width = 0;
 	m_last_size.height = 0;
 	m_graphics = 0;
-	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 	setTLSSys( NULL );
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
@@ -543,7 +684,8 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	{
 		m_sys->downloadManager=new ppDownloadManager(this,m_sys);
 	
-		EngineData::startSDLMain();
+		//EngineData::startSDLMain();
+		EngineData::mainthread_running = true;
 		mainDownloader=new ppDownloader(swffile,m_sys->mainClip->loaderInfo.getPtr(),this);
 		// loader is notified through parsethread
 		mainDownloader->getCache()->setNotifyLoader(false);
@@ -558,6 +700,13 @@ void ppPluginInstance::startMainParser()
 	m_pt=new lightspark::ParseThread(mainDownloaderStream,m_sys->mainClip);
 	m_sys->addJob(m_pt);
 	
+}
+
+PP_Resource ppPluginInstance::createCacheFileRef()
+{
+	char filenamebuf[100];
+	sprintf(filenamebuf,"/tmp%d",++m_cachefilename);
+	return g_fileref_interface->Create(getFileSystem(),filenamebuf);
 }
 
 ppPluginInstance::~ppPluginInstance()
@@ -888,11 +1037,7 @@ void executescript_callback(void* userdata,int result)
 }
 void ppPluginInstance::executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data)
 {
-	struct PP_CompletionCallback cb;
-	cb.func = executescript_callback;
-	cb.flags = 0;
-	cb.user_data = data;
-	g_core_interface->CallOnMainThread(0,cb,0);
+	g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(executescript_callback,data),0);
 }
 bool ppPluginInstance::executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result)
 {
@@ -1215,6 +1360,7 @@ extern "C"
 			Log::redirect(envvar);
 		
 		Log::setLogLevel(log_level);
+		EngineData::sdl_needinit = false;
 		lightspark::SystemState::staticInit();
 		
 		LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
@@ -1236,6 +1382,9 @@ extern "C"
 		g_keyboardinputevent_interface = (const PPB_KeyboardInputEvent*)get_browser_interface(PPB_KEYBOARD_INPUT_EVENT_INTERFACE);
 		g_wheelinputevent_interface = (const PPB_WheelInputEvent*)get_browser_interface(PPB_WHEEL_INPUT_EVENT_INTERFACE);
 		g_flashclipboard_interface = (const PPB_Flash_Clipboard*)get_browser_interface(PPB_FLASH_CLIPBOARD_INTERFACE);
+		g_fileio_interface = (const PPB_FileIO*)get_browser_interface(PPB_FILEIO_INTERFACE);
+		g_fileref_interface = (const PPB_FileRef*)get_browser_interface(PPB_FILEREF_INTERFACE);
+		g_filesystem_interface = (const PPB_FileSystem*)get_browser_interface(PPB_FILESYSTEM_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -1253,7 +1402,10 @@ extern "C"
 				!g_mouseinputevent_interface ||
 				!g_keyboardinputevent_interface ||
 			    !g_wheelinputevent_interface ||
-				!g_flashclipboard_interface)
+				!g_flashclipboard_interface ||
+				!g_fileio_interface ||
+				!g_fileref_interface ||
+				!g_filesystem_interface)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -1272,7 +1424,10 @@ extern "C"
 				<< g_mouseinputevent_interface<<" "
 				<< g_keyboardinputevent_interface<<" "
 				<< g_wheelinputevent_interface<<" "
-				<< g_flashclipboard_interface);
+				<< g_flashclipboard_interface<<" "
+				<< g_fileio_interface<<" "
+				<< g_fileref_interface<<" "
+				<< g_filesystem_interface);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;
@@ -1318,6 +1473,30 @@ uint32_t ppPluginEngineData::getWindowForGnash()
 //	return instance->mWindow;
 	return 0;
 }
+struct userevent_callbackdata
+{
+	void (*func) (SystemState*);
+	SystemState* sys;
+};
+
+void exec_ppPluginEngineData_callback(void* userdata,int result)
+{
+	userevent_callbackdata* data= (userevent_callbackdata*)userdata;
+	data->func(data->sys);
+	delete data;
+}
+void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemState*) )
+{
+	userevent_callbackdata* ue = new userevent_callbackdata;
+	ue->func=func;
+	ue->sys=sys;
+	if (!g_core_interface->IsMainThread())
+	{
+		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
+	}
+	else
+		exec_ppPluginEngineData_callback(ue,0);
+}
 
 void ppPluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
 {
@@ -1362,25 +1541,22 @@ double ppPluginEngineData::getScreenDPI()
 	return 96.0;
 }
 
+StreamCache *ppPluginEngineData::createFileStreamCache()
+{
+	return new ppFileStreamCache(instance);
+}
+
 void swapbuffer_ppPluginEngineData_callback(void* userdata,int result)
 {
 	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
-	struct PP_CompletionCallback cb;
-	cb.func = swapbuffer_callback;
-	cb.flags = 0;
-	cb.user_data = userdata;
-	g_graphics_3d_interface->SwapBuffers(data->getGraphics(),cb);
+	g_graphics_3d_interface->SwapBuffers(data->getGraphics(),PP_MakeCompletionCallback(swapbuffer_callback,userdata));
 	
 }
 void ppPluginEngineData::SwapBuffers()
 {
 	if (!g_core_interface->IsMainThread())
 	{
-		struct PP_CompletionCallback cb;
-		cb.func = swapbuffer_ppPluginEngineData_callback;
-		cb.flags = 0;
-		cb.user_data = this;
-		g_core_interface->CallOnMainThread(0,cb,0);
+		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(swapbuffer_ppPluginEngineData_callback,this),0);
 		swapbuffer_rendering.wait();
 	}
 	else

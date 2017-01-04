@@ -124,10 +124,13 @@ AudioStream::~AudioStream()
 AudioManager::AudioManager():muteAllStreams(false),sdl_available(0),mixeropened(0)
 {
 	sdl_available = 0;
-	if (SDL_WasInit(0)) // some part of SDL already was initialized
-		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
-	else
-		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
+	if (EngineData::sdl_needinit)
+	{
+		if (SDL_WasInit(0)) // some part of SDL already was initialized
+			sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
+		else
+			sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
+	}
 	mixeropened = 0;
 }
 void AudioManager::muteAll()

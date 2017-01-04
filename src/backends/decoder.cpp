@@ -570,7 +570,7 @@ void AudioDecoder::skipAll()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):ownedContext(true)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):engine(eng),ownedContext(true)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
 #endif
@@ -616,7 +616,7 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 		status=INIT;
 }
 
-FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):ownedContext(true)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):engine(eng),ownedContext(true)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
 #endif
@@ -646,7 +646,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC lscodec, int sampleRate, i
 }
 
 #if LIBAVFORMAT_VERSION_MAJOR > 56
-FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecID codecID):ownedContext(true),codecContext(NULL)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecID codecID):engine(eng),ownedContext(true),codecContext(NULL)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
 #endif
@@ -674,7 +674,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecID codecID):ownedContext(true),cod
 #endif
 }
 #else
-FFMpegAudioDecoder::FFMpegAudioDecoder(AVCodecContext* _c):ownedContext(false),codecContext(_c)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c):engine(eng),ownedContext(false),codecContext(_c)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
 #endif
@@ -967,7 +967,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 {
-	int sample_rate = MIX_DEFAULT_FREQUENCY;
+	int sample_rate = engine->audio_getSampleRate();
 	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
 #ifdef HAVE_AV_FRAME_GET_SAMPLE_RATE
  	int framesamplerate = av_frame_get_sample_rate(frameIn);
@@ -1029,7 +1029,7 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, int streamsize)
+FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, AudioFormat* format, int streamsize)
  : audioFound(false),videoFound(false),stream(s),formatCtx(NULL),audioIndex(-1),
    videoIndex(-1),customAudioDecoder(NULL),customVideoDecoder(NULL),avioContext(NULL),availablestreamlength(streamsize)
 {
@@ -1156,12 +1156,12 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, in
 	if(audioFound)
 	{
 		if (format && (format->codec != LS_AUDIO_CODEC::CODEC_NONE))
-			customAudioDecoder=new FFMpegAudioDecoder(format->codec,format->sampleRate,format->channels,true);
+			customAudioDecoder=new FFMpegAudioDecoder(eng,format->codec,format->sampleRate,format->channels,true);
 		else
 #if LIBAVFORMAT_VERSION_MAJOR > 56
-			customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codecpar->codec_id);
+			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar->codec_id);
 #else
-			customAudioDecoder=new FFMpegAudioDecoder(formatCtx->streams[audioIndex]->codec);
+			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codec);
 #endif
 		audioDecoder=customAudioDecoder;
 	}

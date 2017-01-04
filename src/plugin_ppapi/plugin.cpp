@@ -19,7 +19,6 @@
 
 
 // TODO
-// - sound
 // - font loading
 // - register as separate plugin
 
@@ -64,6 +63,8 @@
 #include "ppapi/c/ppb_file_io.h"
 #include "ppapi/c/ppb_file_ref.h"
 #include "ppapi/c/ppb_file_system.h"
+#include "ppapi/c/ppb_audio.h"
+#include "ppapi/c/ppb_audio_config.h"
 
 #include "GLES2/gl2.h"
 
@@ -98,6 +99,8 @@ static const PPB_Flash_Clipboard* g_flashclipboard_interface = NULL;
 static const PPB_FileIO* g_fileio_interface = NULL;
 static const PPB_FileRef* g_fileref_interface = NULL;
 static const PPB_FileSystem* g_filesystem_interface = NULL;
+static const PPB_Audio* g_audio_interface = NULL;
+static const PPB_AudioConfig* g_audioconfig_interface = NULL;
 
 
 
@@ -1385,6 +1388,9 @@ extern "C"
 		g_fileio_interface = (const PPB_FileIO*)get_browser_interface(PPB_FILEIO_INTERFACE);
 		g_fileref_interface = (const PPB_FileRef*)get_browser_interface(PPB_FILEREF_INTERFACE);
 		g_filesystem_interface = (const PPB_FileSystem*)get_browser_interface(PPB_FILESYSTEM_INTERFACE);
+		g_audio_interface = (const PPB_Audio*)get_browser_interface(PPB_AUDIO_INTERFACE);
+		g_audioconfig_interface = (const PPB_AudioConfig*)get_browser_interface(PPB_AUDIO_CONFIG_INTERFACE);
+		
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -1405,7 +1411,9 @@ extern "C"
 				!g_flashclipboard_interface ||
 				!g_fileio_interface ||
 				!g_fileref_interface ||
-				!g_filesystem_interface)
+				!g_filesystem_interface ||
+				!g_audio_interface ||
+				!g_audioconfig_interface )
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -1427,7 +1435,10 @@ extern "C"
 				<< g_flashclipboard_interface<<" "
 				<< g_fileio_interface<<" "
 				<< g_fileref_interface<<" "
-				<< g_filesystem_interface);
+				<< g_filesystem_interface<<" "
+				<< g_audio_interface<<" "
+				<< g_audioconfig_interface<<" "
+				);
 			return PP_ERROR_NOINTERFACE;
 		}
 		return PP_OK;
@@ -1511,13 +1522,6 @@ SDL_Window* ppPluginEngineData::createWidget(uint32_t w,uint32_t h)
 
 void ppPluginEngineData::grabFocus()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"grabFocus");
-	/*
-	if (!widget_gtk)
-		return;
-
-	gtk_widget_grab_focus(widget_gtk);
-	*/
 }
 
 void ppPluginEngineData::setClipboardText(const std::string txt)
@@ -1864,4 +1868,82 @@ void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_
 void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
 	g_gles2_interface->GetIntegerv(instance->m_graphics,GL_MAX_TEXTURE_SIZE,data);
+}
+
+void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)
+{
+	AudioStream *s = (AudioStream*)user_data;
+	if (!s)
+		return;
+
+	uint32_t readcount = 0;
+	while (readcount < buffer_size_in_bytes)
+	{
+		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)sample_buffer)+readcount), buffer_size_in_bytes-readcount);
+		if (!ret)
+			break;
+		readcount += ret;
+	}
+	if (s->getVolume() != 1.0)
+	{
+		int16_t *p = (int16_t *)sample_buffer;
+		for (uint32_t i = 0; i < readcount/2; i++)
+		{
+			*p = (*p)*s->getVolume();
+			p++;
+		}
+	}
+}
+
+int ppPluginEngineData::audio_StreamInit(AudioStream *s)
+{
+	PP_Resource res = g_audio_interface->Create(instance->m_ppinstance,audioconfig,audio_callback,s);
+	if (res != 0)
+		g_audio_interface->StartPlayback(res);
+	else
+		LOG(LOG_ERROR,"creating audio interface failed");
+	return res;
+}
+
+void ppPluginEngineData::audio_StreamPause(int channel, bool dopause)
+{
+	if (dopause)
+		g_audio_interface->StopPlayback(channel);
+	else
+		g_audio_interface->StartPlayback(channel);
+}
+
+void ppPluginEngineData::audio_StreamSetVolume(int channel, double volume)
+{
+}
+
+void ppPluginEngineData::audio_StreamDeinit(int channel)
+{
+	g_audio_interface->StopPlayback(channel);
+}
+
+bool ppPluginEngineData::audio_ManagerInit()
+{
+	uint32_t fc = g_audioconfig_interface->RecommendSampleFrameCount(instance->m_ppinstance,PP_AUDIOSAMPLERATE_44100,LIGHTSPARK_AUDIO_BUFFERSIZE/2);
+	audioconfig = g_audioconfig_interface->CreateStereo16Bit(instance->m_ppinstance,PP_AUDIOSAMPLERATE_44100,fc);
+	return audioconfig != 0;
+}
+
+void ppPluginEngineData::audio_ManagerCloseMixer()
+{
+}
+
+bool ppPluginEngineData::audio_ManagerOpenMixer()
+{
+	return true;
+}
+
+void ppPluginEngineData::audio_ManagerDeinit()
+{
+	
+}
+
+int ppPluginEngineData::audio_getSampleRate()
+{
+	return PP_AUDIOSAMPLERATE_44100;
 }

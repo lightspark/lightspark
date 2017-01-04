@@ -309,9 +309,11 @@ public:
 };
 
 #ifdef ENABLE_LIBAVCODEC
+class EngineData;
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
+	EngineData* engine;
 	bool ownedContext;
 	AVCodecContext* codecContext;
 #ifdef HAVE_LIBAVRESAMPLE
@@ -325,15 +327,15 @@ private:
 	int resampleFrameToS16(FrameSamples& curTail);
 #endif
 public:
-	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
-	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);
+	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
+	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
 #if LIBAVFORMAT_VERSION_MAJOR > 56
-	FFMpegAudioDecoder(AVCodecID codecID);
+	FFMpegAudioDecoder(EngineData* eng,AVCodecID codecID);
 #else
-	FFMpegAudioDecoder(AVCodecContext* codecContext);
+	FFMpegAudioDecoder(EngineData* eng,AVCodecContext* codecContext);
 #endif
 	~FFMpegAudioDecoder();
 	/*
@@ -384,7 +386,7 @@ private:
 #endif
 	int availablestreamlength;
 public:
-	FFMpegStreamDecoder(std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
+	FFMpegStreamDecoder(EngineData* eng,std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
 	~FFMpegStreamDecoder();
 	bool decodeNextFrame();
 };

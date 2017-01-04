@@ -249,7 +249,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	frameTimerThread=new TimerThread(this);
-	audioManager=new AudioManager();
+	audioManager=NULL;
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 
@@ -723,6 +723,7 @@ void SystemState::EngineCreator::threadAbort()
  */
 void SystemState::delayedCreation(SystemState* sys)
 {
+	sys->audioManager=new AudioManager(sys->engineData);
 	int32_t reqWidth=sys->mainClip->getFrameSize().Xmax/20;
 	int32_t reqHeight=sys->mainClip->getFrameSize().Ymax/20;
 

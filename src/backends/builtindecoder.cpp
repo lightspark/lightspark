@@ -21,6 +21,7 @@
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/net/flashnet.h"
+#include "swf.h"
 
 using namespace lightspark;
 
@@ -79,7 +80,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 					case AAC:
 						assert_and_throw(tag.isHeader())
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat, tag.packetData, tag.packetLen);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat, tag.packetData, tag.packetLen);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif
@@ -87,7 +88,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 						break;
 					case MP3:
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,NULL,0);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,NULL,0);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif

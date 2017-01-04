@@ -22,9 +22,11 @@
 #include "swf.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_mixer.h>
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"
+#include "platforms/engineutils.h"
 
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -563,4 +565,94 @@ void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffs
 void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE,data);
+}
+
+void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
+{
+	AudioStream *s = (AudioStream*)udata;
+	if (!s)
+		return;
+
+	uint32_t readcount = 0;
+	while (readcount < ((uint32_t)len))
+	{
+		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)stream)+readcount), ((uint32_t)len)-readcount);
+		if (!ret)
+			break;
+		readcount += ret;
+	}
+}
+
+
+
+int EngineData::audio_StreamInit(AudioStream* s)
+{
+	int mixer_channel = -1;
+
+	uint32_t len = LIGHTSPARK_AUDIO_BUFFERSIZE;
+
+	uint8_t *buf = new uint8_t[len];
+	memset(buf,0,len);
+	Mix_Chunk* chunk = Mix_QuickLoad_RAW(buf, len);
+
+
+	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
+	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, NULL, s);
+	Mix_Resume(mixer_channel);
+	return mixer_channel;
+}
+
+void EngineData::audio_StreamPause(int channel, bool dopause)
+{
+	if (channel == -1)
+		return;
+	if(dopause)
+		Mix_Pause(channel);
+	else
+		Mix_Resume(channel);
+}
+
+void EngineData::audio_StreamSetVolume(int channel, double volume)
+{
+	int curvolume = SDL_MIX_MAXVOLUME * volume;
+	if (channel != -1)
+		Mix_Volume(channel, curvolume);
+}
+
+void EngineData::audio_StreamDeinit(int channel)
+{
+	if (channel != -1)
+		Mix_HaltChannel(channel);
+}
+
+bool EngineData::audio_ManagerInit()
+{
+	bool sdl_available = false;
+	if (SDL_WasInit(0)) // some part of SDL already was initialized
+		sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
+	else
+		sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
+	return sdl_available;
+}
+
+void EngineData::audio_ManagerCloseMixer()
+{
+	Mix_CloseAudio();
+}
+
+bool EngineData::audio_ManagerOpenMixer()
+{
+	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+}
+
+void EngineData::audio_ManagerDeinit()
+{
+	SDL_QuitSubSystem ( SDL_INIT_AUDIO );
+	if (!SDL_WasInit(0))
+		SDL_Quit ();
+}
+
+int EngineData::audio_getSampleRate()
+{
+	return MIX_DEFAULT_FREQUENCY;
 }

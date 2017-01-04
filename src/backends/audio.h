@@ -28,19 +28,21 @@
 namespace lightspark
 {
 class AudioStream;
+class EngineData;
 
 class AudioManager
 {
 	friend class AudioStream;
 private:
 	bool muteAllStreams;
-	int sdl_available;
+	bool audio_available;
 	int mixeropened;
+	EngineData* engineData;
 	std::list<AudioStream *> streams;
 	typedef std::list<AudioStream *>::iterator stream_iterator;
 	Mutex streamMutex;
 public:
-	AudioManager();
+	AudioManager(EngineData* engine);
 
 	AudioStream *createStream(AudioDecoder *decoder, bool startpaused);
 
@@ -60,14 +62,15 @@ private:
 	AudioManager* manager;
 	AudioDecoder *decoder;
 	bool hasStarted;
-	int curvolume;
-	int unmutevolume;
+	bool isPaused;
+	double curvolume;
+	double unmutevolume;
 	uint32_t playedtime;
 	struct timeval starttime;
 	int mixer_channel;
 public:
 	bool init();
-	AudioStream(AudioManager* _manager):manager(_manager),decoder(NULL),hasStarted(false) { }
+	AudioStream(AudioManager* _manager):manager(_manager),decoder(NULL),hasStarted(false),isPaused(true) { }
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();
@@ -77,6 +80,7 @@ public:
 	void pause() { SetPause(true); }
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
+	inline double getVolume() const { return curvolume; }
 	inline AudioDecoder *getDecoder() const { return decoder; }
 	~AudioStream();
 };

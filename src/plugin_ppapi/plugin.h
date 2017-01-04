@@ -142,7 +142,8 @@ private:
 public:
 	SystemState* sys;
 	Semaphore swapbuffer_rendering;
-	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),swapbuffer_rendering(0)
+	PP_Resource audioconfig;
+	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),swapbuffer_rendering(0),audioconfig(0)
 	{
 		width = w;
 		height = h;
@@ -221,6 +222,17 @@ public:
 	void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
 	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
+
+	// Audio handling
+	virtual int audio_StreamInit(AudioStream* s);
+	virtual void audio_StreamPause(int channel, bool dopause);
+	virtual void audio_StreamSetVolume(int channel, double volume);
+	virtual void audio_StreamDeinit(int channel);
+	virtual bool audio_ManagerInit();
+	virtual void audio_ManagerCloseMixer();
+	virtual bool audio_ManagerOpenMixer();
+	virtual void audio_ManagerDeinit();
+	virtual int audio_getSampleRate();
 };
 
 }

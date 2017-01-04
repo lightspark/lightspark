@@ -1805,7 +1805,7 @@ void NetStream::execute()
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
 			{
 				s.seekg(0);
-				streamDecoder=new FFMpegStreamDecoder(s);
+				streamDecoder=new FFMpegStreamDecoder(this->getSystemState()->getEngineData(),s);
 			}
 			if(!streamDecoder->isValid())
 				threadAbort();

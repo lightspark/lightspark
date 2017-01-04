@@ -22,30 +22,11 @@
 #include "backends/config.h"
 #include <iostream>
 #include "logger.h"
-#include <SDL2/SDL_mixer.h>
 #include <sys/time.h>
 
-#define LIGHTSPARK_AUDIO_SDL_BUFFERSIZE 8192
 
 using namespace lightspark;
 using namespace std;
-
-void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
-{
-	AudioStream *s = (AudioStream*)udata;
-	if (!s)
-		return;
-
-	uint32_t readcount = 0;
-	while (readcount < ((uint32_t)len))
-	{
-		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)stream)+readcount), ((uint32_t)len)-readcount);
-		if (!ret)
-			break;
-		readcount += ret;
-	}
-}
-
 
 uint32_t AudioStream::getPlayedTime()
 {
@@ -58,22 +39,11 @@ uint32_t AudioStream::getPlayedTime()
 }
 bool AudioStream::init()
 {
-	unmutevolume = curvolume = SDL_MIX_MAXVOLUME;
+	unmutevolume = curvolume = 1.0;
 	playedtime = 0;
 	gettimeofday(&starttime, NULL);
-	mixer_channel = -1;
-
-	uint32_t len = LIGHTSPARK_AUDIO_SDL_BUFFERSIZE;
-
-	uint8_t *buf = new uint8_t[len];
-	memset(buf,0,len);
-	Mix_Chunk* chunk = Mix_QuickLoad_RAW(buf, len);
-
-
-	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
-	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, NULL, this);
-	Mix_Resume(mixer_channel);
-
+	mixer_channel = manager->engineData->audio_StreamInit(this);
+	isPaused = false;
 	return true;
 }
 
@@ -82,55 +52,45 @@ void AudioStream::SetPause(bool pause_on)
 	if (pause_on)
 	{
 		playedtime = getPlayedTime();
-		if (mixer_channel != -1)
-			Mix_Pause(mixer_channel);
+		isPaused = true;
 	}
 	else
 	{
 		gettimeofday(&starttime, NULL);
-		if (mixer_channel != -1)
-			Mix_Resume(mixer_channel);
+		isPaused = false;
 	}
+	manager->engineData->audio_StreamPause(mixer_channel,pause_on);
 }
 
 bool AudioStream::ispaused()
 {
-	return Mix_Paused(mixer_channel);
+	return 	isPaused;
 }
 
 void AudioStream::mute()
 {
 	unmutevolume = curvolume;
-	curvolume = 0;
+	setVolume(0);
 }
 void AudioStream::unmute()
 {
-	curvolume = unmutevolume;
+	setVolume(unmutevolume);
 }
 void AudioStream::setVolume(double volume)
 {
-	curvolume = SDL_MIX_MAXVOLUME * volume;
-	if (mixer_channel != -1)
-		Mix_Volume(mixer_channel, curvolume);
+	manager->engineData->audio_StreamSetVolume(mixer_channel, volume);
+	curvolume = volume;
 }
 
 AudioStream::~AudioStream()
 {
-	if (mixer_channel != -1)
-		Mix_HaltChannel(mixer_channel);
+	manager->engineData->audio_StreamDeinit(mixer_channel);
 	manager->removeStream(this);
 }
 
-AudioManager::AudioManager():muteAllStreams(false),sdl_available(0),mixeropened(0)
+AudioManager::AudioManager(EngineData *engine):muteAllStreams(false),audio_available(false),mixeropened(0),engineData(engine)
 {
-	sdl_available = 0;
-	if (EngineData::sdl_needinit)
-	{
-		if (SDL_WasInit(0)) // some part of SDL already was initialized
-			sdl_available = !SDL_InitSubSystem ( SDL_INIT_AUDIO );
-		else
-			sdl_available = !SDL_Init ( SDL_INIT_AUDIO );
-	}
+	audio_available = engine->audio_ManagerInit();
 	mixeropened = 0;
 }
 void AudioManager::muteAll()
@@ -158,7 +118,7 @@ void AudioManager::removeStream(AudioStream *s)
 	streams.remove(s);
 	if (streams.empty())
 	{
-		Mix_CloseAudio();
+		engineData->audio_ManagerCloseMixer();
 		mixeropened = false;
 	}
 }
@@ -166,14 +126,14 @@ void AudioManager::removeStream(AudioStream *s)
 AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
 {
 	Locker l(streamMutex);
-	if (!sdl_available)
+	if (!audio_available)
 		return NULL;
 	if (!mixeropened)
 	{
-		if (Mix_OpenAudio (MIX_DEFAULT_FREQUENCY, AUDIO_S16, 2, LIGHTSPARK_AUDIO_SDL_BUFFERSIZE) < 0)
+		if (!engineData->audio_ManagerOpenMixer())
 		{
-			LOG(LOG_ERROR,"Couldn't open SDL_mixer");
-			sdl_available = 0;
+			LOG(LOG_ERROR,"Couldn't open mixer");
+			audio_available = 0;
 			return NULL;
 		}
 		mixeropened = 1;
@@ -204,12 +164,10 @@ AudioManager::~AudioManager()
 	}
 	if (mixeropened)
 	{
-		Mix_CloseAudio();
+		engineData->audio_ManagerCloseMixer();
 	}
-	if (sdl_available)
+	if (audio_available)
 	{
-		SDL_QuitSubSystem ( SDL_INIT_AUDIO );
-		if (!SDL_WasInit(0))
-			SDL_Quit ();
+		engineData->audio_ManagerDeinit();
 	}
 }

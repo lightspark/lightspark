@@ -25,6 +25,8 @@
 #include "threading.h"
 #include "tiny_string.h"
 
+#define LIGHTSPARK_AUDIO_BUFFERSIZE 8192
+
 namespace lightspark
 {
 
@@ -38,6 +40,7 @@ typedef unsigned long XID;
 #define LS_USEREVENT_QUIT EngineData::userevent+2
 class SystemState;
 class StreamCache;
+class AudioStream;
 
 class DLL_PUBLIC EngineData
 {
@@ -107,6 +110,7 @@ public:
 	virtual double getScreenDPI() = 0;
 	virtual StreamCache* createFileStreamCache();
 	
+	// OpenGL methods
 	virtual void SwapBuffers() = 0;
 	virtual void InitOpenGL() = 0;
 	virtual void DeinitOpenGL() = 0;
@@ -165,6 +169,18 @@ public:
 	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
 	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
+
+	// Audio handling
+	virtual int audio_StreamInit(AudioStream* s);
+	virtual void audio_StreamPause(int channel, bool dopause);
+	virtual void audio_StreamSetVolume(int channel, double volume);
+	virtual void audio_StreamDeinit(int channel);
+	virtual bool audio_ManagerInit();
+	virtual void audio_ManagerCloseMixer();
+	virtual bool audio_ManagerOpenMixer();
+	virtual void audio_ManagerDeinit();
+	virtual int audio_getSampleRate();
+	
 };
 
 }

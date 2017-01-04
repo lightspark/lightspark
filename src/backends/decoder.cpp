@@ -1076,6 +1076,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, in
 		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 		AVProbeData probeData;
 		probeData.filename="lightspark_stream";
+		probeData.mime_type=NULL;
 		probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
 		memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
 		stream.read((char*)probeData.buf,8192);
@@ -1083,7 +1084,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, in
 		if(read!=8192)
 			LOG(LOG_ERROR,"Not sufficient data is available from the stream:"<<read);
 		probeData.buf_size=read;
-	
+
 		stream.seekg(0);
 		fmt=av_probe_input_format(&probeData,1);
 		delete[] probeData.buf;
@@ -1154,7 +1155,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(std::istream& s,AudioFormat* format, in
 
 	if(audioFound)
 	{
-		if (format)
+		if (format && (format->codec != LS_AUDIO_CODEC::CODEC_NONE))
 			customAudioDecoder=new FFMpegAudioDecoder(format->codec,format->sampleRate,format->channels,true);
 		else
 #if LIBAVFORMAT_VERSION_MAJOR > 56

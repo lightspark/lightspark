@@ -1,3 +1,4 @@
+R"(
 attribute vec4 ls_Color;
 attribute vec2 ls_Vertex;
 attribute vec2 ls_TexCoord;
@@ -18,3 +19,4 @@ void main()
 	ls_TexCoords[0]=vec4(ls_TexCoord, 0, 1);
 	ls_TexCoords[1]=t;
 }
+)"

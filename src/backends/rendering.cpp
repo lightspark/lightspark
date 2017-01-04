@@ -276,15 +276,11 @@ bool RenderThread::loadShaderPrograms()
 	//Create render program
 	uint32_t f = engineData->exec_glCreateShader_GL_FRAGMENT_SHADER();
 	
-	const char *fs = NULL;
-	fs = dataFileRead("lightspark.frag");
-	if(fs==NULL)
-	{
-		LOG(LOG_ERROR,_("Shader lightspark.frag not found"));
-		throw RunTimeException("Fragment shader code not found");
-	}
+	// directly include shader source to avoid filesystem access
+	const char *fs = 
+#include "lightspark.frag"
+;
 	engineData->exec_glShaderSource(f, 1, &fs,NULL);
-	free((void*)fs);
 	uint32_t g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
 	
 	bool ret=true;
@@ -300,14 +296,11 @@ bool RenderThread::loadShaderPrograms()
 		throw RunTimeException("Could not compile fragment shader");
 	}
 
-	fs = dataFileRead("lightspark.vert");
-	if(fs==NULL)
-	{
-		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));
-		throw RunTimeException("Vertex shader code not found");
-	}
-	engineData->exec_glShaderSource(g, 1, &fs,NULL);
-	free((void*)fs);
+	// directly include shader source to avoid filesystem access
+	const char *fs2 = 
+#include "lightspark.vert"
+;
+	engineData->exec_glShaderSource(g, 1, &fs2,NULL);
 
 	engineData->exec_glGetShaderInfoLog(g,1024,&a,str);
 	LOG(LOG_INFO,_("Vertex shader compilation ") << str);

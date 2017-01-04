@@ -1,3 +1,4 @@
+R"(
 #ifdef GL_ES
 precision highp float;
 #endif
@@ -30,3 +31,4 @@ void main()
 		gl_FragColor=(vbase*(1.0-yuv))+(val*yuv);
 	}
 }
+)"

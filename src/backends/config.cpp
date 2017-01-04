@@ -121,20 +121,20 @@ Config::Config():
 #endif
 
 	//If cache dir doesn't exist, create it
-	path cacheDirectoryP(cacheDirectory);
-	if(!is_directory(cacheDirectoryP))
+	try
 	{
-		LOG(LOG_INFO, "Cache directory does not exist, trying to create");
-		try
+		path cacheDirectoryP(cacheDirectory);
+		if(!is_directory(cacheDirectoryP))
 		{
-			create_directories(cacheDirectoryP);
+			LOG(LOG_INFO, "Cache directory does not exist, trying to create");
+				create_directories(cacheDirectoryP);
 		}
-		catch(const filesystem_error& e)
-		{
-			LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
-					defaultCacheDirectory);
-			cacheDirectory = defaultCacheDirectory;
-		}
+	}
+	catch(const filesystem_error& e)
+	{
+		LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+				defaultCacheDirectory);
+		cacheDirectory = defaultCacheDirectory;
 	}
 
 #ifdef _WIN32

@@ -402,7 +402,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
 : EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
-  format(_format),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState())))
+  format(_format),oldVolume(-1.0),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState())))
 {
 	if (!stream.isNull())
 	{
@@ -500,6 +500,16 @@ void SoundChannel::playStream()
 			if(audioStream)
 				position=audioStream->getPlayedTime();
 
+			if(audioStream)
+			{
+				//TODO: use soundTransform->pan
+				if(soundTransform && soundTransform->volume != oldVolume)
+				{
+					audioStream->setVolume(soundTransform->volume);
+					oldVolume = soundTransform->volume;
+				}
+			}
+			
 			if(threadAborting)
 				throw JobTerminationException();
 		}

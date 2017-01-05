@@ -89,6 +89,7 @@ private:
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	AudioFormat format;
+	number_t oldVolume;
 	ASPROPERTY_GETTER_SETTER(uint32_t,position);
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	void validateSoundTransform(_NR<SoundTransform>);

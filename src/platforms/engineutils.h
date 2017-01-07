@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "threading.h"
 #include "tiny_string.h"
+#include "backends/graphics.h"
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 8192
 
@@ -181,6 +182,8 @@ public:
 	virtual void audio_ManagerDeinit();
 	virtual int audio_getSampleRate();
 	
+	// Text rendering
+	virtual IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms);
 };
 
 }

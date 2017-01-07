@@ -1004,6 +1004,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return NULL;
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
+	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks);
+	if (res != NULL)
+		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
 		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).
 		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.

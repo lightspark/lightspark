@@ -19,7 +19,6 @@
 
 
 // TODO
-// - font loading
 // - register as separate plugin
 
 #include "version.h"
@@ -65,6 +64,8 @@
 #include "ppapi/c/ppb_file_system.h"
 #include "ppapi/c/ppb_audio.h"
 #include "ppapi/c/ppb_audio_config.h"
+#include "ppapi/c/ppb_image_data.h"
+#include "ppapi/c/trusted/ppb_browser_font_trusted.h"
 
 #include "GLES2/gl2.h"
 
@@ -101,8 +102,8 @@ static const PPB_FileRef* g_fileref_interface = NULL;
 static const PPB_FileSystem* g_filesystem_interface = NULL;
 static const PPB_Audio* g_audio_interface = NULL;
 static const PPB_AudioConfig* g_audioconfig_interface = NULL;
-
-
+static const PPB_ImageData* g_imagedata_interface = NULL;
+static const PPB_BrowserFont_Trusted* g_browserfont_interface = NULL;
 
 ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance):cache(0),cacheref(0),writeoffset(0),m_instance(instance)
 {
@@ -1390,6 +1391,9 @@ extern "C"
 		g_filesystem_interface = (const PPB_FileSystem*)get_browser_interface(PPB_FILESYSTEM_INTERFACE);
 		g_audio_interface = (const PPB_Audio*)get_browser_interface(PPB_AUDIO_INTERFACE);
 		g_audioconfig_interface = (const PPB_AudioConfig*)get_browser_interface(PPB_AUDIO_CONFIG_INTERFACE);
+		g_imagedata_interface = (const PPB_ImageData*)get_browser_interface(PPB_IMAGEDATA_INTERFACE);
+		g_browserfont_interface = (const PPB_BrowserFont_Trusted*)get_browser_interface(PPB_BROWSERFONT_TRUSTED_INTERFACE);
+		
 		
 		
 		if (!g_core_interface ||
@@ -1413,7 +1417,10 @@ extern "C"
 				!g_fileref_interface ||
 				!g_filesystem_interface ||
 				!g_audio_interface ||
-				!g_audioconfig_interface )
+				!g_audioconfig_interface ||
+				!g_imagedata_interface ||
+				!g_browserfont_interface
+				)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
 				<< g_core_interface <<" "
@@ -1438,6 +1445,8 @@ extern "C"
 				<< g_filesystem_interface<<" "
 				<< g_audio_interface<<" "
 				<< g_audioconfig_interface<<" "
+				<< g_imagedata_interface<<" "
+				<< g_browserfont_interface<<" "
 				);
 			return PP_ERROR_NOINTERFACE;
 		}
@@ -1947,3 +1956,58 @@ int ppPluginEngineData::audio_getSampleRate()
 {
 	return PP_AUDIOSAMPLERATE_44100;
 }
+
+IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms)
+{
+	PP_BrowserFont_Trusted_Description desc;
+	desc.face = g_var_interface->VarFromUtf8(_textData.font.raw_buf(),_textData.font.numBytes());
+	desc.family = PP_BROWSERFONT_TRUSTED_FAMILY_DEFAULT;
+	desc.size = _textData.fontSize;
+	desc.italic = PP_FALSE;
+	desc.weight = PP_BROWSERFONT_TRUSTED_WEIGHT_NORMAL;
+	desc.letter_spacing = 0;
+	desc.padding = 0;
+	desc.word_spacing = 0;
+	desc.small_caps = PP_FALSE;
+	
+	PP_Point pos = PP_MakePoint(0, _textData.textHeight);
+	PP_Size size = PP_MakeSize(_textData.width, _textData.height);
+	
+	PP_BrowserFont_Trusted_TextRun text;
+	text.text = g_var_interface->VarFromUtf8(_textData.text.raw_buf(),_textData.text.numBytes());
+	text.override_direction = PP_FALSE;
+	text.rtl = PP_FALSE;
+	
+	uint32_t color = (_textData.textColor.Blue) + (_textData.textColor.Green<<8) + (_textData.textColor.Red<<16) + ((int)(255/_a)<<24);
+
+	PP_Resource image_data = g_imagedata_interface->Create(instance->m_ppinstance,PP_IMAGEDATAFORMAT_BGRA_PREMUL,&size,PP_TRUE);
+	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
+	if (font == 0)
+		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
+	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,NULL,PP_FALSE);
+	
+	return new ppFontRenderer(_w,_h,_x,_y,_a,_ms,image_data);
+}
+ppFontRenderer::ppFontRenderer(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m, PP_Resource _image_data)
+	: IDrawable(w, h, x, y, a, m),ppimage(_image_data)
+{
+	
+}
+
+ppFontRenderer::~ppFontRenderer()
+{
+}
+
+uint8_t *ppFontRenderer::getPixelBuffer()
+{
+	uint8_t* data = new uint8_t[this->width*this->height*sizeof(uint32_t)];
+	memcpy(data,g_imagedata_interface->Map(ppimage),this->width*this->height*sizeof(uint32_t));
+	g_imagedata_interface->Unmap(ppimage);
+	return data;
+}
+
+void ppFontRenderer::applyCairoMask(cairo_t *cr, int32_t offsetX, int32_t offsetY) const
+{
+	
+}
+

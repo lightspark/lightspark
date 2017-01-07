@@ -233,6 +233,29 @@ public:
 	virtual bool audio_ManagerOpenMixer();
 	virtual void audio_ManagerDeinit();
 	virtual int audio_getSampleRate();
+
+	// Text rendering
+	virtual IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms);
+};
+
+class ppFontRenderer : public IDrawable
+{
+	PP_Resource ppimage;
+public:
+	ppFontRenderer(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m,PP_Resource _image_data);
+	~ppFontRenderer();
+	/*
+	 * This method returns a raster buffer of the image
+	 * The various implementation are responsible for applying the
+	 * masks
+	 */
+	virtual uint8_t* getPixelBuffer();
+	/*
+	 * This method creates a cairo path that can be used as a mask for
+	 * another object
+	 */
+	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
+	
 };
 
 }

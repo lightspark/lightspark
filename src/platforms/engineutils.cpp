@@ -656,3 +656,8 @@ int EngineData::audio_getSampleRate()
 {
 	return MIX_DEFAULT_FREQUENCY;
 }
+
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms)
+{
+	return NULL;
+}

@@ -31,7 +31,7 @@
 using namespace lightspark;
 using namespace std;
 
-SoundTransform::SoundTransform(Class_base* c): ASObject(c),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
+SoundTransform::SoundTransform(Class_base* c): ASObject(c),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
 {
 }
 

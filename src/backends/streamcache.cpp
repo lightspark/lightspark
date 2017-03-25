@@ -24,12 +24,14 @@
 #include "backends/config.h"
 #include "exceptions.h"
 #include "logger.h"
+#include "netutils.h"
+#include "swf.h"
 
 using namespace std;
 using namespace lightspark;
 
-StreamCache::StreamCache()
-  : receivedLength(0), failed(false), terminated(false),notifyLoader(true)
+StreamCache::StreamCache(SystemState* _sys)
+  : receivedLength(0), failed(false), terminated(false),notifyLoader(true),sys(_sys)
 {
 }
 
@@ -41,22 +43,32 @@ size_t StreamCache::markFinished(bool _failed)
 
 	failed = _failed;
 	terminated = true;
-	stateCond.broadcast();
+	sys->sendMainSignal();
 	return receivedLength;
 }
 
 void StreamCache::waitForData(size_t currentOffset)
 {
-	Locker locker(stateMutex);
+	stateMutex.lock();
 	while (receivedLength <= currentOffset && !terminated)
-		stateCond.wait(stateMutex);
+	{
+		stateMutex.unlock();
+		sys->waitMainSignal();
+		stateMutex.lock();
+	}
+	stateMutex.unlock();
 }
 
 void StreamCache::waitForTermination()
 {
-	Locker locker(stateMutex);
+	stateMutex.lock();
 	while (!terminated)
-		stateCond.wait(stateMutex);
+	{
+		stateMutex.unlock();
+		sys->waitMainSignal();
+		stateMutex.lock();
+	}
+	stateMutex.unlock();
 }
 
 void StreamCache::append(const unsigned char* buffer, size_t length)
@@ -67,9 +79,10 @@ void StreamCache::append(const unsigned char* buffer, size_t length)
 	handleAppend(buffer, length);
 
 	{
-		Locker locker(stateMutex);
+		stateMutex.lock();
 		receivedLength += length;
-		stateCond.broadcast();
+		stateMutex.unlock();
+		sys->sendMainSignal();
 	}
 }
 
@@ -92,7 +105,7 @@ MemoryChunk::~MemoryChunk()
 	delete[] buffer;
 }
 
-MemoryStreamCache::MemoryStreamCache():
+MemoryStreamCache::MemoryStreamCache(SystemState* _sys):StreamCache(_sys),
 	writeChunk(NULL), nextChunkSize(0)
 {
 }
@@ -335,8 +348,8 @@ streampos MemoryStreamCache::Reader::getOffset() const
 	return chunkStartOffset + (size_t)(gptr() - eback());
 }
 
-FileStreamCache::FileStreamCache()
-  : keepCache(false)
+FileStreamCache::FileStreamCache(SystemState* _sys):StreamCache(_sys),
+  keepCache(false)
 {
 }
 

@@ -41,22 +41,21 @@ namespace lightspark
  *
  * This is an abstract base class.
  */
+class SystemState;
 class DLL_PUBLIC StreamCache : public RefCountable {
 protected:
-	StreamCache();
+	StreamCache(SystemState* _sys);
 
 	// stateMutex must be held while receivedLength, failed or
 	// terminated are accessed
 	Mutex stateMutex;
-	// stateCond is signalled when data is received or the stream
-	// is terminated
-	Cond stateCond;
 	// Amount of data already received
 	size_t receivedLength;
 	// Has the stream been completely downloaded or failed?
 	bool failed:1;
 	bool terminated:1;
 	bool notifyLoader:1;
+	SystemState* sys;
 
 	// Wait until more than currentOffset bytes has been received
 	// or until terminated
@@ -147,7 +146,7 @@ private:
 	virtual void handleAppend(const unsigned char* buffer, size_t length) DLL_LOCAL;
 
 public:
-	MemoryStreamCache();
+	MemoryStreamCache(SystemState *_sys);
 	virtual ~MemoryStreamCache();
 
 	virtual void reserve(size_t expectedLength);
@@ -191,7 +190,7 @@ private:
 	virtual void handleAppend(const unsigned char* buffer, size_t length) DLL_LOCAL;
 
 public:
-	FileStreamCache();
+	FileStreamCache(SystemState* _sys);
 	virtual ~FileStreamCache();
 
 	virtual std::streambuf *createReader();

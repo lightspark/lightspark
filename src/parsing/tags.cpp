@@ -1619,7 +1619,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(24,bs);
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache)
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache(root->getSystemState()))
 {
 	LOG(LOG_TRACE,_("DefineSound Tag"));
 	in >> SoundId;

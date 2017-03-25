@@ -159,7 +159,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* downloader)
  * \param[in] _url The URL for the Downloader.
  */
 NPDownloader::NPDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner):
-	Downloader(_url, _MR(new MemoryStreamCache), owner),instance(NULL),cleanupInDestroyStream(true),state(INIT)
+	Downloader(_url, _MR(new MemoryStreamCache(getSys())), owner),instance(NULL),cleanupInDestroyStream(true),state(INIT)
 {
 }
 

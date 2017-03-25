@@ -109,7 +109,7 @@ public:
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;
-	virtual StreamCache* createFileStreamCache();
+	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	
 	// OpenGL methods
 	virtual void SwapBuffers() = 0;

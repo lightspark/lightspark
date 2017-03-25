@@ -262,6 +262,9 @@ private:
 	boost::bimap<nsNameAndKindImpl, uint32_t> uniqueNamespaceMap;
 	//This needs to be atomic because it's decremented without the mutex held
 	ATOMIC_INT32(lastUsedNamespaceId);
+	
+	Mutex mainsignalMutex;
+	Cond mainsignalCond;
 	void systemFinalize();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
@@ -458,6 +461,13 @@ public:
 	void showMouseCursor(bool visible);
 	void waitRendering() DLL_PUBLIC;
 	EngineData* getEngineData() { return engineData;}
+
+	// these methods ensure that externalcallevents are executed as soon and as fast as possible
+	// the ppapi plugin needs this because external call events are blocking the main plugin thread 
+	// so we need to make sure external call events are executed even if another plugin method is currently running in another thread
+	void checkExternalCallEvent() DLL_PUBLIC;
+	void waitMainSignal() DLL_PUBLIC;
+	void sendMainSignal() DLL_PUBLIC;
 };
 
 class ParseThread: public IThreadJob

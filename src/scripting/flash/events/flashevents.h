@@ -77,10 +77,14 @@ private:
 /* Base class for all events that the one can wait on */
 class WaitableEvent : public Event
 {
+private:
+	bool handled;
 public:
 	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(NULL,t,b,c), done(0) {}
-	Semaphore done;
+		: Event(NULL,t,b,c), handled(false) {}
+	void wait();
+	void signal();
+	void finalize();
 };
 
 class EventPhase: public ASObject

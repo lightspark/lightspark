@@ -228,9 +228,9 @@ void EngineData::setClipboardText(const std::string txt)
 		LOG(LOG_ERROR, "copying text to clipboard failed:"<<SDL_GetError());
 }
 
-StreamCache *EngineData::createFileStreamCache()
+StreamCache *EngineData::createFileStreamCache(SystemState* sys)
 {
-	return new FileStreamCache();
+	return new FileStreamCache(sys);
 }
 
 bool EngineData::getGLError(uint32_t &errorCode) const

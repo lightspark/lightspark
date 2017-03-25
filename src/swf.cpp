@@ -1795,7 +1795,7 @@ void SystemState::tick()
 	/* Step 0: Set current frame number to the next frame */
 	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
 	if(currentVm->addEvent(NullRef, advFrame))
-		advFrame->done.wait();
+		advFrame->wait();
 }
 
 void SystemState::tickFence()
@@ -1973,6 +1973,25 @@ void SystemState::showMouseCursor(bool visible)
 void SystemState::waitRendering()
 {
 	getRenderThread()->waitRendering();
+}
+
+void SystemState::checkExternalCallEvent()
+{
+	if (currentVm && isVmThread())
+		currentVm->checkExternalCallEvent();
+}
+void SystemState::waitMainSignal()
+{
+	checkExternalCallEvent();
+	{
+		Locker l(mainsignalMutex);
+		mainsignalCond.wait(mainsignalMutex);
+	}
+	checkExternalCallEvent();
+}
+void SystemState::sendMainSignal()
+{
+	mainsignalCond.broadcast();
 }
 
 /* This is run in vm's thread context */

@@ -501,6 +501,7 @@ private:
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
+	void handleFrontEvent();
 	void signalEventWaiters();
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
 	Class_inherit* findClassInherit(const std::string& s, RootMovieClip* r);
@@ -554,6 +555,7 @@ public:
 	static const Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
+	bool prependEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }
@@ -582,6 +584,7 @@ public:
 	uint32_t getDefaultXMLNamespaceID();
 
 	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
+	void checkExternalCallEvent() DLL_PUBLIC;
 };
 
 class DoABCTag: public ControlTag

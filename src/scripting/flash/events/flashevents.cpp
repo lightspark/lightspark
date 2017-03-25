@@ -200,6 +200,24 @@ ASFUNCTIONBODY(Event,stopImmediatePropagation)
 	return NULL;
 }
 
+void WaitableEvent::wait()
+{
+	while (!handled)
+		getSys()->waitMainSignal();
+}
+
+void WaitableEvent::signal()
+{
+	handled = true;
+	getSys()->sendMainSignal();
+}
+
+void WaitableEvent::finalize()
+{
+	handled = false;
+	Event::finalize();
+}
+
 void EventPhase::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);

@@ -787,6 +787,7 @@ PolicyFile::~PolicyFile()
  */
 void PolicyFile::load()
 {
+	Mutex::Lock l(mutex);
 	//TODO: support download timeout handling
 	
 	//Invalid URLPolicyFile or already loaded, ignore this call
@@ -800,7 +801,6 @@ void PolicyFile::load()
 	if (!isIgnored())
 		valid = retrievePolicyFile(policy);
 
-	Mutex::Lock l(mutex);
 
 	if (isLoaded())
 	{
@@ -1008,7 +1008,7 @@ bool URLPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	bool ok = true;
 
 	//No caching needed for this download, we don't expect very big files
-	Downloader* downloader=getSys()->downloadManager->download(url, _MR(new MemoryStreamCache), NULL);
+	Downloader* downloader=getSys()->downloadManager->download(url, _MR(new MemoryStreamCache(getSys())), NULL);
 
 	//Wait until the file is fetched
 	downloader->waitForTermination();

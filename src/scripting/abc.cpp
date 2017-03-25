@@ -1253,13 +1253,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				catch(ASObject* exception)
 				{
 					//Exception unhandled, report up
-					ev->done.signal();
+					ev->signal();
 					throw;
 				}
 				catch(LightsparkException& e)
 				{
 					//An internal error happended, sync and rethrow
-					ev->done.signal();
+					ev->signal();
 					throw;
 				}
 				break;
@@ -1280,7 +1280,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				catch(LightsparkException& e)
 				{
 					//An internal error happended, sync and rethrow
-					ev->done.signal();
+					ev->signal();
 					throw;
 				}
 				break;
@@ -1338,7 +1338,30 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 
 	/* If this was a waitable event, signal it */
 	if(e.second->is<WaitableEvent>())
-		e.second->as<WaitableEvent>()->done.signal();
+		e.second->as<WaitableEvent>()->signal();
+}
+
+bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+{
+	/* We have to run waitable events directly,
+	 * because otherwise waiting on them in the vm thread
+	 * will block the vm thread from executing them.
+	 */
+	if(isVmThread() && ev->is<WaitableEvent>())
+	{
+		handleEvent( make_pair(obj,ev) );
+		return true;
+	}
+
+	Mutex::Lock l(event_queue_mutex);
+
+	//If the system should terminate new events are not accepted
+	if(shuttingdown)
+		return false;
+
+	events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	sem_event_cond.signal();
+	return true;
 }
 
 /*! \brief enqueue an event, a reference is acquired
@@ -1418,6 +1441,61 @@ void ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 		t->bindedTo=derived_class_tmp;
 
 	derived_class_tmp->bindToTag(t);
+}
+void ABCVm::checkExternalCallEvent()
+{
+	event_queue_mutex.lock();
+	if (events_queue.size() == 0)
+	{
+		event_queue_mutex.unlock();
+		return;
+	}
+	pair<_NR<EventDispatcher>,_R<Event>> e=events_queue.front();
+	if (e.first.isNull() && e.second->getEventType() == EXTERNAL_CALL)
+		handleFrontEvent();
+	else
+		event_queue_mutex.unlock();
+}
+void ABCVm::handleFrontEvent()
+{
+	pair<_NR<EventDispatcher>,_R<Event>> e=events_queue.front();
+	events_queue.pop_front();
+
+	event_queue_mutex.unlock();
+	try
+	{
+		//handle event without lock
+		handleEvent(e);
+		//Flush the invalidation queue
+		if (!e.first.isNull() || e.second->getEventType() != EXTERNAL_CALL)
+			m_sys->flushInvalidationQueue();
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,_("Error in VM ") << e.cause);
+		m_sys->setError(e.cause);
+		/* do not allow any more event to be enqueued */
+		shuttingdown = true;
+		signalEventWaiters();
+	}
+	catch(ASObject*& e)
+	{
+		shuttingdown = true;
+		if(e->getClass())
+			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
+		else
+			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
+		if (e->is<ASError>())
+		{
+			m_sys->setError(e->as<ASError>()->getStackTraceString());
+			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->as<ASError>()->getStackTraceString());
+		}
+		else
+			m_sys->setError(_("Unhandled ActionScript exception"));
+		/* do not allow any more event to be enqueued */
+		shuttingdown = true;
+		signalEventWaiters();
+	}
 }
 
 method_info* ABCContext::get_method(unsigned int m)
@@ -1701,51 +1779,15 @@ void ABCVm::Run(ABCVm* th)
 			}
 		}
 		Chronometer chronometer;
-		pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
-		th->events_queue.pop_front();
 
-		th->event_queue_mutex.unlock();
-		try
-		{
-			//handle event without lock
-			th->handleEvent(e);
-			//Flush the invalidation queue
-			th->m_sys->flushInvalidationQueue();
-			profile->accountTime(chronometer.checkpoint());
+		pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
+		th->handleFrontEvent();
+		profile->accountTime(chronometer.checkpoint());
 #ifdef MEMORY_USAGE_PROFILING
-			if((snapshotCount%100)==0)
-				th->m_sys->saveMemoryUsageInformation(memoryProfile, snapshotCount);
-			snapshotCount++;
+		if((snapshotCount%100)==0)
+			m_sys->saveMemoryUsageInformation(memoryProfile, snapshotCount);
+		snapshotCount++;
 #endif
-		}
-		catch(LightsparkException& e)
-		{
-			LOG(LOG_ERROR,_("Error in VM ") << e.cause);
-			th->m_sys->setError(e.cause);
-			/* do not allow any more event to be enqueued */
-			th->shuttingdown = true;
-			th->signalEventWaiters();
-			break;
-		}
-		catch(ASObject*& e)
-		{
-			th->shuttingdown = true;
-			if(e->getClass())
-				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
-			else
-				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
-			if (e->is<ASError>())
-			{
-				th->m_sys->setError(e->as<ASError>()->getStackTraceString());
-				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->as<ASError>()->getStackTraceString());
-			}
-			else
-				th->m_sys->setError(_("Unhandled ActionScript exception"));
-			/* do not allow any more event to be enqueued */
-			th->shuttingdown = true;
-			th->signalEventWaiters();
-			break;
-		}
 	}
 	if(th->m_sys->useJit)
 	{
@@ -1767,7 +1809,7 @@ void ABCVm::signalEventWaiters()
 		pair<_NR<EventDispatcher>,_R<Event>> e=events_queue.front();
                 events_queue.pop_front();
 		if(e.second->is<WaitableEvent>())
-			e.second->as<WaitableEvent>()->done.signal();
+			e.second->as<WaitableEvent>()->signal();
 	}
 }
 

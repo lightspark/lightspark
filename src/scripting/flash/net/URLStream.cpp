@@ -64,7 +64,7 @@ void URLStreamThread::execute()
 
 	//TODO: support httpStatus
 
-	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(loader->getSystemState())));
 	if(!createDownloader(cache, loader,this))
 		return;
 	data->setLength(0);

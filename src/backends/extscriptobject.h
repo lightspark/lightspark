@@ -391,6 +391,8 @@ private:
 	bool shuttingDown;
 	// True if exceptions should be marshalled to the container
 	bool marshallExceptions;
+	
+	virtual void sendExternalCallSignal() {}
 };
 
 };

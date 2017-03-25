@@ -65,3 +65,23 @@ bool ppExtScriptObject::invoke(const ExtIdentifier& method_name, uint32_t argc, 
 	}
 	return res;
 }
+
+void ppExtScriptObject::handleExternalCall(ExtIdentifier &method_name, uint32_t argc, PP_Var *argv, PP_Var *exception)
+{
+	setTLSSys(getSystemState());
+	externalcallresult = PP_MakeUndefined();
+	LOG(LOG_INFO,"ppExtScriptObject::handleExternalCall:"<< method_name.getString());
+	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
+	const ExtVariant** objArgs = g_newa(const ExtVariant*,argc);
+	for (uint32_t i = 0; i < argc; i++)
+	{
+		objArgs[i]=new ppVariantObject(objectsMap,argv[i]);
+	}
+	invoke(method_name,argc,objArgs,&externalcallresult);
+		
+	LOG(LOG_INFO,"ppExtScriptObject::handleExternalCall done:"<<method_name.getString());
+}
+void ppExtScriptObject::sendExternalCallSignal()
+{
+	instance->signaliodone();
+}

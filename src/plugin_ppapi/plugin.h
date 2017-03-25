@@ -5,6 +5,7 @@
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/pp_var.h"
 #include "ppapi/c/pp_resource.h"
+#include "ppapi/c/pp_completion_callback.h"
 
 namespace lightspark
 {
@@ -13,13 +14,21 @@ class ppPluginInstance;
 
 
 class ppFileStreamCache : public StreamCache {
+	friend class ppPluginInstance;
 private:
 	class ppFileStreamCacheReader : public std::streambuf {
+	friend class ppPluginInstance;
 	private:
+		bool iodone;
 		std::streampos curpos;
+		std::streamsize readrequest;
+		std::streamsize bytesread;
+		char* readbuffer;
 		_R<ppFileStreamCache> buffer;
 		virtual int underflow();
 		virtual std::streamsize xsgetn(char* s, std::streamsize n);
+		static void readioCallback(void *userdata, int result);
+		static void readioCallbackDone(void *userdata, int result);
 		
 		std::streampos seekoff (std::streamoff off, std::ios_base::seekdir way,std::ios_base::openmode which);
 		std::streampos seekpos (std::streampos sp, std::ios_base::openmode which);
@@ -32,7 +41,14 @@ private:
 	PP_Resource cacheref;
 	int64_t writeoffset;
 	ppPluginInstance* m_instance;
+	std::vector<uint8_t> internalbuffer;
+	ppFileStreamCacheReader* reader;
+	bool iodone;
 
+	static void writeioCallback(void* userdata,int result);
+	static void writeioCallbackDone(void* userdata,int result);
+	static void waitioCallback(void* userdata,int result);
+	static void openioCallback(void* userdata,int result);
 	void openCache();
 	void openExistingCache(const tiny_string& filename, bool forWriting=true);
 
@@ -40,9 +56,11 @@ private:
 	bool waitForCache();
 
 	virtual void handleAppend(const unsigned char* buffer, size_t length);
-
+	
+	bool checkCacheFile();
+	void write(const unsigned char *buffer, size_t length);
 public:
-	ppFileStreamCache(ppPluginInstance* instance);
+	ppFileStreamCache(ppPluginInstance* instance, SystemState *sys);
 	virtual ~ppFileStreamCache();
 
 	virtual std::streambuf *createReader();
@@ -75,7 +93,6 @@ private:
 	uint32_t downloadedlength;
 	PP_Resource ppurlloader;
 	uint8_t buffer[4096];
-	
 	static void dlStartCallback(void* userdata,int result);
 	static void dlReadResponseCallback(void* userdata,int result);
 	static void dlStartDownloadCallback(void* userdata,int result);
@@ -114,14 +131,25 @@ friend class ppPluginEngineData;
 	struct PP_Size m_last_size;
 	PP_Resource m_graphics;
 	PP_Resource m_cachefilesystem;
+	PP_Resource m_cachedirectory_ref;
 	ATOMIC_INT32(m_cachefilename);
 	SystemState* m_sys;
 	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;
 	ppDownloader* mainDownloader;
 	ParseThread* m_pt;
+	Thread* m_ppLoopThread;
+	PP_Resource m_messageloop;
+	
+	ExtIdentifier m_extmethod_name;
+	uint32_t m_extargc;
+	PP_Var *m_extargv;
+	PP_Var *m_extexception;
+	void worker();
 	
 public:
+	ACQUIRE_RELEASE_FLAG(inReading);
+	ACQUIRE_RELEASE_FLAG(inWriting);
 	ppPluginInstance(PP_Instance instance, int16_t argc,const char* argn[],const char* argv[]);
 	virtual ~ppPluginInstance();
 	void handleResize(PP_Resource view);
@@ -131,19 +159,26 @@ public:
 	SystemState* getSystemState() const { return m_sys;}
 	void startMainParser();
 	PP_Instance getppInstance() { return m_ppinstance; }
+	PP_Instance getMessageLoop() { return m_messageloop; }
 	PP_Resource getFileSystem() { return m_cachefilesystem; }
 	PP_Resource createCacheFileRef();
+	static void openfilesystem_callback(void *userdata, int result);
+	void handleExternalCall(ExtIdentifier &method_name, uint32_t argc, PP_Var *argv, PP_Var *exception);
+	void waitiodone(ppFileStreamCache *cache);
+	void waitioreaddone(ppFileStreamCache::ppFileStreamCacheReader *cachereader);
+	void signaliodone();
+	int postwork(PP_CompletionCallback callback);
 };
 
 class ppPluginEngineData: public EngineData
 {
 private:
 	ppPluginInstance* instance;
+	bool buffersswapped;
 public:
 	SystemState* sys;
-	Semaphore swapbuffer_rendering;
 	PP_Resource audioconfig;
-	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),sys(_sys),swapbuffer_rendering(0),audioconfig(0)
+	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),buffersswapped(false),sys(_sys),audioconfig(0)
 	{
 		width = w;
 		height = h;
@@ -162,8 +197,10 @@ public:
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
-	StreamCache* createFileStreamCache();
+	StreamCache* createFileStreamCache(SystemState* sys);
 	
+	static void swapbuffer_done_callback(void* userdata,int result);
+	static void swapbuffer_start_callback(void* userdata,int result);
 	void SwapBuffers();
 	void InitOpenGL();
 	void DeinitOpenGL();

@@ -378,10 +378,12 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		func->incRef();
 		funcEvent = _MR(new (func->getSystemState()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
-		// Add the callback function event to the VM event queue
-		funcWasCalled=getVm(func->getSystemState())->addEvent(NullRef,funcEvent);
+		// Add the callback function event to the top of the VM event queue
+		funcWasCalled=getVm(func->getSystemState())->prependEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
 			funcEvent = NullRef;
+		else
+			func->getSystemState()->sendMainSignal();
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
 	else
@@ -410,12 +412,12 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 void ExtASCallback::wait()
 {
 	if(!funcEvent.isNull())
-		funcEvent->done.wait();
+		funcEvent->wait();
 }
 void ExtASCallback::wakeUp()
 {
 	if(!funcEvent.isNull())
-		funcEvent->done.signal();
+		funcEvent->signal();
 }
 bool ExtASCallback::getResult(std::map<const ASObject*, std::unique_ptr<ExtObject>>& objectsMap,
 		const ExtScriptObject& so, const ExtVariant** _result)
@@ -477,6 +479,7 @@ void ExtBuiltinCallback::call(const ExtScriptObject& so, const ExtIdentifier& id
 	// Catch AS exceptions and pass them on
 	catch(ASObject* _exception)
 	{
+		LOG(LOG_INFO,"ExtBuiltinCallback::call: exception:"<<_exception->toString()<<" "<<id.getString()<<" "<<argc);
 		exceptionThrown = true;
 		exception = _exception->toString();
 		_exception->decRef();

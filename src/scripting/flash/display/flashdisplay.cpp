@@ -343,7 +343,7 @@ void LoaderThread::execute()
 	streambuf *sbuf = 0;
 	if(source==URL)
 	{
-		_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache));
+		_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(loader->getSystemState())));
 		if(!createDownloader(cache, loaderInfo, loaderInfo.getPtr(), false))
 			return;
 
@@ -2085,12 +2085,12 @@ int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
 	int ret = 0;
 	do
 	{
+		if(it == dynamicDisplayList.end())
+			throw Class<ArgumentError>::getInstanceS(getSystemState(),"getChildIndex: child not in list", 2025);
 		if(*it == child)
 			break;
 		ret++;
 		++it;
-		if(it == dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS(getSystemState(),"getChildIndex: child not in list", 2025);
 	}
 	while(1);
 	return ret;

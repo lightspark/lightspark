@@ -239,7 +239,7 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache),
+	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache(c->getSystemState())),
 	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
 }
@@ -293,7 +293,7 @@ ASFUNCTIONBODY(Sound,load)
 	th->url = urlRequest->getRequestURL();
 	urlRequest->getPostData(th->postData);
 
-	_R<StreamCache> c(_MR(new MemoryStreamCache()));
+	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
 	th->soundData = c;
 
 	if(!th->url.isValid())

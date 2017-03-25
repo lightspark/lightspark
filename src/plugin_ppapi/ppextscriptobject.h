@@ -12,6 +12,7 @@ class ppExtScriptObject : public ExtScriptObject
 {
 private:
 	ppPluginInstance* instance;
+	void sendExternalCallSignal();
 public:
 	PP_Var ppScriptObject;
 	ppExtScriptObject(ppPluginInstance* _instance,SystemState* sys);
@@ -28,6 +29,8 @@ public:
 	
 	bool invoke(const ExtIdentifier &method_name, uint32_t argc, const ExtVariant **objArgs, PP_Var* result);
 	ppPluginInstance* getInstance() const { return instance; }
+	void handleExternalCall(ExtIdentifier& method_name, uint32_t argc, struct PP_Var* argv, struct PP_Var* exception);
+	PP_Var externalcallresult;
 };
 
 }

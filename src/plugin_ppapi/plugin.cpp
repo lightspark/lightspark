@@ -25,6 +25,7 @@
 #include "logger.h"
 #include "compat.h"
 #include "swf.h"
+#include "abc.h"
 #include "backends/security.h"
 #include "backends/rendering.h"
 #include <string>
@@ -66,6 +67,7 @@
 #include "ppapi/c/ppb_audio_config.h"
 #include "ppapi/c/ppb_image_data.h"
 #include "ppapi/c/trusted/ppb_browser_font_trusted.h"
+#include "ppapi/c/ppb_message_loop.h"
 
 #include "GLES2/gl2.h"
 
@@ -104,8 +106,10 @@ static const PPB_Audio* g_audio_interface = NULL;
 static const PPB_AudioConfig* g_audioconfig_interface = NULL;
 static const PPB_ImageData* g_imagedata_interface = NULL;
 static const PPB_BrowserFont_Trusted* g_browserfont_interface = NULL;
+static const PPB_MessageLoop* g_messageloop_interface = NULL;
 
-ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance):cache(0),cacheref(0),writeoffset(0),m_instance(instance)
+ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance,SystemState* sys):StreamCache(sys),cache(0),cacheref(0),writeoffset(0),m_instance(instance)
+  ,reader(NULL),iodone(false)
 {
 }
 
@@ -123,15 +127,68 @@ void ppFileStreamCache::handleAppend(const unsigned char* buffer, size_t length)
 	if (cache == 0)
 		openCache();
 
-	int written = g_fileio_interface->Write(cache,writeoffset,(const char*)buffer,length,PP_MakeCompletionCallback(NULL,NULL));
-	if (written < 0)
+	write(buffer,length);
+}
+void ppFileStreamCache::writeioCallback(void *userdata, int result)
+{
+	ppFileStreamCache* th = ((ppFileStreamCache*)userdata);
+	g_fileio_interface->Write(th->cache,th->writeoffset,(const char*)th->internalbuffer.data(),th->internalbuffer.size(),PP_MakeCompletionCallback(writeioCallbackDone,th));
+}
+void ppFileStreamCache::writeioCallbackDone(void *userdata, int result)
+{
+	ppFileStreamCache* th = ((ppFileStreamCache*)userdata);
+	if (result < 0)
 	{
-		LOG(LOG_ERROR,"writing cache file failed, error code:"<<written);
-		return;
+		LOG(LOG_ERROR,"writing cache file failed, error code:"<<result);
 	}
-	writeoffset += written;
+	else
+		th->writeoffset += result;
+	th->internalbuffer.clear();
+	waitioCallback(userdata, 0);
 }
 
+void ppFileStreamCache::write(const unsigned char* buffer, size_t length)
+{
+	while (m_instance->inReading)
+	{
+		// wait until reading is done, otherwise we run in a deadlock because chrome blocks
+		m_instance->getSystemState()->waitMainSignal();
+	}
+	RELEASE_WRITE(m_instance->inWriting,true);
+	this->internalbuffer.insert(this->internalbuffer.end(), buffer, buffer+length);
+	m_instance->postwork(PP_MakeCompletionCallback(writeioCallback,this));
+	m_instance->waitiodone(this);
+	RELEASE_WRITE(m_instance->inWriting,false);
+}
+void ppFileStreamCache::waitioCallback(void *userdata, int result)
+{
+	((ppFileStreamCache*)userdata)->iodone = true;
+	((ppFileStreamCache*)userdata)->m_instance->signaliodone();
+}
+void ppFileStreamCache::openioCallback(void *userdata, int result)
+{
+	ppFileStreamCache* th = ((ppFileStreamCache*)userdata);
+	LOG(LOG_CALLS,"cache file open");
+	th->cacheref = th->m_instance->createCacheFileRef();
+	th->cache = g_fileio_interface->Create(th->m_instance->getppInstance());
+	th->m_instance->getSystemState()->checkExternalCallEvent();
+	
+	int res = g_fileio_interface->Open(th->cache,th->cacheref,PP_FILEOPENFLAG_READ|PP_FILEOPENFLAG_WRITE|PP_FILEOPENFLAG_CREATE|PP_FILEOPENFLAG_TRUNCATE,PP_MakeCompletionCallback(waitioCallback,th));
+	LOG(LOG_CALLS,"cache file opened:"<<res<< " "<<th->cacheref<<" "<<th->cache);
+}
+
+bool ppFileStreamCache::checkCacheFile()
+{
+	LOG(LOG_CALLS,"checkCacheFile:"<<cache<<" "<<internalbuffer.size());
+	
+	// file can only be opened if we are not currently executing something in the main plugin thread
+	if (cache == 0)
+	{
+		m_instance->postwork(PP_MakeCompletionCallback(openioCallback,this));
+		m_instance->waitiodone(this);
+	}
+	return true;
+}
 /**
  * \brief Creates & opens a temporary cache file
  *
@@ -148,22 +205,12 @@ void ppFileStreamCache::openCache()
 		markFinished(true);
 		throw RunTimeException("ppFileStreamCache::openCache called twice");
 	}
-
-	//Create a temporary file(name)
-	
-	cacheref = m_instance->createCacheFileRef();
-	cache = g_fileio_interface->Create(m_instance->getFileSystem());
-	int res = g_fileio_interface->Open(cache,cacheref,PP_FileOpenFlags::PP_FILEOPENFLAG_READ|PP_FileOpenFlags::PP_FILEOPENFLAG_WRITE,PP_MakeCompletionCallback(NULL,NULL));
-	if (res != PP_OK)
-	{
-		LOG(LOG_ERROR,"opening cache file failed, error code:"<<res);
-		cache = 0;
-	}
-
+	checkCacheFile();
 }
 
 void ppFileStreamCache::openForWriting()
 {
+	LOG(LOG_CALLS,"opening cache openForWriting:"<<cache);
 	if (cache != 0)
 		return;
 	openCache();
@@ -179,7 +226,6 @@ bool ppFileStreamCache::waitForCache()
 
 	return cache != 0;
 }
-
 std::streambuf *ppFileStreamCache::createReader()
 {
 	if (!waitForCache())
@@ -190,10 +236,11 @@ std::streambuf *ppFileStreamCache::createReader()
 
 	incRef();
 	ppFileStreamCache::ppFileStreamCacheReader *fbuf = new ppFileStreamCache::ppFileStreamCacheReader(_MR(this));
+	reader = fbuf;
 	return fbuf;
 }
 
-ppFileStreamCache::ppFileStreamCacheReader::ppFileStreamCacheReader(_R<ppFileStreamCache> b) : curpos(-1),buffer(b)
+ppFileStreamCache::ppFileStreamCacheReader::ppFileStreamCacheReader(_R<ppFileStreamCache> b) : iodone(false),curpos(0),readrequest(0),bytesread(0),buffer(b)
 {
 }
 
@@ -205,25 +252,75 @@ int ppFileStreamCache::ppFileStreamCacheReader::underflow()
 	return streambuf::underflow();
 }
 
+void ppFileStreamCache::ppFileStreamCacheReader::readioCallback(void *userdata, int result)
+{
+	ppFileStreamCache::ppFileStreamCacheReader* th = ((ppFileStreamCache::ppFileStreamCacheReader*)userdata);
+	LOG(LOG_CALLS,"readiocallback:"<<th->buffer->cache<<" "<<th->curpos<<" "<<th->buffer->getReceivedLength());
+	g_fileio_interface->Read(th->buffer->cache,th->curpos,th->readbuffer,th->readrequest,PP_MakeCompletionCallback(readioCallbackDone,th));
+}
+void ppFileStreamCache::ppFileStreamCacheReader::readioCallbackDone(void *userdata, int result)
+{
+	ppFileStreamCache::ppFileStreamCacheReader* th = ((ppFileStreamCache::ppFileStreamCacheReader*)userdata);
+	LOG(LOG_CALLS,"readiocallback done:"<<th->buffer->cache<<" "<<th->curpos<<" "<<th->buffer->getReceivedLength()<<" "<<result);
+	if (result < 0)
+	{
+		LOG(LOG_ERROR,"reading cache file failed, error code:"<<result);
+	}
+	else
+		th->bytesread = result;
+	th->iodone = true;
+	th->buffer->m_instance->signaliodone();
+}
+
 streamsize ppFileStreamCache::ppFileStreamCacheReader::xsgetn(char* s, streamsize n)
 {
-	streamsize read= g_fileio_interface->Read(buffer->cache,curpos,s,n,PP_MakeCompletionCallback(NULL,NULL));
-	curpos += read;
+	while (buffer->m_instance->inWriting)
+	{
+		// wait until writing is done, otherwise we run in a deadlock because chrome blocks
+		buffer->m_instance->getSystemState()->waitMainSignal();
+	}
+	RELEASE_WRITE(buffer->m_instance->inReading,true);
+	readbuffer= s;
+	buffer->checkCacheFile();
+	readrequest=n;
+	bytesread=0;
+	streamsize read =0;
+	buffer->m_instance->postwork(PP_MakeCompletionCallback(readioCallback,this));
+	buffer->m_instance->waitioreaddone(this);
+	RELEASE_WRITE(buffer->m_instance->inReading,false);
+	if (bytesread < 0)
+	{
+		LOG(LOG_ERROR,"ppFileStreamCacheReader::xsgetn error:"<<read<< " "<<buffer->cache<<" "<<curpos<<" "<<buffer->getReceivedLength());
+		return 0;
+	}
+	
+	curpos += bytesread;
+	read += bytesread;
 	// If not enough data was available, wait for writer
 	while (read < n)
 	{
 		buffer->waitForData(seekoff(0, ios_base::cur, ios_base::in));
 
-		streamsize b = g_fileio_interface->Read(buffer->cache,curpos,s+read,n-read,PP_MakeCompletionCallback(NULL,NULL));
-		curpos += b;
+		while (buffer->m_instance->inWriting)
+		{
+			// wait until writing is done, otherwise we run in a deadlock because chrome blocks
+			buffer->m_instance->getSystemState()->waitMainSignal();
+		}
+		RELEASE_WRITE(buffer->m_instance->inReading,true);
+		readrequest=n;
+		readbuffer+= bytesread;
+		bytesread=0;
+		buffer->m_instance->postwork(PP_MakeCompletionCallback(readioCallback,this));
+		buffer->m_instance->waitioreaddone(this);
+		RELEASE_WRITE(buffer->m_instance->inReading,false);
+		curpos += bytesread;
 
 		// No more data after waiting, this must be EOF
-		if (b == 0)
+		if (bytesread == 0)
 			return read;
 
-		read += b;
+		read += bytesread;
 	}
-
 	return read;
 }
 
@@ -482,7 +579,7 @@ lightspark::Downloader* ppDownloadManager::download(const lightspark::URLInfo& u
 	}
 
 	bool cached = false;
-	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
+	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") <<cache.getPtr()<<" "<< url.getParsedURL() << 
 			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
 	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, m_instance, owner);
@@ -528,7 +625,6 @@ void ppDownloadManager::destroy(lightspark::Downloader* downloader)
 	}
 }
 
-
 void ppDownloader::dlStartCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
@@ -540,6 +636,7 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 		th->setFailed();
 		return;
 	}
+	LOG_CALL("start download callback:"<<th->getURL()<<" "<<g_core_interface->IsMainThread());
 	PP_Resource response = g_urlloader_interface->GetResponseInfo(th->ppurlloader);
 	PP_Var v;
 	uint32_t len;
@@ -589,13 +686,16 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 		LOG_CALL("download done:"<<th->getURL()<<" "<<th->downloadedlength<<" "<<th->getLength());
 		return;
 	}
-	g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,PP_MakeCompletionCallback(dlReadResponseCallback,th));
+	int res = g_urlloader_interface->ReadResponseBody(th->ppurlloader,th->buffer,4096,PP_MakeCompletionCallback(dlReadResponseCallback,th));
+	if (res != PP_OK_COMPLETIONPENDING)
+		LOG(LOG_ERROR,"download failed:"<<res<<" "<<th->getURL());
 }
 void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
 	setTLSSys(th->m_sys);
 	const tiny_string strurl = th->getURL();
+	LOG_CALL("dlStartDownloadCallback:"<<th->data.size()<<" "<<strurl);
 	th->ppurlloader = g_urlloader_interface->Create(th->m_pluginInstance->getppInstance());
 	g_urlloadedtrusted_interface->GrantUniversalAccess(th->ppurlloader);
 	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(th->m_pluginInstance->getppInstance());
@@ -617,14 +717,10 @@ void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 }
 void ppDownloader::startDownload()
 {
-	if (!g_core_interface->IsMainThread())
-		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(dlStartDownloadCallback,this),0);
-	else
-		dlStartDownloadCallback(this,0);
-	
+	this->m_pluginInstance->postwork(PP_MakeCompletionCallback(dlStartDownloadCallback,this));
 }
 ppDownloader::ppDownloader(const lightspark::tiny_string& _url, lightspark::ILoadable* owner, ppPluginInstance *ppinstance):
-	Downloader(_url, _MR(new MemoryStreamCache), owner),isMainClipDownloader(true),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
+	Downloader(_url, _MR(new MemoryStreamCache(ppinstance->getSystemState())), owner),isMainClipDownloader(true),m_sys(ppinstance->getSystemState()),m_pluginInstance(ppinstance),downloadedlength(0),state(INIT)
 {
 	startDownload();
 }
@@ -642,19 +738,80 @@ ppDownloader::ppDownloader(const lightspark::tiny_string& _url, _R<StreamCache> 
 {
 	startDownload();
 }
-void openfilesystem_callback(void* userdata,int result)
+
+void ppPluginInstance::openfilesystem_callback(void* userdata,int result)
 {
-	LOG(LOG_INFO,"filesystem opened");
+	ppPluginInstance* th = (ppPluginInstance*)userdata;
+	int res = g_filesystem_interface->Open(th->m_cachefilesystem, 1024*1024,PP_BlockUntilComplete());
+	th->m_cachedirectory_ref = g_fileref_interface->Create(th->m_cachefilesystem,"/cache");
+	int res1 = g_fileref_interface->MakeDirectory(th->m_cachedirectory_ref,PP_MAKEDIRECTORYFLAG_WITH_ANCESTORS,PP_BlockUntilComplete());
+	LOG(LOG_TRACE,"filesystem opened:"<<th->m_cachefilesystem << " "<<res<<" "<<res1 << " " <<result);
 }
+void ppPluginInstance::handleExternalCall(ExtIdentifier &method_name, uint32_t argc, PP_Var *argv, PP_Var *exception)
+{
+	m_extmethod_name = method_name;
+	m_extargc = argc;
+	m_extargv = argv;
+	m_extexception = exception;
+	LOG(LOG_TRACE,"ppPluginInstance::handleExternalCall:"<< method_name.getString());
+	((ppExtScriptObject*)this->getSystemState()->extScriptObject)->handleExternalCall(method_name,argc,argv,exception);
+}
+
+void ppPluginInstance::waitiodone(ppFileStreamCache* cache)
+{
+	while (!cache->iodone)
+	{
+		getSystemState()->waitMainSignal();
+		LOG_CALL("waitiodone:"<<cache->iodone);
+	}
+	cache->iodone = false;
+}
+void ppPluginInstance::waitioreaddone(ppFileStreamCache::ppFileStreamCacheReader* cachereader)
+{
+	while (!cachereader->iodone)
+	{
+		getSystemState()->waitMainSignal();
+		LOG_CALL("waitioreaddone3:"<<cachereader->iodone);
+	}
+	cachereader->iodone = false;
+}
+
+void ppPluginInstance::signaliodone()
+{
+	this->getSystemState()->sendMainSignal();
+}
+
+int ppPluginInstance::postwork(PP_CompletionCallback callback)
+{
+	getSystemState()->checkExternalCallEvent();
+	return g_messageloop_interface->PostWork(getMessageLoop(),callback,0);
+}
+
 ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const char *argn[], const char *argv[]) : 
 	m_ppinstance(instance),
+	m_graphics(0),
+	m_cachefilesystem(0),
+	m_cachedirectory_ref(0),
 	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
 	mainDownloader(NULL),
-	m_pt(NULL)
+	m_pt(NULL),
+	m_ppLoopThread(NULL),
+	m_extargc(0),
+	m_extargv(NULL),
+	m_extexception(NULL),
+	inReading(false),
+	inWriting(false)
 {
-	m_cachefilesystem = g_filesystem_interface->Create(instance,PP_FileSystemType::PP_FILESYSTEMTYPE_LOCALTEMPORARY);
+	m_messageloop = g_messageloop_interface->Create(this->getppInstance());
+#ifdef HAVE_NEW_GLIBMM_THREAD_API
+	m_ppLoopThread = Thread::create(sigc::mem_fun(this,&ppPluginInstance::worker));
+#else
+	m_ppLoopThread = Thread::create(sigc::mem_fun(this,&ppPluginInstance::worker),true);
+#endif
+	m_cachefilesystem = g_filesystem_interface->Create(getppInstance(),PP_FileSystemType::PP_FILESYSTEMTYPE_LOCALTEMPORARY);
+	g_messageloop_interface->PostWork(m_messageloop,PP_MakeCompletionCallback(openfilesystem_callback,this),0);
+	
 	m_cachefilename = 0;
-	g_filesystem_interface->Open(m_cachefilesystem, 1024*1024,PP_MakeCompletionCallback(openfilesystem_callback,NULL));
 	m_last_size.width = 0;
 	m_last_size.height = 0;
 	m_graphics = 0;
@@ -694,8 +851,18 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 		// loader is notified through parsethread
 		mainDownloader->getCache()->setNotifyLoader(false);
 	}
+	
 	//The sys var should be NULL in this thread
 	setTLSSys( NULL );
+}
+void ppPluginInstance::worker()
+{
+	g_messageloop_interface->AttachToCurrentThread(m_messageloop);
+	
+	while (g_messageloop_interface->GetCurrent() != 0)
+	{
+		g_messageloop_interface->Run(m_messageloop);
+	}
 }
 void ppPluginInstance::startMainParser()
 {
@@ -709,7 +876,8 @@ void ppPluginInstance::startMainParser()
 PP_Resource ppPluginInstance::createCacheFileRef()
 {
 	char filenamebuf[100];
-	sprintf(filenamebuf,"/tmp%d",++m_cachefilename);
+	sprintf(filenamebuf,"/cache/tmp%d",++m_cachefilename);
+	LOG(LOG_TRACE,"createCache:"<<filenamebuf<<" "<<getFileSystem()<<" "<<g_core_interface->IsMainThread());
 	return g_fileref_interface->Create(getFileSystem(),filenamebuf);
 }
 
@@ -734,14 +902,10 @@ ppPluginInstance::~ppPluginInstance()
 	m_sys->destroy();
 	delete m_sys;
 	delete m_pt;
+	g_messageloop_interface->PostQuit(m_messageloop,PP_TRUE);
+	m_ppLoopThread->join();
 	setTLSSys(NULL);
 }
-void swapbuffer_callback(void* userdata,int result)
-{
-	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
-	data->swapbuffer_rendering.signal();
-}
-
 
 void ppPluginInstance::handleResize(PP_Resource view)
 {
@@ -1041,7 +1205,8 @@ void executescript_callback(void* userdata,int result)
 }
 void ppPluginInstance::executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data)
 {
-	g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(executescript_callback,data),0);
+	ExtScriptObject::hostCallHandler(data);
+	//g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(executescript_callback,data),0);
 }
 bool ppPluginInstance::executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result)
 {
@@ -1254,8 +1419,9 @@ static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_V
 
 static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
 {
+	ppPluginInstance* instance = ((ppExtScriptObject*)object)->getInstance();
+	
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
-	PP_Var objResult = PP_MakeUndefined();
 	uint32_t len;
 	ExtIdentifier method_name;
 	switch (name.type)
@@ -1270,17 +1436,8 @@ static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t arg
 			LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Call for method name type "<<(int)name.type);
 			return PP_MakeUndefined();
 	}
-	LOG_CALL("PPP_Class_Call:"<<((ppExtScriptObject*)object)->getInstance()->getSystemState()<<" "<< method_name.getString());
-	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
-	const ExtVariant** objArgs = g_newa(const ExtVariant*,argc);
-	for (uint32_t i = 0; i < argc; i++)
-	{
-		objArgs[i]=new ppVariantObject(objectsMap,argv[i]);
-	}
-	((ppExtScriptObject*)object)->invoke(method_name,argc,objArgs,&objResult);
-		
-	LOG_CALL("PPP_Class_Call done:"<<method_name.getString());
-	return objResult;
+	instance->handleExternalCall(method_name,argc,argv,exception);
+	return ((ppExtScriptObject*)object)->externalcallresult;
 }
 
 static struct PP_Var PPP_Class_Construct(void* object,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
@@ -1393,8 +1550,7 @@ extern "C"
 		g_audioconfig_interface = (const PPB_AudioConfig*)get_browser_interface(PPB_AUDIO_CONFIG_INTERFACE);
 		g_imagedata_interface = (const PPB_ImageData*)get_browser_interface(PPB_IMAGEDATA_INTERFACE);
 		g_browserfont_interface = (const PPB_BrowserFont_Trusted*)get_browser_interface(PPB_BROWSERFONT_TRUSTED_INTERFACE);
-		
-		
+		g_messageloop_interface = (const PPB_MessageLoop*)get_browser_interface(PPB_MESSAGELOOP_INTERFACE);
 		
 		if (!g_core_interface ||
 				!g_instance_interface || 
@@ -1419,7 +1575,8 @@ extern "C"
 				!g_audio_interface ||
 				!g_audioconfig_interface ||
 				!g_imagedata_interface ||
-				!g_browserfont_interface
+				!g_browserfont_interface ||
+				!g_messageloop_interface
 				)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
@@ -1447,6 +1604,7 @@ extern "C"
 				<< g_audioconfig_interface<<" "
 				<< g_imagedata_interface<<" "
 				<< g_browserfont_interface<<" "
+				<< g_messageloop_interface<<" "
 				);
 			return PP_ERROR_NOINTERFACE;
 		}
@@ -1510,12 +1668,7 @@ void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemS
 	userevent_callbackdata* ue = new userevent_callbackdata;
 	ue->func=func;
 	ue->sys=sys;
-	if (!g_core_interface->IsMainThread())
-	{
-		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
-	}
-	else
-		exec_ppPluginEngineData_callback(ue,0);
+	g_messageloop_interface->PostWork(this->instance->getMessageLoop(),PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
 }
 
 void ppPluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
@@ -1554,26 +1707,41 @@ double ppPluginEngineData::getScreenDPI()
 	return 96.0;
 }
 
-StreamCache *ppPluginEngineData::createFileStreamCache()
+StreamCache *ppPluginEngineData::createFileStreamCache(SystemState *sys)
 {
-	return new ppFileStreamCache(instance);
+	return new ppFileStreamCache(instance,sys);
 }
 
-void swapbuffer_ppPluginEngineData_callback(void* userdata,int result)
+void ppPluginEngineData::swapbuffer_done_callback(void* userdata,int result)
 {
 	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
-	g_graphics_3d_interface->SwapBuffers(data->getGraphics(),PP_MakeCompletionCallback(swapbuffer_callback,userdata));
-	
+	data->buffersswapped = true;
+	data->sys->sendMainSignal();
+}
+
+
+void ppPluginEngineData::swapbuffer_start_callback(void* userdata,int result)
+{
+	ppPluginEngineData* data = (ppPluginEngineData*)userdata;
+	int res = g_graphics_3d_interface->SwapBuffers(data->getGraphics(),PP_MakeCompletionCallback(swapbuffer_done_callback,userdata));
+	if (res != PP_OK_COMPLETIONPENDING)
+		LOG(LOG_ERROR,"swapbuffer failed:"<<res);
+	data->sys->sendMainSignal();
 }
 void ppPluginEngineData::SwapBuffers()
 {
+	buffersswapped = false;
 	if (!g_core_interface->IsMainThread())
 	{
-		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(swapbuffer_ppPluginEngineData_callback,this),0);
-		swapbuffer_rendering.wait();
+		g_core_interface->CallOnMainThread(0,PP_MakeCompletionCallback(swapbuffer_start_callback,this),0);
 	}
 	else
-		swapbuffer_ppPluginEngineData_callback(this,0);
+		swapbuffer_start_callback(this,0);
+	while (!buffersswapped)
+	{
+		this->sys->waitMainSignal();
+	}
+	buffersswapped = false;
 }
 
 void ppPluginEngineData::InitOpenGL()

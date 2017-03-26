@@ -1076,7 +1076,9 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 		AVProbeData probeData;
 		probeData.filename="lightspark_stream";
+#if LIBAVFORMAT_VERSION_MAJOR > 56
 		probeData.mime_type=NULL;
+#endif
 		probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
 		memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
 		stream.read((char*)probeData.buf,8192);

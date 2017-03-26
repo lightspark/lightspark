@@ -377,6 +377,37 @@ ASFUNCTIONBODY_GETTER(Sound,bytesLoaded);
 ASFUNCTIONBODY_GETTER(Sound,bytesTotal);
 ASFUNCTIONBODY_GETTER(Sound,length);
 
+void SoundMixer::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setDeclaredMethodByQName("stopAll","",Class<IFunction>::getFunction(c->getSystemState(),stopAll),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("computeSpectrum","",Class<IFunction>::getFunction(c->getSystemState(),computeSpectrum),NORMAL_METHOD,false);
+	REGISTER_GETTER_SETTER(c,bufferTime);
+	REGISTER_GETTER_SETTER(c,soundTransform);
+}
+ASFUNCTIONBODY_GETTER_SETTER(SoundMixer,bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER(SoundMixer,soundTransform);
+
+ASFUNCTIONBODY(SoundMixer,stopAll)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"SoundMixer.stopAll does nothing");
+	return NULL;
+}
+ASFUNCTIONBODY(SoundMixer,computeSpectrum)
+{
+	_NR<ByteArray> output;
+	bool FFTMode;
+	int stretchFactor;
+	ARG_UNPACK (output) (FFTMode,false) (stretchFactor,0);
+	output->setLength(0);
+	output->setPosition(0);
+	for (int i = 0; i < 4*512; i++) // 512 floats
+		output->writeByte(0);
+	output->setPosition(0);
+	LOG(LOG_NOT_IMPLEMENTED,"SoundMixer.computeSpectrum not implemented");
+	return NULL;
+}
+
 void SoundLoaderContext::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
@@ -401,8 +432,9 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
-: EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
-  format(_format),oldVolume(-1.0),position(0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState())))
+	: EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
+	format(_format),oldVolume(-1.0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	leftPeak(1),position(0),rightPeak(1)
 {
 	if (!stream.isNull())
 	{
@@ -422,11 +454,15 @@ void SoundChannel::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 
+	REGISTER_GETTER(c,leftPeak);
 	REGISTER_GETTER(c,position);
+	REGISTER_GETTER(c,rightPeak);
 	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,leftPeak);
 ASFUNCTIONBODY_GETTER(SoundChannel,position);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,rightPeak);
 ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
 
 void SoundChannel::buildTraits(ASObject* o)
@@ -635,4 +671,18 @@ void VideoStatus::sinit(Class_base* c)
 	c->setVariableByQName("ACCELERATED","",abstract_s(c->getSystemState(),"accelerated"),DECLARED_TRAIT);
 	c->setVariableByQName("SOFTWARE","",abstract_s(c->getSystemState(),"software"),DECLARED_TRAIT);
 	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),DECLARED_TRAIT);
+}
+void Microphone::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	REGISTER_GETTER(c,isSupported);
+	c->setDeclaredMethodByQName("getMicrophone","",Class<IFunction>::getFunction(c->getSystemState(),getMicrophone),NORMAL_METHOD,false);
+
+}
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Microphone,isSupported)
+
+ASFUNCTIONBODY(Microphone,getMicrophone)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Microphone.getMicrophone always returns null");
+	return NULL;
 }

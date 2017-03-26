@@ -501,9 +501,11 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef(m_sys));
 	builtin->registerBuiltin("SoundLoaderContext","flash.media",Class<SoundLoaderContext>::getRef(m_sys));
 	builtin->registerBuiltin("SoundChannel","flash.media",Class<SoundChannel>::getRef(m_sys));
+	builtin->registerBuiltin("SoundMixer","flash.media",Class<SoundMixer>::getRef(m_sys));
 	builtin->registerBuiltin("StageVideo","flash.media",Class<StageVideo>::getRef(m_sys));
 	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef(m_sys));
 	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef(m_sys));
+	builtin->registerBuiltin("Microphone","flash.media",Class<Microphone>::getRef(m_sys));
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));

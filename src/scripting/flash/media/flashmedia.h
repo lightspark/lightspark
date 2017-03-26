@@ -90,7 +90,6 @@ private:
 	AudioStream* audioStream;
 	AudioFormat format;
 	number_t oldVolume;
-	ASPROPERTY_GETTER_SETTER(uint32_t,position);
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
@@ -100,6 +99,9 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();
+	ASPROPERTY_GETTER(number_t,leftPeak);
+	ASPROPERTY_GETTER(number_t,position);
+	ASPROPERTY_GETTER(number_t,rightPeak);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(stop);
 
@@ -139,6 +141,16 @@ public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 };
 
+class SoundMixer : public ASObject
+{
+public:
+	SoundMixer(Class_base* c):ASObject(c),bufferTime(0){}
+	static void sinit(Class_base*);
+	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
+	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
+	ASFUNCTION(stopAll);
+	ASFUNCTION(computeSpectrum);
+};
 class SoundLoaderContext : public ASObject
 {
 private:
@@ -180,6 +192,15 @@ public:
 	static void sinit(Class_base*);
 };
 
+class Microphone : public ASObject
+{
+public:
+	Microphone(Class_base* c):ASObject(c),isSupported(false){}
+	static void sinit(Class_base*);
+	ASPROPERTY_GETTER(bool ,isSupported);
+	ASFUNCTION(getMicrophone);
 };
+
+}
 
 #endif /* SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H */

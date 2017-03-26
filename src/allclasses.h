@@ -183,11 +183,13 @@ REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 REGISTER_CLASS_NAME(Sound,"flash.media")
 REGISTER_CLASS_NAME(SoundChannel,"flash.media")
 REGISTER_CLASS_NAME(SoundLoaderContext,"flash.media")
+REGISTER_CLASS_NAME(SoundMixer,"flash.media")
 REGISTER_CLASS_NAME(SoundTransform,"flash.media")
 REGISTER_CLASS_NAME(StageVideo,"flash.media")
 REGISTER_CLASS_NAME(StageVideoAvailability,"flash.media")
 REGISTER_CLASS_NAME(Video,"flash.media")
 REGISTER_CLASS_NAME(VideoStatus,"flash.media")
+REGISTER_CLASS_NAME(Microphone,"flash.media")
 
 //Net
 REGISTER_CLASS_NAME(FileReference,"flash.net")

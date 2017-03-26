@@ -77,6 +77,7 @@
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/concurrent/Mutex.h"
 #include "scripting/flash/concurrent/Condition.h"
+#include "scripting/flash/crypto/flashcrypto.h"
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
@@ -294,6 +295,8 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("Mutex","flash.concurrent",Class<ASMutex>::getRef(m_sys));
 	builtin->registerBuiltin("Condition","flash.concurrent",Class<ASCondition>::getRef(m_sys));
+
+	builtin->registerBuiltin("generateRandomBytes","flash.crypto",_MR(Class<IFunction>::getFunction(m_sys,generateRandomBytes)));
 
 	builtin->registerBuiltin("MovieClip","flash.display",Class<MovieClip>::getRef(m_sys));
 	builtin->registerBuiltin("DisplayObject","flash.display",Class<DisplayObject>::getRef(m_sys));

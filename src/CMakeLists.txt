@@ -67,6 +67,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/concurrent/Mutex.cpp
   scripting/flash/concurrent/Condition.cpp
+  scripting/flash/crypto/flashcrypto.cpp
   scripting/flash/desktop/flashdesktop.cpp
   scripting/flash/display/BitmapContainer.cpp
   scripting/flash/display/BitmapData.cpp

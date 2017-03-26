@@ -86,6 +86,7 @@ public:
 	ASFUNCTION(applyFilter);
 	ASFUNCTION(noise);
 	ASFUNCTION(perlinNoise);
+	ASFUNCTION(threshold);
 };
 
 };

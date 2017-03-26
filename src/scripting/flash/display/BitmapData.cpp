@@ -86,6 +86,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("applyFilter","",Class<IFunction>::getFunction(c->getSystemState(),applyFilter),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(c->getSystemState(),noise),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("perlinNoise","",Class<IFunction>::getFunction(c->getSystemState(),perlinNoise),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("threshold","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
@@ -876,5 +877,20 @@ ASFUNCTIONBODY(BitmapData,perlinNoise)
 	ARG_UNPACK(baseX)(baseY)(numOctaves)(randomSeed)(stitch) (fractalNoise) (channelOptions, 7) (grayScale, false) (offsets, NullRef);
 
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.perlinNoise not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(BitmapData,threshold)
+{
+	_NR<BitmapData> sourceBitmapData;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	tiny_string operation;
+	uint32_t threshold;
+	uint32_t color;
+	uint32_t mask;
+	bool copySource;
+	ARG_UNPACK(sourceBitmapData)(sourceRect)(destPoint)(operation)(threshold) (color,0) (mask, 0xFFFFFFFF) (copySource, false);
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.threshold not implemented");
 	return NULL;
 }

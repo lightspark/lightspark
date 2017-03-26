@@ -96,6 +96,18 @@ public:
 	BevelFilter(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t, angle);
+	ASPROPERTY_GETTER_SETTER(number_t,blurX);
+	ASPROPERTY_GETTER_SETTER(number_t,blurY);
+	ASPROPERTY_GETTER_SETTER(number_t,distance);
+	ASPROPERTY_GETTER_SETTER(number_t,highlightAlpha);
+	ASPROPERTY_GETTER_SETTER(uint32_t,highlightColor);
+	ASPROPERTY_GETTER_SETTER(bool,knockout);
+	ASPROPERTY_GETTER_SETTER(int32_t,quality);
+	ASPROPERTY_GETTER_SETTER(number_t,shadowAlpha);
+	ASPROPERTY_GETTER_SETTER(uint32_t,shadowColor);
+	ASPROPERTY_GETTER_SETTER(number_t,strength);
+	ASPROPERTY_GETTER_SETTER(tiny_string,type);
 };
 class ColorMatrixFilter: public BitmapFilter
 {

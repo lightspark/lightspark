@@ -2426,10 +2426,14 @@ ASFUNCTIONBODY(LocalConnection, _constructor)
 }
 ASFUNCTIONBODY(LocalConnection, domain)
 {
-	//LocalConnection* th=Class<LocalConnection>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::domain is not implemented");
-	return abstract_s(obj->getSystemState());
-}
+	LocalConnection* th=Class<LocalConnection>::cast(obj);
+	tiny_string res = th->getSystemState()->mainClip->getOrigin().getHostname();
+	if (th->getSystemState()->flashMode == SystemState::AIR)
+		LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::domain is not implemented for AIR mode");
+	
+	if (res.empty())
+		res = "localhost";
+	return abstract_s(obj->getSystemState(),res);}
 ASFUNCTIONBODY(LocalConnection, allowDomain)
 {
 	//LocalConnection* th=Class<LocalConnection>::cast(obj);

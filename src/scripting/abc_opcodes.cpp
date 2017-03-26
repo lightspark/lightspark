@@ -187,6 +187,11 @@ void ABCVm::coerce(call_context* th, int n)
 	ASObject** o=th->runtime_stack_pointer();
 	
 	const Type* type = Type::getTypeFromMultiname(mn, th->context);
+	if (type == NULL)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
 	*o=type->coerce(*o);
 }
 

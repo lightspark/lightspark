@@ -286,13 +286,15 @@ ASFUNCTIONBODY(Sound,_constructor)
 ASFUNCTIONBODY(Sound,load)
 {
 	Sound* th=Class<Sound>::cast(obj);
-	assert_and_throw(argslen==1 || argslen==2);
-	URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
-	assert_and_throw(urlRequest);
-	//TODO: args[1] is the SoundLoaderContext
-	th->url = urlRequest->getRequestURL();
-	urlRequest->getPostData(th->postData);
-
+	_NR<URLRequest> urlRequest;
+	_NR<SoundLoaderContext> context;
+	
+	ARG_UNPACK(urlRequest)(context,NullRef);
+	if (!urlRequest.isNull())
+	{
+		th->url = urlRequest->getRequestURL();
+		urlRequest->getPostData(th->postData);
+	}
 	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
 	th->soundData = c;
 

@@ -50,6 +50,7 @@ class Vector;
 class Graphics;
 class Rectangle;
 class Class_inherit;
+class Point;
 
 class InteractiveObject: public DisplayObject
 {
@@ -89,6 +90,7 @@ private:
 	bool mouseChildren;
 	boost::bimap<uint32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
+	void getObjectsFromPoint(Point* point, Array* ar);
 protected:
 	void requestInvalidation(InvalidateQueue* q);
 	//This is shared between RenderThread and VM
@@ -122,11 +124,13 @@ public:
 	ASFUNCTION(addChild);
 	ASFUNCTION(removeChild);
 	ASFUNCTION(removeChildAt);
+	ASFUNCTION(removeChildren);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(_getChildIndex);
 	ASFUNCTION(_setChildIndex);
 	ASFUNCTION(getChildAt);
 	ASFUNCTION(getChildByName);
+	ASFUNCTION(getObjectsUnderPoint);
 	ASFUNCTION(contains);
 	ASFUNCTION(_getMouseChildren);
 	ASFUNCTION(_setMouseChildren);

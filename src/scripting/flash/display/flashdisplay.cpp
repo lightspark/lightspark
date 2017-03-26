@@ -1484,9 +1484,11 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setChildIndex","",Class<IFunction>::getFunction(c->getSystemState(),_setChildIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildAt","",Class<IFunction>::getFunction(c->getSystemState(),getChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getChildByName","",Class<IFunction>::getFunction(c->getSystemState(),getChildByName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getObjectsUnderPoint","",Class<IFunction>::getFunction(c->getSystemState(),getObjectsUnderPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChild","",Class<IFunction>::getFunction(c->getSystemState(),addChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeChild","",Class<IFunction>::getFunction(c->getSystemState(),removeChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeChildAt","",Class<IFunction>::getFunction(c->getSystemState(),removeChildAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChildren","",Class<IFunction>::getFunction(c->getSystemState(),removeChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addChildAt","",Class<IFunction>::getFunction(c->getSystemState(),addChildAt),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildren","",Class<IFunction>::getFunction(c->getSystemState(),swapChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildrenAt","",Class<IFunction>::getFunction(c->getSystemState(),swapChildrenAt),NORMAL_METHOD,true);
@@ -1943,6 +1945,20 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	return child;
 }
 
+ASFUNCTIONBODY(DisplayObjectContainer,removeChildren)
+{
+	uint32_t beginindex;
+	uint32_t endindex;
+	ARG_UNPACK(beginindex,0)(endindex,0x7fffffff);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	{
+		Locker l(th->mutexDisplayList);
+		if (endindex > th->dynamicDisplayList.size())
+			endindex = (uint32_t)th->dynamicDisplayList.size();
+		th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
+	}
+	return NULL;
+}
 ASFUNCTIONBODY(DisplayObjectContainer,_setChildIndex)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
@@ -2109,6 +2125,39 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getChildIndex)
 	d->incRef();
 
 	return abstract_i(obj->getSystemState(),th->getChildIndex(d));
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,getObjectsUnderPoint)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	_NR<Point> point;
+	ARG_UNPACK(point);
+	Array* ret = Class<Array>::getInstanceSNoArgs(th->getSystemState());
+	if (!point.isNull())
+		th->getObjectsFromPoint(point.getPtr(),ret);
+	return ret;
+}
+
+void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
+{
+	number_t xmin,xmax,ymin,ymax;
+	MATRIX m;
+	{
+		Locker l(mutexDisplayList);
+		auto it = dynamicDisplayList.begin();
+		while (it != dynamicDisplayList.end())
+		{
+			(*it)->incRef();
+			(*it)->getBounds(xmin,xmax,ymin,ymax,m);
+			if (xmin <= point->getX() && xmax >= point->getX()
+					&& ymin <= point->getY() && ymax >= point->getY())
+					ar->push(*it);
+			if ((*it)->is<DisplayObjectContainer>())
+				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
+			it++;
+		}
+
+	}
 }
 
 Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef)

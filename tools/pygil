@@ -18,8 +18,6 @@ rconstructor = re.compile('[^/]*ASFUNCTIONBODY\( *([^,]*), *\_constructor\)')
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\)\)\)')
 rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
-#looks like builtin->registerBuiltin("Socket","flash.net",Class<ASObject>::getStubClass(QName("Socket","flash.net")));
-rstupclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<ASObject>::getStubClass\(QName.*')
 #the line may start with anything but a comment character
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*, *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*, *SETTER_METHOD, *([^ ]*)')
@@ -28,7 +26,7 @@ rmet2 = re.compile('[^/]*->prototype->setVariableByQName\( *"([^"]*)", *([^,]*),
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
-rconst = re.compile('[^/]*->setVariableByQName\("([A-Za-z_0-9]*)",.*[A-Z]*\_TRAIT');
+rconst = re.compile('[^/]*->setVariableByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
 rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
 
@@ -74,10 +72,6 @@ for line in f.read().replace("\n","").replace("\t"," ").split(";"):
 		fullname = getFullname(m.group(2),m.group(1))
 		internalToExternal[m.group(3)] = fullname
 		classes.add(fullname)
-	m = rstupclass.match(line)
-	#Object is the only real implementation of ASObject
-	if m:
-		stubclasses.add(m.group(1))
 f.close()
 
 #print internalToExternal
@@ -253,10 +247,6 @@ print "Fully implemented classes:"
 for i in sorted(fclasses):
 	print "\t" + i
 
-print "\nStub classes (currently implemented as ASObject):"
-for i in sorted(stubclasses):
-	print "\t" + i
-
 print "\nFully Missing classes:"
 for i in sorted(mclasses):
 	print "\t" + i
@@ -290,7 +280,7 @@ print ""
 print "Number of fully implemented classes:                ", len(fclasses)
 print "Number of implemented getters/setters/methods/const:", len(setters),len(getters),len(methods),len(const)
 print "Total number of implemented                        :", len(setters)+len(getters)+len(methods)+len(const)
-print "Number of missing classes (of which are stubs):     ", len(mclasses), len(stubclasses)
+print "Number of missing classes                          :", len(mclasses)
 print "Number of missing getters/setters/methods/consts:   ", (len(dsetters)-len(setters)), len(dgetters)-len(getters), len(dmethods)-len(methods), len(dconst)-len(const)
 print "Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)+len(const))
 print "Overall percentage completed:                       ", float(len(setters)+len(getters)+len(methods)+len(const))/float(len(dsetters)+len(dgetters)+len(dmethods)+len(dconst))*100

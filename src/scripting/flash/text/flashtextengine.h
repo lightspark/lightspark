@@ -165,11 +165,20 @@ public:
 	ASFUNCTION(createTextLine);
 	ASFUNCTION(recreateTextLine);
 	ASFUNCTION(releaseLines);
+	ASPROPERTY_GETTER_SETTER(bool,applyNonLinearFontScaling);
+	ASPROPERTY_GETTER_SETTER(_NR<FontDescription>, baselineFontDescription);
+	ASPROPERTY_GETTER_SETTER(number_t,baselineFontSize);
+	ASPROPERTY_GETTER_SETTER(tiny_string,baselineZero);
+	ASPROPERTY_GETTER_SETTER(int,bidiLevel);
+	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
+	ASPROPERTY_GETTER(_NR<TextLine>, firstInvalidLine );
 	ASPROPERTY_GETTER(_NR<TextLine>, firstLine);
 	ASPROPERTY_GETTER(_NR<TextLine>, lastLine);
-	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
+	ASPROPERTY_GETTER_SETTER(tiny_string,lineRotation);
 	ASPROPERTY_GETTER_SETTER(_NR<TextJustifier>, textJustifier);
-	ASPROPERTY_GETTER_SETTER(int,bidiLevel);
+	ASPROPERTY_GETTER_SETTER(_NR<Vector>, tabStops);
+	ASPROPERTY_GETTER(tiny_string, textLineCreationResult);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, userData);
 };
 
 class TextElement: public ContentElement
@@ -180,7 +189,13 @@ public:
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
 };
-
+class GroupElement: public ContentElement
+{
+public:
+	GroupElement(Class_base* c): ContentElement(c) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
 class TextLine: public DisplayObjectContainer, public TextData
 {
 private:
@@ -205,13 +220,80 @@ public:
 	ASFUNCTION(getAscent);
 	ASFUNCTION(getTextWidth);
 	ASFUNCTION(getTextHeight);
+	ASFUNCTION(getBaselinePosition);
+	ASPROPERTY_GETTER(bool,hasGraphicElement);
+	ASPROPERTY_GETTER(bool,hasTabs);
+	ASPROPERTY_GETTER(int,rawTextLength);
+	ASPROPERTY_GETTER(number_t,specifiedWidth);
+	ASPROPERTY_GETTER(int,textBlockBeginIndex);
 
 };
+class TabStop: public ASObject
+{
+public:
+	TabStop(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
 
+class BreakOpportunity: public ASObject
+{
+public:
+	BreakOpportunity(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class CFFHinting: public ASObject
+{
+public:
+	CFFHinting(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class DigitCase: public ASObject
+{
+public:
+	DigitCase(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class DigitWidth: public ASObject
+{
+public:
+	DigitWidth(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class JustificationStyle: public ASObject
+{
+public:
+	JustificationStyle(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class LigatureLevel: public ASObject
+{
+public:
+	LigatureLevel(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class RenderingMode: public ASObject
+{
+public:
+	RenderingMode(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class TabAlignment: public ASObject
+{
+public:
+	TabAlignment(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
 class TextLineValidity: public ASObject
 {
 public:
 	TextLineValidity(Class_base* c): ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+class TextRotation: public ASObject
+{
+public:
+	TextRotation(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
 };
 

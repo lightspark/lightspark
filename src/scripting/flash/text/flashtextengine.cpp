@@ -266,7 +266,9 @@ ASFUNCTIONBODY(EastAsianJustifier, _constructor)
 	return NULL;
 }
 
-TextBlock::TextBlock(Class_base *c): ASObject(c),firstLine(NullRef),lastLine(NullRef),bidiLevel(0)
+
+TextBlock::TextBlock(Class_base *c): ASObject(c)
+  ,applyNonLinearFontScaling(true),baselineFontSize(12),baselineZero("roman"),bidiLevel(0),firstLine(NullRef),lastLine(NullRef),lineRotation("rotate0")
 {
 }
 
@@ -276,18 +278,37 @@ void TextBlock::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(c->getSystemState(),createTextLine),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("recreateTextLine","",Class<IFunction>::getFunction(c->getSystemState(),recreateTextLine),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("releaseLines","",Class<IFunction>::getFunction(c->getSystemState(),releaseLines),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c, applyNonLinearFontScaling);
+	REGISTER_GETTER_SETTER(c, baselineFontDescription);
+	REGISTER_GETTER_SETTER(c, baselineFontSize);
+	REGISTER_GETTER_SETTER(c, baselineZero);
+	REGISTER_GETTER_SETTER(c, bidiLevel);
+	REGISTER_GETTER_SETTER(c, content);
+	REGISTER_GETTER(c, firstInvalidLine );
 	REGISTER_GETTER(c, firstLine);
 	REGISTER_GETTER(c, lastLine);
-	REGISTER_GETTER_SETTER(c, content);
+	REGISTER_GETTER_SETTER(c, lineRotation);
 	REGISTER_GETTER_SETTER(c, textJustifier);
-	REGISTER_GETTER_SETTER(c, bidiLevel);
+	REGISTER_GETTER_SETTER(c, tabStops);
+	REGISTER_GETTER(c, textLineCreationResult);
+	REGISTER_GETTER_SETTER(c, userData);
+	REGISTER_GETTER_SETTER(c, content);
 }
 
-ASFUNCTIONBODY_GETTER(TextBlock, firstLine)
-ASFUNCTIONBODY_GETTER(TextBlock, lastLine)
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content)
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, textJustifier)
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, bidiLevel)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, applyNonLinearFontScaling);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontDescription);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontSize);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineZero);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, bidiLevel);
+ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstInvalidLine );
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstLine);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, lastLine);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, lineRotation);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, textJustifier);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, tabStops);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, textLineCreationResult);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, userData);
 
 ASFUNCTIONBODY(TextBlock, _constructor)
 {
@@ -472,8 +493,21 @@ ASFUNCTIONBODY(TextElement, _constructor)
 	return NULL;
 }
 
+void GroupElement::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ContentElement, _constructor, CLASS_FINAL | CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(GroupElement, _constructor)
+{
+	//GroupElement* th=static_cast<GroupElement*>(obj);
+	LOG(LOG_NOT_IMPLEMENTED, "GroupElement constructor not implemented");
+	return NULL;
+}
+
 TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
   : DisplayObjectContainer(c), TextData(),nextLine(NULL),previousLine(NULL),userData(NULL)
+  ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	textBlock = owner;
 
@@ -486,6 +520,7 @@ void TextLine::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableByQName("MAX_LINE_WIDTH","",abstract_ui(c->getSystemState(),MAX_LINE_WIDTH),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("getBaselinePosition","",Class<IFunction>::getFunction(c->getSystemState(),getBaselinePosition),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(c->getSystemState(),getDescent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(c->getSystemState(),getAscent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),getTextWidth),GETTER_METHOD,true);
@@ -495,6 +530,11 @@ void TextLine::sinit(Class_base* c)
 	REGISTER_GETTER(c, previousLine);
 	REGISTER_GETTER_SETTER(c, validity);
 	REGISTER_GETTER_SETTER(c, userData);
+	REGISTER_GETTER(c, hasGraphicElement);
+	REGISTER_GETTER(c, hasTabs);
+	REGISTER_GETTER(c, rawTextLength);
+	REGISTER_GETTER(c, specifiedWidth);
+	REGISTER_GETTER(c, textBlockBeginIndex);
 }
 
 
@@ -503,6 +543,11 @@ ASFUNCTIONBODY_GETTER(TextLine, nextLine);
 ASFUNCTIONBODY_GETTER(TextLine, previousLine);
 ASFUNCTIONBODY_GETTER_SETTER(TextLine, validity);
 ASFUNCTIONBODY_GETTER_SETTER(TextLine, userData);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasGraphicElement);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasTabs);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, rawTextLength);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, specifiedWidth);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, textBlockBeginIndex);
 
 ASFUNCTIONBODY(TextLine, _constructor)
 {
@@ -511,6 +556,13 @@ ASFUNCTIONBODY(TextLine, _constructor)
 
 	return NULL;
 }
+
+ASFUNCTIONBODY(TextLine, getBaselinePosition)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
+	return abstract_d(obj->getSystemState(),0);
+}
+
 ASFUNCTIONBODY(TextLine, getDescent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent");
@@ -614,6 +666,74 @@ _NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, nu
 	}
 }
 
+void TabStop::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+}
+
+ASFUNCTIONBODY(TabStop, _constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "TabStop constructor not implemented");
+	return NULL;
+}
+void BreakOpportunity::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("ALL","",abstract_s(c->getSystemState(),"all"),CONSTANT_TRAIT);
+	c->setVariableByQName("ANY","",abstract_s(c->getSystemState(),"any"),CONSTANT_TRAIT);
+	c->setVariableByQName("AUTO","",abstract_s(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),CONSTANT_TRAIT);
+}
+void CFFHinting::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("HORIZONTAL_STEM","",abstract_s(c->getSystemState(),"horizontalStem"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),CONSTANT_TRAIT);
+}
+void DigitCase::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("DEFAULT","",abstract_s(c->getSystemState(),"default"),CONSTANT_TRAIT);
+	c->setVariableByQName("LINING","",abstract_s(c->getSystemState(),"lining"),CONSTANT_TRAIT);
+	c->setVariableByQName("OLD_STYLE","",abstract_s(c->getSystemState(),"oldStyle"),CONSTANT_TRAIT);
+}
+void DigitWidth::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("DEFAULT","",abstract_s(c->getSystemState(),"default"),CONSTANT_TRAIT);
+	c->setVariableByQName("PROPORTIONAL","",abstract_s(c->getSystemState(),"proportional"),CONSTANT_TRAIT);
+	c->setVariableByQName("TABULAR","",abstract_s(c->getSystemState(),"tabular"),CONSTANT_TRAIT);
+}
+void JustificationStyle::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("PRIORITIZE_LEAST_ADJUSTMENT","",abstract_s(c->getSystemState(),"prioritizeLeastAdjustment"),CONSTANT_TRAIT);
+	c->setVariableByQName("PUSH_IN_KINSOKU","",abstract_s(c->getSystemState(),"pushInKinsoku"),CONSTANT_TRAIT);
+	c->setVariableByQName("PUSH_OUT_ONLY","",abstract_s(c->getSystemState(),"pushOutOnly"),CONSTANT_TRAIT);
+}
+void LigatureLevel::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("COMMON","",abstract_s(c->getSystemState(),"common"),CONSTANT_TRAIT);
+	c->setVariableByQName("EXOTIC","",abstract_s(c->getSystemState(),"exotic"),CONSTANT_TRAIT);
+	c->setVariableByQName("MINIMUM","",abstract_s(c->getSystemState(),"minimum"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),CONSTANT_TRAIT);
+	c->setVariableByQName("UNCOMMON","",abstract_s(c->getSystemState(),"uncommon"),CONSTANT_TRAIT);
+}
+void RenderingMode::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("CFF","",abstract_s(c->getSystemState(),"cff"),CONSTANT_TRAIT);
+	c->setVariableByQName("NORMAL","",abstract_s(c->getSystemState(),"normal"),CONSTANT_TRAIT);
+}
+void TabAlignment::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("CENTER","",abstract_s(c->getSystemState(),"center"),CONSTANT_TRAIT);
+	c->setVariableByQName("DECIMAL","",abstract_s(c->getSystemState(),"decimal"),CONSTANT_TRAIT);
+	c->setVariableByQName("END","",abstract_s(c->getSystemState(),"end"),CONSTANT_TRAIT);
+	c->setVariableByQName("START","",abstract_s(c->getSystemState(),"start"),CONSTANT_TRAIT);
+}
 void TextLineValidity::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
@@ -622,4 +742,12 @@ void TextLineValidity::sinit(Class_base* c)
 	c->setVariableByQName("STATIC","",abstract_s(c->getSystemState(),"static"),CONSTANT_TRAIT);
 	c->setVariableByQName("VALID","",abstract_s(c->getSystemState(),"valid"),CONSTANT_TRAIT);
 }
-
+void TextRotation::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableByQName("AUTO","",abstract_s(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableByQName("ROTATE_0","",abstract_s(c->getSystemState(),"rotate0"),CONSTANT_TRAIT);
+	c->setVariableByQName("ROTATE_180","",abstract_s(c->getSystemState(),"rotate180"),CONSTANT_TRAIT);
+	c->setVariableByQName("ROTATE_270","",abstract_s(c->getSystemState(),"rotate270"),CONSTANT_TRAIT);
+	c->setVariableByQName("ROTATE_90","",abstract_s(c->getSystemState(),"rotate90"),CONSTANT_TRAIT);
+}

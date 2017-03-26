@@ -370,23 +370,34 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef(m_sys));
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef(m_sys));
 
+	builtin->registerBuiltin("BreakOpportunity","flash.text.engine",Class<BreakOpportunity>::getRef(m_sys));
+	builtin->registerBuiltin("CFFHinting","flash.text.engine",Class<CFFHinting>::getRef(m_sys));
 	builtin->registerBuiltin("ContentElement","flash.text.engine",Class<ContentElement>::getRef(m_sys));
+	builtin->registerBuiltin("DigitCase","flash.text.engine",Class<DigitCase>::getRef(m_sys));
+	builtin->registerBuiltin("DigitWidth","flash.text.engine",Class<DigitWidth>::getRef(m_sys));
+	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef(m_sys));
 	builtin->registerBuiltin("ElementFormat","flash.text.engine",Class<ElementFormat>::getRef(m_sys));
 	builtin->registerBuiltin("FontDescription","flash.text.engine",Class<FontDescription>::getRef(m_sys));
 	builtin->registerBuiltin("FontMetrics","flash.text.engine",Class<FontMetrics>::getRef(m_sys));
 	builtin->registerBuiltin("FontLookup","flash.text.engine",Class<FontLookup>::getRef(m_sys));
 	builtin->registerBuiltin("FontPosture","flash.text.engine",Class<FontPosture>::getRef(m_sys));
 	builtin->registerBuiltin("FontWeight","flash.text.engine",Class<FontWeight>::getRef(m_sys));
+	builtin->registerBuiltin("GroupElement","flash.text.engine",Class<GroupElement>::getRef(m_sys));
+	builtin->registerBuiltin("JustificationStyle","flash.text.engine",Class<JustificationStyle>::getRef(m_sys));
 	builtin->registerBuiltin("Kerning","flash.text.engine",Class<Kerning>::getRef(m_sys));
+	builtin->registerBuiltin("LigatureLevel","flash.text.engine",Class<LigatureLevel>::getRef(m_sys));
 	builtin->registerBuiltin("LineJustification","flash.text.engine",Class<LineJustification>::getRef(m_sys));
+	builtin->registerBuiltin("RenderingMode","flash.text.engine",Class<RenderingMode>::getRef(m_sys));
+	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef(m_sys));
+	builtin->registerBuiltin("TabAlignment","flash.text.engine",Class<TabAlignment>::getRef(m_sys));
+	builtin->registerBuiltin("TabStop","flash.text.engine",Class<TabStop>::getRef(m_sys));
 	builtin->registerBuiltin("TextBaseline","flash.text.engine",Class<TextBaseline>::getRef(m_sys));
 	builtin->registerBuiltin("TextBlock","flash.text.engine",Class<TextBlock>::getRef(m_sys));
 	builtin->registerBuiltin("TextElement","flash.text.engine",Class<TextElement>::getRef(m_sys));
 	builtin->registerBuiltin("TextLine","flash.text.engine",Class<TextLine>::getRef(m_sys));
 	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef(m_sys));
+	builtin->registerBuiltin("TextRotation","flash.text.engine",Class<TextRotation>::getRef(m_sys));
 	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef(m_sys));
-	builtin->registerBuiltin("SpaceJustifier","flash.text.engine",Class<SpaceJustifier>::getRef(m_sys));
-	builtin->registerBuiltin("EastAsianJustifier","flash.text.engine",Class<EastAsianJustifier>::getRef(m_sys));
 
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef(m_sys));
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef(m_sys));

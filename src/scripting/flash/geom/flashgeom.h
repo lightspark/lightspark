@@ -70,6 +70,7 @@ public:
 	ASFUNCTION(offset);
 	ASFUNCTION(offsetPoint);
 	ASFUNCTION(setEmpty);
+	ASFUNCTION(setTo);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_union);
 };
@@ -99,10 +100,11 @@ public:
 	ASFUNCTION(offset);
 	ASFUNCTION(polar);
 	ASFUNCTION(_toString);
+	ASFUNCTION(setTo);
 	
 	number_t len() const;
-	number_t getX() const { return x; };
-	number_t getY() const { return y; };
+	number_t getX() const { return x; }
+	number_t getY() const { return y; }
 };
 
 class ColorTransform: public ASObject

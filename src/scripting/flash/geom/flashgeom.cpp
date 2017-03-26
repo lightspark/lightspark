@@ -77,6 +77,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("offsetPoint","",Class<IFunction>::getFunction(c->getSystemState(),offsetPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(c->getSystemState(),setEmpty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(c->getSystemState(),_union),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
@@ -481,6 +482,18 @@ ASFUNCTIONBODY(Rectangle,_toString)
 	return abstract_s(obj->getSystemState(),buf);
 }
 
+ASFUNCTIONBODY(Rectangle,setTo)
+{
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	number_t x,y,w,h;
+	ARG_UNPACK(x)(y)(w)(h);
+	th->x = x;
+	th->y = y;
+	th->width = w;
+	th->height = h;
+	return NULL;
+}
+
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
   : ASObject(c)
 {
@@ -752,6 +765,7 @@ void Point::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(c->getSystemState(),normalize),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(c->getSystemState(),offset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(c->getSystemState(),polar),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
@@ -916,7 +930,16 @@ ASFUNCTIONBODY(Point,polar)
 	ret->y = len * sin(angle);
 	return ret;
 }
-
+ASFUNCTIONBODY(Point,setTo)
+{
+	Point* th=static_cast<Point*>(obj);
+	number_t x;
+	number_t y;
+	ARG_UNPACK(x)(y);
+	th->x = x;
+	th->y = y;
+	return NULL;
+}
 Transform::Transform(Class_base* c):ASObject(c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
 {
 }

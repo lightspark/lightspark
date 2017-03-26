@@ -160,6 +160,8 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(totalMemory);
 	ASFUNCTION(disposeXML);
+	ASFUNCTION(pauseForGCIfCollectionImminent);
+	ASFUNCTION(gc);
 };
 class ASWorker: public EventDispatcher
 {

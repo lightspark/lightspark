@@ -331,12 +331,12 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	name.name_type=multiname::NAME_STRING;
 	if(index==str.npos) //No dot
 	{
-		name.name_s_id=getSys()->getUniqueStringId(str);
+		name.name_s_id=getSystemState()->getUniqueStringId(str);
 		name.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE)); //TODO: use ns kind
 	}
 	else
 	{
-		name.name_s_id=getSys()->getUniqueStringId(str.substr(index+1));
+		name.name_s_id=getSystemState()->getUniqueStringId(str.substr(index+1));
 		name.ns.push_back(nsNameAndKind(getSystemState(),str.substr(0,index),NAMESPACE));
 	}
 	return getVariableAndTargetByMultiname(name, target);
@@ -588,8 +588,9 @@ void System::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(c->getSystemState(),totalMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(c->getSystemState(),disposeXML),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pauseForGCIfCollectionImminent","",Class<IFunction>::getFunction(c->getSystemState(),pauseForGCIfCollectionImminent),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("gc","",Class<IFunction>::getFunction(c->getSystemState(),gc),NORMAL_METHOD,false);
 }
-
 
 ASFUNCTIONBODY(System,totalMemory)
 {
@@ -609,6 +610,18 @@ ASFUNCTIONBODY(System,disposeXML)
 			l->removeNode(xmlobj.getPtr());
 		parent->decRef();
 	}
+	return NULL;
+}
+ASFUNCTIONBODY(System,pauseForGCIfCollectionImminent)
+{
+	number_t imminence;
+	ARG_UNPACK (imminence,0.75);
+	LOG(LOG_NOT_IMPLEMENTED, "System.pauseForGCIfCollectionImminent not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(System,gc)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "System.gc not implemented");
 	return NULL;
 }
 

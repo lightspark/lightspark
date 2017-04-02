@@ -492,12 +492,12 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
 					context->runtime_stack_push(cachepos->obj);
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					break;
 				}
 					
 				int8_t t = code.readbyte();
-				cachepos->nextcodepos = code.tellpos();
+				code.setNextCachePos(cachepos);
 				pushByte(t);
 			
 				ASObject* d= abstract_i(function->getSystemState(),t);
@@ -514,13 +514,13 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
 					context->runtime_stack_push(cachepos->obj);
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					break;
 				}
 				// specs say pushshort is a u30, but it's really a u32
 				// see https://bugs.adobe.com/jira/browse/ASC-4181
 				uint32_t t = code.readu32();
-				cachepos->nextcodepos = code.tellpos();
+				code.setNextCachePos(cachepos);
 
 				ASObject* i= abstract_i(function->getSystemState(),t);
 				i->setConstant();
@@ -592,7 +592,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
 					context->runtime_stack_push(cachepos->obj);
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					break;
 				}
 
@@ -614,7 +614,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
 					context->runtime_stack_push(cachepos->obj);
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					break;
 				}
 
@@ -636,7 +636,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
 					context->runtime_stack_push(cachepos->obj);
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					break;
 				}
 				uint32_t t = code.readu30();
@@ -984,7 +984,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 				lightspark::method_body_info_cache* cachepos = code.tellcachepos();
 				if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 				{
-					code.seekpos(cachepos->nextcodepos);
+					code.seekcachepos(cachepos->nextcachepos);
 					context->runtime_stack_push(cachepos->obj);
 					cachepos->obj->incRef();
 					break;

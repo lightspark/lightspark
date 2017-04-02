@@ -108,7 +108,7 @@ public:
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), lastcodepos(code+l), codepos(code),cachepos(cc),codecache(cc) {};
+	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), lastcodepos(code+l), codepos(code),cachepos(cc),codecache(cc) {}
 	static void handleError(const char *msg);
 	inline unsigned int size() const
 	{
@@ -133,16 +133,16 @@ public:
 	{
 		return cachepos;
 	}
-	inline const char* tellpos() const
+	inline void seekcachepos(lightspark::method_body_info_cache* newcachepos)
 	{
-		return codepos;
+		cachepos = newcachepos;
+		codepos = code +  (cachepos-codecache);
 	}
-	inline void seekpos(const char* newpos)
+	inline void setNextCachePos(lightspark::method_body_info_cache* oldcachepos)
 	{
-		codepos = newpos;
-		cachepos = codecache+ (codepos-code);
+		oldcachepos->nextcodepos = codepos;
+		oldcachepos->nextcachepos = cachepos;
 	}
-
 	inline void read(char *out, unsigned int nbytes)
 	{
 		if (codepos+nbytes >= lastcodepos)
@@ -176,7 +176,7 @@ public:
 		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
 		{
 			codepos = cachepos->nextcodepos;
-			cachepos = codecache+ (codepos-code);
+			cachepos = cachepos->nextcachepos;
 			return currpos->uvalue;
 		}
 		uint32_t val = readu32();
@@ -213,6 +213,8 @@ public:
 		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER;
 		currpos->uvalue = val;
 		currpos->nextcodepos = codepos;
+		currpos->nextcachepos= cachepos;
+		
 		return val;
 	}
 	inline int32_t reads24()
@@ -221,7 +223,7 @@ public:
 		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
 		{
 			codepos = cachepos->nextcodepos;
-			cachepos = codecache+ (codepos-code);
+			cachepos = cachepos->nextcachepos;
 			return currpos->ivalue;
 		}
 		uint32_t val=0;
@@ -230,6 +232,7 @@ public:
 		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_INTEGER;
 		currpos->ivalue = ret;
 		currpos->nextcodepos = codepos;
+		currpos->nextcachepos= cachepos;
 		return ret;
 	}
 };

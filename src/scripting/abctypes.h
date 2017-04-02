@@ -268,6 +268,7 @@ struct method_body_info_cache
 		ASObject* obj;
 	};
 	const char* nextcodepos;
+	struct method_body_info_cache* nextcachepos;
 };
 
 struct method_body_info

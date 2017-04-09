@@ -154,14 +154,9 @@ int variables_map::getNextEnumerable(unsigned int start) const
 	if(start>=Variables.size())
 		return -1;
 
-	const_var_iterator it=Variables.begin();
+	const_var_iterator it=Variables.nth(start);
 
-	unsigned int i=0;
-	while(i<start)
-	{
-		++i;
-		++it;
-	}
+	unsigned int i=start;
 
 	while(it->second.kind!=DYNAMIC_TRAIT || !it->second.isenumerable)
 	{
@@ -443,7 +438,7 @@ bool ASObject::isConstructed() const
 	return traitsInitialized && constructIndicator;
 }
 variables_map::variables_map(MemoryAccount* m):
-	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m)),slots_vars(m)
+	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m)),slots_vars()
 {
 }
 
@@ -464,7 +459,9 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	var_iterator inserted=Variables.insert(make_pair(varName(nameId, ns), variable(createKind)) ).first;
+	if (Variables.capacity() == Variables.size())
+		Variables.reserve(Variables.capacity()+8);
+	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(varName(nameId, ns), variable(createKind)) );
 	return &inserted->second;
 }
 
@@ -839,17 +836,19 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
+	if (Variables.capacity() == Variables.size())
+		Variables.reserve(Variables.capacity()+8);
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		//if(!mname.ns.begin()->hasEmptyName())
 		//	throwError<ReferenceError>(kWriteSealedError, mname.normalizedName(), "" /* TODO: class name */);
-		var_iterator inserted=Variables.insert(
-			make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
+		var_iterator inserted=Variables.insert(Variables.cbegin(),
+			make_pair(varName(name,mname.ns[0]),variable(createKind)));
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
-	var_iterator inserted=Variables.insert(
-		make_pair(varName(name,mname.ns[0]),variable(createKind))).first;
+	var_iterator inserted=Variables.insert(Variables.cbegin(),
+		make_pair(varName(name,mname.ns[0]),variable(createKind)));
 	return &inserted->second;
 }
 
@@ -907,9 +906,11 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	auto inserted = Variables.insert(make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
+	if (Variables.capacity() == Variables.size())
+		Variables.reserve(Variables.capacity()+8);
+	Variables.insert(Variables.cbegin(),make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
 	if (slot_id)
-		initSlot(slot_id,inserted.first);
+		initSlot(slot_id,name, mname.ns[0]);
 }
 
 ASFUNCTIONBODY(ASObject,generator)
@@ -1061,10 +1062,6 @@ ASFUNCTIONBODY(ASObject,_constructorNotInstantiatable)
 	return NULL;
 }
 
-void ASObject::initSlot(unsigned int n, variables_map::var_iterator it)
-{
-	Variables.initSlot(n,it);
-}
 void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	Variables.initSlot(n,name.name_s_id,name.ns[0]);
@@ -1119,41 +1116,43 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			obj=NULL;
 	}
 
-	if(!obj && cls)
+	if(!obj)
 	{
 		//Look for borrowed traits before
-		obj=cls->findBorrowedGettable(name,&nsRealId);
-	}
-
-	if(!obj && cls)
-	{
-		//Check prototype chain
-		Prototype* proto = cls->prototype.getPtr();
-		while(proto)
+		if (cls)
 		{
-			obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
-			if(obj)
+			obj=cls->findBorrowedGettable(name,&nsRealId);
+			if(!obj)
 			{
-				//It seems valid for a class to redefine only the setter, so if we can't find
-				//something to get, it's ok
-				if(!(obj->getter || obj->var))
-					obj=NULL;
+				//Check prototype chain
+				Prototype* proto = cls->prototype.getPtr();
+				while(proto)
+				{
+					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+					if(obj)
+					{
+						//It seems valid for a class to redefine only the setter, so if we can't find
+						//something to get, it's ok
+						if(!(obj->getter || obj->var))
+							obj=NULL;
+					}
+					if(obj)
+						break;
+					proto = proto->prevPrototype.getPtr();
+				}
 			}
-			if(obj)
-				break;
-			proto = proto->prevPrototype.getPtr();
 		}
+		if(!obj)
+			return NullRef;
 	}
 
-	if(!obj)
-		return NullRef;
-	if ( 
+
+	if ( this->is<Class_base>() && obj->kind == INSTANCE_TRAIT &&
 			(!obj->var || !obj->var->isConstructed() ||
 			 obj->var->getObjectType() == T_UNDEFINED ||
-			 obj->var->getObjectType() == T_NULL) && this->is<Class_base>())
+			 obj->var->getObjectType() == T_NULL))
 	{
-		if (obj->kind == INSTANCE_TRAIT &&
-				getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
+		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 	}
 
@@ -1161,14 +1160,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	{
 		//Call the getter
 		ASObject* target=this;
-		if(target->classdef)
-		{
-			LOG_CALL(_("Calling the getter on type ") << target->classdef->class_name<< " for "<<name);
-		}
-		else
-		{
-			LOG_CALL(_("Calling the getter")<< " for "<<name);
-		}
+		LOG_CALL("Calling the getter for " << name);
 		IFunction* getter=obj->getter;
 		target->incRef();
 		ASObject* ret=getter->call(target,NULL,0);
@@ -1303,8 +1295,7 @@ variables_map::~variables_map()
 void variables_map::destroyContents()
 {
 	const_var_iterator it=Variables.cbegin();
-	const_var_iterator itend=Variables.cend();
-	while(it!=itend)
+	while(it!=Variables.cend())
 	{
 		if(it->second.var)
 			it->second.var->decRef();
@@ -1371,17 +1362,10 @@ bool ASObject::destruct()
 	return dodestruct;
 }
 
-void variables_map::initSlot(unsigned int n, var_iterator& it)
-{
-	if(n>slots_vars.size())
-		slots_vars.resize(n+8,Variables.end());
-
-	slots_vars[n-1]=it;
-}
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
 {
 	if(n>slots_vars.size())
-		slots_vars.resize(n+8,Variables.end());
+		slots_vars.resize(n+8);
 
 	var_iterator ret=Variables.find(varName(nameId,ns));
 
@@ -1390,29 +1374,32 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 		//Name not present, no good
 		throw RunTimeException("initSlot on missing variable");
 	}
-
-	slots_vars[n-1]=ret;
+	slots_vars[n-1]=varName(nameId,ns);
 }
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
 {
 	validateSlotId(n);
-	slots_vars[n-1]->second.setVar(o);
+	var_iterator it = Variables.find(slots_vars[n-1]);
+	it->second.setVar(o);
 }
 
 void variables_map::setSlotNoCoerce(unsigned int n,ASObject* o)
 {
 	validateSlotId(n);
-	slots_vars[n-1]->second.setVarNoCoerce(o);
+	var_iterator it = Variables.find(slots_vars[n-1]);
+	it->second.setVarNoCoerce(o);
 }
 
 void variables_map::validateSlotId(unsigned int n) const
 {
 	if(n == 0 || n-1<slots_vars.size())
 	{
-		assert_and_throw(slots_vars[n-1]!=Variables.end());
-		if(slots_vars[n-1]->second.setter)
-			throw UnsupportedException("setSlot has setters");
+//		if(slots_vars[n-1] && slots_vars[n-1]->setter)
+//		{
+//			LOG(LOG_INFO,"validate2:"<<this<<" "<<n<<" "<<slots_vars[n-1]->setter);
+//			throw UnsupportedException("setSlot has setters");
+//		}
 	}
 	else
 		throw RunTimeException("setSlot out of bounds");
@@ -1423,11 +1410,7 @@ variable* variables_map::getValueAt(unsigned int index)
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		var_iterator it=Variables.begin();
-
-		for(unsigned int i=0;i<index;i++)
-			++it;
-
+		var_iterator it=Variables.nth(index);
 		return &it->second;
 	}
 	else
@@ -1460,11 +1443,7 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=Variables.begin();
-
-		for(unsigned int i=0;i<index;i++)
-			++it;
-
+		const_var_iterator it=Variables.nth(index);
 		return sys->getStringFromUniqueId(it->first.nameId);
 	}
 	else

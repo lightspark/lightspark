@@ -27,6 +27,7 @@
 #include "memory_support.h"
 #include <map>
 #include <boost/intrusive/list.hpp>
+#include <boost/container/flat_map.hpp>
 
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
@@ -216,6 +217,7 @@ struct varName
 {
 	uint32_t nameId;
 	nsNameAndKind ns;
+	varName():nameId(0){}
 	varName(uint32_t name, const nsNameAndKind& _ns):nameId(name),ns(_ns){}
 	inline bool operator<(const varName& r) const
 	{
@@ -238,12 +240,12 @@ class variables_map
 {
 public:
 	//Names are represented by strings in the string and namespace pools
-	typedef std::map<varName,variable,std::less<varName>,reporter_allocator<std::pair<const varName, variable>>>
+	typedef boost::container::flat_map<varName,variable,std::less<varName>,reporter_allocator<std::pair<varName, variable>>>
 		mapType;
 	mapType Variables;
-	typedef std::map<varName,variable>::iterator var_iterator;
-	typedef std::map<varName,variable>::const_iterator const_var_iterator;
-	std::vector<var_iterator, reporter_allocator<var_iterator>> slots_vars;
+	typedef boost::container::flat_map<varName,variable>::iterator var_iterator;
+	typedef boost::container::flat_map<varName,variable>::const_iterator const_var_iterator;
+	std::vector<varName> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**
 	   Find a variable in the map
@@ -274,10 +276,12 @@ public:
 			const nsNameAndKind& ns=ret->first.ns;
 			if(ns==*nsIt)
 			{
-				if (nsRealId)
-					*nsRealId = ns.nsRealId;
 				if(ret->second.kind & traitKinds)
+				{
+					if (nsRealId)
+						*nsRealId = ns.nsRealId;
 					return &ret->second;
+				}
 				else
 					return NULL;
 			}
@@ -300,7 +304,8 @@ public:
 	ASObject* getSlot(unsigned int n)
 	{
 		assert_and_throw(n > 0 && n<=slots_vars.size());
-		return slots_vars[n-1]->second.var;
+		const_var_iterator it = Variables.find(slots_vars[n-1]);
+		return it->second.var;
 	}
 	/*
 	 * This method does throw if the slot id is not valid
@@ -312,7 +317,6 @@ public:
 	 * this is verified at optimization time
 	 */
 	void setSlotNoCoerce(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n, var_iterator &it);
 	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
 	inline unsigned int size() const
 	{
@@ -532,7 +536,6 @@ public:
 	{
 		Variables.setSlotNoCoerce(n,o);
 	}
-	void initSlot(unsigned int n, variables_map::var_iterator it);
 	void initSlot(unsigned int n, const multiname& name);
 	unsigned int numVariables() const;
 	inline tiny_string getNameAt(int i) const

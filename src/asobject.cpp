@@ -154,7 +154,7 @@ int variables_map::getNextEnumerable(unsigned int start) const
 	if(start>=Variables.size())
 		return -1;
 
-	const_var_iterator it=Variables.nth(start);
+	const_var_iterator it=Variables.begin()+start;
 
 	unsigned int i=start;
 
@@ -1410,7 +1410,7 @@ variable* variables_map::getValueAt(unsigned int index)
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		var_iterator it=Variables.nth(index);
+		var_iterator it=Variables.begin()+index;
 		return &it->second;
 	}
 	else
@@ -1443,7 +1443,7 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=Variables.nth(index);
+		const_var_iterator it=Variables.begin()+index;
 		return sys->getStringFromUniqueId(it->first.nameId);
 	}
 	else

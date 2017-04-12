@@ -652,6 +652,6 @@ void ImageDecodingPolicy::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableByQName("ON_DEMAND","",abstract_s(c->getSystemState(),"onDemand"),CONSTANT_TRAIT);
-	c->setVariableByQName("ON_LOAD	","",abstract_s(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
+	c->setVariableByQName("ON_LOAD","",abstract_s(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
 }
 

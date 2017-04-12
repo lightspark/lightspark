@@ -182,7 +182,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 	else
 		status=INIT;
 }
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecID codecID, double frameRateHint):
 	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0)
 {
@@ -645,7 +645,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 #endif
 }
 
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecID codecID):engine(eng),ownedContext(true),codecContext(NULL)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
@@ -1076,7 +1076,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
 		AVProbeData probeData;
 		probeData.filename="lightspark_stream";
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 		probeData.mime_type=NULL;
 #endif
 		probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
@@ -1117,7 +1117,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 	LOG_CALL(_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
 	for(uint32_t i=0;i<formatCtx->nb_streams;i++)
 	{
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 		if(formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)
 #else
 		if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && videoFound==false)
@@ -1126,7 +1126,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 			videoFound=true;
 			videoIndex=(int32_t)i;
 		}
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 		else if(formatCtx->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO && formatCtx->streams[i]->codecpar->codec_id!=CODEC_ID_NONE && audioFound==false)
 #else
 		else if(formatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && formatCtx->streams[i]->codec->codec_id!=CODEC_ID_NONE && audioFound==false)
@@ -1147,7 +1147,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 		AVRational rateRational = stream->avg_frame_rate;
 #endif
 		double frameRate=av_q2d(rateRational);
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codecpar->codec_id,frameRate);
 #else
 		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec,frameRate);
@@ -1160,7 +1160,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 		if (format && (format->codec != LS_AUDIO_CODEC::CODEC_NONE))
 			customAudioDecoder=new FFMpegAudioDecoder(eng,format->codec,format->sampleRate,format->channels,true);
 		else
-#if LIBAVFORMAT_VERSION_MAJOR > 56
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar->codec_id);
 #else
 			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codec);

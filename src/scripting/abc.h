@@ -583,7 +583,7 @@ public:
 	tiny_string getDefaultXMLNamespace();
 	uint32_t getDefaultXMLNamespaceID();
 
-	void buildClassAndBindTag(const std::string& s, DictionaryTag* t);
+	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 	void checkExternalCallEvent() DLL_PUBLIC;
 };
 

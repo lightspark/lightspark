@@ -2006,8 +2006,13 @@ void RootMovieClip::initFrame()
 
 	ABCVm *vm = getVm(getSystemState());
 	auto it=classesToBeBound.begin();
-	for(;it!=classesToBeBound.end();++it)
-		vm->buildClassAndBindTag(it->first.raw_buf(), it->second);
+	while(it!=classesToBeBound.end())
+	{
+		if (it->second->bindedTo != NULL || vm->buildClassAndBindTag(it->first.raw_buf(), it->second))
+			it = classesToBeBound.erase(it);
+		else
+			++it;
+	}
 
 	MovieClip::initFrame();
 	

@@ -1443,11 +1443,11 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 	derived_class_tmp->bindToRoot();
 }
 
-void ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
+bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 {
 	Class_inherit* derived_class_tmp = findClassInherit(s, t->loadedFrom);
 	if(!derived_class_tmp)
-		return;
+		return false;
 
 	//It seems to be acceptable for the same base to be binded multiple times.
 	//In such cases the first binding is bidirectional (instances created using PlaceObject
@@ -1457,6 +1457,7 @@ void ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 		t->bindedTo=derived_class_tmp;
 
 	derived_class_tmp->bindToTag(t);
+	return true;
 }
 void ABCVm::checkExternalCallEvent()
 {

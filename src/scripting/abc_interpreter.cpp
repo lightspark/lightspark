@@ -468,13 +468,15 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x20:
 			{
 				//pushnull
-				context->runtime_stack_push(pushNull());
+				LOG_CALL("pushnull");
+				context->runtime_stack_push(context->context->root->getSystemState()->getNullRef());
 				break;
 			}
 			case 0x21:
 			{
 				//pushundefined
-				context->runtime_stack_push(pushUndefined());
+				LOG_CALL("pushundefined");
+				context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
 				break;
 			}
 			case 0x23:
@@ -803,15 +805,17 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callproperty
-				uint32_t t = code.readu30();
-				uint32_t t2 = code.readu30();
-				method_info* called_mi=NULL;
-				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callProperty(context,t,t2,&called_mi,true);
-				if(called_mi)
-					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
-				else
-					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+//				uint32_t t = code.readu30();
+//				uint32_t t2 = code.readu30();
+//				method_info* called_mi=NULL;
+//				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+//				callProperty(context,t,t2,&called_mi,true);
+//				if(called_mi)
+//					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+//				else
+//					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+
+				callPropertyCache(context,code,true);
 				break;
 			}
 			case 0x47:
@@ -953,10 +957,12 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x5d:
 			{
 				//findpropstrict
-				uint32_t t = code.readu30();
-				multiname* name=context->context->getMultiname(t,context);
-				context->runtime_stack_push(findPropStrict(context,name));
-				name->resetNameIfObject();
+//				uint32_t t = code.readu30();
+//				multiname* name=context->context->getMultiname(t,context);
+//				context->runtime_stack_push(findPropStrict(context,name));
+//				name->resetNameIfObject();
+				
+				context->runtime_stack_push(findPropStrictCache(context,code));
 				break;
 			}
 			case 0x5e:
@@ -1632,7 +1638,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			{
 				//setlocal_n
 				int i=opcode&3;
-				LOG_CALL( _("setLocal ") << i);
+				LOG_CALL( _("setLocal_n ") << i);
 				ASObject* obj=context->runtime_stack_pop();
 				if ((int)i != context->argarrayposition || obj->is<Array>())
 				{

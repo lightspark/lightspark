@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <cstddef>
 #include "parsing/tags.h"
+#include "parsing/streams.h"
 #include "logger.h"
 #include <vector>
 #include <deque>
@@ -326,6 +327,7 @@ private:
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callPropertyCache(call_context* th, memorystream& code, bool keepReturn);
 	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
@@ -366,6 +368,7 @@ private:
 	static void newClass(call_context* th, int n);
 	static void newArray(call_context* th, int n); 
 	static ASObject* findPropStrict(call_context* th, multiname* name);
+	static ASObject* findPropStrictCache(call_context* th, memorystream& code);
 	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);

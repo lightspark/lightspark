@@ -444,6 +444,166 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 	}
 	LOG_CALL(_("End of calling ") << *name);
 }
+void ABCVm::callPropertyCache(call_context* th, memorystream& code, bool keepReturn)
+{
+	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
+	{
+		code.seekcachepos(cachepos->nextcachepos);
+		uint32_t m = code.readu30();
+		
+		ASObject** args=g_newa(ASObject*, m);
+		for(uint32_t i=0;i<m;i++)
+			args[m-i-1]=th->runtime_stack_pop();
+		ASObject* obj=th->runtime_stack_pop();
+		callImpl(th, cachepos->obj, obj, args, m, NULL, keepReturn);
+		return;
+	}
+	uint32_t n = code.readu30();
+	uint32_t m = code.readu30();
+	
+	ASObject** args=g_newa(ASObject*, m);
+	for(uint32_t i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
+
+	multiname* name=th->context->getMultiname(n,th);
+	LOG_CALL( (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
+
+	ASObject* obj=th->runtime_stack_pop();
+	checkDeclaredTraits(obj);
+	
+	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"trying to call property on undefined:"<<*name);
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	//We should skip the special implementation of get
+	_NR<ASObject> o=obj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+	name->resetNameIfObject();
+	if(o.isNull() && obj->is<Class_base>())
+	{
+		// check super classes
+		_NR<Class_base> tmpcls = obj->as<Class_base>()->super;
+		while (tmpcls && !tmpcls.isNull())
+		{
+			o=tmpcls->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+			if(!o.isNull())
+				break;
+			tmpcls = tmpcls->super;
+		}	
+	}
+	if(!o.isNull() && !obj->is<Proxy>())
+	{
+		// the property is cached if
+		// - the multiname is static and
+		// - it belongs to a sealed class
+		if (name->isStatic && 
+				((o->is<Class_base>() && o->as<Class_base>()->isSealed) ||
+				(o->getClass() && o->getClass()->isSealed)))
+		{
+			// put object in cache
+			cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+			cachepos->obj = o.getPtr();
+			o->incRef();
+		}
+		o->incRef();
+		callImpl(th, o.getPtr(), obj, args, m, NULL, keepReturn);
+	}
+	else
+	{
+		//If the object is a Proxy subclass, try to invoke callProperty
+		if(obj->is<Proxy>())
+		{
+			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
+			multiname callPropertyName(NULL);
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s_id=obj->getSystemState()->getUniqueStringId("callProperty");
+			callPropertyName.ns.emplace_back(th->context->root->getSystemState(),flash_proxy,NAMESPACE);
+			_NR<ASObject> oproxy=obj->getVariableByMultiname(callPropertyName,ASObject::SKIP_IMPL);
+
+			if(!oproxy.isNull())
+			{
+				assert_and_throw(oproxy->getObjectType()==T_FUNCTION);
+				if(!o.isNull())
+				{
+					o->incRef();
+					callImpl(th, o.getPtr(), obj, args, m, NULL, keepReturn);
+				}
+				else
+				{
+					IFunction* f=static_cast<IFunction*>(oproxy.getPtr());
+					//Create a new array
+					ASObject** proxyArgs=g_newa(ASObject*, m+1);
+					ASObject* namearg = abstract_s(f->getSystemState(),name->normalizedName(f->getSystemState()));
+					namearg->setProxyProperty(*name);
+					proxyArgs[0]=namearg;
+					for(uint32_t i=0;i<m;i++)
+						proxyArgs[i+1]=args[i];
+					
+					//We now suppress special handling
+					LOG_CALL(_("Proxy::callProperty"));
+					f->incRef();
+					obj->incRef();
+					ASObject* ret=f->call(obj,proxyArgs,m+1);
+					//call getMethodInfo only after the call, so it's updated
+					f->decRef();
+					th->runtime_stack_push(ret);
+					
+					obj->decRef();
+				}
+				LOG_CALL(_("End of calling ") << *name);
+				return;
+			}
+			else if(!o.isNull())
+			{
+				o->incRef();
+				callImpl(th, o.getPtr(), obj, args, m, NULL, keepReturn);
+				LOG_CALL(_("End of calling ") << *name);
+				return;
+			}
+		}
+		for(uint32_t i=0;i<m;i++)
+			args[i]->decRef();
+		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
+		if (obj->hasPropertyByMultiname(*name,true,true))
+		{
+			tiny_string clsname = obj->getClass()->getQualifiedClassName();
+			obj->decRef();
+			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(th->context->root->getSystemState()), clsname);
+		}
+		if (obj->getClass() && obj->getClass()->isSealed)
+		{
+			tiny_string clsname = obj->getClass()->getQualifiedClassName();
+			obj->decRef();
+			throwError<ReferenceError>(kReadSealedError, name->normalizedName(th->context->root->getSystemState()), clsname);
+		}
+		if (obj->is<Class_base>())
+		{
+			tiny_string clsname = obj->as<Class_base>()->class_name.getQualifiedName(th->context->root->getSystemState());
+			obj->decRef();
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(th->context->root->getSystemState()), clsname);
+		}
+		else
+		{
+			tiny_string clsname = obj->getClassName();
+			obj->decRef();
+			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(th->context->root->getSystemState()), clsname);
+		}
+
+		obj->decRef();
+		if(keepReturn)
+			th->runtime_stack_push(th->context->root->getSystemState()->getUndefinedRef());
+
+	}
+	LOG_CALL(_("End of calling ") << *name);
+}
+
 void ABCVm::checkDeclaredTraits(ASObject* obj)
 {
 	if(!obj->isInitialized() &&
@@ -1686,6 +1846,95 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 			return th->context->root->getSystemState()->getUndefinedRef();
 		}
 	}
+
+	assert_and_throw(ret);
+	ret->incRef();
+	return ret;
+}
+
+ASObject* ABCVm::findPropStrictCache(call_context* th, memorystream& code)
+{
+
+	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
+	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
+	{
+		code.seekcachepos(cachepos->nextcachepos);
+		cachepos->obj->incRef();
+		return cachepos->obj;
+	}
+	uint32_t t = code.readu30();
+	multiname* name=th->context->getMultiname(t,th);
+	LOG_CALL( "findPropStrict " << *name );
+
+	vector<scope_entry>::reverse_iterator it;
+	bool hasdynamic=false;
+	bool found=false;
+	ASObject* ret=NULL;
+
+	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
+	{
+		found=th->scope_stack[i-1]->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
+		if (th->scope_stack_dynamic[i-1])
+			hasdynamic = true;
+		if(found)
+		{
+			//We have to return the object, not the property
+			ret=th->scope_stack[i-1];
+			break;
+		}
+	}
+	if(!found && !th->parent_scope_stack.isNull()) // check parent scope stack
+	{
+		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
+		{
+			found=it->object->hasPropertyByMultiname(*name, it->considerDynamic, true);
+			if (it->considerDynamic)
+				hasdynamic = true;
+			if(found)
+			{
+				//We have to return the object, not the property
+				ret=it->object.getPtr();
+				break;
+			}
+		}
+	}
+	if(!found)
+	{
+		ASObject* target;
+		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
+		if(o)
+			ret=target;
+		else
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
+			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
+			{
+				ASObject* r = th->scope_stack[i-1];
+				if (!r->is<Class_base>())
+					continue;
+				if (r->as<Class_base>()->findBorrowedGettable(*name))
+				{
+					if (!r->as<Class_base>()->isSealed)
+						break;
+					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
+				}
+			}
+			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
+			return th->context->root->getSystemState()->getUndefinedRef();
+		}
+		// we only cache the property if
+		// - the property was not found in the scope_stack and
+		// - the scope_stack does not contain any dynamic objects and
+		// - the property was found in one of the global scopes
+		if (!hasdynamic)
+		{
+			// put object in cache
+			cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+			cachepos->obj = ret;
+			ret->incRef();
+		}
+	}
+	name->resetNameIfObject();
 
 	assert_and_throw(ret);
 	ret->incRef();

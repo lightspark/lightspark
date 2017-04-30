@@ -76,6 +76,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 	parsingIsFailed(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
+	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
 }
 

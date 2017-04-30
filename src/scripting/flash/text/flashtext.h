@@ -189,7 +189,7 @@ class TextFormat: public ASObject
 private:
 	void onAlign(const tiny_string& old);
 public:
-	TextFormat(Class_base* c):ASObject(c){}
+	TextFormat(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_TEXTFORMAT){}
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

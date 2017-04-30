@@ -98,6 +98,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
 	  sharpness(0), thickness(0), useRichTextClipboard(false)
 {
+	subtype=SUBTYPE_TEXTFIELD;
 	if (!readOnly)
 	{
 		type = ET_EDITABLE;

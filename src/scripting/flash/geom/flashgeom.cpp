@@ -1026,11 +1026,11 @@ void Transform::buildTraits(ASObject* o)
 {
 }
 
-Matrix::Matrix(Class_base* c):ASObject(c)
+Matrix::Matrix(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX)
 {
 }
 
-Matrix::Matrix(Class_base* c, const MATRIX& m):ASObject(c),matrix(m)
+Matrix::Matrix(Class_base* c, const MATRIX& m):ASObject(c,T_OBJECT,SUBTYPE_MATRIX),matrix(m)
 {
 }
 

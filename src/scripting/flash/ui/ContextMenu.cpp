@@ -24,6 +24,7 @@ using namespace lightspark;
 
 ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),customItems(Class<Array>::getInstanceSNoArgs(c->getSystemState())),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(c->getSystemState()))
 {
+	subtype=SUBTYPE_CONTEXTMENU;
 }
 
 void ContextMenu::sinit(Class_base* c)

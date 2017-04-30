@@ -100,6 +100,7 @@ DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotat
 	sx(1),sy(1),alpha(1.0),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),cacheAsBitmap(false)
 {
+	subtype=SUBTYPE_DISPLAYOBJECT;
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 

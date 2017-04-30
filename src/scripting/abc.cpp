@@ -1130,7 +1130,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 		if(event->type == "rollOver" || event->type == "rollOut")
 		{
 			event->incRef();
-			_R<MouseEvent> mevent = _MR(dynamic_cast<MouseEvent*>(event.getPtr()));  
+			_R<MouseEvent> mevent = _MR(event->as<MouseEvent>());
 			if(mevent->relatedObject)
 			{  
 				mevent->relatedObject->incRef();
@@ -1149,7 +1149,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 				rcur = rcur->getParent();
 				rparents.push_back(rcur);
 			}
-			_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+			_R<DisplayObject> cur = _MR(dispatcher->as<DisplayObject>());
 			//Check if cur is an ancestor of rcur
 			auto i = rparents.begin();
 			for(;i!=rparents.end();++i)
@@ -1183,7 +1183,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 		//The standard behavior
 		else
 		{
-			_R<DisplayObject> cur = _MR(dynamic_cast<DisplayObject*>(dispatcher.getPtr()));
+			_R<DisplayObject> cur = _MR(dispatcher->as<DisplayObject>());
 			while(true)
 			{
 				if(!cur->getParent())

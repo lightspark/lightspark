@@ -382,7 +382,7 @@ class IFunction: public ASObject
 public:
 	ASPROPERTY_GETTER_SETTER(uint32_t,length);
 protected:
-	IFunction(Class_base *c);
+	IFunction(Class_base *c,CLASS_SUBTYPE st);
 	virtual IFunction* clone()=0;
 	_NR<ASObject> closure_this;
 
@@ -462,7 +462,7 @@ public:
 protected:
 	/* Function pointer to the C-function implementation */
 	as_function val;
-	Function(Class_base* c, as_function v=NULL):IFunction(c),val(v){}
+	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v){}
 	Function* clone()
 	{
 		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
@@ -550,11 +550,11 @@ public:
 	_NR<scope_entry_list> func_scope;
 	bool isEqual(ASObject* r)
 	{
-		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
-		if(sf==NULL)
+		if (!r->is<SyntheticFunction>())
 			return false;
 		if (closure_this.isNull())
 			return this == r;
+		SyntheticFunction* sf=r->as<SyntheticFunction>();
 		return (mi==sf->mi) && (closure_this==sf->closure_this);
 	}
 	void acquireScope(const std::vector<scope_entry>& scope)

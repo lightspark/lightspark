@@ -624,7 +624,10 @@ public:
 
 	virtual tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
 	/* returns true if the current object is of type T */
-	template<class T> bool is() const { return dynamic_cast<const T*>(this); }
+	template<class T> bool is() const { 
+		LOG(LOG_ERROR,"dynamic cast:"<<this->getClassName());
+		return dynamic_cast<const T*>(this); 
+	}
 	/* returns this object casted to the given type.
 	 * You have to make sure that it actually is the type (see is<T>() above)
 	 */
@@ -657,54 +660,107 @@ public:
 	
 };
 
-class Number;
-class UInteger;
-class Integer;
-class Boolean;
-class Template_base;
-class ASString;
-class IFunction;
-class Function;
 class Array;
-class Null;
-class Undefined;
-class Type;
 class ASQName;
+class ASString;
+class Bitmap;
+class BitmapData;
+class Boolean;
+class Class_inherit;
+class ContextMenu;
+class ContextMenuBuiltInItems;
+class Date;
+class DisplayObject;
+class DisplayObjectContainer;
+class Event;
+class Function;
+class Function_object;
+class Global;
+class IFunction;
+class Integer;
+class InteractiveObject;
+class KeyboardEvent;
+class LoaderInfo;
+class Matrix;
+class MouseEvent;
 class Namespace;
+class Null;
+class Number;
+class ObjectConstructor;
+class ProgressEvent;
 class Proxy;
 class RegExp;
+class RootMovieClip;
+class SharedObject;
+class Sound;
+class SoundChannel;
+class SoundTransform;
+class Stage;
+class SyntheticFunction;
+class Template_base;
+class TextField;
+class TextFormat;
+class Type;
+class UInteger;
+class Undefined;
+class Vector;
+class WaitableEvent;
 class XML;
 class XMLList;
-class Class_inherit;
-class ObjectConstructor;
-class Function_object;
-class Date;
-class Global;
 
-template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
-template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
-template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
-template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
-template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
-template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
-template<> inline bool ASObject::is<Function>() const { return type==T_FUNCTION; }
-template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
-template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
+
+// this is used to avoid calls to dynamic_cast when testing for some classes
+// keep in mind that when adding a class here you have to take care of the class inheritance and add the new SUBTYPE_ to all apropriate is<> methods 
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
-template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
-template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
-template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
+template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
+template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
+template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
+template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
+template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
+template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
+template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
+template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
+template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP; }
+template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP; }
+template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT; }
+template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
+template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
+template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
+template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
+template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
+template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP; }
+template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
+template<> inline bool ASObject::is<LoaderInfo>() const { return subtype==SUBTYPE_LOADERINFO; }
 template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
+template<> inline bool ASObject::is<Matrix>() const { return subtype==SUBTYPE_MATRIX; }
+template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYPE_MOUSE_EVENT; }
+template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
+template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
+template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
+template<> inline bool ASObject::is<ProgressEvent>() const { return subtype==SUBTYPE_PROGRESSEVENT; }
 template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
+template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
+template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
+template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
+template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
+template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
+template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
+template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
+template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
+template<> inline bool ASObject::is<TextField>() const { return subtype==SUBTYPE_TEXTFIELD; }
+template<> inline bool ASObject::is<TextFormat>() const { return subtype==SUBTYPE_TEXTFORMAT; }
+template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
+template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
+template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
+template<> inline bool ASObject::is<WaitableEvent>() const { return subtype==SUBTYPE_WAITABLE_EVENT; }
 template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
-template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
-template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
-template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
-template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
-template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
+
 
 
 

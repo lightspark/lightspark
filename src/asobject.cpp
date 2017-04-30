@@ -511,7 +511,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	assert(!initialized);
 #endif
 	//borrowed properties only make sense on class objects
-	assert(!isBorrowed || dynamic_cast<Class_base*>(this));
+	assert(!isBorrowed || this->is<Class_base>());
 	//use setVariableByQName(name,ns,o,DYNAMIC_TRAIT) on prototypes
 
 	/*
@@ -655,7 +655,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	{
 		variable *protoObj = cls->findSettableInPrototype(name);
 		if (protoObj && 
-		    ((protoObj->var && protoObj->var->is<Function>()) ||
+		    ((protoObj->var && protoObj->var->is<IFunction>()) ||
 		     protoObj->setter))
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");

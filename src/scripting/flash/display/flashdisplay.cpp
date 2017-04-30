@@ -57,6 +57,7 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
+	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
 	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
@@ -69,6 +70,7 @@ LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicati
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
+	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
 	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
@@ -1506,6 +1508,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 
 DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(c),mouseChildren(true),tabChildren(true)
 {
+	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
 
 bool DisplayObjectContainer::hasLegacyChildAt(uint32_t depth)
@@ -1591,6 +1594,7 @@ bool DisplayObjectContainer::destruct()
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
+	subtype=SUBTYPE_INTERACTIVE_OBJECT;
 }
 
 InteractiveObject::~InteractiveObject()
@@ -1812,8 +1816,7 @@ bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
 	{
 		if(*it==d)
 			return true;
-		DisplayObjectContainer* c=dynamic_cast<DisplayObjectContainer*>((*it).getPtr());
-		if(c && c->_contains(d))
+		if((*it)->is<DisplayObjectContainer>() && (*it)->as<DisplayObjectContainer>()->_contains(d))
 			return true;
 	}
 	return false;
@@ -2318,6 +2321,7 @@ Stage::Stage(Class_base* c):
 	DisplayObjectContainer(c), colorCorrection("default"),
 	showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
+	subtype = SUBTYPE_STAGE;
 	onStage = true;
 }
 
@@ -2595,6 +2599,7 @@ void StageDisplayState::sinit(Class_base* c)
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
 	DisplayObject(c),TokenContainer(this),smoothing(false)
 {
+	subtype=SUBTYPE_BITMAP;
 	if(li)
 	{
 		loaderInfo = li;
@@ -2638,6 +2643,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 
 Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this),smoothing(false)
 {
+	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
 	bitmapData->addUser(this);
 	Bitmap::updatedData();
@@ -3190,7 +3196,7 @@ void MovieClip::advanceFrame()
 	 * 1b. or it is a DefineSpriteTag
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
-	if((!dynamic_cast<RootMovieClip*>(this) && !fromDefineSpriteTag)
+	if((!this->is<RootMovieClip>() && !fromDefineSpriteTag)
 	   || !getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState())))
 		return;
 

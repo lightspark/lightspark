@@ -3007,13 +3007,12 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		IFunction* t=static_cast<IFunction*>(type);
 		ASObject* functionProto=t->prototype.getPtr();
 		//Only Function_object instances may come from functions
-		Function_object* funcObj=dynamic_cast<Function_object*>(value);
-		while(funcObj)
+		ASObject* proto=value;
+		while(proto->is<Function_object>())
 		{
-			ASObject* proto=funcObj->functionPrototype.getPtr();
+			proto=proto->as<Function_object>()->functionPrototype.getPtr();
 			if(proto==functionProto)
 				return true;
-			funcObj=dynamic_cast<Function_object*>(proto);
 		}
 		return false;
 	}

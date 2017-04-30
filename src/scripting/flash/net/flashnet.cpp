@@ -613,6 +613,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 std::map<tiny_string, ASObject* > SharedObject::sharedobjectmap;
 SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
 {
+	subtype=SUBTYPE_SHAREDOBJECT;
 	data=_MR(new_asobject(c->getSystemState()));
 }
 
@@ -1998,7 +1999,7 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<AS
 	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 	_NR<ASObject> callback = client->getVariableByMultiname(callbackName);
-	if(!callback.isNull() && callback->is<Function>())
+	if(!callback.isNull() && callback->is<IFunction>())
 	{
 		ASObject* callbackArgs[arglist.size()];
 

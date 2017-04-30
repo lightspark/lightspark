@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ContextMenuBuiltInItems::ContextMenuBuiltInItems(Class_base* c):ASObject(c),
+ContextMenuBuiltInItems::ContextMenuBuiltInItems(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_CONTEXTMENUBUILTINITEMS),
 	forwardAndBack(false),loop(false),play(false),print(false),quality(false),rewind(false),save(false),zoom(false)
 {
 }

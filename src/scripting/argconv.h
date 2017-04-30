@@ -63,11 +63,11 @@ class ArgumentConversion<Ref<T>>
 public:
 	static Ref<T> toConcrete(ASObject* obj)
 	{
-		T* o = dynamic_cast<T*>(obj);
-		if(!o)
+		if(!obj->is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj->getClassName(),
                                                   Class<T>::getClass(obj->getSystemState())->getQualifiedClassName());
+        T* o = obj->as<T>();
 		o->incRef();
 		return _MR(o);
 	}
@@ -91,11 +91,11 @@ public:
 		if(obj->getObjectType() == T_NULL)
 			return NullRef;
 
-		T* o = dynamic_cast<T*>(obj);
-		if(!o)
+        if(!obj->is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj->getClassName(),
                                                   Class<T>::getClass(obj->getSystemState())->getQualifiedClassName());
+        T* o = obj->as<T>();
 		o->incRef();
 		return _MNR(o);
 	}

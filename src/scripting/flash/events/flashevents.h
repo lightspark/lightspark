@@ -45,7 +45,7 @@ class Responder;
 class Event: public ASObject
 {
 public:
-	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false);
+	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false, CLASS_SUBTYPE st=SUBTYPE_EVENT);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -81,7 +81,7 @@ private:
 	bool handled;
 public:
 	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(NULL,t,b,c), handled(false) {}
+		: Event(NULL,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
 	void wait();
 	void signal();
 	void finalize();

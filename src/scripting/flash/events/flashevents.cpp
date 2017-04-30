@@ -35,8 +35,8 @@ void IEventDispatcher::linkTraits(Class_base* c)
 	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
-Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c):
-	ASObject(cb),bubbles(b),cancelable(c),defaultPrevented(false),eventPhase(0),type(t),target(),currentTarget()
+Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
+	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),eventPhase(0),type(t),target(),currentTarget()
 {
 }
 
@@ -247,13 +247,13 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 }
 
 MouseEvent::MouseEvent(Class_base* c)
- : Event(c, "mouseEvent"), modifiers(KMOD_NONE),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+ : Event(c, "mouseEvent",false,false,SUBTYPE_MOUSE_EVENT), modifiers(KMOD_NONE),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
 MouseEvent::MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
 		       bool b, SDL_Keymod _modifiers, bool _buttonDown, _NR<InteractiveObject> relObj, int32_t _delta)
-  : Event(c,t,b), modifiers(_modifiers), buttonDown(_buttonDown),delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
+  : Event(c,t,b,false,SUBTYPE_MOUSE_EVENT), modifiers(_modifiers), buttonDown(_buttonDown),delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
@@ -262,11 +262,11 @@ Event* MouseEvent::cloneImpl() const
 	return Class<MouseEvent>::getInstanceS(getSystemState(),type,localX,localY,bubbles,(SDL_Keymod)modifiers,buttonDown,relatedObject,delta);
 }
 
-ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false),bytesLoaded(0),bytesTotal(0)
+ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false,false,SUBTYPE_PROGRESSEVENT),bytesLoaded(0),bytesTotal(0)
 {
 }
 
-ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total):Event(c, "progress",false),bytesLoaded(loaded),bytesTotal(total)
+ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total):Event(c, "progress",false,false,SUBTYPE_PROGRESSEVENT),bytesLoaded(loaded),bytesTotal(total)
 {
 }
 
@@ -614,13 +614,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
-	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
-	if(dispobj && (eventName=="enterFrame"
+	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
 				|| eventName=="frameConstructed") )
 	{
-		dispobj->incRef();
-		obj->getSystemState()->registerFrameListener(_MR(dispobj));
+		th->incRef();
+		obj->getSystemState()->registerFrameListener(_MR(th->as<DisplayObject>()));
 	}
 
 	{
@@ -680,16 +679,15 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 	}
 
 	// Only unregister the enterFrame listener _after_ the handlers have been erased.
-	DisplayObject* dispobj=dynamic_cast<DisplayObject*>(th);
-	if(dispobj && (eventName=="enterFrame"
+	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 					|| eventName=="exitFrame"
 					|| eventName=="frameConstructed")
 				&& (!th->hasEventListener("enterFrame")
 					&& !th->hasEventListener("exitFrame")
 					&& !th->hasEventListener("frameConstructed")) )
 	{
-		dispobj->incRef();
-		obj->getSystemState()->unregisterFrameListener(_MR(dispobj));
+		th->incRef();
+		obj->getSystemState()->unregisterFrameListener(_MR(th->as<DisplayObject>()));
 	}
 
 	return NULL;
@@ -874,7 +872,7 @@ ASFUNCTIONBODY(FullScreenEvent,_constructor)
 }
 
 KeyboardEvent::KeyboardEvent(Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers)
-  : Event(c, _type), modifiers(_modifiers), charCode(_charcode), keyCode(_keycode), keyLocation(0)
+  : Event(c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), charCode(_charcode), keyCode(_keycode), keyLocation(0)
 {
 }
 

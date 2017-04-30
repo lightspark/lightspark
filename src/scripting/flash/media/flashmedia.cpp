@@ -31,7 +31,7 @@
 using namespace lightspark;
 using namespace std;
 
-SoundTransform::SoundTransform(Class_base* c): ASObject(c),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
+SoundTransform::SoundTransform(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_SOUNDTRANSFORM),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
 {
 }
 
@@ -242,6 +242,7 @@ Sound::Sound(Class_base* c)
 	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache(c->getSystemState())),
 	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(60*1000)
 {
+	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format)
@@ -250,6 +251,7 @@ Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format)
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(60*1000)
 {
+	subtype=SUBTYPE_SOUND;
 }
 
 Sound::~Sound()
@@ -438,6 +440,7 @@ SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat 
 	format(_format),oldVolume(-1.0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),position(0),rightPeak(1)
 {
+	subtype=SUBTYPE_SOUNDCHANNEL;
 	if (!stream.isNull())
 	{
 		// Start playback

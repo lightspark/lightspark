@@ -31,21 +31,21 @@
 using namespace lightspark;
 using namespace std;
 
-BitmapData::BitmapData(Class_base* c):ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
+BitmapData::BitmapData(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
 {
 }
 
-BitmapData::BitmapData(Class_base* c, _R<BitmapContainer> b):ASObject(c),pixels(b),locked(0),transparent(true)
+BitmapData::BitmapData(Class_base* c, _R<BitmapContainer> b):ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),transparent(true)
 {
 }
 
 BitmapData::BitmapData(Class_base* c, const BitmapData& other)
-  : ASObject(c),pixels(other.pixels),locked(other.locked),transparent(other.transparent)
+  : ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(other.pixels),locked(other.locked),transparent(other.transparent)
 {
 }
 
 BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)
- : ASObject(c),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
+ : ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
 {
 	uint32_t *pixelArray=new uint32_t[width*height];
 	if (width!=0 && height!=0)

@@ -131,7 +131,7 @@ void Undefined::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
-IFunction::IFunction(Class_base* c):ASObject(c,T_FUNCTION),length(0),inClass(NULL),functionname(0)
+IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),functionname(0)
 {
 }
 
@@ -268,7 +268,7 @@ ASObject *IFunction::describeType() const
 	return XML::createFromNode(root);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c),mi(m),val(NULL),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(NULL),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -594,9 +594,9 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 }
 bool Function::isEqual(ASObject* r)
 {
-	Function* f=dynamic_cast<Function*>(r);
-	if(f==NULL)
+	if (!r->is<Function>())
 		return false;
+	Function* f=r->as<Function>();
 	return (val==f->val) && (closure_this.isNull() || f->closure_this.isNull() || closure_this==f->closure_this);
 }
 

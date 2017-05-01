@@ -687,6 +687,7 @@ ASFUNCTIONBODY(SharedObject,getLocal)
 	}
 	it->second->incRef();
 	res->data = _NR<ASObject>(it->second);
+	res->incRef();
 	return res;
 }
 

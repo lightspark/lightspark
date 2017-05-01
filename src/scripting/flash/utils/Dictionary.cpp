@@ -86,10 +86,14 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 		switch (name.name_o->getObjectType())
 		{
 			case T_BOOLEAN:
-			case T_UINTEGER:
 			case T_INTEGER:
 				tmpname.name_type=multiname::NAME_INT;
 				tmpname.name_i = name.name_o->toInt();
+				ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return;
+			case T_UINTEGER:
+				tmpname.name_type=multiname::NAME_UINT;
+				tmpname.name_ui = name.name_o->toUInt();
 				ASObject::setVariableByMultiname(tmpname, o, allowConst);
 				return;
 			case T_NUMBER:
@@ -120,6 +124,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 		//REFERENCE: Dictionary Object on AS3 reference
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_UINT ||
 			name.name_type==multiname::NAME_NUMBER);
 		ASObject::setVariableByMultiname(name, o, allowConst);
 	}
@@ -136,10 +141,13 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 		switch (name.name_o->getObjectType())
 		{
 			case T_BOOLEAN:
-			case T_UINTEGER:
 			case T_INTEGER:
 				tmpname.name_type=multiname::NAME_INT;
 				tmpname.name_i = name.name_o->toInt();
+				return ASObject::deleteVariableByMultiname(tmpname);
+			case T_UINTEGER:
+				tmpname.name_type=multiname::NAME_UINT;
+				tmpname.name_ui = name.name_o->toUInt();
 				return ASObject::deleteVariableByMultiname(tmpname);
 			case T_NUMBER:
 				tmpname.name_type=multiname::NAME_NUMBER;
@@ -169,6 +177,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 		//REFERENCE: Dictionary Object on AS3 reference
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_UINT ||
 			name.name_type==multiname::NAME_NUMBER);
 		return ASObject::deleteVariableByMultiname(name);
 	}
@@ -185,10 +194,13 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 			switch (name.name_o->getObjectType())
 			{
 				case T_BOOLEAN:
-				case T_UINTEGER:
 				case T_INTEGER:
 					tmpname.name_type=multiname::NAME_INT;
 					tmpname.name_i = name.name_o->toInt();
+					return ASObject::getVariableByMultiname(tmpname, opt);
+				case T_UINTEGER:
+					tmpname.name_type=multiname::NAME_UINT;
+					tmpname.name_ui = name.name_o->toUInt();
 					return ASObject::getVariableByMultiname(tmpname, opt);
 				case T_NUMBER:
 					tmpname.name_type=multiname::NAME_NUMBER;
@@ -216,6 +228,7 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 			//REFERENCE: Dictionary Object on AS3 reference
 			assert(name.name_type==multiname::NAME_STRING ||
 				name.name_type==multiname::NAME_INT ||
+				name.name_type==multiname::NAME_UINT ||
 				name.name_type==multiname::NAME_NUMBER);
 			return ASObject::getVariableByMultiname(name, opt);
 		}
@@ -242,10 +255,13 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 		switch (name.name_o->getObjectType())
 		{
 			case T_BOOLEAN:
-			case T_UINTEGER:
 			case T_INTEGER:
 				tmpname.name_type=multiname::NAME_INT;
 				tmpname.name_i = name.name_o->toInt();
+				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
+			case T_UINTEGER:
+				tmpname.name_type=multiname::NAME_UINT;
+				tmpname.name_ui = name.name_o->toUInt();
 				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype);
 			case T_NUMBER:
 				tmpname.name_type=multiname::NAME_NUMBER;
@@ -271,6 +287,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 		//REFERENCE: Dictionary Object on AS3 reference
 		assert(name.name_type==multiname::NAME_STRING ||
 			name.name_type==multiname::NAME_INT ||
+			name.name_type==multiname::NAME_UINT ||
 			name.name_type==multiname::NAME_NUMBER);
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	}

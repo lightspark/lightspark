@@ -1311,6 +1311,11 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index)
 {
+	if (name.name_type == multiname::NAME_UINT)
+	{
+		index = name.name_ui;
+		return true;
+	}
 	if (name.name_type == multiname::NAME_INT && name.name_i >= 0)
 	{
 		index = name.name_i;
@@ -1531,7 +1536,7 @@ _R<ASObject> Array::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		return _MR(abstract_i(getSystemState(),index-1));
+		return _MR(abstract_ui(getSystemState(),index-1));
 	else
 	{
 		//Fall back on object properties

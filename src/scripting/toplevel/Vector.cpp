@@ -954,7 +954,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(getSystemState(),name,index) || index == UINT32_MAX)
 	{
-		if (name.name_type == multiname::NAME_INT ||
+		if (name.name_type == multiname::NAME_INT || name.name_type == multiname::NAME_UINT ||
 				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
 			throwError<RangeError>(kOutOfRangeError,Integer::toString(name.name_i),Integer::toString(vec.size()));
 
@@ -992,7 +992,7 @@ void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_AL
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(getSystemState(),name,index))
 	{
-		if (name.name_type == multiname::NAME_INT ||
+		if (name.name_type == multiname::NAME_INT || name.name_type == multiname::NAME_UINT ||
 				(name.name_type == multiname::NAME_NUMBER && Number::isInteger(name.name_d)))
 			throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 		

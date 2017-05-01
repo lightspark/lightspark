@@ -1849,7 +1849,7 @@ bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& ind
 	bool validIndex=name.toUInt(sys,index, true);
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
-	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type==multiname::NAME_NUMBER))
+	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type == multiname::NAME_INT ||name.name_type==multiname::NAME_NUMBER))
 		throwError<RangeError>(kOutOfRangeError, name.normalizedNameUnresolved(sys), "?");
 
 	return validIndex;

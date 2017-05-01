@@ -1006,8 +1006,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 				if (n == nodes[idx].getPtr())
 				{
 					multiname m(NULL);
-					m.name_type = multiname::NAME_INT;
-					m.name_i = i;
+					m.name_type = multiname::NAME_UINT;
+					m.name_ui = i;
 					m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 					targetobject->setVariableByMultiname(m,o,allowConst);
 					break;
@@ -1032,8 +1032,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 		if (retnodes.size() > idx)
 		{
 			multiname m(NULL);
-			m.name_type = multiname::NAME_INT;
-			m.name_i = idx;
+			m.name_type = multiname::NAME_UINT;
+			m.name_ui = idx;
 			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			targetobject->setVariableByMultiname(m,o,allowConst);
 		}

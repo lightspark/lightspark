@@ -556,8 +556,8 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 	else 
 		(*parent)->setVariableByMultiname(key,subobj,ASObject::CONST_NOT_ALLOWED);
 	multiname name(NULL);
-	name.name_type=multiname::NAME_INT;
-	name.name_i = 0;
+	name.name_type=multiname::NAME_UINT;
+	name.name_ui = 0;
 	name.ns.push_back(nsNameAndKind(getSys(),"",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
@@ -578,7 +578,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 				pos++;
 				break;
 			case ',':
-				name.name_i++;
+				name.name_ui++;
 				needdata = true;
 				pos++;
 				break;

@@ -368,11 +368,12 @@ struct multiname: public memory_reporter
 	union
 	{
 		int32_t name_i;
+		uint32_t name_ui;
 		number_t name_d;
 		ASObject* name_o;
 	};
 	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
-	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
+	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_UINT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	bool isAttribute;
 	bool isStatic;
@@ -540,14 +541,14 @@ inline std::istream & operator>>(std::istream &s, SI16_FLV& v)
 inline std::istream& operator>>(std::istream& s, UI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GINT16_FROM_LE(v.val);
+	v.val=GUINT16_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GINT16_FROM_BE(v.val);
+	v.val=GUINT16_FROM_BE(v.val);
 	return s;
 }
 
@@ -586,14 +587,14 @@ inline std::istream& operator>>(std::istream& s, SI24_FLV& v)
 inline std::istream& operator>>(std::istream& s, UI32_SWF& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=GINT32_FROM_LE(v.val);
+	v.val=GUINT32_FROM_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=GINT32_FROM_BE(v.val);
+	v.val=GUINT32_FROM_BE(v.val);
 	return s;
 }
 

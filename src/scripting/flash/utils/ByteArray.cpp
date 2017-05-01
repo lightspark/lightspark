@@ -33,7 +33,10 @@ using namespace std;
 using namespace lightspark;
 
 #define BA_CHUNK_SIZE 4096
-
+// the flash documentation doesn't tell how large ByteArrays are allowed to be
+// so we simply don't allow bytearrays larger than 1GiB
+// maybe we should set this smaller
+#define BA_MAX_SIZE 0x40000000
 
 ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),currentObjectEncoding(ObjectEncoding::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
@@ -128,10 +131,7 @@ void ByteArray::unlock()
 
 uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
 {
-	// the flash documentation doesn't tell how large ByteArrays are allowed to be
-	// so we simply don't allow bytearrays larger than 1GiB
-	// maybe we should set this smaller
-	if (size > 0x40000000) 
+	if (size > BA_MAX_SIZE) 
 		throwError<ASError>(kOutOfMemoryError);
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
@@ -1075,6 +1075,8 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst);
+	if (index > BA_MAX_SIZE) 
+		throwError<ASError>(kOutOfMemoryError);
 
 	if(index>=len)
 	{

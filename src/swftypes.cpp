@@ -60,6 +60,8 @@ const tiny_string multiname::normalizedName(SystemState* sys) const
 	{
 		case multiname::NAME_INT:
 			return Integer::toString(name_i);
+		case multiname::NAME_UINT:
+			return UInteger::toString(name_ui);
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
@@ -80,6 +82,7 @@ uint32_t multiname::normalizedNameId(SystemState* sys) const
 		case multiname::NAME_STRING:
 			return name_s_id;
 		case multiname::NAME_INT:
+		case multiname::NAME_UINT:
 		case multiname::NAME_NUMBER:
 		case multiname::NAME_OBJECT:
 			if (name_s_id != UINT32_MAX)
@@ -99,6 +102,8 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 	{
 		case multiname::NAME_INT:
 			return Integer::toString(name_i);
+		case multiname::NAME_UINT:
+			return UInteger::toString(name_ui);
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
@@ -127,8 +132,8 @@ void multiname::setName(ASObject* n)
 		name_s_id = UINT32_MAX;
 		break;
 	case T_UINTEGER:
-		name_i=n->as<UInteger>()->val;
-		name_type = NAME_INT;
+		name_ui=n->as<UInteger>()->val;
+		name_type = NAME_UINT;
 		name_s_id = UINT32_MAX;
 		break;
 	case T_NUMBER:
@@ -140,7 +145,12 @@ void multiname::setName(ASObject* n)
 		else
 		{
 			int64_t di = n->as<Number>()->toInt64();
-			if (di > INT32_MAX || di < INT32_MIN)
+			if (di <= UINT32_MAX && di >= 0)
+			{
+				name_ui= di;
+				name_type = NAME_UINT;
+			}
+			else if (di > INT32_MAX || di < INT32_MIN)
 			{
 				name_d=n->as<Number>()->toNumber();
 				name_type = NAME_NUMBER;
@@ -239,6 +249,9 @@ bool multiname::toUInt(SystemState* sys,uint32_t& index, bool acceptStringFracti
 				return false;
 			index=name_i;
 			break;
+		case multiname::NAME_UINT:
+			index=name_ui;
+			break;
 		case multiname::NAME_NUMBER:
 			if(!Number::isInteger(name_d) || name_d < 0 || name_d > UINT32_MAX)
 				return false;
@@ -309,6 +322,8 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	}
 	if(r.name_type==multiname::NAME_INT)
 		s << r.name_i;
+	else if(r.name_type==multiname::NAME_UINT)
+		s << r.name_ui;
 	else if(r.name_type==multiname::NAME_NUMBER)
 		s << r.name_d;
 	else if(r.name_type==multiname::NAME_STRING)

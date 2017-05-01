@@ -2355,7 +2355,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
 	th->locals[m]->decRef();
-	th->locals[m]=abstract_i(th->context->root->getSystemState(),newIndex);
+	th->locals[m]=abstract_ui(th->context->root->getSystemState(),newIndex);
 	if(newIndex==0)
 	{
 		th->locals[n]->decRef();
@@ -2497,10 +2497,10 @@ uint64_t ABCVm::increment_di(ASObject* o)
 ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
 	LOG_CALL("nextValue");
-	if(index->getObjectType()!=T_INTEGER)
+	if(index->getObjectType()!=T_UINTEGER)
 		throw UnsupportedException("Type mismatch in nextValue");
 
-	_R<ASObject> ret=obj->nextValue(index->toInt());
+	_R<ASObject> ret=obj->nextValue(index->toUInt());
 	obj->decRef();
 	index->decRef();
 	ret->incRef();
@@ -2510,10 +2510,10 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 {
 	LOG_CALL("nextName");
-	if(index->getObjectType()!=T_INTEGER)
+	if(index->getObjectType()!=T_UINTEGER)
 		throw UnsupportedException("Type mismatch in nextName");
 
-	_R<ASObject> ret=obj->nextName(index->toInt());
+	_R<ASObject> ret=obj->nextName(index->toUInt());
 	obj->decRef();
 	index->decRef();
 	ret->incRef();

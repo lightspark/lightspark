@@ -456,6 +456,7 @@ void ABCVm::callPropertyCache(call_context* th, memorystream& code, bool keepRet
 		for(uint32_t i=0;i<m;i++)
 			args[m-i-1]=th->runtime_stack_pop();
 		ASObject* obj=th->runtime_stack_pop();
+		cachepos->obj->incRef();
 		callImpl(th, cachepos->obj, obj, args, m, NULL, keepReturn);
 		return;
 	}
@@ -503,8 +504,9 @@ void ABCVm::callPropertyCache(call_context* th, memorystream& code, bool keepRet
 		// the property is cached if
 		// - the multiname is static and
 		// - it belongs to a sealed class
-		if (name->isStatic && 
-				((o->is<Class_base>() && o->as<Class_base>()->isSealed) ||
+		if (name->isStatic && o->is<IFunction>() &&
+				((obj->is<Class_base>() && obj->as<Class_base>()->isSealed) ||
+				(o->is<Class_base>() && o->as<Class_base>()->isSealed) ||
 				(o->getClass() && o->getClass()->isSealed)))
 		{
 			// put object in cache

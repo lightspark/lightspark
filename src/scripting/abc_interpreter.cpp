@@ -805,17 +805,16 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callproperty
-//				uint32_t t = code.readu30();
-//				uint32_t t2 = code.readu30();
-//				method_info* called_mi=NULL;
-//				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-//				callProperty(context,t,t2,&called_mi,true);
-//				if(called_mi)
-//					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
-//				else
-//					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+				uint32_t t = code.readu30();
+				uint32_t t2 = code.readu30();
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+				callProperty(context,t,t2,&called_mi,true);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
 
-				callPropertyCache(context,code,true);
 				break;
 			}
 			case 0x47:
@@ -874,6 +873,7 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else
 					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+
 				break;
 			}
 			case 0x50:

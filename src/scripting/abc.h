@@ -327,7 +327,6 @@ private:
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
-	static void callPropertyCache(call_context* th, memorystream& code, bool keepReturn);
 	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 

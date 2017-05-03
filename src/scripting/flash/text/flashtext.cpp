@@ -247,8 +247,8 @@ ASFUNCTIONBODY(TextField,_setWordWrap)
 	TextField* th=Class<TextField>::cast(obj);
 	ARG_UNPACK(th->wordWrap);
 	th->setSizeAndPositionFromAutoSize();
-	if(th->onStage)
-		th->requestInvalidation(getSys());
+	if(th->onStage && th->isVisible())
+		th->requestInvalidation(th->getSystemState());
 	return NULL;
 }
 
@@ -291,8 +291,8 @@ ASFUNCTIONBODY(TextField,_setAutoSize)
 	{
 		th->autoSize = newAutoSize;
 		th->setSizeAndPositionFromAutoSize();
-		if(th->onStage)
-			th->requestInvalidation(getSys());
+		if(th->onStage && th->isVisible())
+			th->requestInvalidation(th->getSystemState());
 	}
 
 	return NULL;
@@ -336,11 +336,12 @@ ASFUNCTIONBODY(TextField,_setWidth)
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
 	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
-	if((th->autoSize == AS_NONE)||(th->wordWrap == true))
+	if(((th->autoSize == AS_NONE)||(th->wordWrap == true))
+			&& (th->width != args[0]->toUInt()))
 	{
-		th->width=args[0]->toInt();
-		if(th->onStage)
-			th->requestInvalidation(getSys());
+		th->width=args[0]->toUInt();
+		if(th->onStage && th->isVisible())
+			th->requestInvalidation(th->getSystemState());
 		else
 			th->updateSizes();
 	}
@@ -357,11 +358,12 @@ ASFUNCTIONBODY(TextField,_setHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(th->autoSize == AS_NONE)
+	if((th->autoSize == AS_NONE)
+		&& (th->height != args[0]->toUInt()))
 	{
-		th->height=args[0]->toInt();
-		if(th->onStage)
-			th->requestInvalidation(getSys());
+		th->height=args[0]->toUInt();
+		if(th->onStage && th->isVisible())
+			th->requestInvalidation(th->getSystemState());
 		else
 			th->updateSizes();
 	}
@@ -816,8 +818,8 @@ void TextField::validateScrollH(int32_t oldValue)
 	if (scrollH > maxScrollH)
 		scrollH = maxScrollH;
 
-	if (onStage && (scrollH != oldValue))
-		requestInvalidation(getSys());
+	if (onStage && (scrollH != oldValue) && isVisible())
+		requestInvalidation(this->getSystemState());
 }
 
 void TextField::validateScrollV(int32_t oldValue)
@@ -828,8 +830,8 @@ void TextField::validateScrollV(int32_t oldValue)
 	else if (scrollV > maxScrollV)
 		scrollV = maxScrollV;
 
-	if (onStage && (scrollV != oldValue))
-		requestInvalidation(getSys());
+	if (onStage && (scrollV != oldValue) && isVisible())
+		requestInvalidation(this->getSystemState());
 }
 
 int32_t TextField::getMaxScrollH()
@@ -945,6 +947,8 @@ tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
 
 void TextField::updateText(const tiny_string& new_text)
 {
+	if (text == new_text)
+		return;
 	text = new_text;
 	textUpdated();
 }
@@ -956,8 +960,8 @@ void TextField::textUpdated()
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
 
-	if(onStage)
-		requestInvalidation(getSys());
+	if(onStage && isVisible())
+		requestInvalidation(this->getSystemState());
 	else
 		updateSizes();
 }

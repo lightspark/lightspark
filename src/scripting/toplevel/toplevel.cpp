@@ -866,7 +866,7 @@ ASObject* Class_base::coerce(ASObject* o) const
 		return o;
 	if(o->is<Class_base>())
 	{ /* classes can be cast to the type 'Object' or 'Class' */
-		if(this == Class<ASObject>::getClass(o->getSystemState())
+		if(this == o->getSystemState()->getObjectClassRef()
 		|| (class_name.nameId==BUILTIN_STRINGS::STRING_CLASS && class_name.nsStringId==BUILTIN_STRINGS::EMPTY))
 			return o; /* 'this' is the type of a class */
 		else
@@ -1124,7 +1124,7 @@ void Class_base::linkInterface(Class_base* c) const
 bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) const
 {
 	check();
-	if(cls==this || cls==Class<ASObject>::getClass(cls->getSystemState()))
+	if(cls==this || cls==cls->getSystemState()->getObjectClassRef())
 		return true;
 
 	//Now check the interfaces

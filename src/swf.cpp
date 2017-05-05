@@ -237,6 +237,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	//The only bit remaining is setting the Object class as the super class for Class
 	classObject->setSuper(asobjectClass);
 	classObject->decRef();
+	objClassRef = asobjectClass.getPtr();
 
 	trueRef=_MR(Class<Boolean>::getInstanceS(this,true));
 	trueRef->setConstant();

@@ -213,6 +213,7 @@ private:
 	_NR<Undefined> undefined;
 	_NR<Boolean> trueRef;
 	_NR<Boolean> falseRef;
+	Class_base* objClassRef;
 
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;
@@ -335,6 +336,11 @@ public:
 	inline Boolean* getFalseRef() const
 	{
 		return falseRef.getPtr();
+	}
+
+	inline Class_base* getObjectClassRef() const
+	{
+		return objClassRef;
 	}
 
 	RootMovieClip* mainClip;

@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf" };
+static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length" };
 
 extern uint32_t asClassCount;
 

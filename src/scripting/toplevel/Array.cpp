@@ -464,7 +464,7 @@ ASFUNCTIONBODY(Array,shift)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -677,7 +677,7 @@ ASFUNCTIONBODY(Array,_pop)
 		// for other objects we just decrease the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -1009,7 +1009,7 @@ ASFUNCTIONBODY(Array,unshift)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -1055,7 +1055,7 @@ ASFUNCTIONBODY(Array,_push)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -1085,7 +1085,7 @@ ASFUNCTIONBODY(Array,_push_as3)
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
-		lengthName.name_s_id=obj->getSystemState()->getUniqueStringId("length");
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
@@ -1329,7 +1329,8 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 	if(!name.ns[0].hasEmptyName())
 		return false;
 	if (name.name_type == multiname::NAME_STRING && 
-	    !isIntegerWithoutLeadingZeros(name.normalizedName(sys)))
+		(name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
+		!isIntegerWithoutLeadingZeros(name.normalizedName(sys))))
 		return false;
 
 	return name.toUInt(sys,index);

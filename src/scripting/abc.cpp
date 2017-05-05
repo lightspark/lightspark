@@ -708,6 +708,13 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
  */
 multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 {
+	if(n!=0)
+	{
+		const multiname_info* m=&constant_pool.multinames[n];
+		if (m->cached && m->cached->isStatic)
+			return m->cached;
+	}
+	
 	int fromStack = getMultinameRTData(n);
 	ASObject* rt1 = NULL;
 	ASObject* rt2 = NULL;

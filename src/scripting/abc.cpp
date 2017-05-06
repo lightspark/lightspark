@@ -769,15 +769,18 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			ret->name_type=multiname::NAME_STRING;
 			ret->ns.emplace_back(root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			ret->isAttribute=false;
+			ret->hasPublicNS=true;
 			return ret;
 		}
 		ret->isAttribute=m->isAttributeName();
+		ret->hasPublicNS = false;
 		switch(m->kind)
 		{
 			case 0x07: //QName
 			case 0x0D: //QNameA
 			{
 				ret->ns.emplace_back(constant_pool.namespaces[m->ns].getNS(this,m->ns));
+				ret->hasPublicNS = (ret->ns.begin()->kind == NAMESPACE);
 				if (m->name)
 				{
 					ret->name_s_id=getString(m->name);
@@ -792,7 +795,10 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]));
+					nsNameAndKind ns = constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]);
+					if (ns.kind == NAMESPACE)
+						ret->hasPublicNS = true;
+					ret->ns.emplace_back(ns);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -810,7 +816,10 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]));
+					nsNameAndKind ns = constant_pool.namespaces[s->ns[i]].getNS(this,s->ns[i]);
+					if (ns.kind == NAMESPACE)
+						ret->hasPublicNS = true;
+					ret->ns.emplace_back(ns);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				break;
@@ -851,6 +860,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 					name += root->getSystemState()->getStringFromUniqueId(getString(p->name));
 				}
 				ret->ns.emplace_back(constant_pool.namespaces[td->ns].getNS(this,td->ns));
+				ret->hasPublicNS = (ret->ns.begin()->kind == NAMESPACE);
 				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -895,6 +905,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 				ret->isAttribute=m->cached->isAttribute;
 				ret->ns.clear();
 				ret->ns.emplace_back(n->getSystemState(),qname->getURI(),NAMESPACE);
+				ret->hasPublicNS = true;
 			}
 			else
 				n->applyProxyProperty(*ret);
@@ -911,6 +922,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			Namespace* tmpns=static_cast<Namespace*>(n);
 			ret->ns.clear();
 			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
+			ret->hasPublicNS = (tmpns->nskind == NAMESPACE);
 			n->decRef();
 			break;
 		}
@@ -923,6 +935,7 @@ multiname* ABCContext::getMultinameImpl(ASObject* n, ASObject* n2, unsigned int 
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
 			ret->ns.emplace_back(n->getSystemState(),tmpns->uri,tmpns->nskind);
+			ret->hasPublicNS = (tmpns->nskind == NAMESPACE);
 			ret->setName(n);
 			n->decRef();
 			n2->decRef();

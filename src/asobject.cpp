@@ -86,10 +86,13 @@ void ASObject::applyProxyProperty(multiname &name)
 	if (!this->proxyMultiName)
 		return;
 	name.isAttribute = this->proxyMultiName->isAttribute;
+	name.hasPublicNS = false;
 	name.ns.clear();
 	name.ns.reserve(this->proxyMultiName->ns.size());
 	for(unsigned int i=0;i<this->proxyMultiName->ns.size();i++)
 	{
+		if (this->proxyMultiName->ns[i].kind == NAMESPACE)
+			name.hasPublicNS = true;
 		name.ns.push_back(this->proxyMultiName->ns[i]);
 	}
 }
@@ -1107,7 +1110,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 
-	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId):NULL;
+	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasPublicNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1122,7 +1125,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		if (cls)
 		{
 			obj=cls->findBorrowedGettable(name,&nsRealId);
-			if(!obj)
+			if(!obj && name.hasPublicNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->prototype.getPtr();

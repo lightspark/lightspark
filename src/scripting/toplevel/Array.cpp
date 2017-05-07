@@ -29,7 +29,7 @@ using namespace std;
 using namespace lightspark;
 
 Array::Array(Class_base* c):ASObject(c,T_ARRAY),currentsize(0),
-	data(std::less<arrayType::key_type>(), reporter_allocator<arrayType::value_type>(c->memoryAccount)),currentpos(data.end())
+	data(std::less<uint32_t>(), reporter_allocator<std::pair<uint32_t, data_slot>>(c->memoryAccount)),currentpos(0)
 {
 }
 
@@ -333,7 +333,7 @@ ASFUNCTIONBODY(Array,_setLength)
 	if(newLen==th->size())
 		return NULL;
 	th->resize(newLen);
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return NULL;
 }
 
@@ -398,7 +398,7 @@ ASFUNCTIONBODY(Array, _reverse)
 		th->data[size-(it->first+1)]=it->second;
 	}
 	th->incRef();
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return th;
 }
 
@@ -500,7 +500,7 @@ ASFUNCTIONBODY(Array,shift)
 	th->data.clear();
 	th->data.insert(tmp.begin(),tmp.end());
 	th->resize(th->size()-1);
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return ret;
 }
 
@@ -614,7 +614,7 @@ ASFUNCTIONBODY(Array,splice)
 			th->data[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
 	}
 	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return ret;
 }
 
@@ -706,7 +706,7 @@ ASFUNCTIONBODY(Array,_pop)
 		ret = obj->getSystemState()->getUndefinedRef();
 
 	th->currentsize--;
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return ret;
 }
 
@@ -847,7 +847,7 @@ ASFUNCTIONBODY(Array,_sort)
 		th->data[i++]= *ittmp;
 	}
 	obj->incRef();
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return obj;
 }
 
@@ -993,7 +993,7 @@ ASFUNCTIONBODY(Array,sortOn)
 		th->data[i++]= *ittmp;
 	}
 	obj->incRef();
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return obj;
 }
 
@@ -1039,7 +1039,7 @@ ASFUNCTIONBODY(Array,unshift)
 		th->data.clear();
 		th->data.insert(tmp.begin(),tmp.end());
 	}
-	th->currentpos = th->data.end();
+	th->currentpos = 0;
 	return abstract_i(obj->getSystemState(),th->size());
 }
 
@@ -1291,7 +1291,7 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 	ds.data_i=value;
 	ds.type=DATA_INT;
 	data[index] = ds;
-	currentpos = data.end();
+	currentpos = 0;
 }
 
 
@@ -1393,7 +1393,7 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 		ds.type=DATA_OBJECT;
 	}
 	data[index] = ds;
-	currentpos = data.end();
+	currentpos = 0;
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name)
@@ -1412,7 +1412,7 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 		return true;
 	it->second.clear();
 	data.erase(it);
-	currentpos = data.end();
+	currentpos = 0;
 	return true;
 }
 
@@ -1482,13 +1482,13 @@ _R<ASObject> Array::nextValue(uint32_t index)
 	{
 		--index;
 		data_iterator it;
-		if (currentpos != data.end() && currentpos->first == index-1)
-			it = ++currentpos;
-		else 
+		if (currentpos < data.size() && (data.begin()+currentpos)->first == index-1)
+			it = data.begin()+currentpos+1;
+		else
 			it = data.find(index);
 		if(it == data.end() || it->first != index)
 			return _MR(getSystemState()->getUndefinedRef());
-		currentpos = it;
+		currentpos = it-data.begin();
 		const data_slot& sl = it->second;
 		if(sl.type==DATA_OBJECT)
 		{
@@ -1584,8 +1584,8 @@ void Array::resize(uint64_t n)
 	if (n > 0xFFFFFFFF)
 		n = (n % 0x100000000);
 
-	std::map<uint32_t,data_slot>::reverse_iterator it;
-	std::map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
+	boost::container::flat_map<uint32_t,data_slot>::reverse_iterator it;
+	boost::container::flat_map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
 	for ( it=data.rbegin() ; it != data.rend(); ++it )
 	{
 		if (it->first < n)
@@ -1598,7 +1598,7 @@ void Array::resize(uint64_t n)
 	if (itstart != data.end())
 		data.erase(itstart,data.end());
 	currentsize = n;
-	currentpos = data.end();
+	currentpos = 0;
 }
 
 void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1736,7 +1736,7 @@ void Array::set(unsigned int index, _R<ASObject> o)
 			ds.type=DATA_OBJECT;
 		}
 		data[index]=ds;
-		currentpos = data.end();
+		currentpos = 0;
 	}
 	else
 		outofbounds(index);

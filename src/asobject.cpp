@@ -1839,13 +1839,20 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 		const variables_map::const_var_iterator endIt = Variables.Variables.end();
 		bool bfirst = true;
 		path.push_back(this);
-		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+		for(variables_map::const_var_iterator varIt=Variables.Variables.begin(); varIt != Variables.Variables.end(); ++varIt)
 		{
+			if(varIt->second.ns.kind != NAMESPACE || (varIt->second.getter == NULL && varIt->second.var== NULL))
+				continue;
+			ASObject* v = varIt->second.var;
+			if (varIt->second.getter)
+				v=varIt->second.getter->call(this,NULL,0);
+			if(v->getObjectType() == T_UNDEFINED || !varIt->second.isenumerable)
+				continue;
 			// check for cylic reference
-			if (varIt->second.var->getObjectType() != T_UNDEFINED &&
-				varIt->second.var->getObjectType() != T_NULL &&
-				varIt->second.var->getObjectType() != T_BOOLEAN &&
-				std::find(path.begin(),path.end(), varIt->second.var) != path.end())
+			if (v->getObjectType() != T_UNDEFINED &&
+				v->getObjectType() != T_NULL &&
+				v->getObjectType() != T_BOOLEAN &&
+				std::find(path.begin(),path.end(), v) != path.end())
 				throwError<TypeError>(kJSONCyclicStructure);
 
 			if (replacer != NULL)
@@ -1862,13 +1869,13 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 				ASObject* params[2];
 				
 				params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first));
-				params[1] = varIt->second.var;
+				params[1] = v;
 				params[1]->incRef();
 				ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
 				if (funcret)
 					res += funcret->toString();
 				else
-					res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
+					res += v->toJSON(path,replacer,spaces+spaces,filter);
 				bfirst = false;
 			}
 			else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first)+" ") != tiny_string::npos)
@@ -1882,7 +1889,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 				res += ":";
 				if (!spaces.empty())
 					res += " ";
-				res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
+				res += v->toJSON(path,replacer,spaces+spaces,filter);
 				bfirst = false;
 			}
 		}

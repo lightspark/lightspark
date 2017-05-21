@@ -259,7 +259,8 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 	else if(actualLen>expectedLen)
 	{
 		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
-		throw ParseException("Malformed SWF file");
+		// Adobe also seems to ignore this
+		//throw ParseException("Malformed SWF file");
 	}
 	
 	// don't set loaded bytes if we are at the end of the file (this is done in RootMovieClip::initFrame() )

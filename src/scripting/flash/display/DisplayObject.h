@@ -55,7 +55,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
 	MATRIX Matrix;
-	number_t tx,ty;
+	number_t tx,ty,tz;
 	number_t rotation;
 	number_t sx,sy,sz;
 	float alpha;
@@ -177,6 +177,7 @@ public:
 	Vector2f getXY();
 	void setX(number_t x);
 	void setY(number_t y);
+	void setZ(number_t z);
 	void setScaleX(number_t val);
 	void setScaleY(number_t val);
 	void setScaleZ(number_t val);
@@ -192,6 +193,8 @@ public:
 	ASFUNCTION(_setX);
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
+	ASFUNCTION(_getZ);
+	ASFUNCTION(_setZ);
 	ASFUNCTION(_getMask);
 	ASFUNCTION(_setMask);
 	ASFUNCTION(_setAlpha);
@@ -225,6 +228,8 @@ public:
 	ASFUNCTION(globalToLocal);
 	ASFUNCTION(hitTestObject);
 	ASFUNCTION(hitTestPoint);
+	ASPROPERTY_GETTER_SETTER(number_t, rotationX);
+	ASPROPERTY_GETTER_SETTER(number_t, rotationY);
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

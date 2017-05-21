@@ -133,6 +133,8 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_getZ),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_setZ),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_getVisible),GETTER_METHOD,true);
@@ -168,6 +170,8 @@ void DisplayObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
 	REGISTER_GETTER_SETTER(c,filters);
 	REGISTER_GETTER_SETTER(c,scrollRect);
+	REGISTER_GETTER_SETTER(c, rotationX);
+	REGISTER_GETTER_SETTER(c, rotationY);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	IBitmapDrawable::linkTraits(c);
@@ -178,6 +182,8 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
 
 bool DisplayObject::computeCacheAsBitmap() const
 {
@@ -592,6 +598,22 @@ void DisplayObject::setY(number_t val)
 	}
 }
 
+void DisplayObject::setZ(number_t val)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"setting DisplayObject.z has no effect");
+	
+	//Stop using the legacy matrix
+	if(useLegacyMatrix)
+		useLegacyMatrix=false;
+	//Apply translation, it's trivial
+	if(tz!=val)
+	{
+		tz=val;
+		if(onStage)
+			requestInvalidation(getSystemState());
+	}
+}
+
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
@@ -613,6 +635,21 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	assert_and_throw(argslen==1);
 	number_t val=args[0]->toNumber();
 	th->setY(val);
+	return NULL;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getZ)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_d(obj->getSystemState(),th->tz);
+}
+
+ASFUNCTIONBODY(DisplayObject,_setZ)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen==1);
+	number_t val=args[0]->toNumber();
+	th->setZ(val);
 	return NULL;
 }
 

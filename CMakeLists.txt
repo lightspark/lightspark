@@ -189,7 +189,7 @@ SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /us
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_NPAPI_PLUGIN TRUE CACHE BOOL "Compile the npapi browser plugin?")
-SET(COMPILE_PPAPI_PLUGIN FALSE CACHE BOOL "Compile the ppapi browser plugin?")
+SET(COMPILE_PPAPI_PLUGIN TRUE CACHE BOOL "Compile the ppapi browser plugin?")
 SET(ENABLE_CURL TRUE CACHE BOOL "Enable CURL? (Required for Downloader functionality)")
 SET(ENABLE_GLES2 FALSE CACHE BOOL "Build with OpenGLES 2.0 support instead of OpenGL")
 SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functionality?")

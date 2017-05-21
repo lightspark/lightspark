@@ -17,6 +17,9 @@ sdl2, sdl2_mixer, libjpeg, libavformat, pango, liblzma
 If compiling the Firefox plugin is enabled (on by default), you will also need the
 development package for gtk2.
 
+If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that 
+it will replace the adobe flash plugin, as only one flash plugin is allowed in chromium. 
+
 Install also cmake, nasm and gcc (version 4.6.0 or newer) or clang
 
 To build the software please follow these steps.
@@ -92,6 +95,6 @@ REPORTING BUGS
 ==============
 
 If you think you have found a bug in Lightspark, please file a bug
-report at https://bugs.launchpad.net/lightspark. See
+report at https://github.com/lightspark/lightspark/issues. See
 https://github.com/lightspark/lightspark/wiki/Reporting-Bugs for help
 on reporting bugs.

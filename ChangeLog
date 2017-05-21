@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* add ppapi plugin for use with chromium based browsers
 	* switch to SDL2/SDL2_mixer for everything except Firefox plugin.
 	  - the plugin uses gtk2 to interact with Firefox, so the gtk2 dependency is only needed when building the Firefox plugin
 	  - removes audio plugins as audio is now handled via SDL2_mixer for all platforms.

@@ -169,6 +169,10 @@ void ABCVm::coerce_a()
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
 	LOG_CALL( _("checkfilter") );
+	if (o->is<Null>())
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (o->is<Undefined>())
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	if (!o->is<XML>() && !o->is<XMLList>())
 		throwError<TypeError>(kFilterError, o->getClassName());
 	return o;

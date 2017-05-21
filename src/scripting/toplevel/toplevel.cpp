@@ -482,6 +482,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 				}
 				else
 				{
+					if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
+					{
+						ABCVm::preloadFunction(this);
+						mi->body->codeStatus = method_body_info::PRELOADED;
+					}
 					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;

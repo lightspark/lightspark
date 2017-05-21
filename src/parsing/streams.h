@@ -120,6 +120,11 @@ public:
 		return codepos-code;
 	}
 	
+	inline bool atend() const
+	{
+		return codepos == lastcodepos;
+	}
+
 	inline void seekg(unsigned int offset)
 	{
 		if (offset >= lastcodepos-code)
@@ -173,12 +178,13 @@ public:
 	inline uint32_t readu30()
 	{
 		lightspark::method_body_info_cache* currpos = cachepos;
-		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER)
-		{
-			codepos = cachepos->nextcodepos;
-			cachepos = cachepos->nextcachepos;
-			return currpos->uvalue;
-		}
+		assert(currpos->type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER);
+		codepos = cachepos->nextcodepos;
+		cachepos = cachepos->nextcachepos;
+		return currpos->uvalue;
+	}
+	inline uint32_t fillu30()
+	{
 		uint32_t val = readu32();
 		if(val&0xc0000000)
 			memorystream::handleError("Invalid u30");
@@ -220,12 +226,14 @@ public:
 	inline int32_t reads24()
 	{
 		lightspark::method_body_info_cache* currpos = cachepos;
-		if (cachepos->type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER)
-		{
-			codepos = cachepos->nextcodepos;
-			cachepos = cachepos->nextcachepos;
-			return currpos->ivalue;
-		}
+		assert(currpos->type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER);
+		codepos = cachepos->nextcodepos;
+		cachepos = cachepos->nextcachepos;
+		return currpos->ivalue;
+	}
+	inline int32_t fills24()
+	{
+		lightspark::method_body_info_cache* currpos = cachepos;
 		uint32_t val=0;
 		read((char*)&val,3);
 		int32_t ret = LittleEndianToSignedHost24(val);

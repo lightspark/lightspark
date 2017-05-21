@@ -1698,3 +1698,130 @@ ASObject* ABCVm::executeFunction(const SyntheticFunction* function, call_context
 	//We managed to execute all the function
 	return context->runtime_stack_pop();
 }
+
+
+void ABCVm::preloadFunction(const SyntheticFunction* function)
+{
+	method_info* mi=function->mi;
+
+	const int code_len=mi->body->code.size();
+	memorystream code(mi->body->code.data(), code_len,mi->body->codecache);
+	while(!code.atend())
+	{
+		uint8_t opcode = code.readbyte();
+
+		switch(opcode)
+		{
+			case 0x04://getsuper
+			case 0x05://setsuper
+			case 0x06://dxns
+			case 0x08://kill
+			case 0x2c://pushstring
+			case 0x2d://pushint
+			case 0x2e://pushuint
+			case 0x2f://pushdouble
+			case 0x31://pushnamespace
+			case 0x40://newfunction
+			case 0x41://call
+			case 0x42://construct
+			case 0x49://constructsuper
+			case 0x53://constructgenerictype
+			case 0x55://newobject
+			case 0x56://newarray
+			case 0x58://newclass
+			case 0x59://getdescendants
+			case 0x5a://newcatch
+			case 0x5d://findpropstrict
+			case 0x5e://findproperty
+			case 0x5f://finddef
+			case 0x60://getlex
+			case 0x61://setproperty
+			case 0x62://getlocal
+			case 0x63://setlocal
+			case 0x65://getscopeobject
+			case 0x66://getproperty
+			case 0x68://initproperty
+			case 0x6a://deleteproperty
+			case 0x6c://getslot
+			case 0x6d://setslot
+			case 0x6e://getglobalSlot
+			case 0x6f://setglobalSlot
+			case 0x80://coerce
+			case 0x86://astype
+			case 0x92://inclocal
+			case 0x94://declocal
+			case 0xb2://istype
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+			case 0xf0://debugline
+			case 0xf1://debugfile
+			case 0xf2://bkptline
+			{
+				
+				code.fillu30();
+				break;
+			}
+			case 0x0c://ifnlt
+			case 0x0d://ifnle
+			case 0x0e://ifngt
+			case 0x0f://ifnge
+			case 0x10://jump
+			case 0x11://iftrue
+			case 0x12://iffalse
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
+			{
+				code.fills24();
+				break;
+			}
+			case 0x1b://lookupswitch
+			{
+				code.fills24();
+				uint32_t count = code.fillu30();
+				for(unsigned int i=0;i<count+1;i++)
+				{
+					code.fills24();
+				}
+				break;
+			}
+			case 0x24://pushbyte
+			{
+				code.readbyte();
+				break;
+			}
+			case 0x25://pushshort
+			{
+				code.readu32();
+				break;
+			}
+			case 0x32://hasnext2
+			case 0x44://callstatic
+			case 0x45://callsuper
+			case 0x46://callproperty
+			case 0x4c://callproplex
+			case 0x4a://constructprop
+			case 0x4e://callsupervoid
+			case 0x4f://callpropvoid
+			{
+				code.fillu30();
+				code.fillu30();
+				break;
+			}
+			case 0xef://debug
+			{
+				
+				code.readbyte();
+				code.fillu30();
+				code.readbyte();
+				code.fillu30();
+				break;
+			}
+		}
+	}
+}

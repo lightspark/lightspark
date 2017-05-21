@@ -539,6 +539,7 @@ public:
 	void finalize();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(const SyntheticFunction* function, call_context* context, ASObject *caller);
+	static void preloadFunction(const SyntheticFunction* function);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller);
 	static void optimizeFunction(SyntheticFunction* function);
 	static void verifyBranch(std::set<uint32_t>& pendingBlock,std::map<uint32_t,BasicBlock>& basicBlocks,

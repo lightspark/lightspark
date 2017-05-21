@@ -31,10 +31,10 @@
 using namespace lightspark;
 
 #ifdef _WIN32
-const char* Capabilities::EMULATED_VERSION = "WIN 11,1,0," SHORTVERSION;
+const char* Capabilities::EMULATED_VERSION = "WIN 25,0,0," SHORTVERSION;
 const char* Capabilities::MANUFACTURER = "Adobe Windows";
 #else
-const char* Capabilities::EMULATED_VERSION = "LNX 11,1,0," SHORTVERSION;
+const char* Capabilities::EMULATED_VERSION = "LNX 25,0,0," SHORTVERSION;
 const char* Capabilities::MANUFACTURER = "Adobe Linux";
 #endif
 

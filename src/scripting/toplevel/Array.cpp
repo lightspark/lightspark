@@ -319,7 +319,7 @@ ASFUNCTIONBODY(Array, every)
 ASFUNCTIONBODY(Array,_getLength)
 {
 	Array* th=static_cast<Array*>(obj);
-	return abstract_ui(obj->getSystemState(),th->size());
+	return abstract_ui(obj->getSystemState(),th->currentsize);
 }
 
 ASFUNCTIONBODY(Array,_setLength)
@@ -504,7 +504,7 @@ ASFUNCTIONBODY(Array,shift)
 	return ret;
 }
 
-int Array::capIndex(int i) const
+int Array::capIndex(int i)
 {
 	int totalSize=size();
 
@@ -826,12 +826,14 @@ ASFUNCTIONBODY(Array,_sort)
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
-	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
+	std::vector<data_slot> tmp;
 	auto it=th->data.begin();
-	int i = 0;
 	for(;it != th->data.end();++it)
 	{
-		tmp[i++]= it->second;
+		if (it->second.type==DATA_OBJECT &&
+				(!it->second.data || it->second.data->is<Undefined>()))
+			continue;
+		tmp.push_back(it->second);
 	}
 	
 	if(comp)
@@ -841,7 +843,7 @@ ASFUNCTIONBODY(Array,_sort)
 
 	th->data.clear();
 	std::vector<data_slot>::iterator ittmp=tmp.begin();
-	i = 0;
+	int i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
 		th->data[i++]= *ittmp;
@@ -975,19 +977,21 @@ ASFUNCTIONBODY(Array,sortOn)
 		sortfields.push_back(sf);
 	}
 	
-	std::vector<data_slot> tmp = vector<data_slot>(th->data.size());
+	std::vector<data_slot> tmp;
 	auto it=th->data.begin();
-	int i = 0;
 	for(;it != th->data.end();++it)
 	{
-		tmp[i++]= it->second;
+		if (it->second.type==DATA_OBJECT &&
+				(!it->second.data || it->second.data->is<Undefined>()))
+			continue;
+		tmp.push_back(it->second);
 	}
 	
 	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
 
 	th->data.clear();
 	std::vector<data_slot>::iterator ittmp=tmp.begin();
-	i = 0;
+	int i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
 		th->data[i++]= *ittmp;
@@ -1065,11 +1069,14 @@ ASFUNCTIONBODY(Array,_push)
 		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
+	uint64_t s = th->currentsize;
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		args[i]->incRef();
 		th->push(_MR(args[i]));
 	}
+	// currentsize is set even if push fails
+	th->currentsize = s+argslen;
 	return abstract_i(obj->getSystemState(),th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
@@ -1230,7 +1237,7 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return ASObject::getVariableByMultiname(name,opt);
 
 	uint32_t index=0;
@@ -1255,15 +1262,18 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 		}
 		return _MNR(ret);
 	}
-	_NR<ASObject> ret;
-	//Check prototype chain
-	Prototype* proto = this->getClass()->prototype.getPtr();
-	while(proto)
+	if (name.hasEmptyNS)
 	{
-		ret = proto->getObj()->getVariableByMultiname(name, opt);
-		if(!ret.isNull())
-			return ret;
-		proto = proto->prevPrototype.getPtr();
+		_NR<ASObject> ret;
+		//Check prototype chain
+		Prototype* proto = this->getClass()->prototype.getPtr();
+		while(proto)
+		{
+			ret = proto->getObj()->getVariableByMultiname(name, opt);
+			if(!ret.isNull())
+				return ret;
+			proto = proto->prevPrototype.getPtr();
+		}
 	}
 	if(index<size())
 		return _MNR(getSystemState()->getUndefinedRef());
@@ -1326,7 +1336,7 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	assert_and_throw(name.ns.size()!=0);
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return false;
 	if (name.name_type == multiname::NAME_STRING && 
 		(name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
@@ -1441,7 +1451,7 @@ tiny_string Array::toString()
 	return toString_priv();
 }
 
-tiny_string Array::toString_priv(bool localized) const
+tiny_string Array::toString_priv(bool localized)
 {
 	string ret;
 	for(uint32_t i=0;i<size();i++)
@@ -1545,7 +1555,7 @@ _R<ASObject> Array::nextName(uint32_t index)
 	}
 }
 
-_R<ASObject> Array::at(unsigned int index) const
+_R<ASObject> Array::at(unsigned int index)
 {
 	if(size()<=index)
 		outofbounds(index);
@@ -1742,8 +1752,29 @@ void Array::set(unsigned int index, _R<ASObject> o)
 		outofbounds(index);
 }
 
+uint64_t Array::size()
+{
+	if (this->getClass()->is<Class_inherit>())
+	{
+		multiname lengthName(NULL);
+		lengthName.name_type=multiname::NAME_STRING;
+		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
+		lengthName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(getSystemState(),AS3,NAMESPACE));
+		lengthName.isAttribute = false;
+		if (hasPropertyByMultiname(lengthName, true, true))
+		{
+			_NR<ASObject> o=getVariableByMultiname(lengthName,SKIP_IMPL);
+			return o->toUInt();
+		}
+	}
+	return currentsize;
+}
+
 void Array::push(Ref<ASObject> o)
 {
+	if (currentsize == UINT32_MAX)
+		return;
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,"push",getClass()->getQualifiedClassName());

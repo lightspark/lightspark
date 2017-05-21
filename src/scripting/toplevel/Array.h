@@ -94,8 +94,8 @@ private:
 		bool operator()(const data_slot& d1, const data_slot& d2);
 	};
 	void constructorImpl(ASObject* const* args, const unsigned int argslen);
-	tiny_string toString_priv(bool localized=false) const;
-	int capIndex(int i) const;
+	tiny_string toString_priv(bool localized=false);
+	int capIndex(int i);
 public:
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
@@ -146,12 +146,9 @@ public:
 	ASFUNCTION(every);
 	ASFUNCTION(some);
 
-	_R<ASObject> at(unsigned int index) const;
+	_R<ASObject> at(unsigned int index);
 	void set(unsigned int index, _R<ASObject> o);
-	uint64_t size() const
-	{
-		return currentsize;
-	}
+	uint64_t size();
 	void push(_R<ASObject> o);
 	void resize(uint64_t n);
 	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);

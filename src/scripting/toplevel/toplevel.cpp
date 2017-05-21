@@ -723,10 +723,10 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 	if(mn == 0)
 		return Type::anyType; //any
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
-		&& mn->ns[0].hasEmptyName())
+		&& mn->hasEmptyNS)
 		return Type::anyType;
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
-		&& mn->ns[0].hasEmptyName())
+		&& mn->hasEmptyNS)
 		return Type::voidType;
 
 	//Check if the class has already been defined
@@ -752,11 +752,11 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 		return mn->cachedType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
-		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
+		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::anyType;
 
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
-		&& mn->ns.size() == 1 && mn->ns[0].hasEmptyName())
+		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::voidType;
 
 	ASObject* typeObject = NULL;
@@ -823,7 +823,6 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	variables_map::var_iterator i = super->borrowedVariables.Variables.begin();
 	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{
-		const varName& name = i->first;
 		variable& v = i->second;
 		if(v.var)
 			v.var->incRef();
@@ -831,8 +830,8 @@ void Class_base::copyBorrowedTraitsFromSuper()
 			v.getter->incRef();
 		if(v.setter)
 			v.setter->incRef();
-
-		borrowedVariables.Variables.insert(make_pair(name,v));
+		v.issealed = super->isSealed;
+		borrowedVariables.Variables.insert(make_pair(i->first,v));
 	}
 }
 
@@ -1267,7 +1266,7 @@ void Class_base::describeVariables(pugi::xml_node& root,const Class_base* c, std
 			default:
 				continue;
 		}
-		tiny_string name = getSystemState()->getStringFromUniqueId(it->first.nameId);
+		tiny_string name = getSystemState()->getStringFromUniqueId(it->first);
 		auto existing=instanceNodes.find(name);
 		if(existing != instanceNodes.cend())
 			continue;

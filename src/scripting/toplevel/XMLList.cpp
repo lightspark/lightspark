@@ -655,7 +655,7 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		
 		//Only the first namespace is used, is this right?
 		uint32_t namespace_uri = BUILTIN_STRINGS::EMPTY;
-		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+		if(name.ns.size() > 0 && !name.hasEmptyNS)
 		{
 			if (name.ns[0].kind==NAMESPACE)
 				namespace_uri=name.ns[0].nsNameId;

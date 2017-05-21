@@ -360,6 +360,10 @@ struct nsNameAndKind
 	{
 		return nsId==0;
 	}
+	inline bool hasBuiltinName() const
+	{
+		return nsNameId==STRING_AS3NS;
+	}
 };
 
 struct multiname: public memory_reporter
@@ -377,9 +381,10 @@ struct multiname: public memory_reporter
 	NAME_TYPE name_type;
 	bool isAttribute;
 	bool isStatic;
-	bool hasPublicNS;
+	bool hasEmptyNS;
+	bool hasBuiltinNS;
 	const Type* cachedType;
-	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasPublicNS(true),cachedType(NULL)
+	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasEmptyNS(true),hasBuiltinNS(false),cachedType(NULL)
 	{
 	}
 	

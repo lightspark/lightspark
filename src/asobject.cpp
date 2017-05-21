@@ -86,13 +86,16 @@ void ASObject::applyProxyProperty(multiname &name)
 	if (!this->proxyMultiName)
 		return;
 	name.isAttribute = this->proxyMultiName->isAttribute;
-	name.hasPublicNS = false;
+	name.hasEmptyNS = false;
+	name.hasBuiltinNS = false;
 	name.ns.clear();
 	name.ns.reserve(this->proxyMultiName->ns.size());
 	for(unsigned int i=0;i<this->proxyMultiName->ns.size();i++)
 	{
-		if (this->proxyMultiName->ns[i].kind == NAMESPACE)
-			name.hasPublicNS = true;
+		if (this->proxyMultiName->ns[i].hasEmptyName())
+			name.hasEmptyNS = true;
+		if (this->proxyMultiName->ns[i].hasBuiltinName())
+			name.hasBuiltinNS = true;
 		name.ns.push_back(this->proxyMultiName->ns[i]);
 	}
 }
@@ -447,15 +450,19 @@ variables_map::variables_map(MemoryAccount* m):
 
 variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	var_iterator ret=Variables.find(varName(nameId,ns));
-	if(ret!=Variables.end())
+	var_iterator ret=Variables.lower_bound(nameId);
+	while(ret!=Variables.end() && ret->first == nameId)
 	{
-		if(!(ret->second.kind & traitKinds))
+		if (ret->second.ns == ns)
 		{
-			assert(createKind==NO_CREATE_TRAIT);
-			return NULL;
+			if(!(ret->second.kind & traitKinds))
+			{
+				assert(createKind==NO_CREATE_TRAIT);
+				return NULL;
+			}
+			return &ret->second;
 		}
-		return &ret->second;
+		ret++;
 	}
 
 	//Name not present, insert it if we have to create it
@@ -464,7 +471,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 
 	if (Variables.capacity() == Variables.size())
 		Variables.reserve(Variables.capacity()+8);
-	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(varName(nameId, ns), variable(createKind)) );
+	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns)) );
 	return &inserted->second;
 }
 
@@ -644,7 +651,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		//looking for a settable even if a super class sets
 		//has_getter to true.
 		obj=cls->findBorrowedSettable(name,&has_getter);
-		if(obj && (cls->isFinal || cls->isSealed) && !obj->setter)
+		if(obj && (obj->issealed || cls->isFinal || cls->isSealed) && !obj->setter)
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
@@ -733,8 +740,8 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	++varcount;
 }
 
-variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type)
-		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE),isenumerable(true)
+variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type,const nsNameAndKind& _ns)
+		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false)
 {
 	if(_type)
 	{
@@ -781,27 +788,28 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
-	var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+	var_iterator ret=Variables.lower_bound(name);
 	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
-	while(ret!=Variables.end() && ret->first.nameId==name)
+	while(ret!=Variables.end() && ret->first==name)
 	{
 		//breaks when the namespace is not found
-		const nsNameAndKind& ns=ret->first.ns;
+		const nsNameAndKind& ns=ret->second.ns;
 		if(ns==*nsIt)
 		{
 			Variables.erase(ret);
 			return;
 		}
-		else if(*nsIt<ns)
+		else
 		{
 			++nsIt;
-			if(nsIt==mname.ns.end())
-				break;
+			if(nsIt==mname.ns.cend())
+			{
+				nsIt=mname.ns.cbegin();
+				++ret;
+			}
 		}
-		else if(ns<*nsIt)
-			++ret;
 	}
 	throw RunTimeException("Variable to kill not found");
 }
@@ -811,14 +819,14 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	uint32_t name=mname.normalizedNameId(sys);
 	assert(!mname.ns.empty());
 
-	var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+	var_iterator ret=Variables.lower_bound(name);
 	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
-	while(ret!=Variables.end() && ret->first.nameId==name)
+	while(ret!=Variables.end() && ret->first==name)
 	{
 		//breaks when the namespace is not found
-		const nsNameAndKind& ns=ret->first.ns;
+		const nsNameAndKind& ns=ret->second.ns;
 		if(ns==*nsIt)
 		{
 			if(ret->second.kind & traitKinds)
@@ -826,14 +834,15 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 			else
 				return NULL;
 		}
-		else if(*nsIt<ns)
+		else
 		{
 			++nsIt;
-			if(nsIt==mname.ns.end())
-				break;
+			if(nsIt==mname.ns.cend())
+			{
+				nsIt=mname.ns.cbegin();
+				++ret;
+			}
 		}
-		else if(ns<*nsIt)
-			++ret;
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -843,15 +852,15 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 		Variables.reserve(Variables.capacity()+8);
 	if(createKind == DYNAMIC_TRAIT)
 	{
-		//if(!mname.ns.begin()->hasEmptyName())
-		//	throwError<ReferenceError>(kWriteSealedError, mname.normalizedName(), "" /* TODO: class name */);
+		if(!mname.hasEmptyNS)
+			throwError<ReferenceError>(kWriteSealedError, mname.normalizedNameUnresolved(sys), "" /* TODO: class name */);
 		var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(varName(name,mname.ns[0]),variable(createKind)));
+			make_pair(name,variable(createKind,nsNameAndKind())));
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-		make_pair(varName(name,mname.ns[0]),variable(createKind)));
+		make_pair(name,variable(createKind,mname.ns[0])));
 	return &inserted->second;
 }
 
@@ -911,7 +920,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	if (Variables.capacity() == Variables.size())
 		Variables.reserve(Variables.capacity()+8);
-	Variables.insert(Variables.cbegin(),make_pair(varName(name, mname.ns[0]), variable(traitKind, obj, typemname, type)));
+	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, obj, typemname, type,mname.ns[0])));
 	if (slot_id)
 		initSlot(slot_id,name, mname.ns[0]);
 }
@@ -1081,27 +1090,43 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID) const
 {
 	//Get from the current object without considering borrowed properties
-	const variable* var=findGettable(name,nsRealID);
+	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
+	if(obj)
+	{
+		//It seems valid for a class to redefine only the setter, so if we can't find
+		//something to get, it's ok
+		if(!(obj->getter || obj->var))
+			obj=NULL;
+	}
 
-	if(!var && cls)
+	if(!obj)
 	{
 		//Look for borrowed traits before
-		var=cls->findBorrowedGettable(name,nsRealID);
-	}
-
-	if(!var && cls)
-	{
-		//Check prototype chain
-		Prototype* proto = cls->prototype.getPtr();
-		while(proto)
+		if (cls)
 		{
-			var = proto->getObj()->findGettable(name,nsRealID);
-			if(var)
-				break;
-			proto = proto->prevPrototype.getPtr();
+			obj=cls->findBorrowedGettable(name,nsRealID);
+			if(!obj && name.hasEmptyNS)
+			{
+				//Check prototype chain
+				Prototype* proto = cls->prototype.getPtr();
+				while(proto)
+				{
+					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealID);
+					if(obj)
+					{
+						//It seems valid for a class to redefine only the setter, so if we can't find
+						//something to get, it's ok
+						if(!(obj->getter || obj->var))
+							obj=NULL;
+					}
+					if(obj)
+						break;
+					proto = proto->prevPrototype.getPtr();
+				}
+			}
 		}
 	}
-	return var;
+	return obj;
 }
 
 _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
@@ -1110,7 +1135,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 
-	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasPublicNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
+	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1125,7 +1150,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		if (cls)
 		{
 			obj=cls->findBorrowedGettable(name,&nsRealId);
-			if(!obj && name.hasPublicNS)
+			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->prototype.getPtr();
@@ -1162,10 +1187,14 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 	if(obj->getter)
 	{
 		//Call the getter
-		ASObject* target=this;
 		LOG_CALL("Calling the getter for " << name);
 		IFunction* getter=obj->getter;
-		target->incRef();
+		ASObject* target=NULL;
+		if (!getter->isBound())
+		{
+			target=this;
+			target->incRef();
+		}
 		ASObject* ret=getter->call(target,NULL,0);
 		LOG_CALL(_("End of getter"));
 		// No incRef because ret is a new instance
@@ -1194,8 +1223,17 @@ _NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::lis
 	multiname varName(NULL);
 	varName.name_type=multiname::NAME_STRING;
 	varName.name_s_id=getSystemState()->getUniqueStringId(name);
+	varName.hasEmptyNS = false;
+	varName.hasBuiltinNS = false;
 	for (auto ns=namespaces.begin(); ns!=namespaces.end(); ns++)
-		varName.ns.emplace_back(getSystemState(),*ns,NAMESPACE);
+	{
+		nsNameAndKind newns(getSystemState(),*ns,NAMESPACE);
+		varName.ns.push_back(newns);
+		if (newns.hasEmptyName())
+			varName.hasEmptyNS = true;
+		if (newns.hasBuiltinName())
+			varName.hasBuiltinNS = true;
+	}
 	varName.isAttribute = false;
 
 	return getVariableByMultiname(varName,SKIP_IMPL);
@@ -1238,14 +1276,14 @@ void variables_map::check() const
 			break;
 
 		//No double definition of a single variable should exist
-		if(it->first.nameId==next->first.nameId && it->first.ns==next->first.ns)
+		if(it->first==next->first && it->second.ns==next->second.ns)
 		{
 			if(it->second.var==NULL && next->second.var==NULL)
 				continue;
 
 			if(it->second.var==NULL || next->second.var==NULL)
 			{
-				LOG(LOG_INFO, it->first.nameId << " " << it->first.ns);
+				LOG(LOG_INFO, it->first << " " << it->second.ns);
 				LOG(LOG_INFO, it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 				LOG(LOG_INFO, next->second.var << ' ' << next->second.setter << ' ' << next->second.getter);
 				abort();
@@ -1253,7 +1291,7 @@ void variables_map::check() const
 
 			if(it->second.var->getObjectType()!=T_FUNCTION || next->second.var->getObjectType()!=T_FUNCTION)
 			{
-				LOG(LOG_INFO, it->first.nameId);
+				LOG(LOG_INFO, it->first);
 				abort();
 			}
 		}
@@ -1284,8 +1322,8 @@ void variables_map::dumpVariables() const
 			case NO_CREATE_TRAIT:
 				assert(false);
 		}
-		LOG(LOG_INFO, kind <<  '[' << it->first.ns << "] "<<
-			getSys()->getStringFromUniqueId(it->first.nameId) << ' ' <<
+		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
+			getSys()->getStringFromUniqueId(it->first) << ' ' <<
 			it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
 	}
 }
@@ -1370,7 +1408,7 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 	if(n>slots_vars.size())
 		slots_vars.resize(n+8);
 
-	var_iterator ret=Variables.find(varName(nameId,ns));
+	var_iterator ret=Variables.find(nameId);
 
 	if(ret==Variables.end())
 	{
@@ -1380,18 +1418,46 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 	slots_vars[n-1]=varName(nameId,ns);
 }
 
+ASObject *variables_map::getSlot(unsigned int n)
+{
+	assert_and_throw(n > 0 && n<=slots_vars.size());
+	var_iterator it = Variables.find(slots_vars[n-1].nameId);
+	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	{
+		if (it->second.ns == slots_vars[n-1].ns)
+			return it->second.var;
+		it++;
+	}
+	return NULL;
+}
 void variables_map::setSlot(unsigned int n,ASObject* o)
 {
 	validateSlotId(n);
-	var_iterator it = Variables.find(slots_vars[n-1]);
-	it->second.setVar(o);
+	var_iterator it = Variables.find(slots_vars[n-1].nameId);
+	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	{
+		if (it->second.ns == slots_vars[n-1].ns)
+		{
+			it->second.setVar(o);
+			return;
+		}
+		it++;
+	}
 }
 
 void variables_map::setSlotNoCoerce(unsigned int n,ASObject* o)
 {
 	validateSlotId(n);
-	var_iterator it = Variables.find(slots_vars[n-1]);
-	it->second.setVarNoCoerce(o);
+	var_iterator it = Variables.find(slots_vars[n-1].nameId);
+	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	{
+		if (it->second.ns == slots_vars[n-1].ns)
+		{
+			it->second.setVarNoCoerce(o);
+			return;
+		}
+		it++;
+	}
 }
 
 void variables_map::validateSlotId(unsigned int n) const
@@ -1447,7 +1513,7 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 	if(index<Variables.size())
 	{
 		const_var_iterator it=Variables.begin()+index;
-		return sys->getStringFromUniqueId(it->first.nameId);
+		return sys->getStringFromUniqueId(it->first);
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -1477,11 +1543,11 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
 		//Dynamic traits always have empty namespace
-		assert(it->first.ns.hasEmptyName());
+		assert(it->second.ns.hasEmptyName());
 		if (amf0)
-			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first.nameId));
+			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
-			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first.nameId));
+			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
 		it->second.var->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
@@ -1585,12 +1651,12 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			{
 				if(varIt->second.kind==DECLARED_TRAIT)
 				{
-					if(!varIt->first.ns.hasEmptyName())
+					if(!varIt->second.ns.hasEmptyName())
 					{
 						//Skip variable with a namespace, like protected ones
 						continue;
 					}
-					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first.nameId));
+					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first));
 					varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
 				}
 			}
@@ -1611,7 +1677,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(!varIt->first.ns.hasEmptyName())
+				if(!varIt->second.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
@@ -1626,12 +1692,12 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
 			{
-				if(!varIt->first.ns.hasEmptyName())
+				if(!varIt->second.ns.hasEmptyName())
 				{
 					//Skip variable with a namespace, like protected ones
 					continue;
 				}
-				out->writeStringVR(stringMap, getSystemState()->getStringFromUniqueId(varIt->first.nameId));
+				out->writeStringVR(stringMap, getSystemState()->getStringFromUniqueId(varIt->first));
 			}
 		}
 	}
@@ -1639,7 +1705,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
-			if(!varIt->first.ns.hasEmptyName())
+			if(!varIt->second.ns.hasEmptyName())
 			{
 				//Skip variable with a namespace, like protected ones
 				continue;
@@ -1788,14 +1854,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 					res += ",";
 				res += newline+spaces;
 				res += "\"";
-				res += getSystemState()->getStringFromUniqueId(varIt->first.nameId);
+				res += getSystemState()->getStringFromUniqueId(varIt->first);
 				res += "\"";
 				res += ":";
 				if (!spaces.empty())
 					res += " ";
 				ASObject* params[2];
 				
-				params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first.nameId));
+				params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first));
 				params[1] = varIt->second.var;
 				params[1]->incRef();
 				ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
@@ -1805,13 +1871,13 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 					res += varIt->second.var->toJSON(path,replacer,spaces+spaces,filter);
 				bfirst = false;
 			}
-			else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first.nameId)+" ") != tiny_string::npos)
+			else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first)+" ") != tiny_string::npos)
 			{
 				if (!bfirst)
 					res += ",";
 				res += newline+spaces;
 				res += "\"";
-				res += getSystemState()->getStringFromUniqueId(varIt->first.nameId);
+				res += getSystemState()->getStringFromUniqueId(varIt->first);
 				res += "\"";
 				res += ":";
 				if (!spaces.empty())

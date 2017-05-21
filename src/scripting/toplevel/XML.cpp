@@ -1507,7 +1507,7 @@ void XML::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOW
 	//Only the first namespace is used, is this right?
 	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
-	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+	if(name.ns.size() > 0 && !name.hasEmptyNS)
 	{
 		if (name.ns[0].kind==NAMESPACE)
 		{
@@ -1711,7 +1711,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	//Only the first namespace is used, is this right?
 	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
-	if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+	if(name.ns.size() > 0 && !name.hasEmptyNS)
 	{
 		//assert_and_throw(name.ns[0].kind==NAMESPACE);
 		ns_uri=name.ns[0].nsNameId;
@@ -1777,7 +1777,7 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 		//Only the first namespace is used, is this right?
 		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 		uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
-		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+		if(name.ns.size() > 0 && !name.hasEmptyNS)
 		{
 			assert_and_throw(name.ns[0].kind==NAMESPACE);
 			ns_uri=name.ns[0].nsNameId;
@@ -1813,7 +1813,7 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 	{
 		//Only the first namespace is used, is this right?
 		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
-		if(name.ns.size() > 0 && !name.ns[0].hasEmptyName())
+		if(name.ns.size() > 0 && !name.hasEmptyNS)
 		{
 			assert_and_throw(name.ns[0].kind==NAMESPACE);
 			ns_uri=name.ns[0].nsNameId;
@@ -1841,7 +1841,7 @@ bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& ind
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
-	if(name.ns.size()!=0 && !name.ns[0].hasEmptyName())
+	if(name.ns.size()!=0 && !name.hasEmptyNS)
 		return false;
 
 	if (name.isEmpty())

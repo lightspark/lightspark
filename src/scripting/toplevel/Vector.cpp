@@ -928,7 +928,7 @@ bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic,
 	if(!considerDynamic)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
 	unsigned int index=0;
@@ -948,7 +948,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 		return ASObject::getVariableByMultiname(name,opt);
 
 	assert_and_throw(name.ns.size()>0);
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return ASObject::getVariableByMultiname(name,opt);
 
 	unsigned int index=0;
@@ -986,7 +986,7 @@ _NR<ASObject> Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE
 void Vector::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(name.ns.size()>0);
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return ASObject::setVariableByMultiname(name, o, allowConst);
 
 	unsigned int index=0;
@@ -1074,7 +1074,7 @@ bool Vector::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& 
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	assert_and_throw(name.ns.size()!=0);
-	if(!name.ns[0].hasEmptyName())
+	if(!name.hasEmptyNS)
 		return false;
 
 	bool validIndex=name.toUInt(sys,index, true);

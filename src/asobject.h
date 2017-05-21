@@ -200,12 +200,14 @@ struct variable
 	};
 	IFunction* setter;
 	IFunction* getter;
+	nsNameAndKind ns;
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
 	bool isenumerable:1;
-	variable(TRAIT_KIND _k)
-		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),kind(_k),traitState(NO_STATE),isenumerable(true) {}
-	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type);
+	bool issealed:1;
+	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
+		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
+	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type, const nsNameAndKind &_ns);
 	void setVar(ASObject* v);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
@@ -240,11 +242,11 @@ class variables_map
 {
 public:
 	//Names are represented by strings in the string and namespace pools
-	typedef boost::container::flat_map<varName,variable,std::less<varName>,reporter_allocator<std::pair<varName, variable>>>
+	typedef boost::container::flat_multimap<uint32_t,variable,std::less<uint32_t>,reporter_allocator<std::pair<uint32_t, variable>>>
 		mapType;
 	mapType Variables;
-	typedef boost::container::flat_map<varName,variable>::iterator var_iterator;
-	typedef boost::container::flat_map<varName,variable>::const_iterator const_var_iterator;
+	typedef boost::container::flat_multimap<uint32_t,variable>::iterator var_iterator;
+	typedef boost::container::flat_multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<varName> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**
@@ -266,15 +268,14 @@ public:
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 		assert(!mname.ns.empty());
 		
-		const_var_iterator ret=Variables.lower_bound(varName(name,mname.ns.front()));
+		const_var_iterator ret=Variables.lower_bound(name);
 		auto nsIt=mname.ns.cbegin();
-	
 		//Find the namespace
-		while(ret!=Variables.cend() && ret->first.nameId==name)
+		while(ret!=Variables.cend() && ret->first==name)
 		{
 			//breaks when the namespace is not found
-			const nsNameAndKind& ns=ret->first.ns;
-			if(ns==*nsIt)
+			const nsNameAndKind& ns=ret->second.ns;
+			if(ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
 			{
 				if(ret->second.kind & traitKinds)
 				{
@@ -285,14 +286,15 @@ public:
 				else
 					return NULL;
 			}
-			else if(*nsIt<ns)
+			else
 			{
 				++nsIt;
 				if(nsIt==mname.ns.cend())
-					break;
+				{
+					nsIt=mname.ns.cbegin();
+					++ret;
+				}
 			}
-			else if(ns<*nsIt)
-				++ret;
 		}
 	
 		return NULL;
@@ -301,12 +303,7 @@ public:
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id);
 	void killObjVar(SystemState* sys, const multiname& mname);
-	ASObject* getSlot(unsigned int n)
-	{
-		assert_and_throw(n > 0 && n<=slots_vars.size());
-		const_var_iterator it = Variables.find(slots_vars[n-1]);
-		return it->second.var;
-	}
+	ASObject* getSlot(unsigned int n);
 	/*
 	 * This method does throw if the slot id is not valid
 	 */

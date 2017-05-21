@@ -1748,6 +1748,11 @@ void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("recompose","",Class<IFunction>::getFunction(c->getSystemState(),recompose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendTranslation","",Class<IFunction>::getFunction(c->getSystemState(),appendTranslation),NORMAL_METHOD,true);
+	
 }
 
 ASFUNCTIONBODY(Matrix3D,_constructor)
@@ -1762,13 +1767,48 @@ ASFUNCTIONBODY(Matrix3D,clone)
 	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D.clone is not implemented");
 	return Class<Matrix3D>::getInstanceS(obj->getSystemState());
 }
+ASFUNCTIONBODY(Matrix3D,recompose)
+{
+	_NR<Vector> components;
+	tiny_string orientationStyle;
+	ARG_UNPACK(components)(orientationStyle, "eulerAngles");
+	
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.recompose does nothing");
+	return abstract_b(obj->getSystemState(),false);
+}
+ASFUNCTIONBODY(Matrix3D,prependScale)
+{
+	number_t xScale, yScale, zScale;
+	ARG_UNPACK(xScale) (yScale) (zScale);
+	
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependScale does nothing");
+	return NULL;
+}
+ASFUNCTIONBODY(Matrix3D,prependTranslation)
+{
+	number_t x, y, z;
+	ARG_UNPACK(x) (y) (z);
+	
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependTranslation does nothing");
+	return NULL;
+}
+ASFUNCTIONBODY(Matrix3D,appendTranslation)
+{
+	number_t x, y, z;
+	ARG_UNPACK(x) (y) (z);
+	
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.appendTranslation does nothing");
+	return NULL;
+}
 
 void PerspectiveProjection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+
 	REGISTER_GETTER_SETTER(c, fieldOfView);
 	REGISTER_GETTER_SETTER(c, focalLength);
 	REGISTER_GETTER_SETTER(c, projectionCenter);
+	
 }
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, fieldOfView);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, focalLength);

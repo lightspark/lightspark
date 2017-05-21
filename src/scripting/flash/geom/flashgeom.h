@@ -261,6 +261,10 @@ public:
 	
 	ASFUNCTION(_constructor);
 	ASFUNCTION(clone);
+	ASFUNCTION(recompose);
+	ASFUNCTION(prependScale);
+	ASFUNCTION(prependTranslation);
+	ASFUNCTION(appendTranslation);
 };
 class PerspectiveProjection: public ASObject
 {

@@ -511,10 +511,10 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_stri
 
 void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
 {
-	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed);
+	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,false);
 }
 
-void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
+void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
 {
 	check();
 #ifndef NDEBUG
@@ -547,6 +547,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 		++varcount;
 	}
+	obj->isenumerable = isEnumerable;
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -733,15 +734,15 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 }
 
 void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id)
+		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable)
 {
 	check();
-	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id);
+	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 	++varcount;
 }
 
-variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type,const nsNameAndKind& _ns)
-		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false)
+variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
+		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false)
 {
 	if(_type)
 	{
@@ -864,7 +865,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id)
+void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
 {
 	const Type* type = NULL;
 	if (typemname->isStatic)
@@ -920,7 +921,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	if (Variables.capacity() == Variables.size())
 		Variables.reserve(Variables.capacity()+8);
-	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, obj, typemname, type,mname.ns[0])));
+	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, obj, typemname, type,mname.ns[0],isenumerable)));
 	if (slot_id)
 		initSlot(slot_id,name, mname.ns[0]);
 }
@@ -1835,67 +1836,80 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 	else
 	{
 		res += "{";
-		const variables_map::const_var_iterator beginIt = Variables.Variables.begin();
-		const variables_map::const_var_iterator endIt = Variables.Variables.end();
+		variables_map::var_iterator beginIt = Variables.Variables.begin();
+		variables_map::var_iterator endIt = Variables.Variables.end();
 		bool bfirst = true;
+		bool bObjectVars = true;
 		path.push_back(this);
-		for(variables_map::const_var_iterator varIt=Variables.Variables.begin(); varIt != Variables.Variables.end(); ++varIt)
+		variables_map::const_var_iterator varIt = beginIt;
+		while (varIt != endIt)
 		{
-			if(varIt->second.ns.kind != NAMESPACE || (varIt->second.getter == NULL && varIt->second.var== NULL))
-				continue;
-			ASObject* v = varIt->second.var;
-			if (varIt->second.getter)
-				v=varIt->second.getter->call(this,NULL,0);
-			if(v->getObjectType() == T_UNDEFINED || !varIt->second.isenumerable)
-				continue;
-			// check for cylic reference
-			if (v->getObjectType() != T_UNDEFINED &&
-				v->getObjectType() != T_NULL &&
-				v->getObjectType() != T_BOOLEAN &&
-				std::find(path.begin(),path.end(), v) != path.end())
-				throwError<TypeError>(kJSONCyclicStructure);
-
-			if (replacer != NULL)
+			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter != NULL || varIt->second.var!= NULL))
 			{
+				ASObject* v = varIt->second.var;
+				if (varIt->second.getter)
+					v=varIt->second.getter->call(this,NULL,0);
+				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
+				{
+					// check for cylic reference
+					if (v->getObjectType() != T_UNDEFINED &&
+						v->getObjectType() != T_NULL &&
+						v->getObjectType() != T_BOOLEAN &&
+						std::find(path.begin(),path.end(), v) != path.end())
+						throwError<TypeError>(kJSONCyclicStructure);
+		
+					if (replacer != NULL)
+					{
+						if (!bfirst)
+							res += ",";
+						res += newline+spaces;
+						res += "\"";
+						res += getSystemState()->getStringFromUniqueId(varIt->first);
+						res += "\"";
+						res += ":";
+						if (!spaces.empty())
+							res += " ";
+						ASObject* params[2];
+						
+						params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first));
+						params[1] = v;
+						params[1]->incRef();
+						ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
+						if (funcret)
+							res += funcret->toString();
+						else
+							res += v->toJSON(path,replacer,spaces+spaces,filter);
+						bfirst = false;
+					}
+					else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first)+" ") != tiny_string::npos)
+					{
+						if (!bfirst)
+							res += ",";
+						res += newline+spaces;
+						res += "\"";
+						res += getSystemState()->getStringFromUniqueId(varIt->first);
+						res += "\"";
+						res += ":";
+						if (!spaces.empty())
+							res += " ";
+						res += v->toJSON(path,replacer,spaces+spaces,filter);
+						bfirst = false;
+					}
+				}
 				if (!bfirst)
-					res += ",";
-				res += newline+spaces;
-				res += "\"";
-				res += getSystemState()->getStringFromUniqueId(varIt->first);
-				res += "\"";
-				res += ":";
-				if (!spaces.empty())
-					res += " ";
-				ASObject* params[2];
-				
-				params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first));
-				params[1] = v;
-				params[1]->incRef();
-				ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
-				if (funcret)
-					res += funcret->toString();
-				else
-					res += v->toJSON(path,replacer,spaces+spaces,filter);
-				bfirst = false;
+					res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
 			}
-			else if (filter.empty() || filter.find(tiny_string(" ")+getSystemState()->getStringFromUniqueId(varIt->first)+" ") != tiny_string::npos)
+			varIt++;
+			if (varIt == endIt && bObjectVars)
 			{
-				if (!bfirst)
-					res += ",";
-				res += newline+spaces;
-				res += "\"";
-				res += getSystemState()->getStringFromUniqueId(varIt->first);
-				res += "\"";
-				res += ":";
-				if (!spaces.empty())
-					res += " ";
-				res += v->toJSON(path,replacer,spaces+spaces,filter);
-				bfirst = false;
+				bObjectVars = false;
+				if (this->getClass())
+				{
+					varIt = this->getClass()->borrowedVariables.Variables.begin();
+					endIt = this->getClass()->borrowedVariables.Variables.end();
+				}
 			}
 		}
-		if (!bfirst)
-			res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
-
 		res += "}";
 		path.pop_back();
 	}

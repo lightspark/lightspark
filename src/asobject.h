@@ -207,7 +207,7 @@ struct variable
 	bool issealed:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
-	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type, const nsNameAndKind &_ns);
+	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
 	void setVar(ASObject* v);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
@@ -301,7 +301,7 @@ public:
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id);
+	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
 	ASObject* getSlot(unsigned int n);
 	/*
@@ -507,7 +507,7 @@ public:
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
 	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
-			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id);
+			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
 	/*
 	 * Called by ABCVm::initProperty (implementation of ABC instruction), it is allowed to set CONSTANT_TRAIT
 	 */
@@ -519,7 +519,7 @@ public:
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
-	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed);
+	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	ASObject* getSlot(unsigned int n)
 	{

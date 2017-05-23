@@ -2159,6 +2159,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		}
 	}
 #endif
+	bool isenumerable = true;
+	if(t->kind&traits_info::Metadata)
+	{
+		for(unsigned int i=0;i<t->metadata_count;i++)
+		{
+			metadata_info& minfo = metadata[t->metadata[i]];
+			if (root->getSystemState()->getStringFromUniqueId(getString(minfo.name)) == "Transient")
+				isenumerable = false;
+		}
+	}
 	uint32_t kind = t->kind&0xf;
 	switch(kind)
 	{
@@ -2267,7 +2277,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		case traits_info::Setter:
 		case traits_info::Method:
 		{
-		//methods can also be defined at toplevel (not only traits_info::Function!)
+			//methods can also be defined at toplevel (not only traits_info::Function!)
 			if(kind == traits_info::Getter)
 				LOG(LOG_CALLS,"Getter trait: " << *mname << _(" #") << t->method);
 			else if(kind == traits_info::Setter)
@@ -2305,11 +2315,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				f->addToScope(scope_entry(_MR(obj),false));
 			}
 			if(kind == traits_info::Getter)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed,isenumerable);
 			else if(kind == traits_info::Setter)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,SETTER_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,SETTER_METHOD,isBorrowed,false);
 			else if(kind == traits_info::Method)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,NORMAL_METHOD,isBorrowed);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,NORMAL_METHOD,isBorrowed,false);
 			break;
 		}
 		case traits_info::Const:
@@ -2328,7 +2338,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id,isenumerable);
 			break;
 		}
 		case traits_info::Slot:
@@ -2350,7 +2360,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret = NULL;
 			}
 
-			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id);
+			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id,isenumerable);
 ;
 			break;
 		}

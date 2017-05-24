@@ -2642,12 +2642,13 @@ void ABCVm::swap()
 	LOG_CALL(_("swap"));
 }
 
-ASObject* ABCVm::newActivation(call_context* th, method_info* mi, ASObject* caller)
+ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 {
 	LOG_CALL("newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act= NULL;
+	ASObject* caller = th->locals[0];
 	if (caller != NULL && caller->is<Function_object>())
 	{
 		act = new_functionObject(caller->as<Function_object>()->functionPrototype);

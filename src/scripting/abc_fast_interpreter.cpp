@@ -808,7 +808,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x57:
 			{
 				//newactivation
-				context->runtime_stack_push(newActivation(context, mi,caller));
+				context->runtime_stack_push(newActivation(context, mi));
 				break;
 			}
 			case 0x58:

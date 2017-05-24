@@ -73,6 +73,8 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	uint32_t defaultNamespaceUri;
+	ASObject* returnvalue;
+	bool returning;
 	~call_context();
 	static void handleError(int errorcode);
 	inline void runtime_stack_clear()

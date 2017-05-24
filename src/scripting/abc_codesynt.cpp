@@ -321,9 +321,8 @@ void ABCVm::registerFunctions()
 	struct_elems.push_back(int_type);
 	context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context(),LLVMMAKEARRAYREF(struct_elems),true));
 
-	//newActivation needs method_info, context and caller
+	//newActivation needs method_info and context
 	sig.push_back(context_type);
-	sig.push_back(voidptr_type);
 	sig.push_back(voidptr_type);
 	FT=llvm::FunctionType::get(voidptr_type, LLVMMAKEARRAYREF(sig), false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);

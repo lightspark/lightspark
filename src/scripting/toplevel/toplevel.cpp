@@ -374,6 +374,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	/* setup call_context */
 	call_context cc;
+	cc.returning=false;
 	cc.inClass = inClass;
 	cc.mi=mi;
 	cc.locals_size=mi->body->local_count+1;
@@ -491,7 +492,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;
 					//This is not a hot function, execute it using the interpreter
-					ret=ABCVm::executeFunction(this,&cc,obj);
+					ABCVm::executeFunction(this,&cc);
+					ret = cc.returnvalue;
 					//Restore the previous codeStatus
 					mi->body->codeStatus = oldCodeStatus;
 				}

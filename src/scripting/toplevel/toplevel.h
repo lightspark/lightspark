@@ -380,7 +380,8 @@ public:
 class IFunction: public ASObject
 {
 public:
-	ASPROPERTY_GETTER_SETTER(uint32_t,length);
+	uint32_t length;
+	ASFUNCTION(_length);
 protected:
 	IFunction(Class_base *c,CLASS_SUBTYPE st);
 	virtual IFunction* clone()=0;

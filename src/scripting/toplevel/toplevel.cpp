@@ -144,12 +144,21 @@ void IFunction::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("call",AS3,Class<IFunction>::getFunction(c->getSystemState(),IFunction::_call,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("apply","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::apply,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("apply",AS3,Class<IFunction>::getFunction(c->getSystemState(),IFunction::apply,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_getter_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_length),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_length),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_toString),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
-ASFUNCTIONBODY_GETTER(IFunction,length);
+ASFUNCTIONBODY(IFunction,_length)
+{
+	if (obj->is<IFunction>())
+	{
+		IFunction* th=static_cast<IFunction*>(obj);
+		return abstract_i(obj->getSystemState(),th->length);
+	}
+	return abstract_i(obj->getSystemState(),1);
+}
 
 ASFUNCTIONBODY(IFunction,apply)
 {
@@ -2049,6 +2058,8 @@ IFunction* Class<IFunction>::getNopFunction()
 	IFunction* ret=new (this->memoryAccount) Function(this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
 	ret->prototype = _MR(new_asobject(ret->getSystemState()));
+	ret->incRef();
+	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 	return ret;
 }
 

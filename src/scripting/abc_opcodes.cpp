@@ -747,8 +747,19 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 	ret->initialized=true;
 #endif
 
-	f->incRef();
-	ret->setVariableByQName("constructor","",f,DECLARED_TRAIT);
+	ASObject* constructor = new_functionObject(f->prototype);
+	if (f->prototype->subtype != SUBTYPE_FUNCTIONOBJECT)
+	{
+		f->prototype->incRef();
+		constructor->setVariableByQName("prototype","",f->prototype.getPtr(),DECLARED_TRAIT);
+	}
+	else
+	{
+		Class<ASObject>::getRef(f->getSystemState())->prototype->getObj()->incRef();
+		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(f->getSystemState())->prototype->getObj(),DECLARED_TRAIT);
+	}
+	
+	ret->setVariableByQName("constructor","",constructor,DECLARED_TRAIT);
 
 	ret->incRef();
 
@@ -762,8 +773,12 @@ ASObject* ABCVm::constructFunction(call_context* th, IFunction* f, ASObject** ar
 		ret->decRef();
 		ret = ret2;
 	}
-	else if(ret2)
-		ret2->decRef();
+	else
+	{
+		ret->incRef();
+		if(ret2)
+			ret2->decRef();
+	}
 
 	return ret;
 }
@@ -2778,6 +2793,8 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	f->bind(NullRef,-1);
 	//Create the prototype object
 	f->prototype = _MR(new_asobject(f->getSystemState()));
+	f->incRef();
+	f->prototype->setVariableByQName("constructor","",f,DECLARED_TRAIT);
 	return f;
 }
 

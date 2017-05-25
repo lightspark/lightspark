@@ -948,6 +948,14 @@ ASFUNCTIONBODY(ASObject,_toString)
 		ret+=obj->getSystemState()->getStringFromUniqueId(static_cast<Class_base*>(obj)->class_name.nameId);
 		ret+="]";
 	}
+	else if(obj->is<IFunction>())
+	{
+		// ECMA spec 15.3.4.2 says that toString on a function object is implementation dependent
+		// adobe player returns "[object Function-46]", so we do the same
+		ret="[object ";
+		ret+="Function-46";
+		ret+="]";
+	}
 	else if(obj->getClass())
 	{
 		ret="[object ";

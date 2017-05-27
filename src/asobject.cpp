@@ -504,14 +504,14 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	return false;
 }
 
-void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
 {
-	setDeclaredMethodByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed);
+	setDeclaredMethodByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed,isEnumerable);
 }
 
-void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed)
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
 {
-	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,false);
+	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,isEnumerable);
 }
 
 void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
@@ -714,22 +714,23 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	const nsNameAndKind tmpns(getSystemState(),ns, NAMESPACE);
-	setVariableByQName(name, tmpns, o, traitKind);
+	setVariableByQName(name, tmpns, o, traitKind,isEnumerable);
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
+void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
 {
-	setVariableByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind);
+	setVariableByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
 }
 
-void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind)
+void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o);
+	obj->isenumerable=isEnumerable;
 	++varcount;
 }
 
@@ -970,21 +971,6 @@ ASFUNCTIONBODY(ASObject,_toString)
 
 ASFUNCTIONBODY(ASObject,_toLocaleString)
 {
-	multiname toStringName(NULL);
-	toStringName.name_type=multiname::NAME_STRING;
-	toStringName.name_s_id=BUILTIN_STRINGS::STRING_TOSTRING;
-	toStringName.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-	toStringName.isAttribute = false;
-	if (obj->hasPropertyByMultiname(toStringName, true, false))
-	{
-		_NR<ASObject> o=obj->getVariableByMultiname(toStringName,SKIP_IMPL);
-		assert_and_throw(o->is<IFunction>());
-		IFunction* f=o->as<IFunction>();
-		
-		obj->incRef();
-		ASObject *ret=f->call(obj,NULL,0);
-		return ret;
-	}
 	return _toString(obj,args,argslen);
 }
 
@@ -1045,7 +1031,7 @@ ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
 			return abstract_b(obj->getSystemState(),index < (unsigned int)a->size());
 		}
 	}
-	variable* v = obj->Variables.findObjVar(obj->getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* v = obj->Variables.findObjVar(obj->getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	if (v)
 		return abstract_b(obj->getSystemState(),v->isenumerable);
 	if (obj->hasPropertyByMultiname(name,true,false))

@@ -49,6 +49,7 @@ public:
 	inline bool destruct() { dval=Number::NaN; isfloat = true; return ASObject::destruct(); }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
+	ASFUNCTION(_toLocaleString);
 	ASFUNCTION(toExponential);
 	ASFUNCTION(toPrecision);
 	ASFUNCTION(toFixed);

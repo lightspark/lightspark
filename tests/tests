@@ -186,7 +186,9 @@ if [[ "$NOXVFB" == "0" && "$XVFB_NOT_RUNNING" == "1" ]]; then
 		echo "Warning: 'xvfb-run' not found. Windows will pop up."
 		echo "xvfb-run is part of the XvFB package (e.g. apt-get install xvfb)."
 	else
-		xvfb-run -s '-extension GLX' -a $0 --no-xvfb $ALLARGS
+		export SDL_VIDEODRIVER=dummy
+		xvfb-run -s '-screen 0 800x600x24' -a $0 --no-xvfb $ALLARGS
+#		xvfb-run -s '-extension GLX' -a $0 --no-xvfb $ALLARGS
 		exit $?
 	fi
 fi
@@ -310,9 +312,9 @@ for test in $TESTS; do
 	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
 		if [ $DEBUG -eq 1 ]; then
-			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test >$LOGFILE 2>&1
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --exit-on-error $test >$LOGFILE 2>&1
 		else
-			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --exit-on-error $test 1>$LOGFILE 2>/dev/null
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --exit-on-error $test 1>$LOGFILE 2>/dev/null
 		fi
 	else
 		if [ $DEBUG -eq 1 ]; then
@@ -371,6 +373,22 @@ for test in $TESTS; do
 		if [ $THISFAILEDCOUNT -eq 0 ]; then
 			ALLSUCCESSCOUNT=`expr $ALLSUCCESSCOUNT + 1`
 		fi
+	elif [ "`echo $lines | grep 'Finished testing'`" != "" ]; then
+		# abcasm without PASSED/FAILED output
+		THISSUCCESSCOUNT=`echo "$lines" | grep -c 'Testing: '`
+		THISNUMTESTS="$THISSUCCESSCOUNT"
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
+	elif [ "`echo $lines | grep 'Unhandled ActionScript exception'`" != "" ]; then
+		THISFAILEDCOUNT=1;
+		SUCCESSCOUNT=0;
+		THISNUMTESTS=1;
+		FAILURECOUNT=`expr $FAILURECOUNT + $THISFAILEDCOUNT`;
+		FAILED_TESTS="$FAILED_TESTS $test"
+	elif [ "$lines" == "" ]; then
+		# no output
+		THISSUCCESSCOUNT=1;
+		THISNUMTESTS=1;
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + $THISSUCCESSCOUNT`;
 	else
 		if [ $COLORS -eq 1 ]; then
 			echo -e "\\e[0;31m$test printed no test summary!\\e[0m"
@@ -406,10 +424,6 @@ for test in $TESTS; do
 			`
 	fi
 
-	if [ ${#lines} -eq 0 ]; then
-		continue;
-	fi
-
 	if [ $COLORS -eq 1 ]; then
 		lines=`echo -e "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)\n$lines" | sed \
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
@@ -438,6 +452,8 @@ for test in $TESTS; do
 \
 			-e "s/^\(${ASSERTARRAYCHAR}\) \(.*\)\(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${LIGHTBLUEB}\1 ${CLEAR}\2${LIGHTBLUE}\3${CLEAR}/" \
 			`
+	else
+		echo -e "Running $test\n"
 	fi
 
 	echo -e "$lines\n";

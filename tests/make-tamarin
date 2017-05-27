@@ -3,24 +3,33 @@ echo "Tip: you can rebuild individual tests by calling this script like"
 echo "./make-tamarin ecma3/Boolean/e15_6_4_3_2.as"
 echo "or ./make-tamarin ecma3/Boolean"
 
-TAMARIN=${TAMARIN:-tamarin}
-ASC=${ASC:-`pwd`/asc.jar}
+TAMARIN=${TAMARIN:-avmplus}
+ASC=${ASC:-${TAMARIN}/utils/asc.jar}
 AVM=${AVM:-${TAMARIN}/objdir/shell/avmshell}
 if [[ ! -d $TAMARIN ]]; then
-  echo "Directory tamarin not found, please run"
-  echo "hg clone http://hg.mozilla.org/tamarin-redux tamarin"
-  echo "to download the source."
+  echo "tamarin test suite not found, please execute the following steps:"
+  echo "1) clone the avmplus repository: git clone https://github.com/adobe/avmplus.git"
+  echo "2) download the apache flex sdk from http://flex.apache.org/download-binaries.html"
+  echo "3) copy <flex-path>/lib/asc.jar to <avmplus.git>/utils"
+  echo "4) edit <avmplus.git>/core/exec.cpp and replace line 809 'return unreachableAtom;' with 'return 0;"
+  echo "5) mkdir <avmplus.git>/objdir && cd <avmplus.git>/objdir"
+  echo "6) python ../configure.py (tamarin neeeds python2, so make sure that python points to a python2 executable)"
+  echo "7) remove the -Werror flag from APP_CXXFLAGS in generated Makefile"
+  echo "8) add -Wno-narrowing to APP_CXXFLAGS in generated Makefile"
+  echo "8) make"
+  
+  echo "set the TAMARIN environment variable to the path of the cloned avmplus repository"
   exit 1
 fi
 if [[ ! -f $ASC ]]; then
-  echo "File asc.jar not found, please run"
-  echo "wget ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar"
+  echo "File asc.jar not found, please download the apache flex sdk from http://flex.apache.org/download-binaries.html"
+  echo "and set ASC environment variable to '<flex-path>/lib/asc.jar' "
   exit 1
 fi
 
 if [[ `java -jar $ASC | sed -n -e 's/version [^ ]* build \(.*\)/\1/p'` -lt 18513 ]]; then
-  echo "File asc.jar is too old, please run"
-  echo "wget ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar"
+  echo "File asc.jar is too old, please download the apache flex sdk from http://flex.apache.org/download-binaries.html"
+  echo "and set ASC environment variable to '<flex-path>/lib/asc.jar' "
   exit 1
 fi
 
@@ -28,7 +37,7 @@ export CUR=`pwd`
 
 printCompileErrorAndExit()
 {
-    echo "Compiling tests failed. Make sure you have the latest tamarin-redux and asc.jar from http://hg.mozilla.org/tamarin-redux and ftp://ftp.mozilla.org/pub/js/tamarin/builds/asc/latest/asc.jar, respectively."
+    echo "Compiling tests failed."
     exit 1;
 }
 
@@ -94,7 +103,7 @@ function linkTamarinTest() {
         mkdir -p $CUR/tamarin-SWF/$(dirname $1)
         OUTPUT_SWF="$CUR/tamarin-SWF/${1/%ab[cs]/swf}"
 
-        COMMON="Assert.abc Utils.abc $CUR/tamarin/test/acceptance/generated/intrinsics.abc"
+        COMMON="Assert.abc Utils.abc $TAMARIN/test/acceptance/generated/intrinsics.abc"
         ABS_SUPPORT=$(if [[ -f ${1/%abc/abs} ]]; then echo abcasm/abs_helper.abc; fi)
         TEST_SUPPORT=$(if [[ -d ${1/%.abc/} ]]; then echo $(ls ${1/%.abc/}/*.abc 2> /dev/null); fi)
         sortSupportClasses

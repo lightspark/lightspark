@@ -666,6 +666,7 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 {
 	if((exitOnError & type) != 0)
 	{
+		error=true;
 		setShutdownFlag();
 		return;
 	}

@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
 	 * SystemState::setShutdownFlag.
 	 */
 	sys->destroy();
-
+	bool isonerror = sys->exitOnError==SystemState::ERROR_ANY && sys->isOnError();
 	SDL_Event event;
 	SDL_zero(event);
 	event.type = LS_USEREVENT_QUIT;
@@ -371,6 +371,6 @@ int main(int argc, char* argv[])
 
 	SystemState::staticDeinit();
 	
-	return 0;
+	return isonerror ? 1 : 0;
 }
 

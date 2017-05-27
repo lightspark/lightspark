@@ -288,7 +288,7 @@ public:
 	std::string& getErrorCause() { return errorCause; }
 	bool shouldTerminate() const;
 	bool isShuttingDown() const DLL_PUBLIC;
-	bool isOnError() const;
+	bool isOnError() const DLL_PUBLIC;
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
 	void tickFence();

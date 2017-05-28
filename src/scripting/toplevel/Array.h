@@ -145,6 +145,8 @@ public:
 	ASFUNCTION(slice);
 	ASFUNCTION(every);
 	ASFUNCTION(some);
+	ASFUNCTION(insertAt);
+	ASFUNCTION(removeAt);
 
 	_R<ASObject> at(unsigned int index);
 	void set(unsigned int index, _R<ASObject> o);

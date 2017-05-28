@@ -67,6 +67,8 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toLocaleString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("insertAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertAt,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),removeAt,1),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every,1),DYNAMIC_TRAIT);
@@ -1192,6 +1194,80 @@ ASFUNCTIONBODY(Array,_toLocaleString)
 	return abstract_s(obj->getSystemState(),th->toString_priv(true));
 }
 
+ASFUNCTIONBODY(Array,insertAt)
+{
+	Array* th=static_cast<Array*>(obj);
+	int32_t index;
+	_NR<ASObject> o;
+	ARG_UNPACK(index)(o);
+	if (index < 0 && th->currentsize >= (uint32_t)(-index))
+		index = th->currentsize+(index);
+	if (index < 0)
+		index = 0;
+	if ((uint32_t)index >= th->currentsize)
+	{
+		th->currentsize++;
+		th->set(th->currentsize-1,o);
+	}
+	else
+	{
+		std::map<uint32_t,data_slot> tmp;
+		auto it=th->data.begin();
+		for (; it != th->data.end(); ++it )
+		{
+			tmp[it->first+(it->first >= (uint32_t)index ? 1 : 0)]=it->second;
+		}
+		th->data.clear();
+		th->data.insert(tmp.begin(),tmp.end());
+		
+		th->currentsize++;
+		th->set(index,o);
+	}
+	th->currentpos=0;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Array,removeAt)
+{
+	Array* th=static_cast<Array*>(obj);
+	int32_t index;
+	ARG_UNPACK(index);
+	if (index < 0)
+		index = th->currentsize+index;
+	if (index < 0)
+		index = 0;
+	ASObject* o = NULL;
+	auto it = th->data.find(index);
+	if(it != th->data.end())
+	{
+		const data_slot& sl = it->second;
+		switch(sl.type)
+		{
+			case DATA_OBJECT:
+				assert(sl.data!=NULL);
+				o = sl.data;
+				o->incRef();
+				break;
+			case DATA_INT:
+				o = abstract_i(th->getSystemState(),sl.data_i);
+				break;
+		}
+		it->second.clear();
+		th->data.erase(it);
+	}
+	if (index < th->currentsize)
+		th->currentsize--;
+	std::map<uint32_t,data_slot> tmp;
+	it=th->data.begin();
+	for (; it != th->data.end(); ++it )
+	{
+		tmp[it->first-(it->first > (uint32_t)index ? 1 : 0)]=it->second;
+	}
+	th->data.clear();
+	th->data.insert(tmp.begin(),tmp.end());
+	th->currentpos =0;
+	return o;
+}
 int32_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);

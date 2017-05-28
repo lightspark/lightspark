@@ -425,7 +425,7 @@ for test in $TESTS; do
 	fi
 
 	if [ $COLORS -eq 1 ]; then
-		lines=`echo -e "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)\n$lines" | sed \
+		lines=`echo -e "Running $test ($TESTCOUNT/$TOTALTESTCOUNT)\n" | sed \
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
 			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
 \
@@ -451,12 +451,11 @@ for test in $TESTS; do
 			-e "s/\(${SUCCESSTITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${GREENB}\1 ${YELLOW}\2${CLEAR}/" \
 \
 			-e "s/^\(${ASSERTARRAYCHAR}\) \(.*\)\(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${LIGHTBLUEB}\1 ${CLEAR}\2${LIGHTBLUE}\3${CLEAR}/" \
-			`
+			| echo "$lines"`
 	else
 		echo -e "Running $test\n"
 	fi
-
-	echo -e "$lines\n";
+	echo "$lines";
 done
 
 if [[ -n "$JUNITFILE" ]]; then

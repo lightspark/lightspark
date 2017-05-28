@@ -177,11 +177,24 @@ ASFUNCTIONBODY(avmplusSystem,exit)
 }
 ASFUNCTIONBODY(avmplusSystem,canonicalizeNumber)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.canonicalizeNumber is unimplemented."));
 	_NR<ASObject> o;
 	ARG_UNPACK(o);
-	o->incRef();
-	return o.getPtr();
+	switch(o->getObjectType())
+	{
+		case T_NUMBER:
+		case T_INTEGER:
+		case T_BOOLEAN:
+		case T_UINTEGER:
+		case T_NULL:
+		case T_UNDEFINED:
+			return abstract_d(o->getSystemState(),o->toNumber());
+		case T_QNAME:
+		case T_NAMESPACE:
+			return abstract_d(o->getSystemState(),Number::NaN);
+		default:
+			o->incRef();
+			return o.getPtr();
+	}
 }
 
 avmplusDomain::avmplusDomain(Class_base* c):

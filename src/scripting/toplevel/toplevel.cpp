@@ -2150,7 +2150,7 @@ _NR<ASObject> Global::getVariableByMultiname(const multiname& name, GET_VARIABLE
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 {
 	o->incRef();
-	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,NAMESPACE),o.getPtr(),DECLARED_TRAIT);
+	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,NAMESPACE),o.getPtr(),CONSTANT_TRAIT);
 	//setVariableByQName(name,nsNameAndKind(ns,PACKAGE_NAMESPACE),o.getPtr(),DECLARED_TRAIT);
 }
 

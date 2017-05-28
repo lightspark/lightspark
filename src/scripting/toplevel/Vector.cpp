@@ -72,6 +72,8 @@ void Vector::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift","",Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("insertAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertAt,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),removeAt,1),NORMAL_METHOD,true);
 	
 
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
@@ -923,6 +925,57 @@ ASFUNCTIONBODY(Vector,_toString)
 	}
 	return abstract_s(obj->getSystemState(),ret);
 }
+
+ASFUNCTIONBODY(Vector,insertAt)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throwError<RangeError>(kOutOfRangeError);
+	int32_t index;
+	_NR<ASObject> o;
+	ARG_UNPACK(index)(o);
+
+	if (index < 0 && th->vec.size() >= (uint32_t)(-index))
+		index = th->vec.size()+(index);
+	if (index < 0)
+		index = 0;
+	LOG(LOG_ERROR,"insertat:"<<index<<" "<<th->vec.size()<<" "<<th->toString());
+	if ((uint32_t)index >= th->vec.size())
+	{
+		o->incRef();
+		th->vec.push_back(o.getPtr());
+	}
+	else
+	{
+		o->incRef();
+		th->vec.insert(th->vec.begin()+index,o.getPtr());
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector,removeAt)
+{
+	Vector* th=static_cast<Vector*>(obj);
+	if (th->fixed)
+		throwError<RangeError>(kOutOfRangeError);
+	int32_t index;
+	ARG_UNPACK(index);
+	if (index < 0)
+		index = th->vec.size()+index;
+	if (index < 0)
+		index = 0;
+	ASObject* o = NULL;
+	if (index < th->vec.size())
+	{
+		o = th->vec[index];
+		th->vec.erase(th->vec.begin()+index);
+	}
+	else
+		throwError<RangeError>(kOutOfRangeError);
+		
+	return o;
+}
+
 bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
 	if(!considerDynamic)

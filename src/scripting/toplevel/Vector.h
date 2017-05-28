@@ -130,6 +130,8 @@ public:
 	ASFUNCTION(slice);
 	ASFUNCTION(every);
 	ASFUNCTION(some);
+	ASFUNCTION(insertAt);
+	ASFUNCTION(removeAt);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

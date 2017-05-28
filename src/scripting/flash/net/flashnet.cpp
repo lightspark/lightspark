@@ -626,6 +626,7 @@ void SharedObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProperty","",Class<IFunction>::getFunction(c->getSystemState(),setProperty),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 	REGISTER_GETTER(c,data);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
@@ -719,6 +720,11 @@ ASFUNCTIONBODY(SharedObject,close)
 ASFUNCTIONBODY(SharedObject,connect)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.connect not implemented");
+	return NULL;
+}
+ASFUNCTIONBODY(SharedObject,setProperty)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.setProperty not implemented");
 	return NULL;
 }
 

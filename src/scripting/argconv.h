@@ -90,6 +90,8 @@ public:
 	{
 		if(obj->getObjectType() == T_NULL)
 			return NullRef;
+		if(obj->getObjectType() == T_UNDEFINED)
+			return NullRef;
 
         if(!obj->is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,

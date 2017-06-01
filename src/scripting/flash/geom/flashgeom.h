@@ -29,7 +29,7 @@ namespace lightspark
 class Rectangle: public ASObject
 {
 public:
-	Rectangle(Class_base* c):ASObject(c),x(0),y(0),width(0),height(0){}
+	Rectangle(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -81,7 +81,7 @@ private:
 	number_t x,y;
 	static number_t lenImpl(number_t x, number_t y);
 public:
-	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c),x(_x),y(_y){}
+	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -114,7 +114,7 @@ protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
-	ColorTransform(Class_base* c):ASObject(c){}
+	ColorTransform(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM){}
 	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

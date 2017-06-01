@@ -663,7 +663,9 @@ class ASString;
 class Bitmap;
 class BitmapData;
 class Boolean;
+class ByteArray;
 class Class_inherit;
+class ColorTransform;
 class ContextMenu;
 class ContextMenuBuiltInItems;
 class Date;
@@ -684,8 +686,10 @@ class Namespace;
 class Null;
 class Number;
 class ObjectConstructor;
+class Point;
 class ProgressEvent;
 class Proxy;
+class Rectangle;
 class RegExp;
 class RootMovieClip;
 class SharedObject;
@@ -715,8 +719,10 @@ template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
 template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
 template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
+template<> inline bool ASObject::is<ByteArray>() const { return subtype==SUBTYPE_BYTEARRAY; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
+template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }
 template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
 template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
@@ -737,8 +743,10 @@ template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYP
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
+template<> inline bool ASObject::is<Point>() const { return subtype==SUBTYPE_POINT; }
 template<> inline bool ASObject::is<ProgressEvent>() const { return subtype==SUBTYPE_PROGRESSEVENT; }
 template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
+template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE_RECTANGLE; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }

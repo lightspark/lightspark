@@ -495,7 +495,7 @@ ASFUNCTIONBODY(Rectangle,setTo)
 }
 
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
-  : ASObject(c)
+  : ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 			 redOffset, greenOffset, blueOffset, alphaOffset);

@@ -38,7 +38,7 @@ using namespace lightspark;
 // maybe we should set this smaller
 #define BA_MAX_SIZE 0x40000000
 
-ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),currentObjectEncoding(ObjectEncoding::AMF3),
+ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),currentObjectEncoding(ObjectEncoding::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING

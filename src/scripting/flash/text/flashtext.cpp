@@ -41,6 +41,7 @@ void ASFont::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(c->getSystemState(),enumerateFonts),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("hasGlyphs","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,fontName);
 	REGISTER_GETTER(c,fontStyle);
@@ -88,7 +89,11 @@ ASFUNCTIONBODY(ASFont,registerFont)
 	getFontList()->push_back(args[0]);
 	return NULL;
 }
-
+ASFUNCTIONBODY(ASFont,hasGlyphs)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Font.hasGlyphs always returns true");
+	return abstract_b(obj->getSystemState(),true);
+}
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),

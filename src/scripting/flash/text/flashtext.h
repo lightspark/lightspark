@@ -46,6 +46,7 @@ public:
 //	static void buildTraits(ASObject* o);
 	ASFUNCTION(enumerateFonts);
 	ASFUNCTION(registerFont);
+	ASFUNCTION(hasGlyphs);
 	ASPROPERTY_GETTER(tiny_string, fontName);
 	ASPROPERTY_GETTER(tiny_string, fontStyle);
 	ASPROPERTY_GETTER(tiny_string, fontType);

@@ -61,8 +61,10 @@ public:
 	ASFUNCTION(canonicalizeNumber);
 };
 
-class avmplusDomain : public ApplicationDomain
+class avmplusDomain : public ASObject
 {
+private:
+	_NR<ApplicationDomain> appdomain;
 public:
 	avmplusDomain(Class_base* c);
 	static void sinit(Class_base*);
@@ -70,6 +72,10 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
 	ASFUNCTION(getClass);
+	ASFUNCTION(_getCurrentDomain);
+	ASFUNCTION(_getMinDomainMemoryLength);
+	ASFUNCTION(_getDomainMemory);
+	ASFUNCTION(_setDomainMemory);
 };
 
 }

@@ -21,6 +21,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "abc.h"
 
 using namespace lightspark;
 
@@ -198,26 +199,36 @@ ASFUNCTIONBODY(avmplusSystem,canonicalizeNumber)
 }
 
 avmplusDomain::avmplusDomain(Class_base* c):
-	ApplicationDomain(c)
+	ASObject(c)
 {
-	domainMemory->setLength(0);
 }
 
 void avmplusDomain::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ApplicationDomain,_constructor, CLASS_SEALED);
+	CLASS_SETUP(c, ASObject,_constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getClass","",Class<IFunction>::getFunction(c->getSystemState(),getClass),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_getDomainMemory),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_setDomainMemory),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY(avmplusDomain,_constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain constructor is unimplemented."));
 	return NULL;
 }
 
+ASFUNCTIONBODY(avmplusDomain,_getCurrentDomain)
+{
+	avmplusDomain* ret = Class<avmplusDomain>::getInstanceSNoArgs(getSys());
+	ret->appdomain = ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
+	return ret;
+}
+ASFUNCTIONBODY(avmplusDomain,_getMinDomainMemoryLength)
+{
+	return abstract_ui(obj->getSystemState(),MIN_DOMAIN_MEMORY_LIMIT);
+}
 ASFUNCTIONBODY(avmplusDomain,load)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.load is unimplemented."));
@@ -226,11 +237,37 @@ ASFUNCTIONBODY(avmplusDomain,load)
 }
 ASFUNCTIONBODY(avmplusDomain,loadBytes)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.loadBytes is unimplemented."));
+	_NR<ByteArray> bytes;
+	uint32_t swfversion;
+	ARG_UNPACK (bytes)(swfversion, 0);
+
 	return NULL;
 }
 ASFUNCTIONBODY(avmplusDomain,getClass)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.getClass is unimplemented."));
-	return Class<ASObject>::getRef(obj->getSystemState())->getClass(obj->getSystemState());
+	return getDefinitionByName(obj,args,argslen);
+}
+ASFUNCTIONBODY(avmplusDomain,_getDomainMemory)
+{
+	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	if (th->appdomain->domainMemory.isNull())
+		return NULL;
+	th->appdomain->domainMemory->incRef();
+	return th->appdomain->domainMemory.getPtr();
+}
+ASFUNCTIONBODY(avmplusDomain,_setDomainMemory)
+{
+	_NR<ByteArray> b;
+	ARG_UNPACK(b);
+	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	if (b.isNull())
+	{
+		th->appdomain->domainMemory = b;
+		return NULL;
+	}
+		
+	if (b->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
+		throwError<RangeError>(kEndOfFileError);
+	th->appdomain->domainMemory = b;
+	return NULL;
 }

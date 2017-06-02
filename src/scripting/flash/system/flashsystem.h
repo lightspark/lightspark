@@ -26,6 +26,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/events/flashevents.h"
 
+#define MIN_DOMAIN_MEMORY_LIMIT 1024
 namespace lightspark
 {
 
@@ -86,10 +87,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
 	ASPROPERTY_GETTER(_NR<ApplicationDomain>, parentDomain);
 	template<class T>
-	T readFromDomainMemory(uint32_t addr) const
+	T readFromDomainMemory(uint32_t addr)
 	{
-		if(domainMemory.isNull())
-			return 0;
+		checkDomainMemory();
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
@@ -99,14 +99,14 @@ public:
 	template<class T>
 	void writeToDomainMemory(uint32_t addr, T val)
 	{
-		if(domainMemory.isNull())
-			return;
+		checkDomainMemory();
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
 		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
 		*reinterpret_cast<T*>(buf+addr)=val;
 	}
+	void checkDomainMemory();
 };
 
 class LoaderContext: public ASObject

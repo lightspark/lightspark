@@ -657,6 +657,7 @@ public:
 	
 };
 
+class ApplicationDomain;
 class Array;
 class ASQName;
 class ASString;
@@ -679,6 +680,7 @@ class IFunction;
 class Integer;
 class InteractiveObject;
 class KeyboardEvent;
+class LoaderContext;
 class LoaderInfo;
 class Matrix;
 class MouseEvent;
@@ -712,6 +714,7 @@ class XMLList;
 
 // this is used to avoid calls to dynamic_cast when testing for some classes
 // keep in mind that when adding a class here you have to take care of the class inheritance and add the new SUBTYPE_ to all apropriate is<> methods 
+template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
@@ -736,6 +739,7 @@ template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
 template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
+template<> inline bool ASObject::is<LoaderContext>() const { return subtype==SUBTYPE_LOADERCONTEXT; }
 template<> inline bool ASObject::is<LoaderInfo>() const { return subtype==SUBTYPE_LOADERINFO; }
 template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
 template<> inline bool ASObject::is<Matrix>() const { return subtype==SUBTYPE_MATRIX; }

@@ -193,10 +193,8 @@ ASFUNCTIONBODY(Capabilities,_getScreenDPI)
 	return abstract_d(obj->getSystemState(),dpi);
 }
 
-#define MIN_DOMAIN_MEMORY_LIMIT 1024
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c),domainMemory(Class<ByteArray>::getInstanceS(c->getSystemState())),parentDomain(p)
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)
 {
-	domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 void ApplicationDomain::sinit(Class_base* c)
@@ -409,8 +407,17 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 	return NULL;
 }
 
+void ApplicationDomain::checkDomainMemory()
+{
+	if(domainMemory.isNull())
+	{
+		domainMemory = _NR<ByteArray>(Class<ByteArray>::getInstanceS(this->getSystemState()));
+		domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
+	}
+}
+
 LoaderContext::LoaderContext(Class_base* c):
-	ASObject(c),allowCodeImport(true),checkPolicyFile(false),imageDecodingPolicy("onDemand")
+	ASObject(c,T_OBJECT,SUBTYPE_LOADERCONTEXT),allowCodeImport(true),checkPolicyFile(false),imageDecodingPolicy("onDemand")
 {
 }
 

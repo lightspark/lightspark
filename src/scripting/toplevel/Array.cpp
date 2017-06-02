@@ -1255,7 +1255,7 @@ ASFUNCTIONBODY(Array,removeAt)
 		it->second.clear();
 		th->data.erase(it);
 	}
-	if (index < th->currentsize)
+	if ((uint32_t)index < th->currentsize)
 		th->currentsize--;
 	std::map<uint32_t,data_slot> tmp;
 	it=th->data.begin();
@@ -1353,7 +1353,6 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	}
 	if(index<size())
 		return _MNR(getSystemState()->getUndefinedRef());
-	
 	return NullRef;
 }
 
@@ -1397,15 +1396,25 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index)
 {
-	if (name.name_type == multiname::NAME_UINT)
+	switch (name.name_type)
 	{
-		index = name.name_ui;
-		return true;
-	}
-	if (name.name_type == multiname::NAME_INT && name.name_i >= 0)
-	{
-		index = name.name_i;
-		return true;
+		case multiname::NAME_UINT:
+			index = name.name_ui;
+			return true;
+		case multiname::NAME_INT:
+			if (name.name_i >= 0)
+			{
+				index = name.name_i;
+				return true;
+			}
+			break;
+		case multiname::NAME_STRING:
+			if (name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
+					 !isIntegerWithoutLeadingZeros(name.normalizedName(sys)))
+				return false;
+			break;
+		default:
+			break;
 	}
 	if(name.isEmpty())
 		return false;
@@ -1413,10 +1422,6 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 	//As the namespace vector is sorted, we check only the first one
 	assert_and_throw(name.ns.size()!=0);
 	if(!name.hasEmptyNS)
-		return false;
-	if (name.name_type == multiname::NAME_STRING && 
-		(name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
-		!isIntegerWithoutLeadingZeros(name.normalizedName(sys))))
 		return false;
 
 	return name.toUInt(sys,index);

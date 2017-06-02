@@ -452,7 +452,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 		cc.locals[args_len+1]=argumentsArray;
 		cc.argarrayposition=args_len+1;
 	}
-	else if(mi->needsRest()|| passedToRest > 0) // it seems that Adobe allows additional parameters without setting "needsRest"
+	else if(mi->needsRest())
 	{
 		assert_and_throw(argumentsArray==NULL);
 		Array* rest=Class<Array>::getInstanceSNoArgs(getSystemState());

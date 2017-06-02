@@ -1072,7 +1072,7 @@ void ABCVm::abc_sxi1(const SyntheticFunction* function, call_context* context,me
 	//sxi1
 	LOG_CALL( "sxi1");
 	ASObject* arg1=context->runtime_stack_pop();
-	int32_t ret=arg1->toUInt() >>31;
+	int32_t ret=arg1->toUInt()&0x1 ? -1 : 0;
 	arg1->decRef();
 	context->runtime_stack_push(abstract_i(function->getSystemState(),ret));
 }

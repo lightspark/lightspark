@@ -209,13 +209,20 @@ void avmplusDomain::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(c->getSystemState(),loadBytes),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getClass","",Class<IFunction>::getFunction(c->getSystemState(),getClass),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_getDomainMemory),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_setDomainMemory),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY(avmplusDomain,_constructor)
 {
+	_NR<avmplusDomain> parentDomain;
+	ARG_UNPACK(parentDomain);
+	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	if (parentDomain.isNull())
+		th->appdomain = ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
+	else
+		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(getSys(),parentDomain->appdomain));
 	return NULL;
 }
 
@@ -231,16 +238,34 @@ ASFUNCTIONBODY(avmplusDomain,_getMinDomainMemoryLength)
 }
 ASFUNCTIONBODY(avmplusDomain,load)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.Domain.load is unimplemented."));
-	throwError<VerifyError>(kIllegalOpcodeError,"","","");
+	tiny_string filename;
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented.");
+	ARG_UNPACK(filename);
+	throwError<ASError>(kFileOpenError,filename);
 	return NULL;
 }
 ASFUNCTIONBODY(avmplusDomain,loadBytes)
 {
+	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
 	_NR<ByteArray> bytes;
 	uint32_t swfversion;
 	ARG_UNPACK (bytes)(swfversion, 0);
 
+	if (swfversion != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Domain.loadBytes ignores parameter swfVersion");
+	MemoryStreamCache mc(obj->getSystemState());
+	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
+	std::streambuf *sbuf = mc.createReader();
+	std::istream s(sbuf);
+	
+	RootMovieClip* root=getVm(getSys())->currentCallContext->context->root.getPtr();
+	_NR<ApplicationDomain> origdomain = root->applicationDomain;
+	root->applicationDomain = th->appdomain;
+	root->incRef();
+	ABCContext context(_MR(root), s, getVm(root->getSystemState()));
+	context.exec(false);
+	root->applicationDomain = origdomain;
+	delete sbuf;
 	return NULL;
 }
 ASFUNCTIONBODY(avmplusDomain,getClass)

@@ -1999,6 +1999,18 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				code.fillu30();
 				break;
 			}
+			default:
+			{
+				if (abcfunctions[opcode] == abc_invalidinstruction)
+				{
+					char stropcode[10];
+					sprintf(stropcode,"%d",opcode);
+					char strcodepos[20];
+					sprintf(strcodepos,"%d",code.tellg());
+					throwError<VerifyError>(kIllegalOpcodeError,function->getSystemState()->getStringFromUniqueId(function->functionname),stropcode,strcodepos);
+				}
+				break;
+			}
 		}
 	}
 }

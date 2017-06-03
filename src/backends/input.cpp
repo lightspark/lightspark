@@ -161,6 +161,8 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	if (selected.isNull())
+		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
@@ -174,6 +176,8 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
+	if (selected.isNull())
+		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
@@ -186,6 +190,8 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		return;
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	if (selected.isNull())
+		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
@@ -229,6 +235,8 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	{
 		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 		number_t localX, localY;
+		if (selected.isNull())
+			return;
 		selected->globalToLocal(x,y,localX,localY);
 		if(currentMouseOver == selected)
 			m_sys->currentVm->addEvent(selected,
@@ -271,6 +279,8 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	number_t localX, localY;
+	if (selected.isNull())
+		return;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseWheel",localX,localY,true,buttonState,pressed,NullRef,delta)));

@@ -128,6 +128,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	CXFORMWITHALPHA ColorTransform;
+	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
+	bool hasChanged;
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */

@@ -83,6 +83,7 @@ ASFUNCTIONBODY(Graphics,clear)
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->checkAndSetScaling();
 	th->owner->tokens.clear();
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 	return NULL;
 }
@@ -110,6 +111,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -130,6 +132,7 @@ ASFUNCTIONBODY(Graphics,curveTo)
 	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY)));
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -154,6 +157,7 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY)));
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -243,6 +247,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
@@ -270,6 +275,7 @@ ASFUNCTIONBODY(Graphics,drawRoundRectComplex)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
@@ -314,6 +320,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       )));
 
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
@@ -360,6 +367,7 @@ ASFUNCTIONBODY(Graphics,drawEllipse)
 	                        Vector2(left+width, top+height/2-ykappa),
 	                        Vector2(left+width, top+height/2)));
 
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -386,6 +394,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 	
 	return NULL;
@@ -406,6 +415,7 @@ ASFUNCTIONBODY(Graphics,drawPath)
 
 	pathToTokens(commands, data, winding, th->owner->tokens);
 
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -547,6 +557,7 @@ ASFUNCTIONBODY(Graphics,drawTriangles)
 	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
 	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens);
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;
@@ -683,6 +694,7 @@ ASFUNCTIONBODY(Graphics,drawGraphicsData)
 		graphElement->appendToTokens(th->owner->tokens);
 	}
 
+	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(obj->getSystemState());
 
 	return NULL;

@@ -1752,7 +1752,10 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
 	Locker l(mutexDisplayList);
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
+	{
+		(*it)->hasChanged = true;
 		(*it)->requestInvalidation(q);
+	}
 }
 
 void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index)
@@ -2739,6 +2742,7 @@ void Bitmap::updatedData()
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), style.bitmap->getHeight())));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0)));
 	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
+	hasChanged=true;
 	if(onStage)
 		requestInvalidation(getSystemState());
 }

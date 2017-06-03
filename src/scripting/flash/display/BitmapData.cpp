@@ -164,6 +164,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 {
 	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
 	SoftwareInvalidateQueue queue;
+	d->hasChanged=true;
 	d->requestInvalidation(&queue);
 	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight());
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)

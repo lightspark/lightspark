@@ -252,6 +252,7 @@ ASFUNCTIONBODY(TextField,_setWordWrap)
 	TextField* th=Class<TextField>::cast(obj);
 	ARG_UNPACK(th->wordWrap);
 	th->setSizeAndPositionFromAutoSize();
+	th->hasChanged=true;
 	if(th->onStage && th->isVisible())
 		th->requestInvalidation(th->getSystemState());
 	return NULL;
@@ -296,6 +297,7 @@ ASFUNCTIONBODY(TextField,_setAutoSize)
 	{
 		th->autoSize = newAutoSize;
 		th->setSizeAndPositionFromAutoSize();
+		th->hasChanged=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 	}
@@ -345,6 +347,7 @@ ASFUNCTIONBODY(TextField,_setWidth)
 			&& (th->width != args[0]->toUInt()))
 	{
 		th->width=args[0]->toUInt();
+		th->hasChanged=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 		else
@@ -367,6 +370,7 @@ ASFUNCTIONBODY(TextField,_setHeight)
 		&& (th->height != args[0]->toUInt()))
 	{
 		th->height=args[0]->toUInt();
+		th->hasChanged=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 		else
@@ -822,6 +826,7 @@ void TextField::validateScrollH(int32_t oldValue)
 	int32_t maxScrollH = getMaxScrollH();
 	if (scrollH > maxScrollH)
 		scrollH = maxScrollH;
+	hasChanged=true;
 
 	if (onStage && (scrollH != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -834,6 +839,7 @@ void TextField::validateScrollV(int32_t oldValue)
 		scrollV = 1;
 	else if (scrollV > maxScrollV)
 		scrollV = maxScrollV;
+	hasChanged=true;
 
 	if (onStage && (scrollV != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -964,6 +970,7 @@ void TextField::textUpdated()
 	scrollV = 1;
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
+	hasChanged=true;
 
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());

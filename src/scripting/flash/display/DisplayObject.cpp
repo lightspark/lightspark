@@ -98,7 +98,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),cacheAsBitmap(false)
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
 	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
@@ -115,6 +115,7 @@ void DisplayObject::finalize()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	hasChanged = true;
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -224,7 +225,10 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 		}
 	}
 	if(mustInvalidate && onStage)
+	{
+		hasChanged=true;
 		requestInvalidation(getSystemState());
+	}
 }
 
 void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
@@ -257,7 +261,10 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	}
 
 	if(mustInvalidate && onStage)
+	{
+		hasChanged=true;
 		requestInvalidation(getSystemState());
+	}
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -399,7 +406,10 @@ void DisplayObject::setOnStage(bool staged)
 		//Our stage condition changed, send event
 		onStage=staged;
 		if(staged==true)
+		{
+			hasChanged=true;
 			requestInvalidation(getSystemState());
+		}
 		if(getVm(getSystemState())==NULL)
 			return;
 		/*NOTE: By tests we can assert that added/addedToStage is dispatched
@@ -435,11 +445,16 @@ ASFUNCTIONBODY(DisplayObject,_setAlpha)
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	number_t val;
 	ARG_UNPACK (val);
+	
 	/* The stored value is not clipped, _getAlpha will return the
 	 * stored value even if it is outside the [0, 1] range. */
-	th->alpha=val;
-	if(th->onStage)
-		th->requestInvalidation(obj->getSystemState());
+	if(th->alpha != val)
+	{
+		th->alpha=val;
+		th->hasChanged=true;
+		if(th->onStage)
+			th->requestInvalidation(obj->getSystemState());
+	}
 	return NULL;
 }
 
@@ -488,6 +503,7 @@ void DisplayObject::setScaleX(number_t val)
 	if(sx!=val)
 	{
 		sx=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -517,6 +533,7 @@ void DisplayObject::setScaleY(number_t val)
 	if(sy!=val)
 	{
 		sy=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -546,6 +563,7 @@ void DisplayObject::setScaleZ(number_t val)
 	if(sz!=val)
 	{
 		sz=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -579,6 +597,7 @@ void DisplayObject::setX(number_t val)
 	if(tx!=val)
 	{
 		tx=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -593,6 +612,7 @@ void DisplayObject::setY(number_t val)
 	if(ty!=val)
 	{
 		ty=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -609,6 +629,7 @@ void DisplayObject::setZ(number_t val)
 	if(tz!=val)
 	{
 		tz=val;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -816,6 +837,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	if(th->rotation!=val)
 	{
 		th->rotation=val;
+		th->hasChanged=true;
 		if(th->onStage)
 			th->requestInvalidation(obj->getSystemState());
 	}
@@ -841,6 +863,7 @@ void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 	if(parent!=p)
 	{
 		parent=p;
+		hasChanged=true;
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1067,6 +1090,7 @@ void DisplayObject::constructionComplete()
 		this->incRef();
 		loaderInfo->objectHasLoaded(_MR(this));
 	}
+	hasChanged=true;
 	if(onStage)
 		requestInvalidation(getSystemState());
 }

@@ -116,7 +116,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_pushwith,
 	abc_popscope,
 	abc_nextname,
-	abc_invalidinstruction,
+	abc_hasnext,
 
 	abc_pushnull,// 0x20
 	abc_pushundefined,
@@ -727,6 +727,13 @@ void ABCVm::abc_nextname(const SyntheticFunction* function, call_context* contex
 	ASObject* v1=context->runtime_stack_pop();
 	ASObject** pval=context->runtime_stack_pointer();
 	*pval=(nextName(v1,*pval));
+}
+void ABCVm::abc_hasnext(const SyntheticFunction* function, call_context* context,memorystream& code)
+{
+	//hasnext
+	ASObject* v1=context->runtime_stack_pop();
+	ASObject** pval=context->runtime_stack_pointer();
+	*pval=hasNext(v1,*pval);
 }
 void ABCVm::abc_pushnull(const SyntheticFunction* function, call_context* context,memorystream& code)
 {

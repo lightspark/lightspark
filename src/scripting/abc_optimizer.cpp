@@ -700,6 +700,14 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				out << (uint8_t)opcode;
 				break;
 			}
+			case 0x1f:
+			{
+				//hasnext
+				curBlock->popStack(2);
+				curBlock->pushStack(Class<Integer>::getClass(sys));
+				out << (uint8_t)opcode;
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull

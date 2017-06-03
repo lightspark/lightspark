@@ -1972,7 +1972,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
-		if(c==Class<Number>::getClass(c->getSystemState()) || c==Class<ASObject>::getClass(c->getSystemState()))
+		if(c==Class<Number>::getClass(c->getSystemState()) || c==c->getSystemState()->getObjectClassRef())
 			real_ret=true;
 		else if(c==Class<Integer>::getClass(c->getSystemState()))
 			real_ret=(obj->toNumber()==obj->toInt());
@@ -2038,7 +2038,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
 		bool real_ret;
-		if(c==Class<Number>::getClass(c->getSystemState()) || c==Class<ASObject>::getClass(c->getSystemState()))
+		if(c==Class<Number>::getClass(c->getSystemState()) || c==c->getSystemState()->getObjectClassRef())
 			real_ret=true;
 		else if(c==Class<Integer>::getClass(c->getSystemState()))
 			real_ret=(obj->toNumber()==obj->toInt());
@@ -2381,6 +2381,16 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	ret->incRef();
 	return ret.getPtr();
 }
+ASObject* ABCVm::hasNext(ASObject* obj,ASObject* cur_index)
+{
+	LOG_CALL("hasNext " << obj->toDebugString() << ' ' << cur_index->toDebugString());
+
+	uint32_t curIndex=cur_index->toUInt();
+
+	uint32_t newIndex=obj->nextNameIndex(curIndex);
+	return abstract_i(obj->getSystemState(),newIndex);
+}
+
 std::vector<Class_base*> classesToLinkInterfaces;
 void ABCVm::SetAllClassLinks()
 {

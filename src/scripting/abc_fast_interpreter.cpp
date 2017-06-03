@@ -399,6 +399,14 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				context->runtime_stack_push(nextName(v1,v2));
 				break;
 			}
+			case 0x1f:
+			{
+				//hasnext
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				context->runtime_stack_push(hasNext(v1,v2));
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull

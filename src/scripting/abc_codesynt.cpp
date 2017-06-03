@@ -251,6 +251,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"convert_s",(void*)&ABCVm::convert_s,ARGS_OBJ},
 	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ},
 	{"esc_xattr",(void*)&ABCVm::esc_xattr,ARGS_OBJ},
+	{"hasNext",(void*)&ABCVm::hasNext,ARGS_OBJ_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -1161,6 +1162,14 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+					break;
+				}
+				case 0x1f: //hasnext
+				{
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0x20: //pushnull
@@ -2910,6 +2919,23 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 				value=Builder.CreateCall(ex->FindFunctionNamed("nextName"), {v1, v2});
 #else
 				value=Builder.CreateCall2(ex->FindFunctionNamed("nextName"), v1, v2);
+#endif
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				break;
+			}
+			case 0x1f:
+			{
+				//hasnext
+				LOG(LOG_TRACE, _("synt hasnext") );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+
+#ifdef LLVM_37
+				value=Builder.CreateCall(ex->FindFunctionNamed("hasNext"), {v1, v2});
+#else
+				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext"), v1, v2);
 #endif
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;

@@ -259,6 +259,7 @@ private:
 	void registerFunctions();
 	//Interpreted AS instructions
 	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
+	static ASObject *hasNext(ASObject* obj, ASObject* cur_index); 
 	static bool hasNext2(call_context* th, int n, int m); 
 	template<class T>
 	static void loadIntN(call_context* th)
@@ -544,6 +545,7 @@ private:
 	static void abc_pushwith(const SyntheticFunction* function, call_context* context,memorystream& code);
 	static void abc_popscope(const SyntheticFunction* function, call_context* context,memorystream& code);
 	static void abc_nextname(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_hasnext(const SyntheticFunction* function, call_context* context,memorystream& code);
 
 	static void abc_pushnull(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x20
 	static void abc_pushundefined(const SyntheticFunction* function, call_context* context,memorystream& code);

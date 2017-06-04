@@ -692,6 +692,7 @@ void Loader::setContent(_R<DisplayObject> o)
 
 Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),buttonMode(false),useHandCursor(false)
 {
+	subtype=SUBTYPE_SPRITE;
 }
 
 bool Sprite::destruct()
@@ -1132,10 +1133,12 @@ void MovieClip::buildTraits(ASObject* o)
 
 MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),totalFrames_unreliable(1),enabled(true)
 {
+	subtype=SUBTYPE_MOVIECLIP;
 }
 
 MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),totalFrames_unreliable(frames.size()),enabled(true)
 {
+	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
 	//For the root movie, it's the frame count from the header
 }

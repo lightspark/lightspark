@@ -514,184 +514,184 @@ private:
 	// The base to assign to the next loaded context
 	ATOMIC_INT32(nextNamespaceBase);
 
-	typedef void (*abc_function)(const SyntheticFunction*, call_context* ,memorystream&);
+	typedef void (*abc_function)(call_context* ,memorystream&);
 	
-	static void abc_bkpt(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x01
-	static void abc_nop(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_throw(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getSuper(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setSuper(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_dxns(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_dxnslate(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_kill(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_label(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifnlt(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifnle(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifngt(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifnge(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_bkpt(call_context* context,memorystream& code);// 0x01
+	static void abc_nop(call_context* context,memorystream& code);
+	static void abc_throw(call_context* context,memorystream& code);
+	static void abc_getSuper(call_context* context,memorystream& code);
+	static void abc_setSuper(call_context* context,memorystream& code);
+	static void abc_dxns(call_context* context,memorystream& code);
+	static void abc_dxnslate(call_context* context,memorystream& code);
+	static void abc_kill(call_context* context,memorystream& code);
+	static void abc_label(call_context* context,memorystream& code);
+	static void abc_ifnlt(call_context* context,memorystream& code);
+	static void abc_ifnle(call_context* context,memorystream& code);
+	static void abc_ifngt(call_context* context,memorystream& code);
+	static void abc_ifnge(call_context* context,memorystream& code);
 	
-	static void abc_jump(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x10
-	static void abc_iftrue(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_iffalse(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifeq(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifne(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_iflt(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifle(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifgt(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifge(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifstricteq(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_ifstrictne(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lookupswitch(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushwith(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_popscope(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_nextname(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_hasnext(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_jump(call_context* context,memorystream& code);// 0x10
+	static void abc_iftrue(call_context* context,memorystream& code);
+	static void abc_iffalse(call_context* context,memorystream& code);
+	static void abc_ifeq(call_context* context,memorystream& code);
+	static void abc_ifne(call_context* context,memorystream& code);
+	static void abc_iflt(call_context* context,memorystream& code);
+	static void abc_ifle(call_context* context,memorystream& code);
+	static void abc_ifgt(call_context* context,memorystream& code);
+	static void abc_ifge(call_context* context,memorystream& code);
+	static void abc_ifstricteq(call_context* context,memorystream& code);
+	static void abc_ifstrictne(call_context* context,memorystream& code);
+	static void abc_lookupswitch(call_context* context,memorystream& code);
+	static void abc_pushwith(call_context* context,memorystream& code);
+	static void abc_popscope(call_context* context,memorystream& code);
+	static void abc_nextname(call_context* context,memorystream& code);
+	static void abc_hasnext(call_context* context,memorystream& code);
 
-	static void abc_pushnull(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x20
-	static void abc_pushundefined(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_nextvalue(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushbyte(const SyntheticFunction* function, call_context* context, memorystream &code);
-	static void abc_pushshort(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushtrue(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushfalse(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushnan(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pop(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_dup(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_swap(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushstring(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushint(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushuint(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_pushdouble(const SyntheticFunction* function, call_context* context, memorystream &code);
+	static void abc_pushnull(call_context* context,memorystream& code);// 0x20
+	static void abc_pushundefined(call_context* context,memorystream& code);
+	static void abc_nextvalue(call_context* context,memorystream& code);
+	static void abc_pushbyte(call_context* context, memorystream &code);
+	static void abc_pushshort(call_context* context,memorystream& code);
+	static void abc_pushtrue(call_context* context,memorystream& code);
+	static void abc_pushfalse(call_context* context,memorystream& code);
+	static void abc_pushnan(call_context* context,memorystream& code);
+	static void abc_pop(call_context* context,memorystream& code);
+	static void abc_dup(call_context* context,memorystream& code);
+	static void abc_swap(call_context* context,memorystream& code);
+	static void abc_pushstring(call_context* context,memorystream& code);
+	static void abc_pushint(call_context* context,memorystream& code);
+	static void abc_pushuint(call_context* context,memorystream& code);
+	static void abc_pushdouble(call_context* context, memorystream &code);
 
-	static void abc_pushScope(const SyntheticFunction* function, call_context* context, memorystream &code);// 0x30
-	static void abc_pushnamespace(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_hasnext2(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_li8(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_li16(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_li32(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lf32(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lf64(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_si8(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_si16(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_si32(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_sf32(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_sf64(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_pushScope(call_context* context, memorystream &code);// 0x30
+	static void abc_pushnamespace(call_context* context,memorystream& code);
+	static void abc_hasnext2(call_context* context,memorystream& code);
+	static void abc_li8(call_context* context,memorystream& code);
+	static void abc_li16(call_context* context,memorystream& code);
+	static void abc_li32(call_context* context,memorystream& code);
+	static void abc_lf32(call_context* context,memorystream& code);
+	static void abc_lf64(call_context* context,memorystream& code);
+	static void abc_si8(call_context* context,memorystream& code);
+	static void abc_si16(call_context* context,memorystream& code);
+	static void abc_si32(call_context* context,memorystream& code);
+	static void abc_sf32(call_context* context,memorystream& code);
+	static void abc_sf64(call_context* context,memorystream& code);
 
-	static void abc_newfunction(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x40
-	static void abc_call(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_construct(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_callstatic(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_callsuper(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_callproperty(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_returnvoid(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_returnvalue(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_constructsuper(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_constructprop(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_callsupervoid(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_callpropvoid(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_newfunction(call_context* context,memorystream& code);// 0x40
+	static void abc_call(call_context* context,memorystream& code);
+	static void abc_construct(call_context* context,memorystream& code);
+	static void abc_callstatic(call_context* context,memorystream& code);
+	static void abc_callsuper(call_context* context,memorystream& code);
+	static void abc_callproperty(call_context* context,memorystream& code);
+	static void abc_returnvoid(call_context* context,memorystream& code);
+	static void abc_returnvalue(call_context* context,memorystream& code);
+	static void abc_constructsuper(call_context* context,memorystream& code);
+	static void abc_constructprop(call_context* context,memorystream& code);
+	static void abc_callsupervoid(call_context* context,memorystream& code);
+	static void abc_callpropvoid(call_context* context,memorystream& code);
 	
-	static void abc_sxi1(const SyntheticFunction* function, call_context* context,memorystream& code); // 0x50
-	static void abc_sxi8(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_sxi16(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_constructgenerictype(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_newobject(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_newarray(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_newactivation(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_newclass(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getdescendants(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_newcatch(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_findpropstrict(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_findproperty(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_finddef(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_sxi1(call_context* context,memorystream& code); // 0x50
+	static void abc_sxi8(call_context* context,memorystream& code);
+	static void abc_sxi16(call_context* context,memorystream& code);
+	static void abc_constructgenerictype(call_context* context,memorystream& code);
+	static void abc_newobject(call_context* context,memorystream& code);
+	static void abc_newarray(call_context* context,memorystream& code);
+	static void abc_newactivation(call_context* context,memorystream& code);
+	static void abc_newclass(call_context* context,memorystream& code);
+	static void abc_getdescendants(call_context* context,memorystream& code);
+	static void abc_newcatch(call_context* context,memorystream& code);
+	static void abc_findpropstrict(call_context* context,memorystream& code);
+	static void abc_findproperty(call_context* context,memorystream& code);
+	static void abc_finddef(call_context* context,memorystream& code);
 	
-	static void abc_getlex(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x60
-	static void abc_setproperty(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getlocal(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setlocal(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getglobalscope(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getscopeobject(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getProperty(const SyntheticFunction* function, call_context* context, memorystream &code);
-	static void abc_initproperty(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_deleteproperty(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getslot(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setslot(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getglobalSlot(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setglobalSlot(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_getlex(call_context* context,memorystream& code);// 0x60
+	static void abc_setproperty(call_context* context,memorystream& code);
+	static void abc_getlocal(call_context* context,memorystream& code);
+	static void abc_setlocal(call_context* context,memorystream& code);
+	static void abc_getglobalscope(call_context* context,memorystream& code);
+	static void abc_getscopeobject(call_context* context,memorystream& code);
+	static void abc_getProperty(call_context* context, memorystream &code);
+	static void abc_initproperty(call_context* context,memorystream& code);
+	static void abc_deleteproperty(call_context* context,memorystream& code);
+	static void abc_getslot(call_context* context,memorystream& code);
+	static void abc_setslot(call_context* context,memorystream& code);
+	static void abc_getglobalSlot(call_context* context,memorystream& code);
+	static void abc_setglobalSlot(call_context* context,memorystream& code);
 
-	static void abc_convert_s(const SyntheticFunction* function, call_context* context,memorystream& code);// 0x70
-	static void abc_esc_xelem(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_esc_xattr(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_convert_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_convert_u(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_convert_d(const SyntheticFunction* function, call_context* context, memorystream &code);
-	static void abc_convert_b(const SyntheticFunction* function, call_context* context, memorystream &code);
-	static void abc_convert_o(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_checkfilter(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_convert_s(call_context* context,memorystream& code);// 0x70
+	static void abc_esc_xelem(call_context* context,memorystream& code);
+	static void abc_esc_xattr(call_context* context,memorystream& code);
+	static void abc_convert_i(call_context* context,memorystream& code);
+	static void abc_convert_u(call_context* context,memorystream& code);
+	static void abc_convert_d(call_context* context, memorystream &code);
+	static void abc_convert_b(call_context* context, memorystream &code);
+	static void abc_convert_o(call_context* context,memorystream& code);
+	static void abc_checkfilter(call_context* context,memorystream& code);
 
-	static void abc_coerce(const SyntheticFunction* function, call_context* context,memorystream& code); // 0x80
-	static void abc_coerce_a(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_coerce_s(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_astype(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_astypelate(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_coerce(call_context* context,memorystream& code); // 0x80
+	static void abc_coerce_a(call_context* context,memorystream& code);
+	static void abc_coerce_s(call_context* context,memorystream& code);
+	static void abc_astype(call_context* context,memorystream& code);
+	static void abc_astypelate(call_context* context,memorystream& code);
 
-	static void abc_negate(const SyntheticFunction* function, call_context* context,memorystream& code); // 0x90
-	static void abc_increment(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_inclocal(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_decrement(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_declocal(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_typeof(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_not(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_bitnot(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_negate(call_context* context,memorystream& code); // 0x90
+	static void abc_increment(call_context* context,memorystream& code);
+	static void abc_inclocal(call_context* context,memorystream& code);
+	static void abc_decrement(call_context* context,memorystream& code);
+	static void abc_declocal(call_context* context,memorystream& code);
+	static void abc_typeof(call_context* context,memorystream& code);
+	static void abc_not(call_context* context,memorystream& code);
+	static void abc_bitnot(call_context* context,memorystream& code);
 
-	static void abc_add(const SyntheticFunction* function, call_context* context,memorystream& code); //0xa0
-	static void abc_subtract(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_multiply(const SyntheticFunction* function, call_context* context, memorystream &code);
-	static void abc_divide(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_modulo(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lshift(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_rshift(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_urshift(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_bitand(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_bitor(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_bitxor(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_equals(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_strictequals(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lessthan(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_lessequals(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_greaterthan(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_add(call_context* context,memorystream& code); //0xa0
+	static void abc_subtract(call_context* context,memorystream& code);
+	static void abc_multiply(call_context* context, memorystream &code);
+	static void abc_divide(call_context* context,memorystream& code);
+	static void abc_modulo(call_context* context,memorystream& code);
+	static void abc_lshift(call_context* context,memorystream& code);
+	static void abc_rshift(call_context* context,memorystream& code);
+	static void abc_urshift(call_context* context,memorystream& code);
+	static void abc_bitand(call_context* context,memorystream& code);
+	static void abc_bitor(call_context* context,memorystream& code);
+	static void abc_bitxor(call_context* context,memorystream& code);
+	static void abc_equals(call_context* context,memorystream& code);
+	static void abc_strictequals(call_context* context,memorystream& code);
+	static void abc_lessthan(call_context* context,memorystream& code);
+	static void abc_lessequals(call_context* context,memorystream& code);
+	static void abc_greaterthan(call_context* context,memorystream& code);
 	
-	static void abc_greaterequals(const SyntheticFunction* function, call_context* context,memorystream& code);// 0xb0
-	static void abc_instanceof(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_istype(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_istypelate(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_in(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_greaterequals(call_context* context,memorystream& code);// 0xb0
+	static void abc_instanceof(call_context* context,memorystream& code);
+	static void abc_istype(call_context* context,memorystream& code);
+	static void abc_istypelate(call_context* context,memorystream& code);
+	static void abc_in(call_context* context,memorystream& code);
 	
-	static void abc_increment_i(const SyntheticFunction* function, call_context* context,memorystream& code); // 0xc0
-	static void abc_decrement_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_inclocal_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_declocal_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_negate_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_add_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_subtract_i(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_multiply_i(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_increment_i(call_context* context,memorystream& code); // 0xc0
+	static void abc_decrement_i(call_context* context,memorystream& code);
+	static void abc_inclocal_i(call_context* context,memorystream& code);
+	static void abc_declocal_i(call_context* context,memorystream& code);
+	static void abc_negate_i(call_context* context,memorystream& code);
+	static void abc_add_i(call_context* context,memorystream& code);
+	static void abc_subtract_i(call_context* context,memorystream& code);
+	static void abc_multiply_i(call_context* context,memorystream& code);
 
-	static void abc_getlocal_0(const SyntheticFunction* function, call_context* context,memorystream& code); // 0xd0
-	static void abc_getlocal_1(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getlocal_2(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_getlocal_3(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setlocal_0(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setlocal_1(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setlocal_2(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_setlocal_3(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_getlocal_0(call_context* context,memorystream& code); // 0xd0
+	static void abc_getlocal_1(call_context* context,memorystream& code);
+	static void abc_getlocal_2(call_context* context,memorystream& code);
+	static void abc_getlocal_3(call_context* context,memorystream& code);
+	static void abc_setlocal_0(call_context* context,memorystream& code);
+	static void abc_setlocal_1(call_context* context,memorystream& code);
+	static void abc_setlocal_2(call_context* context,memorystream& code);
+	static void abc_setlocal_3(call_context* context,memorystream& code);
 
-	static void abc_debug(const SyntheticFunction* function, call_context* context,memorystream& code); // 0xef
+	static void abc_debug(call_context* context,memorystream& code); // 0xef
 
-	static void abc_debugline(const SyntheticFunction* function, call_context* context,memorystream& code); //0xf0
-	static void abc_debugfile(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_bkptline(const SyntheticFunction* function, call_context* context,memorystream& code);
-	static void abc_timestamp(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_debugline(call_context* context,memorystream& code); //0xf0
+	static void abc_debugfile(call_context* context,memorystream& code);
+	static void abc_bkptline(call_context* context,memorystream& code);
+	static void abc_timestamp(call_context* context,memorystream& code);
 
-	static void abc_invalidinstruction(const SyntheticFunction* function, call_context* context,memorystream& code);
+	static void abc_invalidinstruction(call_context* context,memorystream& code);
 
 	static abc_function abcfunctions[];
 public:

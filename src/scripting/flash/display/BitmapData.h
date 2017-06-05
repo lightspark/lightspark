@@ -87,6 +87,7 @@ public:
 	ASFUNCTION(noise);
 	ASFUNCTION(perlinNoise);
 	ASFUNCTION(threshold);
+	ASFUNCTION(merge);
 };
 
 };

@@ -87,6 +87,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("noise","",Class<IFunction>::getFunction(c->getSystemState(),noise),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("perlinNoise","",Class<IFunction>::getFunction(c->getSystemState(),perlinNoise),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("threshold","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("merge","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
@@ -895,3 +896,19 @@ ASFUNCTIONBODY(BitmapData,threshold)
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.threshold not implemented");
 	return NULL;
 }
+ASFUNCTIONBODY(BitmapData,merge)
+{
+	_NR<BitmapData> sourceBitmapData;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	uint32_t redMultiplier;
+	uint32_t greenMultiplier;
+	uint32_t blueMultiplier;
+	uint32_t alphaMultiplier;
+	ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (redMultiplier) (greenMultiplier) (blueMultiplier) (alphaMultiplier);
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.merge not implemented");
+	return NULL;
+}
+
+

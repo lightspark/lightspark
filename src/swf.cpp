@@ -1062,7 +1062,7 @@ void SystemState::flushInvalidationQueue()
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
 	{
-		if(cur->isOnStage())
+		if(cur->isOnStage() && cur->hasChanged)
 		{
 			IDrawable* d=cur->invalidate(stage, MATRIX());
 			//Check if the drawable is valid and forge a new job to

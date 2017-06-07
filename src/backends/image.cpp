@@ -285,7 +285,7 @@ static void ReadPNGDataFromBuffer(png_structp pngPtr, png_bytep data, png_size_t
 	memcpy(data,(void*)(a->data+a->curpos),length);
 	a->curpos+= length;
 }
-uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!pngPtr)
@@ -298,10 +298,10 @@ uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint
 	b.curpos = 0;
 	png_set_read_fn(pngPtr,(void*)&b, ReadPNGDataFromBuffer);
 
-	return decodePNGImpl(pngPtr, width, height);
+	return decodePNGImpl(pngPtr, width, height,hasAlpha);
 }
 
-uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!pngPtr)
@@ -311,10 +311,10 @@ uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* h
 	}
 	png_set_read_fn(pngPtr,(void*)&str, ReadPNGDataFromStream);
 
-	return decodePNGImpl(pngPtr, width, height);
+	return decodePNGImpl(pngPtr, width, height,hasAlpha);
 }
 
-uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32_t* height)
+uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
 	png_bytep* rowPtrs = NULL;
 	uint8_t* outData = NULL;
@@ -354,9 +354,6 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	{
 		case PNG_COLOR_TYPE_PALETTE:
 			png_set_palette_to_rgb(pngPtr);
-			// png_set_palette_to_rgb wil convert into 32
-			// bit, but we don't want the alpha
-			png_set_strip_alpha(pngPtr);
 			break;
 		case PNG_COLOR_TYPE_GRAY:
 			if (bitdepth < 8)
@@ -369,11 +366,7 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 		png_set_strip_16(pngPtr);
 	}
 
-	if (channels > 3)
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "Alpha channel not supported in PNG");
-		png_set_strip_alpha(pngPtr);
-	}
+	*hasAlpha = (channels > 3);
 
 	// Update the infoPtr to reflect the transformations set
 	// above. Read new values by calling png_get_* again.
@@ -381,18 +374,6 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 
 	//bitdepth = png_get_bit_depth(pngPtr, infoPtr);
 	//color_type = png_get_color_type(pngPtr, infoPtr);
-
-	channels = png_get_channels(pngPtr, infoPtr);
-	if (channels != 3)
-	{
-		// Should never get here because of the
-		// transformations
-		LOG(LOG_NOT_IMPLEMENTED, "Unexpected number of channels in PNG!");
-
-		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
-
-		return NULL;
-	}
 
 	const unsigned int stride = png_get_rowbytes(pngPtr, infoPtr);
 
@@ -419,7 +400,7 @@ uint8_t* ImageDecoder::decodePalette(uint8_t* pixels, uint32_t width, uint32_t h
 	assert(stride >= width);
 	assert(paletteBPP==3 || paletteBPP==4);
 
-	uint8_t* outData = new uint8_t[3*width*height];
+	uint8_t* outData = new uint8_t[paletteBPP*width*height];
 	for (size_t y=0; y<height; y++)
 	{
 		for (size_t x=0; x<width; x++)
@@ -432,8 +413,15 @@ uint8_t* ImageDecoder::decodePalette(uint8_t* pixels, uint32_t width, uint32_t h
 				paletteIndex = 0;
 			}
 
-			uint8_t *dest = outData + 3*(y*width + x);
-			memcpy(dest, &palette[paletteBPP*paletteIndex], 3);
+			uint8_t *dest = outData + paletteBPP*(y*width + x);
+			if (paletteBPP == 4)
+			{
+				// convert color from rgba to argb;
+				uint32_t color_argb = (uint32_t)(palette[paletteBPP*paletteIndex+3]) | palette[paletteBPP*paletteIndex] <<8| palette[paletteBPP*paletteIndex+1] <<16 | palette[paletteBPP*paletteIndex+2] <<24;
+				memcpy(dest, &color_argb, paletteBPP);
+			}
+			else
+				memcpy(dest, &palette[paletteBPP*paletteIndex], paletteBPP);
 		}
 	}
 

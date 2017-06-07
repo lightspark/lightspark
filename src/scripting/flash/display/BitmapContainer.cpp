@@ -81,17 +81,21 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	assert(data.empty());
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h);
+	bool hasAlpha;
+	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
+	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
 }
 bool BitmapContainer::fromPNG(uint8_t* data, int len)
 {
 	/* flash uses signed values for width and height */
 	uint32_t w,h;
-	uint8_t *rgb=ImageDecoder::decodePNG(data,len, &w, &h);
+	bool hasAlpha;
+	uint8_t *rgb=ImageDecoder::decodePNG(data,len, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
+	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
 }
 
 bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP)
@@ -103,7 +107,7 @@ bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint3
 	width = w;
 	height = h;
 	uint8_t *rgb=ImageDecoder::decodePalette(inData, w, h, inStride, palette, numColors, paletteBPP);
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, RGB24);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, paletteBPP == 4 ? ARGB32 : RGB24);
 }
 
 void BitmapContainer::clear()

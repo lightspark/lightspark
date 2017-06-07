@@ -218,6 +218,7 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"wrong_exec_pos",(void*)&ABCVm::wrong_exec_pos,ARGS_NONE},
 	{"dxns",(void*)&ABCVm::dxns,ARGS_CONTEXT_INT},
 	{"dxnslate",(void*)&ABCVm::dxnslate,ARGS_CONTEXT_OBJ},
+	{"callMethod",(void*)&ABCVm::callMethod,ARGS_CONTEXT_INT_INT},
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -2935,7 +2936,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 #ifdef LLVM_37
 				value=Builder.CreateCall(ex->FindFunctionNamed("hasNext"), {v1, v2});
 #else
-				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext"), v1, v2);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("hasNext"), v1, v2);
 #endif
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
@@ -3240,6 +3241,24 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 				Builder.CreateCall(ex->FindFunctionNamed("construct"), {context, constant});
 #else
 				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant);
+#endif
+				break;
+			}
+			case 0x43:
+			{
+				//construct
+				LOG(LOG_TRACE, _("synt callMethod") );
+				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(int_type, t);
+				constant = llvm::ConstantInt::get(int_type, t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(int_type, t);
+#ifdef LLVM_37
+				Builder.CreateCall(ex->FindFunctionNamed("construct"), {context, constant, constant2});
+#else
+				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant, constant2);
 #endif
 				break;
 			}

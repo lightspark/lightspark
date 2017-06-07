@@ -155,7 +155,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_newfunction,// 0x40
 	abc_call,
 	abc_construct,
-	abc_invalidinstruction,
+	abc_callMethod,
 	abc_callstatic,
 	abc_callsuper,
 	abc_callproperty,
@@ -164,7 +164,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_constructsuper,
 	abc_constructprop,
 	abc_invalidinstruction,
-	abc_callproperty,
+	abc_callproplex,
 	abc_invalidinstruction,
 	abc_callsupervoid,
 	abc_callpropvoid,
@@ -1006,6 +1006,14 @@ void ABCVm::abc_construct(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	construct(context,t);
 }
+void ABCVm::abc_callMethod(call_context* context,memorystream& code)
+{
+	// callmethod
+	LOG(LOG_NOT_IMPLEMENTED,"callmethod behaves exactly like callproperty");
+	uint32_t t = code.readu30();
+	uint32_t t2 = code.readu30();
+	callMethod(context,t,t2);
+}
 void ABCVm::abc_callstatic(call_context* context,memorystream& code)
 {
 	//callstatic
@@ -1024,7 +1032,6 @@ void ABCVm::abc_callsuper(call_context* context,memorystream& code)
 }
 void ABCVm::abc_callproperty(call_context* context,memorystream& code)
 {
-	//callproplex seems to be exactly like callproperty
 	//callproperty
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
@@ -1056,6 +1063,14 @@ void ABCVm::abc_constructprop(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
 	constructProp(context,t,t2);
+}
+void ABCVm::abc_callproplex(call_context* context,memorystream& code)
+{
+	//callproplex
+	LOG(LOG_NOT_IMPLEMENTED,"callproplex behaves exactly like callproperty");
+	uint32_t t = code.readu30();
+	uint32_t t2 = code.readu30();
+	callProperty(context,t,t2,NULL,true);
 }
 void ABCVm::abc_callsupervoid(call_context* context,memorystream& code)
 {
@@ -1148,7 +1163,7 @@ void ABCVm::abc_findpropstrict(call_context* context,memorystream& code)
 //		multiname* name=context->context->getMultiname(t,context);
 //		context->runtime_stack_push(findPropStrict(context,name));
 //		name->resetNameIfObject();
-		
+
 		context->runtime_stack_push(findPropStrictCache(context,code));
 }
 void ABCVm::abc_findproperty(call_context* context,memorystream& code)
@@ -1984,6 +1999,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x32://hasnext2
+			case 0x43://callmethod
 			case 0x44://callstatic
 			case 0x45://callsuper
 			case 0x46://callproperty

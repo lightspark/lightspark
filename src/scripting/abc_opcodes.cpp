@@ -350,7 +350,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 			if(!o.isNull())
 				break;
 			tmpcls = tmpcls->super;
-		}	
+		}
 	}
 	if(!o.isNull() && !obj->is<Proxy>())
 	{
@@ -417,7 +417,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		}
 		for(int i=0;i<m;i++)
 			args[i]->decRef();
-		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString() << " not found on " << obj->toDebugString());
+		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString(th->context->root->getSystemState()) << " not found on " << obj->toDebugString());
 		if (obj->hasPropertyByMultiname(*name,true,true))
 		{
 			tiny_string clsname = obj->getClass()->getQualifiedClassName();
@@ -449,6 +449,43 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 
 	}
 	LOG_CALL(_("End of calling ") << *name);
+}
+
+void ABCVm::callMethod(call_context* th, int n, int m)
+{
+	ASObject** args=g_newa(ASObject*, m);
+	for(int i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
+
+	LOG_CALL( "callMethod " << n << ' ' << m);
+
+	ASObject* obj=th->runtime_stack_pop();
+	checkDeclaredTraits(obj);
+
+	if(obj->is<Null>())
+	{
+		LOG(LOG_ERROR,"trying to call method on null:"<<n);
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->is<Undefined>())
+	{
+		LOG(LOG_ERROR,"trying to call method on undefined:"<<n);
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o=obj->getSlot(n);
+	if(o)
+	{
+		o->incRef();
+		callImpl(th, o, obj, args, m, NULL, true);
+	}
+	else
+	{
+		tiny_string clsname = obj->getClassName();
+		obj->decRef();
+		throwError<TypeError>(kCallNotFoundError, "", clsname);
+	}
+	LOG_CALL(_("End of calling method ") << n);
 }
 
 void ABCVm::checkDeclaredTraits(ASObject* obj)

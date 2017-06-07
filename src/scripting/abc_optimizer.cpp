@@ -933,6 +933,19 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				curBlock->pushStack(Type::anyType);
 				break;
 			}
+			case 0x43:
+			{
+				//callmethod
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				out << (uint8_t)opcode;
+				writeInt32(out,t);
+				writeInt32(out,t2);
+				curBlock->popStack(t2+1);
+				curBlock->pushStack(Type::anyType);
+				break;
+			}
 			case 0x4a:
 			{
 				//constructprop

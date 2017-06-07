@@ -201,7 +201,7 @@ public:
 	{
 		if(mi==0)
 			return 0;
-	
+
 		const multiname_info* m=&constant_pool.multinames[mi];
 		switch(m->kind)
 		{
@@ -328,6 +328,7 @@ private:
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
+	static void callMethod(call_context* th, int n, int m);
 	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
@@ -580,6 +581,7 @@ private:
 	static void abc_newfunction(call_context* context,memorystream& code);// 0x40
 	static void abc_call(call_context* context,memorystream& code);
 	static void abc_construct(call_context* context,memorystream& code);
+	static void abc_callMethod(call_context* context, memorystream &code);
 	static void abc_callstatic(call_context* context,memorystream& code);
 	static void abc_callsuper(call_context* context,memorystream& code);
 	static void abc_callproperty(call_context* context,memorystream& code);
@@ -587,6 +589,7 @@ private:
 	static void abc_returnvalue(call_context* context,memorystream& code);
 	static void abc_constructsuper(call_context* context,memorystream& code);
 	static void abc_constructprop(call_context* context,memorystream& code);
+	static void abc_callproplex(call_context* context,memorystream& code);
 	static void abc_callsupervoid(call_context* context,memorystream& code);
 	static void abc_callpropvoid(call_context* context,memorystream& code);
 	

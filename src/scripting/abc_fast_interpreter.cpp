@@ -656,6 +656,15 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				break;
 			}
+			case 0x43:
+			{
+				//callmethod
+				uint32_t t=data->uints[0];
+				uint32_t t2=data->uints[1];
+				callMethod(context,t,t2);
+				instructionPointer+=8;
+				break;
+			}
 			case 0x44:
 			{
 				//callstatic
@@ -686,9 +695,23 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			case 0x46:
-			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callproperty
+				uint32_t t=data->uints[0];
+				uint32_t t2=data->uints[1];
+				method_info* called_mi=NULL;
+				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+				callProperty(context,t,t2,&called_mi,true);
+				if(called_mi)
+					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
+				else
+					PROF_IGNORE_TIME(profilingCheckpoint(startTime));
+				instructionPointer+=8;
+				break;
+			}
+			case 0x4c: 
+			{
+				//callproplex
 				uint32_t t=data->uints[0];
 				uint32_t t2=data->uints[1];
 				method_info* called_mi=NULL;

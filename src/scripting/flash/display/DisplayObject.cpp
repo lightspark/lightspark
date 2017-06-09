@@ -96,12 +96,12 @@ void DisplayObject::Render(RenderContext& ctxt)
 	renderImpl(ctxt);
 }
 
-DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),tx(0),ty(0),rotation(0),
+DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
-	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
+//	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
 DisplayObject::~DisplayObject() {}
@@ -112,6 +112,7 @@ void DisplayObject::finalize()
 	maskOf.reset();
 	parent.reset();
 	mask.reset();
+	matrix.reset();
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
@@ -194,17 +195,21 @@ bool DisplayObject::computeCacheAsBitmap() const
 ASFUNCTIONBODY(DisplayObject,_getTransform)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj);
-	//The tested behaviour is that every time ::transform is accessed
-	//a new object is generated
-
-	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub and does not reflect the real display state");
+	
 	th->incRef();
 	return Class<Transform>::getInstanceS(obj->getSystemState(),_MR(th));
 }
 
 ASFUNCTIONBODY(DisplayObject,_setTransform)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "DisplayObject::transform is a stub");
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	_NR<Transform> trans;
+	ARG_UNPACK(trans);
+	if (!trans.isNull())
+	{
+		th->setMatrix(trans->owner->matrix);
+		th->colorTransform = trans->owner->colorTransform;
+	}
 	return NULL;
 }
 
@@ -212,14 +217,23 @@ void DisplayObject::buildTraits(ASObject* o)
 {
 }
 
-void DisplayObject::setMatrix(const lightspark::MATRIX& m)
+void DisplayObject::setMatrix(_NR<Matrix> m)
 {
 	bool mustInvalidate=false;
+	if (m.isNull())
+	{
+		if (!matrix.isNull())
+			mustInvalidate=true;
+		matrix= NullRef;
+	}
+	else
 	{
 		SpinlockLocker locker(spinlock);
-		if(Matrix!=m)
+		if (matrix.isNull())
+			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
+		if(matrix->matrix!=m->matrix)
 		{
-			Matrix=m;
+			matrix->matrix=m->matrix;
 			extractValuesFromMatrix();
 			mustInvalidate=true;
 		}
@@ -233,8 +247,25 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 
 void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 {
-	if(useLegacyMatrix)
-		setMatrix(m);
+	if(!useLegacyMatrix)
+		return;
+	bool mustInvalidate=false;
+	{
+		SpinlockLocker locker(spinlock);
+		if (matrix.isNull())
+			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
+		if(matrix->matrix!=m)
+		{
+			matrix->matrix=m;
+			extractValuesFromMatrix();
+			mustInvalidate=true;
+		}
+	}
+	if(mustInvalidate && onStage)
+	{
+		hasChanged=true;
+		requestInvalidation(getSystemState());
+	}
 }
 
 void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
@@ -279,7 +310,14 @@ MATRIX DisplayObject::getConcatenatedMatrix() const
  * necessary bounded.) */
 float DisplayObject::clippedAlpha() const
 {
-	float a = ColorTransform.transformedAlpha(alpha);
+	float a = alpha;
+	if (!this->colorTransform.isNull())
+	{
+		if (alpha != 1.0 && this->colorTransform->alphaMultiplier != 1.0)
+			a = alpha * this->colorTransform->alphaMultiplier /256.;
+		if (this->colorTransform->alphaOffset != 0)
+			a = alpha + this->colorTransform->alphaOffset /256.;
+	}
 	return dmin(dmax(a, 0.), 1.);
 }
 
@@ -295,7 +333,9 @@ MATRIX DisplayObject::getMatrix() const
 {
 	SpinlockLocker locker(spinlock);
 	//Start from the residual matrix and construct the whole one
-	MATRIX ret=Matrix;
+	MATRIX ret;
+	if (!matrix.isNull())
+		ret=matrix->matrix;
 	ret.scale(sx,sy);
 	ret.rotate(rotation*M_PI/180);
 	ret.translate(tx,ty);
@@ -306,17 +346,18 @@ void DisplayObject::extractValuesFromMatrix()
 {
 	//Extract the base components from the matrix and leave in
 	//it only the residual components
-	tx=Matrix.getTranslateX();
-	ty=Matrix.getTranslateY();
-	sx=Matrix.getScaleX();
-	sy=Matrix.getScaleY();
-	rotation=Matrix.getRotation();
+	assert(!matrix.isNull());
+	tx=matrix->matrix.getTranslateX();
+	ty=matrix->matrix.getTranslateY();
+	sx=matrix->matrix.getScaleX();
+	sy=matrix->matrix.getScaleY();
+	rotation=matrix->matrix.getRotation();
 	//Deapply translation
-	Matrix.translate(-tx,-ty);
+	matrix->matrix.translate(-tx,-ty);
 	//Deapply rotation
-	Matrix.rotate(-rotation*M_PI/180);
+	matrix->matrix.rotate(-rotation*M_PI/180);
 	//Deapply scaling
-	Matrix.scale(1.0/sx,1.0/sy);
+	matrix->matrix.scale(1.0/sx,1.0/sy);
 }
 
 bool DisplayObject::skipRender() const

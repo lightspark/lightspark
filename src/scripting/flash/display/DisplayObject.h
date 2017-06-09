@@ -54,7 +54,7 @@ public:
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
-	MATRIX Matrix;
+	_NR<Matrix> matrix;
 	number_t tx,ty,tz;
 	number_t rotation;
 	number_t sx,sy,sz;
@@ -81,7 +81,7 @@ private:
 	 * Utility function to set internal MATRIX
 	 * Also used by Transform
 	 */
-	void setMatrix(const MATRIX& m);
+	void setMatrix(_NR<Matrix> m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
@@ -127,7 +127,7 @@ public:
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
-	CXFORMWITHALPHA ColorTransform;
+	_NR<ColorTransform> colorTransform;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
 	/**

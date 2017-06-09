@@ -307,7 +307,7 @@ protected:
 	UI16_SWF Depth;
 	UI16_SWF CharacterId;
 	MATRIX Matrix;
-	CXFORMWITHALPHA ColorTransform;
+	CXFORMWITHALPHA ColorTransformWithAlpha;
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;

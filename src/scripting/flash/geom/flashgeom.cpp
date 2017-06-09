@@ -978,6 +978,8 @@ ASFUNCTIONBODY(Transform,_getMatrix)
 {
 	Transform* th=Class<Transform>::cast(obj);
 	assert_and_throw(argslen==0);
+	if (th->owner->matrix.isNull())
+		return obj->getSystemState()->getNullRef();
 	const MATRIX& ret=th->owner->getMatrix();
 	return Class<Matrix>::getInstanceS(obj->getSystemState(),ret);
 }
@@ -987,39 +989,37 @@ ASFUNCTIONBODY(Transform,_setMatrix)
 	Transform* th=Class<Transform>::cast(obj);
 	_NR<Matrix> m;
 	ARG_UNPACK(m);
-	if(m.isNull())
-		return NULL;
-
-	th->owner->setMatrix(m->getMATRIX());
+	th->owner->setMatrix(m);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Transform,_getColorTransform)
 {
 	Transform* th=Class<Transform>::cast(obj);
-	const CXFORMWITHALPHA& ct=th->owner->ColorTransform;
-	return Class<ColorTransform>::getInstanceS(obj->getSystemState(),ct);
+	if (th->owner->colorTransform.isNull())
+		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState()));
+	th->owner->colorTransform->incRef();
+	return th->owner->colorTransform.getPtr();
 }
 
 ASFUNCTIONBODY(Transform,_setColorTransform)
 {
-	//Transform* th=Class<Transform>::cast(obj);
+	Transform* th=Class<Transform>::cast(obj);
 	_NR<ColorTransform> ct;
 	ARG_UNPACK(ct);
 	if (ct.isNull())
 		throwError<TypeError>(kNullPointerError, "colorTransform");
 
-	LOG(LOG_NOT_IMPLEMENTED, "Transform::setColorTransform");
-	// Set colortransform on th->owner
+	ct->incRef();
+	th->owner->colorTransform = ct;
 
 	return NULL;
 }
 
 ASFUNCTIONBODY(Transform,_getConcatenatedMatrix)
 {
-	//Transform* th=Class<Transform>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"contcatenatedMAtrix not implemented");
-	return Class<Matrix>::getInstanceS(obj->getSystemState());
+	Transform* th=Class<Transform>::cast(obj);
+	return Class<Matrix>::getInstanceS(obj->getSystemState(),th->owner->getConcatenatedMatrix());
 }
 
 void Transform::buildTraits(ASObject* o)

@@ -110,6 +110,7 @@ public:
 class ColorTransform: public ASObject
 {
 friend class BitmapData;
+friend class DisplayObject;
 protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
@@ -146,6 +147,7 @@ public:
 
 class Matrix: public ASObject
 {
+friend class DisplayObject;
 private:
 	MATRIX matrix;
 public:
@@ -192,6 +194,7 @@ class PerspectiveProjection;
 class Matrix3D;
 class Transform: public ASObject
 {
+friend class DisplayObject;
 private:
 	_NR<DisplayObject> owner;
 public:

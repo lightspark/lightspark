@@ -38,6 +38,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "backends/audio.h"
 
 #undef RGB
@@ -754,7 +755,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
-		if (*it == 13) 
+		if (*it == 13)
 		{
 			curPos.x = 0;
 			curPos.y += 20*1024 * this->scaling;
@@ -1231,7 +1232,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 
 	//TODO: move these three attributes in PlaceInfo
 	if(PlaceFlagHasColorTransform)
-		obj->ColorTransform=ColorTransform;
+		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
 
 	if(PlaceFlagHasRatio)
 		obj->Ratio=Ratio;
@@ -1344,7 +1345,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> Matrix;
 
 	if(PlaceFlagHasColorTransform)
-		in >> ColorTransform;
+		in >> ColorTransformWithAlpha;
 
 	if(PlaceFlagHasRatio)
 		in >> Ratio;
@@ -1398,7 +1399,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> Matrix;
 
 	if(PlaceFlagHasColorTransform)
-		in >> ColorTransform;
+		in >> ColorTransformWithAlpha;
 
 	if(PlaceFlagHasRatio)
 		in >> Ratio;

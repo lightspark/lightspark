@@ -47,12 +47,14 @@ void TokenContainer::renderImpl(RenderContext& ctxt) const
 void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 								  tokensVector& tokens,
 								  const std::list<FILLSTYLE>& fillStyles,
-								  const MATRIX& matrix)
+								  const MATRIX& matrix,
+								  const std::list<LINESTYLE2>& lineStyles)
 {
 	Vector2 cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
-
+	unsigned int linestyle=0;
+			
 	ShapesBuilder shapesBuilder;
 
 	for(unsigned int i=0;i<shapeRecords.size();i++)
@@ -71,6 +73,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
 				if(color1)
 					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
 			}
 			else
 			{
@@ -86,6 +90,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
 				if(color1)
 					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
 			}
 		}
 		else
@@ -95,11 +101,10 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				cursor.x=cur->MoveDeltaX;
 				cursor.y=cur->MoveDeltaY;
 			}
-/*			if(cur->StateLineStyle)
+			if(cur->StateLineStyle)
 			{
-				cur_path->state.validStroke=true;
-				cur_path->state.stroke=cur->LineStyle;
-			}*/
+				linestyle = cur->LineStyle;
+			}
 			if(cur->StateFillStyle1)
 			{
 				color1=cur->FillStyle1;
@@ -111,7 +116,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		}
 	}
 
-	shapesBuilder.outputTokens(fillStyles, tokens);
+	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens);
 }
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q)

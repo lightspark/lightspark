@@ -1055,21 +1055,21 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShape2Tag(h,3,root)
 {
 	LOG(LOG_TRACE,"DefineShape3Tag");
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineShape3Tag(h,4,root)
@@ -1082,7 +1082,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
 	in >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles);
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root),

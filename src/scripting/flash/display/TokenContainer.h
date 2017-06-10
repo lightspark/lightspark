@@ -49,7 +49,7 @@ public:
 	tokensVector tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
-					 const MATRIX& matrix = MATRIX());
+					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>());
 	static void getTextureSize(tokensVector& tokens, int *width, int *height);
 	uint16_t getCurrentLineWidth() const;
 	float scaling;

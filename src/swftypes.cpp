@@ -506,8 +506,7 @@ void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 	assert_and_throw(r.version==version);
 	if(version<4)
 		LineStyles.insert(LineStyles.end(),r.LineStyles.begin(),r.LineStyles.end());
-	else
-		LineStyles2.insert(LineStyles2.end(),r.LineStyles2.begin(),r.LineStyles2.end());
+	LineStyles2.insert(LineStyles2.end(),r.LineStyles2.begin(),r.LineStyles2.end());
 }
 
 std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
@@ -524,6 +523,10 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 			LINESTYLE tmp(v.version);
 			s >> tmp;
 			v.LineStyles.push_back(tmp);
+			LINESTYLE2 tmp2(v.version);
+			tmp2.Color = tmp.Color;
+			tmp2.Width = tmp.Width;
+			v.LineStyles2.push_back(tmp2);
 		}
 	}
 	else

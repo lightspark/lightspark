@@ -256,6 +256,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	bool empty=true;
 
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
+	cairo_matrix_t mat;
+	cairo_get_matrix(cr,&mat);
+	cairo_set_matrix(stroke_cr, &mat);
+	
 	cairo_push_group(stroke_cr);
 
 	// Make sure not to draw anything until a fill is set.
@@ -358,7 +362,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				if (style.Width == 0)
 					cairo_set_line_width(stroke_cr, 1);
 				else
-					cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0));
+					cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0 / scaleCorrection));
 				break;
 			}
 
@@ -888,7 +892,7 @@ void AsyncDrawJob::jobFence()
 	//If the data must be uploaded (there were no errors) the Job add itself to the upload queue.
 	//Otherwise it destroys itself
 	if(uploadNeeded)
-		getSys()->getRenderThread()->addUploadJob(this);
+		owner->getSystemState()->getRenderThread()->addUploadJob(this);
 	else
 		delete this;
 }

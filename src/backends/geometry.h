@@ -113,13 +113,14 @@ private:
 public:
 	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
 	void extendFilledOutlineForColorCurve(unsigned int color, const Vector2& start, const Vector2& control, const Vector2& end);
-	void extendStrokeOutlineForColor(unsigned int stroke, const Vector2& v1, const Vector2& v2);
+	void extendStrokeOutline(unsigned int stroke, const Vector2& v1, const Vector2& v2);
+	void extendStrokeOutlineCurve(unsigned int color, const Vector2& v1, const Vector2& v2, const Vector2& v3);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries
 		@param styles This list is supposed to survive until as long as the returned tokens array
 		@param tokens A vector that will be filled with tokens
 	*/
-	void outputTokens(const std::list<FILLSTYLE>& styles, tokensVector& tokens);
+	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2> &linestyles, tokensVector& tokens);
 	void clear();
 };
 

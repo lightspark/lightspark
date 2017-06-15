@@ -204,35 +204,35 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 	if (reviver)
 	{
 		bool haskey = key.name_type!= multiname::NAME_OBJECT;
-		ASObject* params[2];
+		asAtom params[2];
 		
 		if (haskey)
 		{
-			params[0] = abstract_s(getSys(),key.normalizedName(getSys()));
+			params[0] = asAtom::fromObject(abstract_s(getSys(),key.normalizedName(getSys())));
 			if ((*parent)->hasPropertyByMultiname(key,true,false))
 			{
-				params[1] = (*parent)->getVariableByMultiname(key).getPtr();
-				params[1]->incRef();
+				params[1] = (*parent)->getVariableByMultiname(key);
+				ASATOM_INCREF(params[1]);
 			}
 			else
-				params[1] = getSys()->getNullRef();
+				params[1] = asAtom(T_NULL);
 		}
 		else
 		{
-			params[0] = abstract_s(getSys(),"");
-			params[1] = *parent;
-			params[1]->incRef();
+			params[0] = asAtom::fromObject(abstract_s(getSys(),""));
+			params[1] = asAtom::fromObject(*parent);
+			ASATOM_INCREF(params[1]);
 		}
 
-		ASObject *funcret=reviver->call(getSys()->getNullRef(), params, 2);
-		if(funcret)
+		asAtom funcret=reviver->call(asAtom(T_NULL), params, 2);
+		if(funcret.type != T_INVALID)
 		{
 			if (haskey)
 			{
-				if (funcret->is<Undefined>())
+				if (funcret.type == T_UNDEFINED)
 				{
 					(*parent)->deleteVariableByMultiname(key);
-					funcret->decRef();
+					ASATOM_DECREF(funcret);
 				}
 				else
 				{
@@ -240,7 +240,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 				}
 			}
 			else 
-				*parent= funcret;
+				*parent= funcret.toObject(getSys());
 		}
 	}
 	return pos;
@@ -259,7 +259,7 @@ int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,con
 			if (*parent == NULL)
 				*parent = abstract_b(getSys(),true);
 			else 
-				(*parent)->setVariableByMultiname(key,abstract_b((*parent)->getSystemState(),true),ASObject::CONST_NOT_ALLOWED);
+				(*parent)->setVariableByMultiname(key,asAtom(true),ASObject::CONST_NOT_ALLOWED);
 		}
 		else
 			throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -283,7 +283,7 @@ int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,co
 			if (*parent == NULL)
 				*parent = abstract_b(getSys(),false);
 			else 
-				(*parent)->setVariableByMultiname(key,abstract_b((*parent)->getSystemState(),false),ASObject::CONST_NOT_ALLOWED);
+				(*parent)->setVariableByMultiname(key,asAtom(false),ASObject::CONST_NOT_ALLOWED);
 		}
 		else
 			throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -306,7 +306,7 @@ int JSON::parseNull(const tiny_string &jsonstring, int pos,ASObject** parent,con
 			if (*parent == NULL)
 				*parent = getSys()->getNullRef();
 			else 
-				(*parent)->setVariableByMultiname(key,getSys()->getNullRef(),ASObject::CONST_NOT_ALLOWED);
+				(*parent)->setVariableByMultiname(key,asAtom(T_NULL),ASObject::CONST_NOT_ALLOWED);
 		}
 		else
 			throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -426,7 +426,7 @@ int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,c
 		if (*parent == NULL)
 			*parent = abstract_s(getSys(),res);
 		else 
-			(*parent)->setVariableByMultiname(key,abstract_s(getSys(),res),ASObject::CONST_NOT_ALLOWED);
+			(*parent)->setVariableByMultiname(key,asAtom::fromObject(abstract_s(getSys(),res)),ASObject::CONST_NOT_ALLOWED);
 	}
 	if (result)
 		*result =res;
@@ -475,7 +475,7 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 		*parent = abstract_d(getSys(),num);
 	else 
 	{
-		(*parent)->setVariableByMultiname(key,abstract_d(getSys(),num),ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,asAtom(num),ASObject::CONST_NOT_ALLOWED);
 	}
 	return pos;
 }
@@ -487,7 +487,7 @@ int JSON::parseObject(const tiny_string &jsonstring, int pos,ASObject** parent,c
 	if (*parent == NULL)
 		*parent = subobj;
 	else 
-		(*parent)->setVariableByMultiname(key,subobj,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,asAtom::fromObject(subobj),ASObject::CONST_NOT_ALLOWED);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.ns.push_back(nsNameAndKind(getSys(),"",NAMESPACE));
@@ -554,7 +554,7 @@ int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, 
 	if (*parent == NULL)
 		*parent = subobj;
 	else 
-		(*parent)->setVariableByMultiname(key,subobj,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,asAtom::fromObject(subobj),ASObject::CONST_NOT_ALLOWED);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_UINT;
 	name.name_ui = 0;

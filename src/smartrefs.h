@@ -51,7 +51,7 @@ public:
 		if (!isConstant)
 			++ref_count;
 	}
-	inline void decRef()
+	inline bool decRef()
 	{
 		assert(ref_count>0);
 		if (!isConstant)
@@ -64,10 +64,12 @@ public:
 					ref_count=-1024;
 					delete this;
 				}
+				return true;
 			}
 			else
 				--ref_count;
 		}
+		return false;
 	}
 	virtual bool destruct()
 	{

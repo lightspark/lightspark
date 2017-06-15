@@ -96,19 +96,31 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	//CHECK: what to do if ns is empty
 	ASObject* target=args[0];
 	Class_base* c;
-	SWFOBJECT_TYPE otype=target->getObjectType();
-	if(otype==T_NULL)
-		return abstract_s(target->getSystemState(),"null");
-	else if(otype==T_UNDEFINED)
-		// Testing shows that this really returns "void"!
-		return abstract_s(target->getSystemState(),"void");
-	else if(otype!=T_CLASS)
+	switch(target->getObjectType())
 	{
-		assert_and_throw(target->getClass());
-		c=target->getClass();
+		case T_NULL:
+			return abstract_s(target->getSystemState(),"null");
+		case T_UNDEFINED:
+			// Testing shows that this really returns "void"!
+			return abstract_s(target->getSystemState(),"void");
+		case T_CLASS:
+			c=static_cast<Class_base*>(target);
+			break;
+		case T_NUMBER:
+			if (target->as<Number>()->isfloat)
+				c=target->getClass();
+			else if (target->toInt64() > INT32_MIN && target->toInt64()< INT32_MAX)
+				c=Class<Integer>::getRef(target->getSystemState()).getPtr();
+			else if (target->toInt64() > 0 && target->toInt64()< UINT32_MAX)
+				c=Class<UInteger>::getRef(target->getSystemState()).getPtr();
+			else 
+				c=target->getClass();
+			break;
+		default:
+			assert_and_throw(target->getClass());
+			c=target->getClass();
+			break;
 	}
-	else
-		c=static_cast<Class_base*>(target);
 
 	return abstract_s(obj->getSystemState(),c->getQualifiedClassName());
 }

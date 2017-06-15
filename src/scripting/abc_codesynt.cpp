@@ -815,7 +815,8 @@ inline llvm::Value* getMultiname(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& Bu
 	if(rtdata==0)
 	{
 		//Multinames without runtime date persist
-		multiname* mname = ABCContext::s_getMultiname(abccontext,NULL,NULL,multinameIndex);
+		asAtom atom;
+		multiname* mname = ABCContext::s_getMultiname(abccontext,atom,NULL,multinameIndex);
 		name = llvm::ConstantExpr::getIntToPtr(llvm::ConstantInt::get(ptr_type, (intptr_t)mname),voidptr_type);
 	}
 	else
@@ -1638,6 +1639,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 				}
 				case 0x62: //getlocal
 					code >> localIndex;
+					// falls through
 				case 0xd0: //getlocal_n
 				case 0xd1:
 				case 0xd2:
@@ -1660,6 +1662,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 				}
 				case 0x63: //setlocal
 					code >> localIndex;
+					// falls through
 				case 0xd4: //setlocal_n
 				case 0xd5:
 				case 0xd6:
@@ -3246,19 +3249,18 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 			}
 			case 0x43:
 			{
-				//construct
+				//callMethod
 				LOG(LOG_TRACE, _("synt callMethod") );
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
-				constant = llvm::ConstantInt::get(int_type, t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
 #ifdef LLVM_37
-				Builder.CreateCall(ex->FindFunctionNamed("construct"), {context, constant, constant2});
+				Builder.CreateCall(ex->FindFunctionNamed("callMethod"), {context, constant, constant2});
 #else
-				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant, constant2);
+				Builder.CreateCall3(ex->FindFunctionNamed("callMethod"), context, constant, constant2);
 #endif
 				break;
 			}
@@ -3610,6 +3612,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 			}
 			case 0x62: //getlocal
 				code >> localIndex;
+				// falls through
 			case 0xd0: //getlocal_0
 			case 0xd1: //getlocal_1
 			case 0xd2: //getlocal_2
@@ -3818,6 +3821,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("esc_xattr"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				break;
 			}
 			case 0x73:
 			{
@@ -4635,6 +4639,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 			}
 			case 0x63: //setlocal
 				code >> localIndex;
+				// falls through
 			case 0xd4: //setlocal_0
 			case 0xd5: //setlocal_1
 			case 0xd6: //setlocal_2

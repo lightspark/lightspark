@@ -45,7 +45,7 @@ enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
-	/*UNUSED=7,*/ T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14, T_TEMPLATE=15};
+	T_INVALID=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14, T_TEMPLATE=15};
 // this is used to avoid calls to dynamic_cast when testing for some classes
 enum CLASS_SUBTYPE { SUBTYPE_NOT_SET, SUBTYPE_PROXY, SUBTYPE_REGEXP, SUBTYPE_XML, SUBTYPE_XMLLIST,SUBTYPE_DATE, SUBTYPE_INHERIT, SUBTYPE_OBJECTCONSTRUCTOR,SUBTYPE_FUNCTIONOBJECT
 					 ,SUBTYPE_GLOBAL,SUBTYPE_FUNCTION,SUBTYPE_SYNTHETICFUNCTION,SUBTYPE_EVENT,SUBTYPE_WAITABLE_EVENT, SUBTYPE_INTERACTIVE_OBJECT, SUBTYPE_STAGE
@@ -406,7 +406,7 @@ struct multiname: public memory_reporter
 
 	const tiny_string qualifiedString(SystemState *sys) const;
 	/* sets name_type, name_s/name_d based on the object n */
-	void setName(ASObject* n);
+	void setName(class asAtom &n, SystemState *sys);
 	void resetNameIfObject();
 	inline bool isQName() const { return ns.size() == 1; }
 	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false) const;

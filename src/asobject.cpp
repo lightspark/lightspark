@@ -143,10 +143,10 @@ tiny_string ASObject::toString()
 
 tiny_string ASObject::toLocaleString()
 {
-	_NR<ASObject> str = executeASMethod("toLocaleString", {""}, NULL, 0);
-	if (str.isNull())
+	asAtom str = executeASMethod("toLocaleString", {""}, NULL, 0);
+	if (str.type == T_INVALID)
 		return "";
-	return str->toString();
+	return str.toString();
 }
 
 TRISTATE ASObject::isLess(ASObject* r)
@@ -183,18 +183,18 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 	return Variables.getNextEnumerable(cur_index-1+1)+1;
 }
 
-_R<ASObject> ASObject::nextName(uint32_t index)
+asAtom ASObject::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
 	const tiny_string& name = getNameAt(index-1);
 	// not mentioned in the specs, but Adobe seems to convert string names to Integers, if possible
 	if (Array::isIntegerWithoutLeadingZeros(name))
-		return _MR(abstract_i(getSystemState(),Integer::stringToASInteger(name.raw_buf(), 0)));
-	return _MR(abstract_s(getSystemState(),name));
+		return asAtom(Integer::stringToASInteger(name.raw_buf(), 0));
+	return asAtom::fromObject(abstract_s(getSystemState(),name));
 }
 
-_R<ASObject> ASObject::nextValue(uint32_t index)
+asAtom ASObject::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
 
@@ -355,14 +355,14 @@ _R<ASObject> ASObject::call_valueOf()
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
-	_NR<ASObject> o=getVariableByMultiname(valueOfName,SKIP_IMPL);
-	if (!o->is<IFunction>())
+	asAtom o=getVariableByMultiname(valueOfName,SKIP_IMPL);
+	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
-	IFunction* f=o->as<IFunction>();
+	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
 
 	incRef();
-	ASObject *ret=f->call(this,NULL,0);
-	return _MR(ret);
+	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	return _MR(ret.toObject(getSystemState()));
 }
 
 bool ASObject::has_toString()
@@ -389,13 +389,14 @@ _R<ASObject> ASObject::call_toString()
 	toStringName.isAttribute = false;
 	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
-	_NR<ASObject> o=getVariableByMultiname(toStringName,SKIP_IMPL);
-	assert_and_throw(o->is<IFunction>());
-	IFunction* f=o->as<IFunction>();
+	asAtom o=getVariableByMultiname(toStringName,SKIP_IMPL);
+	if (o.type != T_FUNCTION)
+		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
+	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
 
 	incRef();
-	ASObject *ret=f->call(this,NULL,0);
-	return _MR(ret);
+	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	return _MR(ret.toObject(getSystemState()));
 }
 
 tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
@@ -411,22 +412,21 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunct
 	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
 		return res;
 
-	_NR<ASObject> o=getVariableByMultiname(toJSONName,SKIP_IMPL);
-	if (!o->is<IFunction>())
+	asAtom o=getVariableByMultiname(toJSONName,SKIP_IMPL);
+	if (o.type != T_FUNCTION)
 		return res;
-
-	IFunction* f=o->as<IFunction>();
+	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
 
 	incRef();
-	ASObject *ret=f->call(this,NULL,0);
-	if (ret->is<ASString>())
+	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	if (ret.type == T_STRING)
 	{
 		res += "\"";
-		res += ret->toString();
+		res += ret.toString();
 		res += "\"";
 	}
 	else 
-		res = ret->toJSON(path,replacer,spaces,filter);
+		res = ret.toObject(getSystemState())->toJSON(path,replacer,spaces,filter);
 	ok = true;
 	return res;
 }
@@ -552,7 +552,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		case NORMAL_METHOD:
 		{
-			obj->setVar(o);
+			obj->setVar(asAtom::fromObject(o),getSystemState());
 			break;
 		}
 		case GETTER_METHOD:
@@ -593,9 +593,9 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
 		return false;
 
-	assert(obj->getter==NULL && obj->setter==NULL && obj->var!=NULL);
+	assert(obj->getter==NULL && obj->setter==NULL && obj->var.type!=T_INVALID);
 	//Now dereference the value
-	obj->var->decRef();
+	ASATOM_DECREF(obj->var);
 
 	//Now kill the variable
 	Variables.killObjVar(getSystemState(),name);
@@ -607,7 +607,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	check();
-	setVariableByMultiname(name,abstract_i(this->getSystemState(),value),CONST_NOT_ALLOWED);
+	setVariableByMultiname(name,asAtom(value),CONST_NOT_ALLOWED);
 }
 
 variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter)
@@ -617,7 +617,7 @@ variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const 
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
-		if(!(ret->setter || ret->var))
+		if(!(ret->setter || ret->var.type != T_INVALID))
 		{
 			ret=NULL;
 			if(has_getter)
@@ -633,7 +633,7 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 }
 
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
+void ASObject::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -666,7 +666,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 	{
 		variable *protoObj = cls->findSettableInPrototype(name);
 		if (protoObj && 
-		    ((protoObj->var && protoObj->var->is<IFunction>()) ||
+		    ((protoObj->var.type == T_FUNCTION) ||
 		     protoObj->setter))
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
@@ -703,14 +703,15 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, CONST_
 		//One argument can be passed without creating an array
 		ASObject* target=this;
 		target->incRef();
-		_R<ASObject> ret= _MR( setter->call(target,&o,1) );
-		assert_and_throw(ret->is<Undefined>());
+		asAtom* arg1 = &o;
+		asAtom ret= setter->call(asAtom::fromObject(target),arg1,1);
+		assert_and_throw(ret.type == T_UNDEFINED);
 		LOG_CALL(_("End of setter"));
 	}
 	else
 	{
 		assert_and_throw(!obj->getter);
-		obj->setVar(o);
+		obj->setVar(o,getSystemState());
 	}
 }
 
@@ -729,7 +730,7 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
-	obj->setVar(o);
+	obj->setVar(asAtom::fromObject(o),getSystemState());
 	obj->isenumerable=isEnumerable;
 	++varcount;
 }
@@ -742,7 +743,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 	++varcount;
 }
 
-variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
+variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
 		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false)
 {
 	if(_type)
@@ -757,30 +758,26 @@ variable::variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* _type
 	}
 }
 
-void variable::setVar(ASObject* v)
+void variable::setVar(asAtom v, SystemState* sys)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
 	//children, which is done outisde any ABC context
-	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm(v->getSystemState())->currentCallContext)
+	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm(sys)->currentCallContext)
 	{
-		type = Type::getTypeFromMultiname(traitTypemname, getVm(v->getSystemState())->currentCallContext->context);
+		type = Type::getTypeFromMultiname(traitTypemname, getVm(sys)->currentCallContext->context);
 		assert(type);
 		traitState=TYPE_RESOLVED;
 	}
-
 	if((traitState&TYPE_RESOLVED) && type)
-		v = type->coerce(v);
-
-	if(var)
-		var->decRef();
+		v = type->coerce(sys,v);
+	ASATOM_DECREF(var);
 	var=v;
 }
 
-void variable::setVarNoCoerce(ASObject* v)
+void variable::setVarNoCoerce(asAtom &v)
 {
-	if(var)
-		var->decRef();
+	ASATOM_DECREF(var);
 	var=v;
 }
 
@@ -872,6 +869,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	if (typemname->isStatic)
 		type = typemname->cachedType;
 	
+	asAtom value;
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
@@ -883,16 +881,17 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	{
 		if (obj == NULL) // create dynamic object
 		{
-			obj = mainObj->getSystemState()->getUndefinedRef();
+			value = asAtom(T_UNDEFINED);
 		}
 		else
 		{
 			assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
+			value = asAtom::fromObject(obj);
 			if(obj->is<Undefined>())
 			{
 				//Casting undefined to an object (of unknown class)
 				//results in Null
-				obj = mainObj->getSystemState()->getNullRef();
+				value = asAtom(T_NULL);
 			}
 		}
 	}
@@ -906,14 +905,17 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				&& typemname->ns[0].kind == NAMESPACE)
 			{
 				// avoid recursive construction
-				obj = mainObj->getSystemState()->getUndefinedRef();
+				value = asAtom(T_UNDEFINED);
 			}
 			else
 			{
 				obj = mainObj->getSystemState()->getUndefinedRef();
-				obj = type->coerce(obj);
+				value = type->coerce(mainObj->getSystemState(),asAtom::fromObject(obj));
 			}
 		}
+		else
+			value = asAtom::fromObject(obj);
+
 		if (typemname->isStatic && typemname->cachedType == NULL)
 			typemname->cachedType = type;
 	}
@@ -922,7 +924,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	if (Variables.capacity() == Variables.size())
 		Variables.reserve(Variables.capacity()+8);
-	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, obj, typemname, type,mname.ns[0],isenumerable)));
+	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
 	if (slot_id)
 		initSlot(slot_id,name, mname.ns[0]);
 }
@@ -1077,20 +1079,20 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
 
-	_NR<ASObject> ret=getVariableByMultiname(name);
-	assert_and_throw(!ret.isNull());
-	return ret->toInt();
+	asAtom ret=getVariableByMultiname(name);
+	assert_and_throw(ret.type != T_INVALID);
+	return ret.toInt();
 }
 
-const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID) const
+variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID)
 {
 	//Get from the current object without considering borrowed properties
-	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
+	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(obj->getter || obj->var))
+		if(!(obj->getter || obj->var.type != T_INVALID))
 			obj=NULL;
 	}
 
@@ -1099,7 +1101,7 @@ const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VAR
 		//Look for borrowed traits before
 		if (cls)
 		{
-			obj=cls->findBorrowedGettable(name,nsRealID);
+			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,nsRealID);
 			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
@@ -1111,7 +1113,7 @@ const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VAR
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(obj->getter || obj->var))
+						if(!(obj->getter || obj->var.type != T_INVALID))
 							obj=NULL;
 					}
 					if(obj)
@@ -1124,18 +1126,18 @@ const variable* ASObject::findVariableByMultiname(const multiname& name, GET_VAR
 	return obj;
 }
 
-_NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 
-	const variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
+	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(obj->getter || obj->var))
+		if(!(obj->getter || obj->var.type != T_INVALID))
 			obj=NULL;
 	}
 
@@ -1144,7 +1146,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 		//Look for borrowed traits before
 		if (cls)
 		{
-			obj=cls->findBorrowedGettable(name,&nsRealId);
+			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,&nsRealId);
 			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
@@ -1156,7 +1158,7 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(obj->getter || obj->var))
+						if(!(obj->getter || obj->var.type != T_INVALID))
 							obj=NULL;
 					}
 					if(obj)
@@ -1166,14 +1168,14 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			}
 		}
 		if(!obj)
-			return NullRef;
+			return asAtom();
 	}
 
 
 	if ( this->is<Class_base>() && obj->kind == INSTANCE_TRAIT &&
-			(!obj->var || !obj->var->isConstructed() ||
-			 obj->var->getObjectType() == T_UNDEFINED ||
-			 obj->var->getObjectType() == T_NULL))
+			(obj->var.type == T_INVALID || !obj->var.isConstructed() ||
+			 obj->var.type == T_UNDEFINED ||
+			 obj->var.type == T_NULL))
 	{
 		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
@@ -1190,30 +1192,29 @@ _NR<ASObject> ASObject::getVariableByMultiname(const multiname& name, GET_VARIAB
 			target=this;
 			target->incRef();
 		}
-		ASObject* ret=getter->call(target,NULL,0);
+		asAtom ret=getter->call(asAtom::fromObject(target),NULL,0);
 		LOG_CALL(_("End of getter"));
 		// No incRef because ret is a new instance
-		return _MNR(ret);
+		return ret;
 	}
 	else
 	{
 		assert_and_throw(!obj->setter);
-		assert_and_throw(obj->var);
-		if(obj->var->getObjectType()==T_FUNCTION && obj->var->as<IFunction>()->isMethod())
+		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
 			LOG_CALL("Attaching this " << this << " to function " << name);
 			//the obj reference is acquired by the smart reference
 			this->incRef();
-			IFunction* f=obj->var->as<IFunction>()->bind(_MR(this),-1);
+			IFunction* f=obj->var.getObject()->as<IFunction>()->bind(_MR(this),-1);
 			//No incref is needed, as the function is a new instance
-			return _MNR(f);
+			return asAtom::fromObject(f);
 		}
-		obj->var->incRef();
-		return _MNR(obj->var);
+		ASATOM_INCREF(obj->var);
+		return obj->var;
 	}
 }
 
-_NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces)
+asAtom ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces)
 {
 	multiname varName(NULL);
 	varName.name_type=multiname::NAME_STRING;
@@ -1234,19 +1235,18 @@ _NR<ASObject> ASObject::getVariableByMultiname(const tiny_string& name, std::lis
 	return getVariableByMultiname(varName,SKIP_IMPL);
 }
 
-_NR<ASObject> ASObject::executeASMethod(const tiny_string& methodName,
+asAtom ASObject::executeASMethod(const tiny_string& methodName,
 					std::list<tiny_string> namespaces,
-					ASObject* const* args,
+					asAtom* args,
 					uint32_t num_args)
 {
-	_NR<ASObject> o = getVariableByMultiname(methodName, namespaces);
-	if (o.isNull() || !o->is<IFunction>())
+	asAtom o = getVariableByMultiname(methodName, namespaces);
+	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, methodName);
-	IFunction* f=o->as<IFunction>();
+	IFunction* f=o.getObject()->as<IFunction>();
 
 	incRef();
-	ASObject *ret=f->call(this,args,num_args);
-	return _MNR(ret);
+	return f->call(asAtom::fromObject(this),args,num_args);
 }
 
 void ASObject::check() const
@@ -1273,18 +1273,18 @@ void variables_map::check() const
 		//No double definition of a single variable should exist
 		if(it->first==next->first && it->second.ns==next->second.ns)
 		{
-			if(it->second.var==NULL && next->second.var==NULL)
+			if(it->second.var.type == T_INVALID && next->second.var.type == T_INVALID)
 				continue;
 
-			if(it->second.var==NULL || next->second.var==NULL)
+			if(it->second.var.type == T_INVALID || next->second.var.type == T_INVALID)
 			{
 				LOG(LOG_INFO, it->first << " " << it->second.ns);
-				LOG(LOG_INFO, it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
-				LOG(LOG_INFO, next->second.var << ' ' << next->second.setter << ' ' << next->second.getter);
+				LOG(LOG_INFO, it->second.var.type << ' ' << it->second.setter << ' ' << it->second.getter);
+				LOG(LOG_INFO, next->second.var.type << ' ' << next->second.setter << ' ' << next->second.getter);
 				abort();
 			}
 
-			if(it->second.var->getObjectType()!=T_FUNCTION || next->second.var->getObjectType()!=T_FUNCTION)
+			if(it->second.var.type!=T_FUNCTION || next->second.var.type!=T_FUNCTION)
 			{
 				LOG(LOG_INFO, it->first);
 				abort();
@@ -1319,7 +1319,7 @@ void variables_map::dumpVariables() const
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			it->second.var << ' ' << it->second.setter << ' ' << it->second.getter);
+			it->second.var.type << ' ' << it->second.setter << ' ' << it->second.getter);
 	}
 }
 
@@ -1330,11 +1330,10 @@ variables_map::~variables_map()
 
 void variables_map::destroyContents()
 {
-	const_var_iterator it=Variables.cbegin();
+	var_iterator it=Variables.begin();
 	while(it!=Variables.cend())
 	{
-		if(it->second.var)
-			it->second.var->decRef();
+		ASATOM_DECREF(it->second.var);
 		if(it->second.setter)
 			it->second.setter->decRef();
 		if(it->second.getter)
@@ -1413,7 +1412,7 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 	slots_vars[n-1]=varName(nameId,ns);
 }
 
-ASObject *variables_map::getSlot(unsigned int n)
+asAtom variables_map::getSlot(unsigned int n)
 {
 	assert_and_throw(n > 0 && n<=slots_vars.size());
 	var_iterator it = Variables.find(slots_vars[n-1].nameId);
@@ -1423,9 +1422,9 @@ ASObject *variables_map::getSlot(unsigned int n)
 			return it->second.var;
 		it++;
 	}
-	return NULL;
+	return asAtom();
 }
-void variables_map::setSlot(unsigned int n,ASObject* o)
+void variables_map::setSlot(unsigned int n,asAtom o,SystemState* sys)
 {
 	validateSlotId(n);
 	var_iterator it = Variables.find(slots_vars[n-1].nameId);
@@ -1433,14 +1432,14 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 	{
 		if (it->second.ns == slots_vars[n-1].ns)
 		{
-			it->second.setVar(o);
+			it->second.setVar(o,sys);
 			return;
 		}
 		it++;
 	}
 }
 
-void variables_map::setSlotNoCoerce(unsigned int n,ASObject* o)
+void variables_map::setSlotNoCoerce(unsigned int n, asAtom o)
 {
 	validateSlotId(n);
 	var_iterator it = Variables.find(slots_vars[n-1].nameId);
@@ -1481,7 +1480,7 @@ variable* variables_map::getValueAt(unsigned int index)
 		throw RunTimeException("getValueAt out of bounds");
 }
 
-_R<ASObject> ASObject::getValueAt(int index)
+asAtom ASObject::getValueAt(int index)
 {
 	variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
@@ -1491,14 +1490,14 @@ _R<ASObject> ASObject::getValueAt(int index)
 		LOG_CALL(_("Calling the getter"));
 		IFunction* getter=obj->getter;
 		incRef();
-		_R<ASObject> ret(getter->call(this,NULL,0));
+		asAtom ret = getter->call(asAtom::fromObject(this),NULL,0);
 		LOG_CALL(_("End of getter"));
 		return ret;
 	}
 	else
 	{
-		obj->var->incRef();
-		return _MR(obj->var);
+		ASATOM_INCREF(obj->var);
+		return obj->var;
 	}
 }
 
@@ -1521,14 +1520,14 @@ unsigned int ASObject::numVariables() const
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const
+				std::map<const Class_base*, uint32_t> traitsMap)
 {
 	Variables.serialize(out, stringMap, objMap, traitsMap);
 }
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) const
+				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
 	//Pairs of name, value
@@ -1543,7 +1542,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
 			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
-		it->second.var->serialize(out, stringMap, objMap, traitsMap);
+		it->second.var.toObject(out->getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 	}
 	//The empty string closes the object
 	if (!amf0) out->writeStringVR(stringMap, "");
@@ -1616,13 +1615,13 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		writeExternalName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		writeExternalName.isAttribute = false;
 
-		_NR<ASObject> o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
-		assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
-		IFunction* f=o->as<IFunction>();
+		asAtom o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
+		assert_and_throw(o.type==T_FUNCTION);
+		IFunction* f=o.getObject()->as<IFunction>();
 		this->incRef();
 		out->incRef();
-		ASObject* const tmpArg[1] = {out};
-		f->call(this, tmpArg, 1);
+		asAtom tmpArg[1] = { asAtom::fromObject(out) };
+		f->call(asAtom::fromObject(this), tmpArg, 1);
 		return;
 	}
 
@@ -1630,8 +1629,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	objMap.insert(make_pair(this, objMap.size()));
 
 	uint32_t traitsCount=0;
-	const variables_map::const_var_iterator beginIt = Variables.Variables.begin();
-	const variables_map::const_var_iterator endIt = Variables.Variables.end();
+	const variables_map::var_iterator beginIt = Variables.Variables.begin();
+	const variables_map::var_iterator endIt = Variables.Variables.end();
 	//Check if the class traits has been already serialized to send it by reference
 	auto it2=traitsMap.find(type);
 
@@ -1642,7 +1641,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		{
 			out->writeByte(amf0_reference_marker);
 			out->writeShort(it2->second);
-			for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+			for(variables_map::var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 			{
 				if(varIt->second.kind==DECLARED_TRAIT)
 				{
@@ -1652,7 +1651,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 						continue;
 					}
 					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first));
-					varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
+					varIt->second.var.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 				}
 			}
 		}
@@ -1696,7 +1695,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			}
 		}
 	}
-	for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
+	for(variables_map::var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
 		{
@@ -1705,7 +1704,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				//Skip variable with a namespace, like protected ones
 				continue;
 			}
-			varIt->second.var->serialize(out, stringMap, objMap, traitsMap);
+			varIt->second.var.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 		}
 	}
 	if(!type->isSealed)
@@ -1835,14 +1834,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 		bool bfirst = true;
 		bool bObjectVars = true;
 		path.push_back(this);
-		variables_map::const_var_iterator varIt = beginIt;
+		variables_map::var_iterator varIt = beginIt;
 		while (varIt != endIt)
 		{
-			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter != NULL || varIt->second.var!= NULL))
+			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter != NULL || varIt->second.var.type!= T_INVALID))
 			{
-				ASObject* v = varIt->second.var;
+				ASObject* v = varIt->second.var.toObject(getSystemState());
 				if (varIt->second.getter)
-					v=varIt->second.getter->call(this,NULL,0);
+					v=varIt->second.getter->call(asAtom::fromObject(this),NULL,0).toObject(getSystemState());
 				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
 					// check for cylic reference
@@ -1863,14 +1862,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 						res += ":";
 						if (!spaces.empty())
 							res += " ";
-						ASObject* params[2];
+						asAtom params[2];
 						
-						params[0] = abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first));
-						params[1] = v;
-						params[1]->incRef();
-						ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
-						if (funcret)
-							res += funcret->toString();
+						params[0] = asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first)));
+						params[1] = asAtom::fromObject(v);
+						ASATOM_INCREF(params[1]);
+						asAtom funcret=replacer->call(asAtom(T_NULL), params, 2);
+						if (funcret.type != T_INVALID)
+							res += funcret.toString();
 						else
 							res += v->toJSON(path,replacer,spaces+spaces,filter);
 						bfirst = false;
@@ -1914,14 +1913,14 @@ bool ASObject::hasprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	return (var && var->var);
+	return (var && var->var.type != T_INVALID);
 }
 
 ASObject* ASObject::getprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	return var ? var->var : NULL;
+	return var ? var->var.toObject(getSystemState()) : NULL;
 }
 
 /*
@@ -1952,10 +1951,11 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	if(ret->setter)
 	{
 		this->incRef();
-		_MR( ret->setter->call(this,&obj,1) );
+		asAtom arg1= asAtom::fromObject(obj);
+		ret->setter->call(asAtom::fromObject(this),&arg1,1);
 	}
 	else
-		ret->setVar(obj);
+		ret->setVar(asAtom::fromObject(obj),getSystemState());
 }
 
 tiny_string ASObject::getClassName() const
@@ -1965,3 +1965,1144 @@ tiny_string ASObject::getClassName() const
 	else
 		return "";
 }
+
+ASObject *asAtom::toObject(SystemState *sys)
+{
+	if (objval)
+		return objval;
+	switch(type)
+	{
+		case T_INTEGER:
+			// ints are internally treated as numbers, so create a Number instance
+			objval = abstract_di(sys,intval);
+			break;
+		case T_UINTEGER:
+			// uints are internally treated as numbers, so create a Number instance
+			objval = abstract_di(sys,uintval);
+			break;
+		case T_NUMBER:
+			objval = abstract_d(sys,numberval);
+			break;
+		case T_BOOLEAN:
+			return (boolval ? sys->getTrueRef(): sys->getFalseRef());
+		case T_NULL:
+			return sys->getNullRef();
+		case T_UNDEFINED:
+			return sys->getUndefinedRef();
+		case T_INVALID:
+			LOG(LOG_ERROR,"calling toObject on invalid asAtom, should not happen");
+			return objval;
+		default:
+			break;
+	}
+	return objval;
+}
+
+asAtom asAtom::fromObject(ASObject *obj)
+{
+	asAtom a;
+	if (obj)
+		a.replace(obj);
+	return a;
+}
+
+void asAtom::replace(ASObject *obj)
+{
+	assert(obj);
+	type = obj->getObjectType();
+	switch(type)
+	{
+		case T_INTEGER:
+			intval = obj->as<Integer>()->val;
+			break;
+		case T_UINTEGER:
+			uintval = obj->as<UInteger>()->val;
+			break;
+		case T_NUMBER:
+			if (!obj->as<Number>()->isfloat)
+			{ 
+				if (obj->toInt64() > INT32_MIN && obj->toInt64()< INT32_MAX)
+				{
+					intval = obj->as<Number>()->toInt();
+					type = T_INTEGER;
+				}
+				else if (obj->toInt64() > 0 && obj->toInt64()< UINT32_MAX)
+				{
+					uintval = obj->as<Number>()->toUInt();
+					type = T_UINTEGER;
+				}
+				else
+					numberval = obj->as<Number>()->toNumber();
+			}
+			else
+				numberval = obj->as<Number>()->toNumber();
+			break;
+		case T_BOOLEAN:
+			boolval = obj->as<Boolean>()->val;
+			break;
+		default:
+			break;
+	}
+	objval = obj;
+}
+
+void asAtom::decRef()
+{
+	if (objval && objval->decRef())
+		objval = NULL;
+}
+
+std::string asAtom::toDebugString()
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return Integer::toString(intval)+"i";
+		case T_UINTEGER:
+			return UInteger::toString(uintval)+"ui";
+		case T_NUMBER:
+			return Number::toString(numberval)+"d";
+		case T_BOOLEAN:
+			return Integer::toString(boolval)+"b";
+		case T_NULL:
+			return "Null";
+		case T_UNDEFINED:
+			return "Undefined";
+		case T_INVALID:
+			return "Invalid";
+		default:
+			assert(objval);
+			return objval->toDebugString();
+	}
+}
+
+void asAtom::applyProxyProperty(multiname &name)
+{
+	switch(type)
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+		case T_NULL:
+		case T_UNDEFINED:
+		case T_INVALID:
+			break;
+		default:
+			assert(objval);
+			objval->applyProxyProperty(name);
+			break;
+	}
+}
+TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
+{
+	switch (type)
+	{
+		case T_INTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (intval < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (intval < 0 || ((uint32_t)intval)  < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (intval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (intval < v2.toInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (intval < 0)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_UINTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (v2.intval > 0 && (uintval < (uint32_t)v2.intval))?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (uintval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (uintval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (uintval < v2.toUInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_NUMBER:
+		{
+			if(std::isnan(numberval))
+				return TUNDEFINED;
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (numberval  < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (numberval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (numberval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (numberval < v2.toInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (numberval < 0)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_BOOLEAN:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (boolval < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (boolval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (boolval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (boolval < v2.boolval)?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (boolval)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_NULL:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (0 < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (0 < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (0 < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (0 < v2.boolval)?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_UNDEFINED:
+			return TUNDEFINED;
+		case T_INVALID:
+			return TUNDEFINED;
+		default:
+			break;
+	}
+	return toObject(sys)->isLess(v2.toObject(sys));
+}
+bool asAtom::isEqual(SystemState *sys, asAtom &v2)
+{
+	switch (type)
+	{
+		case T_INTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return intval==v2.toInt();
+				case T_UINTEGER:
+					return intval >= 0 && intval==v2.toInt();
+				case T_NUMBER:
+					return intval==v2.toNumber();
+				case T_BOOLEAN:
+					return intval==v2.toInt();
+				case T_STRING:
+					return intval==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_UINTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return v2.intval >= 0 && uintval==v2.toUInt();
+				case T_UINTEGER:
+				case T_NUMBER:
+				case T_STRING:
+				case T_BOOLEAN:
+					return uintval==v2.toUInt();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_NUMBER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_BOOLEAN:
+					return toNumber()==v2.toNumber();
+				case T_NUMBER:
+				case T_STRING:
+					return toNumber()==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_BOOLEAN:
+		{
+			switch (v2.type)
+			{
+				case T_BOOLEAN:
+					return boolval==v2.boolval;
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return false;
+					return boolval==v2.toNumber();
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_NUMBER:
+					return boolval==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_NULL:
+		{
+			switch (v2.type)
+			{
+				case T_NULL:
+				case T_UNDEFINED:
+					return true;
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_NUMBER:
+				case T_BOOLEAN:
+					return false;
+				case T_FUNCTION:
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_UNDEFINED:
+		{
+			switch (v2.type)
+			{
+				case T_UNDEFINED:
+				case T_NULL:
+					return true;
+				case T_NUMBER:
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_BOOLEAN:
+					return false;
+				case T_FUNCTION:
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+		}
+		case T_INVALID:
+			return false;
+		default:
+			break;
+	}
+	return toObject(sys)->isEqual(v2.toObject(sys));
+}
+
+bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
+{
+	if(type!=v2.type)
+	{
+		//Type conversions are ok only for numeric types
+		switch(type)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			case T_NULL:
+				if (!v2.isConstructed() && v2.type!=T_CLASS)
+					return true;
+				return false;
+			default:
+				return false;
+		}
+		switch(v2.type)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			case T_NULL:
+				if (!isConstructed() && type!=T_CLASS)
+					return true;
+				return false;
+			default:
+				return false;
+		}
+	}
+	return isEqual(sys,v2);
+	
+}
+
+bool asAtom::isConstructed() const
+{
+	switch(type)
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+		case T_NULL:
+		case T_UNDEFINED:
+			return true;
+		case T_INVALID:
+			return false;
+		default:
+			assert(objval);
+			return objval->isConstructed();
+	}
+}
+
+bool asAtom::isPrimitive() const
+{
+	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
+	// because they are special cases of Number
+	return type==T_NUMBER || type ==T_UNDEFINED || type == T_NULL ||
+		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
+			type==T_UINTEGER;
+}
+
+asAtom asAtom::asTypelate(asAtom atomtype)
+{
+	LOG_CALL(_("asTypelate"));
+
+	if(atomtype.type != T_CLASS)
+	{
+		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	Class_base* c=static_cast<Class_base*>(atomtype.getObject());
+	//Special case numeric types
+	if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
+	{
+		bool real_ret;
+		if(c==Class<Number>::getClass(c->getSystemState()) || c==c->getSystemState()->getObjectClassRef())
+			real_ret=true;
+		else if(c==Class<Integer>::getClass(c->getSystemState()))
+			real_ret=(toNumber()==toInt());
+		else if(c==Class<UInteger>::getClass(c->getSystemState()))
+			real_ret=(toNumber()==toUInt());
+		else
+			real_ret=false;
+		LOG_CALL(_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
+		ASATOM_DECREF(atomtype);
+		if(real_ret)
+			return *this;
+		else
+			return asAtom(T_NULL);
+	}
+
+	Class_base* objc = toObject(c->getSystemState())->getClass();
+	if(!objc)
+	{
+		ASATOM_DECREF(atomtype);
+		return asAtom(T_NULL);
+	}
+
+	bool real_ret=objc->isSubClass(c);
+	LOG_CALL(_("Type ") << objc->class_name << _(" is ") << ((real_ret)?_(" "):_("not ")) 
+			<< _("subclass of ") << c->class_name);
+	ASATOM_DECREF(atomtype);
+	if(real_ret)
+		return *this;
+	else
+		return asAtom(T_NULL);
+	
+}
+
+number_t asAtom::toNumber()
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NULL:
+			return 0;
+		case T_UNDEFINED:
+			return Number::NaN;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toNumber();
+	}
+}
+int32_t asAtom::toInt()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return Number::toInt(numberval);
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toInt();
+	}
+}
+int64_t asAtom::toInt64()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toInt64();
+	}
+}
+uint32_t asAtom::toUInt()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toUInt();
+	}
+}
+
+tiny_string asAtom::toString()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return "undefined";
+		case T_NULL:
+			return "null";
+		case T_BOOLEAN:
+			return boolval ? "true" : "false";
+		case T_NUMBER:
+			return Number::toString(numberval);
+		case T_INTEGER:
+			return Integer::toString(intval);
+		case T_UINTEGER:
+			return UInteger::toString(uintval);
+		case T_STRING:
+			assert(objval);
+			return objval->as<ASString>()->getData();
+		case T_INVALID:
+			return "";
+		default:
+			assert(objval);
+			return objval->toString();
+	}
+}
+tiny_string asAtom::toLocaleString()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return "undefined";
+		case T_NULL:
+			return "null";
+		case T_BOOLEAN:
+			return "[object Boolean]";
+		case T_NUMBER:
+			return Number::toString(numberval);
+		case T_INTEGER:
+			return Integer::toString(intval);
+		case T_UINTEGER:
+			return UInteger::toString(uintval);
+		case T_INVALID:
+			return "";
+		default:
+			assert(objval);
+			return objval->toLocaleString();
+	}
+}
+
+asAtom asAtom::typeOf(SystemState* sys)
+{
+	string ret="object";
+	switch(type)
+	{
+		case T_UNDEFINED:
+			ret="undefined";
+			break;
+		case T_OBJECT:
+			if(objval->is<XML>() || objval->is<XMLList>())
+				ret = "xml";
+			break;
+		case T_BOOLEAN:
+			ret="boolean";
+			break;
+		case T_NUMBER:
+		case T_INTEGER:
+		case T_UINTEGER:
+			ret="number";
+			break;
+		case T_STRING:
+			ret="string";
+			break;
+		case T_FUNCTION:
+			ret="function";
+			break;
+		default:
+			break;
+	}
+	return asAtom::fromObject(abstract_s(sys,ret));
+}
+
+/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
+bool asAtom::Boolean_concrete()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+		case T_NULL:
+			return false;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NUMBER:
+			return numberval != 0.0 && !std::isnan(numberval);
+		case T_INTEGER:
+			return intval != 0;
+		case T_UINTEGER:
+			return uintval != 0;
+		case T_STRING:
+			assert(objval);
+			if (!objval->isConstructed())
+				return false;
+			return !objval->as<ASString>()->isEmpty();
+		case T_FUNCTION:
+		case T_ARRAY:
+		case T_OBJECT:
+			assert(objval);
+			// not constructed objects return false
+			if (!objval->isConstructed())
+				return false;
+			return true;
+		default:
+			//everything else is an Object regarding to the spec
+			return true;
+	}
+}
+
+void asAtom::convert_i()
+{
+	if (type == T_INTEGER)
+		return;
+	int32_t v = toInt();
+	decRef();
+	setInt(v);
+}
+
+void asAtom::convert_u()
+{
+	if (type == T_UINTEGER)
+		return;
+	uint32_t v = toUInt();
+	decRef();
+	setUInt(v);
+}
+
+void asAtom::convert_d()
+{
+	if (type == T_NUMBER || type == T_INTEGER)
+		return;
+	number_t v = toNumber();
+	decRef();
+	setNumber(v);
+}
+
+void asAtom::convert_b()
+{
+	if (type == T_BOOLEAN)
+		return;
+	bool v = false;
+	switch(type)
+	{
+		case T_UNDEFINED:
+		case T_NULL:
+			v= false;
+			break;
+		case T_BOOLEAN:
+			break;
+		case T_NUMBER:
+			v= numberval != 0.0 && !std::isnan(numberval);
+			break;
+		case T_INTEGER:
+			v= intval != 0;
+			break;
+		case T_UINTEGER:
+			v= uintval != 0;
+			break;
+		case T_STRING:
+			if (objval->isConstructed())
+				v= !objval->as<ASString>()->isEmpty();
+			break;
+		case T_FUNCTION:
+		case T_ARRAY:
+		case T_OBJECT:
+			// not constructed objects return false
+			v= (objval->isConstructed());
+			break;
+		default:
+			//everything else is an Object regarding to the spec
+			v= true;
+			break;
+	}
+	decRef();
+	setBool(v);
+}
+
+void asAtom::setInt(int32_t val)
+{
+	type = T_INTEGER;
+	intval = val;
+	objval = NULL;
+}
+
+void asAtom::setUInt(uint32_t val)
+{
+	type = T_UINTEGER;
+	uintval = val;
+	objval = NULL;
+}
+
+void asAtom::setNumber(number_t val)
+{
+	type = T_NUMBER;
+	numberval = val;
+	objval = NULL;
+}
+
+void asAtom::setBool(bool val)
+{
+	type = T_BOOLEAN;
+	boolval = val;
+	objval = NULL;
+}
+
+void asAtom::increment()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			setNumber(Number::NaN);
+			break;
+		case T_NULL:
+			setInt(1);
+			break;
+		case T_INTEGER:
+			setInt(intval+1);
+			break;
+		case T_UINTEGER:
+			setUInt(uintval+1);
+			break;
+		case T_NUMBER:
+			setNumber(numberval+1);
+			break;
+		case T_BOOLEAN:
+			setInt((boolval ? 1 : 0)+1);
+			break;
+		default:
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n+1);
+			break;
+	}
+}
+
+void asAtom::decrement()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			setNumber(Number::NaN);
+			break;
+		case T_NULL:
+			setInt(-1);
+			break;
+		case T_INTEGER:
+			setInt(intval-1);
+			break;
+		case T_UINTEGER:
+		{
+			number_t val = uintval;
+			setNumber(val-1);
+			break;
+		}
+		case T_NUMBER:
+			setNumber(numberval-1);
+			break;
+		case T_BOOLEAN:
+			setInt((boolval ? 1 : 0)-1);
+			break;
+		default:
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n-1);
+			break;
+	}
+
+}
+
+void asAtom::increment_i()
+{
+	setInt(toInt()+1);
+}
+void asAtom::decrement_i()
+{
+	setInt(toInt()-1);
+}
+
+void asAtom::add(asAtom &v2, SystemState* sys)
+{
+	//Implement ECMA add algorithm, for XML and default (see avm2overview)
+
+	// if both values are Integers or UIntegers the result is also an int Number
+	if( (type == T_INTEGER || type == T_UINTEGER) &&
+		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		int64_t num1=toInt64();
+		int64_t num2=v2.toInt64();
+		LOG_CALL("addI " << num1 << '+' << num2);
+		setNumber(num1+num2);
+	}
+	else if((type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER) &&
+			(v2.type == T_NUMBER || v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		double num1=toNumber();
+		double num2=v2.toNumber();
+		LOG_CALL("addN " << num1 << '+' << num2);
+		setNumber(num1+num2);
+	}
+	else if(type== T_STRING || v2.type == T_STRING)
+	{
+		tiny_string a = toString();
+		tiny_string b = v2.toString();
+		LOG_CALL("add " << a << '+' << b);
+		decRef();
+		ASATOM_DECREF(v2);
+		type = T_STRING;
+		objval = abstract_s(sys,a + b);
+	}
+	else
+	{
+		ASObject* val1 = toObject(sys);
+		ASObject* val2 = v2.toObject(sys);
+		if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
+		{
+			//Check if the objects are both XML or XMLLists
+			Class_base* xmlClass=Class<XML>::getClass(val1->getSystemState());
+
+			XMLList* newList=Class<XMLList>::getInstanceS(val1->getSystemState(),true);
+			if(val1->getClass()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val1)));
+			else //if(val1->getClass()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val1)));
+
+			if(val2->getClass()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val2)));
+			else //if(val2->getClass()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val2)));
+
+			//The references of val1 and val2 have been passed to the smart references
+			//no decRef is needed
+			type = T_OBJECT;
+			objval = newList;
+		}
+		else
+		{//If none of the above apply, convert both to primitives with no hint
+			_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
+			_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
+			if(val1p->is<ASString>() || val2p->is<ASString>())
+			{//If one is String, convert both to strings and concat
+				string a(val1p->toString().raw_buf());
+				string b(val2p->toString().raw_buf());
+				LOG_CALL("add " << a << '+' << b);
+				val1->decRef();
+				val2->decRef();
+				type = T_STRING;
+				objval = abstract_s(sys,a+b);
+			}
+			else
+			{//Convert both to numbers and add
+				number_t num1=val1p->toNumber();
+				number_t num2=val2p->toNumber();
+				LOG_CALL("addN " << num1 << '+' << num2);
+				number_t result = num1 + num2;
+				val1->decRef();
+				val2->decRef();
+				setNumber(result);
+			}
+		}
+	}
+}
+
+void asAtom::bitnot()
+{
+	int32_t i1=toInt();
+	decRef();
+	LOG_CALL(_("bitNot ") << hex << i1 << dec);
+	setInt(~i1);
+}
+
+void asAtom::subtract(asAtom &v2)
+{
+	number_t num2=v2.toNumber();
+	number_t num1=toNumber();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("subtract ") << num1 << '-' << num2);
+	setNumber(num1-num2);
+}
+
+void asAtom::multiply(asAtom &v2)
+{
+	double num1=v2.toNumber();
+	double num2=toNumber();
+	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+
+	setNumber(num1*num2);
+}
+
+void asAtom::divide(asAtom &v2)
+{
+	double num1=toNumber();
+	double num2=v2.toNumber();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	setNumber(num1/num2);
+}
+
+void asAtom::modulo(asAtom &v2)
+{
+	// if both values are Integers the result is also an int
+	if( ((type == T_INTEGER) || (type == T_UINTEGER)) &&
+		((v2.type == T_INTEGER) || (v2.type == T_UINTEGER)))
+	{
+		int32_t num1=toInt();
+		int32_t num2=v2.toInt();
+		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
+		if (num2 == 0)
+			setNumber(Number::NaN);
+		else
+			setInt(num1%num2);
+	}
+	else
+	{
+		number_t num1=toNumber();
+		number_t num2=v2.toNumber();
+
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
+		/* fmod returns NaN if num2 == 0 as the spec mandates */
+		setNumber(::fmod(num1,num2));
+	}
+}
+
+void asAtom::lshift(asAtom &v1)
+{
+	int32_t i2=toInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("lShift ")<<hex<<i2<<_("<<")<<i1<<dec);
+	//Left shift are supposed to always work in 32bit
+	setInt(i2<<i1);
+}
+
+void asAtom::rshift(asAtom &v1)
+{
+	int32_t i2=toInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("rShift ")<<hex<<i2<<_(">>")<<i1<<dec);
+	setInt(i2>>i1);
+}
+
+void asAtom::urshift(asAtom &v1)
+{
+	uint32_t i2=toUInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("urShift ")<<hex<<i2<<_(">>")<<i1<<dec);
+	setUInt(i2>>i1);
+}
+void asAtom::bit_and(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("bitAnd_oo ") << hex << i1 << '&' << i2 << dec);
+	setInt(i1&i2);
+}
+void asAtom::bit_or(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	LOG_CALL(_("bitOr ") << hex << i1 << '|' << i2 << dec);
+	setInt(i1|i2);
+}
+void asAtom::bit_xor(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("bitXor ") << hex << i1 << '^' << i2 << dec);
+	setInt(i1^i2);
+}
+void asAtom::_not()
+{
+	LOG_CALL( _("not:") <<this->toDebugString()<<" "<<!Boolean_concrete());
+	
+	bool ret=!Boolean_concrete();
+	decRef();
+	setBool(ret);
+}
+
+void asAtom::negate_i()
+{
+	LOG_CALL(_("negate_i"));
+	int n=toInt();
+	decRef();
+	setInt(-n);
+}
+
+void asAtom::add_i(asAtom &v2)
+{
+	int32_t num2=v2.toInt();
+	int32_t num1=toInt();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("add_i ") << num1 << '+' << num2);
+	setInt(num1+num2);
+}
+
+void asAtom::subtract_i(asAtom &v2)
+{
+	int num2=v2.toInt();
+	int num1=toInt();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("subtract_i ") << num1 << '-' << num2);
+	setInt(num1-num2);
+}
+
+void asAtom::multiply_i(asAtom &v2)
+{
+	int num1=toInt();
+	int num2=v2.toInt();
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	setInt(num1*num2);
+}
+

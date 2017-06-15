@@ -80,7 +80,7 @@ ASFUNCTIONBODY(ASFont,enumerateFonts)
 	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
 	{
 		(*i)->incRef();
-		ret->push(_MR(*i));
+		ret->push(asAtom::fromObject(*i));
 	}
 	return ret;
 }
@@ -491,21 +491,21 @@ ASFUNCTIONBODY(TextField,_setDefaultTextFormat)
 	return NULL;
 }
 
-ASFUNCTIONBODY(TextField, _getter_type)
+ASFUNCTIONBODY_ATOM(TextField, _getter_type)
 {
-	TextField* th=Class<TextField>::cast(obj);
+	TextField* th=Class<TextField>::cast(obj.getObject());
 	if (th->type == ET_READ_ONLY)
-		return abstract_s(obj->getSystemState(),"dynamic");
+		return asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),"dynamic"));
 	else
-		return abstract_s(obj->getSystemState(),"input");
+		return asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),"input"));
 }
 
-ASFUNCTIONBODY(TextField, _setter_type)
+ASFUNCTIONBODY_ATOM(TextField, _setter_type)
 {
-	TextField* th=Class<TextField>::cast(obj);
+	TextField* th=Class<TextField>::cast(obj.getObject());
 
 	tiny_string value;
-	ARG_UNPACK(value);
+	ARG_UNPACK_ATOM(value);
 
 	if (value == "dynamic")
 		th->type = ET_READ_ONLY;
@@ -514,7 +514,7 @@ ASFUNCTIONBODY(TextField, _setter_type)
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "type");
 
-	return NULL;
+	return asAtom();
 }
 
 ASFUNCTIONBODY(TextField,_getLineIndexAtPoint)
@@ -1331,7 +1331,7 @@ ASFUNCTIONBODY(StyleSheet,_getStyleNames)
 	Array* ret=Class<Array>::getInstanceSNoArgs(obj->getSystemState());
 	map<tiny_string, _R<ASObject>>::const_iterator it=th->styles.begin();
 	for(;it!=th->styles.end();++it)
-		ret->push(_MR(abstract_s(obj->getSystemState(),it->first)));
+		ret->push(asAtom::fromObject(abstract_s(obj->getSystemState(),it->first)));
 	return ret;
 }
 

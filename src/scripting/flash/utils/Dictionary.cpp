@@ -73,10 +73,10 @@ Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
 void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
-	Dictionary::setVariableByMultiname(name,abstract_i(getSystemState(),value),CONST_NOT_ALLOWED);
+	Dictionary::setVariableByMultiname(name,asAtom(value),CONST_NOT_ALLOWED);
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
+void Dictionary::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -114,9 +114,9 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, CONS
 
 		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it!=data.end())
-			it->second=_MR(o);
+			it->second=_MR(o.toObject(getSystemState()));
 		else
-			data.insert(make_pair(name_o,_MR(o)));
+			data.insert(make_pair(name_o,_MR(o.toObject(getSystemState()))));
 	}
 	else
 	{
@@ -183,7 +183,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-_NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & ASObject::SKIP_IMPL)==0 && implEnable)
 	{
@@ -218,9 +218,9 @@ _NR<ASObject> Dictionary::getVariableByMultiname(const multiname& name, GET_VARI
 
 			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 			if(it != data.end())
-				return it->second;
+				return asAtom::fromObject(it->second.getPtr());
 			else
-				return NullRef;
+				return asAtom();
 		}
 		else
 		{
@@ -310,7 +310,7 @@ uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 	}
 }
 
-_R<ASObject> Dictionary::nextName(uint32_t index)
+asAtom Dictionary::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=data.size())
@@ -319,7 +319,7 @@ _R<ASObject> Dictionary::nextName(uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 
-		return it->first;
+		return asAtom::fromObject(it->first.getPtr());
 	}
 	else
 	{
@@ -328,7 +328,7 @@ _R<ASObject> Dictionary::nextName(uint32_t index)
 	}
 }
 
-_R<ASObject> Dictionary::nextValue(uint32_t index)
+asAtom Dictionary::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=data.size())
@@ -337,7 +337,7 @@ _R<ASObject> Dictionary::nextValue(uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 
-		return it->second;
+		return asAtom::fromObject(it->second.getPtr());
 	}
 	else
 	{
@@ -401,8 +401,8 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 		tmp = 0;
 		while ((tmp = nextNameIndex(tmp)) != 0)
 		{
-			nextName(tmp)->serialize(out, stringMap, objMap, traitsMap);
-			nextValue(tmp)->serialize(out, stringMap, objMap, traitsMap);
+			nextName(tmp).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+			nextValue(tmp).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 		}
 	}
 }

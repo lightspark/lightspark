@@ -74,10 +74,10 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 	{
 		SystemState* sys = getSys();
 		tiny_string stacktrace;
-		for (auto it = getVm(sys)->stacktrace.crbegin(); it != getVm(sys)->stacktrace.crend(); it++)
+		for (auto it = getVm(sys)->stacktrace.rbegin(); it != getVm(sys)->stacktrace.rend(); it++)
 		{
 			stacktrace += "    at ";
-			stacktrace += (*it).second->getClassName();
+			stacktrace += (*it).second.toObject(sys)->getClassName();
 			stacktrace += "/";
 			stacktrace += sys->getStringFromUniqueId((*it).first);
 			stacktrace += "()\n";
@@ -91,10 +91,10 @@ ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const 
 	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
 	stacktrace = "";
-	for (auto it = getVm(c->getSystemState())->stacktrace.crbegin(); it != getVm(c->getSystemState())->stacktrace.crend(); it++)
+	for (auto it = getVm(c->getSystemState())->stacktrace.rbegin(); it != getVm(c->getSystemState())->stacktrace.rend(); it++)
 	{
 		stacktrace += "    at ";
-		stacktrace += (*it).second->getClassName();
+		stacktrace += (*it).second.toObject(c->getSystemState())->getClassName();
 		stacktrace += "/";
 		stacktrace += c->getSystemState()->getStringFromUniqueId((*it).first);
 		stacktrace += "()\n";

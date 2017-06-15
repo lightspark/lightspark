@@ -217,15 +217,15 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)
 			{
-				_R<ASObject> nextName=other->nextName(index);
-				_R<ASObject> nextValue=other->nextValue(index);
+				asAtom nextName=other->nextName(index);
+				asAtom nextValue=other->nextValue(index);
 
-				if(nextName->getObjectType() == T_INTEGER)
-					objectValue->setProperty(nextName->toInt(), ExtVariant(objectsMap, nextValue));
+				if(nextName.type == T_INTEGER)
+					objectValue->setProperty(nextName.toInt(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
 				else
 				{
 					allNumericProperties = false;
-					objectValue->setProperty(nextName->toString().raw_buf(), ExtVariant(objectsMap, nextValue));
+					objectValue->setProperty(nextName.toString().raw_buf(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
 				}
 			}
 
@@ -288,7 +288,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 				for(uint32_t i = 0; i < count; i++)
 				{
 					const ExtVariant& property = objValue->getProperty(i);
-					static_cast<Array*>(asobj)->set(i, _MR(property.getASObject(objectsMap)));
+					static_cast<Array*>(asobj)->set(i, asAtom::fromObject(property.getASObject(objectsMap)));
 				}
 			}
 			// We are converting an object, so lets set variables
@@ -390,8 +390,18 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		try
 		{
+			asAtom* newArgs=NULL;
+			if (argc > 0)
+			{
+				newArgs=g_newa(asAtom, argc);
+				for (uint32_t i = 0; i < argc; i++)
+				{
+					newArgs[i] = asAtom::fromObject(asArgs[i]);
+				}
+			}
+
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			result = func->call(getSys()->getNullRef(), asArgs, argc);
+			result = func->call(asAtom(T_NULL), newArgs, argc).toObject(func->getSystemState());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

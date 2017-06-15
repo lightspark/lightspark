@@ -159,7 +159,7 @@ public:
 	method_info* get_method(unsigned int m);
 	uint32_t getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	static multiname* s_getMultiname(ABCContext*, ASObject* rt1, ASObject* rt2, int m);
+	static multiname* s_getMultiname(ABCContext*, asAtom& rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
 	ASObject* getConstant(int kind, int index);
@@ -226,7 +226,7 @@ public:
 	}
 	
 	multiname* getMultiname(unsigned int m, call_context* th);
-	multiname* getMultinameImpl(ASObject* rt1, ASObject* rt2, unsigned int m);
+	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	void exec(bool lazy);
@@ -245,6 +245,7 @@ class ABCVm
 {
 friend class ABCContext;
 friend class method_info;
+friend class asAtom;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
@@ -264,63 +265,63 @@ private:
 	template<class T>
 	static void loadIntN(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		uint32_t addr=arg1->toUInt();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		uint32_t addr=arg1.toUInt();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
-		th->runtime_stack_push(abstract_i(arg1->getSystemState(),ret));
-		arg1->decRef();
+		RUNTIME_STACK_PUSH(th,asAtom(ret));
+		ASATOM_DECREF(arg1);
 	}
 	template<class T>
 	static void storeIntN(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		ASObject* arg2=th->runtime_stack_pop();
-		uint32_t addr=arg1->toUInt();
-		arg1->decRef();
-		int32_t val=arg2->toInt();
-		arg2->decRef();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		uint32_t addr=arg1.toUInt();
+		ASATOM_DECREF(arg1);
+		int32_t val=arg2.toInt();
+		ASATOM_DECREF(arg2);
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
 	static void loadFloat(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		float addr=arg1->toNumber();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		float addr=arg1.toNumber();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<float>(addr);
-		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
-		arg1->decRef();
+		RUNTIME_STACK_PUSH(th,asAtom(ret));
+		ASATOM_DECREF(arg1);
 	}
 
 	static void loadDouble(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		double addr=arg1->toNumber();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		double addr=arg1.toNumber();
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		number_t ret=appDomain->readFromDomainMemory<double>(addr);
-		th->runtime_stack_push(abstract_d(arg1->getSystemState(),ret));
-		arg1->decRef();
+		RUNTIME_STACK_PUSH(th,asAtom(ret));
+		ASATOM_DECREF(arg1);
 	}
 	static void storeFloat(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		ASObject* arg2=th->runtime_stack_pop();
-		number_t addr=arg1->toNumber();
-		arg1->decRef();
-		float val=(float)arg2->toNumber();
-		arg2->decRef();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		number_t addr=arg1.toNumber();
+		ASATOM_DECREF(arg1);
+		float val=(float)arg2.toNumber();
+		ASATOM_DECREF(arg2);
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<float>(addr, val);
 	}
 	static void storeDouble(call_context* th)
 	{
-		ASObject* arg1=th->runtime_stack_pop();
-		ASObject* arg2=th->runtime_stack_pop();
-		number_t addr=arg1->toNumber();
-		arg1->decRef();
-		double val=arg2->toNumber();
-		arg2->decRef();
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		number_t addr=arg1.toNumber();
+		ASATOM_DECREF(arg1);
+		double val=arg2.toNumber();
+		ASATOM_DECREF(arg2);
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<double>(addr, val);
 	}
@@ -329,7 +330,7 @@ private:
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callMethod(call_context* th, int n, int m);
-	static void callImpl(call_context* th, ASObject* f, ASObject* obj, ASObject** args, int m, method_info** called_mi, bool keepReturn);
+	static void callImpl(call_context* th, ASObject* f, asAtom obj, asAtom *args, int m, method_info** called_mi, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 
@@ -757,7 +758,7 @@ public:
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
-	std::vector<std::pair<uint32_t,ASObject*> > stacktrace;
+	std::vector<std::pair<uint32_t,asAtom> > stacktrace;
 
 	struct abc_limits {
 		/* maxmium number of recursion allowed. See ScriptLimitsTag */

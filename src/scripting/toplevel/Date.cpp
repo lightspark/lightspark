@@ -782,7 +782,7 @@ ASFUNCTIONBODY(Date,setTime)
 		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute = true;
-		obj->setVariableByMultiname(name,abstract_d(obj->getSystemState(),ms),CONST_NOT_ALLOWED);
+		obj->setVariableByMultiname(name,asAtom(ms),CONST_NOT_ALLOWED);
 		return abstract_d(obj->getSystemState(),ms);
 	}
 	assert_and_throw(obj->is<Date>());

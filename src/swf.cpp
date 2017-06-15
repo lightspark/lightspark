@@ -1687,7 +1687,7 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 	return ret;
 }
 
-void RootMovieClip::setVariableByMultiname(multiname& name, ASObject* o)
+void RootMovieClip::setVariableByMultiname(multiname& name, asAtom o)
 {
 	sem_wait(&mutex);
 	ASObject::setVariableByMultiname(name,o);

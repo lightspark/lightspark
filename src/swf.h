@@ -103,12 +103,12 @@ public:
 	void parsingFailed();
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
-	URLInfo& getOrigin() { return origin; };
+	URLInfo& getOrigin() { return origin; }
 	void DLL_PUBLIC setBaseURL(const tiny_string& url);
 	const URLInfo& getBaseURL();
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	void setVariableByMultiname(multiname& name, ASObject* o);
+	void setVariableByMultiname(multiname& name, asAtom o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	static RootMovieClip* getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*

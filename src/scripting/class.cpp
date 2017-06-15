@@ -152,10 +152,10 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var);
-	if(var->var)
+	if(var->var.type != T_INVALID)
 	{
-		assert_and_throw(var->var->getObjectType()==T_FUNCTION);
-		IFunction* f=var->var->as<IFunction>();
+		assert_and_throw(var->var.type==T_FUNCTION);
+		IFunction* f=var->var.toObject(c->getSystemState())->as<IFunction>();
 		f->incRef();
 		c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
 	}

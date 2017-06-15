@@ -1038,7 +1038,7 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 	return index<len;
 }
 
-_NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+asAtom ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
 	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
@@ -1047,10 +1047,10 @@ _NR<ASObject> ByteArray::getVariableByMultiname(const multiname& name, GET_VARIA
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
-		return _MNR(abstract_ui(getSystemState(),static_cast<uint32_t>(value)));
+		return asAtom(static_cast<uint32_t>(value));
 	}
 	else
-		return _MNR(getSystemState()->getUndefinedRef());
+		return asAtom(T_UNDEFINED);
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -1069,7 +1069,7 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
+void ByteArray::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -1087,15 +1087,15 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, CONST
 	}
 
 	// Fill the byte pointed to by index with the truncated uint value of the object.
-	uint8_t value = static_cast<uint8_t>(o->toUInt() & 0xff);
+	uint8_t value = static_cast<uint8_t>(o.toUInt() & 0xff);
 	bytes[index] = value;
 
-	o->decRef();
+	ASATOM_DECREF(o);
 }
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	setVariableByMultiname(name, abstract_i(getSystemState(),value),ASObject::CONST_NOT_ALLOWED);
+	setVariableByMultiname(name, asAtom(value),ASObject::CONST_NOT_ALLOWED);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -1390,18 +1390,18 @@ ASFUNCTIONBODY(ByteArray,pop)
 }
 
 // this seems to be how AS3 handles generic push calls in Array class
-ASFUNCTIONBODY(ByteArray,push)
+ASFUNCTIONBODY_ATOM(ByteArray,push)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj);
+	ByteArray* th=static_cast<ByteArray*>(obj.getObject());
 	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
-		th->bytes[th->len+i] = (uint8_t)args[i]->toInt();
+		th->bytes[th->len+i] = (uint8_t)args[i].toInt();
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return abstract_ui(obj->getSystemState(),res);
+	return asAtom(res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class

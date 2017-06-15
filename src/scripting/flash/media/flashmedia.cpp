@@ -505,7 +505,7 @@ ASFUNCTIONBODY(SoundChannel, stop)
 
 void SoundChannel::execute()
 {
-	playStream();
+	//playStream();
 }
 
 void SoundChannel::playStream()

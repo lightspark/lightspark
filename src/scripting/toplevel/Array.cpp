@@ -29,7 +29,7 @@ using namespace std;
 using namespace lightspark;
 
 Array::Array(Class_base* c):ASObject(c,T_ARRAY),currentsize(0),
-	data(std::less<uint32_t>(), reporter_allocator<std::pair<uint32_t, data_slot>>(c->memoryAccount)),currentpos(0)
+	data(std::less<uint32_t>(), reporter_allocator<std::pair<uint32_t, asAtom>>(c->memoryAccount)),currentpos(0)
 {
 }
 
@@ -129,7 +129,7 @@ void Array::constructorImpl(ASObject* const* args, const unsigned int argslen)
 		for(unsigned int i=0;i<argslen;i++)
 		{
 			args[i]->incRef();
-			set(i,_MR(args[i]));
+			set(i,asAtom::fromObject(args[i]));
 		}
 	}
 }
@@ -145,8 +145,7 @@ ASFUNCTIONBODY(Array,_concat)
 	for(;it != th->data.end();++it)
 	{
 		ret->data[it->first]=it->second;
-		if(ret->data[it->first].type==DATA_OBJECT && ret->data[it->first].data)
-			ret->data[it->first].data->incRef();
+		ASATOM_INCREF(ret->data[it->first]);
 	}
 
 	for(unsigned int i=0;i<argslen;i++)
@@ -161,8 +160,7 @@ ASFUNCTIONBODY(Array,_concat)
 			{
 				uint32_t newIndex=ret->size()+itother->first;
 				ret->data[newIndex]=itother->second;
-				if(ret->data[newIndex].type==DATA_OBJECT && ret->data[newIndex].data)
-					ret->data[newIndex].data->incRef();
+				ASATOM_INCREF(ret->data[newIndex]);
 			}
 			ret->resize(oldSize+otherArray->size());
 		}
@@ -170,7 +168,7 @@ ASFUNCTIONBODY(Array,_concat)
 		{
 			//Insert the argument
 			args[i]->incRef();
-			ret->push(_MR(args[i]));
+			ret->push(asAtom::fromObject(args[i]));
 		}
 	}
 
@@ -186,41 +184,38 @@ ASFUNCTIONBODY(Array,filter)
 	if (f.isNull())
 		return ret;
 
-	ASObject* params[3];
-	ASObject *funcRet;
+	asAtom params[3];
+	asAtom funcRet;
 
 	for(auto it=th->data.begin();it != th->data.end();++it)
 	{
-		if (it->second.type==DATA_OBJECT)
-		{
-			params[0] = it->second.data;
-			it->second.data->incRef();
-		}
-		else
-			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
-		params[1] = abstract_i(obj->getSystemState(),it->first);
-		params[2] = th;
+		params[0] = it->second;
+		ASATOM_INCREF(it->second);
+		params[1] = asAtom(it->first);
+		params[2] = asAtom::fromObject(th);
 		th->incRef();
 
 		// ensure that return values are the original values
-		ASObject *origval = params[0];
-		origval->incRef();
+		asAtom origval = params[0];
+		ASATOM_INCREF(origval);
 		if(argslen==1)
 		{
-			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
+			funcRet=f->call(asAtom(T_NULL), params, 3);
 		}
 		else
 		{
 			args[1]->incRef();
-			funcRet=f->call(args[1], params, 3);
+			funcRet=f->call(asAtom::fromObject(args[1]), params, 3);
 		}
-		if(funcRet)
+		if(funcRet.type != T_INVALID)
 		{
-			if(Boolean_concrete(funcRet))
-				ret->push(_MR(origval));
+			if(funcRet.Boolean_concrete())
+				ret->push(origval);
 			else
-				origval->decRef();
-			funcRet->decRef();
+			{
+				ASATOM_DECREF(origval);
+			}
+			ASATOM_DECREF(funcRet);
 		}
 	}
 	return ret;
@@ -234,39 +229,34 @@ ASFUNCTIONBODY(Array, some)
 	if (f.isNull())
 		return abstract_b(obj->getSystemState(),false);
 
-	ASObject* params[3];
-	ASObject *funcRet;
+	asAtom params[3];
+	asAtom funcRet;
 
 	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		if (it->second.type==DATA_OBJECT)
-		{
-			params[0] = it->second.data;
-			it->second.data->incRef();
-		}
-		else
-			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
-		params[1] = abstract_i(obj->getSystemState(),it->first);
-		params[2] = th;
+		params[0] = it->second;
+		ASATOM_INCREF(it->second);
+		params[1] = asAtom(it->first);
+		params[2] = asAtom::fromObject(th);
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
+			funcRet=f->call(asAtom(T_NULL), params, 3);
 		}
 		else
 		{
 			args[1]->incRef();
-			funcRet=f->call(args[1], params, 3);
+			funcRet=f->call(asAtom::fromObject(args[1]), params, 3);
 		}
-		if(funcRet)
+		if(funcRet.type != T_INVALID)
 		{
-			if(Boolean_concrete(funcRet))
+			if(funcRet.Boolean_concrete())
 			{
-				return funcRet;
+				return funcRet.toObject(th->getSystemState());
 			}
-			funcRet->decRef();
+			ASATOM_DECREF(funcRet);
 		}
 	}
 	return abstract_b(obj->getSystemState(),false);
@@ -280,63 +270,58 @@ ASFUNCTIONBODY(Array, every)
 	if (f.isNull())
 		return abstract_b(obj->getSystemState(),true);
 
-	ASObject* params[3];
-	ASObject *funcRet;
+	asAtom params[3];
+	asAtom funcRet;
 
 	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		if (it->second.type==DATA_OBJECT)
-		{
-			params[0] = it->second.data;
-			it->second.data->incRef();
-		}
-		else
-			params[0] =abstract_di(obj->getSystemState(),it->second.data_i);
-		params[1] = abstract_i(obj->getSystemState(),it->first);
-		params[2] = th;
+		params[0] = it->second;
+		ASATOM_INCREF(it->second);
+		params[1] = asAtom(it->first);
+		params[2] = asAtom::fromObject(th);
 		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f->call(obj->getSystemState()->getNullRef(), params, 3);
+			funcRet=f->call(asAtom(T_NULL), params, 3);
 		}
 		else
 		{
 			args[1]->incRef();
-			funcRet=f->call(args[1], params, 3);
+			funcRet=f->call(asAtom::fromObject(args[1]), params, 3);
 		}
-		if(funcRet)
+		if(funcRet.type != T_INVALID)
 		{
-			if(!Boolean_concrete(funcRet))
+			if(!funcRet.Boolean_concrete())
 			{
-				return funcRet;
+				return funcRet.toObject(th->getSystemState());
 			}
-			funcRet->decRef();
+			ASATOM_DECREF(funcRet);
 		}
 	}
 	return abstract_b(obj->getSystemState(),true);
 }
 
-ASFUNCTIONBODY(Array,_getLength)
+ASFUNCTIONBODY_ATOM(Array,_getLength)
 {
-	Array* th=static_cast<Array*>(obj);
-	return abstract_ui(obj->getSystemState(),th->currentsize);
+	Array* th=static_cast<Array*>(obj.getObject());
+	return asAtom((uint32_t)th->currentsize);
 }
 
-ASFUNCTIONBODY(Array,_setLength)
+ASFUNCTIONBODY_ATOM(Array,_setLength)
 {
 	uint32_t newLen;
-	ARG_UNPACK(newLen);
-	Array* th=static_cast<Array*>(obj);
+	ARG_UNPACK_ATOM(newLen);
+	Array* th=static_cast<Array*>(obj.getObject());
 	if (th->getClass() && th->getClass()->isSealed)
-		return NULL;
+		return asAtom();
 	//If newLen is equal to size do nothing
 	if(newLen==th->size())
-		return NULL;
+		return asAtom();
 	th->resize(newLen);
 	th->currentpos = 0;
-	return NULL;
+	return asAtom();
 }
 
 ASFUNCTIONBODY(Array,forEach)
@@ -346,7 +331,7 @@ ASFUNCTIONBODY(Array,forEach)
 	ARG_UNPACK(f);
 	if (f.isNull())
 		return NULL;
-	ASObject* params[3];
+	asAtom params[3];
 
 	uint32_t s = th->size();
 	for (uint32_t i=0; i < s; i++ )
@@ -354,34 +339,31 @@ ASFUNCTIONBODY(Array,forEach)
 		auto it = th->data.find(i);
 		if (it != th->data.end())
 		{
-			if(it->second.type==DATA_INT)
-				params[0]=abstract_i(obj->getSystemState(),it->second.data_i);
-			else if(it->second.type==DATA_OBJECT && it->second.data)
+			if(it->second.type!=T_INVALID)
 			{
-				params[0]=it->second.data;
-				params[0]->incRef();
+				params[0]=it->second;
+				ASATOM_INCREF(params[0]);
 			}
 			else
-				params[0]=obj->getSystemState()->getUndefinedRef();
+				params[0]=asAtom(T_UNDEFINED);
 		}
 		else
 			continue;
-		params[1] = abstract_i(obj->getSystemState(),i);
-		params[2] = th;
+		params[1] = asAtom(i);
+		params[2] = asAtom::fromObject(th);
 		th->incRef();
 
-		ASObject *funcret;
+		asAtom funcret;
 		if( argslen == 1 )
 		{
-			funcret=f->call(obj->getSystemState()->getNullRef(), params, 3);
+			funcret=f->call(asAtom(T_NULL), params, 3);
 		}
 		else
 		{
 			args[1]->incRef();
-			funcret=f->call(args[1], params, 3);
+			funcret=f->call(asAtom::fromObject(args[1]), params, 3);
 		}
-		if(funcret)
-			funcret->decRef();
+		ASATOM_DECREF(funcret);
 	}
 
 	return NULL;
@@ -391,7 +373,7 @@ ASFUNCTIONBODY(Array, _reverse)
 {
 	Array* th = static_cast<Array*>(obj);
 
-	std::map<uint32_t, data_slot> tmp = std::map<uint32_t, data_slot>(th->data.begin(),th->data.end());
+	std::map<uint32_t, asAtom> tmp = std::map<uint32_t, asAtom>(th->data.begin(),th->data.end());
 	uint32_t size = th->size();
 	th->data.clear();
 	auto it=tmp.begin();
@@ -440,10 +422,8 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 		auto it = th->data.find(i);
 		if (it == th->data.end())
 		    continue;
-		DATA_TYPE dtype = it->second.type;
-		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && it->second.data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && arg0->toInt() == it->second.data_i))
+		asAtom a = asAtom::fromObject(arg0.getPtr());
+		if(it->second.isEqualStrict(obj->getSystemState(),a))
 		{
 			ret=i;
 			break;
@@ -470,10 +450,10 @@ ASFUNCTIONBODY(Array,shift)
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
-		uint32_t res = o->toUInt();
+		asAtom o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o.toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res-1),CONST_NOT_ALLOWED);
+			obj->setVariableByMultiname(lengthName,asAtom(res-1),CONST_NOT_ALLOWED);
 		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -484,13 +464,8 @@ ASFUNCTIONBODY(Array,shift)
 	if(it == th->data.end())
 		ret = obj->getSystemState()->getUndefinedRef();
 	else
-	{
-		if(it->second.type==DATA_OBJECT)
-			ret=it->second.data;
-		else
-			ret = abstract_i(obj->getSystemState(),it->second.data_i);
-	}
-	std::map<uint32_t,data_slot> tmp;
+		ret=it->second.toObject(obj->getSystemState());
+	std::map<uint32_t,asAtom> tmp;
 	it=th->data.begin();
 	for (; it != th->data.end(); ++it )
 	{
@@ -542,8 +517,7 @@ ASFUNCTIONBODY(Array,slice)
 		auto it = th->data.find(i);
 		if (it != th->data.end())
 		{
-			if(it->second.type == DATA_OBJECT)
-				it->second.data->incRef();
+			ASATOM_INCREF(it->second);
 			ret->data[j]=it->second;
 		}
 		j++;
@@ -590,7 +564,7 @@ ASFUNCTIONBODY(Array,splice)
 		}
 	}
 	// remember items in current array that have to be moved to new position
-	vector<data_slot> tmp = vector<data_slot>(totalSize- (startIndex+deleteCount));
+	vector<asAtom> tmp = vector<asAtom>(totalSize- (startIndex+deleteCount));
 	for (int i = startIndex+deleteCount; i < totalSize ; i++)
 	{
 		auto it = th->data.find(i);
@@ -607,12 +581,12 @@ ASFUNCTIONBODY(Array,splice)
 	for(unsigned int i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
-		th->push(_MR(args[i]));
+		th->push(asAtom::fromObject(args[i]));
 	}
 	// move remembered items to new position
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
-		if (tmp[i].type != DATA_OBJECT || tmp[i].data != NULL)
+		if (tmp[i].type != T_INVALID)
 			th->data[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
 	}
 	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
@@ -648,16 +622,12 @@ ASFUNCTIONBODY(Array,indexOf)
 	if (index < 0) index = th->size()+ index;
 	if (index < 0) index = 0;
 
-	DATA_TYPE dtype;
 	for (auto it=th->data.begin() ; it != th->data.end(); ++it )
 	{
 		if (it->first < (uint32_t)index)
 			continue;
-		data_slot sl = it->second;
-		dtype = sl.type;
-		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
-		if((dtype == DATA_OBJECT && sl.data->isEqualStrict(arg0.getPtr())) ||
-			(dtype == DATA_INT && abstract_di(obj->getSystemState(),sl.data_i)->isEqualStrict(arg0.getPtr())))
+		asAtom a = asAtom::fromObject(arg0.getPtr());
+		if(it->second.isEqualStrict(obj->getSystemState(),a))
 		{
 			ret=it->first;
 			break;
@@ -683,10 +653,10 @@ ASFUNCTIONBODY(Array,_pop)
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
-		uint32_t res = o->toUInt();
+		asAtom o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o.toUInt();
 		if (res > 0)
-			obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res-1),CONST_NOT_ALLOWED);
+			obj->setVariableByMultiname(lengthName,asAtom(res-1),CONST_NOT_ALLOWED);
 		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -698,10 +668,7 @@ ASFUNCTIONBODY(Array,_pop)
 	auto it = th->data.find(size-1);
 	if (it != th->data.end())
 	{
-		if(it->second.type==DATA_OBJECT)
-			ret=it->second.data;
-		else
-			ret = abstract_i(obj->getSystemState(),it->second.data_i);
+		ret=it->second.toObject(obj->getSystemState());
 		th->data.erase(it);
 	}
 	else
@@ -712,21 +679,14 @@ ASFUNCTIONBODY(Array,_pop)
 	return ret;
 }
 
-bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_slot& d2)
+bool Array::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 {
 	if(isNumeric)
 	{
 		number_t a=numeric_limits<double>::quiet_NaN();
 		number_t b=numeric_limits<double>::quiet_NaN();
-		if(d1.type==DATA_INT)
-			a=d1.data_i;
-		else if(d1.type==DATA_OBJECT && d1.data)
-			a=d1.data->toNumber();
-
-		if(d2.type==DATA_INT)
-			b=d2.data_i;
-		else if(d2.type==DATA_OBJECT && d2.data)
-			b=d2.data->toNumber();
+		a=d1.toNumber();
+		b=d2.toNumber();
 
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
@@ -740,18 +700,8 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 		//Comparison is always in lexicographic order
 		tiny_string s1;
 		tiny_string s2;
-		if(d1.type==DATA_INT)
-			s1=Integer::toString(d1.data_i);
-		else if(d1.type==DATA_OBJECT && d1.data)
-			s1=d1.data->toString();
-		else
-			s1="undefined";
-		if(d2.type==DATA_INT)
-			s2=Integer::toString(d2.data_i);
-		else if(d2.type==DATA_OBJECT && d2.data)
-			s2=d2.data->toString();
-		else
-			s2="undefined";
+		s1=d1.toString();
+		s2=d2.toString();
 
 		if(isDescending)
 		{
@@ -772,33 +722,18 @@ bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_sl
 	}
 }
 
-bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_slot& d2)
+bool Array::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
 {
-	ASObject* objs[2];
-	if(d1.type==DATA_INT)
-		objs[0]=abstract_i(comparator->getSystemState(),d1.data_i);
-	else if(d1.type==DATA_OBJECT && d1.data)
-	{
-		objs[0]=d1.data;
-		objs[0]->incRef();
-	}
-	else
-		objs[0]=comparator->getSystemState()->getUndefinedRef();
-
-	if(d2.type==DATA_INT)
-		objs[1]=abstract_i(comparator->getSystemState(),d2.data_i);
-	else if(d2.type==DATA_OBJECT && d2.data)
-	{
-		objs[1]=d2.data;
-		objs[1]->incRef();
-	}
-	else
-		objs[1]=comparator->getSystemState()->getUndefinedRef();
+	asAtom objs[2];
+	objs[0]=d1;
+	ASATOM_INCREF(objs[0]);
+	objs[1]=d2;
+	ASATOM_INCREF(objs[1]);
 
 	assert(comparator);
-	_NR<ASObject> ret=_MNR(comparator->call(comparator->getSystemState()->getNullRef(), objs, 2));
-	assert_and_throw(ret);
-	return (ret->toNumber()<0); //Less
+	asAtom ret=comparator->call(asAtom(T_NULL), objs, 2);
+	assert_and_throw(ret.type != T_INVALID);
+	return (ret.toNumber()<0); //Less
 }
 
 ASFUNCTIONBODY(Array,_sort)
@@ -828,12 +763,11 @@ ASFUNCTIONBODY(Array,_sort)
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
-	std::vector<data_slot> tmp;
+	std::vector<asAtom> tmp;
 	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		if (it->second.type==DATA_OBJECT &&
-				(!it->second.data || it->second.data->is<Undefined>()))
+		if (it->second.type==T_INVALID || it->second.type==T_UNDEFINED)
 			continue;
 		tmp.push_back(it->second);
 	}
@@ -844,7 +778,7 @@ ASFUNCTIONBODY(Array,_sort)
 		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive,isDescending));
 
 	th->data.clear();
-	std::vector<data_slot>::iterator ittmp=tmp.begin();
+	std::vector<asAtom>::iterator ittmp=tmp.begin();
 	int i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
@@ -855,22 +789,20 @@ ASFUNCTIONBODY(Array,_sort)
 	return obj;
 }
 
-bool Array::sortOnComparator::operator()(const data_slot& d1, const data_slot& d2)
+bool Array::sortOnComparator::operator()(asAtom& d1, asAtom& d2)
 {
 	std::vector<sorton_field>::iterator it=fields.begin();
 	for(;it != fields.end();++it)
 	{
-		assert_and_throw(d1.type == DATA_OBJECT && d1.type == DATA_OBJECT);
-
-		_NR<ASObject> obj1 = d1.data->getVariableByMultiname(it->fieldname);
-		_NR<ASObject> obj2 = d2.data->getVariableByMultiname(it->fieldname);
+		asAtom obj1 = d1.toObject(getSys())->getVariableByMultiname(it->fieldname);
+		asAtom obj2 = d2.toObject(getSys())->getVariableByMultiname(it->fieldname);
 		if(it->isNumeric)
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
-			a=obj1->toNumber();
+			a=obj1.toNumber();
 			
-			b=obj2->toNumber();
+			b=obj2.toNumber();
 			
 			if(std::isnan(a) || std::isnan(b))
 				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
@@ -887,8 +819,8 @@ bool Array::sortOnComparator::operator()(const data_slot& d1, const data_slot& d
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1->toString();
-			s2=obj2->toString();
+			s1=obj1.toString();
+			s2=obj2.toString();
 			if (s1 != s2)
 			{
 				if(it->isDescending)
@@ -911,41 +843,36 @@ bool Array::sortOnComparator::operator()(const data_slot& d1, const data_slot& d
 	return false;
 }
 
-ASFUNCTIONBODY(Array,sortOn)
+ASFUNCTIONBODY_ATOM(Array,sortOn)
 {
 	if (argslen != 1 && argslen != 2)
 		throwError<ArgumentError>(kWrongArgumentCountError, "1",
 					  Integer::toString(argslen));
-	Array* th=static_cast<Array*>(obj);
+	Array* th=static_cast<Array*>(obj.getObject());
 	std::vector<sorton_field> sortfields;
-	if(args[0]->is<Array>())
+	if(args[0].is<Array>())
 	{
-		Array* obj=static_cast<Array*>(args[0]);
+		Array* obj=static_cast<Array*>(args[0].getObject());
 		int n = 0;
 		auto it=obj->data.begin();
 		for(;it != obj->data.end();++it)
 		{
 			multiname sortfieldname(NULL);
 			sortfieldname.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
-			if (it->second.type == DATA_OBJECT)
-			{
-				sortfieldname.setName(it->second.data);
-			}
+			asAtom atom = it->second;
+			sortfieldname.setName(atom,obj->getSystemState());
 			sorton_field sf(sortfieldname);
 			sortfields.push_back(sf);
 		}
-		if (argslen == 2 && args[1]->is<Array>())
+		if (argslen == 2 && args[1].is<Array>())
 		{
-			Array* opts=static_cast<Array*>(args[1]);
+			Array* opts=static_cast<Array*>(args[1].getObject());
 			auto itopt=opts->data.begin();
 			int nopt = 0;
 			for(;itopt != opts->data.end() && nopt < n;++itopt)
 			{
 				uint32_t options=0;
-				if (itopt->second.type == DATA_OBJECT)
-					options = itopt->second.data->toInt();
-				else
-					options = itopt->second.data_i;
+				options = itopt->second.toInt();
 				if(options&NUMERIC)
 					sortfields[nopt].isNumeric=true;
 				if(options&CASEINSENSITIVE)
@@ -961,12 +888,13 @@ ASFUNCTIONBODY(Array,sortOn)
 	else
 	{
 		multiname sortfieldname(NULL);
-		sortfieldname.setName(args[0]);
-		sortfieldname.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
+		asAtom atom = args[0];
+		sortfieldname.setName(atom,th->getSystemState());
+		sortfieldname.ns.push_back(nsNameAndKind(obj.getObject()->getSystemState(),"",NAMESPACE));
 		sorton_field sf(sortfieldname);
 		if (argslen == 2)
 		{
-			uint32_t options = args[1]->toInt();
+			uint32_t options = args[1].toInt();
 			if(options&NUMERIC)
 				sf.isNumeric=true;
 			if(options&CASEINSENSITIVE)
@@ -979,12 +907,11 @@ ASFUNCTIONBODY(Array,sortOn)
 		sortfields.push_back(sf);
 	}
 	
-	std::vector<data_slot> tmp;
+	std::vector<asAtom> tmp;
 	auto it=th->data.begin();
 	for(;it != th->data.end();++it)
 	{
-		if (it->second.type==DATA_OBJECT &&
-				(!it->second.data || it->second.data->is<Undefined>()))
+		if (it->second.type==T_UNDEFINED)
 			continue;
 		tmp.push_back(it->second);
 	}
@@ -992,13 +919,13 @@ ASFUNCTIONBODY(Array,sortOn)
 	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
 
 	th->data.clear();
-	std::vector<data_slot>::iterator ittmp=tmp.begin();
+	std::vector<asAtom>::iterator ittmp=tmp.begin();
 	int i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
 		th->data[i++]= *ittmp;
 	}
-	obj->incRef();
+	ASATOM_INCREF(obj);
 	th->currentpos = 0;
 	return obj;
 }
@@ -1019,9 +946,9 @@ ASFUNCTIONBODY(Array,unshift)
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
-		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
+		asAtom o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o.toUInt();
+		obj->setVariableByMultiname(lengthName,asAtom(res+argslen),CONST_NOT_ALLOWED);
 		return obj->getSystemState()->getUndefinedRef();
 	}
 	Array* th=static_cast<Array*>(obj);
@@ -1031,7 +958,7 @@ ASFUNCTIONBODY(Array,unshift)
 	if (argslen > 0)
 	{
 		th->resize(th->size()+argslen);
-		std::map<uint32_t,data_slot> tmp;
+		std::map<uint32_t,asAtom> tmp;
 		for (auto it=th->data.rbegin(); it != th->data.rend(); ++it )
 		{
 			tmp[it->first+argslen]=it->second;
@@ -1039,7 +966,7 @@ ASFUNCTIONBODY(Array,unshift)
 		
 		for(uint32_t i=0;i<argslen;i++)
 		{
-			tmp[i] = data_slot(args[i]);
+			tmp[i] = asAtom::fromObject(args[i]);
 			args[i]->incRef();
 		}
 		th->data.clear();
@@ -1049,69 +976,69 @@ ASFUNCTIONBODY(Array,unshift)
 	return abstract_i(obj->getSystemState(),th->size());
 }
 
-ASFUNCTIONBODY(Array,_push)
+ASFUNCTIONBODY_ATOM(Array,_push)
 {
-	if (!obj->is<Array>())
+	if (!obj.is<Array>())
 	{
 		// this seems to be how Flash handles the generic push calls
-		if (obj->is<Vector>())
+		if (obj.is<Vector>())
 			return Vector::push(obj,args,argslen);
-		if (obj->is<ByteArray>())
+		if (obj.is<ByteArray>())
 			return ByteArray::push(obj,args,argslen);
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
-		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj.getObject()->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj.getObject()->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
-		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
-		return obj->getSystemState()->getUndefinedRef();
+		asAtom o=obj.getObject()->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o.toUInt();
+		obj.getObject()->setVariableByMultiname(lengthName,asAtom(res+argslen),CONST_NOT_ALLOWED);
+		return asAtom(T_UNDEFINED);
 	}
-	Array* th=static_cast<Array*>(obj);
+	Array* th=static_cast<Array*>(obj.getObject());
 	uint64_t s = th->currentsize;
 	for(unsigned int i=0;i<argslen;i++)
 	{
-		args[i]->incRef();
-		th->push(_MR(args[i]));
+		ASATOM_INCREF(args[i]);
+		th->push(args[i]);
 	}
 	// currentsize is set even if push fails
 	th->currentsize = s+argslen;
-	return abstract_i(obj->getSystemState(),th->size());
+	return asAtom((int32_t)th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
-ASFUNCTIONBODY(Array,_push_as3)
+ASFUNCTIONBODY_ATOM(Array,_push_as3)
 {
-	if (!obj->is<Array>())
+	if (!obj.is<Array>())
 	{
 		// this seems to be how Flash handles the generic push calls
-		if (obj->is<Vector>())
+		if (obj.is<Vector>())
 			return Vector::push(obj,args,argslen);
-		if (obj->is<ByteArray>())
+		if (obj.is<ByteArray>())
 			return ByteArray::push(obj,args,argslen);
 		// for other objects we just increase the length property
 		multiname lengthName(NULL);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
-		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
-		lengthName.ns.push_back(nsNameAndKind(obj->getSystemState(),AS3,NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj.getObject()->getSystemState(),"",NAMESPACE));
+		lengthName.ns.push_back(nsNameAndKind(obj.getObject()->getSystemState(),AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		_NR<ASObject> o=obj->getVariableByMultiname(lengthName,SKIP_IMPL);
-		uint32_t res = o->toUInt();
-		obj->setVariableByMultiname(lengthName,abstract_ui(obj->getSystemState(),res+argslen),CONST_NOT_ALLOWED);
-		return obj->getSystemState()->getUndefinedRef();
+		asAtom o=obj.getObject()->getVariableByMultiname(lengthName,SKIP_IMPL);
+		uint32_t res = o.toUInt();
+		obj.getObject()->setVariableByMultiname(lengthName,asAtom(res+argslen),CONST_NOT_ALLOWED);
+		return asAtom(T_UNDEFINED);
 	}
-	Array* th=static_cast<Array*>(obj);
+	Array* th=static_cast<Array*>(obj.getObject());
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		if (th->size() >= UINT32_MAX)
 			break;
-		args[i]->incRef();
-		th->push(_MR(args[i]));
+		ASATOM_INCREF(args[i]);
+		th->push(args[i]);
 	}
-	return abstract_i(obj->getSystemState(),th->size());
+	return asAtom((int32_t)th->size());
 }
 
 ASFUNCTIONBODY(Array,_map)
@@ -1131,36 +1058,43 @@ ASFUNCTIONBODY(Array,_map)
 	uint32_t s = th->size();
 	for (uint32_t i=0; i < s; i++ )
 	{
-		ASObject* funcArgs[3];
+		asAtom funcArgs[3];
 		auto it = th->data.find(i);
 		if (it != th->data.end())
 		{
-			if(it->second.type==DATA_INT)
-				funcArgs[0]=abstract_i(obj->getSystemState(),it->second.data_i);
-			else if(it->second.type==DATA_OBJECT && it->second.data)
+			if(it->second.type!=T_INVALID)
 			{
-				funcArgs[0]=it->second.data;
-				funcArgs[0]->incRef();
+				funcArgs[0]=it->second;
+				ASATOM_INCREF(funcArgs[0]);
 			}
 			else
-				funcArgs[0]=obj->getSystemState()->getUndefinedRef();
+				funcArgs[0]=asAtom(T_UNDEFINED);
 		}
 		else
-			funcArgs[0]=obj->getSystemState()->getUndefinedRef();
-		funcArgs[1]=abstract_i(obj->getSystemState(),i);
-		funcArgs[2]=th;
-		funcArgs[2]->incRef();
-		ASObject* funcRet= NULL;
+			funcArgs[0]=asAtom(T_UNDEFINED);
+		funcArgs[1]=asAtom(i);
+		funcArgs[2]=asAtom::fromObject(th);
+		ASATOM_INCREF(funcArgs[2]);
+		asAtom funcRet;
 		if (func)
 		{
 			if (argslen > 1)
 				args[1]->incRef();
-			funcRet = func->call(argslen > 1? args[1] : obj->getSystemState()->getNullRef(), funcArgs, 3);
+			funcRet = func->call(argslen > 1? asAtom::fromObject(args[1]) : asAtom(T_NULL), funcArgs, 3);
 		}
 		else
-			funcRet = RegExp::exec(args[0],funcArgs,1);
-		assert_and_throw(funcRet);
-		arrayRet->push(_MR(funcRet));
+		{
+			unsigned int newArgsLen = 3;
+			ASObject** newArgs=g_newa(ASObject*, newArgsLen);
+			for(unsigned int i=0;i<newArgsLen;i++)
+			{
+				newArgs[i]=funcArgs[i].toObject(th->getSystemState());
+				newArgs[i]->incRef();
+			}
+			funcRet = asAtom::fromObject(RegExp::exec(args[0],newArgs,1));
+		}
+		assert_and_throw(funcRet.type != T_INVALID);
+		arrayRet->push(funcRet);
 	}
 
 	return arrayRet;
@@ -1207,11 +1141,11 @@ ASFUNCTIONBODY(Array,insertAt)
 	if ((uint32_t)index >= th->currentsize)
 	{
 		th->currentsize++;
-		th->set(th->currentsize-1,o);
+		th->set(th->currentsize-1,asAtom::fromObject(o.getPtr()));
 	}
 	else
 	{
-		std::map<uint32_t,data_slot> tmp;
+		std::map<uint32_t,asAtom> tmp;
 		auto it=th->data.begin();
 		for (; it != th->data.end(); ++it )
 		{
@@ -1221,7 +1155,7 @@ ASFUNCTIONBODY(Array,insertAt)
 		th->data.insert(tmp.begin(),tmp.end());
 		
 		th->currentsize++;
-		th->set(index,o);
+		th->set(index,asAtom::fromObject(o.getPtr()));
 	}
 	th->currentpos=0;
 	return NULL;
@@ -1240,24 +1174,13 @@ ASFUNCTIONBODY(Array,removeAt)
 	auto it = th->data.find(index);
 	if(it != th->data.end())
 	{
-		const data_slot& sl = it->second;
-		switch(sl.type)
-		{
-			case DATA_OBJECT:
-				assert(sl.data!=NULL);
-				o = sl.data;
-				o->incRef();
-				break;
-			case DATA_INT:
-				o = abstract_i(th->getSystemState(),sl.data_i);
-				break;
-		}
-		it->second.clear();
+		asAtom sl = it->second;
+		o = sl.toObject(obj->getSystemState());
 		th->data.erase(it);
 	}
 	if ((uint32_t)index < th->currentsize)
 		th->currentsize--;
-	std::map<uint32_t,data_slot> tmp;
+	std::map<uint32_t,asAtom> tmp;
 	it=th->data.begin();
 	for (; it != th->data.end(); ++it )
 	{
@@ -1280,34 +1203,13 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 		auto it = data.find(index);
 		if (it == data.end())
 			return 0;
-		const data_slot& sl = it->second;
-		switch(sl.type)
-		{
-			case DATA_OBJECT:
-			{
-				assert(sl.data!=NULL);
-				if(sl.data->getObjectType()==T_INTEGER)
-				{
-					Integer* i=static_cast<Integer*>(sl.data);
-					return i->toInt();
-				}
-				else if(sl.data->getObjectType()==T_NUMBER)
-				{
-					Number* i=static_cast<Number*>(sl.data);
-					return i->toInt();
-				}
-				else
-					throw UnsupportedException("Array::getVariableByMultiname_i not completely implemented");
-			}
-			case DATA_INT:
-				return sl.data_i;
-		}
+		return it->second.toInt();
 	}
 
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-_NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+asAtom Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 		return ASObject::getVariableByMultiname(name,opt);
@@ -1322,38 +1224,25 @@ _NR<ASObject> Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_
 	auto it = data.find(index);
 	if(it != data.end())
 	{
-		ASObject* ret=NULL;
-		const data_slot& sl = it->second;
-		switch(sl.type)
-		{
-			case DATA_OBJECT:
-				ret=sl.data;
-				if(ret==NULL)
-					ret=getSystemState()->getUndefinedRef();
-				ret->incRef();
-				break;
-			case DATA_INT:
-				ret=abstract_di(this->getSystemState(),sl.data_i);
-				break;
-		}
-		return _MNR(ret);
+		ASATOM_INCREF(it->second);
+		return it->second;
 	}
 	if (name.hasEmptyNS)
 	{
-		_NR<ASObject> ret;
+		asAtom ret;
 		//Check prototype chain
 		Prototype* proto = this->getClass()->prototype.getPtr();
 		while(proto)
 		{
 			ret = proto->getObj()->getVariableByMultiname(name, opt);
-			if(!ret.isNull())
+			if(ret.type != T_INVALID)
 				return ret;
 			proto = proto->prevPrototype.getPtr();
 		}
 	}
 	if(index<size())
-		return _MNR(getSystemState()->getUndefinedRef());
-	return NullRef;
+		return asAtom(T_UNDEFINED);
+	return asAtom();
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
@@ -1371,11 +1260,8 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 		resize(index+1);
 	auto it = data.find(index);
 	if(it != data.end())
-		it->second.clear();
-	data_slot ds;
-	ds.data_i=value;
-	ds.type=DATA_INT;
-	data[index] = ds;
+		ASATOM_DECREF(it->second);
+	data[index] = asAtom(value);
 	currentpos = 0;
 }
 
@@ -1446,7 +1332,7 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
+void Array::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
@@ -1466,24 +1352,11 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALL
 	if(index>=size())
 		resize((uint64_t)index+1);
 
-	data_slot ds;
 	auto it = data.find(index);
 	if(it != data.end())
-		it->second.clear();
+		ASATOM_DECREF(it->second);
 
-	if(o->getObjectType()==T_INTEGER)
-	{
-		Integer* i=static_cast<Integer*>(o);
-		ds.data_i=i->val;
-		ds.type=DATA_INT;
-		o->decRef();
-	}
-	else
-	{
-		ds.data=o;
-		ds.type=DATA_OBJECT;
-	}
-	data[index] = ds;
+	data[index] = o;
 	currentpos = 0;
 }
 
@@ -1501,7 +1374,7 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 	auto it = data.find(index);
 	if(it == data.end())
 		return true;
-	it->second.clear();
+	ASATOM_DECREF(it->second);
 	data.erase(it);
 	currentpos = 0;
 	return true;
@@ -1540,25 +1413,14 @@ tiny_string Array::toString_priv(bool localized)
 		auto it = data.find(i);
 		if(it != data.end())
 		{
-			const data_slot& sl = it->second;
-			if(sl.type==DATA_OBJECT)
+			asAtom sl = it->second;
+			if(sl.type != T_UNDEFINED && sl.type != T_NULL && sl.type != T_INVALID)
 			{
-				if(sl.data && !sl.data->is<Undefined>() && !sl.data->is<Null>())
-				{
-					if (localized)
-						ret += sl.data->toLocaleString().raw_buf();
-					else
-						ret += sl.data->toString().raw_buf();
-				}
+				if (localized)
+					ret += sl.toLocaleString().raw_buf();
+				else
+					ret += sl.toString().raw_buf();
 			}
-			else if(sl.type==DATA_INT)
-			{
-				char buf[20];
-				snprintf(buf,20,"%i",sl.data_i);
-				ret+=buf;
-			}
-			else
-				throw UnsupportedException("Array::toString not completely implemented");
 		}
 		if(i!=size()-1)
 			ret+=',';
@@ -1566,7 +1428,7 @@ tiny_string Array::toString_priv(bool localized)
 	return ret;
 }
 
-_R<ASObject> Array::nextValue(uint32_t index)
+asAtom Array::nextValue(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
@@ -1578,23 +1440,16 @@ _R<ASObject> Array::nextValue(uint32_t index)
 		else
 			it = data.find(index);
 		if(it == data.end() || it->first != index)
-			return _MR(getSystemState()->getUndefinedRef());
+			return asAtom(T_UNDEFINED);
 		currentpos = it-data.begin();
-		const data_slot& sl = it->second;
-		if(sl.type==DATA_OBJECT)
-		{
-			if(sl.data==NULL)
-				return _MR(getSystemState()->getUndefinedRef());
-			else
-			{
-				sl.data->incRef();
-				return _MR(sl.data);
-			}
-		}
-		else if(sl.type==DATA_INT)
-			return _MR(abstract_di(getSystemState(),sl.data_i));
+		asAtom sl = it->second;
+		if(sl.type == T_INVALID)
+			return asAtom(T_UNDEFINED);
 		else
-			throw UnsupportedException("Unexpected data type");
+		{
+			ASATOM_INCREF(sl);
+			return sl;
+		}
 	}
 	else
 	{
@@ -1624,11 +1479,11 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 	
 }
 
-_R<ASObject> Array::nextName(uint32_t index)
+asAtom Array::nextName(uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		return _MR(abstract_ui(getSystemState(),index-1));
+		return asAtom(index-1);
 	else
 	{
 		//Fall back on object properties
@@ -1644,22 +1499,12 @@ _R<ASObject> Array::at(unsigned int index)
 	auto it = data.find(index);
 	if(it == data.end())
 		return _MR(getSystemState()->getUndefinedRef());
-	const data_slot& sl = it->second;
-	switch(sl.type)
+	ASObject* ret = it->second.toObject(getSystemState());
+	if(ret)
 	{
-		case DATA_OBJECT:
-		{
-			if(sl.data)
-			{
-				sl.data->incRef();
-				return _MR(sl.data);
-			}
-		}
-		case DATA_INT:
-			return _MR(abstract_di(getSystemState(),sl.data_i));
+		ret->incRef();
+		return _MR(ret);
 	}
-
-	//We should be here only if data is an object and is NULL
 	return _MR(getSystemState()->getUndefinedRef());
 }
 
@@ -1675,8 +1520,8 @@ void Array::resize(uint64_t n)
 	if (n > 0xFFFFFFFF)
 		n = (n % 0x100000000);
 
-	boost::container::flat_map<uint32_t,data_slot>::reverse_iterator it;
-	boost::container::flat_map<uint32_t,data_slot>::iterator itstart = n ? data.end() : data.begin();
+	boost::container::flat_map<uint32_t,asAtom>::reverse_iterator it;
+	boost::container::flat_map<uint32_t,asAtom>::iterator itstart = n ? data.end() : data.begin();
 	for ( it=data.rbegin() ; it != data.rend(); ++it )
 	{
 		if (it->first < n)
@@ -1684,7 +1529,7 @@ void Array::resize(uint64_t n)
 			itstart = it.base();
 			break;
 		}
-		it->second.clear();
+		ASATOM_DECREF(it->second);
 	}
 	if (itstart != data.end())
 		data.erase(itstart,data.end());
@@ -1723,22 +1568,9 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		for(uint32_t i=0;i<denseCount;i++)
 		{
 			if (data.find(i) == data.end())
-			{
 				out->writeByte(null_marker);
-			}
 			else
-			{
-				switch(data.at(i).type)
-				{
-					case DATA_INT:
-						out->writeByte(double_marker);
-						out->serializeDouble(data.at(i).data_i);
-						break;
-					case DATA_OBJECT:
-						data.at(i).data->serialize(out, stringMap, objMap, traitsMap);
-						break;
-				}
-			}
+				data.at(i).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 		}
 	}
 }
@@ -1760,30 +1592,25 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, IFunction *replacer, co
 	for (auto it=data.begin() ; it != data.end(); ++it)
 	{
 		tiny_string subres;
-		ASObject* o = it->second.type==DATA_OBJECT ? it->second.data : abstract_i(getSystemState(),it->second.data_i);
 		if (replacer != NULL)
 		{
-			ASObject* params[2];
+			asAtom params[2];
 			
-			params[0] = abstract_di(getSystemState(),it->first);
-			params[0]->incRef();
-			params[1] = o;
-			params[1]->incRef();
-			ASObject *funcret=replacer->call(getSystemState()->getNullRef(), params, 2);
-			if (funcret)
-				subres = funcret->toJSON(path,NULL,spaces,filter);
+			params[0] = asAtom(it->first);
+			ASATOM_INCREF(params[0]);
+			params[1] = it->second;
+			ASATOM_INCREF(params[1]);
+			asAtom funcret=replacer->call(asAtom(T_NULL), params, 2);
+			if (funcret.type != T_INVALID)
+				subres = funcret.toObject(getSystemState())->toJSON(path,NULL,spaces,filter);
 		}
 		else
 		{
-			if(it->second.type==DATA_OBJECT)
-			{
-				if (it->second.data)
-					subres = it->second.data->toJSON(path,replacer,spaces,filter);
-				else
-					continue;
-			}
+			ASObject* o = it->second.toObject(getSystemState());
+			if (o)
+				subres = o->toJSON(path,replacer,spaces,filter);
 			else
-				subres = o->toString();
+				continue;
 		}
 		if (!subres.empty())
 		{
@@ -1807,26 +1634,14 @@ Array::~Array()
 {
 }
 
-void Array::set(unsigned int index, _R<ASObject> o)
+void Array::set(unsigned int index, asAtom o)
 {
 	if(index<currentsize)
 	{
-		data_slot ds;
 		if(data.find(index) != data.end())
-			data[index].clear();
-		if(o->getObjectType()==T_INTEGER)
-		{
-			Integer* i=o->as<Integer>();
-			ds.data_i=i->val;
-			ds.type=DATA_INT;
-		}
-		else
-		{
-			o->incRef();
-			ds.data=o.getPtr();
-			ds.type=DATA_OBJECT;
-		}
-		data[index]=ds;
+			ASATOM_DECREF(data[index]);
+		ASATOM_INCREF(o);
+		data[index]=o;
 		currentpos = 0;
 	}
 	else
@@ -1845,14 +1660,14 @@ uint64_t Array::size()
 		lengthName.isAttribute = false;
 		if (hasPropertyByMultiname(lengthName, true, true))
 		{
-			_NR<ASObject> o=getVariableByMultiname(lengthName,SKIP_IMPL);
-			return o->toUInt();
+			asAtom o=getVariableByMultiname(lengthName,SKIP_IMPL);
+			return o.toUInt();
 		}
 	}
 	return currentsize;
 }
 
-void Array::push(Ref<ASObject> o)
+void Array::push(asAtom o)
 {
 	if (currentsize == UINT32_MAX)
 		return;

@@ -156,7 +156,7 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 	for(int32_t i=0;i<denseCount;i++)
 	{
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		ret->push(value);
+		ret->push(asAtom::fromObject(value.getPtr()));
 	}
 	return ret;
 }
@@ -207,7 +207,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			if (type == NULL)
 			{
 				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);
-				type = Class<ASObject>::getClass(input->getSystemState());
+				type = input->getSystemState()->getObjectClassRef();
 			}
 			break;
 		}
@@ -305,7 +305,7 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		key->incRef();
 		value->incRef();
-		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED);
+		ret->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),ASObject::CONST_ALLOWED);
 	}
 	return ret;
 }
@@ -381,13 +381,13 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		readExternalName.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		readExternalName.isAttribute = false;
 
-		_NR<ASObject> o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
-		assert_and_throw(!o.isNull() && o->getObjectType()==T_FUNCTION);
-		IFunction* f=o->as<IFunction>();
+		asAtom o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
+		assert_and_throw(o.type==T_FUNCTION);
+		IFunction* f=o.getObject()->as<IFunction>();
 		ret->incRef();
 		input->incRef();
-		ASObject* const tmpArg[1] = {input};
-		f->call(ret.getPtr(), tmpArg, 1);
+		asAtom tmpArg[1] = { asAtom::fromObject(input) };
+		f->call(asAtom::fromObject(ret.getPtr()), tmpArg, 1);
 		return ret;
 	}
 
@@ -430,7 +430,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 
-		ret->setVariableByMultiname(name,value.getPtr(),ASObject::CONST_ALLOWED,traits.type);
+		ret->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),ASObject::CONST_ALLOWED,traits.type);
 	}
 
 	//Read dynamic name, value pairs
@@ -636,7 +636,7 @@ _R<ASObject> Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& st
 	{
 		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
 		value->incRef();
-		ret->push(value);
+		ret->push(asAtom::fromObject(value.getPtr()));
 		count--;
 	}
 	return ret;

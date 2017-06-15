@@ -988,9 +988,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 						if(objType)
 						{
 							const variable* var=objType->findBorrowedGettable(*name);
-							if(var && var->var && var->var->getObjectType()==T_FUNCTION)
+							if(var && var->var.type==T_FUNCTION)
 							{
-								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var);
+								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var.getObject());
 								if(calledFunc)
 									inferredData.type=calledFunc->mi->returnType;
 							}

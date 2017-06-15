@@ -203,9 +203,9 @@ ASObject *RegExp::match(const tiny_string& str)
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] >= 0)
-			a->push(_MR(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
+			a->push(asAtom::fromObject(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
-			a->push(_MR(getSystemState()->getUndefinedRef()));
+			a->push(asAtom::fromObject(getSystemState()->getUndefinedRef()));
 	}
 	a->setVariableByQName("input","",abstract_s(getSystemState(),str),DYNAMIC_TRAIT);
 

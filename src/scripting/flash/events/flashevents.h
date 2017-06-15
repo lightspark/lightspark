@@ -273,7 +273,6 @@ class MouseEvent: public Event
 {
 private:
 	uint32_t modifiers; 
-	bool buttonDown;
 	Event* cloneImpl() const;
 public:
 	MouseEvent(Class_base* c);
@@ -285,8 +284,8 @@ public:
 	void setTarget(_NR<ASObject> t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
 	ASFUNCTION(_constructor);
+	ASPROPERTY_GETTER_SETTER(bool,buttonDown);
 	ASFUNCTION_GETTER_SETTER(altKey);
-	ASFUNCTION_GETTER_SETTER(buttonDown);
 	ASFUNCTION_GETTER_SETTER(controlKey);
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASPROPERTY_GETTER_SETTER(int32_t,delta);

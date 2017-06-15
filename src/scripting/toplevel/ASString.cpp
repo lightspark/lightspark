@@ -70,19 +70,15 @@ ASFUNCTIONBODY(ASString,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(ASString,_getLength)
+ASFUNCTIONBODY_ATOM(ASString,_getLength)
 {
 	// fast path if obj is ASString
-	if (obj->is<ASString>())
+	if (obj.type == T_STRING)
 	{
-		ASString* th = obj->as<ASString>();
-		if (th->strlength.isNull())
-			th->strlength = _MNR(abstract_i(obj->getSystemState(),th->getData().numChars()));
-		th->strlength->incRef();
-		return th->strlength.getPtr();
-//		return abstract_i(obj->getSystemState(),th->getData().numChars());
+		ASString* th = obj.getObject()->as<ASString>();
+		return asAtom((int32_t)th->getData().numChars());
 	}
-	return abstract_i(obj->getSystemState(),obj->toString().numChars());
+	return asAtom((int32_t)obj.toString().numChars());
 }
 
 void ASString::sinit(Class_base* c)
@@ -242,7 +238,7 @@ ASFUNCTIONBODY(ASString,match)
 			prevLastIndex = re->lastIndex;
 
 			assert(match->is<Array>());
-			resarr->push(match->as<Array>()->at(0));
+			resarr->push(asAtom::fromObject(match->as<Array>()->at(0).getPtr()));
 		}
 
 		// According to ECMA we should return Null if resarr
@@ -283,7 +279,7 @@ ASFUNCTIONBODY(ASString,split)
 	uint32_t limit = 0x7fffffff;
 	if(argslen == 0 )
 	{
-		ret->push(_MR(abstract_s(obj->getSystemState(),data)));
+		ret->push(asAtom::fromObject(abstract_s(obj->getSystemState(),data)));
 		return ret;
 	}
 	if (argslen > 1 && !args[1]->is<Undefined>())
@@ -301,7 +297,7 @@ ASFUNCTIONBODY(ASString,split)
 			{
 				if (ret->size() >= limit)
 					break;
-				ret->push(_MR(abstract_s(obj->getSystemState(), tiny_string::fromChar(*i) ) ));
+				ret->push(asAtom::fromObject(abstract_s(obj->getSystemState(), tiny_string::fromChar(*i) ) ));
 			}
 			return ret;
 		}
@@ -339,7 +335,7 @@ ASFUNCTIONBODY(ASString,split)
 			ASString* s=abstract_s(obj->getSystemState(),data.substr_bytes(lastMatch,end-lastMatch));
 			if (ret->size() >= limit)
 				break;
-			ret->push(_MR(s));
+			ret->push(asAtom::fromObject(s));
 			lastMatch=offset=ovector[1];
 
 			//Insert capturing groups
@@ -349,14 +345,14 @@ ASFUNCTIONBODY(ASString,split)
 					break;
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
 				ASString* s=abstract_s(obj->getSystemState(),data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
-				ret->push(_MR(s));
+				ret->push(asAtom::fromObject(s));
 			}
 		}
 		while(end<data.numBytes() && ret->size() < limit);
 		if(ret->size() < limit && lastMatch != data.numBytes()+1)
 		{
 			ASString* s=abstract_s(obj->getSystemState(),data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
-			ret->push(_MR(s));
+			ret->push(asAtom::fromObject(s));
 		}
 		pcre_free(pcreRE);
 	}
@@ -369,7 +365,7 @@ ASFUNCTIONBODY(ASString,split)
 
 			if (data.numChars() == 0)
 			{
-				ret->push(_MR(abstract_s(obj->getSystemState())));
+				ret->push(asAtom::fromObject(abstract_s(obj->getSystemState())));
 			}
 			uint32_t j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
@@ -377,7 +373,7 @@ ASFUNCTIONBODY(ASString,split)
 				if (j >= limit)
 					break;
 				j++;
-				ret->push(_MR(abstract_s(obj->getSystemState(), tiny_string::fromChar(*i) ) ));
+				ret->push(asAtom::fromObject(abstract_s(obj->getSystemState(), tiny_string::fromChar(*i) ) ));
 			}
 			return ret;
 		}
@@ -393,10 +389,10 @@ ASFUNCTIONBODY(ASString,split)
 			ASString* s=abstract_s(obj->getSystemState(),data.substr(start,(match-start)));
 			if (ret->size() >= limit)
 				break;
-			ret->push(_MR(s));
+			ret->push(asAtom::fromObject(s));
 			start=match+del.numChars();
 			if (start == len)
-				ret->push(_MR(abstract_s(obj->getSystemState())));
+				ret->push(asAtom::fromObject(abstract_s(obj->getSystemState())));
 		}
 		while(start<len && ret->size() < limit);
 	}
@@ -660,26 +656,26 @@ ASFUNCTIONBODY(ASString,charAt)
 	return abstract_s(obj->getSystemState(), tiny_string::fromChar(data.charAt(index)) );
 }
 
-ASFUNCTIONBODY(ASString,charCodeAt)
+ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 {
 	int64_t index;
 	
-	ARG_UNPACK (index, 0);
+	ARG_UNPACK_ATOM (index, 0);
 
 	// fast path if obj is ASString
-	if (obj->is<ASString>())
+	if (obj.type == T_STRING)
 	{
-		if(index<0 || index>=(int64_t)obj->as<ASString>()->getData().numChars())
-			return abstract_d(obj->getSystemState(),Number::NaN);
-		return abstract_i(obj->getSystemState(),obj->as<ASString>()->getData().charAt(index));
+		if(index<0 || index>=(int64_t)obj.getObject()->as<ASString>()->getData().numChars())
+			return asAtom(Number::NaN);
+		return asAtom((int32_t)obj.getObject()->as<ASString>()->getData().charAt(index));
 	}
-	tiny_string data = obj->toString();
+	tiny_string data = obj.toString();
 	if(index<0 || index>=(int64_t)data.numChars())
-		return abstract_d(obj->getSystemState(),Number::NaN);
+		return asAtom(Number::NaN);
 	else
 	{
 		//Character codes are expected to be positive
-		return abstract_i(obj->getSystemState(),data.charAt(index));
+		return asAtom((int32_t)data.charAt(index));
 	}
 }
 
@@ -828,17 +824,17 @@ ASFUNCTIONBODY(ASString,replace)
 			{
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
-				ASObject** subargs = g_newa(ASObject*, 3+capturingGroups);
+				asAtom* subargs = g_newa(asAtom, 3+capturingGroups);
 				//we index on bytes, not on UTF-8 characters
-				subargs[0]=abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0]));
+				subargs[0]=asAtom::fromObject(abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
-				subargs[capturingGroups+1]=abstract_i(obj->getSystemState(),ovector[0]-retDiff);
+					subargs[i+1]=asAtom::fromObject(abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2])));
+				subargs[capturingGroups+1]=asAtom((int32_t)(ovector[0]-retDiff));
 				
-				subargs[capturingGroups+2]=abstract_s(obj->getSystemState(),data);
-				ASObject* ret=f->call(obj->getSystemState()->getNullRef(), subargs, 3+capturingGroups);
-				replaceWithTmp=ret->toString().raw_buf();
-				ret->decRef();
+				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(obj->getSystemState(),data));
+				asAtom ret=f->call(asAtom(T_NULL), subargs, 3+capturingGroups);
+				replaceWithTmp=ret.toString().raw_buf();
+				ASATOM_DECREF(ret);
 			} else {
 					size_t pos, ipos = 0;
 					tiny_string group;

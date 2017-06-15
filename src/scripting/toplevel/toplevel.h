@@ -85,7 +85,7 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 * If the argument cannot be converted, it throws a TypeError
 	 */
-	virtual ASObject* coerce(ASObject* o) const=0;
+	virtual asAtom coerce(SystemState* sys, asAtom o) const=0;
 
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
@@ -102,20 +102,20 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	ASObject* coerce(ASObject* o) const { return o; }
-	virtual ~Any() {};
+	asAtom coerce(SystemState* sys,asAtom o) const { return o; }
+	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; };
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
 };
 
 class Void: public Type
 {
 public:
-	ASObject* coerce(ASObject* o) const;
-	virtual ~Void() {};
+	asAtom coerce(SystemState* sys,asAtom o) const;
+	virtual ~Void() {}
 	tiny_string getName() const { return "void"; }
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; };
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
 };
 
@@ -128,8 +128,8 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	ASObject* coerce(ASObject* o) const { throw RunTimeException("Coercing to an ActivationType should not happen");};
-	virtual ~ActivationType() {};
+	asAtom coerce(SystemState* sys,asAtom o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	virtual ~ActivationType() {}
 	tiny_string getName() const { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const;
@@ -253,12 +253,12 @@ public:
 	 * It consumes one reference of 'o'.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	virtual ASObject* coerce(ASObject* o) const;
+	virtual asAtom coerce(SystemState* sys, asAtom o) const;
 
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
-		return ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,nsRealId);
+		return ASObject::findGettableImplConst(getSystemState(), borrowedVariables,name,nsRealId);
 	}
 	
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
@@ -338,8 +338,8 @@ class ObjectPrototype: public ASObject, public Prototype
 public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
 };
 
@@ -354,7 +354,7 @@ public:
 	ObjectConstructor(Class_base* c,uint32_t length);
 	void incRef() { getClass()->incRef(); }
 	void decRef() { getClass()->decRef(); }
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool isEqual(ASObject* r);
 };
 
@@ -369,7 +369,7 @@ public:
 	_NR<ASObject> functionPrototype;
 	void finalize() { functionPrototype.reset(); }
 
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -415,7 +415,7 @@ public:
 	 * Return the ASObject the function returned.
 	 * This never returns NULL.
 	 */
-	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args)=0;
+	virtual asAtom call(asAtom obj, asAtom* args, uint32_t num_args)=0;
 	IFunction* bind(_NR<ASObject> c, int level)
 	{
 		if(!isBound())
@@ -460,10 +460,14 @@ class Function : public IFunction
 friend class Class<IFunction>;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
+	typedef asAtom (*as_atom_function)(asAtom, asAtom*, const unsigned int);
 protected:
 	/* Function pointer to the C-function implementation */
+	// TODO this can be removed once all builtin functions are using the asAtom-based function pointer
 	as_function val;
-	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v){}
+	/* Function pointer to the C-function implementation with atom arguments */
+	as_atom_function val_atom;
+	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v),val_atom(NULL) {}
 	Function* clone()
 	{
 		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
@@ -472,6 +476,7 @@ protected:
 		else
 		{
 			ret->val = val;
+			ret->val_atom = val_atom;
 			ret->length = length;
 			ret->inClass = inClass;
 			ret->functionname = functionname;
@@ -480,7 +485,7 @@ protected:
 	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
+	asAtom call(asAtom obj, asAtom* args, uint32_t num_args);
 	bool isEqual(ASObject* r);
 };
 
@@ -497,7 +502,7 @@ public:
 		return Function::destruct();
 	}
 	
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -539,7 +544,7 @@ private:
 	method_info* getMethodInfo() const { return mi; }
 public:
 	~SyntheticFunction() {}
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
+	asAtom call(asAtom obj, asAtom *args, uint32_t num_args);
 	inline bool destruct()
 	{
 		func_scope.reset();
@@ -592,7 +597,7 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(SystemState* sys,Function::as_function v)
+	static Function* getFunction(SystemState* sys,Function::as_function v, int len = 0)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
@@ -600,23 +605,26 @@ public:
 			ret=new (c->memoryAccount) Function(c, v);
 		else
 			ret->val = v;
-		ret->constructIndicator = true;
-		ret->constructorCallComplete = true;
-		return ret;
-	}
-	static Function* getFunction(SystemState* sys,Function::as_function v, int len)
-	{
-		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
-		if (!ret)
-			ret=new (c->memoryAccount) Function(c, v);
-		else
-			ret->val = v;
+		ret->val_atom= NULL;
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;
 	}
+	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0)
+	{
+		Class<IFunction>* c=Class<IFunction>::getClass(sys);
+		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
+		if (!ret)
+			ret=new (c->memoryAccount) Function(c, NULL);
+		ret->val= NULL;
+		ret->val_atom = v;
+		ret->length = len;
+		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
+		return ret;
+	}
+
 	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
@@ -657,7 +665,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
 };
 
 class Null: public ASObject
@@ -668,9 +676,9 @@ public:
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
 	int64_t toInt64();
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -702,8 +710,8 @@ public:
 	tiny_string toString();
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	_R<ASObject> nextName(uint32_t index);
-	_R<ASObject> nextValue(uint32_t index);
+	asAtom nextName(uint32_t index);
+	asAtom nextValue(uint32_t index);
 };
 
 class Namespace: public ASObject
@@ -735,8 +743,8 @@ public:
 	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	_R<ASObject> nextName(uint32_t index);
-	_R<ASObject> nextValue(uint32_t index);
+	asAtom nextName(uint32_t index);
+	asAtom nextValue(uint32_t index);
 };
 
 
@@ -748,9 +756,9 @@ private:
 public:
 	Global(Class_base* cb, ABCContext* c, int s);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {};
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	_NR<ASObject> getVariableByMultinameOpportunistic(const multiname& name);
+	static void buildTraits(ASObject* o) {}
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	asAtom getVariableByMultinameOpportunistic(const multiname& name);
 	/*
 	 * Utility method to register builtin methods and classes
 	 */

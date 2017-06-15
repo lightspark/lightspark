@@ -117,69 +117,62 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 	}
 }
 
-void multiname::setName(ASObject* n)
+void multiname::setName(asAtom& n,SystemState* sys)
 {
 	if (name_type==NAME_OBJECT && name_o!=NULL) {
 		name_o->decRef();
 		name_o = NULL;
 	}
 
-	switch(n->getObjectType())
+	switch(n.type)
 	{
 	case T_INTEGER:
-		name_i=n->as<Integer>()->val;
+		name_i=n.intval;
 		name_type = NAME_INT;
 		name_s_id = UINT32_MAX;
 		break;
 	case T_UINTEGER:
-		name_ui=n->as<UInteger>()->val;
+		name_ui=n.uintval;
 		name_type = NAME_UINT;
 		name_s_id = UINT32_MAX;
 		break;
 	case T_NUMBER:
-		if (n->as<Number>()->isfloat)
-		{
-			name_d=n->as<Number>()->toNumber();
-			name_type = NAME_NUMBER;
-		}
-		else
-		{
-			int64_t di = n->as<Number>()->toInt64();
-			if (di <= UINT32_MAX && di >= 0)
-			{
-				name_ui= di;
-				name_type = NAME_UINT;
-			}
-			else if (di > INT32_MAX || di < INT32_MIN)
-			{
-				name_d=n->as<Number>()->toNumber();
-				name_type = NAME_NUMBER;
-			}
-			else
-			{
-				name_i= di;
-				name_type = NAME_INT;
-			}
-		}
+		name_d=n.numberval;
+		name_type = NAME_NUMBER;
+		name_s_id = UINT32_MAX;
+		break;
+	case T_BOOLEAN:
+		name_i=n.boolval ? 1 : 0;
+		name_type = NAME_INT;
 		name_s_id = UINT32_MAX;
 		break;
 	case T_QNAME:
 		{
-			ASQName* qname=static_cast<ASQName*>(n);
+			ASQName* qname=static_cast<ASQName*>(n.objval);
 			name_s_id=qname->local_name;
 			name_type = NAME_STRING;
 		}
 		break;
 	case T_STRING:
 		{
-			ASString* o=static_cast<ASString*>(n);
-			name_s_id=o->hasId ? o->toStringId() : n->getSystemState()->getUniqueStringId(o->getData());
+			ASString* o=static_cast<ASString*>(n.objval);
+			name_s_id=o->hasId ? o->toStringId() : o->getSystemState()->getUniqueStringId(o->getData());
 			name_type = NAME_STRING;
 		}
 		break;
+	case T_NULL:
+		name_o=sys->getNullRef();
+		name_type = NAME_OBJECT;
+		name_s_id = UINT32_MAX;
+		break;
+	case T_UNDEFINED:
+		name_o=sys->getUndefinedRef();
+		name_type = NAME_OBJECT;
+		name_s_id = UINT32_MAX;
+		break;
 	default:
-		n->incRef();
-		name_o=n;
+		ASATOM_INCREF(n);
+		name_o=n.objval;
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		break;

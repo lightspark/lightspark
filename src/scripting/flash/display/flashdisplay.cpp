@@ -760,11 +760,11 @@ ASFUNCTIONBODY(Sprite,_stopDrag)
 
 ASFUNCTIONBODY_GETTER(Sprite, hitArea);
 
-ASFUNCTIONBODY(Sprite,_setter_hitArea)
+ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 {
-	Sprite* th=Class<Sprite>::cast(obj);
+	Sprite* th=Class<Sprite>::cast(obj.getObject());
 	_NR<Sprite> value;
-	ARG_UNPACK(value);
+	ARG_UNPACK_ATOM(value);
 
 	if (!th->hitArea.isNull())
 		th->hitArea->hitTarget.reset();
@@ -776,7 +776,7 @@ ASFUNCTIONBODY(Sprite,_setter_hitArea)
 		th->hitArea->hitTarget = _MNR(th);
 	}
 
-	return NULL;
+	return asAtom();
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -1036,7 +1036,7 @@ ASFUNCTIONBODY(Scene,_getLabels)
 	ret->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
-		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(obj->getSystemState(),th->labels[i])));
+		ret->set(i, asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),th->labels[i])));
 	}
 	return ret;
 }
@@ -1369,7 +1369,7 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
-		ret->set(i, _MR(Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[i],numFrames)));
+		ret->set(i, asAtom::fromObject(Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[i],numFrames)));
 	}
 	return ret;
 }
@@ -1451,7 +1451,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 	ret->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
-		ret->set(i, _MR(Class<FrameLabel>::getInstanceS(obj->getSystemState(),sc.labels[i])));
+		ret->set(i, asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),sc.labels[i])));
 	}
 	return ret;
 }
@@ -1536,7 +1536,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 //		objName.name_type=multiname::NAME_STRING;
 //		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
 //		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-//		setVariableByMultiname(objName,getSystemState()->getNullRef(), ASObject::CONST_NOT_ALLOWED);
+//		setVariableByMultiname(objName,asAtom(T_NULL), ASObject::CONST_NOT_ALLOWED);
 //	}
 
 	obj->incRef();
@@ -1560,7 +1560,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,obj,ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,asAtom::fromObject(obj),ASObject::CONST_NOT_ALLOWED);
 	}
 
 	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));
@@ -2160,7 +2160,7 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 			(*it)->getBounds(xmin,xmax,ymin,ymax,m);
 			if (xmin <= point->getX() && xmax >= point->getX()
 					&& ymin <= point->getY() && ymax >= point->getY())
-					ar->push(*it);
+					ar->push(asAtom::fromObject((*it).getPtr()));
 			if ((*it)->is<DisplayObjectContainer>())
 				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
 			it++;
@@ -3174,9 +3174,8 @@ void MovieClip::initFrame()
 	//TODO: check order: child or parent first?
 	if(newFrame && frameScripts.count(state.FP))
 	{
-		ASObject *v=frameScripts[state.FP]->call(NULL,NULL,0);
-		if(v)
-			v->decRef();
+		asAtom v=frameScripts[state.FP]->call(asAtom(),NULL,0);
+		ASATOM_DECREF(v);
 	}
 
 }

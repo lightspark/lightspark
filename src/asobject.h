@@ -31,101 +31,106 @@
 
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
+#define ASFUNCTION_ATOM(name) \
+	static asAtom name(asAtom , asAtom* args, const unsigned int argslen)
 
 /* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
 	type name; \
-	ASFUNCTION( _getter_##name)
+	ASFUNCTION_ATOM( _getter_##name)
 
 #define ASPROPERTY_SETTER(type,name) \
 	type name; \
-	ASFUNCTION( _setter_##name)
+	ASFUNCTION_ATOM( _setter_##name)
 
 #define ASPROPERTY_GETTER_SETTER(type, name) \
 	type name; \
-	ASFUNCTION( _getter_##name); \
-	ASFUNCTION( _setter_##name)
+	ASFUNCTION_ATOM( _getter_##name); \
+	ASFUNCTION_ATOM( _setter_##name)
 
 /* declare setter/getter for already existing member variable */
 #define ASFUNCTION_GETTER(name) \
-	ASFUNCTION( _getter_##name)
+	ASFUNCTION_ATOM( _getter_##name)
 
 #define ASFUNCTION_SETTER(name) \
-	ASFUNCTION( _setter_##name)
+	ASFUNCTION_ATOM( _setter_##name)
 
 #define ASFUNCTION_GETTER_SETTER(name) \
-	ASFUNCTION( _getter_##name); \
-	ASFUNCTION( _setter_##name)
+	ASFUNCTION_ATOM( _getter_##name); \
+	ASFUNCTION_ATOM( _setter_##name)
 
 /* general purpose body for an AS function */
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
+#define ASFUNCTIONBODY_ATOM(c,name) \
+	asAtom c::name(asAtom obj, asAtom* args, const unsigned int argslen)
+
 /* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
-	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
-		c* th = obj->as<c>(); \
+		if(!obj.is<c>()) \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+		c* th = obj.as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter"); \
-		return ArgumentConversion<decltype(th->name)>::toAbstract(obj->getSystemState(),th->name); \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(obj.getObject()->getSystemState(),th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
-	ASObject* c::_getter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
-		c* th = obj->as<c>(); \
+		if(!obj.is<c>()) \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+		c* th = obj.as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Arguments provided in getter"); \
-		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " getter is not implemented"); \
-		return ArgumentConversion<decltype(th->name)>::toAbstract(obj->getSystemState(),th->name); \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " getter is not implemented"); \
+		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(obj.getObject()->getSystemState(),th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
-	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
-		c* th = obj->as<c>(); \
+		if(!obj.is<c>()) \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
-		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
-		return NULL; \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
+		return asAtom(); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
-	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
-		c* th = obj->as<c>(); \
+		if(!obj.is<c>()) \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
-		LOG(LOG_NOT_IMPLEMENTED,obj->getClassName() <<"."<< #name << " setter is not implemented"); \
-		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
-		return NULL; \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " setter is not implemented"); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
+		return asAtom(); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
  * After the property has been updated, the callback member function is called with the old value
  * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
-	ASObject* c::_setter_##name(ASObject* obj, ASObject* const* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!obj->is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Function applied to wrong object"); \
-		c* th = obj->as<c>(); \
+		if(!obj.is<c>()) \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); \
+			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
-		th->name = ArgumentConversion<decltype(th->name)>::toConcrete(args[0]); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
 		th->callback(oldValue); \
-		return NULL; \
+		return asAtom(); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_GETTER_SETTER or ASFUNCTION_GETTER_SETTER */
@@ -189,9 +194,88 @@ extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
+class asAtom
+{
+friend class multiname;
+friend class ABCContext;
+private:
+	union
+	{
+		int32_t intval;
+		uint32_t uintval;
+		number_t numberval;
+		bool boolval;
+	};
+	ASObject* objval;
+	void decRef();
+public:
+	SWFOBJECT_TYPE type;
+	asAtom():objval(NULL),type(T_INVALID) {}
+	asAtom(SWFOBJECT_TYPE _t):objval(NULL),type(_t) {}
+	asAtom(int32_t val):intval(val),objval(NULL),type(T_INTEGER) {}
+	asAtom(uint32_t val):uintval(val),objval(NULL),type(T_UINTEGER) {}
+	asAtom(number_t val):numberval(val),objval(NULL),type(T_NUMBER) {}
+	asAtom(bool val):boolval(val),objval(NULL),type(T_BOOLEAN) {}
+	ASObject* toObject(SystemState* sys);
+	// returns NULL if this atom is a primitive;
+	inline ASObject* getObject() const { return objval; }
+	static asAtom fromObject(ASObject* obj);
+	void replace(ASObject* obj);
+	std::string toDebugString();
+	void applyProxyProperty(multiname& name);
+	TRISTATE isLess(SystemState *sys, asAtom& v2);
+	bool isEqual(SystemState *sys, asAtom& v2);
+	bool isEqualStrict(SystemState *sys, asAtom& v2);
+	bool isConstructed() const;
+	bool isPrimitive() const;
+	asAtom asTypelate(asAtom atomtype);
+	number_t toNumber();
+	int32_t toInt();
+	int64_t toInt64();
+	uint32_t toUInt();
+	tiny_string toString();
+	tiny_string toLocaleString();
+	asAtom typeOf(SystemState *sys);
+	bool Boolean_concrete();
+	void convert_i();
+	void convert_u();
+	void convert_d();
+	void convert_b();
+	void setInt(int32_t val);
+	void setUInt(uint32_t val);
+	void setNumber(number_t val);
+	void setBool(bool val);
+	void increment();
+	void decrement();
+	void increment_i();
+	void decrement_i();
+	void add(asAtom& v2, SystemState *sys);
+	void bitnot();
+	void subtract(asAtom& v2);
+	void multiply(asAtom& v2);
+	void divide(asAtom& v2);
+	void modulo(asAtom& v2);
+	void lshift(asAtom& v1);
+	void rshift(asAtom& v1);
+	void urshift(asAtom& v1);
+	void bit_and(asAtom& v1);
+	void bit_or(asAtom& v1);
+	void bit_xor(asAtom& v1);
+	void _not();
+	void negate_i();
+	void add_i(asAtom& v2);
+	void subtract_i(asAtom& v2);
+	void multiply_i(asAtom& v2);
+	template<class T> bool is() const;
+	template<class T> const T* as() const { return static_cast<const T*>(this->objval); }
+	template<class T> T* as() { return static_cast<T*>(this->objval); }
+};
+#define ASATOM_INCREF(a) if (a.getObject()) a.getObject()->incRef()
+#define ASATOM_DECREF(a) if (a.getObject()) a.getObject()->decRef()
+#define ASATOM_DECREF_POINTER(a) if (a->getObject()) a->getObject()->decRef()
 struct variable
 {
-	ASObject* var;
+	asAtom var;
 	union
 	{
 		multiname* traitTypemname;
@@ -206,13 +290,13 @@ struct variable
 	bool isenumerable:1;
 	bool issealed:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: var(NULL),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
-	variable(TRAIT_KIND _k, ASObject* _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(ASObject* v);
+		: typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
+	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
+	void setVar(asAtom v, SystemState* sys);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
-	void setVarNoCoerce(ASObject* v);
+	void setVarNoCoerce(asAtom &v);
 };
 
 struct varName
@@ -261,7 +345,7 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	inline const variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
+	inline const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
 	{
 		if (mname.isEmpty())
 			return NULL;
@@ -299,21 +383,61 @@ public:
 	
 		return NULL;
 	}
+
+	//
+	inline variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL)
+	{
+		if (mname.isEmpty())
+			return NULL;
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+		assert(!mname.ns.empty());
+
+		var_iterator ret=Variables.lower_bound(name);
+		auto nsIt=mname.ns.cbegin();
+		//Find the namespace
+		while(ret!=Variables.cend() && ret->first==name)
+		{
+			//breaks when the namespace is not found
+			const nsNameAndKind& ns=ret->second.ns;
+			if(ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
+			{
+				if(ret->second.kind & traitKinds)
+				{
+					if (nsRealId)
+						*nsRealId = ns.nsRealId;
+					return &ret->second;
+				}
+				else
+					return NULL;
+			}
+			else
+			{
+				++nsIt;
+				if(nsIt==mname.ns.cend())
+				{
+					nsIt=mname.ns.cbegin();
+					++ret;
+				}
+			}
+		}
+
+		return NULL;
+	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
-	ASObject* getSlot(unsigned int n);
+	asAtom getSlot(unsigned int n);
 	/*
 	 * This method does throw if the slot id is not valid
 	 */
 	void validateSlotId(unsigned int n) const;
-	void setSlot(unsigned int n,ASObject* o);
+	void setSlot(unsigned int n,asAtom o,SystemState* sys);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	void setSlotNoCoerce(unsigned int n,ASObject* o);
+	void setSlotNoCoerce(unsigned int n, asAtom o);
 	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
 	inline unsigned int size() const
 	{
@@ -326,7 +450,7 @@ public:
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) const;
+				std::map<const Class_base*, uint32_t>& traitsMap);
 	void dumpVariables() const;
 	void destroyContents();
 };
@@ -352,12 +476,12 @@ private:
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
-		const variable* ret=varcount ? Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId):NULL;
+		const variable* ret=varcount ? Variables.findObjVarConst(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId):NULL;
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter || ret->var))
+			if(!(ret->getter || ret->var.type != T_INVALID))
 				ret=NULL;
 		}
 		return ret;
@@ -390,17 +514,29 @@ protected:
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap) const;
+				std::map<const Class_base*, uint32_t> traitsMap);
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
-	inline static const variable* findGettableImpl(SystemState* sys,const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	inline static const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
 	{
-		const variable* ret=map.findObjVar(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=map.findObjVarConst(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter || ret->var))
+			if(!(ret->getter || ret->var.type != T_INVALID))
+				ret=NULL;
+		}
+		return ret;
+	}
+	inline static variable* findGettableImpl(SystemState* sys, variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	{
+		variable* ret=map.findObjVar(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		if(ret)
+		{
+			//It seems valid for a class to redefine only the setter, so if we can't find
+			//something to get, it's ok
+			if(!(ret->getter || ret->var.type != T_INVALID))
 				ret=NULL;
 		}
 		return ret;
@@ -464,7 +600,7 @@ public:
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
 
-	virtual _NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
 		return getVariableByMultiname(name,opt,classdef);
 	}
@@ -472,26 +608,26 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	const variable* findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t* nsRealID = NULL) const;
+	variable *findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t* nsRealID = NULL);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
-	_NR<ASObject> getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces);
+	asAtom getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces);
 	/*
 	 * Execute a AS method on this object. Returns the value
 	 * returned by the function. One reference of each args[i] is
 	 * consumed. The method must exist, otherwise a TypeError is
 	 * thrown.
 	 */
-	_NR<ASObject> executeASMethod(const tiny_string& methodName, std::list<tiny_string> namespaces, ASObject* const* args, uint32_t num_args);
+	asAtom executeASMethod(const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst)
+	virtual void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
 	{
 		setVariableByMultiname(name,o,allowConst,classdef);
 	}
@@ -502,7 +638,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
@@ -521,15 +657,15 @@ public:
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	ASObject* getSlot(unsigned int n)
+	asAtom getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
 	}
-	void setSlot(unsigned int n,ASObject* o)
+	void setSlot(unsigned int n,asAtom o)
 	{
-		Variables.setSlot(n,o);
+		Variables.setSlot(n,o,getSystemState());
 	}
-	void setSlotNoCoerce(unsigned int n,ASObject* o)
+	void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
 		Variables.setSlotNoCoerce(n,o);
 	}
@@ -539,7 +675,7 @@ public:
 	{
 		return Variables.getNameAt(sys,i);
 	}
-	_R<ASObject> getValueAt(int i);
+	asAtom getValueAt(int i);
 	inline SWFOBJECT_TYPE getObjectType() const
 	{
 		return type;
@@ -600,8 +736,8 @@ public:
 
 	//Enumeration handling
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
-	virtual _R<ASObject> nextName(uint32_t index);
-	virtual _R<ASObject> nextValue(uint32_t index);
+	virtual asAtom nextName(uint32_t index);
+	virtual asAtom nextValue(uint32_t index);
 
 	//Called when the object construction is completed. Used by MovieClip implementation
 	inline virtual void constructionComplete()
@@ -775,6 +911,24 @@ template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; 
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
 
 
+template<class T> inline bool asAtom::is() const {
+	assert(type == T_OBJECT);
+	return objval ? objval->is<T>() : false;
+}
+template<> inline bool asAtom::is<Array>() const { return type==T_ARRAY; }
+template<> inline bool asAtom::is<ASObject>() const { return true; }
+template<> inline bool asAtom::is<ASQName>() const { return type==T_QNAME; }
+template<> inline bool asAtom::is<ASString>() const { return type==T_STRING; }
+template<> inline bool asAtom::is<Boolean>() const { return type==T_BOOLEAN; }
+template<> inline bool asAtom::is<Class_base>() const { return type==T_CLASS; }
+template<> inline bool asAtom::is<IFunction>() const { return type==T_FUNCTION; }
+template<> inline bool asAtom::is<Integer>() const { return type==T_INTEGER; }
+template<> inline bool asAtom::is<Namespace>() const { return type==T_NAMESPACE; }
+template<> inline bool asAtom::is<Null>() const { return type==T_NULL; }
+template<> inline bool asAtom::is<Number>() const { return type==T_NUMBER; }
+template<> inline bool asAtom::is<Type>() const { return type==T_CLASS; }
+template<> inline bool asAtom::is<UInteger>() const { return type==T_UINTEGER; }
+template<> inline bool asAtom::is<Undefined>() const { return type==T_UNDEFINED; }
 
 
 }

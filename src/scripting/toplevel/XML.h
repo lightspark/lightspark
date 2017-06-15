@@ -138,6 +138,7 @@ public:
 	ASFUNCTION(_hasOwnProperty);
 	ASFUNCTION(_prependChild);
 	ASFUNCTION(_replace);
+	ASFUNCTION(setNotification);
 
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
@@ -154,9 +155,9 @@ public:
 	
 	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const;
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);
 	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
 
@@ -174,8 +175,8 @@ public:
 	void normalize();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
-	_R<ASObject> nextName(uint32_t index);
-	_R<ASObject> nextValue(uint32_t index);
+	asAtom nextName(uint32_t index);
+	asAtom nextValue(uint32_t index);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

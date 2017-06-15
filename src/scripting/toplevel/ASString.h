@@ -70,7 +70,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(charAt);
-	ASFUNCTION(charCodeAt);
+	ASFUNCTION_ATOM(charCodeAt);
 	ASFUNCTION(concat);
 	ASFUNCTION(fromCharCode);
 	ASFUNCTION(indexOf);
@@ -85,7 +85,7 @@ public:
 	ASFUNCTION(toLowerCase);
 	ASFUNCTION(toUpperCase);
 	ASFUNCTION(_toString);
-	ASFUNCTION(_getLength);
+	ASFUNCTION_ATOM(_getLength);
 	ASFUNCTION(localeCompare);
 	ASFUNCTION(localeCompare_prototype);
 	bool isEqual(ASObject* r);
@@ -121,24 +121,24 @@ public:
 };
 
 template<>
-inline ASObject* Class<ASString>::coerce(ASObject* o) const
+inline asAtom Class<ASString>::coerce(SystemState* sys,asAtom o) const
 {
-	if (o->is<ASString>())
+	if (o.type == T_STRING)
 		return o;
 	//Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
-	if(o->is<Null>())
+	if(o.type == T_NULL)
 		return o;
-	ASObject* res = NULL;
-	if(o->is<Undefined>())
+	asAtom res;
+	if(o.type == T_UNDEFINED)
 	{
-		res = o->getSystemState()->getNullRef();
-		o->decRef();
+		res.type = T_NULL;
+		ASATOM_DECREF(o);
 		return res;
 	}
-	if(!o->isConstructed())
+	if(!o.isConstructed())
 		return o;
-	res = lightspark::abstract_s(o->getSystemState(),o->toString());
-	o->decRef();
+	res = asAtom::fromObject(lightspark::abstract_s(sys,o.toString()));
+	ASATOM_DECREF(o);
 	return res;
 }
 

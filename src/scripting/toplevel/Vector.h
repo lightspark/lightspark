@@ -75,16 +75,16 @@ public:
 
 	//Overloads
 	tiny_string toString();
-	void setVariableByMultiname(const multiname& name, ASObject* o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	_NR<ASObject> getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
 
 	tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	_R<ASObject> nextName(uint32_t index);
-	_R<ASObject> nextValue(uint32_t index);
+	asAtom nextName(uint32_t index);
+	asAtom nextValue(uint32_t index);
 
 	uint32_t size() const
 	{
@@ -106,7 +106,7 @@ public:
 	//TODO: do we need to implement generator?
 	ASFUNCTION(_constructor);
 
-	ASFUNCTION(push);
+	ASFUNCTION_ATOM(push);
 	ASFUNCTION(_concat);
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);

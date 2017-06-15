@@ -829,7 +829,7 @@ ASFUNCTIONBODY(NetConnection,call)
 	for(uint32_t i=2;i<argslen;i++)
 	{
 		args[i]->incRef();
-		rest->push(_MR(args[i]));
+		rest->push(asAtom::fromObject(args[i]));
 	}
 
 	_R<ByteArray> message=_MR(Class<ByteArray>::getInstanceS(obj->getSystemState()));
@@ -2005,8 +2005,8 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<AS
 	callbackName.name_type=multiname::NAME_STRING;
 	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-	_NR<ASObject> callback = client->getVariableByMultiname(callbackName);
-	if(!callback.isNull() && callback->is<IFunction>())
+	asAtom callback = client->getVariableByMultiname(callbackName);
+	if(callback.type == T_FUNCTION)
 	{
 		ASObject* callbackArgs[arglist.size()];
 
@@ -2018,9 +2018,9 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<AS
 			arg->incRef();
 			callbackArgs[i++] = arg.getPtr();
 		}
-		callback->incRef();
+		ASATOM_INCREF(callback);
 		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(_MR(
-				static_cast<IFunction*>(callback.getPtr())),
+				static_cast<IFunction*>(callback.getObject())),
 				_MR(client), callbackArgs, arglist.size()));
 		getVm(getSystemState())->addEvent(NullRef,event);
 	}
@@ -2165,24 +2165,24 @@ void URLVariables::decode(const tiny_string& s)
 			propName.name_type=multiname::NAME_STRING;
 			propName.name_s_id=getSys()->getUniqueStringId(tiny_string(name,true));
 			propName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-			_NR<ASObject> curValue=getVariableByMultiname(propName);
-			if(!curValue.isNull())
+			asAtom curValue=getVariableByMultiname(propName);
+			if(curValue.type != T_INVALID)
 			{
 				//If the variable already exists we have to create an Array of values
 				Array* arr=NULL;
-				if(curValue->getObjectType()!=T_ARRAY)
+				if(curValue.type!=T_ARRAY)
 				{
 					arr=Class<Array>::getInstanceSNoArgs(getSystemState());
 					arr->push(curValue);
-					setVariableByMultiname(propName,arr,ASObject::CONST_NOT_ALLOWED);
+					setVariableByMultiname(propName,asAtom::fromObject(arr),ASObject::CONST_NOT_ALLOWED);
 				}
 				else
-					arr=Class<Array>::cast(curValue.getPtr());
+					arr=Class<Array>::cast(curValue.getObject());
 
-				arr->push(_MR(abstract_s(getSystemState(),value)));
+				arr->push(asAtom::fromObject(abstract_s(getSystemState(),value)));
 			}
 			else
-				setVariableByMultiname(propName,abstract_s(getSystemState(),value),ASObject::CONST_NOT_ALLOWED);
+				setVariableByMultiname(propName,asAtom::fromObject(abstract_s(getSystemState(),value)),ASObject::CONST_NOT_ALLOWED);
 
 			g_free(name);
 			g_free(value);
@@ -2242,12 +2242,12 @@ tiny_string URLVariables::toString_priv()
 		const tiny_string& name=getNameAt(i);
 		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
 
-		_R<ASObject> val=getValueAt(i);
-		if(val->getObjectType()==T_ARRAY)
+		asAtom val=getValueAt(i);
+		if(val.type==T_ARRAY)
 		{
 			//Print using multiple properties
 			//Ex. ["foo","bar"] -> prop1=foo&prop1=bar
-			Array* arr=Class<Array>::cast(val.getPtr());
+			Array* arr=Class<Array>::cast(val.getObject());
 			for(uint32_t j=0;j<arr->size();j++)
 			{
 				//Escape the name
@@ -2275,7 +2275,7 @@ tiny_string URLVariables::toString_priv()
 			tmp+="=";
 
 			//Escape the value
-			const tiny_string& value=val->toString();
+			const tiny_string& value=val.toString();
 			char* escapedValue=g_uri_escape_string(value.raw_buf(),NULL, false);
 			tmp+=escapedValue;
 			g_free(escapedValue);
@@ -2398,8 +2398,9 @@ ASFUNCTIONBODY(Responder, onResult)
 	Responder* th=Class<Responder>::cast(obj);
 	assert_and_throw(argslen==1);
 	args[0]->incRef();
-	ASObject* ret=th->result->call(getSys()->getNullRef(), args, argslen);
-	ret->decRef();
+	asAtom arg0 = asAtom::fromObject(args[0]);
+	asAtom ret=th->result->call(asAtom(T_NULL), &arg0, argslen);
+	ASATOM_DECREF(ret);
 	return NULL;
 }
 
@@ -2441,7 +2442,8 @@ ASFUNCTIONBODY(LocalConnection, domain)
 	
 	if (res.empty())
 		res = "localhost";
-	return abstract_s(obj->getSystemState(),res);}
+	return abstract_s(obj->getSystemState(),res);
+}
 ASFUNCTIONBODY(LocalConnection, allowDomain)
 {
 	//LocalConnection* th=Class<LocalConnection>::cast(obj);

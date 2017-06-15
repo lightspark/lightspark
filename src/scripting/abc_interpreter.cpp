@@ -63,7 +63,7 @@ void ABCVm::executeFunction(const SyntheticFunction* function, call_context* con
 		uint32_t instructionPointer=code.tellg();
 #endif
 		uint8_t opcode = code.readbyte();
-
+//LOG(LOG_INFO,"opcode:"<<hex<<(int)opcode);
 		//Save ip for exception handling in SyntheticFunction::callImpl
 		context->exec_pos = code.tellg();
 		abcfunctions[opcode](context,code);
@@ -80,7 +80,7 @@ void ABCVm::executeFunction(const SyntheticFunction* function, call_context* con
 #undef PROF_IGNORE_TIME
 	//We managed to execute all the function
 	context->returning = true;
-	context->returnvalue = context->runtime_stack_pop();
+	RUNTIME_STACK_POP(context,context->returnvalue);
 }
 
 ABCVm::abc_function ABCVm::abcfunctions[]={
@@ -394,7 +394,7 @@ void ABCVm::abc_dxns(call_context* context,memorystream& code)
 void ABCVm::abc_dxnslate(call_context* context,memorystream& code)
 {
 	//dxnslate
-	ASObject* v=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->context->root->getSystemState());
 	dxnslate(context, v);
 }
 void ABCVm::abc_kill(call_context* context,memorystream& code)
@@ -402,9 +402,8 @@ void ABCVm::abc_kill(call_context* context,memorystream& code)
 	//kill
 	uint32_t t = code.readu30();
 	LOG_CALL( "kill " << t);
-	assert_and_throw(context->locals[t]);
-	context->locals[t]->decRef();
-	context->locals[t]=context->context->root->getSystemState()->getUndefinedRef();
+	ASATOM_DECREF(context->locals[t]);
+	context->locals[t]=asAtom::fromObject(context->context->root->getSystemState()->getUndefinedRef());
 }
 void ABCVm::abc_label(call_context* context,memorystream& code)
 {
@@ -414,9 +413,13 @@ void ABCVm::abc_ifnlt(call_context* context,memorystream& code)
 {
 	//ifnlt
 	int32_t t = code.reads24();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifNLT(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v2.isLess(context->context->root->getSystemState(),v1) == TTRUE);
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -432,9 +435,13 @@ void ABCVm::abc_ifnle(call_context* context,memorystream& code)
 {
 	//ifnle
 	int32_t t = code.reads24();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifNLE(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v1.isLess(context->context->root->getSystemState(),v2) == TFALSE);
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -450,9 +457,13 @@ void ABCVm::abc_ifngt(call_context* context,memorystream& code)
 {
 	//ifngt
 	int32_t t = code.reads24();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifNGT(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v1.isLess(context->context->root->getSystemState(),v2) == TTRUE);
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -468,9 +479,13 @@ void ABCVm::abc_ifnge(call_context* context,memorystream& code)
 {
 	//ifnge
 	int32_t t = code.reads24();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifNGE(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v2.isLess(context->context->root->getSystemState(),v1) == TFALSE);
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -500,8 +515,10 @@ void ABCVm::abc_iftrue(call_context* context,memorystream& code)
 	//iftrue
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	bool cond=ifTrue(v1);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	bool cond=v1.Boolean_concrete();
+	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)")));
+	ASATOM_DECREF(v1);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -518,8 +535,10 @@ void ABCVm::abc_iffalse(call_context* context,memorystream& code)
 	//iffalse
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	bool cond=ifFalse(v1);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	bool cond=!v1.Boolean_concrete();
+	LOG_CALL(_("ifFalse (") << ((cond)?_("taken"):_("not taken")) << ')');
+	ASATOM_DECREF(v1);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -536,9 +555,12 @@ void ABCVm::abc_ifeq(call_context* context,memorystream& code)
 	//ifeq
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifEq(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=(v1.isEqual(context->context->root->getSystemState(),v2));
+	LOG_CALL(_("ifEq (") << ((cond)?_("taken)"):_("not taken)")));
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -555,9 +577,12 @@ void ABCVm::abc_ifne(call_context* context,memorystream& code)
 	//ifne
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifNE(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v1.isEqual(context->context->root->getSystemState(),v2));
+	LOG_CALL(_("ifNE (") << ((cond)?_("taken)"):_("not taken)")));
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -574,9 +599,14 @@ void ABCVm::abc_iflt(call_context* context,memorystream& code)
 	//iflt
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifLT(v1, v2);
+
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=v2.isLess(context->context->root->getSystemState(),v1) == TTRUE;
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifLT (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -593,9 +623,14 @@ void ABCVm::abc_ifle(call_context* context,memorystream& code)
 	//ifle
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifLE(v1, v2);
+
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=v1.isLess(context->context->root->getSystemState(),v2) == TFALSE;
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -612,9 +647,13 @@ void ABCVm::abc_ifgt(call_context* context,memorystream& code)
 	//ifgt
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifGT(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=v1.isLess(context->context->root->getSystemState(),v2) == TTRUE;
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifGT (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -631,9 +670,13 @@ void ABCVm::abc_ifge(call_context* context,memorystream& code)
 	//ifge
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifGE(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=v2.isLess(context->context->root->getSystemState(),v1) == TFALSE;
+	ASATOM_DECREF(v2);
+	ASATOM_DECREF(v1);
+	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
+
 	if(cond)
 	{
 		int here=code.tellg();
@@ -650,9 +693,13 @@ void ABCVm::abc_ifstricteq(call_context* context,memorystream& code)
 	//ifstricteq
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifStrictEq(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+
+	bool cond=v1.isEqualStrict(context->context->root->getSystemState(),v2);
+	LOG_CALL(_("ifStrictEq ")<<cond);
+	ASATOM_DECREF(v1);
+	ASATOM_DECREF(v2);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -669,9 +716,13 @@ void ABCVm::abc_ifstrictne(call_context* context,memorystream& code)
 	//ifstrictne
 	int32_t t = code.reads24();
 
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
-	bool cond=ifStrictNE(v1, v2);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+
+	bool cond=!v1.isEqualStrict(context->context->root->getSystemState(),v2);
+	LOG_CALL(_("ifStrictNE ")<<cond <<" "<<v1.toDebugString()<<" "<<v2.toDebugString());
+	ASATOM_DECREF(v1);
+	ASATOM_DECREF(v2);
 	if(cond)
 	{
 		int here=code.tellg();
@@ -698,10 +749,10 @@ void ABCVm::abc_lookupswitch(call_context* context,memorystream& code)
 		LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i]);
 	}
 
-	ASObject* index_obj=context->runtime_stack_pop();
-	assert_and_throw(index_obj->getObjectType()==T_INTEGER);
-	unsigned int index=index_obj->toUInt();
-	index_obj->decRef();
+	RUNTIME_STACK_POP_CREATE(context,index_obj);
+	assert_and_throw(index_obj.type==T_INTEGER);
+	unsigned int index=index_obj.toUInt();
+	ASATOM_DECREF(index_obj);
 
 	uint32_t dest=defaultdest;
 	if(index<=count)
@@ -724,187 +775,148 @@ void ABCVm::abc_popscope(call_context* context,memorystream& code)
 void ABCVm::abc_nextname(call_context* context,memorystream& code)
 {
 	//nextname
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=(nextName(v1,*pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("nextName");
+	if(v1.type!=T_UINTEGER)
+		throw UnsupportedException("Type mismatch in nextName");
+
+	asAtom ret=pval->toObject(context->context->root->getSystemState())->nextName(v1.toUInt());
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v1);
+	ASATOM_INCREF(ret);
+	*pval = ret;
 }
 void ABCVm::abc_hasnext(call_context* context,memorystream& code)
 {
 	//hasnext
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=hasNext(v1,*pval);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("hasNext " << v1.toDebugString() << ' ' << pval->toDebugString());
+
+	uint32_t curIndex=pval->toUInt();
+
+	uint32_t newIndex=v1.toObject(context->context->root->getSystemState())->nextNameIndex(curIndex);
+	pval->setInt(newIndex);
 }
 void ABCVm::abc_pushnull(call_context* context,memorystream& code)
 {
 	//pushnull
 	LOG_CALL("pushnull");
-	context->runtime_stack_push(context->context->root->getSystemState()->getNullRef());
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(context->context->root->getSystemState()->getNullRef()));
 }
 void ABCVm::abc_pushundefined(call_context* context,memorystream& code)
 {
 	LOG_CALL("pushundefined");
-	context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(context->context->root->getSystemState()->getUndefinedRef()));
 }
 void ABCVm::abc_nextvalue(call_context* context,memorystream& code)
 {
 	//nextvalue
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=(nextValue(v1,*pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	
+	if(v1.type!=T_UINTEGER)
+		throw UnsupportedException("Type mismatch in nextValue");
+
+	asAtom ret=pval->toObject(context->context->root->getSystemState())->nextValue(v1.toUInt());
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v1);
+	ASATOM_INCREF(ret);
+	*pval=ret;
 }
 void ABCVm::abc_pushbyte(call_context* context,memorystream& code)
 {
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
-	{
-		context->runtime_stack_push(cachepos->obj);
-		code.seekcachepos(cachepos->nextcachepos);
-		return;
-	}
-		
+	//pushbyte
 	int8_t t = code.readbyte();
-	code.setNextCachePos(cachepos);
-	pushByte(t);
-
-	ASObject* d= abstract_i(context->context->root->getSystemState(),t);
-	d->setConstant();
-	cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-	cachepos->obj = d;
-	context->runtime_stack_push(d);
+	LOG_CALL("pushbyte "<<(int)t);
+	RUNTIME_STACK_PUSH(context,asAtom((int32_t)t));
 }
 void ABCVm::abc_pushshort(call_context* context,memorystream& code)
 {
 	//pushshort
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
-	{
-		context->runtime_stack_push(cachepos->obj);
-		code.seekcachepos(cachepos->nextcachepos);
-		return;
-	}
 	// specs say pushshort is a u30, but it's really a u32
 	// see https://bugs.adobe.com/jira/browse/ASC-4181
 	uint32_t t = code.readu32();
-	code.setNextCachePos(cachepos);
+	LOG_CALL("pushshort "<<t);
 
-	ASObject* i= abstract_i(context->context->root->getSystemState(),t);
-	i->setConstant();
-	cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-	cachepos->obj = i;
-	context->runtime_stack_push(i);
-
-	pushShort(t);
+	RUNTIME_STACK_PUSH(context,asAtom((int32_t)t));
 }
 void ABCVm::abc_pushtrue(call_context* context,memorystream& code)
 {
 	//pushtrue
-	context->runtime_stack_push(abstract_b(context->context->root->getSystemState(),pushTrue()));
+	LOG_CALL("pushtrue");
+	RUNTIME_STACK_PUSH(context,asAtom(true));
 }
 void ABCVm::abc_pushfalse(call_context* context,memorystream& code)
 {
 	//pushfalse
-	context->runtime_stack_push(abstract_b(context->context->root->getSystemState(),pushFalse()));
+	LOG_CALL("pushfalse");
+	RUNTIME_STACK_PUSH(context,asAtom(false));
 }
 void ABCVm::abc_pushnan(call_context* context,memorystream& code)
 {
 	//pushnan
-	context->runtime_stack_push(pushNaN());
+	LOG_CALL("pushNaN");
+	RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
 }
 void ABCVm::abc_pop(call_context* context,memorystream& code)
 {
 	//pop
 	pop();
-	ASObject* o=context->runtime_stack_pop();
-	if(o)
-		o->decRef();
+	RUNTIME_STACK_POP_CREATE(context,o);
+	ASATOM_DECREF(o);
 }
 void ABCVm::abc_dup(call_context* context,memorystream& code)
 {
 	//dup
 	dup();
-	ASObject* o=context->runtime_stack_peek();
-	o->incRef();
-	context->runtime_stack_push(o);
+	RUNTIME_STACK_PEEK_CREATE(context,o);
+	ASATOM_INCREF(o);
+	RUNTIME_STACK_PUSH(context,o);
 }
 void ABCVm::abc_swap(call_context* context,memorystream& code)
 {
 	//swap
 	swap();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
 
-	context->runtime_stack_push(v1);
-	context->runtime_stack_push(v2);
+	RUNTIME_STACK_PUSH(context,v1);
+	RUNTIME_STACK_PUSH(context,v2);
 }
 void ABCVm::abc_pushstring(call_context* context,memorystream& code)
 {
 	//pushstring
 	uint32_t t = code.readu30();
-	context->runtime_stack_push(pushString(context,t));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushString(context,t)));
 }
 void ABCVm::abc_pushint(call_context* context,memorystream& code)
 {
 	//pushint
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
-	{
-		context->runtime_stack_push(cachepos->obj);
-		code.seekcachepos(cachepos->nextcachepos);
-		return;
-	}
-
 	uint32_t t = code.readu30();
 	s32 val=context->context->constant_pool.integer[t];
 	pushInt(context, val);
 
-	ASObject* i=abstract_i(context->context->root->getSystemState(),val);
-	i->setConstant();
-	cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-	cachepos->obj = i;
-	context->runtime_stack_push(i);
+	RUNTIME_STACK_PUSH(context,asAtom(val));
 }
 void ABCVm::abc_pushuint(call_context* context,memorystream& code)
 {
 	//pushuint
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
-	{
-		context->runtime_stack_push(cachepos->obj);
-		code.seekcachepos(cachepos->nextcachepos);
-		return;
-	}
-
 	uint32_t t = code.readu30();
 	u32 val=context->context->constant_pool.uinteger[t];
 	pushUInt(context, val);
 
-	ASObject* i=abstract_ui(context->context->root->getSystemState(),val);
-	i->setConstant();
-	cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-	cachepos->obj = i;
-	context->runtime_stack_push(i);
+	RUNTIME_STACK_PUSH(context,asAtom(val));
 }
 void ABCVm::abc_pushdouble(call_context* context,memorystream& code)
 {
 	//pushdouble
-	//pushdouble
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
-	{
-		context->runtime_stack_push(cachepos->obj);
-		code.seekcachepos(cachepos->nextcachepos);
-		return;
-	}
 	uint32_t t = code.readu30();
 	d64 val=context->context->constant_pool.doubles[t];
 	pushDouble(context, val);
 
-	ASObject* d= abstract_d(context->context->root->getSystemState(),val);
-	d->setConstant();
-	cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-	cachepos->obj = d;
-	context->runtime_stack_push(d);
+	RUNTIME_STACK_PUSH(context,asAtom(val));
 }
 void ABCVm::abc_pushScope(call_context* context,memorystream& code)
 {
@@ -915,7 +927,7 @@ void ABCVm::abc_pushnamespace(call_context* context,memorystream& code)
 {
 	//pushnamespace
 	uint32_t t = code.readu30();
-	context->runtime_stack_push( pushNamespace(context, t) );
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushNamespace(context, t) ));
 }
 void ABCVm::abc_hasnext2(call_context* context,memorystream& code)
 {
@@ -924,7 +936,7 @@ void ABCVm::abc_hasnext2(call_context* context,memorystream& code)
 	uint32_t t2 = code.readu30();
 
 	bool ret=hasNext2(context,t,t2);
-	context->runtime_stack_push(abstract_b(context->context->root->getSystemState(),ret));
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
 }
 //Alchemy opcodes
 void ABCVm::abc_li8(call_context* context,memorystream& code)
@@ -943,7 +955,7 @@ void ABCVm::abc_li32(call_context* context,memorystream& code)
 {
 	//li32
 	LOG_CALL( "li32");
-	loadIntN<uint32_t>(context);
+	loadIntN<int32_t>(context);
 }
 void ABCVm::abc_lf32(call_context* context,memorystream& code)
 {
@@ -991,7 +1003,7 @@ void ABCVm::abc_newfunction(call_context* context,memorystream& code)
 {
 	//newfunction
 	uint32_t t = code.readu30();
-	context->runtime_stack_push(newFunction(context,t));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newFunction(context,t)));
 }
 void ABCVm::abc_call(call_context* context,memorystream& code)
 {
@@ -1019,16 +1031,14 @@ void ABCVm::abc_callstatic(call_context* context,memorystream& code)
 	//callstatic
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
-	method_info* called_mi=NULL;
-	callStatic(context,t,t2,&called_mi,true);
+	callStatic(context,t,t2,NULL,true);
 }
 void ABCVm::abc_callsuper(call_context* context,memorystream& code)
 {
 	//callsuper
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
-	method_info* called_mi=NULL;
-	callSuper(context,t,t2,&called_mi,true);
+	callSuper(context,t,t2,NULL,true);
 }
 void ABCVm::abc_callproperty(call_context* context,memorystream& code)
 {
@@ -1041,14 +1051,14 @@ void ABCVm::abc_returnvoid(call_context* context,memorystream& code)
 {
 	//returnvoid
 	LOG_CALL(_("returnVoid"));
-	context->returnvalue = NULL;
+	context->returnvalue = asAtom();
 	context->returning = true;
 }
 void ABCVm::abc_returnvalue(call_context* context,memorystream& code)
 {
 	//returnvalue
-	context->returnvalue = context->runtime_stack_pop();
-	LOG_CALL(_("returnValue ") << context->returnvalue);
+	RUNTIME_STACK_POP(context,context->returnvalue);
+	LOG_CALL(_("returnValue ") << context->returnvalue.toDebugString());
 	context->returning = true;
 }
 void ABCVm::abc_constructsuper(call_context* context,memorystream& code)
@@ -1085,35 +1095,34 @@ void ABCVm::abc_callpropvoid(call_context* context,memorystream& code)
 	//callpropvoid
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
-	method_info* called_mi=NULL;
-	callProperty(context,t,t2,&called_mi,false);
+	callProperty(context,t,t2,NULL,false);
 }
 void ABCVm::abc_sxi1(call_context* context,memorystream& code)
 {
 	//sxi1
 	LOG_CALL( "sxi1");
-	ASObject* arg1=context->runtime_stack_pop();
+	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=arg1->toUInt()&0x1 ? -1 : 0;
-	arg1->decRef();
-	context->runtime_stack_push(abstract_i(context->context->root->getSystemState(),ret));
+	ASATOM_DECREF_POINTER(arg1);
+	arg1->setInt(ret);
 }
 void ABCVm::abc_sxi8(call_context* context,memorystream& code)
 {
 	//sxi8
 	LOG_CALL( "sxi8");
-	ASObject* arg1=context->runtime_stack_pop();
+	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int8_t)arg1->toUInt();
-	arg1->decRef();
-	context->runtime_stack_push(abstract_i(context->context->root->getSystemState(),ret));
+	ASATOM_DECREF_POINTER(arg1);
+	arg1->setInt(ret);
 }
 void ABCVm::abc_sxi16(call_context* context,memorystream& code)
 {
 	//sxi16
 	LOG_CALL( "sxi16");
-	ASObject* arg1=context->runtime_stack_pop();
+	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int16_t)arg1->toUInt();
-	arg1->decRef();
-	context->runtime_stack_push(abstract_i(context->context->root->getSystemState(),ret));
+	ASATOM_DECREF_POINTER(arg1);
+	arg1->setInt(ret);
 }
 void ABCVm::abc_constructgenerictype(call_context* context,memorystream& code)
 {
@@ -1136,7 +1145,7 @@ void ABCVm::abc_newarray(call_context* context,memorystream& code)
 void ABCVm::abc_newactivation(call_context* context,memorystream& code)
 {
 	//newactivation
-	context->runtime_stack_push(newActivation(context, context->mi));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newActivation(context, context->mi)));
 }
 void ABCVm::abc_newclass(call_context* context,memorystream& code)
 {
@@ -1154,24 +1163,24 @@ void ABCVm::abc_newcatch(call_context* context,memorystream& code)
 {
 	//newcatch
 	uint32_t t = code.readu30();
-	context->runtime_stack_push(newCatch(context,t));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newCatch(context,t)));
 }
 void ABCVm::abc_findpropstrict(call_context* context,memorystream& code)
 {
 	//findpropstrict
 //		uint32_t t = code.readu30();
 //		multiname* name=context->context->getMultiname(t,context);
-//		context->runtime_stack_push(findPropStrict(context,name));
+//		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
-		context->runtime_stack_push(findPropStrictCache(context,code));
+		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrictCache(context,code)));
 }
 void ABCVm::abc_findproperty(call_context* context,memorystream& code)
 {
 	//findproperty
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,context);
-	context->runtime_stack_push(findProperty(context,name));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(findProperty(context,name)));
 	name->resetNameIfObject();
 }
 void ABCVm::abc_finddef(call_context* context,memorystream& code)
@@ -1180,7 +1189,7 @@ void ABCVm::abc_finddef(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,context);
 	LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
-	context->runtime_stack_push(context->context->root->getSystemState()->getNullRef());
+	RUNTIME_STACK_PUSH(context,asAtom(T_NULL));
 	name->resetNameIfObject();
 }
 void ABCVm::abc_getlex(call_context* context,memorystream& code)
@@ -1190,7 +1199,7 @@ void ABCVm::abc_getlex(call_context* context,memorystream& code)
 	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 	{
 		code.seekcachepos(cachepos->nextcachepos);
-		context->runtime_stack_push(cachepos->obj);
+		RUNTIME_STACK_PUSH(context,asAtom::fromObject(cachepos->obj));
 		cachepos->obj->incRef();
 		return;
 	}
@@ -1199,7 +1208,7 @@ void ABCVm::abc_getlex(call_context* context,memorystream& code)
 	{
 		// put object in cache
 		cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-		cachepos->obj = context->runtime_stack_peek();
+		RUNTIME_STACK_PEEK_ASOBJECT(context,cachepos->obj,context->context->root->getSystemState());
 		cachepos->obj->incRef();
 	}
 }
@@ -1207,73 +1216,108 @@ void ABCVm::abc_setproperty(call_context* context,memorystream& code)
 {
 	//setproperty
 	uint32_t t = code.readu30();
-	ASObject* value=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE(context,value);
 
 	multiname* name=context->context->getMultiname(t,context);
 
-	ASObject* obj=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE(context,obj)
 
-	setProperty(value,obj,name);
+	LOG_CALL(_("setProperty ") << *name << ' ' << obj.toDebugString()<<" " <<value.toDebugString());
+
+	if(obj.type == T_NULL)
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj.toDebugString()<<" " << value.toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj.type == T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj.toDebugString()<<" " << value.toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	//Do not allow to set contant traits
+	ASObject* o = obj.toObject(context->context->root->getSystemState());
+	o->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
+	o->decRef();
+
 	name->resetNameIfObject();
 }
 void ABCVm::abc_getlocal(call_context* context,memorystream& code)
 {
 	//getlocal
 	uint32_t i = code.readu30();
-	if (!context->locals[i])
-	{
-		LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
-		context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
-		return;
-	}
-	context->locals[i]->incRef();
-	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
-	context->runtime_stack_push(context->locals[i]);
+	ASATOM_INCREF(context->locals[i]);
+	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
+	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
 void ABCVm::abc_setlocal(call_context* context,memorystream& code)
 {
 	//setlocal
 	uint32_t i = code.readu30();
 	LOG_CALL( _("setLocal ") << i );
-	ASObject* obj=context->runtime_stack_pop();
-	assert_and_throw(obj);
-	if ((int)i != context->argarrayposition || obj->is<Array>())
+	RUNTIME_STACK_POP_CREATE(context,obj)
+	if (i >= context->locals_size)
 	{
-		if(context->locals[i])
-			context->locals[i]->decRef();
+		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
+		return;
+	}
+	if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+	{
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
 }
 void ABCVm::abc_getglobalscope(call_context* context,memorystream& code)
 {
 	//getglobalscope
-	context->runtime_stack_push(getGlobalScope(context));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(getGlobalScope(context)));
 }
 void ABCVm::abc_getscopeobject(call_context* context,memorystream& code)
 {
 	//getscopeobject
 	uint32_t t = code.readu30();
-	context->runtime_stack_push(getScopeObject(context,t));
+	RUNTIME_STACK_PUSH(context,asAtom::fromObject(getScopeObject(context,t)));
 }
 void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 {
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,context);
 
-	ASObject* obj=context->runtime_stack_pop();
 
-	ASObject* ret=getProperty(obj,name);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
+
+	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	checkDeclaredTraits(obj);
+
+
+	asAtom prop=obj->getVariableByMultiname(*name);
+	if(prop.type == T_INVALID)
+	{
+		if (obj->getClass() && obj->getClass()->isSealed)
+			throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+		if (name->isEmpty() || !name->hasEmptyNS)
+			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+		if (obj->is<Undefined>())
+			throwError<TypeError>(kConvertUndefinedToObjectError);
+		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
+		prop = asAtom(T_UNDEFINED);
+	}
+	else
+	{
+		ASATOM_INCREF(prop);
+	}
+	obj->decRef();
 	name->resetNameIfObject();
 
-	context->runtime_stack_push(ret);
+	RUNTIME_STACK_PUSH(context,prop);
 }
 void ABCVm::abc_initproperty(call_context* context,memorystream& code)
 {
 	//initproperty
 	uint32_t t = code.readu30();
-	ASObject* value=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value, context->context->root->getSystemState());
 	multiname* name=context->context->getMultiname(t,context);
-	ASObject* obj=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
 	initProperty(obj,value,name);
 	name->resetNameIfObject();
 }
@@ -1282,26 +1326,35 @@ void ABCVm::abc_deleteproperty(call_context* context,memorystream& code)
 	//deleteproperty
 	uint32_t t = code.readu30();
 	multiname* name = context->context->getMultiname(t,context);
-	ASObject* obj=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
 	bool ret = deleteProperty(obj,name);
 	name->resetNameIfObject();
-	context->runtime_stack_push(abstract_b(context->context->root->getSystemState(),ret));
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
 }
 void ABCVm::abc_getslot(call_context* context,memorystream& code)
 {
 	//getslot
 	uint32_t t = code.readu30();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=getSlot(*pval, t);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	
+	asAtom ret=pval->toObject(context->context->root->getSystemState())->getSlot(t);
+	LOG_CALL("getSlot " << t << " " << ret.toDebugString());
+	//getSlot can only access properties defined in the current
+	//script, so they should already be defind by this script
+	ASATOM_INCREF(ret);
+
+	*pval=ret;
 }
 void ABCVm::abc_setslot(call_context* context,memorystream& code)
 {
 	//setslot
 	uint32_t t = code.readu30();
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject* v2=context->runtime_stack_pop();
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->context->root->getSystemState());
 
-	setSlot(v1, v2, t);
+	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< v1.toDebugString());
+	v2->setSlot(t,v1);
+	v2->decRef();
 }
 void ABCVm::abc_getglobalSlot(call_context* context,memorystream& code)
 {
@@ -1309,7 +1362,7 @@ void ABCVm::abc_getglobalSlot(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 
 	Global* globalscope = getGlobalScope(context);
-	context->runtime_stack_push(globalscope->getSlot(t));
+	RUNTIME_STACK_PUSH(context,globalscope->getSlot(t));
 }
 void ABCVm::abc_setglobalSlot(call_context* context,memorystream& code)
 {
@@ -1317,74 +1370,64 @@ void ABCVm::abc_setglobalSlot(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 
 	Global* globalscope = getGlobalScope(context);
-	ASObject* obj=context->runtime_stack_pop();
-	globalscope->setSlot(t,obj);
+	RUNTIME_STACK_POP_CREATE(context,o);
+	globalscope->setSlot(t,o);
 }
 void ABCVm::abc_convert_s(call_context* context,memorystream& code)
 {
 	//convert_s
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=convert_s(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->replace(convert_s(pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_esc_xelem(call_context* context,memorystream& code)
 {
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval = esc_xelem(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->replace(esc_xelem(pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_esc_xattr(call_context* context,memorystream& code)
 {
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval = esc_xattr(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->replace(esc_xattr(pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_convert_i(call_context* context,memorystream& code)
 {
 	//convert_i
-	ASObject** pval=context->runtime_stack_pointer();
-	if (!(*pval)->is<Integer>())
-		*pval = abstract_i(context->context->root->getSystemState(),convert_i(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("convert_i");
+	pval->convert_i();
 }
 void ABCVm::abc_convert_u(call_context* context,memorystream& code)
 {
 	//convert_u
-	ASObject** pval=context->runtime_stack_pointer();
-	if (!(*pval)->is<UInteger>())
-		*pval = abstract_ui(context->context->root->getSystemState(),convert_u(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("convert_u");
+	pval->convert_u();
 }
 void ABCVm::abc_convert_d(call_context* context,memorystream& code)
 {
 	//convert_d
-	ASObject** pval=context->runtime_stack_pointer();
-	switch ((*pval)->getObjectType())
-	{
-		case T_INTEGER:
-		case T_BOOLEAN:
-		case T_UINTEGER:
-			*pval = abstract_di(context->context->root->getSystemState(),convert_di(*pval));
-			break;
-		case T_NUMBER:
-			break;
-		default:
-			*pval = abstract_d(context->context->root->getSystemState(),convert_d(*pval));
-			break;
-	}
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("convert_d");
+	pval->convert_d();
 }
 void ABCVm::abc_convert_b(call_context* context,memorystream& code)
 {
 	//convert_b
-	ASObject** pval=context->runtime_stack_pointer();
-	if (!(*pval)->is<Boolean>())
-		*pval = abstract_b(context->context->root->getSystemState(),convert_b(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("convert_b");
+	pval->convert_b();
 }
 void ABCVm::abc_convert_o(call_context* context,memorystream& code)
 {
 	//convert_o
-	ASObject** pval=context->runtime_stack_pointer();
-	if ((*pval)->is<Null>())
+	LOG_CALL("convert_o");
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	if (pval->type == T_NULL)
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on null");
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if ((*pval)->is<Undefined>())
+	if (pval->type == T_UNDEFINED)
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on undefined");
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -1393,8 +1436,8 @@ void ABCVm::abc_convert_o(call_context* context,memorystream& code)
 void ABCVm::abc_checkfilter(call_context* context,memorystream& code)
 {
 	//checkfilter
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=checkfilter(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	checkfilter(pval->toObject(context->context->root->getSystemState()));
 }
 void ABCVm::abc_coerce(call_context* context,memorystream& code)
 {
@@ -1410,9 +1453,9 @@ void ABCVm::abc_coerce_a(call_context* context,memorystream& code)
 void ABCVm::abc_coerce_s(call_context* context,memorystream& code)
 {
 	//coerce_s
-	ASObject** pval=context->runtime_stack_pointer();
-	if (!(*pval)->is<ASString>())
-		*pval = coerce_s(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	if (pval->type != T_STRING)
+		pval->replace(coerce_s(pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_astype(call_context* context,memorystream& code)
 {
@@ -1420,33 +1463,29 @@ void ABCVm::abc_astype(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,NULL);
 
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=asType(context->context, *pval, name);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->replace(asType(context->context, pval->toObject(context->context->root->getSystemState()), name));
 }
 void ABCVm::abc_astypelate(call_context* context,memorystream& code)
 {
 	//astypelate
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=asTypelate(v1, *pval);
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	*pval = pval->asTypelate(v1);
 }
 void ABCVm::abc_negate(call_context* context,memorystream& code)
 {
 	//negate
-	ASObject** pval=context->runtime_stack_pointer();
-	if (((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) && (*pval)->toInt64() != 0 && (*pval)->toInt64() == (*pval)->toInt())
-		*pval=abstract_di(context->context->root->getSystemState(),negate_i(*pval));
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),negate(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	number_t ret=-(pval->toNumber());
+	ASATOM_DECREF_POINTER(pval);
+	pval->setNumber(ret);
 }
 void ABCVm::abc_increment(call_context* context,memorystream& code)
 {
 	//increment
-	ASObject** pval=context->runtime_stack_pointer();
-	if ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat ))
-		*pval=abstract_di(context->context->root->getSystemState(),increment_di(*pval));
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),increment(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->increment();
 }
 void ABCVm::abc_inclocal(call_context* context,memorystream& code)
 {
@@ -1457,11 +1496,8 @@ void ABCVm::abc_inclocal(call_context* context,memorystream& code)
 void ABCVm::abc_decrement(call_context* context,memorystream& code)
 {
 	//decrement
-	ASObject** pval=context->runtime_stack_pointer();
-	if ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat ))
-		*pval=abstract_di(context->context->root->getSystemState(),decrement_di(*pval));
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),decrement(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->decrement();
 }
 void ABCVm::abc_declocal(call_context* context,memorystream& code)
 {
@@ -1472,201 +1508,184 @@ void ABCVm::abc_declocal(call_context* context,memorystream& code)
 void ABCVm::abc_typeof(call_context* context,memorystream& code)
 {
 	//typeof
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=typeOf(*pval);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL(_("typeOf"));
+	asAtom ret = pval->typeOf(context->context->root->getSystemState());
+	ASATOM_DECREF_POINTER(pval);
+	*pval = ret;
 }
 void ABCVm::abc_not(call_context* context,memorystream& code)
 {
 	//not
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_b(context->context->root->getSystemState(),_not(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->_not();
 }
 void ABCVm::abc_bitnot(call_context* context,memorystream& code)
 {
 	//bitnot
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_i(context->context->root->getSystemState(),bitNot(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->bitnot();
 }
 void ABCVm::abc_add(call_context* context,memorystream& code)
 {
 	//add
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=add(v2, *pval);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->add(v2,context->context->root->getSystemState());
 }
 void ABCVm::abc_subtract(call_context* context,memorystream& code)
 {
 	//subtract
 	//Be careful, operands in subtract implementation are swapped
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	// if both values are Integers or int Numbers the result is also an int Number
-	if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
-		(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
-	{
-		int64_t num1=(*pval)->toInt64();
-		int64_t num2=v2->toInt64();
-		LOG_CALL(_("subtractI ")  << num1 << '-' << num2);
-		(*pval)->decRef();
-		v2->decRef();
-		*pval = abstract_di(context->context->root->getSystemState(), num1-num2);
-	}
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),subtract(v2, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->subtract(v2);
 }
 void ABCVm::abc_multiply(call_context* context,memorystream& code)
 {
 	//multiply
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	// if both values are Integers or int Numbers the result is also an int Number
-	if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
-		(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
-	{
-		int64_t num1=(*pval)->toInt64();
-		int64_t num2=v2->toInt64();
-		LOG_CALL(_("multiplyI ")  << num1 << '*' << num2);
-		(*pval)->decRef();
-		v2->decRef();
-		*pval = abstract_di(context->context->root->getSystemState(), num1*num2);
-	}
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),multiply(v2, (*pval)));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->multiply(v2);
 }
 void ABCVm::abc_divide(call_context* context,memorystream& code)
 {
 	//divide
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_d(context->context->root->getSystemState(),divide(v2, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->divide(v2);
 }
 void ABCVm::abc_modulo(call_context* context,memorystream& code)
 {
 	//modulo
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	// if both values are Integers or int Numbers the result is also an int Number
-	if( ((*pval)->is<Integer>() || (*pval)->is<UInteger>() || ((*pval)->is<Number>() && !(*pval)->as<Number>()->isfloat)) &&
-		(v2->is<Integer>() || v2->is<UInteger>() || (v2->is<Number>() && !v2->as<Number>()->isfloat)))
-	{
-		int64_t num1=(*pval)->toInt64();
-		int64_t num2=v2->toInt64();
-		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
-		(*pval)->decRef();
-		v2->decRef();
-		if (num2 == 0)
-			*pval=abstract_d(context->context->root->getSystemState(),Number::NaN);
-		else
-			*pval = abstract_di(context->context->root->getSystemState(), num1%num2);
-	}
-	else
-		*pval=abstract_d(context->context->root->getSystemState(),modulo(*pval, v2));
+	pval->modulo(v2);
 }
 void ABCVm::abc_lshift(call_context* context,memorystream& code)
 {
 	//lshift
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),lShift(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->lshift(v1);
 }
 void ABCVm::abc_rshift(call_context* context,memorystream& code)
 {
 	//rshift
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),rShift(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->rshift(v1);
 }
 void ABCVm::abc_urshift(call_context* context,memorystream& code)
 {
 	//urshift
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_ui(context->context->root->getSystemState(),urShift(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->urshift(v1);
 }
 void ABCVm::abc_bitand(call_context* context,memorystream& code)
 {
 	//bitand
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),bitAnd(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->bit_and(v1);
 }
 void ABCVm::abc_bitor(call_context* context,memorystream& code)
 {
 	//bitor
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),bitOr(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->bit_or(v1);
 }
 void ABCVm::abc_bitxor(call_context* context,memorystream& code)
 {
 	//bitxor
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),bitXor(v1, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->bit_xor(v1);
 }
 void ABCVm::abc_equals(call_context* context,memorystream& code)
 {
 	//equals
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	*pval=abstract_b(context->context->root->getSystemState(),equals(*pval, v2));
+	bool ret=pval->isEqual(context->context->root->getSystemState(),v2);
+	LOG_CALL( _("equals ") << ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
+	pval->setBool(ret);
 }
 void ABCVm::abc_strictequals(call_context* context,memorystream& code)
 {
 	//strictequals
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_b(context->context->root->getSystemState(),strictEquals(*pval, v2));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	bool ret = pval->isEqualStrict(context->context->root->getSystemState(),v2);
+	LOG_CALL( _("strictequals ") << ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
+	pval->setBool(ret);
 }
 void ABCVm::abc_lessthan(call_context* context,memorystream& code)
 {
 	//lessthan
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	//Real comparision demanded to object
+	bool ret=(pval->isLess(context->context->root->getSystemState(),v2)==TTRUE);
+	LOG_CALL(_("lessThan ")<<ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
 
-	*pval=abstract_b(context->context->root->getSystemState(),lessThan(*pval, v2));
+	pval->setBool(ret);
 }
 void ABCVm::abc_lessequals(call_context* context,memorystream& code)
 {
 	//lessequals
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	//Real comparision demanded to object
+	bool ret=(v2.isLess(context->context->root->getSystemState(),*pval)==TFALSE);
+	LOG_CALL(_("lessEquals ")<<ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
 
-	*pval=abstract_b(context->context->root->getSystemState(),lessEquals(*pval, v2));
+	pval->setBool(ret);
 }
 void ABCVm::abc_greaterthan(call_context* context,memorystream& code)
 {
 	//greaterthan
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	//Real comparision demanded to object
+	bool ret=(v2.isLess(context->context->root->getSystemState(),*pval)==TTRUE);
+	LOG_CALL(_("greaterThan ")<<ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
 
-	*pval=abstract_b(context->context->root->getSystemState(),greaterThan(*pval, v2));
+	pval->setBool(ret);
 }
 void ABCVm::abc_greaterequals(call_context* context,memorystream& code)
 {
 	//greaterequals
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	//Real comparision demanded to object
+	bool ret=(pval->isLess(context->context->root->getSystemState(),v2)==TFALSE);
+	LOG_CALL(_("greaterEquals ")<<ret);
+	ASATOM_DECREF_POINTER(pval);
+	ASATOM_DECREF(v2);
 
-	*pval=abstract_b(context->context->root->getSystemState(),greaterEquals(*pval, v2));
+	pval->setBool(ret);
 }
 void ABCVm::abc_instanceof(call_context* context,memorystream& code)
 {
 	//instanceof
-	ASObject* type=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_b(context->context->root->getSystemState(),instanceOf(*pval, type));
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->context->root->getSystemState());
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->setBool(instanceOf(pval->toObject(context->context->root->getSystemState()),type));
 }
 void ABCVm::abc_istype(call_context* context,memorystream& code)
 {
@@ -1674,37 +1693,37 @@ void ABCVm::abc_istype(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,NULL);
 
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	*pval=abstract_b(context->context->root->getSystemState(),isType(context->context, *pval, name));
+	pval->setBool(isType(context->context,pval->toObject(context->context->root->getSystemState()),name));
 }
 void ABCVm::abc_istypelate(call_context* context,memorystream& code)
 {
 	//istypelate
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	*pval=abstract_b(context->context->root->getSystemState(),isTypelate(v1, *pval));
+	pval->setBool(isTypelate(v1, pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_in(call_context* context,memorystream& code)
 {
 	//in
-	ASObject* v1=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	*pval=abstract_b(context->context->root->getSystemState(),in(v1, *pval));
+	pval->setBool(in(v1,pval->toObject(context->context->root->getSystemState())));
 }
 void ABCVm::abc_increment_i(call_context* context,memorystream& code)
 {
 	//increment_i
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_i(context->context->root->getSystemState(),increment_i(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->increment_i();
 }
 void ABCVm::abc_decrement_i(call_context* context,memorystream& code)
 {
 	//decrement_i
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_i(context->context->root->getSystemState(),decrement_i(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->decrement_i();
 }
 void ABCVm::abc_inclocal_i(call_context* context,memorystream& code)
 {
@@ -1721,138 +1740,128 @@ void ABCVm::abc_declocal_i(call_context* context,memorystream& code)
 void ABCVm::abc_negate_i(call_context* context,memorystream& code)
 {
 	//negate_i
-	ASObject** pval=context->runtime_stack_pointer();
-	*pval=abstract_i(context->context->root->getSystemState(),negate_i(*pval));
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->negate_i();
 }
 void ABCVm::abc_add_i(call_context* context,memorystream& code)
 {
 	//add_i
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),add_i(v2, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->add_i(v2);
 }
 void ABCVm::abc_subtract_i(call_context* context,memorystream& code)
 {
 	//subtract_i
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),subtract_i(v2, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->subtract_i(v2);
 }
 void ABCVm::abc_multiply_i(call_context* context,memorystream& code)
 {
 	//multiply_i
-	ASObject* v2=context->runtime_stack_pop();
-	ASObject** pval=context->runtime_stack_pointer();
-
-	*pval=abstract_i(context->context->root->getSystemState(),multiply_i(v2, *pval));
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	pval->multiply_i(v2);
 }
 void ABCVm::abc_getlocal_0(call_context* context,memorystream& code)
 {
 	//getlocal_0
 	int i=0;
-	if (!context->locals[i])
-	{
-		LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
-		context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
-		return;
-	}
-	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
-	context->locals[i]->incRef();
-	context->runtime_stack_push(context->locals[i]);
+	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
+	ASATOM_INCREF(context->locals[i]);
+	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
 void ABCVm::abc_getlocal_1(call_context* context,memorystream& code)
 {
 	//getlocal_1
 	int i=1;
-	if (!context->locals[i])
-	{
-		LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
-		context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
-		return;
-	}
-	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
-	context->locals[i]->incRef();
-	context->runtime_stack_push(context->locals[i]);
+	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
+	ASATOM_INCREF(context->locals[i]);
+	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
 void ABCVm::abc_getlocal_2(call_context* context,memorystream& code)
 {
 	//getlocal_2
 	int i=2;
-	if (!context->locals[i])
-	{
-		LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
-		context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
-		return;
-	}
-	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
-	context->locals[i]->incRef();
-	context->runtime_stack_push(context->locals[i]);
+	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
+	ASATOM_INCREF(context->locals[i]);
+	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
 void ABCVm::abc_getlocal_3(call_context* context,memorystream& code)
 {
 	//getlocal_3
 	int i=3;
-	if (!context->locals[i])
-	{
-		LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
-		context->runtime_stack_push(context->context->root->getSystemState()->getUndefinedRef());
-		return;
-	}
-	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i]->toDebugString() );
-	context->locals[i]->incRef();
-	context->runtime_stack_push(context->locals[i]);
+	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
+	ASATOM_INCREF(context->locals[i]);
+	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
 void ABCVm::abc_setlocal_0(call_context* context,memorystream& code)
 {
 	//setlocal_0
-	int i=0;
+	unsigned int i=0;
 	LOG_CALL( _("setLocal ") << i);
-	ASObject* obj=context->runtime_stack_pop();
-	if ((int)i != context->argarrayposition || obj->is<Array>())
+	RUNTIME_STACK_POP_CREATE(context,obj)
+	if (i >= context->locals_size)
 	{
-		if(context->locals[i])
-			context->locals[i]->decRef();
+		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
+		return;
+	}
+	if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+	{
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
 }
 void ABCVm::abc_setlocal_1(call_context* context,memorystream& code)
 {
 	//setlocal_1
-	int i=1;
+	unsigned int i=1;
 	LOG_CALL( _("setLocal ") << i);
-	ASObject* obj=context->runtime_stack_pop();
-	if ((int)i != context->argarrayposition || obj->is<Array>())
+
+	RUNTIME_STACK_POP_CREATE(context,obj)
+	if (i >= context->locals_size)
 	{
-		if(context->locals[i])
-			context->locals[i]->decRef();
+		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
+		return;
+	}
+	if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+	{
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
 }
 void ABCVm::abc_setlocal_2(call_context* context,memorystream& code)
 {
 	//setlocal_2
-	int i=2;
+	unsigned int i=2;
 	LOG_CALL( _("setLocal ") << i);
-	ASObject* obj=context->runtime_stack_pop();
-	if ((int)i != context->argarrayposition || obj->is<Array>())
+	RUNTIME_STACK_POP_CREATE(context,obj)
+	if (i >= context->locals_size)
 	{
-		if(context->locals[i])
-			context->locals[i]->decRef();
+		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
+		return;
+	}
+	if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+	{
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
 }
 void ABCVm::abc_setlocal_3(call_context* context,memorystream& code)
 {
 	//setlocal_3
-	int i=3;
+	unsigned int i=3;
 	LOG_CALL( _("setLocal ") << i);
-	ASObject* obj=context->runtime_stack_pop();
-	if ((int)i != context->argarrayposition || obj->is<Array>())
+	RUNTIME_STACK_POP_CREATE(context,obj)
+	if (i >= context->locals_size)
 	{
-		if(context->locals[i])
-			context->locals[i]->decRef();
+		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
+		return;
+	}
+	if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+	{
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
 }

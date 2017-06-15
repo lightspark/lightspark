@@ -167,6 +167,7 @@ public:
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) T(c);
+			assert_and_throw(ret);
 		}
 		ret->setIsInitialized();
 		ret->constructionComplete();
@@ -221,9 +222,9 @@ public:
 			args[i]->decRef();
 		return ret;
 	}
-	ASObject* coerce(ASObject* o) const
+	asAtom coerce(SystemState* sys,asAtom o) const
 	{
-		return Class_base::coerce(o);
+		return Class_base::coerce(sys,o);
 	}
 };
 
@@ -231,60 +232,62 @@ template<>
 Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
 
 template<>
-inline ASObject* Class<Number>::coerce(ASObject* o) const
+inline asAtom Class<Number>::coerce(SystemState* sys,asAtom o) const
 {
-	switch (o->getObjectType())
+	switch (o.type)
 	{
 		case T_NUMBER:
 			return o;
 		case T_INTEGER:
+		{
+			int32_t n = o.toInt();
+			ASATOM_DECREF(o);
+			return asAtom(n);
+		}
 		case T_UINTEGER:
 		{
-			ASObject* res = abstract_di(o->getSystemState(),o->toInt64());
-			o->decRef();
-			return res;
+			uint32_t n = o.toUInt();
+			ASATOM_DECREF(o);
+			return asAtom(n);
 		}
 		default:
 		{
-			number_t n = o->toNumber();
-			ASObject* res = abstract_d(o->getSystemState(),n);
-			o->decRef();
-			return res;
+			number_t n = o.toNumber();
+			ASATOM_DECREF(o);
+			return asAtom(n);
 		}
 	}
 }
 
 template<>
-inline ASObject* Class<UInteger>::coerce(ASObject* o) const
+inline asAtom Class<UInteger>::coerce(SystemState* sys,asAtom o) const
 {
-	if (o->is<UInteger>())
+	if (o.type == T_UINTEGER)
 		return o;
-	uint32_t n = o->toUInt();
-	ASObject* res = abstract_ui(o->getSystemState(),n);
-	o->decRef();
-	return res;
+	uint32_t n = o.toUInt();
+	ASATOM_DECREF(o);
+	return asAtom(n);
+;
 }
 
 template<>
-inline ASObject* Class<Integer>::coerce(ASObject* o) const
+inline asAtom Class<Integer>::coerce(SystemState* sys,asAtom o) const
 {
-	if (o->is<Integer>())
+	if (o.type == T_INTEGER)
 		return o;
-	int32_t n = o->toInt();
-	ASObject* res = abstract_i(o->getSystemState(),n);
-	o->decRef();
-	return res;
+	int32_t n = o.toInt();
+	ASATOM_DECREF(o);
+	return asAtom(n);
 }
 
 template<>
-inline ASObject* Class<Boolean>::coerce(ASObject* o) const
+inline asAtom Class<Boolean>::coerce(SystemState* sys,asAtom o) const
 {
-	if (o->is<Boolean>())
+	if (o.type == T_BOOLEAN)
 		return o;
-	bool n = Boolean_concrete(o);
-	ASObject* res = abstract_b(o->getSystemState(),n);
-	o->decRef();
-	return res;
+	bool n = o.Boolean_concrete();
+	ASATOM_DECREF(o);
+	return asAtom(n);
 }
 
 template<>
@@ -446,16 +449,17 @@ public:
 		types.push_back(type);
 	}
 
-	ASObject* coerce(ASObject* o) const
+	asAtom coerce(SystemState* sys,asAtom o) const
 	{
-		if (o->is<Undefined>())
+		if (o.type == T_UNDEFINED)
 		{
-			ASObject* res = o->getSystemState()->getNullRef();
-			o->decRef();
+			ASATOM_DECREF(o);
+			asAtom res;
+			res.type = T_NULL;
 			return res;
 		}
-		else if ((o->is<Vector>() && o->as<Vector>()->sameType(this)) || 
-				 o->is<Null>())
+		else if ((o.getObject() && o.getObject()->is<Vector>() && o.getObject()->as<Vector>()->sameType(this)) ||
+				 o.type ==T_NULL)
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type
@@ -463,11 +467,11 @@ public:
 		}
 		else
 		{
-			tiny_string clsname = o->getClassName();
-			o->decRef();
+			tiny_string clsname = o.getObject() ? o.getObject()->getClassName() : "";
+			ASATOM_DECREF(o);
 			throwError<TypeError>(kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
-			return NULL; // not reached
+			return asAtom(); // not reached
 		}
 	}
 };

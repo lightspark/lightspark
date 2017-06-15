@@ -374,12 +374,12 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& na
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		_NR<ASObject> o=globalScopes[i]->getVariableByMultiname(name);
-		if(!o.isNull())
+		asAtom o=globalScopes[i]->getVariableByMultiname(name);
+		if(o.type != T_INVALID)
 		{
 			target=globalScopes[i];
 			// No incRef, return a reference borrowed from globalScopes
-			return o.getPtr();
+			return o.toObject(getSystemState());
 		}
 	}
 	return NULL;
@@ -397,11 +397,11 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		_NR<ASObject> o=globalScopes[i]->getVariableByMultinameOpportunistic(name);
-		if(!o.isNull())
+		asAtom o=globalScopes[i]->getVariableByMultinameOpportunistic(name);
+		if(o.type != T_INVALID)
 		{
 			// No incRef, return a reference borrowed from globalScopes
-			return o.getPtr();
+			return o.toObject(getSystemState());
 		}
 	}
 	return NULL;

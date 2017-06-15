@@ -167,9 +167,9 @@ ASFUNCTIONBODY(Event,formatToString)
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s_id=obj->getSystemState()->getUniqueStringId(prop);
 		propName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
-		_NR<ASObject> value=th->getVariableByMultiname(propName);
-		if (!value.isNull())
-			msg += value->toString();
+		asAtom value=th->getVariableByMultiname(propName);
+		if (value.type != T_INVALID)
+			msg += value.toString();
 	}
 	msg += "]";
 
@@ -388,104 +388,92 @@ ASFUNCTIONBODY_GETTER(MouseEvent,localY);
 ASFUNCTIONBODY_GETTER(MouseEvent,stageX);
 ASFUNCTIONBODY_GETTER(MouseEvent,stageY);
 ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,delta);
+ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,buttonDown);
 
-ASFUNCTIONBODY(MouseEvent,_setter_localX)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); 
-	number_t val=args[0]->toNumber();
+		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Wrong number of arguments in setter"); 
+	number_t val=args[0].toNumber();
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj->getSystemState()))))
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return NULL; 
+	return asAtom(); 
 }
 
-ASFUNCTIONBODY(MouseEvent,_setter_localY)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong number of arguments in setter"); 
-	number_t val=args[0]->toNumber();
+		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Wrong number of arguments in setter"); 
+	number_t val=args[0].toNumber();
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj->getSystemState()))))
+	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return NULL; 
+	return asAtom(); 
 }
 
-ASFUNCTIONBODY(MouseEvent,_getter_buttonDown)
+ASFUNCTIONBODY_ATOM(MouseEvent,_getter_altKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->buttonDown);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_ALT));
 }
 
-ASFUNCTIONBODY(MouseEvent,_setter_buttonDown)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_altKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	th->buttonDown = true;
-	return NULL;
-}
-
-ASFUNCTIONBODY(MouseEvent,_getter_altKey)
-{
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_ALT);
-}
-
-ASFUNCTIONBODY(MouseEvent,_setter_altKey)
-{
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_ALT;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(MouseEvent,_getter_controlKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_getter_controlKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_CTRL));
 }
 
-ASFUNCTIONBODY(MouseEvent,_setter_controlKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_controlKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(MouseEvent,_getter_ctrlKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_getter_ctrlKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_CTRL));
 }
 
-ASFUNCTIONBODY(MouseEvent,_setter_ctrlKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_ctrlKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(MouseEvent,_getter_shiftKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_getter_shiftKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_SHIFT);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_SHIFT));
 }
 
-ASFUNCTIONBODY(MouseEvent,_setter_shiftKey)
+ASFUNCTIONBODY_ATOM(MouseEvent,_setter_shiftKey)
 {
-	MouseEvent* th=static_cast<MouseEvent*>(obj);
+	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_SHIFT;
-	return NULL;
+	return asAtom();
 }
 ASFUNCTIONBODY(MouseEvent,updateAfterEvent)
 {
@@ -704,17 +692,17 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 
 	// Must call the AS getter, because the getter may have been
 	// overridden
-	_NR<ASObject> target = e->getVariableByMultiname("target", {""});
-	if(!target.isNull() && !target->is<Null>() && !target->is<Undefined>())
+	asAtom target = e->getVariableByMultiname("target", {""});
+	if(target.type != T_INVALID && target.type != T_NULL && target.type != T_UNDEFINED)
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
-		_NR<ASObject> cloned = e->executeASMethod("clone", {""}, NULL, 0);
+		asAtom cloned = e->executeASMethod("clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
-		if(!cloned->is<Event>())
+		if(!cloned.getObject() || !cloned.getObject()->is<Event>())
 			return abstract_b(obj->getSystemState(),false);
 
-		cloned->incRef();
-		e = _MR(cloned->as<Event>());
+		ASATOM_INCREF(cloned);
+		e = _MR(cloned.getObject()->as<Event>());
 	}
 	if(!th->forcedTarget.isNull())
 		e->setTarget(th->forcedTarget);
@@ -767,10 +755,9 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
 		//If the f is a class method, the 'this' is ignored
-		ASObject* const arg0=e.getPtr();
-		ASObject* ret=tmpListener[i].f->call(this,&arg0,1);
-		if(ret)
-			ret->decRef();
+		asAtom arg0= asAtom::fromObject(e.getPtr());
+		asAtom ret=tmpListener[i].f->call(asAtom::fromObject(this),&arg0,1);
+		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}
@@ -829,7 +816,7 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	infoName.name_s_id=obj->getSystemState()->getUniqueStringId("info");
 	infoName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 	infoName.isAttribute = false;
-	obj->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
+	obj->setVariableByMultiname(infoName, asAtom::fromObject(info), CONST_NOT_ALLOWED);
 	return NULL;
 }
 
@@ -846,10 +833,10 @@ Event* NetStatusEvent::cloneImpl() const
 	infoName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 	infoName.isAttribute = false;
 
-	_NR<ASObject> info = const_cast<NetStatusEvent*>(this)->getVariableByMultiname(infoName);
-	assert(!info.isNull());
-	info->incRef();
-	clone->setVariableByMultiname(infoName, info.getPtr(), CONST_NOT_ALLOWED);
+	asAtom info = const_cast<NetStatusEvent*>(this)->getVariableByMultiname(infoName);
+	assert(info.type != T_INVALID);
+	ASATOM_INCREF(info);
+	clone->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 
 	return clone;
 }
@@ -936,68 +923,68 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, charCode);
 ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyCode);
 ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
 
-ASFUNCTIONBODY(KeyboardEvent, _getter_altKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_altKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_ALT);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_ALT));
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _setter_altKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_altKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_ALT;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _getter_commandKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_commandKey)
 {
 	// Supported only on OSX
-	return abstract_b(obj->getSystemState(),false);
+	return asAtom(false);
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _setter_commandKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
 {
 	// Supported only on OSX
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _getter_controlKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_controlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_CTRL));
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _setter_controlKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_controlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _getter_ctrlKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_ctrlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_CTRL);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_CTRL));
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _setter_ctrlKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_ctrlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return NULL;
+	return asAtom();
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _getter_shiftKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_shiftKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
-	return abstract_b(obj->getSystemState(),th->modifiers & KMOD_SHIFT);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	return asAtom((bool)(th->modifiers & KMOD_SHIFT));
 }
 
-ASFUNCTIONBODY(KeyboardEvent, _setter_shiftKey)
+ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj);
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_SHIFT;
-	return NULL;
+	return asAtom();
 }
 
 Event* KeyboardEvent::cloneImpl() const

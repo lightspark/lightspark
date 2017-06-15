@@ -80,25 +80,29 @@ public:
 	int32_t toInt()
 	{
 		if (!isfloat) return ival;
+		return toInt(dval);
+	}
+	static int32_t toInt(number_t val)
+	{
 		double posInt;
 
 		/* step 2 */
-		if(std::isnan(dval) || std::isinf(dval) || dval == 0.0)
+		if(std::isnan(val) || std::isinf(val) || val == 0.0)
 			return 0;
 		/* step 3 */
-		posInt = floor(fabs(dval));
+		posInt = floor(fabs(val));
 		/* step 4 */
 		if (posInt > 4294967295.0)
 			posInt = fmod(posInt, 4294967296.0);
 		/* step 5 */
 		if (posInt >= 2147483648.0) {
 			// follow tamarin
-			if(dval < 0.0)
+			if(val < 0.0)
 				return 0x80000000 - (int32_t)(posInt - 2147483648.0);
 			else
 				return 0x80000000 + (int32_t)(posInt - 2147483648.0);
 		}
-		return (int32_t)(dval < 0.0 ? -posInt : posInt);
+		return (int32_t)(val < 0.0 ? -posInt : posInt);
 	}
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);

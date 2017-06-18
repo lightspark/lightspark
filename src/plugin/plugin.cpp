@@ -448,6 +448,8 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 			}
 			else
 				LOG(LOG_INFO, "PLUGIN: NPScriptObjectGW requested but was NULL");
+			err = NPERR_INVALID_PARAM;
+			break;
 		default:
 			err = NPERR_INVALID_PARAM;
 			break;

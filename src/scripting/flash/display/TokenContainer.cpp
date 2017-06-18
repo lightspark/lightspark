@@ -187,18 +187,18 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 			case CURVE_CUBIC:
 			{
 				VECTOR_BOUNDS(tokens[i].p3);
-				// fall through
 			}
+			// falls through
 			case CURVE_QUADRATIC:
 			{
 				VECTOR_BOUNDS(tokens[i].p2);
-				// fall through
 			}
+			// falls through
 			case STRAIGHT:
 			{
 				hasContent = true;
-				// fall through
 			}
+			// falls through
 			case MOVE:
 			{
 				VECTOR_BOUNDS(tokens[i].p1);

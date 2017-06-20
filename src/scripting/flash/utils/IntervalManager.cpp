@@ -45,12 +45,12 @@ IntervalManager::~IntervalManager()
 	}
 }
 
-uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
+uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
 {
 	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
-	IntervalRunner* runner = new (getSys()->unaccountedMemory)
+	IntervalRunner* runner = new (callback.getObject()->getSystemState()->unaccountedMemory)
 		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
 
 	//Add runner as tickjob
@@ -62,16 +62,16 @@ uint32_t IntervalManager::setInterval(_R<IFunction> callback, ASObject** args, c
 
 	return currentID-1;
 }
-uint32_t IntervalManager::setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, uint32_t interval)
+uint32_t IntervalManager::setTimeout(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
 {
 	Mutex::Lock l(mutex);
 
 	uint32_t id = getFreeID();
-	IntervalRunner* runner = new (getSys()->unaccountedMemory)
+	IntervalRunner* runner = new (callback.getObject()->getSystemState()->unaccountedMemory)
 		IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
 
 	//Add runner as waitjob
-	getSys()->addWait(interval, runner);
+	callback.getObject()->getSystemState()->addWait(interval, runner);
 	//Add runner to map
 	runners[id] = runner;
 	//increment currentID

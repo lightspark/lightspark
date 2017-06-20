@@ -34,7 +34,7 @@ void Timer::tick()
 	//This will be executed once if repeatCount was originally 1
 	//Otherwise it's executed until stopMe is set to true
 	this->incRef();
-	getVm(getSys())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSys(),"timer")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSystemState(),"timer")));
 
 	currentCount++;
 	if(repeatCount!=0)
@@ -42,7 +42,7 @@ void Timer::tick()
 		if(currentCount==repeatCount)
 		{
 			this->incRef();
-			getVm(getSys())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSys(),"timerComplete")));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSystemState(),"timerComplete")));
 			stopMe=true;
 			running=false;
 		}
@@ -69,16 +69,16 @@ void Timer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 }
 
-ASFUNCTIONBODY(Timer,_constructor)
+ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
-	Timer* th=static_cast<Timer*>(obj);
+	Timer* th=static_cast<Timer*>(obj.getObject());
 
-	th->delay=args[0]->toInt();
+	th->delay=args[0].toInt();
 	if(argslen>=2)
-		th->repeatCount=args[1]->toInt();
+		th->repeatCount=args[1].toInt();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(Timer,_getCurrentCount)

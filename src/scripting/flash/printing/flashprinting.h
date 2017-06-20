@@ -32,7 +32,7 @@ class PrintJob: public EventDispatcher
 public:
 	PrintJob(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 

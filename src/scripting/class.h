@@ -45,7 +45,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
+	asAtom getInstance(bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass);
 	DictionaryTag const* tag;
 	bool bindedToRoot;
 	void recursiveBuild(ASObject* target) const;
@@ -53,6 +53,12 @@ public:
 	Class_inherit(const QName& name, MemoryAccount* m);
 	bool destruct()
 	{
+		auto it = class_scope.begin();
+		while (it != class_scope.end())
+		{
+			ASATOM_DECREF((*it).object);
+			it++;
+		}
 		class_scope.clear();
 		return Class_base::destruct();
 	}
@@ -123,13 +129,13 @@ class Class: public Class_base
 protected:
 	Class(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
-	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
+	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret = realClass->freelist[0].getObjectFromFreeList()->as<T>();
-		if (!ret)
-			ret=new (realClass->memoryAccount) T(realClass);
+		asAtom ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		if (ret.type == T_INVALID)
+			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -215,24 +221,24 @@ public:
 	{
 		T::buildTraits(o);
 	}
-	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
-		ASObject *ret=T::generator(NULL, args, argslen);
+		asAtom ret=T::generator(asAtom::invalidAtom, args, argslen);
 		for(unsigned int i=0;i<argslen;i++)
-			args[i]->decRef();
+			ASATOM_DECREF(args[i]);
 		return ret;
 	}
-	asAtom coerce(SystemState* sys,asAtom o) const
+	asAtom coerce(SystemState* sys,asAtom& o) const
 	{
 		return Class_base::coerce(sys,o);
 	}
 };
 
 template<>
-Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
+asAtom Class<Global>::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
 
 template<>
-inline asAtom Class<Number>::coerce(SystemState* sys,asAtom o) const
+inline asAtom Class<Number>::coerce(SystemState* sys,asAtom& o) const
 {
 	switch (o.type)
 	{
@@ -260,7 +266,7 @@ inline asAtom Class<Number>::coerce(SystemState* sys,asAtom o) const
 }
 
 template<>
-inline asAtom Class<UInteger>::coerce(SystemState* sys,asAtom o) const
+inline asAtom Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (o.type == T_UINTEGER)
 		return o;
@@ -271,7 +277,7 @@ inline asAtom Class<UInteger>::coerce(SystemState* sys,asAtom o) const
 }
 
 template<>
-inline asAtom Class<Integer>::coerce(SystemState* sys,asAtom o) const
+inline asAtom Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (o.type == T_INTEGER)
 		return o;
@@ -281,7 +287,7 @@ inline asAtom Class<Integer>::coerce(SystemState* sys,asAtom o) const
 }
 
 template<>
-inline asAtom Class<Boolean>::coerce(SystemState* sys,asAtom o) const
+inline asAtom Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (o.type == T_BOOLEAN)
 		return o;
@@ -296,7 +302,7 @@ class Class<ASObject>: public Class_base
 private:
 	Class<ASObject>(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL);
+	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL);
 public:
 	static ASObject* getInstanceS(SystemState* sys)
 	{
@@ -326,18 +332,18 @@ public:
 	{
 		ASObject::buildTraits(o);
 	}
-	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
-		ASObject *ret;
-		if(argslen==0 || args[0]->is<Null>() || args[0]->is<Undefined>())
-			ret=Class<ASObject>::getInstanceS(getSys());
+		asAtom ret;
+		if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
+			ret=asAtom::fromObject(Class<ASObject>::getInstanceS(getSys()));
 		else
 		{
-			args[0]->incRef();
+			ASATOM_INCREF(args[0]);
 			ret=args[0];
 		}
 		for(unsigned int i=0;i<argslen;i++)
-			args[i]->decRef();
+			ASATOM_DECREF(args[i]);
 		return ret;
 	}
 };
@@ -356,12 +362,12 @@ class InterfaceClass: public Class_base
 {
 	virtual ~InterfaceClass() { }
 	void buildInstanceTraits(ASObject*) const {}
-	ASObject* getInstance(bool, ASObject* const*, unsigned int, Class_base* realClass)
+	asAtom getInstance(bool, asAtom*, unsigned int, Class_base* realClass)
 	{
 		assert(false);
-		return NULL;
+		return asAtom::invalidAtom;
 	}
-	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
 		assert(argslen == 1);
 		return args[0];
@@ -413,12 +419,12 @@ public:
 	{
 	}
 
-	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)
+	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)
 	{
 		if(realClass==NULL)
 			realClass=this;
-		T* ret=new (realClass->memoryAccount) T(realClass);
-		ret->setTypes(types);
+		asAtom ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
+		ret.as<T>()->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -427,11 +433,12 @@ public:
 	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
 	 * this->types will be Class<ASString> on entry of this function.
 	 */
-	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
-		ASObject* ret = T::generator(this,args,argslen);
+		asAtom th = asAtom::fromObject(this);
+		asAtom ret = T::generator(th,args,argslen);
 		for(size_t i=0;i<argslen;++i)
-			args[i]->decRef();
+			ASATOM_DECREF(args[i]);
 		return ret;
 	}
 
@@ -449,7 +456,7 @@ public:
 		types.push_back(type);
 	}
 
-	asAtom coerce(SystemState* sys,asAtom o) const
+	asAtom coerce(SystemState* sys,asAtom& o) const
 	{
 		if (o.type == T_UNDEFINED)
 		{
@@ -471,7 +478,7 @@ public:
 			ASATOM_DECREF(o);
 			throwError<TypeError>(kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
-			return asAtom(); // not reached
+			return asAtom::invalidAtom; // not reached
 		}
 	}
 };
@@ -569,9 +576,9 @@ public:
 		templ->decRef();
 		return ret;
 	}
-	static T* getInstanceS(SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
+	static asAtom getInstanceS(SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		return static_cast<T*>(getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(true,NULL,0));
+		return getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(true,NULL,0);
 	}
 
 	static Template<T>* getTemplate(SystemState* sys,const QName& name)

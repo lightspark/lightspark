@@ -216,7 +216,7 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			throw ParseException("invalid marker in AMF3 vector");
 			
 	}
-	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)));
+	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)).as<Vector>());
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
 
@@ -305,7 +305,8 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		key->incRef();
 		value->incRef();
-		ret->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),ASObject::CONST_ALLOWED);
+		asAtom v = asAtom::fromObject(value.getPtr());
+		ret->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	}
 	return ret;
 }
@@ -373,7 +374,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
 
-		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0));
+		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0).toObject(input->getSystemState()));
 		//Invoke readExternal
 		multiname readExternalName(NULL);
 		readExternalName.name_type=multiname::NAME_STRING;
@@ -383,11 +384,10 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 
 		asAtom o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
-		IFunction* f=o.getObject()->as<IFunction>();
-		ret->incRef();
 		input->incRef();
 		asAtom tmpArg[1] = { asAtom::fromObject(input) };
-		f->call(asAtom::fromObject(ret.getPtr()), tmpArg, 1);
+		asAtom v=asAtom::fromObject(ret.getPtr());
+		o.callFunction(v, tmpArg, 1);
 		return ret;
 	}
 
@@ -414,7 +414,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		traitsMap.emplace_back(traits);
 	}
 
-	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0):
+	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0).toObject(input->getSystemState()):
 		Class<ASObject>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret.getPtr());
@@ -430,7 +430,8 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 
-		ret->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),ASObject::CONST_ALLOWED,traits.type);
+		asAtom v = asAtom::fromObject(value.getPtr());
+		ret->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,traits.type);
 	}
 
 	//Read dynamic name, value pairs

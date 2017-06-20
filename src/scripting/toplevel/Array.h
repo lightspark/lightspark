@@ -61,9 +61,9 @@ private:
 	class sortComparatorWrapper
 	{
 	private:
-		IFunction* comparator;
+		asAtom comparator;
 	public:
-		sortComparatorWrapper(IFunction* c):comparator(c){}
+		sortComparatorWrapper(asAtom c):comparator(c){}
 		bool operator()(asAtom& d1, asAtom& d2);
 	};
 	class sortOnComparator
@@ -74,7 +74,7 @@ private:
 		sortOnComparator(const std::vector<sorton_field>& sf):fields(sf){}
 		bool operator()(asAtom& d1, asAtom& d2);
 	};
-	void constructorImpl(ASObject* const* args, const unsigned int argslen);
+	void constructorImpl(asAtom *args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
 public:
@@ -100,42 +100,42 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 
-	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_push);
 	ASFUNCTION_ATOM(_push_as3);
 	ASFUNCTION(_concat);
-	ASFUNCTION(_pop);
-	ASFUNCTION(join);
-	ASFUNCTION(shift);
-	ASFUNCTION(unshift);
+	ASFUNCTION_ATOM(_pop);
+	ASFUNCTION_ATOM(join);
+	ASFUNCTION_ATOM(shift);
+	ASFUNCTION_ATOM(unshift);
 	ASFUNCTION(splice);
-	ASFUNCTION(_sort);
+	ASFUNCTION_ATOM(_sort);
 	ASFUNCTION_ATOM(sortOn);
-	ASFUNCTION(filter);
+	ASFUNCTION_ATOM(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION_ATOM(_getLength);
 	ASFUNCTION_ATOM(_setLength);
-	ASFUNCTION(forEach);
+	ASFUNCTION_ATOM(forEach);
 	ASFUNCTION(_reverse);
 	ASFUNCTION(lastIndexOf);
-	ASFUNCTION(_map);
+	ASFUNCTION_ATOM(_map);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_toLocaleString);
 	ASFUNCTION(slice);
-	ASFUNCTION(every);
-	ASFUNCTION(some);
-	ASFUNCTION(insertAt);
+	ASFUNCTION_ATOM(every);
+	ASFUNCTION_ATOM(some);
+	ASFUNCTION_ATOM(insertAt);
 	ASFUNCTION(removeAt);
 
-	_R<ASObject> at(unsigned int index);
-	void set(unsigned int index, asAtom o);
+	asAtom at(unsigned int index);
+	void set(unsigned int index, asAtom &o);
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
@@ -147,7 +147,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	virtual tiny_string toJSON(std::vector<ASObject *> &path,IFunction* replacer, const tiny_string &spaces,const tiny_string& filter);
+	virtual tiny_string toJSON(std::vector<ASObject *> &path,asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 };
 
 

@@ -135,10 +135,10 @@ public:
 	ASFUNCTION(_toJSON);
 
 	// these are internal methods used if the generic Array-Methods are called on a ByteArray
-	ASFUNCTION(pop);
+	ASFUNCTION_ATOM(pop);
 	ASFUNCTION_ATOM(push);
-	ASFUNCTION(shift);
-	ASFUNCTION(unshift);
+	ASFUNCTION_ATOM(shift);
+	ASFUNCTION_ATOM(unshift);
 	/**
 		Get ownership over the passed buffer
 		@param buf Pointer to the buffer to acquire, ownership and delete authority is acquired
@@ -161,7 +161,7 @@ public:
 	static void buildTraits(ASObject* o);
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 

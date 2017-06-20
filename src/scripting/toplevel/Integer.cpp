@@ -72,11 +72,11 @@ ASFUNCTIONBODY(Integer,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(Integer,generator)
+ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		return abstract_i(getSys(),0);
-	return abstract_i(args[0]->getSystemState(),args[0]->toInt());
+		return asAtom((int32_t)0);
+	return asAtom(args[0].toInt());
 }
 
 TRISTATE Integer::isLess(ASObject* o)

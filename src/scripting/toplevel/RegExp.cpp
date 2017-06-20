@@ -110,22 +110,22 @@ ASFUNCTIONBODY(RegExp,_constructor)
 }
 
 
-ASFUNCTIONBODY(RegExp,generator)
+ASFUNCTIONBODY_ATOM(RegExp,generator)
 {
 	if(argslen == 0)
 	{
-		return Class<RegExp>::getInstanceS(getSys(),"");
+		return asAtom::fromObject(Class<RegExp>::getInstanceS(getSys(),""));
 	}
-	else if(args[0]->is<RegExp>())
+	else if(args[0].is<RegExp>())
 	{
-		args[0]->incRef();
+		ASATOM_INCREF(args[0]);
 		return args[0];
 	}
 	else
 	{
 		if (argslen > 1)
 			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		return Class<RegExp>::getInstanceS(args[0]->getSystemState(),args[0]->toString());
+		return asAtom::fromObject(Class<RegExp>::getInstanceS(getSys(),args[0].toString()));
 	}
 }
 
@@ -137,12 +137,12 @@ ASFUNCTIONBODY_GETTER(RegExp, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(RegExp, lastIndex);
 ASFUNCTIONBODY_GETTER(RegExp, source);
 
-ASFUNCTIONBODY(RegExp,exec)
+ASFUNCTIONBODY_ATOM(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj);
+	RegExp* th=static_cast<RegExp*>(obj.getObject());
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0]->toString();
-	return th->match(arg0);
+	const tiny_string& arg0=args[0].toString();
+	return asAtom::fromObject(th->match(arg0));
 }
 
 ASObject *RegExp::match(const tiny_string& str)
@@ -218,9 +218,9 @@ ASObject *RegExp::match(const tiny_string& str)
 	{
 		nameEntry* entry=reinterpret_cast<nameEntry*>(entries);
 		uint16_t num=GINT16_FROM_BE(entry->number);
-		ASObject* captured=a->at(num).getPtr();
-		captured->incRef();
-		a->setVariableByQName(tiny_string(entry->name, true),"",captured,DYNAMIC_TRAIT);
+		asAtom captured=a->at(num);
+		ASATOM_INCREF(captured);
+		a->setVariableAtomByQName(getSystemState()->getUniqueStringId(tiny_string(entry->name, true)),nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),captured,DYNAMIC_TRAIT);
 		entries+=namedSize;
 	}
 	lastIndex=ovector[1];

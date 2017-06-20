@@ -1101,7 +1101,8 @@ void DisplayObject::initFrame()
 {
 	if(!isConstructed() && getClass())
 	{
-		getClass()->handleConstruction(this,NULL,0,true);
+		asAtom o = asAtom::fromObject(this);
+		getClass()->handleConstruction(o,NULL,0,true);
 
 		/*
 		 * Legacy objects have their display list properties set on creation, but

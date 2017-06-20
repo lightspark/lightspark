@@ -67,17 +67,16 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(nam
 	subtype = SUBTYPE_INHERIT;
 }
 
-ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
+asAtom Class_inherit::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	//We override the classdef
 	if(realClass==NULL)
 		realClass=this;
 
-	ASObject* ret=NULL;
+	asAtom ret;
 	if(tag)
 	{
-		ret=tag->instance(realClass);
-		assert_and_throw(ret);
+		ret=asAtom::fromObject(tag->instance(realClass));
 	}
 	else
 	{
@@ -133,10 +132,10 @@ void Class_inherit::setupDeclaredTraits(ASObject *target) const
 
 
 template<>
-Global* Class<Global>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
+asAtom Class<Global>::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	throwError<TypeError>(kConstructOfNonFunctionError);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
@@ -155,56 +154,45 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 	if(var->var.type != T_INVALID)
 	{
 		assert_and_throw(var->var.type==T_FUNCTION);
-		IFunction* f=var->var.toObject(c->getSystemState())->as<IFunction>();
-		f->incRef();
-		c->setDeclaredMethodByQName(name,interfaceNs,f,NORMAL_METHOD,true);
+		ASATOM_INCREF(var->var);
+		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->var,NORMAL_METHOD,true);
 	}
-	if(var->getter)
+	if(var->getter.type != T_INVALID)
 	{
-		assert_and_throw(var->getter->getObjectType()==T_FUNCTION);
-		IFunction *f=var->getter->as<IFunction>();
-		f->incRef();
-		c->setDeclaredMethodByQName(name,interfaceNs,f,GETTER_METHOD,true);
+		assert_and_throw(var->getter.type==T_FUNCTION);
+		ASATOM_INCREF(var->getter);
+		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->getter,GETTER_METHOD,true);
 	}
-	if(var->setter)
+	if(var->setter.type != T_INVALID)
 	{
-		assert_and_throw(var->setter->getObjectType()==T_FUNCTION);
-		IFunction *f=var->setter->as<IFunction>();
-		f->incRef();
-		c->setDeclaredMethodByQName(name,interfaceNs,f,SETTER_METHOD,true);
+		assert_and_throw(var->setter.type==T_FUNCTION);
+		ASATOM_INCREF(var->setter);
+		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->setter,SETTER_METHOD,true);
 	}
 }
 
-ASObject* Class<ASObject>::getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
+asAtom Class<ASObject>::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
 		// Construction according to ECMA 15.2.2.1
-		switch(args[0]->getObjectType())
+		switch(args[0].type)
 		{
-		case T_BOOLEAN:
-			return abstract_b(this->getSystemState(),Boolean_concrete(args[0]));
-		case T_NUMBER:
-			if (!args[0]->as<Number>()->isfloat)
-				return abstract_di(this->getSystemState(), args[0]->toInt64());
-			return abstract_d(this->getSystemState(), args[0]->toNumber());
-		case T_INTEGER:
-			return abstract_i(this->getSystemState(),args[0]->toInt());
-		case T_UINTEGER:
-			return abstract_ui(this->getSystemState(),args[0]->toUInt());
-		case T_STRING:
-			return abstract_s(this->getSystemState(),args[0]->toString());
-		case T_FUNCTION:
-		case T_OBJECT:
-			args[0]->incRef();
-			return args[0];
-		default:
-			break;
+			case T_BOOLEAN:
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+			case T_STRING:
+			case T_FUNCTION:
+			case T_OBJECT:
+				return args[0];
+			default:
+				break;
 		}
 	}
 	if(realClass==NULL)
 		realClass=this;
-	ASObject* ret=new (realClass->memoryAccount) ASObject(realClass);
+	asAtom ret=asAtom::fromObject(new (realClass->memoryAccount) ASObject(realClass));
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 	return ret;

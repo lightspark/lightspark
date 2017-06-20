@@ -37,10 +37,9 @@ void NativeApplication::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(NativeApplication,_constructor)
+ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
-	return NULL;
+	return EventDispatcher::_constructor(obj, NULL, 0);
 }
 
 //  Should actually be a Singleton
@@ -49,17 +48,17 @@ ASFUNCTIONBODY(NativeApplication, _getNativeApplication)
 	return Class<NativeApplication>::getInstanceS(getSys());
 }
 
-ASFUNCTIONBODY(NativeApplication, addEventListener)
+ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)
 {
-	EventDispatcher* th = Class<EventDispatcher>::cast(obj);
+	EventDispatcher* th = Class<EventDispatcher>::cast(obj.getObject());
 	EventDispatcher::addEventListener(obj, args, argslen);
-	if (args[0]->toString() == "invoke")
+	if (args[0].toString() == "invoke")
 	{
 		th->incRef();
-		getVm(obj->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(obj->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(th->getSystemState())));
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void NativeDragManager::sinit(Class_base* c)

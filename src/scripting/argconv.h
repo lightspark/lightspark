@@ -20,7 +20,6 @@
 #ifndef SCRIPTING_ARGCONV_H
 #define SCRIPTING_ARGCONV_H 1
 
-#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
 
@@ -272,7 +271,7 @@ template<class T>
 class ArgumentConversionAtom
 {
 public:
-	static T toConcrete(asAtom obj);
+	static T toConcrete(asAtom obj,const T& v);
 	static asAtom toAbstract(SystemState* sys,const T& val);
 };
 
@@ -280,15 +279,23 @@ template<>
 class ArgumentConversionAtom<asAtom>
 {
 public:
-	static asAtom toConcrete(asAtom obj)
+	static asAtom toConcrete(asAtom obj,const asAtom& v)
 	{
+		if(obj.type == T_NULL)
+			return asAtom::nullAtom;
+		if(obj.type == T_UNDEFINED)
+			return asAtom::nullAtom;
+		if(v.type != T_INVALID && obj.type != v.type)
+                        throwError<ArgumentError>(kCheckTypeFailedError,
+                                                  obj.toObject(getSys())->getClassName(),
+                                                  "?"); // TODO
 		ASATOM_INCREF(obj);
 		return obj;
 	}
 	static asAtom toAbstract(SystemState* sys,asAtom val)
 	{
 		if(val.type == T_INVALID)
-			return asAtom(T_NULL);
+			return asAtom::nullAtom;
 		ASATOM_INCREF(val);
 		return val;
 	}
@@ -298,7 +305,7 @@ template<class T>
 class ArgumentConversionAtom<Ref<T>>
 {
 public:
-	static Ref<T> toConcrete(asAtom obj)
+	static Ref<T> toConcrete(asAtom obj,const Ref<T> v)
 	{
 		if(!obj.is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,
@@ -319,7 +326,7 @@ template<class T>
 class ArgumentConversionAtom<NullableRef<T>>
 {
 public:
-	static NullableRef<T> toConcrete(asAtom obj)
+	static NullableRef<T> toConcrete(asAtom obj,const NullableRef<T>& v)
 	{
 		if(obj.type == T_NULL)
 			return NullRef;
@@ -337,7 +344,7 @@ public:
 	static asAtom toAbstract(SystemState* sys,const NullableRef<T>& val)
 	{
 		if(val.isNull())
-			return asAtom(T_NULL);
+			return asAtom::nullAtom;
 		val->incRef();
 		return asAtom::fromObject(val.getPtr());
 	}
@@ -347,7 +354,7 @@ template<>
 class ArgumentConversionAtom<NullableRef<ASObject>>
 {
 public:
-	static NullableRef<ASObject> toConcrete(asAtom obj)
+	static NullableRef<ASObject> toConcrete(asAtom obj,const NullableRef<ASObject>& v)
 	{
 		ASObject* o = obj.toObject(getSys());
 		o->incRef();
@@ -356,50 +363,50 @@ public:
 	static asAtom toAbstract(SystemState* sys,const NullableRef<ASObject>& val)
 	{
 		if(val.isNull())
-			return asAtom(T_NULL);
+			return asAtom::nullAtom;
 		val->incRef();
 		return asAtom::fromObject(val.getPtr());
 	}
 };
 
 template<>
-inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(asAtom obj)
+inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(asAtom obj,const number_t& v)
 {
 	return obj.toNumber();
 }
 
 template<>
-inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(asAtom obj)
+inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(asAtom obj,const bool& v)
 {
 	return obj.Boolean_concrete();
 }
 
 template<>
-inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(asAtom obj)
+inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(asAtom obj,const uint32_t& v)
 {
 	return obj.toUInt();
 }
 
 template<>
-inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(asAtom obj)
+inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(asAtom obj,const int32_t& v)
 {
 	return obj.toInt();
 }
 
 template<>
-inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(asAtom obj)
+inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(asAtom obj,const int64_t& v)
 {
 	return obj.toInt64();
 }
 
 template<>
-inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(asAtom obj)
+inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(asAtom obj,const tiny_string& v)
 {
 	return obj.toString();
 }
 
 template<>
-inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(asAtom obj)
+inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(asAtom obj,const RGB& v)
 {
 	return RGB(obj.toUInt());
 }
@@ -457,7 +464,7 @@ public:
 		if(argslen == 0)
                         throwError<ArgumentError>(kWrongArgumentCountError, "object", "?", "?");
 
-		v = ArgumentConversionAtom<T>::toConcrete(args[0]);
+		v = ArgumentConversionAtom<T>::toConcrete(args[0],v);
 		args++;
 		argslen--;
 		return *this;
@@ -466,7 +473,7 @@ public:
 	{
 		if(argslen > 0)
 		{
-			v = ArgumentConversionAtom<T>::toConcrete(args[0]);
+			v = ArgumentConversionAtom<T>::toConcrete(args[0],v);
 			args++;
 			argslen--;
 		}

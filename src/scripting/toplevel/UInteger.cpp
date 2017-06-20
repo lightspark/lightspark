@@ -98,11 +98,11 @@ ASFUNCTIONBODY(UInteger,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(UInteger,generator)
+ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		return abstract_ui(getSys(),0);
-	return abstract_ui(args[0]->getSystemState(),args[0]->toUInt());
+		return asAtom((uint32_t)0);
+	return asAtom(args[0].toUInt());
 }
 
 ASFUNCTIONBODY(UInteger,_valueOf)

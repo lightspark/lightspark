@@ -29,10 +29,11 @@
 #include <boost/intrusive/list.hpp>
 #include <boost/container/flat_map.hpp>
 
+// this is deprecated, please use ASFUNCTION_ATOM
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
 #define ASFUNCTION_ATOM(name) \
-	static asAtom name(asAtom , asAtom* args, const unsigned int argslen)
+	static asAtom name(asAtom& , asAtom* args, const unsigned int argslen)
 
 /* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
@@ -60,15 +61,16 @@
 	ASFUNCTION_ATOM( _setter_##name)
 
 /* general purpose body for an AS function */
+// this is deprecated, please use ASFUNCTIONBODY_ATOM
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
 #define ASFUNCTIONBODY_ATOM(c,name) \
-	asAtom c::name(asAtom obj, asAtom* args, const unsigned int argslen)
+	asAtom c::name(asAtom& obj, asAtom* args, const unsigned int argslen)
 
 /* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
-	asAtom c::_getter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
@@ -79,7 +81,7 @@
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_getter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
@@ -92,19 +94,19 @@
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
-	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
-		return asAtom(); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
+		return asAtom::invalidAtom; \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
@@ -112,15 +114,15 @@
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " setter is not implemented"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
-		return asAtom(); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
+		return asAtom::invalidAtom; \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
  * After the property has been updated, the callback member function is called with the old value
  * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
-	asAtom c::_setter_##name(asAtom obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
@@ -128,9 +130,9 @@
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0]); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
 		th->callback(oldValue); \
-		return asAtom(); \
+		return asAtom::invalidAtom; \
 	}
 
 /* full body for a getter declared by ASPROPERTY_GETTER_SETTER or ASFUNCTION_GETTER_SETTER */
@@ -205,6 +207,7 @@ private:
 		uint32_t uintval;
 		number_t numberval;
 		bool boolval;
+		ASObject* closure_this; // used for T_FUNCTION objects
 	};
 	ASObject* objval;
 	void decRef();
@@ -220,6 +223,20 @@ public:
 	// returns NULL if this atom is a primitive;
 	inline ASObject* getObject() const { return objval; }
 	static asAtom fromObject(ASObject* obj);
+	static asAtom fromFunction(ASObject* f, ASObject* closure);
+	inline bool isBound() const { return type == T_FUNCTION && closure_this; }
+	inline ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
+	static asAtom undefinedAtom;
+	static asAtom nullAtom;
+	static asAtom invalidAtom;
+	static asAtom trueAtom;
+	static asAtom falseAtom;
+	/*
+	 * Calls this function with the given object and args.
+	 * One reference of each args[i] is consumed.
+	 * Return the asAtom the function returned.
+	 */
+	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args);
 	void replace(ASObject* obj);
 	std::string toDebugString();
 	void applyProxyProperty(multiname& name);
@@ -228,13 +245,14 @@ public:
 	bool isEqualStrict(SystemState *sys, asAtom& v2);
 	bool isConstructed() const;
 	bool isPrimitive() const;
-	asAtom asTypelate(asAtom atomtype);
+	asAtom asTypelate(asAtom& atomtype);
 	number_t toNumber();
 	int32_t toInt();
 	int64_t toInt64();
 	uint32_t toUInt();
 	tiny_string toString();
 	tiny_string toLocaleString();
+	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
 	bool Boolean_concrete();
 	void convert_i();
@@ -271,8 +289,8 @@ public:
 	template<class T> T* as() { return static_cast<T*>(this->objval); }
 };
 #define ASATOM_INCREF(a) if (a.getObject()) a.getObject()->incRef()
-#define ASATOM_DECREF(a) if (a.getObject()) a.getObject()->decRef()
-#define ASATOM_DECREF_POINTER(a) if (a->getObject()) a->getObject()->decRef()
+#define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b) b->decRef(); } while (0)
+#define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b) b->decRef(); } while (0)
 struct variable
 {
 	asAtom var;
@@ -282,15 +300,15 @@ struct variable
 		const Type* type;
 		void* typeUnion;
 	};
-	IFunction* setter;
-	IFunction* getter;
+	asAtom setter;
+	asAtom getter;
 	nsNameAndKind ns;
 	TRAIT_KIND kind;
 	TRAIT_STATE traitState;
 	bool isenumerable:1;
 	bool issealed:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
+		: typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
 	void setVar(asAtom v, SystemState* sys);
 	/*
@@ -481,7 +499,7 @@ private:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter || ret->var.type != T_INVALID))
+			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
 				ret=NULL;
 		}
 		return ret;
@@ -524,7 +542,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter || ret->var.type != T_INVALID))
+			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
 				ret=NULL;
 		}
 		return ret;
@@ -536,7 +554,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter || ret->var.type != T_INVALID))
+			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
 				ret=NULL;
 		}
 		return ret;
@@ -627,7 +645,7 @@ public:
 	asAtom executeASMethod(const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
-	virtual void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
+	virtual void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 	{
 		setVariableByMultiname(name,o,allowConst,classdef);
 	}
@@ -638,7 +656,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
+	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
@@ -652,10 +670,14 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
+	void setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
+	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
+	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	asAtom getSlot(unsigned int n)
 	{
@@ -714,12 +736,12 @@ public:
 	_R<ASObject> call_valueOf();
 	bool has_toString();
 	_R<ASObject> call_toString();
-	tiny_string call_toJSON(bool &ok, std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces, const tiny_string &filter);
+	tiny_string call_toJSON(bool &ok, std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces, const tiny_string &filter);
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */
 	virtual tiny_string getClassName() const;
 
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 
 	/* helpers for the dynamic property 'prototype' */
 	bool hasprop_prototype();
@@ -755,7 +777,7 @@ public:
 
 	virtual ASObject *describeType() const;
 
-	virtual tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
+	virtual tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 	/* returns true if the current object is of type T */
 	template<class T> bool is() const { 
 		LOG(LOG_ERROR,"dynamic cast:"<<this->getClassName());
@@ -912,10 +934,10 @@ template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_X
 
 
 template<class T> inline bool asAtom::is() const {
-	assert(type == T_OBJECT);
 	return objval ? objval->is<T>() : false;
 }
 template<> inline bool asAtom::is<Array>() const { return type==T_ARRAY; }
+template<> inline bool asAtom::is<asAtom>() const { return true; }
 template<> inline bool asAtom::is<ASObject>() const { return true; }
 template<> inline bool asAtom::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool asAtom::is<ASString>() const { return type==T_STRING; }

@@ -36,8 +36,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASObject *match(const tiny_string& str);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
-	ASFUNCTION(exec);
+	ASFUNCTION_ATOM(generator);
+	ASFUNCTION_ATOM(exec);
 	ASFUNCTION(test);
 	ASFUNCTION(_toString);
 	ASPROPERTY_GETTER(bool, dotall);

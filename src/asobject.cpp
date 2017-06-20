@@ -358,10 +358,9 @@ _R<ASObject> ASObject::call_valueOf()
 	asAtom o=getVariableByMultiname(valueOfName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
-	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
 
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	asAtom v =asAtom::fromObject(this);
+	asAtom ret=o.callFunction(v,NULL,0);
 	return _MR(ret.toObject(getSystemState()));
 }
 
@@ -392,14 +391,13 @@ _R<ASObject> ASObject::call_toString()
 	asAtom o=getVariableByMultiname(toStringName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
-	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
 
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	asAtom v =asAtom::fromObject(this);
+	asAtom ret=o.callFunction(v,NULL,0);
 	return _MR(ret.toObject(getSystemState()));
 }
 
-tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
+tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
 {
 	tiny_string res;
 	ok = false;
@@ -415,10 +413,8 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, IFunct
 	asAtom o=getVariableByMultiname(toJSONName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		return res;
-	IFunction* f=o.toObject(getSystemState())->as<IFunction>();
-
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),NULL,0);
+	asAtom v=asAtom::fromObject(this);
+	asAtom ret=o.callFunction(v,NULL,0);
 	if (ret.type == T_STRING)
 	{
 		res += "\"";
@@ -557,16 +553,81 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		}
 		case GETTER_METHOD:
 		{
-			if(obj->getter!=NULL)
-				obj->getter->decRef();
-			obj->getter=o;
+			ASATOM_DECREF(obj->getter);
+			obj->getter=asAtom::fromObject(o);
 			break;
 		}
 		case SETTER_METHOD:
 		{
-			if(obj->setter!=NULL)
-				obj->setter->decRef();
-			obj->setter=o;
+			ASATOM_DECREF(obj->setter);
+			obj->setter=asAtom::fromObject(o);
+			break;
+		}
+	}
+	o->functionname = nameId;
+}
+
+void ASObject::setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+{
+	setDeclaredMethodAtomByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed,isEnumerable);
+}
+void ASObject::setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+{
+	setDeclaredMethodAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,isEnumerable);
+}
+void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+{
+	check();
+#ifndef NDEBUG
+	assert(!initialized);
+#endif
+	//borrowed properties only make sense on class objects
+	assert(!isBorrowed || this->is<Class_base>());
+	//use setVariableByQName(name,ns,o,DYNAMIC_TRAIT) on prototypes
+
+	assert(f.type == T_FUNCTION);
+	IFunction* o = f.getObject()->as<IFunction>();
+	/*
+	 * Set the inClass property if not previously set.
+	 * This is used for builtin methods. Methods defined by AS3 code
+	 * get their inClass set in buildTrait.
+	 * It is necesarry to decide if o is a function or a method,
+	 * i.e. if a method closure should be created in getProperty.
+	 */
+	if(isBorrowed && o->inClass == NULL)
+		o->inClass = this->as<Class_base>();
+
+	variable* obj=NULL;
+	if(isBorrowed)
+	{
+		assert(this->is<Class_base>());
+		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		if (!this->is<Class_inherit>())
+			o->setConstant();
+	}
+	else
+	{
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		++varcount;
+	}
+	obj->isenumerable = isEnumerable;
+	switch(type)
+	{
+		case NORMAL_METHOD:
+		{
+			obj->setVar(f,getSystemState());
+			break;
+		}
+		case GETTER_METHOD:
+		{
+			ASATOM_DECREF(obj->getter);
+			obj->getter=f;
+			break;
+		}
+		case SETTER_METHOD:
+		{
+			ASATOM_DECREF(obj->setter);
+			obj->setter=f;
 			break;
 		}
 	}
@@ -593,7 +654,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
 		return false;
 
-	assert(obj->getter==NULL && obj->setter==NULL && obj->var.type!=T_INVALID);
+	assert(obj->getter.type == T_INVALID && obj->setter.type == T_INVALID && obj->var.type!=T_INVALID);
 	//Now dereference the value
 	ASATOM_DECREF(obj->var);
 
@@ -607,7 +668,8 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	check();
-	setVariableByMultiname(name,asAtom(value),CONST_NOT_ALLOWED);
+	asAtom v(value);
+	setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 }
 
 variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter)
@@ -617,7 +679,7 @@ variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const 
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
-		if(!(ret->setter || ret->var.type != T_INVALID))
+		if(!(ret->setter.type != T_INVALID || ret->var.type != T_INVALID))
 		{
 			ret=NULL;
 			if(has_getter)
@@ -633,7 +695,7 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 }
 
 
-void ASObject::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
+void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -652,7 +714,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALL
 		//looking for a settable even if a super class sets
 		//has_getter to true.
 		obj=cls->findBorrowedSettable(name,&has_getter);
-		if(obj && (obj->issealed || cls->isFinal || cls->isSealed) && !obj->setter)
+		if(obj && (obj->issealed || cls->isFinal || cls->isSealed) && obj->setter.type == T_INVALID)
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
@@ -667,7 +729,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALL
 		variable *protoObj = cls->findSettableInPrototype(name);
 		if (protoObj && 
 		    ((protoObj->var.type == T_FUNCTION) ||
-		     protoObj->setter))
+		     protoObj->setter.type != T_INVALID))
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
@@ -694,23 +756,22 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALL
 		++varcount;
 	}
 
-	if(obj->setter)
+	if(obj->setter.type != T_INVALID)
 	{
 		//Call the setter
 		LOG_CALL(_("Calling the setter"));
-		//Overriding function is automatically done by using cur_level
-		IFunction* setter=obj->setter;
 		//One argument can be passed without creating an array
 		ASObject* target=this;
-		target->incRef();
 		asAtom* arg1 = &o;
-		asAtom ret= setter->call(asAtom::fromObject(target),arg1,1);
+
+		asAtom v =asAtom::fromObject(target);
+		asAtom ret= obj->setter.callFunction(v,arg1,1);
 		assert_and_throw(ret.type == T_UNDEFINED);
 		LOG_CALL(_("End of setter"));
 	}
 	else
 	{
-		assert_and_throw(!obj->getter);
+		assert_and_throw(obj->getter.type == T_INVALID);
 		obj->setVar(o,getSystemState());
 	}
 }
@@ -728,9 +789,14 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 
 void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
 {
+	asAtom v = asAtom::fromObject(o);
+	setVariableAtomByQName(nameId, ns, v, traitKind, isEnumerable);
+}
+void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable)
+{
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
-	obj->setVar(asAtom::fromObject(o),getSystemState());
+	obj->setVar(o,getSystemState());
 	obj->isenumerable=isEnumerable;
 	++varcount;
 }
@@ -744,7 +810,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o,
 }
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
-		: var(_v),typeUnion(NULL),setter(NULL),getter(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false)
+		: var(_v),typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false)
 {
 	if(_type)
 	{
@@ -881,7 +947,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	{
 		if (obj == NULL) // create dynamic object
 		{
-			value = asAtom(T_UNDEFINED);
+			value = asAtom::undefinedAtom;
 		}
 		else
 		{
@@ -891,7 +957,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 			{
 				//Casting undefined to an object (of unknown class)
 				//results in Null
-				value = asAtom(T_NULL);
+				value = asAtom::nullAtom;
 			}
 		}
 	}
@@ -908,10 +974,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				value = asAtom(T_UNDEFINED);
 			}
 			else
-			{
-				obj = mainObj->getSystemState()->getUndefinedRef();
-				value = type->coerce(mainObj->getSystemState(),asAtom::fromObject(obj));
-			}
+				value = type->coerce(mainObj->getSystemState(),asAtom::undefinedAtom);
 		}
 		else
 			value = asAtom::fromObject(obj);
@@ -929,17 +992,17 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		initSlot(slot_id,name, mname.ns[0]);
 }
 
-ASFUNCTIONBODY(ASObject,generator)
+ASFUNCTIONBODY_ATOM(ASObject,generator)
 {
 	//By default we assume it's a passthrough cast
 	if(argslen==1)
 	{
 		LOG_CALL(_("Passthrough of ") << args[0]);
-		args[0]->incRef();
+		ASATOM_INCREF(args[0]);
 		return args[0];
 	}
 	else
-		return Class<ASObject>::getInstanceS(getSys());
+		return asAtom::fromObject(Class<ASObject>::getInstanceS(getSys()));
 }
 
 ASFUNCTIONBODY(ASObject,_toString)
@@ -1092,7 +1155,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(obj->getter || obj->var.type != T_INVALID))
+		if(!(obj->getter.type != T_INVALID|| obj->var.type != T_INVALID))
 			obj=NULL;
 	}
 
@@ -1113,7 +1176,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(obj->getter || obj->var.type != T_INVALID))
+						if(!(obj->getter.type != T_INVALID || obj->var.type != T_INVALID))
 							obj=NULL;
 					}
 					if(obj)
@@ -1137,7 +1200,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(obj->getter || obj->var.type != T_INVALID))
+		if(!(obj->getter.type != T_INVALID || obj->var.type != T_INVALID))
 			obj=NULL;
 	}
 
@@ -1158,7 +1221,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(obj->getter || obj->var.type != T_INVALID))
+						if(!(obj->getter.type != T_INVALID || obj->var.type != T_INVALID))
 							obj=NULL;
 					}
 					if(obj)
@@ -1168,7 +1231,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			}
 		}
 		if(!obj)
-			return asAtom();
+			return asAtom::invalidAtom;
 	}
 
 
@@ -1181,33 +1244,37 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 	}
 
-	if(obj->getter)
+	if(obj->getter.type != T_INVALID)
 	{
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name);
-		IFunction* getter=obj->getter;
 		ASObject* target=NULL;
-		if (!getter->isBound())
-		{
+		if (!obj->getter.isBound())
 			target=this;
-			target->incRef();
-		}
-		asAtom ret=getter->call(asAtom::fromObject(target),NULL,0);
+		
+		asAtom v =asAtom::fromObject(target);
+		asAtom ret=obj->getter.callFunction(v,NULL,0);
 		LOG_CALL(_("End of getter"));
 		// No incRef because ret is a new instance
 		return ret;
 	}
 	else
 	{
-		assert_and_throw(!obj->setter);
+		assert_and_throw(obj->setter.type == T_INVALID);
 		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
-			LOG_CALL("Attaching this " << this << " to function " << name);
-			//the obj reference is acquired by the smart reference
-			this->incRef();
-			IFunction* f=obj->var.getObject()->as<IFunction>()->bind(_MR(this),-1);
-			//No incref is needed, as the function is a new instance
-			return asAtom::fromObject(f);
+			ASATOM_INCREF(obj->var);
+			if (obj->var.isBound())
+			{
+				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
+				return obj->var;
+			}
+			else
+			{
+				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name);
+				this->incRef();
+				return asAtom::fromFunction(obj->var.getObject(),this);
+			}
 		}
 		ASATOM_INCREF(obj->var);
 		return obj->var;
@@ -1243,10 +1310,8 @@ asAtom ASObject::executeASMethod(const tiny_string& methodName,
 	asAtom o = getVariableByMultiname(methodName, namespaces);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, methodName);
-	IFunction* f=o.getObject()->as<IFunction>();
-
-	incRef();
-	return f->call(asAtom::fromObject(this),args,num_args);
+	asAtom v =asAtom::fromObject(this);
+	return o.callFunction(v,args,num_args);
 }
 
 void ASObject::check() const
@@ -1279,8 +1344,8 @@ void variables_map::check() const
 			if(it->second.var.type == T_INVALID || next->second.var.type == T_INVALID)
 			{
 				LOG(LOG_INFO, it->first << " " << it->second.ns);
-				LOG(LOG_INFO, it->second.var.type << ' ' << it->second.setter << ' ' << it->second.getter);
-				LOG(LOG_INFO, next->second.var.type << ' ' << next->second.setter << ' ' << next->second.getter);
+				LOG(LOG_INFO, it->second.var.type << ' ' << it->second.setter.type << ' ' << it->second.getter.type);
+				LOG(LOG_INFO, next->second.var.type << ' ' << next->second.setter.type << ' ' << next->second.getter.type);
 				abort();
 			}
 
@@ -1319,7 +1384,7 @@ void variables_map::dumpVariables() const
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			it->second.var.type << ' ' << it->second.setter << ' ' << it->second.getter);
+			it->second.var.type << ' ' << it->second.setter.type << ' ' << it->second.getter.type);
 	}
 }
 
@@ -1334,10 +1399,8 @@ void variables_map::destroyContents()
 	while(it!=Variables.cend())
 	{
 		ASATOM_DECREF(it->second.var);
-		if(it->second.setter)
-			it->second.setter->decRef();
-		if(it->second.getter)
-			it->second.getter->decRef();
+		ASATOM_DECREF(it->second.setter);
+		ASATOM_DECREF(it->second.getter);
 		it = Variables.erase(it);
 	}
 }
@@ -1422,7 +1485,7 @@ asAtom variables_map::getSlot(unsigned int n)
 			return it->second.var;
 		it++;
 	}
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 void variables_map::setSlot(unsigned int n,asAtom o,SystemState* sys)
 {
@@ -1484,13 +1547,12 @@ asAtom ASObject::getValueAt(int index)
 {
 	variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
-	if(obj->getter)
+	if(obj->getter.type != T_INVALID)
 	{
 		//Call the getter
 		LOG_CALL(_("Calling the getter"));
-		IFunction* getter=obj->getter;
-		incRef();
-		asAtom ret = getter->call(asAtom::fromObject(this),NULL,0);
+		asAtom v=asAtom::fromObject(this);
+		asAtom ret = obj->getter.callFunction(v,NULL,0);
 		LOG_CALL(_("End of getter"));
 		return ret;
 	}
@@ -1617,11 +1679,10 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 		asAtom o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
-		IFunction* f=o.getObject()->as<IFunction>();
-		this->incRef();
 		out->incRef();
 		asAtom tmpArg[1] = { asAtom::fromObject(out) };
-		f->call(asAtom::fromObject(this), tmpArg, 1);
+		asAtom v=asAtom::fromObject(this);
+		o.callFunction(v, tmpArg, 1);
 		return;
 	}
 
@@ -1751,7 +1812,7 @@ ASObject *ASObject::describeType() const
 	return XML::createFromNode(root);
 }
 
-tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter)
+tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
 {
 	bool ok;
 	tiny_string res = call_toJSON(ok,path,replacer,spaces,filter);
@@ -1837,11 +1898,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 		variables_map::var_iterator varIt = beginIt;
 		while (varIt != endIt)
 		{
-			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter != NULL || varIt->second.var.type!= T_INVALID))
+			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter.type != T_INVALID || varIt->second.var.type!= T_INVALID))
 			{
 				ASObject* v = varIt->second.var.toObject(getSystemState());
-				if (varIt->second.getter)
-					v=varIt->second.getter->call(asAtom::fromObject(this),NULL,0).toObject(getSystemState());
+				if (varIt->second.getter.type != T_INVALID)
+				{
+					asAtom t=asAtom::fromObject(this);
+					v=varIt->second.getter.callFunction(t,NULL,0).toObject(getSystemState());
+				}
 				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
 					// check for cylic reference
@@ -1851,7 +1915,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 						std::find(path.begin(),path.end(), v) != path.end())
 						throwError<TypeError>(kJSONCyclicStructure);
 		
-					if (replacer != NULL)
+					if (replacer.type != T_INVALID)
 					{
 						if (!bfirst)
 							res += ",";
@@ -1867,7 +1931,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, IFunction *replacer,
 						params[0] = asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first)));
 						params[1] = asAtom::fromObject(v);
 						ASATOM_INCREF(params[1]);
-						asAtom funcret=replacer->call(asAtom(T_NULL), params, 2);
+						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2);
 						if (funcret.type != T_INVALID)
 							res += funcret.toString();
 						else
@@ -1948,11 +2012,11 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 		++varcount;
 	}
-	if(ret->setter)
+	if(ret->setter.type != T_INVALID)
 	{
-		this->incRef();
 		asAtom arg1= asAtom::fromObject(obj);
-		ret->setter->call(asAtom::fromObject(this),&arg1,1);
+		asAtom v=asAtom::fromObject(this);
+		ret->setter.callFunction(v,&arg1,1);
 	}
 	else
 		ret->setVar(asAtom::fromObject(obj),getSystemState());
@@ -1965,6 +2029,12 @@ tiny_string ASObject::getClassName() const
 	else
 		return "";
 }
+
+asAtom asAtom::undefinedAtom(T_UNDEFINED);
+asAtom asAtom::nullAtom(T_NULL);
+asAtom asAtom::invalidAtom(T_INVALID);
+asAtom asAtom::trueAtom(true);
+asAtom asAtom::falseAtom(false);
 
 ASObject *asAtom::toObject(SystemState *sys)
 {
@@ -2006,6 +2076,36 @@ asAtom asAtom::fromObject(ASObject *obj)
 	return a;
 }
 
+asAtom asAtom::fromFunction(ASObject *f, ASObject *closure)
+{
+	asAtom a;
+	a.replace(f);
+	a.closure_this = closure;
+	return a;
+}
+
+asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args)
+{
+	assert_and_throw(type == T_FUNCTION);
+		
+	ASObject* closure = closure_this;
+	if (obj.type == T_FUNCTION && obj.closure_this)
+		closure = NULL; // force use of function closure in call
+	asAtom c;
+	if(closure)
+	{ /* closure_this can never been overriden */
+		LOG_CALL(_("Calling with closure ") << toDebugString());
+		c=asAtom::fromObject(closure);
+	}
+	else
+		c = obj;
+	ASATOM_INCREF(c);
+	
+	if (objval->is<SyntheticFunction>())
+		return objval->as<SyntheticFunction>()->call(c, args, num_args);
+	return objval->as<Function>()->call(c, args, num_args);
+}
+
 void asAtom::replace(ASObject *obj)
 {
 	assert(obj);
@@ -2040,6 +2140,9 @@ void asAtom::replace(ASObject *obj)
 		case T_BOOLEAN:
 			boolval = obj->as<Boolean>()->val;
 			break;
+		case T_FUNCTION:
+			closure_this = NULL;
+			break;
 		default:
 			break;
 	}
@@ -2070,6 +2173,11 @@ std::string asAtom::toDebugString()
 			return "Undefined";
 		case T_INVALID:
 			return "Invalid";
+		case T_FUNCTION:
+			assert(objval);
+			if (closure_this)
+				return objval->toDebugString()+ "(closure:"+closure_this->toDebugString()+")";
+			return objval->toDebugString();
 		default:
 			assert(objval);
 			return objval->toDebugString();
@@ -2353,6 +2461,18 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 					return v2.toObject(sys)->isEqual(this->toObject(sys));
 			}
 		}
+		case T_FUNCTION:
+		{
+			switch (v2.type)
+			{
+				case T_FUNCTION:
+					if (closure_this != NULL && v2.closure_this != NULL && closure_this != v2.closure_this)
+						return false;
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+				default:
+					return false;
+			}
+		}
 		case T_INVALID:
 			return false;
 		default:
@@ -2425,7 +2545,7 @@ bool asAtom::isPrimitive() const
 			type==T_UINTEGER;
 }
 
-asAtom asAtom::asTypelate(asAtom atomtype)
+asAtom asAtom::asTypelate(asAtom& atomtype)
 {
 	LOG_CALL(_("asTypelate"));
 
@@ -2452,14 +2572,14 @@ asAtom asAtom::asTypelate(asAtom atomtype)
 		if(real_ret)
 			return *this;
 		else
-			return asAtom(T_NULL);
+			return asAtom::nullAtom;
 	}
 
 	Class_base* objc = toObject(c->getSystemState())->getClass();
 	if(!objc)
 	{
 		ASATOM_DECREF(atomtype);
-		return asAtom(T_NULL);
+		return asAtom::nullAtom;
 	}
 
 	bool real_ret=objc->isSubClass(c);
@@ -2469,7 +2589,7 @@ asAtom asAtom::asTypelate(asAtom atomtype)
 	if(real_ret)
 		return *this;
 	else
-		return asAtom(T_NULL);
+		return asAtom::nullAtom;
 	
 }
 
@@ -2614,6 +2734,11 @@ tiny_string asAtom::toLocaleString()
 			assert(objval);
 			return objval->toLocaleString();
 	}
+}
+
+uint32_t asAtom::toStringId(SystemState* sys)
+{
+	return toObject(sys)->toStringId();
 }
 
 asAtom asAtom::typeOf(SystemState* sys)

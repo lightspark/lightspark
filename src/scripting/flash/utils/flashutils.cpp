@@ -186,50 +186,48 @@ ASFUNCTIONBODY(lightspark,getTimer)
 }
 
 
-ASFUNCTIONBODY(lightspark,setInterval)
+ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2 && args[0]->getObjectType()==T_FUNCTION);
+	assert_and_throw(argslen >= 2 && args[0].type==T_FUNCTION);
 
 	//Build arguments array
-	ASObject** callbackArgs = g_newa(ASObject*,argslen-2);
+	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
 	uint32_t i;
 	for(i=0; i<argslen-2; i++)
 	{
 		callbackArgs[i] = args[i+2];
 		//incRef all passed arguments
-		args[i+2]->incRef();
+		ASATOM_INCREF(args[i+2]);
 	}
 
 	//incRef the function
-	args[0]->incRef();
-	IFunction* callback=static_cast<IFunction*>(args[0]);
+	ASATOM_INCREF(args[0]);
 	//Add interval through manager
-	uint32_t id = args[0]->getSystemState()->intervalManager->setInterval(_MR(callback), callbackArgs, argslen-2,
-			_MR(args[0]->getSystemState()->getNullRef()), args[1]->toInt());
-	return abstract_i(args[0]->getSystemState(),id);
+	uint32_t id = args[0].getObject()->getSystemState()->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
+			asAtom::nullAtom, args[1].toInt());
+	return asAtom((int32_t)id);
 }
 
-ASFUNCTIONBODY(lightspark,setTimeout)
+ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 {
 	assert_and_throw(argslen >= 2);
 
 	//Build arguments array
-	ASObject** callbackArgs = g_newa(ASObject*,argslen-2);
+	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
 	uint32_t i;
 	for(i=0; i<argslen-2; i++)
 	{
 		callbackArgs[i] = args[i+2];
 		//incRef all passed arguments
-		args[i+2]->incRef();
+		ASATOM_INCREF(args[i+2]);
 	}
 
 	//incRef the function
-	args[0]->incRef();
-	IFunction* callback=static_cast<IFunction*>(args[0]);
+	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
-	uint32_t id = args[0]->getSystemState()->intervalManager->setTimeout(_MR(callback), callbackArgs, argslen-2,
-			_MR(args[0]->getSystemState()->getNullRef()), args[1]->toInt());
-	return abstract_i(args[0]->getSystemState(),id);
+	uint32_t id = args[0].getObject()->getSystemState()->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
+			asAtom::nullAtom, args[1].toInt());
+	return asAtom((int32_t)id);
 }
 
 ASFUNCTIONBODY(lightspark,clearInterval)

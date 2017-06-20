@@ -32,9 +32,9 @@ public:
 	NativeApplication(Class_base* c):EventDispatcher(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getNativeApplication);
-	ASFUNCTION(addEventListener);
+	ASFUNCTION_ATOM(addEventListener);
 };
 
 class NativeDragManager: public ASObject

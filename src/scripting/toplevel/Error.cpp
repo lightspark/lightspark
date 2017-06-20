@@ -148,23 +148,23 @@ ASFUNCTIONBODY(ASError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(ASError,generator)
+ASFUNCTIONBODY_ATOM(ASError,generator)
 {
 	ASError* th=Class<ASError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
-void ASError::errorGenerator(ASError* obj, ASObject* const* args, const unsigned int argslen)
+void ASError::errorGenerator(ASError* obj, asAtom* args, const unsigned int argslen)
 {
 	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
-		obj->message = args[0]->toString();
+		obj->message = args[0].toString();
 	}
 	if(argslen == 2)
 	{
-		obj->errorID = static_cast<Integer*>(args[1])->toInt();
+		obj->errorID = args[1].toInt();
 	}
 }
 
@@ -198,11 +198,11 @@ ASFUNCTIONBODY(SecurityError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(SecurityError,generator)
+ASFUNCTIONBODY_ATOM(SecurityError,generator)
 {
 	ASError* th=Class<SecurityError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void SecurityError::sinit(Class_base* c)
@@ -225,11 +225,11 @@ ASFUNCTIONBODY(ArgumentError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(ArgumentError,generator)
+ASFUNCTIONBODY_ATOM(ArgumentError,generator)
 {
 	ASError* th=Class<ArgumentError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void ArgumentError::sinit(Class_base* c)
@@ -252,11 +252,11 @@ ASFUNCTIONBODY(DefinitionError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(DefinitionError,generator)
+ASFUNCTIONBODY_ATOM(DefinitionError,generator)
 {
 	ASError* th=Class<DefinitionError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void DefinitionError::sinit(Class_base* c)
@@ -279,11 +279,11 @@ ASFUNCTIONBODY(EvalError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(EvalError,generator)
+ASFUNCTIONBODY_ATOM(EvalError,generator)
 {
 	ASError* th=Class<EvalError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void EvalError::sinit(Class_base* c)
@@ -306,11 +306,11 @@ ASFUNCTIONBODY(RangeError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(RangeError,generator)
+ASFUNCTIONBODY_ATOM(RangeError,generator)
 {
 	ASError* th=Class<RangeError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void RangeError::sinit(Class_base* c)
@@ -333,11 +333,11 @@ ASFUNCTIONBODY(ReferenceError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(ReferenceError,generator)
+ASFUNCTIONBODY_ATOM(ReferenceError,generator)
 {
 	ASError* th=Class<ReferenceError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void ReferenceError::sinit(Class_base* c)
@@ -360,11 +360,11 @@ ASFUNCTIONBODY(SyntaxError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(SyntaxError,generator)
+ASFUNCTIONBODY_ATOM(SyntaxError,generator)
 {
 	ASError* th=Class<SyntaxError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void SyntaxError::sinit(Class_base* c)
@@ -387,11 +387,11 @@ ASFUNCTIONBODY(TypeError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(TypeError,generator)
+ASFUNCTIONBODY_ATOM(TypeError,generator)
 {
 	ASError* th=Class<TypeError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void TypeError::sinit(Class_base* c)
@@ -414,11 +414,11 @@ ASFUNCTIONBODY(URIError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(URIError,generator)
+ASFUNCTIONBODY_ATOM(URIError,generator)
 {
 	ASError* th=Class<URIError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void URIError::sinit(Class_base* c)
@@ -441,11 +441,11 @@ ASFUNCTIONBODY(VerifyError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(VerifyError,generator)
+ASFUNCTIONBODY_ATOM(VerifyError,generator)
 {
 	ASError* th=Class<VerifyError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void VerifyError::sinit(Class_base* c)
@@ -468,11 +468,11 @@ ASFUNCTIONBODY(UninitializedError,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(UninitializedError,generator)
+ASFUNCTIONBODY_ATOM(UninitializedError,generator)
 {
 	ASError* th=Class<UninitializedError>::getInstanceS(getSys());
 	errorGenerator(th, args, argslen);
-	return th;
+	return asAtom::fromObject(th);
 }
 
 void UninitializedError::sinit(Class_base* c)

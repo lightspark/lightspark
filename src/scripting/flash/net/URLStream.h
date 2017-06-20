@@ -55,7 +55,7 @@ private:
 	URLStreamThread *job;
 	Spinlock spinlock;
 	void finalize();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getEndian);
 	ASFUNCTION(_setEndian);
 	ASFUNCTION(_getObjectEncoding);

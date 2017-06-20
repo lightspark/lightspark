@@ -60,8 +60,8 @@ public:
 	~Sound();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(load);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(load);
 	ASFUNCTION(play);
 	ASFUNCTION(close);
 };
@@ -102,7 +102,7 @@ public:
 	ASPROPERTY_GETTER(number_t,leftPeak);
 	ASPROPERTY_GETTER(number_t,position);
 	ASPROPERTY_GETTER(number_t,rightPeak);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(stop);
 
 	//IThreadJob interface

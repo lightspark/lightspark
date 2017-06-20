@@ -217,20 +217,12 @@ ASFUNCTIONBODY(Number,_toLocaleString)
 	}
 }
 
-ASFUNCTIONBODY(Number,generator)
+ASFUNCTIONBODY_ATOM(Number,generator)
 {
 	if(argslen==0)
-		return abstract_di(getSys(),0);
+		return asAtom(0.);
 
-	switch (args[0]->getObjectType())
-	{
-		case T_INTEGER:
-		case T_BOOLEAN:
-		case T_UINTEGER:
-			return abstract_di(args[0]->getSystemState(),args[0]->toInt());
-		default:
-			return abstract_d(args[0]->getSystemState(),args[0]->toNumber());
-	}
+	return asAtom(args[0].toNumber());
 }
 
 tiny_string Number::toString()

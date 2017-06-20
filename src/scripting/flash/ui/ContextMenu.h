@@ -32,7 +32,7 @@ class ContextMenu : public EventDispatcher
 public:
 	ContextMenu(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(hideBuiltInItems);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);

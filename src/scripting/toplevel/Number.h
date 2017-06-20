@@ -106,9 +106,9 @@ public:
 	}
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);
-	static void buildTraits(ASObject* o){};
+	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	std::string toDebugString() { return toString()+(isfloat ? "d" : "di"); }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

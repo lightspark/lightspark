@@ -403,7 +403,7 @@ void ABCVm::abc_kill(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	LOG_CALL( "kill " << t);
 	ASATOM_DECREF(context->locals[t]);
-	context->locals[t]=asAtom::fromObject(context->context->root->getSystemState()->getUndefinedRef());
+	context->locals[t]=asAtom::undefinedAtom;
 }
 void ABCVm::abc_label(call_context* context,memorystream& code)
 {
@@ -803,12 +803,12 @@ void ABCVm::abc_pushnull(call_context* context,memorystream& code)
 {
 	//pushnull
 	LOG_CALL("pushnull");
-	RUNTIME_STACK_PUSH(context,asAtom::fromObject(context->context->root->getSystemState()->getNullRef()));
+	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
 }
 void ABCVm::abc_pushundefined(call_context* context,memorystream& code)
 {
 	LOG_CALL("pushundefined");
-	RUNTIME_STACK_PUSH(context,asAtom::fromObject(context->context->root->getSystemState()->getUndefinedRef()));
+	RUNTIME_STACK_PUSH(context,asAtom::undefinedAtom);
 }
 void ABCVm::abc_nextvalue(call_context* context,memorystream& code)
 {
@@ -846,13 +846,13 @@ void ABCVm::abc_pushtrue(call_context* context,memorystream& code)
 {
 	//pushtrue
 	LOG_CALL("pushtrue");
-	RUNTIME_STACK_PUSH(context,asAtom(true));
+	RUNTIME_STACK_PUSH(context,asAtom::trueAtom);
 }
 void ABCVm::abc_pushfalse(call_context* context,memorystream& code)
 {
 	//pushfalse
 	LOG_CALL("pushfalse");
-	RUNTIME_STACK_PUSH(context,asAtom(false));
+	RUNTIME_STACK_PUSH(context,asAtom::falseAtom);
 }
 void ABCVm::abc_pushnan(call_context* context,memorystream& code)
 {
@@ -1051,7 +1051,7 @@ void ABCVm::abc_returnvoid(call_context* context,memorystream& code)
 {
 	//returnvoid
 	LOG_CALL(_("returnVoid"));
-	context->returnvalue = asAtom();
+	context->returnvalue = asAtom::invalidAtom;
 	context->returning = true;
 }
 void ABCVm::abc_returnvalue(call_context* context,memorystream& code)
@@ -1173,7 +1173,7 @@ void ABCVm::abc_findpropstrict(call_context* context,memorystream& code)
 //		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
-		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrictCache(context,code)));
+		RUNTIME_STACK_PUSH(context,findPropStrictCache(context,code));
 }
 void ABCVm::abc_findproperty(call_context* context,memorystream& code)
 {
@@ -1189,7 +1189,7 @@ void ABCVm::abc_finddef(call_context* context,memorystream& code)
 	uint32_t t = code.readu30();
 	multiname* name=context->context->getMultiname(t,context);
 	LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
-	RUNTIME_STACK_PUSH(context,asAtom(T_NULL));
+	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
 	name->resetNameIfObject();
 }
 void ABCVm::abc_getlex(call_context* context,memorystream& code)
@@ -1199,7 +1199,7 @@ void ABCVm::abc_getlex(call_context* context,memorystream& code)
 	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
 	{
 		code.seekcachepos(cachepos->nextcachepos);
-		RUNTIME_STACK_PUSH(context,asAtom::fromObject(cachepos->obj));
+		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(cachepos->obj,cachepos->closure));
 		cachepos->obj->incRef();
 		return;
 	}
@@ -1208,7 +1208,10 @@ void ABCVm::abc_getlex(call_context* context,memorystream& code)
 	{
 		// put object in cache
 		cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-		RUNTIME_STACK_PEEK_ASOBJECT(context,cachepos->obj,context->context->root->getSystemState());
+		RUNTIME_STACK_PEEK_CREATE(context,v);
+		
+		cachepos->obj = v.getObject();
+		cachepos->closure = v.getClosure();
 		cachepos->obj->incRef();
 	}
 }
@@ -1275,7 +1278,12 @@ void ABCVm::abc_getscopeobject(call_context* context,memorystream& code)
 {
 	//getscopeobject
 	uint32_t t = code.readu30();
-	RUNTIME_STACK_PUSH(context,asAtom::fromObject(getScopeObject(context,t)));
+	assert_and_throw(context->curr_scope_stack > t);
+	asAtom ret=context->scope_stack[t];
+	ASATOM_INCREF(ret);
+	LOG_CALL( _("getScopeObject: ") << ret.toDebugString());
+	
+	RUNTIME_STACK_PUSH(context,ret);
 }
 void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 {
@@ -1300,7 +1308,7 @@ void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 			throwError<TypeError>(kConvertUndefinedToObjectError);
 		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
 			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
-		prop = asAtom(T_UNDEFINED);
+		prop = asAtom::undefinedAtom;
 	}
 	else
 	{
@@ -1315,10 +1323,13 @@ void ABCVm::abc_initproperty(call_context* context,memorystream& code)
 {
 	//initproperty
 	uint32_t t = code.readu30();
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE(context,value);
 	multiname* name=context->context->getMultiname(t,context);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
-	initProperty(obj,value,name);
+	LOG_CALL("initProperty "<<*name);
+	RUNTIME_STACK_POP_CREATE(context,obj);
+	checkDeclaredTraits(obj.toObject(context->context->root->getSystemState()));
+	obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
+	ASATOM_DECREF(obj);
 	name->resetNameIfObject();
 }
 void ABCVm::abc_deleteproperty(call_context* context,memorystream& code)

@@ -44,9 +44,8 @@ ASFUNCTIONBODY_GETTER_SETTER(NetStreamPlayOptions,start);
 ASFUNCTIONBODY_GETTER_SETTER(NetStreamPlayOptions,streamName);
 ASFUNCTIONBODY_GETTER_SETTER(NetStreamPlayOptions,transition);
 
-ASFUNCTIONBODY(NetStreamPlayOptions,_constructor)
+ASFUNCTIONBODY_ATOM(NetStreamPlayOptions,_constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
-	return NULL;
+	return EventDispatcher::_constructor(obj, NULL, 0);
 }
 

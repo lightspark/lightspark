@@ -32,20 +32,20 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
-	ASFUNCTION(_parse);
-	ASFUNCTION(_stringify);
-	static ASObject* doParse(const tiny_string &jsonstring, IFunction *reviver);
+	ASFUNCTION_ATOM(generator);
+	ASFUNCTION_ATOM(_parse);
+	ASFUNCTION_ATOM(_stringify);
+	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver);
 private:
-	static void parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, IFunction *reviver);
-	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key,IFunction* reviver);
+	static void parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, asAtom reviver);
+	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key,asAtom reviver);
 	static int parseTrue(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
 	static int parseFalse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
 	static int parseNull(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
 	static int parseString(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, tiny_string *result = NULL);
 	static int parseNumber(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
-	static int parseObject(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, IFunction *reviver);
-	static int parseArray(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, IFunction *reviver);
+	static int parseObject(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, asAtom reviver);
+	static int parseArray(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, asAtom reviver);
 };
 
 }

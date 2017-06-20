@@ -45,9 +45,9 @@ protected:
 	uint32_t repeatCount;
 	uint32_t currentCount;
 public:
-	Timer(Class_base* c):EventDispatcher(c),running(false),delay(0),repeatCount(0),currentCount(0){};
+	Timer(Class_base* c):EventDispatcher(c),running(false),delay(0),repeatCount(0),currentCount(0){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getCurrentCount);
 	ASFUNCTION(_getRepeatCount);
 	ASFUNCTION(_setRepeatCount);

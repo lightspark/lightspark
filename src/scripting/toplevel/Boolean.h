@@ -37,7 +37,7 @@ class Boolean: public ASObject
 public:
 	Boolean(Class_base* c, bool v=false):ASObject(c,T_BOOLEAN),val(v) {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o){};
+	static void buildTraits(ASObject* o){}
 	bool val;
 	inline bool destruct() { val=false; return ASObject::destruct(); }
 	int32_t toInt()
@@ -50,10 +50,10 @@ public:
 	}
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

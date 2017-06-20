@@ -328,37 +328,36 @@ ASFUNCTIONBODY(XMLList,_hasComplexContent)
 	return abstract_b(obj->getSystemState(),th->hasComplexContent());
 }
 
-ASFUNCTIONBODY(XMLList,generator)
+ASFUNCTIONBODY_ATOM(XMLList,generator)
 {
-	assert(obj==NULL);
 	if(argslen==0)
 	{
-		return Class<XMLList>::getInstanceSNoArgs(getSys());
+		return asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
 	}
-	else if(args[0]->is<ASString>() ||
-		args[0]->is<Number>() ||
-		args[0]->is<Integer>() ||
-		args[0]->is<UInteger>() ||
-		args[0]->is<Boolean>())
+	else if(args[0].is<ASString>() ||
+		args[0].is<Number>() ||
+		args[0].is<Integer>() ||
+		args[0].is<UInteger>() ||
+		args[0].is<Boolean>())
 	{
-		return Class<XMLList>::getInstanceS(args[0]->getSystemState(),args[0]->toString());
+		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),args[0].toString()));
 	}
-	else if(args[0]->is<XMLList>())
+	else if(args[0].is<XMLList>())
 	{
-		args[0]->incRef();
+		ASATOM_INCREF(args[0]);
 		return args[0];
 	}
-	else if(args[0]->is<XML>())
+	else if(args[0].is<XML>())
 	{
 		XML::XMLVector nodes;
-		args[0]->incRef();
-		nodes.push_back(_MR(Class<XML>::cast(args[0])));
-		return Class<XMLList>::getInstanceS(args[0]->getSystemState(),nodes);
+		ASATOM_INCREF(args[0]);
+		nodes.push_back(_MR(args[0].as<XML>()));
+		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),nodes));
 	}
-	else if(args[0]->getObjectType()==T_NULL ||
-		args[0]->getObjectType()==T_UNDEFINED)
+	else if(args[0].type ==T_NULL ||
+		args[0].type ==T_UNDEFINED)
 	{
-		return Class<XMLList>::getInstanceSNoArgs(args[0]->getSystemState());
+		return asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
 	}
 	else
 		throw RunTimeException("Type not supported in XMLList()");
@@ -714,7 +713,7 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return asAtom();
+			return asAtom::invalidAtom;
 
 		return asAtom::fromObject(create(getSystemState(),retnodes,this,name));
 	}
@@ -724,7 +723,7 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		if(index<nodes.size())
 			return asAtom::fromObject(nodes[index].getPtr());
 		else
-			return asAtom(T_UNDEFINED);
+			return asAtom::undefinedAtom;
 	}
 	else
 	{
@@ -740,7 +739,7 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return asAtom();
+			return asAtom::invalidAtom;
 
 		this->incRef();
 		return asAtom::fromObject(create(getSystemState(),retnodes,this,name));
@@ -771,7 +770,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
 
-void XMLList::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
+void XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -826,13 +825,17 @@ void XMLList::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLO
 					tmp2->nodename = tmpname;
 					tmp2->attributelist = _MR(Class<XMLList>::getInstanceSNoArgs(getSystemState()));
 					tmp2->constructed = true;
-					tmp2->setVariableByMultiname(targetproperty,asAtom::fromObject(tmp),allowConst);
+					asAtom v = asAtom::fromObject(tmp);
+					tmp2->setVariableByMultiname(targetproperty,v,allowConst);
 					tmp2->incRef();
 					tmplist->appendSingleNode(tmp2);
 					appendSingleNode(tmp2);
 				}
 				else
-					tmplist->setVariableByMultiname(tmpprop,asAtom::fromObject(tmp),allowConst);
+				{
+					asAtom v = asAtom::fromObject(tmp);
+					tmplist->setVariableByMultiname(tmpprop,v,allowConst);
+				}
 			}
 			else
 			{
@@ -988,7 +991,10 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	if (nodes[idx]->isAttribute)
 	{
 		if (targetobject)
-			targetobject->setVariableByMultiname(targetproperty,asAtom::fromObject(o),allowConst);
+		{
+			asAtom v = asAtom::fromObject(o);
+			targetobject->setVariableByMultiname(targetproperty,v,allowConst);
+		}
 		nodes[idx]->setTextContent(o->toString());
 	}
 	if (o->is<XMLList>())
@@ -1009,7 +1015,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 					m.name_type = multiname::NAME_UINT;
 					m.name_ui = i;
 					m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-					targetobject->setVariableByMultiname(m,asAtom::fromObject(o),allowConst);
+					asAtom v = asAtom::fromObject(o);
+					targetobject->setVariableByMultiname(m,v,allowConst);
 					break;
 				}
 			}
@@ -1035,7 +1042,8 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			m.name_type = multiname::NAME_UINT;
 			m.name_ui = idx;
 			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			targetobject->setVariableByMultiname(m,asAtom::fromObject(o),allowConst);
+			asAtom v = asAtom::fromObject(o);
+			targetobject->setVariableByMultiname(m,v,allowConst);
 		}
 		if (o->as<XML>()->getNodeKind() == pugi::node_pcdata)
 		{

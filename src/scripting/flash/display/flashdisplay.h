@@ -74,7 +74,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,focusRect);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_setMouseEnabled);
 	ASFUNCTION(_getMouseEnabled);
 	ASFUNCTION(_setDoubleClickEnabled);
@@ -119,7 +119,7 @@ public:
 	void initFrame();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
 	ASFUNCTION(removeChild);
@@ -170,7 +170,7 @@ public:
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getUpState);
 	ASFUNCTION(_setUpState);
 	ASFUNCTION(_getDownState);
@@ -201,7 +201,7 @@ public:
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
@@ -265,7 +265,7 @@ public:
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getLoaderURL);
 	ASFUNCTION(_getURL);
 	ASFUNCTION(_getBytesLoaded);
@@ -330,7 +330,7 @@ public:
 	void threadFinished(IThreadJob* job);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(close);
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
@@ -366,7 +366,7 @@ public:
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_getGraphics);
 	ASFUNCTION(_startDrag);
 	ASFUNCTION(_stopDrag);
@@ -474,7 +474,7 @@ private:
 	const Scene_data *getScene(const tiny_string &sceneName) const;
 	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
-	std::map<uint32_t,_NR<IFunction> > frameScripts;
+	std::map<uint32_t,asAtom > frameScripts;
 	bool fromDefineSpriteTag;
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
@@ -495,9 +495,9 @@ public:
 	 * executed while loading
 	 */
 	virtual bool hasFinishedLoading() { return true; }
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(swapDepths);
-	ASFUNCTION(addFrameScript);
+	ASFUNCTION_ATOM(addFrameScript);
 	ASFUNCTION(stop);
 	ASFUNCTION(play);
 	ASFUNCTION(gotoAndStop);
@@ -552,7 +552,7 @@ public:
 	ASFUNCTION(_getScaleMode);
 	ASFUNCTION(_setScaleMode);
 	ASFUNCTION(_getLoaderInfo);
-	ASFUNCTION(_getStageVideos);
+	ASFUNCTION_ATOM(_getStageVideos);
 	ASFUNCTION(_getFocus);
 	ASFUNCTION(_setFocus);
 	ASFUNCTION(_setTabChildren);
@@ -693,7 +693,7 @@ public:
 	~Bitmap();
 	bool destruct();
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
@@ -708,7 +708,7 @@ public:
 	AVM1Movie(Class_base* c):DisplayObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class Shader : public ASObject

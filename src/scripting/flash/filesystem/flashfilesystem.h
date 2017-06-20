@@ -33,7 +33,7 @@ class FileStream: public EventDispatcher
 public:
 	FileStream(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 
@@ -42,7 +42,7 @@ class ASFile: public FileReference
 public:
 	ASFile(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
 };
 }

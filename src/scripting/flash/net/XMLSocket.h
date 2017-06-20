@@ -54,7 +54,7 @@ protected:
 	Spinlock joblock; // protect access to job
 
 	ASPROPERTY_GETTER_SETTER(int,timeout);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(_close);
 	ASFUNCTION(_connect);
 	ASFUNCTION(_send);

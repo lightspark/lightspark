@@ -43,7 +43,6 @@ Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE
 void Event::finalize()
 {
 	ASObject::finalize();
-	target.reset();
 	currentTarget.reset();
 }
 
@@ -399,12 +398,12 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
+	if(th->target.type != T_INVALID &&(th->target.toObject(th->getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
+		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return asAtom(); 
+	return asAtom::invalidAtom; 
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
@@ -416,12 +415,12 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target &&(th->target->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
+	if(th->target.type != T_INVALID &&(th->target.toObject(th->getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getPtr());
+		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return asAtom(); 
+	return asAtom::invalidAtom; 
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_altKey)
@@ -434,7 +433,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_altKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_ALT;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_controlKey)
@@ -447,7 +446,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_controlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_ctrlKey)
@@ -460,7 +459,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_ctrlKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_shiftKey)
@@ -473,7 +472,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_shiftKey)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	th->modifiers |= KMOD_SHIFT;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY(MouseEvent,updateAfterEvent)
 {
@@ -488,11 +487,11 @@ void MouseEvent::buildTraits(ASObject* o)
 	//o->setVariableByQName("localY","",abstract_d(0),DECLARED_TRAIT);
 }
 
-void MouseEvent::setTarget(_NR<ASObject> t)
+void MouseEvent::setTarget(asAtom t)
 {
 	target = t;
 	//If t is NULL, it means MouseEvent is being reset
-	if(!t)
+	if(t.type == T_INVALID)
 	{
 		localX = 0;
 		localY = 0;
@@ -501,9 +500,9 @@ void MouseEvent::setTarget(_NR<ASObject> t)
 		relatedObject = NullRef;
 	}
 	//If t is non null, it should be an InteractiveObject
-	else if(t->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
+	else if(t.toObject(getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getPtr());
+		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getObject());
 		tar->localToGlobal(localX, localY, stageX, stageY);
 	}
 }
@@ -557,7 +556,6 @@ void EventDispatcher::finalize()
 {
 	ASObject::finalize();
 	handlers.clear();
-	forcedTarget.reset();
 }
 
 void EventDispatcher::sinit(Class_base* c)
@@ -584,44 +582,43 @@ void EventDispatcher::dumpHandlers()
 		LOG(LOG_INFO, it->first);
 }
 
-ASFUNCTIONBODY(EventDispatcher,addEventListener)
+ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj.getObject());
+	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
-		return NULL;
+		return asAtom::invalidAtom;
 
 	bool useCapture=false;
 	int32_t priority=0;
 
 	if(argslen>=3)
-		useCapture=Boolean_concrete(args[2]);
+		useCapture=args[2].Boolean_concrete();
 	if(argslen>=4)
-		priority=args[3]->toInt();
+		priority=args[3].toInt();
 
-	const tiny_string& eventName=args[0]->toString();
-	IFunction* f=static_cast<IFunction*>(args[1]);
+	const tiny_string& eventName=args[0].toString();
 
 	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
 				|| eventName=="frameConstructed") )
 	{
 		th->incRef();
-		obj->getSystemState()->registerFrameListener(_MR(th->as<DisplayObject>()));
+		th->getSystemState()->registerFrameListener(_MR(th->as<DisplayObject>()));
 	}
 
 	{
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
-		f->incRef();
-		const listener newListener(_MR(f), priority, useCapture);
+		ASATOM_INCREF(args[1]);
+		const listener newListener(args[1], priority, useCapture);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
@@ -633,20 +630,20 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 	return abstract_b(obj->getSystemState(),ret);
 }
 
-ASFUNCTIONBODY(EventDispatcher,removeEventListener)
+ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj.getObject());
 	
-	if (args[1]->getObjectType() == T_NULL) // it seems that null is allowed as function
-		return NULL;
-	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
+	if (args[1].type == T_NULL) // it seems that null is allowed as function
+		return asAtom::invalidAtom;
+	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
-	const tiny_string& eventName=args[0]->toString();
+	const tiny_string& eventName=args[0].toString();
 
 	bool useCapture=false;
 	if(argslen>=3)
-		useCapture=Boolean_concrete(args[2]);
+		useCapture=args[2].Boolean_concrete();
 
 	{
 		Locker l(th->handlersMutex);
@@ -654,12 +651,11 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		if(h==th->handlers.end())
 		{
 			LOG(LOG_CALLS,_("Event not found"));
-			return NULL;
+			return asAtom::invalidAtom;
 		}
 
-		IFunction* f=static_cast<IFunction*>(args[1]);
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
-											make_pair(f,useCapture));
+											make_pair(args[1],useCapture));
 		if(it!=h->second.end())
 			h->second.erase(it);
 		if(h->second.empty()) //Remove the entry from the map
@@ -675,20 +671,20 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 					&& !th->hasEventListener("frameConstructed")) )
 	{
 		th->incRef();
-		obj->getSystemState()->unregisterFrameListener(_MR(th->as<DisplayObject>()));
+		th->getSystemState()->unregisterFrameListener(_MR(th->as<DisplayObject>()));
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
+ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->getClass()==NULL || !(args[0]->getClass()->isSubClass(Class<Event>::getClass(obj->getSystemState()))))
-		return abstract_b(obj->getSystemState(),false);
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj.getObject());
+	if(!args[0].is<Event>())
+		return asAtom::falseAtom;
 
-	args[0]->incRef();
-	_R<Event> e=_MR(Class<Event>::cast(args[0]));
+	ASATOM_INCREF(args[0]);
+	_R<Event> e=_MR(Class<Event>::cast(args[0].getObject()));
 
 	// Must call the AS getter, because the getter may have been
 	// overridden
@@ -699,32 +695,32 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		asAtom cloned = e->executeASMethod("clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
 		if(!cloned.getObject() || !cloned.getObject()->is<Event>())
-			return abstract_b(obj->getSystemState(),false);
+			return asAtom::falseAtom;
 
 		ASATOM_INCREF(cloned);
 		e = _MR(cloned.getObject()->as<Event>());
 	}
-	if(!th->forcedTarget.isNull())
+	if(th->forcedTarget.type != T_INVALID)
 		e->setTarget(th->forcedTarget);
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);
-	return abstract_b(obj->getSystemState(),true);
+	return asAtom::trueAtom;
 }
 
-ASFUNCTIONBODY(EventDispatcher,_constructor)
+ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 {
-	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	_NR<ASObject> forcedTarget;
-	ARG_UNPACK(forcedTarget, NullRef);
-	if(!forcedTarget.isNull())
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj.getObject());
+	asAtom forcedTarget;
+	ARG_UNPACK_ATOM(forcedTarget, asAtom::nullAtom);
+	if(forcedTarget.type != T_INVALID)
 	{
-		if(forcedTarget->getObjectType()==T_NULL || forcedTarget->getObjectType()==T_UNDEFINED)
-			forcedTarget=NullRef;
-		else if(!forcedTarget->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(obj->getSystemState())))
-			throw Class<ArgumentError>::getInstanceS(obj->getSystemState(),"Wrong argument for EventDispatcher");
+		if(forcedTarget.type==T_NULL || forcedTarget.type==T_UNDEFINED)
+			forcedTarget=asAtom::invalidAtom;
+		else if(!forcedTarget.toObject(th->getSystemState())->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(th->getSystemState())))
+			throw Class<ArgumentError>::getInstanceS(th->getSystemState(),"Wrong argument for EventDispatcher");
 	}
 	th->forcedTarget=forcedTarget;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void EventDispatcher::handleEvent(_R<Event> e)
@@ -749,17 +745,17 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 			continue;
-		incRef();
 		//The object needs to be used multiple times
 		e->incRef();
 		//tmpListener is now also owned by the vector
-		tmpListener[i].f->incRef();
+		ASATOM_INCREF(tmpListener[i].f);
 		//If the f is a class method, the 'this' is ignored
 		asAtom arg0= asAtom::fromObject(e.getPtr());
-		asAtom ret=tmpListener[i].f->call(asAtom::fromObject(this),&arg0,1);
+		asAtom v = asAtom::fromObject(this);
+		asAtom ret=tmpListener[i].f.callFunction(v,&arg0,1);
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
-		tmpListener[i].f->decRef();
+		ASATOM_DECREF(tmpListener[i].f);
 	}
 	
 	e->check();
@@ -816,7 +812,8 @@ ASFUNCTIONBODY(NetStatusEvent,_constructor)
 	infoName.name_s_id=obj->getSystemState()->getUniqueStringId("info");
 	infoName.ns.push_back(nsNameAndKind(obj->getSystemState(),"",NAMESPACE));
 	infoName.isAttribute = false;
-	obj->setVariableByMultiname(infoName, asAtom::fromObject(info), CONST_NOT_ALLOWED);
+	asAtom v = asAtom::fromObject(info);
+	obj->setVariableByMultiname(infoName, v, CONST_NOT_ALLOWED);
 	return NULL;
 }
 
@@ -933,19 +930,19 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_ALT;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_commandKey)
 {
 	// Supported only on OSX
-	return asAtom(false);
+	return asAtom::falseAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
 {
 	// Supported only on OSX
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_controlKey)
@@ -958,7 +955,7 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_ctrlKey)
@@ -971,7 +968,7 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_shiftKey)
@@ -984,7 +981,7 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_SHIFT;
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 Event* KeyboardEvent::cloneImpl() const
@@ -1116,10 +1113,10 @@ ASFUNCTIONBODY(HTTPStatusEvent,_constructor)
 	return NULL;
 }
 
-FunctionEvent::FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj, ASObject** _args, uint32_t _numArgs):
+FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):
 		WaitableEvent("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs)
 {
-	args = new ASObject*[numArgs];
+	args = new asAtom[numArgs];
 	uint32_t i;
 	for(i=0; i<numArgs; i++)
 	{
@@ -1133,7 +1130,7 @@ FunctionEvent::~FunctionEvent()
 	delete[] args;
 }
 
-ExternalCallEvent::ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args,
+ExternalCallEvent::ExternalCallEvent(asAtom _f, ASObject* const* _args,
 	uint32_t _numArgs, ASObject** _result, bool* _thrown, tiny_string* _exception):
 		WaitableEvent("ExternalCallEvent"),
 		f(_f),args(_args),result(_result),thrown(_thrown),exception(_exception),numArgs(_numArgs)
@@ -1449,10 +1446,10 @@ void UncaughtErrorEvents::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY(UncaughtErrorEvents, _constructor)
+ASFUNCTIONBODY_ATOM(UncaughtErrorEvents, _constructor)
 {
 	//EventDispatcher::_constructor(obj, NULL, 0);
 	//UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"UncaughtErrorEvents is not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }

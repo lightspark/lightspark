@@ -64,10 +64,10 @@ ASFUNCTIONBODY(Math,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(Math,generator)
+ASFUNCTIONBODY_ATOM(Math,generator)
 {
 	throwError<TypeError>(kMathNotFunctionError);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(Math,atan2)

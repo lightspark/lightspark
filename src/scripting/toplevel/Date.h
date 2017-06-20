@@ -57,7 +57,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION(UTC);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);

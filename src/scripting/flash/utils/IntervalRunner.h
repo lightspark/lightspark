@@ -37,14 +37,14 @@ private:
 	~IntervalRunner();
 	INTERVALTYPE type;
 	uint32_t id;
-	_R<IFunction> callback;
-	ASObject** args;
-	_R<ASObject> obj;
+	asAtom callback;
+	asAtom* args;
+	asAtom obj;
 	const unsigned int argslen;
 	uint32_t interval;
 public:
-	IntervalRunner(INTERVALTYPE _type, uint32_t _id, _R<IFunction> _callback, ASObject** _args,
-			const unsigned int _argslen, _R<ASObject> _obj, const uint32_t _interval);
+	IntervalRunner(INTERVALTYPE _type, uint32_t _id, asAtom _callback, asAtom* _args,
+			const unsigned int _argslen, asAtom _obj, const uint32_t _interval);
 	void tick();
 	void tickFence();
 	INTERVALTYPE getType() { return type; }

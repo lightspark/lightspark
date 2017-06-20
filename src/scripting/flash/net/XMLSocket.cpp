@@ -202,17 +202,17 @@ void XMLSocket::finalize()
 
 ASFUNCTIONBODY_GETTER_SETTER(XMLSocket, timeout);
 
-ASFUNCTIONBODY(XMLSocket, _constructor)
+ASFUNCTIONBODY_ATOM(XMLSocket, _constructor)
 {
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK (host, "") (port, 0);
+	ARG_UNPACK_ATOM (host, "") (port, 0);
 
 	EventDispatcher::_constructor(obj,NULL,0);
 
-	XMLSocket* th=obj->as<XMLSocket>();
-	host_is_null = argslen > 0 && args[0]->is<Null>();
+	XMLSocket* th=obj.as<XMLSocket>();
+	host_is_null = argslen > 0 && args[0].is<Null>();
 	if (port != 0)
 	{
 		if (host_is_null)
@@ -221,7 +221,7 @@ ASFUNCTIONBODY(XMLSocket, _constructor)
 			th->connect(host, port);
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(XMLSocket, _close)

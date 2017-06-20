@@ -53,7 +53,7 @@ ASFUNCTIONBODY(Proxy,_isAttribute)
 	return abstract_b(obj->getSystemState(),mname.isAttribute);
 }
 
-void Proxy::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
+void Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	//If a variable named like this already exist, use that
 	if(ASObject::hasPropertyByMultiname(name, true, false) || !implEnable)
@@ -77,7 +77,6 @@ void Proxy::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWE
 
 	assert_and_throw(proxySetter.type==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(proxySetter.getObject());
 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
@@ -87,8 +86,8 @@ void Proxy::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWE
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::setProperty"));
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),args,2);
+	asAtom v = asAtom::fromObject(this);
+	asAtom ret=proxySetter.callFunction(v,args,2);
 	assert_and_throw(ret.type == T_UNDEFINED);
 	implEnable=true;
 }
@@ -116,16 +115,14 @@ asAtom Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION 
 
 	assert_and_throw(o.type==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(o.getObject());
-
-	ASObject* namearg = abstract_s(f->getSystemState(),name.normalizedName(getSystemState()));
+	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	asAtom ret=o.callFunction(v,&arg,1);
 	implEnable=true;
 	return ret;
 }
@@ -154,16 +151,14 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 	assert_and_throw(proxyHasProperty.type==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(proxyHasProperty.getObject());
-
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::hasProperty"));
-	incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	asAtom ret=proxyHasProperty.callFunction(v,&arg,1);
 	implEnable=true;
 	return ret.Boolean_concrete();
 }
@@ -189,16 +184,14 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 
 	assert_and_throw(proxyDeleter.type==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(proxyDeleter.getObject());
-
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::deleteProperty"));
-	incRef();
-	asAtom ret= f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	asAtom ret= proxyDeleter.callFunction(v,&arg,1);
 	implEnable=true;
 	return ret.Boolean_concrete();
 }
@@ -214,10 +207,9 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	nextNameIndexName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o=getVariableByMultiname(nextNameIndexName,ASObject::SKIP_IMPL);
 	assert_and_throw(o.type==T_FUNCTION);
-	IFunction* f=static_cast<IFunction*>(o.getObject());
 	asAtom arg=asAtom(cur_index);
-	this->incRef();
-	asAtom ret=f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	asAtom ret=o.callFunction(v,&arg,1);
 	uint32_t newIndex=ret.toInt();
 	ASATOM_DECREF(ret);
 	return newIndex;
@@ -234,10 +226,9 @@ asAtom Proxy::nextName(uint32_t index)
 	nextNameName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o=getVariableByMultiname(nextNameName,ASObject::SKIP_IMPL);
 	assert_and_throw(o.type==T_FUNCTION);
-	IFunction* f=static_cast<IFunction*>(o.getObject());
 	asAtom arg=asAtom(index);
-	incRef();
-	return f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	return o.callFunction(v,&arg,1);
 }
 
 asAtom Proxy::nextValue(uint32_t index)
@@ -251,10 +242,9 @@ asAtom Proxy::nextValue(uint32_t index)
 	nextValueName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o=getVariableByMultiname(nextValueName,ASObject::SKIP_IMPL);
 	assert_and_throw(o.type==T_FUNCTION);
-	IFunction* f=static_cast<IFunction*>(o.getObject());
 	asAtom arg=asAtom(index);
-	incRef();
-	return f->call(asAtom::fromObject(this),&arg,1);
+	asAtom v = asAtom::fromObject(this);
+	return o.callFunction(v,&arg,1);
 }
 bool Proxy::isConstructed() const
 {

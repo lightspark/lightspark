@@ -49,7 +49,7 @@ public:
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	virtual void setTarget(_NR<ASObject> t) {target = t; }
+	virtual void setTarget(asAtom t) {target = t; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_preventDefault);
 	ASFUNCTION(_isDefaultPrevented);
@@ -63,7 +63,7 @@ public:
 	ASPROPERTY_GETTER(tiny_string,type);
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
-	ASPROPERTY_GETTER(_NR<ASObject>,target);
+	ASPROPERTY_GETTER(asAtom,target);
 	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
 	ASFUNCTION(stopPropagation);
 	ASFUNCTION(stopImmediatePropagation);
@@ -281,7 +281,7 @@ public:
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	void setTarget(_NR<ASObject> t);
+	void setTarget(asAtom t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool,buttonDown);
@@ -320,21 +320,21 @@ class listener
 {
 friend class EventDispatcher;
 private:
-	_R<IFunction> f;
+	asAtom f;
 	int32_t priority;
 	/* true: get events in the capture phase
 	 * false: get events in the bubble phase
 	 */
 	bool use_capture;
 public:
-	explicit listener(_R<IFunction> _f, int32_t _p, bool _c)
+	explicit listener(asAtom _f, int32_t _p, bool _c)
 		:f(_f),priority(_p),use_capture(_c){}
-	bool operator==(std::pair<IFunction*,bool> r)
+	bool operator==(std::pair<asAtom,bool> r)
 	{
 		/* One can register the same handle for the same event with
 		 * different values of use_capture
 		 */
-		return (use_capture == r.second) && f->isEqual(r.first);
+		return (use_capture == r.second) && f.isEqual(getSys(),r.first);
 	}
 	bool operator<(const listener& r) const
 	{
@@ -357,7 +357,7 @@ private:
 	/*
 	 * This will be used when a target is passed to EventDispatcher constructor
 	 */
-	_NR<ASObject> forcedTarget;
+	asAtom forcedTarget;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) {}
 public:
@@ -369,10 +369,10 @@ public:
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
 	virtual void defaultEventBehavior(_R<Event> e) {}
-	ASFUNCTION(_constructor);
-	ASFUNCTION(addEventListener);
-	ASFUNCTION(removeEventListener);
-	ASFUNCTION(dispatchEvent);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(addEventListener);
+	ASFUNCTION_ATOM(removeEventListener);
+	ASFUNCTION_ATOM(dispatchEvent);
 	ASFUNCTION(_hasEventListener);
 };
 
@@ -425,12 +425,12 @@ class FunctionEvent: public WaitableEvent
 {
 friend class ABCVm;
 private:
-	_R<IFunction> f;
-	_NR<ASObject> obj;
-	ASObject** args;
+	asAtom f;
+	asAtom obj;
+	asAtom* args;
 	unsigned int numArgs;
 public:
-	FunctionEvent(_R<IFunction> _f, _NR<ASObject> _obj=NullRef, ASObject** _args=NULL, uint32_t _numArgs=0);
+	FunctionEvent(asAtom _f, asAtom _obj=asAtom::invalidAtom, asAtom* _args=NULL, uint32_t _numArgs=0);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }
@@ -440,14 +440,14 @@ class ExternalCallEvent: public WaitableEvent
 {
 friend class ABCVm;
 private:
-	_R<IFunction> f;
+	asAtom f;
 	ASObject* const* args;
 	ASObject** result;
 	bool* thrown;
 	tiny_string* exception;
 	unsigned int numArgs;
 public:
-	ExternalCallEvent(_R<IFunction> _f, ASObject* const* _args, uint32_t _numArgs,
+	ExternalCallEvent(asAtom _f, ASObject* const* _args, uint32_t _numArgs,
 			  ASObject** _result, bool* _thrown, tiny_string* _exception);
 	~ExternalCallEvent();
 	static void sinit(Class_base*);
@@ -605,7 +605,7 @@ class UncaughtErrorEvents: public EventDispatcher
 public:
 	UncaughtErrorEvents(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 }

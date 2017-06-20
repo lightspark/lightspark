@@ -69,12 +69,12 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 }
 
 /* this implements the global Boolean() function */
-ASFUNCTIONBODY(Boolean,generator)
+ASFUNCTIONBODY_ATOM(Boolean,generator)
 {
 	if(argslen==1)
-		return abstract_b(args[0]->getSystemState(),Boolean_concrete(args[0]));
+		return asAtom(args[0].Boolean_concrete());
 	else
-		return abstract_b(getSys(),false);
+		return asAtom::falseAtom;
 }
 
 void Boolean::sinit(Class_base* c)
@@ -86,16 +86,16 @@ void Boolean::sinit(Class_base* c)
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
 }
 
-ASFUNCTIONBODY(Boolean,_constructor)
+ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 {
-	Boolean* th=static_cast<Boolean*>(obj);
+	Boolean* th=static_cast<Boolean*>(obj.getObject());
 	if(argslen==0)
 	{
 		//No need to handle default argument. The object is initialized to false anyway
-		return NULL;
+		return asAtom::invalidAtom;
 	}
-	th->val=Boolean_concrete(args[0]);
-	return NULL;
+	th->val=args[0].Boolean_concrete();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(Boolean,_toString)

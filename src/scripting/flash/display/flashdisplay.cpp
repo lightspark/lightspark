@@ -221,11 +221,10 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 	}
 }
 
-ASFUNCTIONBODY(LoaderInfo,_constructor)
+ASFUNCTIONBODY_ATOM(LoaderInfo,_constructor)
 {
 	//LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	EventDispatcher::_constructor(obj,NULL,0);
-	return NULL;
+	return EventDispatcher::_constructor(obj,NULL,0);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
@@ -415,13 +414,13 @@ void LoaderThread::execute()
 	}
 }
 
-ASFUNCTIONBODY(Loader,_constructor)
+ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
-	Loader* th=static_cast<Loader*>(obj);
+	Loader* th=static_cast<Loader*>(obj.getObject());
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo->setLoaderURL(obj->getSystemState()->mainClip->getOrigin().getParsedURL());
-	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(obj->getSystemState()));
-	return NULL;
+	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(th->getSystemState()));
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(Loader,_getContent)
@@ -776,7 +775,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 		th->hitArea->hitTarget = _MNR(th);
 	}
 
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -938,11 +937,10 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	return ret;
 }
 
-ASFUNCTIONBODY(Sprite,_constructor)
+ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
 	//Sprite* th=Class<Sprite>::cast(obj);
-	DisplayObjectContainer::_constructor(obj,NULL,0);
-	return NULL;
+	return DisplayObjectContainer::_constructor(obj,NULL,0);
 }
 
 ASFUNCTIONBODY(Sprite,_getGraphics)
@@ -1036,7 +1034,8 @@ ASFUNCTIONBODY(Scene,_getLabels)
 	ret->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
-		ret->set(i, asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),th->labels[i])));
+		asAtom v = asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),th->labels[i]));
+		ret->set(i, v);
 	}
 	return ret;
 }
@@ -1146,7 +1145,14 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTa
 bool MovieClip::destruct()
 {
 	frames.clear();
+	auto it = frameScripts.begin();
+	while (it != frameScripts.end())
+	{
+		ASATOM_DECREF(it->second);
+		it++;
+	}
 	frameScripts.clear();
+	
 	fromDefineSpriteTag = false;
 	totalFrames_unreliable = 1;
 	enabled = true;
@@ -1220,26 +1226,24 @@ uint32_t MovieClip::getFrameIdByNumber(uint32_t i, const tiny_string& sceneName)
 	return sceneData->startframe + i;
 }
 
-ASFUNCTIONBODY(MovieClip,addFrameScript)
+ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 {
-	MovieClip* th=Class<MovieClip>::cast(obj);
+	MovieClip* th=Class<MovieClip>::cast(obj.getObject());
 	assert_and_throw(argslen>=2 && argslen%2==0);
 
 	for(uint32_t i=0;i<argslen;i+=2)
 	{
-		uint32_t frame=args[i]->toInt();
+		uint32_t frame=args[i].toInt();
 
-		if(args[i+1]->getObjectType()!=T_FUNCTION)
+		if(args[i+1].type  !=T_FUNCTION)
 		{
 			LOG(LOG_ERROR,_("Not a function"));
-			return NULL;
+			return asAtom::invalidAtom;
 		}
-		IFunction* f=static_cast<IFunction*>(args[i+1]);
-		f->incRef();
-		th->frameScripts[frame]=_MNR(f);
+		ASATOM_INCREF(args[i+1]);
+		th->frameScripts[frame]=args[i+1];
 	}
-	
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(MovieClip,swapDepths)
@@ -1369,7 +1373,8 @@ ASFUNCTIONBODY(MovieClip,_getScenes)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
-		ret->set(i, asAtom::fromObject(Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[i],numFrames)));
+		asAtom v = asAtom::fromObject(Class<Scene>::getInstanceS(obj->getSystemState(),th->scenes[i],numFrames));
+		ret->set(i, v);
 	}
 	return ret;
 }
@@ -1451,17 +1456,18 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 	ret->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
-		ret->set(i, asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),sc.labels[i])));
+		asAtom v = asAtom::fromObject(Class<FrameLabel>::getInstanceS(obj->getSystemState(),sc.labels[i]));
+		ret->set(i, v);
 	}
 	return ret;
 }
 
-ASFUNCTIONBODY(MovieClip,_constructor)
+ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
 	Sprite::_constructor(obj,NULL,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
@@ -1536,7 +1542,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 //		objName.name_type=multiname::NAME_STRING;
 //		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
 //		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-//		setVariableByMultiname(objName,asAtom(T_NULL), ASObject::CONST_NOT_ALLOWED);
+//		setVariableByMultiname(objName,asAtom::nullAtom, ASObject::CONST_NOT_ALLOWED);
 //	}
 
 	obj->incRef();
@@ -1560,7 +1566,8 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,asAtom::fromObject(obj),ASObject::CONST_NOT_ALLOWED);
+		asAtom v = asAtom::fromObject(obj);
+		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
 	}
 
 	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));
@@ -1606,15 +1613,15 @@ InteractiveObject::~InteractiveObject()
 		getSystemState()->getInputThread()->removeListener(this);
 }
 
-ASFUNCTIONBODY(InteractiveObject,_constructor)
+ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
-	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj.getObject());
 	EventDispatcher::_constructor(obj,NULL,0);
 	//Object registered very early are not supported this way (Stage for example)
-	if(obj->getSystemState()->getInputThread())
-		obj->getSystemState()->getInputThread()->addListener(th);
+	if(th->getSystemState()->getInputThread())
+		th->getSystemState()->getInputThread()->addListener(th);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(InteractiveObject,_setMouseEnabled)
@@ -1723,10 +1730,9 @@ void DisplayObjectContainer::setOnStage(bool staged)
 	}
 }
 
-ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
+ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
-	InteractiveObject::_constructor(obj,NULL,0);
-	return NULL;
+	return InteractiveObject::_constructor(obj,NULL,0);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
@@ -2194,10 +2200,9 @@ void Shape::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Shape,_constructor)
+ASFUNCTIONBODY_ATOM(Shape,_constructor)
 {
-	DisplayObject::_constructor(obj,NULL,0);
-	return NULL;
+	return DisplayObject::_constructor(obj,NULL,0);
 }
 
 ASFUNCTIONBODY(Shape,_getGraphics)
@@ -2433,10 +2438,10 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 	return NULL;
 }
 
-ASFUNCTIONBODY(Stage,_getStageVideos)
+ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	return Template<Vector>::getInstanceS(obj->getSystemState(),Class<StageVideo>::getClass(obj->getSystemState()),NullRef);
+	return Template<Vector>::getInstanceS(obj.getObject()->getSystemState(),Class<StageVideo>::getClass(obj.getObject()->getSystemState()),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()
@@ -2678,12 +2683,12 @@ void Bitmap::sinit(Class_base* c)
 
 }
 
-ASFUNCTIONBODY(Bitmap,_constructor)
+ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 {
 	tiny_string _pixelSnapping;
 	_NR<BitmapData> _bitmapData;
-	Bitmap* th = obj->as<Bitmap>();
-	ARG_UNPACK(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
+	Bitmap* th = obj.as<Bitmap>();
+	ARG_UNPACK_ATOM(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
 
 	DisplayObject::_constructor(obj,NULL,0);
 
@@ -2698,7 +2703,7 @@ ASFUNCTIONBODY(Bitmap,_constructor)
 		th->updatedData();
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Bitmap::onBitmapData(_NR<BitmapData> old)
@@ -2872,18 +2877,18 @@ void SimpleButton::finalize()
 	upState.reset();
 }
 
-ASFUNCTIONBODY(SimpleButton,_constructor)
+ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 {
 	/* This _must_ not call the DisplayObjectContainer
 	 * see note at the class declaration.
 	 */
 	InteractiveObject::_constructor(obj,NULL,0);
-	SimpleButton* th=static_cast<SimpleButton*>(obj);
+	SimpleButton* th=obj.as<SimpleButton>();
 	_NR<DisplayObject> upState;
 	_NR<DisplayObject> overState;
 	_NR<DisplayObject> downState;
 	_NR<DisplayObject> hitTestState;
-	ARG_UNPACK(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef);
+	ARG_UNPACK_ATOM(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef);
 
 	if (!upState.isNull())
 		th->upState = upState;
@@ -2896,7 +2901,7 @@ ASFUNCTIONBODY(SimpleButton,_constructor)
 
 	th->reflectState();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void SimpleButton::reflectState()
@@ -3174,7 +3179,7 @@ void MovieClip::initFrame()
 	//TODO: check order: child or parent first?
 	if(newFrame && frameScripts.count(state.FP))
 	{
-		asAtom v=frameScripts[state.FP]->call(asAtom(),NULL,0);
+		asAtom v=frameScripts[state.FP].callFunction(asAtom::invalidAtom,NULL,0);
 		ASATOM_DECREF(v);
 	}
 
@@ -3248,10 +3253,9 @@ void AVM1Movie::buildTraits(ASObject* o)
 	//No traits
 }
 
-ASFUNCTIONBODY(AVM1Movie,_constructor)
+ASFUNCTIONBODY_ATOM(AVM1Movie,_constructor)
 {
-	DisplayObject::_constructor(obj,NULL,0);
-	return NULL;
+	return DisplayObject::_constructor(obj,NULL,0);
 }
 
 void Shader::sinit(Class_base* c)

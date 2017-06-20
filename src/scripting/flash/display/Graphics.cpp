@@ -844,8 +844,8 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 	for(int i = 0; i < NumGradient; i ++)
 	{
 		GRADRECORD record(0xff);
-		record.Color = RGBA(colors->at(i)->toUInt(), (int)alphas->at(i)->toNumber()*255);
-		record.Ratio = UI8(ratios->at(i)->toUInt());
+		record.Color = RGBA(colors->at(i).toUInt(), (int)alphas->at(i).toNumber()*255);
+		record.Ratio = UI8(ratios->at(i).toUInt());
 		grad.GradientRecords.push_back(record);
 	}
 

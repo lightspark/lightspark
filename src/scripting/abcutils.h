@@ -30,12 +30,13 @@ class method_info;
 class ABCContext;
 class ASObject;
 class Class_base;
+class asAtom;
 
 struct scope_entry
 {
-	_R<ASObject> object;
+	asAtom object;
 	bool considerDynamic;
-	scope_entry(_R<ASObject> o, bool c):object(o),considerDynamic(c)
+	scope_entry(asAtom o, bool c):object(o),considerDynamic(c)
 	{
 	}
 };
@@ -62,7 +63,7 @@ struct call_context
 	_NR<scope_entry_list> parent_scope_stack;
 	uint32_t max_scope_stack;
 	uint32_t curr_scope_stack;
-	ASObject** scope_stack;
+	asAtom* scope_stack;
 	bool* scope_stack_dynamic;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
@@ -108,7 +109,7 @@ else context->handleError(kStackOverflowError)
 	RUNTIME_STACK_POP_ASOBJECT(context,ret, sys)
 
 #define RUNTIME_STACK_PEEK(context,ret) \
-	ret= context->stack_index ? context->stack[context->stack_index-1] : asAtom(); 
+	ret= context->stack_index ? context->stack[context->stack_index-1] : asAtom::invalidAtom; 
 
 #define RUNTIME_STACK_PEEK_ASOBJECT(context,ret, sys) \
 	ret= context->stack_index ? context->stack[context->stack_index-1].toObject(sys) : NULL; 

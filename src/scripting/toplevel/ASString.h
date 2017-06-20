@@ -76,7 +76,7 @@ public:
 	ASFUNCTION(indexOf);
 	ASFUNCTION(lastIndexOf);
 	ASFUNCTION(match);
-	ASFUNCTION(replace);
+	ASFUNCTION_ATOM(replace);
 	ASFUNCTION(search);
 	ASFUNCTION(slice);
 	ASFUNCTION(split);
@@ -95,7 +95,7 @@ public:
 	uint32_t toUInt();
 	int64_t toInt64();
 	
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
@@ -121,7 +121,7 @@ public:
 };
 
 template<>
-inline asAtom Class<ASString>::coerce(SystemState* sys,asAtom o) const
+inline asAtom Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (o.type == T_STRING)
 		return o;

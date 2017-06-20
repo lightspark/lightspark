@@ -154,44 +154,43 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("replace",AS3,Class<IFunction>::getFunction(c->getSystemState(),_replace),NORMAL_METHOD,true);
 }
 
-ASFUNCTIONBODY(XML,generator)
+ASFUNCTIONBODY_ATOM(XML,generator)
 {
-	assert(obj==NULL);
 	assert_and_throw(argslen<=1);
 	if (argslen == 0)
 	{
-		return Class<XML>::getInstanceSNoArgs(getSys());
+		return asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
 	}
-	else if (args[0]->is<Null>() || args[0]->is<Undefined>())
+	else if (args[0].is<Null>() || args[0].is<Undefined>())
 	{
-		return Class<XML>::getInstanceSNoArgs(args[0]->getSystemState());
+		return asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
 	}
-	else if(args[0]->is<ASString>() ||
-		args[0]->is<Number>() ||
-		args[0]->is<Integer>() ||
-		args[0]->is<UInteger>() ||
-		args[0]->is<Boolean>())
+	else if(args[0].is<ASString>() ||
+		args[0].is<Number>() ||
+		args[0].is<Integer>() ||
+		args[0].is<UInteger>() ||
+		args[0].is<Boolean>())
 	{
-		return createFromString(args[0]->getSystemState(),args[0]->toString());
+		return asAtom::fromObject(createFromString(getSys(),args[0].toString()));
 	}
-	else if(args[0]->is<XML>())
+	else if(args[0].is<XML>())
 	{
-		args[0]->incRef();
+		ASATOM_INCREF(args[0]);
 		return args[0];
 	}
-	else if(args[0]->is<XMLList>())
+	else if(args[0].is<XMLList>())
 	{
-		_R<XML> ret=args[0]->as<XMLList>()->reduceToXML();
+		_R<XML> ret=args[0].as<XMLList>()->reduceToXML();
 		ret->incRef();
-		return ret.getPtr();
+		return asAtom::fromObject(ret.getPtr());
 	}
-	else if(args[0]->is<XMLNode>())
+	else if(args[0].is<XMLNode>())
 	{
-		return createFromNode(args[0]->as<XMLNode>()->node);
+		return asAtom::fromObject(createFromNode(args[0].as<XMLNode>()->node));
 	}
 	else
 	{
-		return createFromString(args[0]->getSystemState(),args[0]->toString());
+		return asAtom::fromObject(createFromString(getSys(),args[0].toString()));
 	}
 }
 
@@ -987,7 +986,8 @@ ASFUNCTIONBODY(XML,_setLocalName)
 
 void XML::setLocalName(const tiny_string& new_name)
 {
-	if(!isXMLName(abstract_s(getSystemState(),new_name)))
+	asAtom v =asAtom::fromObject(abstract_s(getSystemState(),new_name));
+	if(!isXMLName(getSystemState(),v))
 	{
 		throwError<TypeError>(kXMLInvalidName, new_name);
 	}
@@ -1491,7 +1491,7 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 		{
 			const XMLVector& ret=getValuesByMultiname(childrenlist,name);
 			if(ret.empty() && (opt & XML_STRICT)!=0)
-				return asAtom();
+				return asAtom::invalidAtom;
 			
 			asAtom ch =asAtom::fromObject(XMLList::create(getSystemState(),ret,this->getChildrenlist(),name));
 			return ch;
@@ -1499,7 +1499,7 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 	}
 }
 
-void XML::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
+void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	unsigned int index=0;
 	bool isAttr=name.isAttribute;
@@ -1640,7 +1640,8 @@ void XML::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_
 					{
 						XML* newnode = createFromString(this->getSystemState(),o.toString());
 						tmpnode->childrenlist->clear();
-						tmpnode->setVariableByMultiname(name,asAtom::fromObject(newnode),allowConst);
+						asAtom v = asAtom::fromObject(newnode);
+						tmpnode->setVariableByMultiname(name,v,allowConst);
 					}
 					if (!found)
 					{
@@ -1951,15 +1952,21 @@ ASFUNCTIONBODY(XML,_getSettings)
 	mn.isAttribute = true;
 
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreComments");
-	res->setVariableByMultiname(mn,asAtom(ignoreComments),CONST_NOT_ALLOWED);
+	asAtom v;
+	v = asAtom(ignoreComments);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreProcessingInstructions");
-	res->setVariableByMultiname(mn,asAtom(ignoreProcessingInstructions),CONST_NOT_ALLOWED);
+	v = asAtom(ignoreProcessingInstructions);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreWhitespace");
-	res->setVariableByMultiname(mn,asAtom(ignoreWhitespace),CONST_NOT_ALLOWED);
+	v = asAtom(ignoreWhitespace);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("prettyIndent");
-	res->setVariableByMultiname(mn,asAtom(prettyIndent),CONST_NOT_ALLOWED);
+	v = asAtom(prettyIndent);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("prettyPrinting");
-	res->setVariableByMultiname(mn,asAtom(prettyPrinting),CONST_NOT_ALLOWED);
+	v = asAtom(prettyPrinting);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	return res;
 }
 ASFUNCTIONBODY(XML,_setSettings)
@@ -2029,15 +2036,16 @@ ASFUNCTIONBODY(XML,_getDefaultSettings)
 	mn.isAttribute = true;
 
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreComments");
-	res->setVariableByMultiname(mn,asAtom(true),CONST_NOT_ALLOWED);
+	res->setVariableByMultiname(mn,asAtom::trueAtom,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreProcessingInstructions");
-	res->setVariableByMultiname(mn,asAtom(true),CONST_NOT_ALLOWED);
+	res->setVariableByMultiname(mn,asAtom::trueAtom,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("ignoreWhitespace");
-	res->setVariableByMultiname(mn,asAtom(true),CONST_NOT_ALLOWED);
+	res->setVariableByMultiname(mn,asAtom::trueAtom,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("prettyIndent");
-	res->setVariableByMultiname(mn,asAtom((int32_t)2),CONST_NOT_ALLOWED);
+	asAtom v((int32_t)2);
+	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=res->getSystemState()->getUniqueStringId("prettyPrinting");
-	res->setVariableByMultiname(mn,asAtom(true),CONST_NOT_ALLOWED);
+	res->setVariableByMultiname(mn,asAtom::trueAtom,CONST_NOT_ALLOWED);
 	return res;
 }
 ASFUNCTIONBODY(XML,_toJSON)
@@ -2889,27 +2897,29 @@ ASFUNCTIONBODY(XML,_replace)
 		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	}
 	uint32_t index=0;
+	asAtom v = asAtom::fromObject(value.getPtr());
 	if(XML::isValidMultiname(obj->getSystemState(),name,index))
 	{
-		th->childrenlist->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),CONST_NOT_ALLOWED);
+		th->childrenlist->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 	}	
 	else if (th->hasPropertyByMultiname(name,true,false))
 	{
 		if (value->is<XMLList>())
 		{
 			th->deleteVariableByMultiname(name);
-			th->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),CONST_NOT_ALLOWED);
+			th->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 		}
 		else if (value->is<XML>())
 		{
 			th->deleteVariableByMultiname(name);
-			th->setVariableByMultiname(name,asAtom::fromObject(value.getPtr()),CONST_NOT_ALLOWED);
+			th->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 		}
 		else
 		{
 			XML* x = createFromString(obj->getSystemState(),value->toString());
 			th->deleteVariableByMultiname(name);
-			th->setVariableByMultiname(name,asAtom::fromObject(x),CONST_NOT_ALLOWED);
+			v = asAtom::fromObject(x);
+			th->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 		}
 	}
 	th->incRef();

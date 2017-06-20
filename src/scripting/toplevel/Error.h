@@ -48,11 +48,11 @@ private:
 protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string, message);
 	void setErrorID(int32_t id) { errorID=id; }
-	static void errorGenerator(ASError *obj, ASObject* const* args, const unsigned int argslen);
+	static void errorGenerator(ASError *obj, asAtom *args, const unsigned int argslen);
 public:
 	ASError(Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION(_getStackTrace);
 	ASFUNCTION(_toString);
 	tiny_string toString();
@@ -66,7 +66,7 @@ class SecurityError: public ASError
 public:
 	SecurityError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SecurityError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -76,7 +76,7 @@ class ArgumentError: public ASError
 public:
 	ArgumentError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ArgumentError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -86,7 +86,7 @@ class DefinitionError: public ASError
 public:
 	DefinitionError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "DefinitionError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -96,7 +96,7 @@ class EvalError: public ASError
 public:
 	EvalError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "EvalError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -106,7 +106,7 @@ class RangeError: public ASError
 public:
 	RangeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "RangeError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -116,7 +116,7 @@ class ReferenceError: public ASError
 public:
 	ReferenceError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ReferenceError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -126,7 +126,7 @@ class SyntaxError: public ASError
 public:
 	SyntaxError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SyntaxError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -136,7 +136,7 @@ class TypeError: public ASError
 public:
 	TypeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "TypeError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -146,7 +146,7 @@ class URIError: public ASError
 public:
 	URIError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "URIError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -156,7 +156,7 @@ class VerifyError: public ASError
 public:
 	VerifyError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "VerifyError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -167,7 +167,7 @@ class UninitializedError: public ASError
 public:
 	UninitializedError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "UninitializedError"){}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };

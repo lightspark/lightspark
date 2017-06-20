@@ -36,7 +36,7 @@ private:
 public:
 	NetStreamPlayOptions(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 }

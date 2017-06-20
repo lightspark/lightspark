@@ -36,12 +36,12 @@ void PrintJob::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_GETTER(PrintJob, isSupported);
 
-ASFUNCTIONBODY(PrintJob, _constructor)
+ASFUNCTIONBODY_ATOM(PrintJob, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 	//PrintJob* th=Class<PrintJob>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJob is not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 PrintJobOptions::PrintJobOptions(Class_base* c):

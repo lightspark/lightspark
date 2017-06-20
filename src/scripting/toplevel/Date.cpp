@@ -267,14 +267,14 @@ void Date::MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int6
 	datetime = g_date_time_to_local(datetimeUTC);
 }
 
-ASFUNCTIONBODY(Date,generator)
+ASFUNCTIONBODY_ATOM(Date,generator)
 {
 	Date* th=Class<Date>::getInstanceS(getSys());
 	GDateTime* tmp = g_date_time_new_now_utc();
 	th->MakeDateFromMilliseconds(g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000);
 	g_date_time_unref(tmp);
 
-	return abstract_s(th->getSystemState(),th->toString());
+	return asAtom::fromObject(abstract_s(th->getSystemState(),th->toString()));
 }
 
 ASFUNCTIONBODY(Date,UTC)
@@ -782,7 +782,8 @@ ASFUNCTIONBODY(Date,setTime)
 		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute = true;
-		obj->setVariableByMultiname(name,asAtom(ms),CONST_NOT_ALLOWED);
+		asAtom v = asAtom(ms);
+		obj->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 		return abstract_d(obj->getSystemState(),ms);
 	}
 	assert_and_throw(obj->is<Date>());

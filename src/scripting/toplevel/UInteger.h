@@ -43,7 +43,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_valueOf);
 	ASFUNCTION(_toExponential);

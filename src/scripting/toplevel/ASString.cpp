@@ -238,7 +238,7 @@ ASFUNCTIONBODY(ASString,match)
 			prevLastIndex = re->lastIndex;
 
 			assert(match->is<Array>());
-			resarr->push(asAtom::fromObject(match->as<Array>()->at(0).getPtr()));
+			resarr->push(match->as<Array>()->at(0));
 		}
 
 		// According to ECMA we should return Null if resarr
@@ -764,12 +764,12 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	return ret;
 }
 
-ASFUNCTIONBODY(ASString,replace)
+ASFUNCTIONBODY_ATOM(ASString,replace)
 {
-	tiny_string data = obj->toString();
+	tiny_string data = obj.toString();
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* ret=abstract_s(obj->getSystemState(),data);
+	ASString* ret=abstract_s(obj.getObject()->getSystemState(),data);
 
 	tiny_string replaceWith;
 	if(argslen < 2)
@@ -777,30 +777,30 @@ ASFUNCTIONBODY(ASString,replace)
 		type = STRING;
 		replaceWith="";
 	}
-	else if(args[1]->getObjectType()!=T_FUNCTION)
+	else if(args[1].type!=T_FUNCTION)
 	{
 		type = STRING;
-		replaceWith=args[1]->toString();
+		replaceWith=args[1].toString();
 	}
 	else
 	{
-		replaceWith=args[1]->toString();
+		replaceWith=args[1].toString();
 		type = FUNC;
 	}
-	if(args[0]->getClass()==Class<RegExp>::getClass(obj->getSystemState()))
+	if(args[0].getObject() && args[0].getObject()->getClass()==Class<RegExp>::getClass(obj.getObject()->getSystemState()))
 	{
-		RegExp* re=static_cast<RegExp*>(args[0]);
+		RegExp* re=static_cast<RegExp*>(args[0].getObject());
 
 		pcre* pcreRE = re->compile();
 		if (!pcreRE)
-			return ret;
+			return asAtom::fromObject(ret);
 
 		int capturingGroups;
 		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 		if(infoOk!=0)
 		{
 			pcre_free(pcreRE);
-			return ret;
+			return asAtom::fromObject(ret);
 		}
 		pcre_extra extra;
 		extra.match_limit_recursion=200;
@@ -817,22 +817,21 @@ ASFUNCTIONBODY(ASString,replace)
 			{
 				//No matches or error
 				pcre_free(pcreRE);
-				return ret;
+				return asAtom::fromObject(ret);
 			}
 			prevsubstring += ret->getData().substr_bytes(offset,ovector[0]-offset);
 			if(type==FUNC)
 			{
 				//Get the replace for this match
-				IFunction* f=static_cast<IFunction*>(args[1]);
 				asAtom* subargs = g_newa(asAtom, 3+capturingGroups);
 				//we index on bytes, not on UTF-8 characters
-				subargs[0]=asAtom::fromObject(abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
+				subargs[0]=asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),ret->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=asAtom::fromObject(abstract_s(obj->getSystemState(),ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2])));
+					subargs[i+1]=asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),ret->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2])));
 				subargs[capturingGroups+1]=asAtom((int32_t)(ovector[0]-retDiff));
 				
-				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(obj->getSystemState(),data));
-				asAtom ret=f->call(asAtom(T_NULL), subargs, 3+capturingGroups);
+				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),data));
+				asAtom ret=args[1].callFunction(asAtom::nullAtom, subargs, 3+capturingGroups);
 				replaceWithTmp=ret.toString().raw_buf();
 				ASATOM_DECREF(ret);
 			} else {
@@ -891,15 +890,15 @@ ASFUNCTIONBODY(ASString,replace)
 	}
 	else
 	{
-		const tiny_string& s=args[0]->toString();
+		const tiny_string& s=args[0].toString();
 		int index=ret->getData().find(s,0);
 		if(index==-1) //No result
-			return ret;
+			return asAtom::fromObject(ret);
 		ret->hasId = false;
 		ret->getData().replace(index,s.numChars(),replaceWith);
 	}
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
 ASFUNCTIONBODY(ASString,concat)
@@ -915,13 +914,13 @@ ASFUNCTIONBODY(ASString,concat)
 	return ret;
 }
 
-ASFUNCTIONBODY(ASString,generator)
+ASFUNCTIONBODY_ATOM(ASString,generator)
 {
 	assert(argslen<=1);
 	if (argslen == 0)
-		return abstract_s(getSys());
+		return asAtom::fromObject(abstract_s(getSys()));
 	else
-		return abstract_s(args[0]->getSystemState(),args[0]->toString());
+		return asAtom::fromObject(abstract_s(getSys(),args[0].toString()));
 }
 
 bool ASString::isEcmaSpace(uint32_t c)

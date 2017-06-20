@@ -288,7 +288,8 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 				for(uint32_t i = 0; i < count; i++)
 				{
 					const ExtVariant& property = objValue->getProperty(i);
-					static_cast<Array*>(asobj)->set(i, asAtom::fromObject(property.getASObject(objectsMap)));
+					asAtom v = asAtom::fromObject(property.getASObject(objectsMap));
+					static_cast<Array*>(asobj)->set(i, v);
 				}
 			}
 			// We are converting an object, so lets set variables
@@ -342,13 +343,13 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 }
 
 /* -- ExtASCallback -- */
-ExtASCallback::ExtASCallback(IFunction *_func):funcWasCalled(false), func(_func), result(NULL), asArgs(NULL)
+ExtASCallback::ExtASCallback(asAtom _func):funcWasCalled(false), func(_func), result(NULL), asArgs(NULL)
 {
-	func->incRef();
+	ASATOM_INCREF(func);
 }
 
 ExtASCallback::~ExtASCallback() {
-	func->decRef();
+	ASATOM_DECREF(func);
 	if(asArgs)
 		delete[] asArgs;
 }
@@ -376,14 +377,14 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 
 	if(!synchronous)
 	{
-		func->incRef();
-		funcEvent = _MR(new (func->getSystemState()->unaccountedMemory) ExternalCallEvent(_MR(func), asArgs, argc, &result, &exceptionThrown, &exception));
+		ASATOM_INCREF(func);
+		funcEvent = _MR(new (func.getObject()->getSystemState()->unaccountedMemory) ExternalCallEvent(func, asArgs, argc, &result, &exceptionThrown, &exception));
 		// Add the callback function event to the top of the VM event queue
-		funcWasCalled=getVm(func->getSystemState())->prependEvent(NullRef,funcEvent);
+		funcWasCalled=getVm(func.getObject()->getSystemState())->prependEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
 			funcEvent = NullRef;
 		else
-			func->getSystemState()->sendMainSignal();
+			func.getObject()->getSystemState()->sendMainSignal();
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
 	else
@@ -401,7 +402,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			}
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			result = func->call(asAtom(T_NULL), newArgs, argc).toObject(func->getSystemState());
+			result = func.callFunction(asAtom::nullAtom, newArgs, argc).toObject(func.getObject()->getSystemState());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

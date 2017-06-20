@@ -514,7 +514,7 @@ ASFUNCTIONBODY_ATOM(TextField, _setter_type)
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "type");
 
-	return asAtom();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(TextField,_getLineIndexAtPoint)

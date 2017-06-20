@@ -168,10 +168,9 @@ void URLStream::threadFinished(IThreadJob* finishedJob)
 	delete finishedJob;
 }
 
-ASFUNCTIONBODY(URLStream,_constructor)
+ASFUNCTIONBODY_ATOM(URLStream,_constructor)
 {
-	EventDispatcher::_constructor(obj,NULL,0);
-	return NULL;
+	return EventDispatcher::_constructor(obj,NULL,0);
 }
 
 ASFUNCTIONBODY(URLStream,load)

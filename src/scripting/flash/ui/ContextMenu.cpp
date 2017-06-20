@@ -39,11 +39,11 @@ void ContextMenu::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,customItems);
 ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
-ASFUNCTIONBODY(ContextMenu,_constructor)
+ASFUNCTIONBODY_ATOM(ContextMenu,_constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu constructor is a stub");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(ContextMenu,hideBuiltInItems)

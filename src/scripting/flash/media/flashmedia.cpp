@@ -275,23 +275,23 @@ void Sound::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Sound,_constructor)
+ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 
 	if (argslen>0)
 		Sound::load(obj, args, argslen);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Sound,load)
+ASFUNCTIONBODY_ATOM(Sound,load)
 {
-	Sound* th=Class<Sound>::cast(obj);
+	Sound* th=obj.as<Sound>();
 	_NR<URLRequest> urlRequest;
 	_NR<SoundLoaderContext> context;
 	
-	ARG_UNPACK(urlRequest)(context,NullRef);
+	ARG_UNPACK_ATOM(urlRequest)(context,NullRef);
 	if (!urlRequest.isNull())
 	{
 		th->url = urlRequest->getRequestURL();
@@ -304,8 +304,8 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		getVm(obj->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(obj->getSystemState())));
-		return NULL;
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		return asAtom::invalidAtom;
 	}
 
 	//The URL is valid so we can start the download
@@ -314,12 +314,12 @@ ASFUNCTIONBODY(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->downloader=getSys()->downloadManager->download(th->url, th->soundData, th);
+		th->downloader=th->getSystemState()->downloadManager->download(th->url, th->soundData, th);
 	}
 	else
 	{
 		list<tiny_string> headers=urlRequest->getHeaders();
-		th->downloader=getSys()->downloadManager->downloadWithData(th->url,
+		th->downloader=th->getSystemState()->downloadManager->downloadWithData(th->url,
 				th->soundData, th->postData, headers, th);
 		//Clean up the postData for the next load
 		th->postData.clear();
@@ -327,9 +327,9 @@ ASFUNCTIONBODY(Sound,load)
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		getVm(obj->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(obj->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(Sound,play)
@@ -489,11 +489,11 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 	}
 }
 
-ASFUNCTIONBODY(SoundChannel, _constructor)
+ASFUNCTIONBODY_ATOM(SoundChannel, _constructor)
 {
 	EventDispatcher::_constructor(obj, NULL, 0);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY(SoundChannel, stop)
@@ -505,7 +505,7 @@ ASFUNCTIONBODY(SoundChannel, stop)
 
 void SoundChannel::execute()
 {
-	//playStream();
+	playStream();
 }
 
 void SoundChannel::playStream()

@@ -45,10 +45,10 @@ class Vector: public ASObject
 	class sortComparatorWrapper
 	{
 	private:
-		IFunction* comparator;
+		asAtom comparator;
 		const Type* vec_type;
 	public:
-		sortComparatorWrapper(IFunction* c, const Type* v):comparator(c),vec_type(v){}
+		sortComparatorWrapper(asAtom c, const Type* v):comparator(c),vec_type(v){}
 		bool operator()(ASObject* d1, ASObject* d2);
 	};
 public:
@@ -67,20 +67,20 @@ public:
 	
 	
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {};
-	static ASObject* generator(TemplatedClass<Vector>* o_class, ASObject* const* args, const unsigned int argslen);
+	static void buildTraits(ASObject* o) {}
+	static asAtom generator(asAtom& o_class, asAtom* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
 	bool sameType(const Class_base* cls) const;
 
 	//Overloads
 	tiny_string toString();
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
 
-	tiny_string toJSON(std::vector<ASObject *> &path, IFunction *replacer, const tiny_string &spaces,const tiny_string& filter);
+	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 
 	uint32_t nextNameIndex(uint32_t cur_index);
 	asAtom nextName(uint32_t index);
@@ -90,10 +90,10 @@ public:
 	{
 		return vec.size();
 	}
-        ASObject* at(unsigned int index) const
-        {
-                return vec.at(index);
-        }
+	ASObject* at(unsigned int index) const
+	{
+		return vec.at(index);
+	}
 	//Get value at index, or return defaultValue (a borrowed
 	//reference) if index is out-of-range
 	ASObject* at(unsigned int index, ASObject *defaultValue) const;
@@ -107,29 +107,29 @@ public:
 	ASFUNCTION(_constructor);
 
 	ASFUNCTION_ATOM(push);
-	ASFUNCTION(_concat);
-	ASFUNCTION(_pop);
+	ASFUNCTION_ATOM(_concat);
+	ASFUNCTION_ATOM(_pop);
 	ASFUNCTION(join);
-	ASFUNCTION(shift);
-	ASFUNCTION(unshift);
+	ASFUNCTION_ATOM(shift);
+	ASFUNCTION_ATOM(unshift);
 	ASFUNCTION(splice);
-	ASFUNCTION(_sort);
+	ASFUNCTION_ATOM(_sort);
 	ASFUNCTION(getLength);
 	ASFUNCTION(setLength);
-	ASFUNCTION(filter);
+	ASFUNCTION_ATOM(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(_setLength);
 	ASFUNCTION(getFixed);
 	ASFUNCTION(setFixed);
-	ASFUNCTION(forEach);
+	ASFUNCTION_ATOM(forEach);
 	ASFUNCTION(_reverse);
 	ASFUNCTION(lastIndexOf);
-	ASFUNCTION(_map);
-	ASFUNCTION(_toString);
-	ASFUNCTION(slice);
-	ASFUNCTION(every);
-	ASFUNCTION(some);
+	ASFUNCTION_ATOM(_map);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(slice);
+	ASFUNCTION_ATOM(every);
+	ASFUNCTION_ATOM(some);
 	ASFUNCTION(insertAt);
 	ASFUNCTION(removeAt);
 

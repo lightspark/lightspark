@@ -167,8 +167,8 @@ public:
 	void setDataFormat(const tiny_string& newFormat);
 	void setBytesTotal(uint32_t b);
 	void setBytesLoaded(uint32_t b);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(load);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(load);
 	ASFUNCTION(close);
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
@@ -181,14 +181,14 @@ public:
 class Responder: public ASObject
 {
 private:
-	_NR<IFunction> result;
-	_NR<IFunction> status;
+	asAtom result;
+	asAtom status;
 public:
 	Responder(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
 	void finalize();
-	ASFUNCTION(_constructor);
-	ASFUNCTION(onResult);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(onResult);
 };
 
 class NetConnection: public EventDispatcher, public IThreadJob
@@ -219,7 +219,7 @@ public:
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(connect);
 	ASFUNCTION(call);
 	ASFUNCTION(_getConnected);
@@ -307,7 +307,7 @@ public:
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION(play);
 	ASFUNCTION(play2);
 	ASFUNCTION(resume);
@@ -405,7 +405,7 @@ class LocalConnection: public EventDispatcher
 public:
 	LocalConnection(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
 	ASFUNCTION(allowDomain);
 	ASFUNCTION(allowInsecureDomain);
@@ -421,7 +421,7 @@ class NetGroup: public EventDispatcher
 public:
 	NetGroup(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class FileReference: public EventDispatcher
@@ -429,14 +429,14 @@ class FileReference: public EventDispatcher
 public:
 	FileReference(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 class ASSocket: public EventDispatcher, IDataInput, IDataOutput
 {
 public:
 	ASSocket(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class DRMManager: public EventDispatcher

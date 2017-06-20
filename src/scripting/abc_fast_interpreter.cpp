@@ -449,13 +449,13 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x26:
 			{
 				//pushtrue
-				RUNTIME_STACK_PUSH(context,asAtom(true));
+				RUNTIME_STACK_PUSH(context,asAtom::trueAtom);
 				break;
 			}
 			case 0x27:
 			{
 				//pushfalse
-				RUNTIME_STACK_PUSH(context,asAtom(false));
+				RUNTIME_STACK_PUSH(context,asAtom::falseAtom);
 				break;
 			}
 			case 0x28:
@@ -954,7 +954,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getscopeobject
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_PUSH(context,asAtom::fromObject(getScopeObject(context,t)));
+				assert_and_throw(context->curr_scope_stack > t);
+				asAtom ret=context->scope_stack[t];
+				ASATOM_INCREF(ret);
+				LOG_CALL( _("getScopeObject: ") << ret.toDebugString());
+
+				RUNTIME_STACK_PUSH(context,ret);
 				break;
 			}
 			case 0x66:
@@ -977,10 +982,13 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//initproperty
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE(context,value);
 				multiname* name=context->context->getMultiname(t,context);
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
-				initProperty(obj,value,name);
+				LOG_CALL("initProperty "<<*name);
+				RUNTIME_STACK_POP_CREATE(context,obj);
+				checkDeclaredTraits(obj.toObject(context->context->root->getSystemState()));
+				obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
+				ASATOM_DECREF(obj);
 				name->resetNameIfObject();
 				break;
 			}
@@ -1650,17 +1658,17 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//index of the scope stack
 				uint32_t t=data->uints[0];
 				LOG_CALL( "getScopeAtIndex " << t);
-				ASObject* obj;
+				asAtom obj;
 				uint32_t parentsize = context->parent_scope_stack.isNull() ? 0 :context->parent_scope_stack->scope.size();
 				if (!context->parent_scope_stack.isNull() && t<parentsize)
-					obj = context->parent_scope_stack->scope[t].object.getPtr();
+					obj = context->parent_scope_stack->scope[t].object.toObject(function->getSystemState());
 				else
 				{
 					assert_and_throw(t-parentsize <context->curr_scope_stack);
 					obj=context->scope_stack[t-parentsize];
 				}
-				obj->incRef();
-				RUNTIME_STACK_PUSH(context,asAtom::fromObject(obj));
+				ASATOM_INCREF(obj);
+				RUNTIME_STACK_PUSH(context,obj);
 				instructionPointer+=4;
 				break;
 			}

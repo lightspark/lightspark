@@ -1136,8 +1136,8 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 {
 	std::deque<_R<DisplayObject>> parents;
 	//Only set the default target is it's not overridden
-	if(event->target.isNull())
-		event->setTarget(dispatcher);
+	if(event->target.type == T_INVALID)
+		event->setTarget(asAtom::fromObject(dispatcher.getPtr()));
 	/** rollOver/Out are special: according to spec 
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
 	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 
@@ -1258,7 +1258,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
-	event->setTarget(NullRef);
+	event->setTarget(asAtom::invalidAtom);
 }
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
@@ -1293,19 +1293,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
 				try
 				{
-					if(!ev->obj.isNull())
-						ev->obj->incRef();
-					asAtom* newArgs=NULL;
-					if (ev->numArgs > 0)
-					{
-						newArgs=g_newa(asAtom, ev->numArgs);
-						for (uint32_t i = 0; i < ev->numArgs; i++)
-						{
-							newArgs[i] = asAtom::fromObject(ev->args[i]);
-						}
-					}
-
-					asAtom result = ev->f->call(asAtom::fromObject(ev->obj.getPtr()),newArgs,ev->numArgs);
+					asAtom result = ev->f.callFunction(ev->obj,ev->args,ev->numArgs);
 					ASATOM_DECREF(result);
 				}
 				catch(ASObject* exception)
@@ -1336,7 +1324,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 							newArgs[i] = asAtom::fromObject(ev->args[i]);
 						}
 					}
-					*(ev->result) = ev->f->call(m_sys->getNullRef(),newArgs,ev->numArgs).toObject(m_sys);
+					*(ev->result) = ev->f.callFunction(asAtom::nullAtom,newArgs,ev->numArgs).toObject(m_sys);
 				}
 				catch(ASObject* exception)
 				{
@@ -1601,7 +1589,8 @@ call_context::~call_context()
 	}
 	while (curr_scope_stack)
 	{
-		scope_stack[--curr_scope_stack]->decRef();
+		--curr_scope_stack;
+		ASATOM_DECREF(scope_stack[curr_scope_stack]);
 	}
 }
 
@@ -1706,11 +1695,14 @@ void ABCContext::exec(bool lazy)
 	root->applicationDomain->registerGlobalScope(global);
 	//the script init of the last script is the main entry point
 	if(!lazy)
-		runScriptInit(i, global);
+	{
+		asAtom g = asAtom::fromObject(global);
+		runScriptInit(i, g);
+	}
 	LOG(LOG_CALLS, _("End of Entry Point"));
 }
 
-void ABCContext::runScriptInit(unsigned int i, ASObject* g)
+void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 {
 	LOG(LOG_CALLS, "Running script init for script " << i );
 
@@ -1718,13 +1710,12 @@ void ABCContext::runScriptInit(unsigned int i, ASObject* g)
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(g->getSystemState(),m);
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m);
 	
-	g->incRef();
-	entry->addToScope(scope_entry(_MR(g),false));
+	ASATOM_INCREF(g);
+	entry->addToScope(scope_entry(g,false));
 
-	g->incRef();
-	asAtom ret=entry->call(asAtom::fromObject(g),NULL,0);
+	asAtom ret=asAtom::fromObject(entry).callFunction(g,NULL,0);
 
 	ASATOM_DECREF(ret);
 
@@ -1934,8 +1925,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		{
 			obj->incRef();
 			asAtom callbackArgs[1] { asAtom::fromObject(obj.getPtr()) };
-			client->incRef();
-			callback.getObject()->as<IFunction>()->call(asAtom::fromObject(client.getPtr()), callbackArgs, 1);
+			asAtom v = asAtom::fromObject(client.getPtr());
+			callback.callFunction(v, callbackArgs, 1);
 		}
 	}
 	uint16_t numMessage;
@@ -1976,8 +1967,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			{
 				ret->incRef();
 				asAtom callbackArgs[1] { asAtom::fromObject(ret.getPtr()) };
-				responder->incRef();
-				callback.getObject()->as<IFunction>()->call(asAtom::fromObject(responder.getPtr()), callbackArgs, 1);
+				asAtom v = asAtom::fromObject(responder.getPtr());
+				callback.callFunction(v, callbackArgs, 1);
 			}
 		}
 	}
@@ -2054,9 +2045,8 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			{
 				assert_and_throw(var->var.type == T_FUNCTION);
 
-				IFunction* f=static_cast<IFunction*>(var->var.toObject(c->getSystemState()));
-				f->incRef();
-				c->setDeclaredMethodByQName(nameId,mname.ns[0],f,NORMAL_METHOD,true);
+				ASATOM_INCREF(var->var);
+				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->var,NORMAL_METHOD,true);
 			}
 			else
 			{
@@ -2075,12 +2065,10 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && var->getter)
+			if(var && var->getter.type != T_INVALID)
 			{
-				assert_and_throw(var->getter);
-
-				var->getter->incRef();
-				c->setDeclaredMethodByQName(nameId,mname.ns[0],var->getter,GETTER_METHOD,true);
+				ASATOM_INCREF(var->getter);
+				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->getter,GETTER_METHOD,true);
 			}
 			else
 			{
@@ -2099,12 +2087,10 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && var->setter)
+			if(var && var->setter.type != T_INVALID)
 			{
-				assert_and_throw(var->setter);
-
-				var->setter->incRef();
-				c->setDeclaredMethodByQName(nameId,mname.ns[0],var->setter,SETTER_METHOD,true);
+				ASATOM_INCREF(var->setter);
+				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->setter,SETTER_METHOD,true);
 			}
 			else
 			{
@@ -2322,14 +2308,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				if(isBorrowed)
 				{
 					obj->incRef();
-					f->addToScope(scope_entry(_MR(obj),false));
+					f->addToScope(scope_entry(asAtom::fromObject(obj),false));
 				}
 			}
 			else
 			{
 				assert(scriptid != -1);
 				obj->incRef();
-				f->addToScope(scope_entry(_MR(obj),false));
+				f->addToScope(scope_entry(asAtom::fromObject(obj),false));
 			}
 			if(kind == traits_info::Getter)
 				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed,isenumerable);
@@ -2383,7 +2369,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 		}
 		default:
 			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
-			obj->setVariableByMultiname(*mname, asAtom(T_UNDEFINED), ASObject::CONST_NOT_ALLOWED);
+			obj->setVariableByMultiname(*mname, asAtom::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
 			break;
 	}
 }

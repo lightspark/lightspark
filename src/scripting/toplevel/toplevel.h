@@ -29,10 +29,13 @@
 #include "scripting/abcutils.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"
-#include "scripting/toplevel/XML.h"
 #include "memory_support.h"
 #include <boost/intrusive/list.hpp>
 
+namespace pugi
+{
+	class xml_node;
+}
 namespace lightspark
 {
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
@@ -85,7 +88,7 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 * If the argument cannot be converted, it throws a TypeError
 	 */
-	virtual asAtom coerce(SystemState* sys, asAtom o) const=0;
+	virtual asAtom coerce(SystemState* sys, asAtom& o) const=0;
 
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
@@ -102,7 +105,7 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	asAtom coerce(SystemState* sys,asAtom o) const { return o; }
+	asAtom coerce(SystemState* sys,asAtom& o) const { return o; }
 	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
@@ -112,7 +115,7 @@ public:
 class Void: public Type
 {
 public:
-	asAtom coerce(SystemState* sys,asAtom o) const;
+	asAtom coerce(SystemState* sys,asAtom& o) const;
 	virtual ~Void() {}
 	tiny_string getName() const { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
@@ -128,7 +131,7 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	asAtom coerce(SystemState* sys,asAtom o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	asAtom coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
@@ -221,7 +224,7 @@ public:
 	void addPrototypeGetter();
 	void addLengthGetter();
 	inline virtual void setupDeclaredTraits(ASObject *target) const { target->traitsInitialized = true; }
-	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
+	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	bool hasConstructor() { return constructor != NULL; }
 	Class_base(const QName& name, MemoryAccount* m);
@@ -229,7 +232,7 @@ public:
 	Class_base(const Class_object*);
 	~Class_base();
 	void finalize();
-	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
+	virtual asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -244,7 +247,7 @@ public:
 	tiny_string getQualifiedClassName() const;
 	tiny_string getName() const;
 	tiny_string toString();
-	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
+	virtual asAtom generator(asAtom* args, const unsigned int argslen);
 	ASObject *describeType() const;
 	void describeInstance(pugi::xml_node &root) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
@@ -253,7 +256,7 @@ public:
 	 * It consumes one reference of 'o'.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	virtual asAtom coerce(SystemState* sys, asAtom o) const;
+	virtual asAtom coerce(SystemState* sys, asAtom& o) const;
 
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
@@ -281,10 +284,10 @@ class Class_object: public Class_base
 private:
 	//Invoke the special constructor that will set the super to Object
 	Class_object():Class_base(this){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass)
+	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");
-		return NULL;
+		return asAtom::invalidAtom;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
@@ -339,7 +342,7 @@ public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
 };
 
@@ -384,9 +387,6 @@ public:
 	ASFUNCTION(_length);
 protected:
 	IFunction(Class_base *c,CLASS_SUBTYPE st);
-	virtual IFunction* clone()=0;
-	_NR<ASObject> closure_this;
-
 public:
 	static void sinit(Class_base* c);
 	/* If this is a method, inClass is the class this is defined in.
@@ -395,55 +395,18 @@ public:
 	Class_base* inClass;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
-	bool isBound() const { return closure_this; }
 	bool isConstructed() const { return constructIndicator; }
 	inline bool destruct() 
 	{
-		closure_this.reset();
 		inClass=NULL;
 		functionname=0;
 		length=0;
 		return ASObject::destruct();
 	}
-	ASFUNCTION(apply);
-	ASFUNCTION(_call);
+	ASFUNCTION_ATOM(apply);
+	ASFUNCTION_ATOM(_call);
 	ASFUNCTION(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
-	/*
-	 * Calls this function with the given object and args.
-	 * One reference of obj and each args[i] is consumed.
-	 * Return the ASObject the function returned.
-	 * This never returns NULL.
-	 */
-	virtual asAtom call(asAtom obj, asAtom* args, uint32_t num_args)=0;
-	IFunction* bind(_NR<ASObject> c, int level)
-	{
-		if(!isBound())
-		{
-			IFunction* ret=NULL;
-			if(!c)
-			{
-				//If binding with null we are generated from newFunction, don't copy
-				ret=this;
-			}
-			else
-			{
-				//Generate a copy
-				ret=clone();
-				ret->setClass(getClass());
-			}
-			ret->closure_this=c;
-			ret->constructIndicator = true;
-			ret->constructorCallComplete = true;
-			//std::cout << "Binding " << ret << std::endl;
-			return ret;
-		}
-		else
-		{
-			incRef();
-			return this;
-		}
-	}
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
 	uint32_t functionname;
@@ -460,7 +423,7 @@ class Function : public IFunction
 friend class Class<IFunction>;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
-	typedef asAtom (*as_atom_function)(asAtom, asAtom*, const unsigned int);
+	typedef asAtom (*as_atom_function)(asAtom&, asAtom*, const unsigned int);
 protected:
 	/* Function pointer to the C-function implementation */
 	// TODO this can be removed once all builtin functions are using the asAtom-based function pointer
@@ -468,24 +431,9 @@ protected:
 	/* Function pointer to the C-function implementation with atom arguments */
 	as_atom_function val_atom;
 	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v),val_atom(NULL) {}
-	Function* clone()
-	{
-		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
-		if (!ret)
-			ret=new (getClass()->memoryAccount) Function(*this);
-		else
-		{
-			ret->val = val;
-			ret->val_atom = val_atom;
-			ret->length = length;
-			ret->inClass = inClass;
-			ret->functionname = functionname;
-		}
-		return ret;
-	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
-	asAtom call(asAtom obj, asAtom* args, uint32_t num_args);
+	asAtom call(asAtom& obj, asAtom* args, uint32_t num_args);
 	bool isEqual(ASObject* r);
 };
 
@@ -521,30 +469,10 @@ private:
 	synt_function val;
 	SyntheticFunction(Class_base* c,method_info* m);
 	
-	SyntheticFunction* clone()
-	{
-		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
-		if (!ret)
-		{
-			ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
-		}
-		else
-		{
-			ret->mi = mi;
-			ret->val = val;
-			ret->length = length;
-			ret->inClass = inClass;
-			func_scope->incRef();
-			ret->func_scope = func_scope;
-			ret->functionname = functionname;
-		}
-		ret->objfreelist = &getClass()->freelist[1];
-		return ret;
-	}
 	method_info* getMethodInfo() const { return mi; }
 public:
 	~SyntheticFunction() {}
-	asAtom call(asAtom obj, asAtom *args, uint32_t num_args);
+	asAtom call(asAtom& obj, asAtom *args, uint32_t num_args);
 	inline bool destruct()
 	{
 		func_scope.reset();
@@ -556,12 +484,7 @@ public:
 	_NR<scope_entry_list> func_scope;
 	bool isEqual(ASObject* r)
 	{
-		if (!r->is<SyntheticFunction>())
-			return false;
-		if (closure_this.isNull())
-			return this == r;
-		SyntheticFunction* sf=r->as<SyntheticFunction>();
-		return (mi==sf->mi) && (closure_this==sf->closure_this);
+		return this == r;
 	}
 	void acquireScope(const std::vector<scope_entry>& scope)
 	{
@@ -587,7 +510,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>(MemoryAccount* m):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),m){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen, Class_base* realClass);
+	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
 	IFunction* getNopFunction();
 public:
 	static Class<IFunction>* getClass(SystemState* sys);
@@ -642,13 +565,14 @@ public:
 		
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
-		c->handleConstruction(ret,NULL,0,true);
+		asAtom obj = asAtom::fromObject(ret);
+		c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
 	}
-	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
+	virtual asAtom generator(asAtom* args, const unsigned int argslen);
 };
 
 class Undefined : public ASObject
@@ -665,7 +589,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 };
 
 class Null: public ASObject
@@ -678,7 +602,7 @@ public:
 	int64_t toInt64();
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst);
+	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -699,7 +623,7 @@ public:
 	void setByXML(XML* node);
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION(_getURI);
 	ASFUNCTION(_getLocalName);
 	ASFUNCTION(_toString);
@@ -728,8 +652,8 @@ public:
 	Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY,NS_KIND _nskind = NAMESPACE);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(generator);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(generator);
 	ASFUNCTION(_getURI);
 	// according to ECMA-357 and tamarin tests uri/prefix properties are readonly
 	//ASFUNCTION(_setURI);
@@ -778,8 +702,8 @@ ASObject* escape(ASObject* obj,ASObject* const* args, const unsigned int argslen
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-bool isXMLName(ASObject* obj);
-ASObject* _isXMLName(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+bool isXMLName(SystemState *sys, asAtom &obj);
+asAtom _isXMLName(asAtom& obj,asAtom* args, const unsigned int argslen);
 number_t parseNumber(const tiny_string str);
 };
 

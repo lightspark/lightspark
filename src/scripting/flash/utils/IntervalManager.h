@@ -37,8 +37,8 @@ private:
 public:
 	IntervalManager();
 	~IntervalManager();
-	uint32_t setInterval(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, const uint32_t interval);
-	uint32_t setTimeout(_R<IFunction> callback, ASObject** args, const unsigned int argslen, _R<ASObject> obj, const uint32_t interval);
+	uint32_t setInterval(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, const uint32_t interval);
+	uint32_t setTimeout(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, const uint32_t interval);
 	uint32_t getFreeID();
 	void clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob);
 };

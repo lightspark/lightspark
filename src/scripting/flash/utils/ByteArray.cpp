@@ -1050,7 +1050,7 @@ asAtom ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPT
 		return asAtom(static_cast<uint32_t>(value));
 	}
 	else
-		return asAtom(T_UNDEFINED);
+		return asAtom::undefinedAtom;
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -1069,7 +1069,7 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, asAtom o, CONST_ALLOWED_FLAG allowConst)
+void ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -1095,7 +1095,8 @@ void ByteArray::setVariableByMultiname(const multiname& name, asAtom o, CONST_AL
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	setVariableByMultiname(name, asAtom(value),ASObject::CONST_NOT_ALLOWED);
+	asAtom v = asAtom(value);
+	setVariableByMultiname(name, v,ASObject::CONST_NOT_ALLOWED);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -1374,9 +1375,9 @@ ASFUNCTIONBODY(ByteArray,clear)
 }
 
 // this seems to be how AS3 handles generic pop calls in Array class
-ASFUNCTIONBODY(ByteArray,pop)
+ASFUNCTIONBODY_ATOM(ByteArray,pop)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj);
+	ByteArray* th=obj.as<ByteArray>();
 	uint8_t res = 0;
 	th->lock();
 	if (th->readByte(res))
@@ -1385,7 +1386,7 @@ ASFUNCTIONBODY(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	return abstract_ui(obj->getSystemState(),res);
+	return asAtom((uint32_t)res);
 	
 }
 
@@ -1405,9 +1406,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,push)
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
-ASFUNCTIONBODY(ByteArray,shift)
+ASFUNCTIONBODY_ATOM(ByteArray,shift)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj);
+	ByteArray* th=obj.as<ByteArray>();
 	uint8_t res = 0;
 	th->lock();
 	if (th->readByte(res))
@@ -1416,23 +1417,23 @@ ASFUNCTIONBODY(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	return abstract_ui(obj->getSystemState(),res);
+	return asAtom((uint32_t)res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
-ASFUNCTIONBODY(ByteArray,unshift)
+ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj);
+	ByteArray* th=obj.as<ByteArray>();
 	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
 		memmove((th->bytes+argslen),(th->bytes),th->len);
-		th->bytes[i] = (uint8_t)args[i]->toInt();
+		th->bytes[i] = (uint8_t)args[i].toInt();
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return abstract_ui(obj->getSystemState(),res);
+	return asAtom(res);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ByteArray,shareable);
 

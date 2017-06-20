@@ -189,7 +189,7 @@ public:
 		@param deferred_initialization A pointer to a function that can be used to build the given trait later
 	*/
 	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1, bool checkExisting=true);
-	void runScriptInit(unsigned int scriptid, ASObject* g);
+	void runScriptInit(unsigned int scriptid, asAtom& g);
 
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
@@ -330,7 +330,7 @@ private:
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callMethod(call_context* th, int n, int m);
-	static void callImpl(call_context* th, ASObject* f, asAtom obj, asAtom *args, int m, method_info** called_mi, bool keepReturn);
+	static void callImpl(call_context* th, asAtom& f, asAtom &obj, asAtom *args, int m, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 
 	static void setLocal(int n); 
 	static void setLocal_int(int n,int v); 
@@ -370,7 +370,7 @@ private:
 	static void newClass(call_context* th, int n);
 	static void newArray(call_context* th, int n); 
 	static ASObject* findPropStrict(call_context* th, multiname* name);
-	static ASObject* findPropStrictCache(call_context* th, memorystream& code);
+	static asAtom findPropStrictCache(call_context* th, memorystream& code);
 	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);
@@ -482,7 +482,7 @@ private:
 	static void SetAllClassLinks();
 	static void AddClassLinks(Class_base* target);
 	static bool newClassRecursiveLink(Class_base* target, Class_base* c);
-	static ASObject* constructFunction(call_context* th, IFunction* f, ASObject** args, int argslen);
+	static asAtom constructFunction(call_context* th, asAtom& f, asAtom* args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 
 	//Opcode tables

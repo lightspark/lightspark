@@ -62,8 +62,8 @@ ASObject* getQualifiedClassName(ASObject*, ASObject* const* args, const unsigned
 ASObject* getQualifiedSuperclassName(ASObject*, ASObject* const* args, const unsigned int len);
 ASObject* getDefinitionByName(ASObject*, ASObject* const* args, const unsigned int len);
 ASObject* getTimer(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* setInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* setTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+asAtom setInterval(asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom setTimeout(asAtom& obj,asAtom* args, const unsigned int argslen);
 ASObject* clearInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* clearTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);

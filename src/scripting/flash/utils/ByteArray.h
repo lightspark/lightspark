@@ -109,7 +109,7 @@ public:
 	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
 	ASFUNCTION(readMultiByte);
-	ASFUNCTION(readObject);
+	ASFUNCTION_ATOM(readObject);
 	ASFUNCTION(readShort);
 	ASFUNCTION(readUnsignedByte);
 	ASFUNCTION(readUnsignedInt);

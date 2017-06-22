@@ -430,36 +430,35 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 	if (winding != "evenOdd")
 		LOG(LOG_NOT_IMPLEMENTED, "Only event-odd winding implemented in Graphics.drawPath");
 
-	_R<ASObject> zeroRef = _MR(abstract_d(commands->getSystemState(),0));
-	ASObject *zero = zeroRef.getPtr();
+	asAtom zero((number_t)0);
 
 	int k = 0;
 	for (unsigned int i=0; i<commands->size(); i++)
 	{
-		switch (commands->at(i)->toInt())
+		switch (commands->at(i).toInt())
 		{
 			case GraphicsPathCommand::MOVE_TO:
 			{
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
 				break;
 			}
 
 			case GraphicsPathCommand::LINE_TO:
 			{
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
 				break;
 			}
 
 			case GraphicsPathCommand::CURVE_TO:
 			{
-				number_t cx = data->at(k++, zero)->toNumber();
-				number_t cy = data->at(k++, zero)->toNumber();
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t cx = data->at(k++, zero).toNumber();
+				number_t cy = data->at(k++, zero).toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 							      Vector2(cx, cy),
 							      Vector2(x, y)));
@@ -469,8 +468,8 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 			case GraphicsPathCommand::WIDE_MOVE_TO:
 			{
 				k+=2;
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
 				break;
 			}
@@ -478,20 +477,20 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 			case GraphicsPathCommand::WIDE_LINE_TO:
 			{
 				k+=2;
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
 				break;
 			}
 
 			case GraphicsPathCommand::CUBIC_CURVE_TO:
 			{
-				number_t c1x = data->at(k++, zero)->toNumber();
-				number_t c1y = data->at(k++, zero)->toNumber();
-				number_t c2x = data->at(k++, zero)->toNumber();
-				number_t c2y = data->at(k++, zero)->toNumber();
-				number_t x = data->at(k++, zero)->toNumber();
-				number_t y = data->at(k++, zero)->toNumber();
+				number_t c1x = data->at(k++, zero).toNumber();
+				number_t c1y = data->at(k++, zero).toNumber();
+				number_t c2x = data->at(k++, zero).toNumber();
+				number_t c2y = data->at(k++, zero).toNumber();
+				number_t x = data->at(k++, zero).toNumber();
+				number_t y = data->at(k++, zero).toNumber();
 				tokens.emplace_back(GeomToken(CURVE_CUBIC,
 							      Vector2(c1x, c1y),
 							      Vector2(c2x, c2y),
@@ -628,15 +627,15 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 			if (indices.isNull())
 				vertex=3*i+j;
 			else
-				vertex=indices->at(3*i+j)->toInt();
+				vertex=indices->at(3*i+j).toInt();
 
-			x[j]=vertices->at(2*vertex)->toNumber();
-			y[j]=vertices->at(2*vertex+1)->toNumber();
+			x[j]=vertices->at(2*vertex).toNumber();
+			y[j]=vertices->at(2*vertex+1).toNumber();
 
 			if (has_uvt)
 			{
-				u[j]=uvtData->at(vertex*uvtElemSize)->toNumber()*texturewidth;
-				v[j]=uvtData->at(vertex*uvtElemSize+1)->toNumber()*textureheight;
+				u[j]=uvtData->at(vertex*uvtElemSize).toNumber()*texturewidth;
+				v[j]=uvtData->at(vertex*uvtElemSize+1).toNumber()*textureheight;
 			}
 		}
 		
@@ -684,7 +683,7 @@ ASFUNCTIONBODY(Graphics,drawGraphicsData)
 
 	for (unsigned int i=0; i<graphicsData->size(); i++)
 	{
-		IGraphicsData *graphElement = dynamic_cast<IGraphicsData *>(graphicsData->at(i));
+		IGraphicsData *graphElement = dynamic_cast<IGraphicsData *>(graphicsData->at(i).getObject());
 		if (!graphElement)
 		{
 			LOG(LOG_ERROR, "Invalid type in Graphics::drawGraphicsData()");

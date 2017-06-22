@@ -23,10 +23,11 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "scripting/toplevel/Array.h"
+#include "3rdparty/pugixml/src/pugixml.hpp"
 
 namespace lightspark
 {
+class Array;
 
 class AntiAliasType : public ASObject
 {

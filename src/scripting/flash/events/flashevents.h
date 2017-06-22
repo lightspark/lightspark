@@ -22,7 +22,6 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "scripting/toplevel/toplevel.h"
 #include "backends/extscriptobject.h"
 #include <string>
 #include <SDL2/SDL_keyboard.h>

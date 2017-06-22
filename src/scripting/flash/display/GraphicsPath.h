@@ -38,15 +38,15 @@ public:
 	GraphicsPath(Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, commands);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, data);
 	ASPROPERTY_GETTER_SETTER(tiny_string, winding);
-	ASFUNCTION(curveTo);
-	ASFUNCTION(lineTo);
-	ASFUNCTION(moveTo);
-	ASFUNCTION(wideLineTo);
-	ASFUNCTION(wideMoveTo);
+	ASFUNCTION_ATOM(curveTo);
+	ASFUNCTION_ATOM(lineTo);
+	ASFUNCTION_ATOM(moveTo);
+	ASFUNCTION_ATOM(wideLineTo);
+	ASFUNCTION_ATOM(wideMoveTo);
 	void appendToTokens(tokensVector& tokens);
 };
 

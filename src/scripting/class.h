@@ -21,7 +21,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
-#include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include "asobject.h"
@@ -465,7 +465,7 @@ public:
 			res.type = T_NULL;
 			return res;
 		}
-		else if ((o.getObject() && o.getObject()->is<Vector>() && o.getObject()->as<Vector>()->sameType(this)) ||
+		else if ((o.getObject() && o.getObject()->is<T>() && o.getObject()->as<T>()->sameType(this)) ||
 				 o.type ==T_NULL)
 		{
 			// Vector.<x> can be coerced to Vector.<y>

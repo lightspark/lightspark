@@ -580,9 +580,11 @@ ASFUNCTIONBODY(BitmapData,histogram)
 		Vector *histogram = Template<Vector>::getInstanceS(obj->getSystemState(),Class<Number>::getClass(obj->getSystemState()),NullRef).as<Vector>();
 		for (int level=0; level<256; level++)
 		{
-			histogram->append(abstract_d(obj->getSystemState(),counts[channelOrder[j]][level]));
+			asAtom v(counts[channelOrder[j]][level]);
+			histogram->append(v);
 		}
-		result->append(histogram);
+		asAtom v = asAtom::fromObject(histogram);
+		result->append(v);
 	}
 
 	return result;
@@ -670,7 +672,10 @@ ASFUNCTIONBODY(BitmapData,getVector)
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;
 	for (it=pixelvec.begin(); it!=pixelvec.end(); ++it)
-		result->append(abstract_ui(obj->getSystemState(),*it));
+	{
+		asAtom v(*it);
+		result->append(v);
+	}
 	return result;
 }
 
@@ -732,7 +737,7 @@ ASFUNCTIONBODY(BitmapData,setVector)
 			if (i >= inputVector->size())
 				throwError<RangeError>(kParamRangeError);
 
-			uint32_t pixel = inputVector->at(i)->toUInt();
+			uint32_t pixel = inputVector->at(i).toUInt();
 			th->pixels->setPixel(x, y, pixel, th->transparent);
 			i++;
 		}

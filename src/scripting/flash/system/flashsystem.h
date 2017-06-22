@@ -23,7 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/utils/ByteArray.h"
-#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Error.h"
 #include "scripting/flash/events/flashevents.h"
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024

@@ -28,8 +28,6 @@
 #include "smartrefs.h"
 #include <vector>
 
-#include "scripting/class.h"
-
 namespace lightspark
 {
 

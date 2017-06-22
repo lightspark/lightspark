@@ -1996,7 +1996,7 @@ void NetStream::threadAbort()
 	}
 }
 
-void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<ASObject> >& arglist)
+void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom>& arglist)
 {
 	if (client.isNull())
 		return;
@@ -2014,9 +2014,9 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<_NR<AS
 		int i= 0;
 		for (auto it = arglist.cbegin();it != arglist.cend(); it++)
 		{
-			_NR<ASObject> arg = (*it);
-			arg->incRef();
-			callbackArgs[i++] = arg.getPtr();
+			asAtom arg = (*it);
+			ASATOM_INCREF(arg);
+			callbackArgs[i++] = arg;
 		}
 		ASATOM_INCREF(callback);
 		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback,

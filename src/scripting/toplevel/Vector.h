@@ -30,7 +30,7 @@ class Vector: public ASObject
 {
 	const Type* vec_type;
 	bool fixed;
-	std::vector<ASObject*, reporter_allocator<ASObject*>> vec;
+	std::vector<asAtom, reporter_allocator<asAtom>> vec;
 	int capIndex(int i) const;
 	class sortComparatorDefault
 	{
@@ -40,7 +40,7 @@ class Vector: public ASObject
 		bool isDescending;
 	public:
 		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
-		bool operator()(ASObject* d1, ASObject* d2);
+		bool operator()(asAtom& d1, asAtom& d2);
 	};
 	class sortComparatorWrapper
 	{
@@ -49,7 +49,7 @@ class Vector: public ASObject
 		const Type* vec_type;
 	public:
 		sortComparatorWrapper(asAtom c, const Type* v):comparator(c),vec_type(v){}
-		bool operator()(ASObject* d1, ASObject* d2);
+		bool operator()(asAtom& d1, asAtom& d2);
 	};
 public:
 	Vector(Class_base* c, const Type *vtype=NULL);
@@ -58,8 +58,7 @@ public:
 	{
 		for(unsigned int i=0;i<size();i++)
 		{
-			if(vec[i])
-				vec[i]->decRef();
+			ASATOM_DECREF(vec[i]);
 		}
 		vec.clear();
 		return ASObject::destruct();
@@ -90,48 +89,48 @@ public:
 	{
 		return vec.size();
 	}
-	ASObject* at(unsigned int index) const
+	asAtom at(unsigned int index) const
 	{
 		return vec.at(index);
 	}
 	//Get value at index, or return defaultValue (a borrowed
 	//reference) if index is out-of-range
-	ASObject* at(unsigned int index, ASObject *defaultValue) const;
+	asAtom at(unsigned int index, asAtom defaultValue) const;
 
 	//Appends an object to the Vector. o is coerced to vec_type.
 	//Takes ownership of o.
-	void append(ASObject *o);
+	void append(asAtom& o);
 	void setFixed(bool v) { fixed = v; }
 
 	//TODO: do we need to implement generator?
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 
 	ASFUNCTION_ATOM(push);
 	ASFUNCTION_ATOM(_concat);
 	ASFUNCTION_ATOM(_pop);
-	ASFUNCTION(join);
+	ASFUNCTION_ATOM(join);
 	ASFUNCTION_ATOM(shift);
 	ASFUNCTION_ATOM(unshift);
-	ASFUNCTION(splice);
+	ASFUNCTION_ATOM(splice);
 	ASFUNCTION_ATOM(_sort);
-	ASFUNCTION(getLength);
-	ASFUNCTION(setLength);
+	ASFUNCTION_ATOM(getLength);
+	ASFUNCTION_ATOM(setLength);
 	ASFUNCTION_ATOM(filter);
-	ASFUNCTION(indexOf);
-	ASFUNCTION(_getLength);
-	ASFUNCTION(_setLength);
-	ASFUNCTION(getFixed);
-	ASFUNCTION(setFixed);
+	ASFUNCTION_ATOM(indexOf);
+	ASFUNCTION_ATOM(_getLength);
+	ASFUNCTION_ATOM(_setLength);
+	ASFUNCTION_ATOM(getFixed);
+	ASFUNCTION_ATOM(setFixed);
 	ASFUNCTION_ATOM(forEach);
-	ASFUNCTION(_reverse);
-	ASFUNCTION(lastIndexOf);
+	ASFUNCTION_ATOM(_reverse);
+	ASFUNCTION_ATOM(lastIndexOf);
 	ASFUNCTION_ATOM(_map);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(slice);
 	ASFUNCTION_ATOM(every);
 	ASFUNCTION_ATOM(some);
-	ASFUNCTION(insertAt);
-	ASFUNCTION(removeAt);
+	ASFUNCTION_ATOM(insertAt);
+	ASFUNCTION_ATOM(removeAt);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

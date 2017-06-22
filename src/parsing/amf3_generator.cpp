@@ -23,6 +23,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/Vector.h"
 #include "scripting/class.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "toplevel/XML.h"
@@ -34,23 +35,23 @@
 using namespace std;
 using namespace lightspark;
 
-_R<ASObject> Amf3Deserializer::readObject() const
+asAtom Amf3Deserializer::readObject() const
 {
 	vector<tiny_string> stringMap;
-	vector<ASObject*> objMap;
+	vector<asAtom> objMap;
 	vector<TraitsRef> traitsMap;
 	return parseValue(stringMap, objMap, traitsMap);
 }
 
-_R<ASObject> Amf3Deserializer::parseInteger() const
+asAtom Amf3Deserializer::parseInteger() const
 {
 	uint32_t tmp;
 	if(!input->readU29(tmp))
 		throw ParseException("Not enough data to parse integer");
-	return _MR(abstract_i(input->getSystemState(),tmp));
+	return asAtom(tmp);
 }
 
-_R<ASObject> Amf3Deserializer::parseDouble() const
+asAtom Amf3Deserializer::parseDouble() const
 {
 	union
 	{
@@ -65,10 +66,10 @@ _R<ASObject> Amf3Deserializer::parseDouble() const
 			throw ParseException("Not enough data to parse double");
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
-	return _MR(abstract_d(input->getSystemState(),tmp.val));
+	return asAtom(tmp.val);
 }
 
-_R<ASObject> Amf3Deserializer::parseDate() const
+asAtom Amf3Deserializer::parseDate() const
 {
 	union
 	{
@@ -85,7 +86,7 @@ _R<ASObject> Amf3Deserializer::parseDate() const
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
 	Date* dt = Class<Date>::getInstanceS(input->getSystemState());
 	dt->MakeDateFromMilliseconds((int64_t)tmp.val);
-	return _MR(dt);
+	return asAtom::fromObject(dt);
 }
 
 tiny_string Amf3Deserializer::parseStringVR(std::vector<tiny_string>& stringMap) const
@@ -117,8 +118,8 @@ tiny_string Amf3Deserializer::parseStringVR(std::vector<tiny_string>& stringMap)
 	return retStr;
 }
 
-_R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t arrayRef;
@@ -130,14 +131,14 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		//Just a reference
 		if(objMap.size() <= (arrayRef >> 1))
 			throw ParseException("Invalid object reference in AMF3 data");
-		ASObject* ret=objMap[arrayRef >> 1];
-		ret->incRef();
-		return _MR(ret);
+		asAtom ret=objMap[arrayRef >> 1];
+		ASATOM_INCREF(ret);
+		return ret;
 	}
 
-	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS(input->getSystemState()));
+	Array* ret=Class<lightspark::Array>::getInstanceS(input->getSystemState());
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(asAtom::fromObject(ret));
 
 	int32_t denseCount = arrayRef >> 1;
 
@@ -147,22 +148,22 @@ _R<ASObject> Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		const tiny_string& varName=parseStringVR(stringMap);
 		if(varName=="")
 			break;
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
-		ret->setVariableByQName(varName,"",value.getPtr(), DYNAMIC_TRAIT);
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
+		ret->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value, DYNAMIC_TRAIT);
 	}
 
 	//Read the dense portion
 	for(int32_t i=0;i<denseCount;i++)
 	{
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		ret->push(asAtom::fromObject(value.getPtr()));
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ret->push(value);
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-_R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t vectorRef;
@@ -174,9 +175,9 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 		//Just a reference
 		if(objMap.size() <= (vectorRef >> 1))
 			throw ParseException("Invalid object reference in AMF3 data");
-		ASObject* ret=objMap[vectorRef >> 1];
-		ret->incRef();
-		return _MR(ret);
+		asAtom ret=objMap[vectorRef >> 1];
+		ASATOM_INCREF(ret);
+		return ret;
 	}
 
 	uint8_t b;
@@ -216,9 +217,9 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 			throw ParseException("invalid marker in AMF3 vector");
 			
 	}
-	_R<lightspark::Vector> ret=_MR(Template<Vector>::getInstanceS(input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)).as<Vector>());
+	Vector* ret= Template<Vector>::getInstanceS(input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)).as<Vector>();
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(asAtom::fromObject(ret));
 
 	
 	int32_t count = vectorRef >> 1;
@@ -232,7 +233,8 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 				uint32_t value = 0;
 				if (!input->readUnsignedInt(value))
 					throw ParseException("Not enough data to parse AMF3 vector");
-				ret->append(abstract_i(input->getSystemState(),value));
+				asAtom v((int32_t)value);
+				ret->append(v);
 				break;
 			}
 			case vector_uint_marker:
@@ -240,33 +242,33 @@ _R<ASObject> Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_stri
 				uint32_t value = 0;
 				if (!input->readUnsignedInt(value))
 					throw ParseException("Not enough data to parse AMF3 vector");
-				ret->append(abstract_ui(input->getSystemState(),value));
+				asAtom v(value);
+				ret->append(v);
 				break;
 			}
 			case vector_double_marker:
 			{
-				_R<ASObject> v = parseDouble();
-				v->incRef();
-				ret->append(v.getPtr());
+				asAtom v = parseDouble();
+				ret->append(v);
 				break;
 			}
 			case vector_object_marker:
 			{
-				_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-				value->incRef();
-				ret->append(value.getPtr());
+				asAtom value=parseValue(stringMap, objMap, traitsMap);
+				ASATOM_INCREF(value);
+				ret->append(value);
 				break;
 			}
 		}
 	}
 	// set fixed at last to avoid rangeError
 	ret->setFixed(b == 0x01);
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
 
-_R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t dictRef;
@@ -278,9 +280,9 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		//Just a reference
 		if(objMap.size() <= (dictRef >> 1))
 			throw ParseException("Invalid object reference in AMF3 data");
-		ASObject* ret=objMap[dictRef >> 1];
-		ret->incRef();
-		return _MR(ret);
+		asAtom ret=objMap[dictRef >> 1];
+		ASATOM_INCREF(ret);
+		return ret;
 	}
 
 	uint8_t weakkeys;
@@ -288,31 +290,30 @@ _R<ASObject> Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringM
 		throw ParseException("Not enough data to parse AMF3 vector");
 	if (weakkeys)
 		LOG(LOG_NOT_IMPLEMENTED,"handling of weak keys in Dictionary");
-	_R<Dictionary> ret=_MR(Class<Dictionary>::getInstanceS(input->getSystemState()));
+	Dictionary* ret=Class<Dictionary>::getInstanceS(input->getSystemState());
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(ret);
 
 	
 	int32_t count = dictRef >> 1;
 
 	for(int32_t i=0;i<count;i++)
 	{
-		_R<ASObject> key=parseValue(stringMap, objMap, traitsMap);
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
+		asAtom key=parseValue(stringMap, objMap, traitsMap);
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		multiname name(NULL);
 		name.name_type=multiname::NAME_OBJECT;
-		name.name_o = key.getPtr();
+		name.name_o = key.toObject(getSys());
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
-		key->incRef();
-		value->incRef();
-		asAtom v = asAtom::fromObject(value.getPtr());
-		ret->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+		ASATOM_INCREF(key);
+		ASATOM_INCREF(value);
+		ret->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED);
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-_R<ASObject> Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t bytearrayRef;
@@ -324,14 +325,14 @@ _R<ASObject> Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMa
 		//Just a reference
 		if(objMap.size() <= (bytearrayRef >> 1))
 			throw ParseException("Invalid object reference in AMF3 data");
-		ASObject* ret=objMap[bytearrayRef >> 1];
-		ret->incRef();
-		return _MR(ret);
+		asAtom ret=objMap[bytearrayRef >> 1];
+		ASATOM_INCREF(ret);
+		return ret;
 	}
 
-	_R<ByteArray> ret=_MR(Class<ByteArray>::getInstanceS(input->getSystemState()));
+	ByteArray* ret=Class<ByteArray>::getInstanceS(input->getSystemState());
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(asAtom::fromObject(ret));
 
 	
 	int32_t count = bytearrayRef >> 1;
@@ -343,11 +344,11 @@ _R<ASObject> Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMa
 			throw ParseException("Not enough data to parse AMF3 bytearray");
 		ret->writeByte(b);
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-_R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t objRef;
@@ -358,9 +359,9 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Just a reference
 		if(objMap.size() <= (objRef >> 1))
 			throw ParseException("Invalid object reference in AMF3 data");
-		ASObject* ret=objMap[objRef >> 1];
-		ret->incRef();
-		return _MR(ret);
+		asAtom ret=objMap[objRef >> 1];
+		ASATOM_INCREF(ret);
+		return ret;
 	}
 
 	if((objRef&0x07)==0x07)
@@ -374,7 +375,7 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
 
-		_R<ASObject> ret=_MR(type->getInstance(true, NULL, 0).toObject(input->getSystemState()));
+		asAtom ret= type->getInstance(true, NULL, 0);
 		//Invoke readExternal
 		multiname readExternalName(NULL);
 		readExternalName.name_type=multiname::NAME_STRING;
@@ -382,12 +383,11 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		readExternalName.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		readExternalName.isAttribute = false;
 
-		asAtom o=ret->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
+		asAtom o=ret.getObject()->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
 		input->incRef();
 		asAtom tmpArg[1] = { asAtom::fromObject(input) };
-		asAtom v=asAtom::fromObject(ret.getPtr());
-		o.callFunction(v, tmpArg, 1);
+		o.callFunction(ret, tmpArg, 1);
 		return ret;
 	}
 
@@ -414,24 +414,23 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		traitsMap.emplace_back(traits);
 	}
 
-	_R<ASObject> ret=_MR((traits.type)?traits.type->getInstance(true, NULL, 0).toObject(input->getSystemState()):
-		Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret=(traits.type)?traits.type->getInstance(true, NULL, 0):
+		asAtom::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(ret);
 
 	for(uint32_t i=0;i<traits.traitsNames.size();i++)
 	{
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
 
 		multiname name(NULL);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=input->getSystemState()->getUniqueStringId(traits.traitsNames[i]);
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
-
-		asAtom v = asAtom::fromObject(value.getPtr());
-		ret->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,traits.type);
+			
+		ret.getObject()->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED,traits.type);
 	}
 
 	//Read dynamic name, value pairs
@@ -440,14 +439,14 @@ _R<ASObject> Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		const tiny_string& varName=parseStringVR(stringMap);
 		if(varName=="")
 			break;
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
-		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
 
-_R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const
+asAtom Amf3Deserializer::parseXML(std::vector<asAtom>& objMap, bool legacyXML) const
 {
 	uint32_t xmlRef;
 	if(!input->readU29(xmlRef))
@@ -458,9 +457,9 @@ _R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool leg
 		//Just a reference
 		if(objMap.size() <= (xmlRef >> 1))
 			throw ParseException("Invalid XML reference in AMF3 data");
-		ASObject *xmlObj = objMap[xmlRef >> 1];
-		xmlObj->incRef();
-		return _MR(xmlObj);
+		asAtom xmlObj = objMap[xmlRef >> 1];
+		ASATOM_INCREF(xmlObj);
+		return xmlObj;
 	}
 
 	uint32_t strLen=xmlRef>>1;
@@ -478,13 +477,13 @@ _R<ASObject> Amf3Deserializer::parseXML(std::vector<ASObject*>& objMap, bool leg
 		xmlObj=Class<XMLDocument>::getInstanceS(input->getSystemState(),xmlStr);
 	else
 		xmlObj=XML::createFromString(input->getSystemState(),xmlStr);
-	objMap.push_back(xmlObj);
-	return _MR(xmlObj);
+	objMap.push_back(asAtom::fromObject(xmlObj));
+	return asAtom::fromObject(xmlObj);
 }
 
 
-_R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	//Read the first byte as it contains the object marker
@@ -496,13 +495,13 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 		switch(marker)
 		{
 			case null_marker:
-				return _MR(input->getSystemState()->getNullRef());
+				return asAtom::nullAtom;
 			case undefined_marker:
-				return _MR(input->getSystemState()->getUndefinedRef());
+				return asAtom::undefinedAtom;
 			case false_marker:
-				return _MR(abstract_b(input->getSystemState(),false));
+				return asAtom::falseAtom;
 			case true_marker:
-				return _MR(abstract_b(input->getSystemState(),true));
+				return asAtom::trueAtom;
 			case integer_marker:
 				return parseInteger();
 			case double_marker:
@@ -510,7 +509,7 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case date_marker:
 				return parseDate();
 			case string_marker:
-				return _MR(abstract_s(input->getSystemState(),parseStringVR(stringMap)));
+				return asAtom::fromObject(abstract_s(input->getSystemState(),parseStringVR(stringMap)));
 			case xml_doc_marker:
 				return parseXML(objMap, true);
 			case array_marker:
@@ -541,15 +540,15 @@ _R<ASObject> Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case amf0_number_marker:
 				return parseDouble();
 			case amf0_boolean_marker:
-				return _MR(abstract_b(input->getSystemState(), input->readByte(marker)));
+				return asAtom((bool)input->readByte(marker));
 			case amf0_string_marker:
-				return _MR(abstract_s(input->getSystemState(),parseStringAMF0()));
+				return asAtom::fromObject(abstract_s(input->getSystemState(),parseStringAMF0()));
 			case amf0_object_marker:
 				return parseObjectAMF0(stringMap,objMap,traitsMap);
 			case amf0_null_marker:
-				return _MR(input->getSystemState()->getNullRef());
+				return asAtom::nullAtom;
 			case amf0_undefined_marker:
-				return _MR(input->getSystemState()->getUndefinedRef());
+				return asAtom::undefinedAtom;
 			case amf0_reference_marker:
 				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
 				throw UnsupportedException("unimplemented marker");
@@ -593,15 +592,15 @@ tiny_string Amf3Deserializer::parseStringAMF0() const
 	}
 	return retStr;
 }
-_R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t count;
 	if(!input->readUnsignedInt(count))
 		throw ParseException("Not enough data to parse AMF3 array");
 
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret=asAtom::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
 
 	//Read name, value pairs
 	while(true)
@@ -615,39 +614,39 @@ _R<ASObject> Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stri
 				break;
 			throw ParseException("empty key in AMF0 ECMA array");
 		}
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
-		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
-_R<ASObject> Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
 	uint32_t count;
 	if(!input->readUnsignedInt(count))
 		throw ParseException("Not enough data to parse AMF3 strict array");
 
-	_R<lightspark::Array> ret=_MR(Class<lightspark::Array>::getInstanceS(input->getSystemState()));
+	lightspark::Array* ret=Class<lightspark::Array>::getInstanceS(input->getSystemState());
 	//Add object to the map
-	objMap.push_back(ret.getPtr());
+	objMap.push_back(asAtom::fromObject(ret));
 
 	while(count)
 	{
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
-		ret->push(asAtom::fromObject(value.getPtr()));
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
+		ret->push(value);
 		count--;
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-_R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const
 {
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret=asAtom::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
 
 	while (true)
 	{
@@ -660,11 +659,11 @@ _R<ASObject> Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringM
 				return ret;
 			throw ParseException("empty key in AMF0 object");
 		}
-		_R<ASObject> value=parseValue(stringMap, objMap, traitsMap);
-		value->incRef();
+		asAtom value=parseValue(stringMap, objMap, traitsMap);
+		ASATOM_INCREF(value);
 
-		ret->setVariableByQName(varName,"",value.getPtr(),DYNAMIC_TRAIT);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
 	}
-	return _R<ASObject>(input->getSystemState()->getUndefinedRef());
+	return ret;
 }
 

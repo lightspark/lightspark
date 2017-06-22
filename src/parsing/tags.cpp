@@ -755,7 +755,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
-		if (*it == 13)
+		if (*it == 13 || *it == 10)
 		{
 			curPos.x = 0;
 			curPos.y += 20*1024 * this->scaling;

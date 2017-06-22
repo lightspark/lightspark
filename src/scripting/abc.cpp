@@ -1907,8 +1907,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
 			message->readByte(marker);
 		}
-
-		_R<ASObject> obj=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
+		asAtom v = asAtom::fromObject(message.getPtr());
+		asAtom obj= ByteArray::readObject(v, NULL, 0);
 
 		asAtom callback;
 		if(!client.isNull())
@@ -1923,8 +1923,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 
 		if(callback.type == T_FUNCTION)
 		{
-			obj->incRef();
-			asAtom callbackArgs[1] { asAtom::fromObject(obj.getPtr()) };
+			ASATOM_INCREF(obj);
+			asAtom callbackArgs[1] { obj };
 			asAtom v = asAtom::fromObject(client.getPtr());
 			callback.callFunction(v, callbackArgs, 1);
 		}
@@ -1954,7 +1954,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
 			message->readByte(marker);
 		}
-		_R<ASObject> ret=_MR(ByteArray::readObject(message.getPtr(), NULL, 0));
+		asAtom v = asAtom::fromObject(message.getPtr());
+		asAtom ret=ByteArray::readObject(v, NULL, 0);
 	
 		if(!responder.isNull())
 		{
@@ -1965,8 +1966,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			asAtom callback = responder->getVariableByMultiname(onResultName);
 			if(callback.type == T_FUNCTION)
 			{
-				ret->incRef();
-				asAtom callbackArgs[1] { asAtom::fromObject(ret.getPtr()) };
+				ASATOM_INCREF(ret);
+				asAtom callbackArgs[1] { ret };
 				asAtom v = asAtom::fromObject(responder.getPtr());
 				callback.callFunction(v, callbackArgs, 1);
 			}

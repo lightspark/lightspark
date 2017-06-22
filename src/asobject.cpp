@@ -792,6 +792,10 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 	asAtom v = asAtom::fromObject(o);
 	setVariableAtomByQName(nameId, ns, v, traitKind, isEnumerable);
 }
+void ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable)
+{
+	setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
+}
 void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
@@ -997,7 +1001,7 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 	//By default we assume it's a passthrough cast
 	if(argslen==1)
 	{
-		LOG_CALL(_("Passthrough of ") << args[0]);
+		LOG_CALL(_("Passthrough of ") << args[0].toDebugString());
 		ASATOM_INCREF(args[0]);
 		return args[0];
 	}

@@ -973,21 +973,21 @@ ASFUNCTIONBODY(ByteArray,readMultiByte)
 	return abstract_s(obj->getSystemState(),(char*)th->bytes+th->position,strlen);
 }
 
-ASFUNCTIONBODY(ByteArray,readObject)
+ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj);
+	ByteArray* th=obj.as<ByteArray>();
 	assert_and_throw(argslen==0);
 	th->lock();
 	if(th->bytes==NULL)
 	{
 		th->unlock();
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
-		return obj->getSystemState()->getUndefinedRef();
+		return asAtom::undefinedAtom;
 		//throwError<EOFError>(kEOFError);
 	}
 	//assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);
-	_NR<ASObject> ret(NullRef);
+	asAtom ret;
 	try
 	{
 		ret=d.readObject();
@@ -1000,13 +1000,13 @@ ASFUNCTIONBODY(ByteArray,readObject)
 		//TODO: throw AS exception
 	}
 
-	if(ret.isNull())
+	if(ret.type == T_INVALID)
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
-		return obj->getSystemState()->getUndefinedRef();
+		return asAtom::undefinedAtom;
 	}
-	ret->incRef();
-	return ret.getPtr();
+	ASATOM_INCREF(ret);
+	return ret;
 }
 
 ASFUNCTIONBODY(ByteArray,_toString)

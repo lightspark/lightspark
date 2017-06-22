@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Vector.h"
 #include "scripting/class.h"
 #include "parsing/tags.h"
 

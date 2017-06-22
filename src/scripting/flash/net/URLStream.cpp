@@ -22,6 +22,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/net/URLStream.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/argconv.h"
 
 /**
@@ -284,9 +285,10 @@ ASFUNCTIONBODY(URLStream,readMultiByte) {
 	return ByteArray::readMultiByte(th->data.getPtr(), args, argslen);
 }
 
-ASFUNCTIONBODY(URLStream,readObject) {
-	URLStream* th=static_cast<URLStream*>(obj);
-	return ByteArray::readObject(th->data.getPtr(), args, argslen);
+ASFUNCTIONBODY_ATOM(URLStream,readObject) {
+	URLStream* th=obj.as<URLStream>();
+	asAtom v = asAtom::fromObject(th->data.getPtr());
+	return ByteArray::readObject(v, args, argslen);
 }
 
 ASFUNCTIONBODY(URLStream,readShort) {

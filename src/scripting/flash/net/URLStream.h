@@ -23,7 +23,6 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/utils/ByteArray.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
 
@@ -31,6 +30,7 @@ namespace lightspark
 {
 
 class URLStream;
+class ByteArray;
 
 class URLStreamThread : public DownloaderThreadBase, public ILoadable
 {
@@ -70,7 +70,7 @@ private:
 	ASFUNCTION(readFloat);
 	ASFUNCTION(readInt);
 	ASFUNCTION(readMultiByte);
-	ASFUNCTION(readObject);
+	ASFUNCTION_ATOM(readObject);
 	ASFUNCTION(readShort);
 	ASFUNCTION(readUnsignedByte);
 	ASFUNCTION(readUnsignedInt);

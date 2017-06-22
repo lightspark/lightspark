@@ -25,10 +25,10 @@
 #include <map>
 #include "swftypes.h"
 #include "backends/decoder.h"
-#include "asobject.h"
 
 namespace lightspark
 {
+class asAtom;
 
 class FLV_HEADER
 {
@@ -63,7 +63,7 @@ class ScriptDataTag: public VideoTag
 {
 public:
 	tiny_string methodName;
-	std::list<_NR<ASObject> > dataobjectlist;
+	std::list<asAtom> dataobjectlist;
 	ScriptDataTag() {}
 	ScriptDataTag(std::istream& s);
 };

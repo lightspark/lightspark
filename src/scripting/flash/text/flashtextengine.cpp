@@ -19,6 +19,7 @@
 
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/class.h"
+#include "scripting/toplevel/Vector.h"
 #include "scripting/argconv.h"
 #include "swf.h"
 
@@ -292,7 +293,6 @@ void TextBlock::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, tabStops);
 	REGISTER_GETTER(c, textLineCreationResult);
 	REGISTER_GETTER_SETTER(c, userData);
-	REGISTER_GETTER_SETTER(c, content);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, applyNonLinearFontScaling);

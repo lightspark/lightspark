@@ -21,7 +21,6 @@
 #define SCRIPTING_FLASH_NET_URLREQUESTHEADER_H 1
 
 #include "asobject.h"
-#include "scripting/class.h"
 #include "tiny_string.h"
 
 namespace lightspark

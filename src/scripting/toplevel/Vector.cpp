@@ -97,7 +97,7 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),DYNAMIC_TRAIT);
 }
 
-Vector::Vector(Class_base* c, const Type *vtype):ASObject(c,T_OBJECT,SUBTYPE_VECTOR),vec_type(vtype),fixed(false),vec(reporter_allocator<ASObject*>(c->memoryAccount))
+Vector::Vector(Class_base* c, const Type *vtype):ASObject(c,T_OBJECT,SUBTYPE_VECTOR),vec_type(vtype),fixed(false),vec(reporter_allocator<asAtom>(c->memoryAccount))
 {
 }
 
@@ -136,9 +136,9 @@ asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argsl
 			asAtom obj = a->at(i);
 			ASATOM_INCREF(obj);
 			//Convert the elements of the array to the type of this vector
-			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),obj).toObject(o_class.getObject()->getSystemState()) );
+			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),obj) );
 		}
-		return ret;
+		return asAtom::fromObject(ret);
 	}
 	else if(args[0].getObject()->getClass()->getTemplate() == Template<Vector>::getTemplate(o_class.getObject()->getSystemState()))
 	{
@@ -148,11 +148,10 @@ asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argsl
 		Vector* ret = o_class.as<TemplatedClass<Vector>>()->getInstance(false,NULL,0).as<Vector>();
 		for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 		{
-			(*i)->incRef();
-			asAtom v = asAtom::fromObject(*i);
-			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),v).toObject(o_class.getObject()->getSystemState()) );
+			ASATOM_INCREF((*i));
+			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),*i) );
 		}
-		return ret;
+		return asAtom::fromObject(ret);
 	}
 	else
 	{
@@ -162,20 +161,19 @@ asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argsl
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector,_constructor)
+ASFUNCTIONBODY_ATOM(Vector,_constructor)
 {
 	uint32_t len;
 	bool fixed;
-	ARG_UNPACK (len, 0) (fixed, false);
+	ARG_UNPACK_ATOM (len, 0) (fixed, false);
 	assert_and_throw(argslen <= 2);
-	ASObject::_constructor(obj,NULL,0);
 
-	Vector* th=static_cast< Vector *>(obj);
+	Vector* th=obj.as< Vector>();
 	assert(th->vec_type);
 	th->fixed = fixed;
-	th->vec.resize(len, NULL);
+	th->vec.resize(len, asAtom::invalidAtom);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_concat)
@@ -183,16 +181,13 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 	Vector* th=obj.as<Vector>();
 	Vector* ret= th->getClass()->getInstance(true,NULL,0).as<Vector>();
 	// copy values into new Vector
-	ret->vec.resize(th->size(), NULL);
+	ret->vec.resize(th->size(), asAtom::invalidAtom);
 	auto it=th->vec.begin();
 	uint32_t index = 0;
 	for(;it != th->vec.end();++it)
 	{
-		if (*it)
-		{
-			ret->vec[index]=*it;
-			ret->vec[index]->incRef();
-		}
+		ret->vec[index]=*it;
+		ASATOM_INCREF(ret->vec[index]);
 		index++;
 	}
 	//Insert the arguments in the vector
@@ -201,25 +196,24 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		if (args[i].is<Vector>())
 		{
 			Vector* arg=args[i].as<Vector>();
-			ret->vec.resize(index+arg->size(), NULL);
+			ret->vec.resize(index+arg->size(), asAtom::invalidAtom);
 			auto it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
 			{
-				if (*it)
+				if (it->type != T_INVALID)
 				{
 					// force Class_base to ensure that a TypeError is thrown 
 					// if the object type does not match the base vector type
-					asAtom v = asAtom::fromObject(*it);
-					ret->vec[index]=((Class_base*)th->vec_type)->Class_base::coerce(th->getSystemState(),v).toObject(th->getSystemState());
-					ret->vec[index]->incRef();
+					ret->vec[index]=((Class_base*)th->vec_type)->Class_base::coerce(th->getSystemState(),*it);
+					ASATOM_INCREF(ret->vec[index]);
 				}
 				index++;
 			}
 		}
 		else
 		{
-			ret->vec[index] = th->vec_type->coerce(th->getSystemState(),args[i]).toObject(th->getSystemState());
-			ret->vec[index]->incRef();
+			ret->vec[index] = th->vec_type->coerce(th->getSystemState(),args[i]);
+			ASATOM_INCREF(ret->vec[index]);
 			index++;
 		}
 	}	
@@ -241,10 +235,10 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 
 	for(unsigned int i=0;i<th->size();i++)
 	{
-		if (!th->vec[i])
+		if (th->vec[i].type == T_INVALID)
 			continue;
-		params[0] = asAtom::fromObject(th->vec[i]);
-		th->vec[i]->incRef();
+		params[0] = th->vec[i];
+		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
 		th->incRef();
@@ -261,7 +255,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 		{
 			if(funcRet.Boolean_concrete())
 			{
-				th->vec[i]->incRef();
+				ASATOM_INCREF(th->vec[i]);
 				ret->vec.push_back(th->vec[i]);
 			}
 			ASATOM_DECREF(funcRet);
@@ -283,10 +277,10 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
-		if (!th->vec[i])
+		if (th->vec[i].type == T_INVALID)
 			continue;
-		params[0] = asAtom::fromObject(th->vec[i]);
-		th->vec[i]->incRef();
+		params[0] = th->vec[i];
+		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
 		th->incRef();
@@ -324,10 +318,10 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
-		if (th->vec[i])
+		if (th->vec[i].type != T_INVALID)
 		{
-			params[0] = asAtom::fromObject(th->vec[i]);
-			th->vec[i]->incRef();
+			params[0] = th->vec[i];
+			ASATOM_INCREF(th->vec[i]);
 		}
 		else
 			params[0] = asAtom::nullAtom;
@@ -357,16 +351,15 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 	return asAtom::trueAtom;
 }
 
-void Vector::append(ASObject *o)
+void Vector::append(asAtom &o)
 {
 	if (fixed)
 	{
-		o->decRef();
+		ASATOM_DECREF(o);
 		throwError<RangeError>(kVectorFixedError);
 	}
 
-	asAtom v = asAtom::fromObject(o);
-	vec.push_back(vec_type->coerce(getSystemState(),v).toObject(getSystemState()));
+	vec.push_back(vec_type->coerce(getSystemState(),o));
 }
 
 ASFUNCTIONBODY_ATOM(Vector,push)
@@ -379,7 +372,7 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		ASATOM_INCREF(args[i]);
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
 		//they are converted to the vec_type
-		th->vec.push_back( th->vec_type->coerce(th->getSystemState(),args[i]).toObject(th->getSystemState()) );
+		th->vec.push_back( th->vec_type->coerce(th->getSystemState(),args[i]));
 	}
 	return asAtom((uint32_t)th->vec.size());
 }
@@ -393,52 +386,51 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 	asAtom natom(T_NULL);
 	if (size == 0)
 		return th->vec_type->coerce(th->getSystemState(),natom);
-	ASObject* ret = th->vec[size-1];
-	if (!ret)
-		ret = th->vec_type->coerce(th->getSystemState(),natom).toObject(th->getSystemState());
+	asAtom ret = th->vec[size-1];
+	if (ret.type == T_INVALID)
+		ret = th->vec_type->coerce(th->getSystemState(),natom);
 	th->vec.pop_back();
-	return asAtom::fromObject(ret);
+	return ret;
 }
 
-ASFUNCTIONBODY(Vector,getLength)
+ASFUNCTIONBODY_ATOM(Vector,getLength)
 {
-	return abstract_ui(obj->getSystemState(),obj->as<Vector>()->vec.size());
+	return asAtom((uint32_t)obj.as<Vector>()->vec.size());
 }
 
-ASFUNCTIONBODY(Vector,setLength)
+ASFUNCTIONBODY_ATOM(Vector,setLength)
 {
-	Vector* th = obj->as<Vector>();
+	Vector* th = obj.as<Vector>();
 	if (th->fixed)
 		throwError<RangeError>(kVectorFixedError);
 	uint32_t len;
-	ARG_UNPACK (len);
+	ARG_UNPACK_ATOM (len);
 	if(len <= th->vec.size())
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
-			if(th->vec[i])
-				th->vec[i]->decRef();
+			ASATOM_DECREF(th->vec[i]);
 	}
-	th->vec.resize(len, NULL);
-	return NULL;
+	th->vec.resize(len, asAtom::invalidAtom);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector,getFixed)
+ASFUNCTIONBODY_ATOM(Vector,getFixed)
 {
-	return abstract_b(obj->getSystemState(),obj->as<Vector>()->fixed);
+	return asAtom(obj.as<Vector>()->fixed);
 }
 
-ASFUNCTIONBODY(Vector,setFixed)
+ASFUNCTIONBODY_ATOM(Vector,setFixed)
 {
-	Vector* th = obj->as<Vector>();
+	Vector* th = obj.as<Vector>();
 	bool fixed;
-	ARG_UNPACK (fixed);
+	ARG_UNPACK_ATOM (fixed);
 	th->fixed = fixed;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector,forEach)
 {
-	Vector* th=static_cast<Vector*>(obj.getObject());
+	Vector* th=obj.as<Vector>();
 	if (argslen < 1)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.forEach", "1", Integer::toString(argslen));
 	if (!args[0].is<IFunction>())
@@ -448,10 +440,10 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
-		if (!th->vec[i])
+		if (th->vec[i].type == T_INVALID)
 			continue;
-		params[0] = asAtom::fromObject(th->vec[i]);
-		th->vec[i]->incRef();
+		params[0] = th->vec[i];
+		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = th;
 		th->incRef();
@@ -471,15 +463,15 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector, _reverse)
+ASFUNCTIONBODY_ATOM(Vector, _reverse)
 {
-	Vector* th = static_cast<Vector*>(obj);
+	Vector* th = obj.as<Vector>();
 
-	std::vector<ASObject*> tmp = std::vector<ASObject*>(th->vec.begin(),th->vec.end());
+	std::vector<asAtom> tmp = std::vector<asAtom>(th->vec.begin(),th->vec.end());
 	uint32_t size = th->size();
 	th->vec.clear();
-	th->vec.resize(size, NULL);
-	std::vector<ASObject*>::iterator it=tmp.begin();
+	th->vec.resize(size, asAtom::invalidAtom);
+	std::vector<asAtom>::iterator it=tmp.begin();
 	uint32_t index = size-1;
 	for(;it != tmp.end();++it)
  	{
@@ -487,27 +479,27 @@ ASFUNCTIONBODY(Vector, _reverse)
 		index--;
 	}
 	th->incRef();
-	return th;
+	return asAtom::fromObject(th);
 }
 
-ASFUNCTIONBODY(Vector,lastIndexOf)
+ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	assert_and_throw(argslen==1 || argslen==2);
-	int ret=-1;
-	ASObject* arg0=args[0];
+	int32_t ret=-1;
+	asAtom arg0=args[0];
 
 	if(th->vec.size() == 0)
-		return abstract_di(obj->getSystemState(),-1);
+		return asAtom((int32_t)-1);
 
 	size_t i = th->size()-1;
 
-	if(argslen == 2 && std::isnan(args[1]->toNumber()))
-		return abstract_i(obj->getSystemState(),0);
+	if(argslen == 2 && std::isnan(args[1].toNumber()))
+		return asAtom((int32_t)0);
 
-	if(argslen == 2 && args[1]->getObjectType() != T_UNDEFINED && !std::isnan(args[1]->toNumber()))
+	if(argslen == 2 && args[1].type != T_UNDEFINED && !std::isnan(args[1].toNumber()))
 	{
-		int j = args[1]->toInt(); //Preserve sign
+		int j = args[1].toInt(); //Preserve sign
 		if(j < 0) //Negative offset, use it as offset from the end of the array
 		{
 			if((size_t)-j > th->size())
@@ -525,9 +517,9 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	}
 	do
 	{
-		if (!th->vec[i])
+		if (th->vec[i].type == T_INVALID)
 		    continue;
-		if (th->vec[i]->isEqualStrict(arg0))
+		if (th->vec[i].isEqualStrict(th->getSystemState(),arg0))
 		{
 			ret=i;
 			break;
@@ -535,7 +527,7 @@ ASFUNCTIONBODY(Vector,lastIndexOf)
 	}
 	while(i--);
 
-	return abstract_i(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
 
 ASFUNCTIONBODY_ATOM(Vector,shift)
@@ -547,22 +539,15 @@ ASFUNCTIONBODY_ATOM(Vector,shift)
 	if(!th->size())
 		return th->vec_type->coerce(th->getSystemState(),natom);
 	asAtom ret;
-	if(th->vec[0])
-		ret=asAtom::fromObject(th->vec[0]);
+	if(th->vec[0].type !=T_INVALID)
+		ret=th->vec[0];
 	else
 		ret=th->vec_type->coerce(th->getSystemState(),natom);
 	for(uint32_t i= 1;i< th->size();i++)
 	{
-		if (th->vec[i])
-		{
-			th->vec[i-1]=th->vec[i];
-		}
-		else if (th->vec[i-1])
-		{
-			th->vec[i-1] = NULL;
-		}
+		th->vec[i-1]=th->vec[i];
 	}
-	th->vec.resize(th->size()-1, NULL);
+	th->vec.resize(th->size()-1, asAtom::invalidAtom);
 	return ret;
 }
 
@@ -599,138 +584,132 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 	Vector* ret= th->getClass()->getInstance(true,NULL,0).as<Vector>();
-	ret->vec.resize(endIndex-startIndex, NULL);
+	ret->vec.resize(endIndex-startIndex, asAtom::invalidAtom);
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
-		if (th->vec[i])
+		if (th->vec[i].type != T_INVALID)
 		{
-			th->vec[i]->incRef();
-			asAtom v = asAtom::fromObject(th->vec[i]);
-			ret->vec[j] =th->vec_type->coerce(th->getSystemState(),v).toObject(th->getSystemState());
+			ASATOM_INCREF(th->vec[i]);
+			ret->vec[j] =th->vec_type->coerce(th->getSystemState(),th->vec[i]);
 		}
 		j++;
 	}
 	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Vector,splice)
+ASFUNCTIONBODY_ATOM(Vector,splice)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	if (th->fixed)
 		throwError<RangeError>(kVectorFixedError);
-	int startIndex=args[0]->toInt();
+	int startIndex=args[0].toInt();
 	//By default, delete all the element up to the end
 	//Use the array len, it will be capped below
 	int deleteCount=th->size();
 	if(argslen > 1)
-		deleteCount=args[1]->toUInt();
+		deleteCount=args[1].toUInt();
 	int totalSize=th->size();
-	Vector* ret= obj->getClass()->getInstance(true,NULL,0).as<Vector>();
+	Vector* ret= th->getClass()->getInstance(true,NULL,0).as<Vector>();
 
 	startIndex=th->capIndex(startIndex);
 
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
 
-	ret->vec.resize(deleteCount, NULL);
+	ret->vec.resize(deleteCount, asAtom::invalidAtom);
 	if(deleteCount)
 	{
 		// write deleted items to return array
 		for(int i=0;i<deleteCount;i++)
 		{
-			if (th->vec[startIndex+i])
-				ret->vec[i] = th->vec[startIndex+i];
+			ret->vec[i] = th->vec[startIndex+i];
 		}
 		// delete items from current array
 		for (int i = 0; i < deleteCount; i++)
 		{
-			if(th->vec[startIndex+i])
-			{
-				th->vec[startIndex+i] = NULL;
-			}
+			th->vec[startIndex+i] = asAtom::invalidAtom;
 		}
 	}
 	// remember items in current array that have to be moved to new position
-	vector<ASObject*> tmp = vector<ASObject*>(totalSize- (startIndex+deleteCount));
-	tmp.resize(totalSize- (startIndex+deleteCount), NULL);
+	vector<asAtom> tmp = vector<asAtom>(totalSize- (startIndex+deleteCount));
+	tmp.resize(totalSize- (startIndex+deleteCount), asAtom::invalidAtom);
 	for (int i = startIndex+deleteCount; i < totalSize ; i++)
 	{
-		if (th->vec[i])
+		if (th->vec[i].type != T_INVALID)
 		{
 			tmp[i-(startIndex+deleteCount)] = th->vec[i];
-			th->vec[i] = NULL;
+			th->vec[i] = asAtom::invalidAtom;
 		}
 	}
-	th->vec.resize(startIndex, NULL);
+	th->vec.resize(startIndex, asAtom::invalidAtom);
 
 	
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2;i<argslen;i++)
 	{
-		args[i]->incRef();
+		ASATOM_INCREF(args[i]);
 		th->vec.push_back(args[i]);
 	}
 	// move remembered items to new position
-	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), NULL);
+	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), asAtom::invalidAtom);
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
-		if (tmp[i])
-			th->vec[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
+		th->vec[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Vector,join)
+ASFUNCTIONBODY_ATOM(Vector,join)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	
 	tiny_string del = ",";
 	if (argslen == 1)
-	      del=args[0]->toString();
+	      del=args[0].toString();
 	string ret;
 	for(uint32_t i=0;i<th->size();i++)
 	{
-		if (th->vec[i])
-			ret+=th->vec[i]->toString().raw_buf();
+		if (th->vec[i].type != T_INVALID)
+			ret+=th->vec[i].toString().raw_buf();
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
-	return abstract_s(obj->getSystemState(),ret);
+	return asAtom::fromObject(abstract_s(th->getSystemState(),ret));
 }
 
-ASFUNCTIONBODY(Vector,indexOf)
+ASFUNCTIONBODY_ATOM(Vector,indexOf)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	assert_and_throw(argslen==1 || argslen==2);
-	int ret=-1;
-	ASObject* arg0=args[0];
+	int32_t ret=-1;
+	asAtom arg0=args[0];
 
 	int unsigned i = 0;
 	if(argslen == 2)
 	{
-		i = args[1]->toInt();
+		i = args[1].toInt();
 	}
 
 	for(;i<th->size();i++)
 	{
-		if (!th->vec[i])
+		if (th->vec[i].type ==T_INVALID)
 			continue;
-		if(th->vec[i]->isEqualStrict(arg0))
+		if(th->vec[i].isEqualStrict(th->getSystemState(),arg0))
 		{
 			ret=i;
 			break;
 		}
 	}
-	return abstract_i(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
-bool Vector::sortComparatorDefault::operator()(ASObject* d1, ASObject* d2)
+bool Vector::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 {
 	if(isNumeric)
 	{
-		number_t a=d1->toNumber();
+		number_t a=d1.toNumber();
 
-		number_t b=d2->toNumber();
+		number_t b=d2.toNumber();
 
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
@@ -742,8 +721,8 @@ bool Vector::sortComparatorDefault::operator()(ASObject* d1, ASObject* d2)
 	else
 	{
 		//Comparison is always in lexicographic order
-		tiny_string s1 = d1->toString();
-		tiny_string s2 = d2->toString();
+		tiny_string s1 = d1.toString();
+		tiny_string s2 = d2.toString();
 
 		if(isDescending)
 		{
@@ -763,19 +742,19 @@ bool Vector::sortComparatorDefault::operator()(ASObject* d1, ASObject* d2)
 		}
 	}
 }
-bool Vector::sortComparatorWrapper::operator()(ASObject* d1, ASObject* d2)
+bool Vector::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
 {
 	asAtom objs[2];
-	if (d1)
+	if (d1.type != T_INVALID)
 	{
-		objs[0] = asAtom::fromObject(d1);
+		objs[0] = d1;
 		ASATOM_INCREF(objs[0]);
 	}
 	else
 		objs[0] = asAtom::nullAtom;
-	if (d2)
+	if (d2.type != T_INVALID)
 	{
-		objs[1] = asAtom::fromObject(d2);
+		objs[1] = d2;
 		ASATOM_INCREF(objs[1]);
 	}
 	else
@@ -813,7 +792,7 @@ ASFUNCTIONBODY_ATOM(Vector,_sort)
 		if(options&(~(Array::NUMERIC|Array::CASEINSENSITIVE|Array::DESCENDING)))
 			throw UnsupportedException("Vector::sort not completely implemented");
 	}
-	std::vector<ASObject*> tmp = vector<ASObject*>(th->vec.size());
+	std::vector<asAtom> tmp = vector<asAtom>(th->vec.size());
 	int i = 0;
 	for(auto it=th->vec.begin();it != th->vec.end();++it)
 	{
@@ -841,21 +820,18 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 		throwError<RangeError>(kVectorFixedError);
 	if (argslen > 0)
 	{
-		th->vec.resize(th->size()+argslen, NULL);
-		for(uint32_t i=th->size();i> 0;i--)
+		uint32_t s = th->size();
+		th->vec.resize(th->size()+argslen, asAtom::invalidAtom);
+		for(uint32_t i=s;i> 0;i--)
 		{
-			if (th->vec[i-1])
-			{
-				th->vec[(i-1)+argslen]=th->vec[i-1];
-				th->vec[i-1] = NULL;
-			}
-			
+			th->vec[(i-1)+argslen]=th->vec[i-1];
+			th->vec[i-1] = asAtom::invalidAtom;
 		}
 		
 		for(uint32_t i=0;i<argslen;i++)
 		{
 			ASATOM_INCREF(args[i]);
-			th->vec[i] = th->vec_type->coerce(th->getSystemState(),args[i]).toObject(th->getSystemState());
+			th->vec[i] = th->vec_type->coerce(th->getSystemState(),args[i]);
 		}
 	}
 	return asAtom((int32_t)th->size());
@@ -863,7 +839,7 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 
 ASFUNCTIONBODY_ATOM(Vector,_map)
 {
-	Vector* th=static_cast<Vector*>(obj.getObject());
+	Vector* th=obj.as<Vector>();
 	asAtom func(T_FUNCTION);
 	asAtom thisObject;
 	
@@ -877,24 +853,15 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		asAtom funcArgs[3];
-		if (!th->vec[i])
-			funcArgs[0]=asAtom::nullAtom;
-		else
-		{
-			if(th->vec[i])
-			{
-				funcArgs[0]=asAtom::fromObject(th->vec[i]);
-				ASATOM_INCREF(funcArgs[0]);
-			}
-			else
-				funcArgs[0]=asAtom::undefinedAtom;
-		}
+		funcArgs[0]=th->vec[i];
+		ASATOM_INCREF(funcArgs[0]);
 		funcArgs[1]=asAtom(i);
 		funcArgs[2]=asAtom::fromObject(th);
 		ASATOM_INCREF(funcArgs[2]);
 		asAtom funcRet=func.callFunction(thisObject, funcArgs, 3);
 		assert_and_throw(funcRet.type != T_INVALID);
-		ret->vec.push_back(funcRet.toObject(th->getSystemState()));
+		ASATOM_INCREF(funcRet);
+		ret->vec.push_back(funcRet);
 	}
 
 	return asAtom::fromObject(ret);
@@ -907,8 +874,8 @@ ASFUNCTIONBODY_ATOM(Vector,_toString)
 	asAtom natom(T_NULL);
 	for(size_t i=0; i < th->vec.size(); ++i)
 	{
-		if (th->vec[i])
-			ret += th->vec[i]->toString();
+		if (th->vec[i].type != T_INVALID)
+			ret += th->vec[i].toString();
 		else
 			// use the type's default value
 			ret += th->vec_type->coerce(th->getSystemState(), natom).toString();
@@ -919,45 +886,44 @@ ASFUNCTIONBODY_ATOM(Vector,_toString)
 	return asAtom::fromObject(abstract_s(th->getSystemState(),ret));
 }
 
-ASFUNCTIONBODY(Vector,insertAt)
+ASFUNCTIONBODY_ATOM(Vector,insertAt)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	if (th->fixed)
 		throwError<RangeError>(kOutOfRangeError);
 	int32_t index;
-	_NR<ASObject> o;
-	ARG_UNPACK(index)(o);
+	asAtom o;
+	ARG_UNPACK_ATOM(index)(o);
 
 	if (index < 0 && th->vec.size() >= (uint32_t)(-index))
 		index = th->vec.size()+(index);
 	if (index < 0)
 		index = 0;
-	LOG(LOG_ERROR,"insertat:"<<index<<" "<<th->vec.size()<<" "<<th->toString());
 	if ((uint32_t)index >= th->vec.size())
 	{
-		o->incRef();
-		th->vec.push_back(o.getPtr());
+		ASATOM_INCREF(o);
+		th->vec.push_back(o);
 	}
 	else
 	{
-		o->incRef();
-		th->vec.insert(th->vec.begin()+index,o.getPtr());
+		ASATOM_INCREF(o);
+		th->vec.insert(th->vec.begin()+index,o);
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector,removeAt)
+ASFUNCTIONBODY_ATOM(Vector,removeAt)
 {
-	Vector* th=static_cast<Vector*>(obj);
+	Vector* th=obj.as<Vector>();
 	if (th->fixed)
 		throwError<RangeError>(kOutOfRangeError);
 	int32_t index;
-	ARG_UNPACK(index);
+	ARG_UNPACK_ATOM(index);
 	if (index < 0)
 		index = th->vec.size()+index;
 	if (index < 0)
 		index = 0;
-	ASObject* o = NULL;
+	asAtom o;
 	if ((uint32_t)index < th->vec.size())
 	{
 		o = th->vec[index];
@@ -1011,10 +977,10 @@ asAtom Vector::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION
 	}
 	if(index < vec.size())
 	{
-		if (vec[index])
+		if (vec[index].type !=T_INVALID)
 		{
-			vec[index]->incRef();
-			return asAtom::fromObject(vec[index]);
+			ASATOM_INCREF(vec[index]);
+			return vec[index];
 		}
 		else
 		{
@@ -1049,12 +1015,11 @@ void Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLO
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
 		return ASObject::setVariableByMultiname(name, o, allowConst);
 	}
-	ASObject* o2 = this->vec_type->coerce(getSystemState(), o).toObject(getSystemState());
+	asAtom o2 = this->vec_type->coerce(getSystemState(), o);
 	  
 	if(index < vec.size())
 	{
-		if (vec[index])
-			vec[index]->decRef();
+		ASATOM_DECREF(vec[index]);
 		vec[index] = o2;
 	}
 	else if(!fixed && index == vec.size())
@@ -1080,8 +1045,8 @@ tiny_string Vector::toString()
 	{
 		if( i )
 			t += ",";
-		if (vec[i]) 
-			t += vec[i]->toString();
+		if (vec[i].type != T_INVALID) 
+			t += vec[i].toString();
 		else
 			t += vec_type->coerce(getSystemState(), natom ).toString();
 	}
@@ -1108,10 +1073,10 @@ asAtom Vector::nextValue(uint32_t index)
 {
 	if(index<=vec.size())
 	{
-		if (vec[index-1])
+		if (vec[index-1].type != T_INVALID)
 		{
-			vec[index-1]->incRef();
-			return asAtom::fromObject(vec[index-1]);
+			ASATOM_INCREF(vec[index-1]);
+			return vec[index-1];
 		}
 		asAtom natom(T_NULL);
 		return vec_type->coerce(getSystemState(), natom);
@@ -1150,23 +1115,23 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 	for (unsigned int i =0;  i < vec.size(); i++)
 	{
 		tiny_string subres;
-		ASObject* o = vec[i];
-		if (!o)
-			o = getSystemState()->getNullRef();
+		asAtom o = vec[i];
+		if (o.type == T_INVALID)
+			o= asAtom::nullAtom;
 		if (replacer.type != T_INVALID)
 		{
 			asAtom params[2];
 			
 			params[0] = asAtom(i);
 			ASATOM_INCREF(params[0]);
-			params[1] = asAtom::fromObject(o);
+			params[1] = o;
 			asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2);
 			if (funcret.type != T_INVALID)
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}
 		else
 		{
-			subres = o->toJSON(path,replacer,spaces,filter);
+			subres = o.toObject(getSystemState())->toJSON(path,replacer,spaces,filter);
 		}
 		if (!subres.empty())
 		{
@@ -1185,7 +1150,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 	return res;
 }
 
-ASObject* Vector::at(unsigned int index, ASObject *defaultValue) const
+asAtom Vector::at(unsigned int index, asAtom defaultValue) const
 {
 	if (index < vec.size())
 		return vec.at(index);
@@ -1235,7 +1200,7 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		}
 		for(uint32_t i=0;i<count;i++)
 		{
-			if (!vec[i])
+			if (vec[i].type == T_INVALID)
 			{
 				//TODO should we write a null_marker here?
 				LOG(LOG_NOT_IMPLEMENTED,"serialize unset vector objects");
@@ -1244,16 +1209,16 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 			switch (marker)
 			{
 				case vector_int_marker:
-					out->writeUnsignedInt(out->endianIn((uint32_t)vec[i]->toInt()));
+					out->writeUnsignedInt(out->endianIn((uint32_t)vec[i].toInt()));
 					break;
 				case vector_uint_marker:
-					out->writeUnsignedInt(out->endianIn(vec[i]->toUInt()));
+					out->writeUnsignedInt(out->endianIn(vec[i].toUInt()));
 					break;
 				case vector_double_marker:
-					out->serializeDouble(vec[i]->toNumber());
+					out->serializeDouble(vec[i].toNumber());
 					break;
 				case vector_object_marker:
-					vec[i]->serialize(out, stringMap, objMap, traitsMap);
+					vec[i].toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 					break;
 			}
 		}

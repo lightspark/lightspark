@@ -93,42 +93,42 @@ private:
 	ByteArray* input;
 	tiny_string parseStringVR(std::vector<tiny_string>& stringMap) const;
 	
-	_R<ASObject> parseObject(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseObject(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseArray(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseArray(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseDictionary(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseDictionary(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseByteArray(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseByteArray(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseValue(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseValue(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseInteger() const;
-	_R<ASObject> parseDouble() const;
-	_R<ASObject> parseDate() const;
-	_R<ASObject> parseXML(std::vector<ASObject*>& objMap, bool legacyXML) const;
+	asAtom parseInteger() const;
+	asAtom parseDouble() const;
+	asAtom parseDate() const;
+	asAtom parseXML(std::vector<asAtom>& objMap, bool legacyXML) const;
 
 
-	_R<ASObject> parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	_R<ASObject> parseObjectAMF0(std::vector<tiny_string>& stringMap,
-			std::vector<ASObject*>& objMap,
+	asAtom parseObjectAMF0(std::vector<tiny_string>& stringMap,
+			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
-	_R<ASObject> readObject() const;
+	asAtom readObject() const;
 	tiny_string parseStringAMF0() const;
 };
 

@@ -267,9 +267,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 
 	#define PATH(operation, args...) \
-		operation(cr, ## args); \
-		operation(stroke_cr, ## args);
+		operation(instroke?stroke_cr:cr, ## args);
 
+	bool instroke = false;
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
 		switch(tokens[i].type)
@@ -319,6 +319,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				if(skipPaint)
 					break;
 
+				instroke = true;
 				cairo_stroke(stroke_cr);
 
 				const LINESTYLE2& style = tokens[i].lineStyle;
@@ -381,6 +382,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				if(skipPaint)
 					break;
 
+				instroke = false;
 				cairo_stroke(stroke_cr);
 
 				// Clear source.
@@ -413,7 +415,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	if(!skipPaint)
 	{
 		cairo_fill(cr);
-		cairo_stroke(stroke_cr);
+		if (instroke)
+			cairo_stroke(stroke_cr);
 	}
 
 	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);

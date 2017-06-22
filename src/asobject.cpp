@@ -2832,7 +2832,7 @@ void asAtom::convert_u()
 
 void asAtom::convert_d()
 {
-	if (type == T_NUMBER || type == T_INTEGER)
+	if (type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER)
 		return;
 	number_t v = toNumber();
 	decRef();
@@ -2953,8 +2953,13 @@ void asAtom::decrement()
 			break;
 		case T_UINTEGER:
 		{
-			number_t val = uintval;
-			setNumber(val-1);
+			if (uintval > 0)
+				setUInt(uintval-1);
+			else
+			{
+				number_t val = uintval;
+				setNumber(val-1);
+			}
 			break;
 		}
 		case T_NUMBER:
@@ -2992,7 +2997,13 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
 		LOG_CALL("addI " << num1 << '+' << num2);
-		setNumber(num1+num2);
+		int64_t res = num1+num2;
+		if (res > INT32_MIN && res < INT32_MAX)
+			setInt(res);
+		else if (res >= 0 && res < UINT32_MAX)
+			setUInt(res);
+		else
+			setNumber(res);
 	}
 	else if((type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER) &&
 			(v2.type == T_NUMBER || v2.type == T_INTEGER || v2.type ==T_UINTEGER))
@@ -3075,22 +3086,62 @@ void asAtom::bitnot()
 
 void asAtom::subtract(asAtom &v2)
 {
-	number_t num2=v2.toNumber();
-	number_t num1=toNumber();
-
-	decRef();
-	ASATOM_DECREF(v2);
-	LOG_CALL(_("subtract ") << num1 << '-' << num2);
-	setNumber(num1-num2);
+	if( (type == T_INTEGER || type == T_UINTEGER) &&
+		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		int64_t num1=toInt64();
+		int64_t num2=v2.toInt64();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
+		int64_t res = num1-num2;
+		if (res > INT32_MIN && res < INT32_MAX)
+			setInt(res);
+		else if (res >= 0 && res < UINT32_MAX)
+			setUInt(res);
+		else
+			setNumber(res);
+	}
+	else
+	{
+		number_t num2=v2.toNumber();
+		number_t num1=toNumber();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("subtract ") << num1 << '-' << num2);
+		setNumber(num1-num2);
+	}
 }
 
 void asAtom::multiply(asAtom &v2)
 {
-	double num1=v2.toNumber();
-	double num2=toNumber();
-	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
-
-	setNumber(num1*num2);
+	if( (type == T_INTEGER || type == T_UINTEGER) &&
+		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		int64_t num1=toInt64();
+		int64_t num2=v2.toInt64();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("multiplyI ") << num1 << '*' << num2);
+		int64_t res = num1*num2;
+		if (res > INT32_MIN && res < INT32_MAX)
+			setInt(res);
+		else if (res >= 0 && res < UINT32_MAX)
+			setUInt(res);
+		else
+			setNumber(res);
+	}
+	else
+	{
+		double num1=v2.toNumber();
+		double num2=toNumber();
+		LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	
+		setNumber(num1*num2);
+	}
 }
 
 void asAtom::divide(asAtom &v2)

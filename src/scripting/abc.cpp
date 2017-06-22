@@ -597,6 +597,50 @@ void ABCVm::registerClasses()
 	m_sys->systemDomain->registerGlobalScope(builtin);
 }
 
+void ABCVm::loadFloat(call_context *th)
+{
+	RUNTIME_STACK_POP_CREATE(th,arg1);
+	float addr=arg1.toNumber();
+	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+	number_t ret=appDomain->readFromDomainMemory<float>(addr);
+	RUNTIME_STACK_PUSH(th,asAtom(ret));
+	ASATOM_DECREF(arg1);
+}
+
+void ABCVm::loadDouble(call_context *th)
+{
+	RUNTIME_STACK_POP_CREATE(th,arg1);
+	double addr=arg1.toNumber();
+	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+	number_t ret=appDomain->readFromDomainMemory<double>(addr);
+	RUNTIME_STACK_PUSH(th,asAtom(ret));
+	ASATOM_DECREF(arg1);
+}
+
+void ABCVm::storeFloat(call_context *th)
+{
+	RUNTIME_STACK_POP_CREATE(th,arg1);
+	RUNTIME_STACK_POP_CREATE(th,arg2);
+	number_t addr=arg1.toNumber();
+	ASATOM_DECREF(arg1);
+	float val=(float)arg2.toNumber();
+	ASATOM_DECREF(arg2);
+	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+	appDomain->writeToDomainMemory<float>(addr, val);
+}
+
+void ABCVm::storeDouble(call_context *th)
+{
+	RUNTIME_STACK_POP_CREATE(th,arg1);
+	RUNTIME_STACK_POP_CREATE(th,arg2);
+	number_t addr=arg1.toNumber();
+	ASATOM_DECREF(arg1);
+	double val=arg2.toNumber();
+	ASATOM_DECREF(arg2);
+	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+	appDomain->writeToDomainMemory<double>(addr, val);
+}
+
 
 //Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
 multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)

@@ -25,11 +25,14 @@
 #include <iostream>
 #include "swftypes.h"
 #include "backends/geometry.h"
-#include "scripting/flash/utils/flashutils.h"
-#include "scripting/class.h"
+#include "backends/decoder.h"
+#include "scripting/flash/display/flashdisplay.h"
 
 namespace lightspark
 {
+class Class_base;
+class RootMovieClip;
+class DisplayObjectContainer;
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG};
 
@@ -118,19 +121,13 @@ protected:
 public:
 	DefineShapeTag(RECORDHEADER h,std::istream& in, RootMovieClip* root);
 	virtual int getId() const{ return ShapeId; }
-	ASObject* instance(Class_base* c=NULL) const
-	{
-		if(c==NULL)
-			c=Class<Shape>::getClass(loadedFrom->getSystemState());
-		Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
-		return ret;
-	}
+	ASObject* instance(Class_base* c=NULL) const;
 };
 
 class DefineShape2Tag: public DefineShapeTag
 {
 protected:
-	DefineShape2Tag(RECORDHEADER h, int v, RootMovieClip* root):DefineShapeTag(h,v,root){};
+	DefineShape2Tag(RECORDHEADER h, int v, RootMovieClip* root):DefineShapeTag(h,v,root){}
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 };
@@ -138,7 +135,7 @@ public:
 class DefineShape3Tag: public DefineShape2Tag
 {
 protected:
-	DefineShape3Tag(RECORDHEADER h, int v, RootMovieClip* root):DefineShape2Tag(h,v,root){};
+	DefineShape3Tag(RECORDHEADER h, int v, RootMovieClip* root):DefineShape2Tag(h,v,root){}
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	virtual int getId() const { return ShapeId; }
@@ -547,7 +544,7 @@ class ProtectTag: public ControlTag
 {
 public:
 	ProtectTag(RECORDHEADER h, std::istream& in);
-	void execute(RootMovieClip* root) const{};
+	void execute(RootMovieClip* root) const{}
 };
 
 class BitmapContainer;

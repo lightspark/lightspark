@@ -23,7 +23,6 @@
 #include "compat.h"
 #include <cstddef>
 #include "parsing/tags.h"
-#include "parsing/streams.h"
 #include "logger.h"
 #include <vector>
 #include <deque>
@@ -33,6 +32,7 @@
 #include "scripting/abcutils.h"
 #include "scripting/abctypes.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/toplevel/toplevel.h"
 
 namespace llvm {
 	class ExecutionEngine;
@@ -284,47 +284,10 @@ private:
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
-	static void loadFloat(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		float addr=arg1.toNumber();
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		number_t ret=appDomain->readFromDomainMemory<float>(addr);
-		RUNTIME_STACK_PUSH(th,asAtom(ret));
-		ASATOM_DECREF(arg1);
-	}
-
-	static void loadDouble(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		double addr=arg1.toNumber();
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		number_t ret=appDomain->readFromDomainMemory<double>(addr);
-		RUNTIME_STACK_PUSH(th,asAtom(ret));
-		ASATOM_DECREF(arg1);
-	}
-	static void storeFloat(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		RUNTIME_STACK_POP_CREATE(th,arg2);
-		number_t addr=arg1.toNumber();
-		ASATOM_DECREF(arg1);
-		float val=(float)arg2.toNumber();
-		ASATOM_DECREF(arg2);
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		appDomain->writeToDomainMemory<float>(addr, val);
-	}
-	static void storeDouble(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		RUNTIME_STACK_POP_CREATE(th,arg2);
-		number_t addr=arg1.toNumber();
-		ASATOM_DECREF(arg1);
-		double val=arg2.toNumber();
-		ASATOM_DECREF(arg2);
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
-		appDomain->writeToDomainMemory<double>(addr, val);
-	}
+	static void loadFloat(call_context* th);
+	static void loadDouble(call_context* th);
+	static void storeFloat(call_context* th);
+	static void storeDouble(call_context* th);
 
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);

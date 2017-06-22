@@ -23,6 +23,7 @@
 #include "abcutils.h"
 #include <string>
 #include <sstream>
+#include "scripting/class.h"
 
 using namespace std;
 using namespace lightspark;

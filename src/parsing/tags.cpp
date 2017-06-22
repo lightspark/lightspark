@@ -35,6 +35,7 @@
 #include "logger.h"
 #include "compat.h"
 #include "parsing/streams.h"
+#include "scripting/class.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
@@ -1056,6 +1057,14 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
+}
+
+ASObject *DefineShapeTag::instance(Class_base *c) const
+{
+	if(c==NULL)
+		c=Class<Shape>::getClass(loadedFrom->getSystemState());
+	Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
+	return ret;
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)

@@ -20,6 +20,7 @@
 
 #include "backends/security.h"
 #include "scripting/abc.h"
+#include "scripting/class.h"
 #include "swf.h"
 #include "backends/config.h"
 #include "backends/netutils.h"

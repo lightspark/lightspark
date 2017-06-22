@@ -21,6 +21,7 @@
 #include "compat.h"
 #include "exceptions.h"
 #include "scripting/abcutils.h"
+#include "scripting/class.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>

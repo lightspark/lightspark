@@ -58,6 +58,7 @@
 #endif
 #include <sstream>
 #include "scripting/abc.h"
+#include "scripting/class.h"
 #include "swftypes.h"
 #include "exceptions.h"
 

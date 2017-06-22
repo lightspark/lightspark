@@ -21,6 +21,7 @@
 #include "logger.h"
 #include "scripting/abc.h"
 #include "scripting/toplevel/Error.h"
+#include "scripting/class.h"
 
 using namespace lightspark;
 using namespace std;

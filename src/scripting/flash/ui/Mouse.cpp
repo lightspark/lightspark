@@ -20,6 +20,8 @@
 #include "scripting/flash/ui/Mouse.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Error.h"
+#include "scripting/toplevel/Vector.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "swf.h"
@@ -92,6 +94,10 @@ void MouseCursor::sinit(Class_base* c)
 	c->setVariableByQName("HAND","",abstract_s(c->getSystemState(),"hand"),CONSTANT_TRAIT);
 	c->setVariableByQName("IBEAM","",abstract_s(c->getSystemState(),"ibeam"),CONSTANT_TRAIT);
 }
+MouseCursorData::MouseCursorData(Class_base *c):ASObject(c),frameRate(0)
+{
+}
+
 void MouseCursorData::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);

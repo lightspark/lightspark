@@ -225,6 +225,10 @@ void URLStream::finalize()
 	data.reset();
 }
 
+URLStream::URLStream(Class_base *c):EventDispatcher(c),data(_MNR(Class<ByteArray>::getInstanceS(c->getSystemState()))),job(NULL),connected(false) 
+{
+}
+
 ASFUNCTIONBODY(URLStream,bytesAvailable) {
 	URLStream* th=static_cast<URLStream*>(obj);
 	return ByteArray::_getBytesAvailable(th->data.getPtr(), args, argslen);

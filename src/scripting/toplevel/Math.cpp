@@ -58,10 +58,10 @@ void Math::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(c->getSystemState(),tan,1),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY(Math,_constructor)
+ASFUNCTIONBODY_ATOM(Math,_constructor)
 {
 	throwError<TypeError>(kMathNotConstructorError);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Math,generator)
@@ -70,20 +70,20 @@ ASFUNCTIONBODY_ATOM(Math,generator)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Math,atan2)
+ASFUNCTIONBODY_ATOM(Math,atan2)
 {
 	number_t n1, n2;
-	ARG_UNPACK (n1) (n2);
-	return abstract_d(obj->getSystemState(),::atan2(n1,n2));
+	ARG_UNPACK_ATOM (n1) (n2);
+	return asAtom(::atan2(n1,n2));
 }
 
-ASFUNCTIONBODY(Math,_max)
+ASFUNCTIONBODY_ATOM(Math,_max)
 {
 	double largest = -numeric_limits<double>::infinity();
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		double arg = args[i]->toNumber();
+		double arg = args[i].toNumber();
 		if (std::isnan(arg))
 		{
 			largest = numeric_limits<double>::quiet_NaN();
@@ -94,16 +94,16 @@ ASFUNCTIONBODY(Math,_max)
 		else
 			largest = (arg>largest) ? arg : largest;
 	}
-	return abstract_d(obj->getSystemState(),largest);
+	return asAtom(largest);
 }
 
-ASFUNCTIONBODY(Math,_min)
+ASFUNCTIONBODY_ATOM(Math,_min)
 {
 	double smallest = numeric_limits<double>::infinity();
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		double arg = args[i]->toNumber();
+		double arg = args[i].toNumber();
 		if (std::isnan(arg))
 		{
 			smallest = numeric_limits<double>::quiet_NaN();
@@ -115,125 +115,178 @@ ASFUNCTIONBODY(Math,_min)
 			smallest = (arg<smallest)? arg : smallest;
 	}
 
-	return abstract_d(obj->getSystemState(),smallest);
+	return asAtom(smallest);
 }
 
-ASFUNCTIONBODY(Math,exp)
+ASFUNCTIONBODY_ATOM(Math,exp)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::exp(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::exp(n));
 }
 
-ASFUNCTIONBODY(Math,acos)
-{
-	//Angle is in radians
-	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::acos(n));
-}
-
-ASFUNCTIONBODY(Math,asin)
+ASFUNCTIONBODY_ATOM(Math,acos)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::asin(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::acos(n));
 }
 
-ASFUNCTIONBODY(Math,atan)
+ASFUNCTIONBODY_ATOM(Math,asin)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::atan(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::asin(n));
 }
 
-ASFUNCTIONBODY(Math,cos)
+ASFUNCTIONBODY_ATOM(Math,atan)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::cos(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::atan(n));
 }
 
-ASFUNCTIONBODY(Math,sin)
+ASFUNCTIONBODY_ATOM(Math,cos)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::sin(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::cos(n));
 }
 
-ASFUNCTIONBODY(Math,tan)
+ASFUNCTIONBODY_ATOM(Math,sin)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::tan(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::sin(n));
 }
 
-ASFUNCTIONBODY(Math,abs)
+ASFUNCTIONBODY_ATOM(Math,tan)
+{
+	//Angle is in radians
+	number_t n;
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::tan(n));
+}
+
+ASFUNCTIONBODY_ATOM(Math,abs)
+{
+	asAtom a;
+	ARG_UNPACK_ATOM (a);
+	switch (a.type)
+	{
+		case T_INTEGER:
+		{
+			int32_t n = a.toInt();
+			if (n == INT32_MIN)
+				return asAtom((uint32_t)n);
+			return asAtom(n < 0 ? -n : n);
+		}
+		case T_UINTEGER:
+			return a;
+		case T_UNDEFINED:
+			return asAtom(Number::NaN);
+		case T_NULL:
+			return asAtom((int32_t)0);
+		default:
+		{
+			number_t n = a.toNumber();
+			if (n  == 0.)
+				return asAtom((int32_t)0);
+			return asAtom((number_t)::fabs(n));
+		}
+	}
+}
+
+ASFUNCTIONBODY_ATOM(Math,ceil)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::fabs(n));
+	ARG_UNPACK_ATOM (n);
+	if (std::isnan(n))
+		return asAtom(Number::NaN);
+	else if (n == 0.)
+		return asAtom(std::signbit(n) ? -0. : 0.);
+	else if (n > INT32_MIN && n < INT32_MAX)
+	{
+		number_t n2 = ::ceil(n);
+		if (n2 == 0.)
+				return asAtom(std::signbit(n2) ? -0. : 0.);
+		return asAtom((int32_t)n2);
+	}
+	else
+		return asAtom(::ceil(n));
 }
 
-ASFUNCTIONBODY(Math,ceil)
+ASFUNCTIONBODY_ATOM(Math,log)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::ceil(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::log(n));
 }
 
-ASFUNCTIONBODY(Math,log)
+ASFUNCTIONBODY_ATOM(Math,floor)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::log(n));
+	ARG_UNPACK_ATOM (n);
+	if (n == 0.)
+		return asAtom(std::signbit(n) ? -0. : 0.);
+	else if (n > INT32_MIN && n < INT32_MAX)
+	{
+		number_t n2 = ::floor(n);
+		if (n2 == 0.)
+				return asAtom(std::signbit(n2) ? -0. : 0.);
+		return asAtom((int32_t)n2);
+	}
+	else
+		return asAtom((number_t)::floor(n));
 }
 
-ASFUNCTIONBODY(Math,floor)
+ASFUNCTIONBODY_ATOM(Math,round)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::floor(n));
+	ARG_UNPACK_ATOM (n);
+	if (std::isnan(n))
+		return asAtom(Number::NaN);
+	else if (n < 0 && n >= -0.5)
+		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
+		return asAtom(obj.getObject() == Class<Number>::getClass(obj.getObject()->getSystemState()) ? -0. : 0.);
+	else if (n == 0.)
+		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
+		return asAtom(obj.getObject() == Class<Number>::getClass(obj.getObject()->getSystemState()) ? (std::signbit(n) ? -0. : 0.) : 0.);
+	else if (n > INT32_MIN && n < INT32_MAX)
+		return asAtom((int32_t)::floor(n+0.5));
+	else
+		return asAtom((number_t)::floor(n+0.5));
 }
 
-ASFUNCTIONBODY(Math,round)
+ASFUNCTIONBODY_ATOM(Math,sqrt)
 {
 	number_t n;
-	ARG_UNPACK (n);
-	if (n < 0 && n >= -0.5)
-		return abstract_d(obj->getSystemState(),0);
-	return abstract_d(obj->getSystemState(),::round(n));
+	ARG_UNPACK_ATOM (n);
+	return asAtom(::sqrt(n));
 }
 
-ASFUNCTIONBODY(Math,sqrt)
-{
-	number_t n;
-	ARG_UNPACK (n);
-	return abstract_d(obj->getSystemState(),::sqrt(n));
-}
-
-ASFUNCTIONBODY(Math,pow)
+ASFUNCTIONBODY_ATOM(Math,pow)
 {
 	number_t x, y;
-	ARG_UNPACK (x) (y);
+	ARG_UNPACK_ATOM (x) (y);
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
-		return abstract_d(obj->getSystemState(),Number::NaN);
-	return abstract_d(obj->getSystemState(),::pow(x,y));
+		return asAtom(Number::NaN);
+	return asAtom(::pow(x,y));
 }
 
-ASFUNCTIONBODY(Math,random)
+ASFUNCTIONBODY_ATOM(Math,random)
 {
 	if(argslen > 0)
 		throwError<ArgumentError>(kWrongArgumentCountError, "object", "", "");
 
 	number_t ret=rand();
 	ret/=(number_t(1.)+RAND_MAX);
-	return abstract_d(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
 
 

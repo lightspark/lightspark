@@ -212,7 +212,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	setTLSSys(this);
 	// it seems Adobe ignores any locale date settings
 	setlocale(LC_TIME, "C");
-
+	setlocale(LC_NUMERIC, "POSIX");
+	
 	mainThread = Thread::self();
 
 	unaccountedMemory = allocateMemoryAccount("Unaccounted");

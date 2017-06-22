@@ -3152,7 +3152,19 @@ void asAtom::divide(asAtom &v2)
 	decRef();
 	ASATOM_DECREF(v2);
 	LOG_CALL(_("divide ")  << num1 << '/' << num2);
-	setNumber(num1/num2);
+	// handling of infinity according to ECMA-262, chapter 11.5.2
+	if (std::isinf(num1))
+	{
+		if (std::isinf(num2) || std::isnan(num2))
+			setNumber(Number::NaN);
+		else
+		{
+			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
+			setNumber( needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
+		}
+	}
+	else
+		setNumber(num1/num2);
 }
 
 void asAtom::modulo(asAtom &v2)

@@ -31,27 +31,27 @@ public:
 	Math(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 
-	ASFUNCTION(abs);
-	ASFUNCTION(acos);
-	ASFUNCTION(asin);
-	ASFUNCTION(atan);
-	ASFUNCTION(atan2);
-	ASFUNCTION(ceil);
-	ASFUNCTION(cos);
-	ASFUNCTION(exp);
-	ASFUNCTION(floor);
-	ASFUNCTION(log);
-	ASFUNCTION(_max);
-	ASFUNCTION(_min);
-	ASFUNCTION(pow);
-	ASFUNCTION(random);
-	ASFUNCTION(round);
-	ASFUNCTION(sin);
-	ASFUNCTION(sqrt);
-	ASFUNCTION(tan);
+	ASFUNCTION_ATOM(abs);
+	ASFUNCTION_ATOM(acos);
+	ASFUNCTION_ATOM(asin);
+	ASFUNCTION_ATOM(atan);
+	ASFUNCTION_ATOM(atan2);
+	ASFUNCTION_ATOM(ceil);
+	ASFUNCTION_ATOM(cos);
+	ASFUNCTION_ATOM(exp);
+	ASFUNCTION_ATOM(floor);
+	ASFUNCTION_ATOM(log);
+	ASFUNCTION_ATOM(_max);
+	ASFUNCTION_ATOM(_min);
+	ASFUNCTION_ATOM(pow);
+	ASFUNCTION_ATOM(random);
+	ASFUNCTION_ATOM(round);
+	ASFUNCTION_ATOM(sin);
+	ASFUNCTION_ATOM(sqrt);
+	ASFUNCTION_ATOM(tan);
 };
 
 }

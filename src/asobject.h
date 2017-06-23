@@ -33,7 +33,7 @@
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
 #define ASFUNCTION_ATOM(name) \
-	static asAtom name(asAtom& , asAtom* args, const unsigned int argslen)
+	static asAtom name(SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
 
 /* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
@@ -66,53 +66,53 @@
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
 #define ASFUNCTIONBODY_ATOM(c,name) \
-	asAtom c::name(asAtom& obj, asAtom* args, const unsigned int argslen)
+	asAtom c::name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
 
 /* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
-	asAtom c::_getter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
-		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(obj.getObject()->getSystemState(),th->name); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(sys,th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_getter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_getter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " getter is not implemented"); \
-		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(obj.getObject()->getSystemState(),th->name); \
+		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(sys,th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
-	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
 		return asAtom::invalidAtom; \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " setter is not implemented"); \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
 		return asAtom::invalidAtom; \
@@ -122,13 +122,13 @@
  * After the property has been updated, the callback member function is called with the old value
  * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
-	asAtom c::_setter_##name(asAtom& obj, asAtom* args, const unsigned int argslen) \
+	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
 		th->callback(oldValue); \

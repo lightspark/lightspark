@@ -223,7 +223,7 @@ public:
 	}
 	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
-		asAtom ret=T::generator(asAtom::invalidAtom, args, argslen);
+		asAtom ret=T::generator(getSystemState(), asAtom::invalidAtom, args, argslen);
 		for(unsigned int i=0;i<argslen;i++)
 			ASATOM_DECREF(args[i]);
 		return ret;
@@ -436,7 +436,7 @@ public:
 	asAtom generator(asAtom* args, const unsigned int argslen)
 	{
 		asAtom th = asAtom::fromObject(this);
-		asAtom ret = T::generator(th,args,argslen);
+		asAtom ret = T::generator(this->getSystemState(),th,args,argslen);
 		for(size_t i=0;i<argslen;++i)
 			ASATOM_DECREF(args[i]);
 		return ret;

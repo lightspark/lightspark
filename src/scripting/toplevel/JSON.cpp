@@ -133,7 +133,7 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 	}
 	tiny_string res = value->toJSON(path,replacer,spaces,filter);
 
-	return asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),res));
+	return asAtom::fromObject(abstract_s(sys,res));
 }
 void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, asAtom reviver)
 {

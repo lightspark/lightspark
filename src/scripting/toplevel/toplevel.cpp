@@ -582,7 +582,7 @@ asAtom Function::call(asAtom& obj, asAtom *args, uint32_t num_args)
 		// use the asAtom based call interface
 		try
 		{
-			ret=val_atom(obj,args,num_args);
+			ret=val_atom(getSystemState(),obj,args,num_args);
 		}
 		catch(ASObject* excobj)
 		{
@@ -962,7 +962,7 @@ Class_base::~Class_base()
 {
 }
 
-asAtom Class_base::_getter_constructorprop(asAtom& obj, asAtom* args, const unsigned int argslen)
+asAtom Class_base::_getter_constructorprop(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	Class_base* th = NULL;
 	if(obj.is<Class_base>())
@@ -976,13 +976,13 @@ asAtom Class_base::_getter_constructorprop(asAtom& obj, asAtom* args, const unsi
 	return asAtom::fromObject(ret);
 }
 
-asAtom Class_base::_getter_prototype(asAtom& obj, asAtom* args, const unsigned int argslen)
+asAtom Class_base::_getter_prototype(SystemState* sys,asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	if(!obj.is<Class_base>())
-		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
 	Class_base* th = obj.as<Class_base>();
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
 	ASObject* ret=th->prototype->getObj();
 	ret->incRef();
 	return asAtom::fromObject(ret);
@@ -991,7 +991,7 @@ ASFUNCTIONBODY_GETTER(Class_base, length);
 
 asAtom Class_base::generator(asAtom* args, const unsigned int argslen)
 {
-	asAtom ret=ASObject::generator(asAtom::invalidAtom, args, argslen);
+	asAtom ret=ASObject::generator(getSystemState(),asAtom::invalidAtom, args, argslen);
 	for(unsigned int i=0;i<argslen;i++)
 		ASATOM_DECREF(args[i]);
 	return ret;
@@ -2540,7 +2540,7 @@ ASFUNCTIONBODY_ATOM(lightspark,_isXMLName)
 	if(argslen==0)
 		return asAtom(false);
 
-	return asAtom(isXMLName(getSys(),args[0]));
+	return asAtom(isXMLName(sys,args[0]));
 }
 
 ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)

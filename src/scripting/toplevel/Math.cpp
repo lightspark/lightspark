@@ -253,10 +253,10 @@ ASFUNCTIONBODY_ATOM(Math,round)
 		return asAtom(Number::NaN);
 	else if (n < 0 && n >= -0.5)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		return asAtom(obj.getObject() == Class<Number>::getClass(obj.getObject()->getSystemState()) ? -0. : 0.);
+		return asAtom(obj.getObject() == Class<Number>::getClass(sys) ? -0. : 0.);
 	else if (n == 0.)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		return asAtom(obj.getObject() == Class<Number>::getClass(obj.getObject()->getSystemState()) ? (std::signbit(n) ? -0. : 0.) : 0.);
+		return asAtom(obj.getObject() == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 		return asAtom((int32_t)::floor(n+0.5));
 	else

@@ -224,7 +224,7 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_constructor)
 {
 	//LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	return EventDispatcher::_constructor(obj,NULL,0);
+	return EventDispatcher::_constructor(sys,obj,NULL,0);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
@@ -416,10 +416,10 @@ void LoaderThread::execute()
 
 ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
-	Loader* th=static_cast<Loader*>(obj.getObject());
-	DisplayObjectContainer::_constructor(obj,NULL,0);
+	Loader* th=obj.as<Loader>();
+	DisplayObjectContainer::_constructor(sys,obj,NULL,0);
 	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
-	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(th->getSystemState()));
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -940,7 +940,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
 	//Sprite* th=Class<Sprite>::cast(obj);
-	return DisplayObjectContainer::_constructor(obj,NULL,0);
+	return DisplayObjectContainer::_constructor(sys,obj,NULL,0);
 }
 
 ASFUNCTIONBODY(Sprite,_getGraphics)
@@ -1464,7 +1464,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentLabels)
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
-	Sprite::_constructor(obj,NULL,0);
+	Sprite::_constructor(sys,obj,NULL,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 	return asAtom::invalidAtom;
@@ -1615,11 +1615,11 @@ InteractiveObject::~InteractiveObject()
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
-	InteractiveObject* th=static_cast<InteractiveObject*>(obj.getObject());
-	EventDispatcher::_constructor(obj,NULL,0);
+	InteractiveObject* th=obj.as<InteractiveObject>();
+	EventDispatcher::_constructor(sys,obj,NULL,0);
 	//Object registered very early are not supported this way (Stage for example)
-	if(th->getSystemState()->getInputThread())
-		th->getSystemState()->getInputThread()->addListener(th);
+	if(sys->getInputThread())
+		sys->getInputThread()->addListener(th);
 
 	return asAtom::invalidAtom;
 }
@@ -1732,7 +1732,7 @@ void DisplayObjectContainer::setOnStage(bool staged)
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
-	return InteractiveObject::_constructor(obj,NULL,0);
+	return InteractiveObject::_constructor(sys,obj,NULL,0);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
@@ -2202,7 +2202,7 @@ void Shape::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
 {
-	return DisplayObject::_constructor(obj,NULL,0);
+	return DisplayObject::_constructor(sys,obj,NULL,0);
 }
 
 ASFUNCTIONBODY(Shape,_getGraphics)
@@ -2441,7 +2441,7 @@ ASFUNCTIONBODY(Stage,_setScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	return Template<Vector>::getInstanceS(obj.getObject()->getSystemState(),Class<StageVideo>::getClass(obj.getObject()->getSystemState()),NullRef);
+	return Template<Vector>::getInstanceS(sys,Class<StageVideo>::getClass(sys),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()
@@ -2690,7 +2690,7 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	Bitmap* th = obj.as<Bitmap>();
 	ARG_UNPACK_ATOM(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
 
-	DisplayObject::_constructor(obj,NULL,0);
+	DisplayObject::_constructor(sys,obj,NULL,0);
 
 	if(_pixelSnapping!="auto")
 		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping:"<<_pixelSnapping);
@@ -2882,7 +2882,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	/* This _must_ not call the DisplayObjectContainer
 	 * see note at the class declaration.
 	 */
-	InteractiveObject::_constructor(obj,NULL,0);
+	InteractiveObject::_constructor(sys,obj,NULL,0);
 	SimpleButton* th=obj.as<SimpleButton>();
 	_NR<DisplayObject> upState;
 	_NR<DisplayObject> overState;
@@ -3255,7 +3255,7 @@ void AVM1Movie::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(AVM1Movie,_constructor)
 {
-	return DisplayObject::_constructor(obj,NULL,0);
+	return DisplayObject::_constructor(sys,obj,NULL,0);
 }
 
 void Shader::sinit(Class_base* c)

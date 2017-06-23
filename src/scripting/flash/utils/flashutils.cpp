@@ -203,7 +203,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add interval through manager
-	uint32_t id = args[0].getObject()->getSystemState()->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
+	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
 			asAtom::nullAtom, args[1].toInt());
 	return asAtom((int32_t)id);
 }
@@ -225,7 +225,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
-	uint32_t id = args[0].getObject()->getSystemState()->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
+	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
 			asAtom::nullAtom, args[1].toInt());
 	return asAtom((int32_t)id);
 }

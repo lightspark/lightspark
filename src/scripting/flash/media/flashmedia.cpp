@@ -277,10 +277,10 @@ void Sound::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 
 	if (argslen>0)
-		Sound::load(obj, args, argslen);
+		Sound::load(sys,obj, args, argslen);
 
 	return asAtom::invalidAtom;
 }
@@ -491,7 +491,7 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 
 ASFUNCTIONBODY_ATOM(SoundChannel, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 
 	return asAtom::invalidAtom;
 }

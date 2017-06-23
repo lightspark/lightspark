@@ -1265,7 +1265,6 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 		assert_and_throw(obj->setter.type == T_INVALID);
 		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
-			ASATOM_INCREF(obj->var);
 			if (obj->var.isBound())
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
@@ -1277,7 +1276,6 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 				return asAtom::fromFunction(obj->var.getObject(),this);
 			}
 		}
-		ASATOM_INCREF(obj->var);
 		return obj->var;
 	}
 }
@@ -2122,7 +2120,7 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args)
 	assert_and_throw(type == T_FUNCTION);
 		
 	ASObject* closure = closure_this;
-	if (obj.type == T_FUNCTION && obj.closure_this)
+	if ((obj.type == T_FUNCTION && obj.closure_this) || obj.is<XML>() || obj.is<XMLList>())
 		closure = NULL; // force use of function closure in call
 	asAtom c;
 	if(closure)

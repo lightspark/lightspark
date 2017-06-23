@@ -33,7 +33,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getNativeApplication);
+	ASFUNCTION_ATOM(_getNativeApplication);
 	ASFUNCTION_ATOM(addEventListener);
 };
 

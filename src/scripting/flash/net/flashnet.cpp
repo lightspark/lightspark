@@ -489,11 +489,11 @@ void URLLoader::setBytesLoaded(uint32_t b)
 
 ASFUNCTIONBODY_ATOM(URLLoader,_constructor)
 {
-	EventDispatcher::_constructor(obj,NULL,0);
-	if(argslen==1 && args[0].getObject()->getClass() == Class<URLRequest>::getClass(args[0].getObject()->getSystemState()))
+	EventDispatcher::_constructor(sys,obj,NULL,0);
+	if(argslen==1 && args[0].is<URLRequest>())
 	{
 		//URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
-		load(obj, args, argslen);
+		load(sys, obj, args, argslen);
 	}
 	return asAtom::invalidAtom;
 }
@@ -795,7 +795,7 @@ void NetConnection::finalize()
 
 ASFUNCTIONBODY_ATOM(NetConnection, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	NetConnection* th=Class<NetConnection>::cast(obj.getObject());
 	th->objectEncoding = getSys()->staticNetConnectionDefaultObjectEncoding;
 	return asAtom::invalidAtom;
@@ -1299,7 +1299,7 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 
 ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	NetStream* th=obj.as<NetStream>();
 
 	LOG(LOG_CALLS,_("NetStream constructor"));
@@ -2429,7 +2429,7 @@ ASFUNCTIONBODY_GETTER_SETTER(LocalConnection, client);
 
 ASFUNCTIONBODY_ATOM(LocalConnection, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj.getObject());
 	th->incRef();
 	th->client = _NR<LocalConnection>(th);
@@ -2490,7 +2490,7 @@ void NetGroup::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(NetGroup, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	//NetGroup* th=Class<NetGroup>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
 	return asAtom::invalidAtom;
@@ -2508,7 +2508,7 @@ void FileReference::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(FileReference, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	//FileReference* th=Class<FileReference>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"FileReference is not implemented");
 	return asAtom::invalidAtom;
@@ -2526,7 +2526,7 @@ void ASSocket::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ASSocket, _constructor)
 {
-	EventDispatcher::_constructor(obj, NULL, 0);
+	EventDispatcher::_constructor(sys,obj, NULL, 0);
 	//ASSocket* th=Class<ASSocket>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
 	return asAtom::invalidAtom;

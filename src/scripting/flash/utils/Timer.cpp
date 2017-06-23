@@ -71,8 +71,8 @@ void Timer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
-	EventDispatcher::_constructor(obj,NULL,0);
-	Timer* th=static_cast<Timer*>(obj.getObject());
+	EventDispatcher::_constructor(sys,obj,NULL,0);
+	Timer* th=obj.as<Timer>();
 
 	th->delay=args[0].toInt();
 	if(argslen>=2)

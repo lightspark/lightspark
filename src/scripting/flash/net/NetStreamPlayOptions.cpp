@@ -46,6 +46,6 @@ ASFUNCTIONBODY_GETTER_SETTER(NetStreamPlayOptions,transition);
 
 ASFUNCTIONBODY_ATOM(NetStreamPlayOptions,_constructor)
 {
-	return EventDispatcher::_constructor(obj, NULL, 0);
+	return EventDispatcher::_constructor(sys,obj, NULL, 0);
 }
 

@@ -117,10 +117,10 @@ bool Vector::sameType(const Class_base *cls) const
 	return (clsname.startsWith(cls->class_name.getQualifiedName(getSystemState()).raw_buf()));
 }
 
-asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argslen)
+asAtom Vector::generator(SystemState *sys, asAtom &o_class, asAtom* args, const unsigned int argslen)
 {
 	assert_and_throw(argslen == 1);
-	assert_and_throw(args[0].toObject(o_class.getObject()->getSystemState())->getClass());
+	assert_and_throw(args[0].toObject(sys)->getClass());
 	assert_and_throw(o_class.as<TemplatedClass<Vector>>()->getTypes().size() == 1);
 
 	const Type* type = o_class.as<TemplatedClass<Vector>>()->getTypes()[0];
@@ -136,11 +136,11 @@ asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argsl
 			asAtom obj = a->at(i);
 			ASATOM_INCREF(obj);
 			//Convert the elements of the array to the type of this vector
-			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),obj) );
+			ret->vec.push_back( type->coerce(sys,obj) );
 		}
 		return asAtom::fromObject(ret);
 	}
-	else if(args[0].getObject()->getClass()->getTemplate() == Template<Vector>::getTemplate(o_class.getObject()->getSystemState()))
+	else if(args[0].getObject()->getClass()->getTemplate() == Template<Vector>::getTemplate(sys))
 	{
 		Vector* arg = args[0].as<Vector>();
 
@@ -149,13 +149,13 @@ asAtom Vector::generator(asAtom &o_class, asAtom* args, const unsigned int argsl
 		for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 		{
 			ASATOM_INCREF((*i));
-			ret->vec.push_back( type->coerce(o_class.getObject()->getSystemState(),*i) );
+			ret->vec.push_back( type->coerce(sys,*i) );
 		}
 		return asAtom::fromObject(ret);
 	}
 	else
 	{
-		throwError<ArgumentError>(kCheckTypeFailedError, args[0].toObject(o_class.getObject()->getSystemState())->getClassName(), "Vector");
+		throwError<ArgumentError>(kCheckTypeFailedError, args[0].toObject(sys)->getClassName(), "Vector");
 	}
 
 	return asAtom::invalidAtom;
@@ -225,8 +225,8 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 	if (argslen < 1 || argslen > 2)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.filter", "1", Integer::toString(argslen));
 	if (!args[0].is<IFunction>())
-		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(obj.getObject()->getSystemState())->getClassName(), "Function");
-	Vector* th=static_cast<Vector*>(obj.getObject());
+		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(sys)->getClassName(), "Function");
+	Vector* th=obj.as<Vector>();
 	  
 	asAtom f = args[0];
 	asAtom params[3];

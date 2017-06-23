@@ -423,7 +423,7 @@ class Function : public IFunction
 friend class Class<IFunction>;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
-	typedef asAtom (*as_atom_function)(asAtom&, asAtom*, const unsigned int);
+	typedef asAtom (*as_atom_function)(SystemState*, asAtom&, asAtom*, const unsigned int);
 protected:
 	/* Function pointer to the C-function implementation */
 	// TODO this can be removed once all builtin functions are using the asAtom-based function pointer
@@ -703,7 +703,7 @@ ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argsl
 ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 bool isXMLName(SystemState *sys, asAtom &obj);
-asAtom _isXMLName(asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom _isXMLName(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 number_t parseNumber(const tiny_string str);
 };
 

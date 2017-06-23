@@ -1922,7 +1922,6 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 
 	if(f)
 	{
-		f->incRef();
 		asAtom v = asAtom::fromObject(f);
 		callImpl(th, v, obj, args, m, keepReturn);
 	}
@@ -1968,7 +1967,6 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	name->resetNameIfObject();
 	if(f.type != T_INVALID)
 	{
-		ASATOM_INCREF(f);
 		asAtom v = asAtom::fromObject(obj);
 		callImpl(th, f, v, args, m, keepReturn);
 	}
@@ -2251,7 +2249,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		ASATOM_DECREF(obj);
 		throw;
 	}
-
 	RUNTIME_STACK_PUSH(th,ret);
 	if (ret.getObject())
 		ret.getObject()->setConstructorCallComplete();
@@ -2784,7 +2781,6 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	if(f.is<IFunction>())
 	{
 		asAtom ret=f.callFunction(obj,args,m);
-		ASATOM_DECREF(f);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else
@@ -2792,7 +2788,6 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	}
 	else if(f.is<Class_base>())
 	{
-		ASATOM_DECREF(obj);
 		Class_base* c=f.as<Class_base>();
 		asAtom ret=c->generator(args,m);
 		c->decRef();
@@ -2803,7 +2798,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	}
 	else if(f.is<RegExp>())
 	{
-		asAtom ret=RegExp::exec(f,args,m);
+		asAtom ret=RegExp::exec(th->context->root->getSystemState(),f,args,m);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else
@@ -2815,7 +2810,6 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 		ASATOM_DECREF(obj);
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
-		ASATOM_DECREF(f);
 		throwError<TypeError>(kCallOfNonFunctionError, "Object");
 	}
 	LOG_CALL(_("End of call ") << m << ' ' << f.type);

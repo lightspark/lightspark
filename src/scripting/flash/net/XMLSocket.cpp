@@ -209,7 +209,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _constructor)
 	int port;
 	ARG_UNPACK_ATOM (host, "") (port, 0);
 
-	EventDispatcher::_constructor(obj,NULL,0);
+	EventDispatcher::_constructor(sys,obj,NULL,0);
 
 	XMLSocket* th=obj.as<XMLSocket>();
 	host_is_null = argslen > 0 && args[0].is<Null>();

@@ -67,7 +67,7 @@ public:
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	static asAtom generator(asAtom& o_class, asAtom* args, const unsigned int argslen);
+	static asAtom generator(SystemState* sys, asAtom& o_class, asAtom* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
 	bool sameType(const Class_base* cls) const;

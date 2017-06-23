@@ -493,11 +493,11 @@ ASFUNCTIONBODY(TextField,_setDefaultTextFormat)
 
 ASFUNCTIONBODY_ATOM(TextField, _getter_type)
 {
-	TextField* th=Class<TextField>::cast(obj.getObject());
+	TextField* th=obj.as<TextField>();
 	if (th->type == ET_READ_ONLY)
-		return asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),"dynamic"));
+		return asAtom::fromObject(abstract_s(sys,"dynamic"));
 	else
-		return asAtom::fromObject(abstract_s(obj.getObject()->getSystemState(),"input"));
+		return asAtom::fromObject(abstract_s(sys,"input"));
 }
 
 ASFUNCTIONBODY_ATOM(TextField, _setter_type)

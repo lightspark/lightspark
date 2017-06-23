@@ -393,12 +393,12 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS(sys,"Wrong number of arguments in setter"); 
 	number_t val=args[0].toNumber();
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.type != T_INVALID &&(th->target.toObject(th->getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
+	if(th->target.type != T_INVALID &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -410,12 +410,12 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 {
 	MouseEvent* th=static_cast<MouseEvent*>(obj.getObject());
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(obj.getObject()->getSystemState(),"Wrong number of arguments in setter"); 
+		throw Class<ArgumentError>::getInstanceS(sys,"Wrong number of arguments in setter"); 
 	number_t val=args[0].toNumber();
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.type != T_INVALID &&(th->target.toObject(th->getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(obj.getObject()->getSystemState()))))
+	if(th->target.type != T_INVALID &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);

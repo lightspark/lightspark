@@ -1952,7 +1952,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->readByte(marker);
 		}
 		asAtom v = asAtom::fromObject(message.getPtr());
-		asAtom obj= ByteArray::readObject(v, NULL, 0);
+		asAtom obj= ByteArray::readObject(m_sys, v, NULL, 0);
 
 		asAtom callback;
 		if(!client.isNull())
@@ -1999,7 +1999,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->readByte(marker);
 		}
 		asAtom v = asAtom::fromObject(message.getPtr());
-		asAtom ret=ByteArray::readObject(v, NULL, 0);
+		asAtom ret=ByteArray::readObject(m_sys,v, NULL, 0);
 	
 		if(!responder.isNull())
 		{

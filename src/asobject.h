@@ -26,8 +26,8 @@
 #include "threading.h"
 #include "memory_support.h"
 #include <map>
+#include <unordered_map>
 #include <boost/intrusive/list.hpp>
-#include <boost/container/flat_map.hpp>
 
 // this is deprecated, please use ASFUNCTION_ATOM
 #define ASFUNCTION(name) \
@@ -200,6 +200,7 @@ class asAtom
 {
 friend class multiname;
 friend class ABCContext;
+
 private:
 	union
 	{
@@ -344,11 +345,10 @@ class variables_map
 {
 public:
 	//Names are represented by strings in the string and namespace pools
-	typedef boost::container::flat_multimap<uint32_t,variable,std::less<uint32_t>,reporter_allocator<std::pair<uint32_t, variable>>>
-		mapType;
+	typedef std::unordered_multimap<uint32_t,variable> mapType;
 	mapType Variables;
-	typedef boost::container::flat_multimap<uint32_t,variable>::iterator var_iterator;
-	typedef boost::container::flat_multimap<uint32_t,variable>::const_iterator const_var_iterator;
+	typedef std::unordered_multimap<uint32_t,variable>::iterator var_iterator;
+	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<varName> slots_vars;
 	variables_map(MemoryAccount* m);
 	/**
@@ -370,7 +370,7 @@ public:
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 		assert(!mname.ns.empty());
 		
-		const_var_iterator ret=Variables.lower_bound(name);
+		const_var_iterator ret=Variables.find(name);
 		auto nsIt=mname.ns.cbegin();
 		//Find the namespace
 		while(ret!=Variables.cend() && ret->first==name)
@@ -410,7 +410,7 @@ public:
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 		assert(!mname.ns.empty());
 
-		var_iterator ret=Variables.lower_bound(name);
+		var_iterator ret=Variables.find(name);
 		auto nsIt=mname.ns.cbegin();
 		//Find the namespace
 		while(ret!=Variables.cend() && ret->first==name)

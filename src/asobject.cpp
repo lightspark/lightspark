@@ -160,9 +160,14 @@ int variables_map::getNextEnumerable(unsigned int start) const
 	if(start>=Variables.size())
 		return -1;
 
-	const_var_iterator it=Variables.begin()+start;
+	const_var_iterator it=Variables.begin();
 
-	unsigned int i=start;
+	unsigned int i=0;
+	while (i < start)
+	{
+		++i;
+		++it;
+	}
 
 	while(it->second.kind!=DYNAMIC_TRAIT || !it->second.isenumerable)
 	{
@@ -439,15 +444,14 @@ bool ASObject::isConstructed() const
 {
 	return traitsInitialized && constructIndicator;
 }
-variables_map::variables_map(MemoryAccount* m):
-	Variables(std::less<mapType::key_type>(), reporter_allocator<mapType::value_type>(m)),slots_vars()
+variables_map::variables_map(MemoryAccount *m)
 {
 }
 
 variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	var_iterator ret=Variables.lower_bound(nameId);
-	while(ret!=Variables.end() && ret->first == nameId)
+	var_iterator ret=Variables.find(nameId);
+	while(ret!=Variables.end() && ret->first==nameId)
 	{
 		if (ret->second.ns == ns)
 		{
@@ -465,8 +469,6 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
 
-	if (Variables.capacity() == Variables.size())
-		Variables.reserve(Variables.capacity()+8);
 	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns)) );
 	return &inserted->second;
 }
@@ -857,7 +859,7 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
-	var_iterator ret=Variables.lower_bound(name);
+	var_iterator ret=Variables.find(name);
 	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
@@ -888,7 +890,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	uint32_t name=mname.normalizedNameId(sys);
 	assert(!mname.ns.empty());
 
-	var_iterator ret=Variables.lower_bound(name);
+	var_iterator ret=Variables.find(name);
 	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
@@ -917,8 +919,6 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
 	if(createKind==NO_CREATE_TRAIT)
 		return NULL;
-	if (Variables.capacity() == Variables.size())
-		Variables.reserve(Variables.capacity()+8);
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		if(!mname.hasEmptyNS)
@@ -989,8 +989,6 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	if (Variables.capacity() == Variables.size())
-		Variables.reserve(Variables.capacity()+8);
 	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
 	if (slot_id)
 		initSlot(slot_id,name, mname.ns[0]);
@@ -1276,7 +1274,6 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name);
-				this->incRef();
 				return asAtom::fromFunction(obj->var.getObject(),this);
 			}
 		}
@@ -1540,7 +1537,13 @@ variable* variables_map::getValueAt(unsigned int index)
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		var_iterator it=Variables.begin()+index;
+		var_iterator it=Variables.begin();
+		uint32_t i = 0;
+		while (i < index)
+		{
+			++i;
+			++it;
+		}
 		return &it->second;
 	}
 	else
@@ -1572,7 +1575,13 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=Variables.begin()+index;
+		const_var_iterator it=Variables.begin();
+		uint32_t i = 0;
+		while (i < index)
+		{
+			++i;
+			++it;
+		}
 		return sys->getStringFromUniqueId(it->first);
 	}
 	else
@@ -1894,14 +1903,44 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 	else
 	{
 		res += "{";
+		
+		// 
+		std::vector<uint32_t> tmp;
 		variables_map::var_iterator beginIt = Variables.Variables.begin();
 		variables_map::var_iterator endIt = Variables.Variables.end();
-		bool bfirst = true;
-		bool bObjectVars = true;
-		path.push_back(this);
 		variables_map::var_iterator varIt = beginIt;
 		while (varIt != endIt)
 		{
+			tmp.push_back(varIt->first);
+			varIt++;
+		}
+		std::sort(tmp.begin(),tmp.end());
+		bool bfirst = true;
+		bool bObjectVars = true;
+		path.push_back(this);
+		auto tmpIt = tmp.begin();
+		while (tmpIt != tmp.end())
+		{
+			varIt = bObjectVars ? Variables.Variables.find(*tmpIt) : this->getClass()->borrowedVariables.Variables.find(*tmpIt);
+			tmpIt++;
+			if (tmpIt == tmp.end() && bObjectVars)
+			{
+				LOG(LOG_ERROR,"tojson");
+				bObjectVars = false;
+				if (this->getClass())
+				{
+					variables_map::var_iterator varIt2 = this->getClass()->borrowedVariables.Variables.begin();
+					while (varIt2 != this->getClass()->borrowedVariables.Variables.end())
+					{
+						tmp.push_back(varIt2->first);
+						varIt2++;
+					}
+					std::sort(tmp.begin(),tmp.end());
+					tmpIt = tmp.begin();
+				}
+			}
+			if (varIt == endIt)
+				continue;
 			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter.type != T_INVALID || varIt->second.var.type!= T_INVALID))
 			{
 				ASObject* v = varIt->second.var.toObject(getSystemState());
@@ -1959,16 +1998,6 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				}
 				if (!bfirst)
 					res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
-			}
-			varIt++;
-			if (varIt == endIt && bObjectVars)
-			{
-				bObjectVars = false;
-				if (this->getClass())
-				{
-					varIt = this->getClass()->borrowedVariables.Variables.begin();
-					endIt = this->getClass()->borrowedVariables.Variables.end();
-				}
 			}
 		}
 		res += "}";

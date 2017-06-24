@@ -21,6 +21,7 @@
 #define SCRIPTING_TOPLEVEL_ARRAY_H 1
 
 #include "asobject.h"
+#include <unordered_map>
 
 namespace lightspark
 {
@@ -39,12 +40,10 @@ class Array: public ASObject
 friend class ABCVm;
 protected:
 	uint64_t currentsize;
-	typedef boost::container::flat_map<uint32_t,asAtom,std::less<uint32_t>,
-		reporter_allocator<std::pair<uint32_t, asAtom>>> arrayType;
+	typedef std::unordered_map<uint32_t,asAtom> arrayType;
 	
-	typedef boost::container::flat_map<uint32_t,asAtom>::iterator data_iterator;
+	typedef std::unordered_map<uint32_t,asAtom>::iterator data_iterator;
 	arrayType data;
-	uint32_t currentpos;
 	void outofbounds(unsigned int index) const;
 	~Array();
 private:
@@ -89,7 +88,6 @@ public:
 		}
 		data.clear();
 		currentsize=0;
-		currentpos = 0;
 		return ASObject::destruct();
 	}
 	
@@ -113,12 +111,12 @@ public:
 	ASFUNCTION_ATOM(_sort);
 	ASFUNCTION_ATOM(sortOn);
 	ASFUNCTION_ATOM(filter);
-	ASFUNCTION(indexOf);
+	ASFUNCTION_ATOM(indexOf);
 	ASFUNCTION_ATOM(_getLength);
 	ASFUNCTION_ATOM(_setLength);
 	ASFUNCTION_ATOM(forEach);
 	ASFUNCTION(_reverse);
-	ASFUNCTION(lastIndexOf);
+	ASFUNCTION_ATOM(lastIndexOf);
 	ASFUNCTION_ATOM(_map);
 	ASFUNCTION(_toString);
 	ASFUNCTION(_toLocaleString);

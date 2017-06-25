@@ -2400,9 +2400,8 @@ ASFUNCTIONBODY_ATOM(Responder, onResult)
 {
 	Responder* th=Class<Responder>::cast(obj.getObject());
 	assert_and_throw(argslen==1);
-	ASATOM_INCREF(args[0]);
 	asAtom arg0 = args[0];
-	asAtom ret=th->result.callFunction(asAtom::nullAtom, &arg0, argslen);
+	asAtom ret=th->result.callFunction(asAtom::nullAtom, &arg0, argslen,false);
 	ASATOM_DECREF(ret);
 	return asAtom::invalidAtom;
 }

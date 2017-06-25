@@ -1337,7 +1337,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
 				try
 				{
-					asAtom result = ev->f.callFunction(ev->obj,ev->args,ev->numArgs);
+					asAtom result = ev->f.callFunction(ev->obj,ev->args,ev->numArgs,true);
 					ASATOM_DECREF(result);
 				}
 				catch(ASObject* exception)
@@ -1368,7 +1368,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 							newArgs[i] = asAtom::fromObject(ev->args[i]);
 						}
 					}
-					*(ev->result) = ev->f.callFunction(asAtom::nullAtom,newArgs,ev->numArgs).toObject(m_sys);
+					*(ev->result) = ev->f.callFunction(asAtom::nullAtom,newArgs,ev->numArgs,true).toObject(m_sys);
 				}
 				catch(ASObject* exception)
 				{
@@ -1759,7 +1759,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	ASATOM_INCREF(g);
 	entry->addToScope(scope_entry(g,false));
 
-	asAtom ret=asAtom::fromObject(entry).callFunction(g,NULL,0);
+	asAtom ret=asAtom::fromObject(entry).callFunction(g,NULL,0,false);
 
 	ASATOM_DECREF(ret);
 
@@ -1970,7 +1970,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			ASATOM_INCREF(obj);
 			asAtom callbackArgs[1] { obj };
 			asAtom v = asAtom::fromObject(client.getPtr());
-			callback.callFunction(v, callbackArgs, 1);
+			callback.callFunction(v, callbackArgs, 1,true);
 		}
 	}
 	uint16_t numMessage;
@@ -2013,7 +2013,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 				ASATOM_INCREF(ret);
 				asAtom callbackArgs[1] { ret };
 				asAtom v = asAtom::fromObject(responder.getPtr());
-				callback.callFunction(v, callbackArgs, 1);
+				callback.callFunction(v, callbackArgs, 1,true);
 			}
 		}
 	}

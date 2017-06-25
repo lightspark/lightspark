@@ -194,21 +194,19 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		if (it == th->data.end())
 			continue;
 		params[0] = it->second;
-		ASATOM_INCREF(it->second);
 		params[1] = asAtom(it->first);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		// ensure that return values are the original values
 		asAtom origval = params[0];
 		ASATOM_INCREF(origval);
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -243,18 +241,16 @@ ASFUNCTIONBODY_ATOM(Array, some)
 		if (it == th->data.end())
 			continue;
 		params[0] = it->second;
-		ASATOM_INCREF(it->second);
 		params[1] = asAtom(it->first);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -287,18 +283,16 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		if (it == th->data.end())
 			continue;
 		params[0] = it->second;
-		ASATOM_INCREF(it->second);
 		params[1] = asAtom(it->first);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -348,10 +342,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 		if (it != th->data.end())
 		{
 			if(it->second.type!=T_INVALID)
-			{
 				params[0]=it->second;
-				ASATOM_INCREF(params[0]);
-			}
 			else
 				params[0]=asAtom::undefinedAtom;
 		}
@@ -359,16 +350,15 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 			continue;
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		asAtom funcret;
 		if( argslen == 1 )
 		{
-			funcret=f.callFunction(asAtom::nullAtom, params, 3);
+			funcret=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcret=f.callFunction(args[1], params, 3);
+			funcret=f.callFunction(args[1], params, 3,false);
 		}
 		ASATOM_DECREF(funcret);
 	}
@@ -729,12 +719,10 @@ bool Array::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
 {
 	asAtom objs[2];
 	objs[0]=d1;
-	ASATOM_INCREF(objs[0]);
 	objs[1]=d2;
-	ASATOM_INCREF(objs[1]);
 
 	assert(comparator.type == T_FUNCTION);
-	asAtom ret=comparator.callFunction(asAtom::nullAtom, objs, 2);
+	asAtom ret=comparator.callFunction(asAtom::nullAtom, objs, 2,false);
 	assert_and_throw(ret.type != T_INVALID);
 	return (ret.toNumber()<0); //Less
 }
@@ -1068,7 +1056,6 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 			if(it->second.type!=T_INVALID)
 			{
 				funcArgs[0]=it->second;
-				ASATOM_INCREF(funcArgs[0]);
 			}
 			else
 				funcArgs[0]=asAtom::undefinedAtom;
@@ -1077,11 +1064,10 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 			funcArgs[0]=asAtom::undefinedAtom;
 		funcArgs[1]=asAtom(i);
 		funcArgs[2]=asAtom::fromObject(th);
-		ASATOM_INCREF(funcArgs[2]);
 		asAtom funcRet;
 		if (func.type != T_INVALID)
 		{
-			funcRet = func.callFunction(argslen > 1? args[1] : asAtom::nullAtom, funcArgs, 3);
+			funcRet = func.callFunction(argslen > 1? args[1] : asAtom::nullAtom, funcArgs, 3,false);
 		}
 		else
 		{
@@ -1581,10 +1567,8 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 			asAtom params[2];
 			
 			params[0] = asAtom(it->first);
-			ASATOM_INCREF(params[0]);
 			params[1] = it->second;
-			ASATOM_INCREF(params[1]);
-			asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2);
+			asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,false);
 			if (funcret.type != T_INVALID)
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}

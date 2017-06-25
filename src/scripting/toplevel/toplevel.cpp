@@ -165,7 +165,7 @@ ASFUNCTIONBODY(IFunction,_length)
 ASFUNCTIONBODY_ATOM(IFunction,apply)
 {
 	/* This function never changes the 'this' pointer of a method closure */
-	IFunction* th=static_cast<IFunction*>(obj.getObject());
+	IFunction* th=obj.as<IFunction>();
 	assert_and_throw(argslen<=2);
 
 	asAtom newObj;
@@ -196,11 +196,10 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 		for(int i=0;i<newArgsLen;i++)
 		{
 			asAtom val = array->at(i);
-			ASATOM_INCREF(val);
 			newArgs[i]=val;
 		}
 	}
-	asAtom ret=obj.callFunction(newObj,newArgs,newArgsLen);
+	asAtom ret=obj.callFunction(newObj,newArgs,newArgsLen,false);
 	if (newArgs)
 		delete[] newArgs;
 	return ret;
@@ -236,10 +235,9 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		for(unsigned int i=0;i<newArgsLen;i++)
 		{
 			newArgs[i]=args[i+1];
-			ASATOM_INCREF(newArgs[i]);
 		}
 	}
-	return obj.callFunction(newObj,newArgs,newArgsLen);
+	return obj.callFunction(newObj,newArgs,newArgsLen,false);
 }
 
 ASFUNCTIONBODY(IFunction,_toString)
@@ -525,6 +523,7 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 					cc.exec_pos = exc.target;
 					cc.runtime_stack_clear();
 					cc.stack[cc.stack_index++]=asAtom::fromObject(excobj);
+					excobj->incRef();
 					while (cc.curr_scope_stack)
 					{
 						--cc.curr_scope_stack;
@@ -555,7 +554,6 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	getVm(getSystemState())->currentCallContext = saved_cc;
 
 	this->decRef(); //free local ref
-	ASATOM_DECREF(obj);
 
 	if(ret.type == T_INVALID)
 		ret=asAtom::undefinedAtom;
@@ -564,7 +562,7 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 
 /**
  * This executes a C++ function.
- * It consumes one reference of obj and one of each arg
+ * It consumes _no_ references of obj and args
  */
 asAtom Function::call(asAtom& obj, asAtom *args, uint32_t num_args)
 {
@@ -580,18 +578,7 @@ asAtom Function::call(asAtom& obj, asAtom *args, uint32_t num_args)
 	if (val_atom)
 	{
 		// use the asAtom based call interface
-		try
-		{
-			ret=val_atom(getSystemState(),obj,args,num_args);
-		}
-		catch(ASObject* excobj)
-		{
-			//If an exception is thrown from native code, clean up and rethrow
-			ASATOM_DECREF(obj);
-			throw;
-		}
-	
-		ASATOM_DECREF(obj);
+		ret=val_atom(getSystemState(),obj,args,num_args);
 		if(ret.type == T_INVALID)
 			ret=asAtom::undefinedAtom;
 		return ret;
@@ -611,22 +598,8 @@ asAtom Function::call(asAtom& obj, asAtom *args, uint32_t num_args)
 		}
 	}
 
-	try
-	{
-		ret=asAtom::fromObject(val(obj.toObject(getSystemState()),newArgs,num_args));
-	}
-	catch(ASObject* excobj)
-	{
-		//If an exception is thrown from native code, clean up and rethrow
-		for(uint32_t i=0;i<num_args;i++)
-			ASATOM_DECREF(args[i]);
-		ASATOM_DECREF(obj);
-		throw;
-	}
+	ret=asAtom::fromObject(val(obj.toObject(getSystemState()),newArgs,num_args));
 
-	for(uint32_t i=0;i<num_args;i++)
-		ASATOM_DECREF(args[i]);
-	ASATOM_DECREF(obj);
 	if(ret.type == T_INVALID)
 		ret=asAtom::undefinedAtom;
 	return ret;
@@ -862,10 +835,10 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{
 		variable& v = i->second;
+		v.issealed = super->isSealed;
 		ASATOM_INCREF(v.var);
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
-		v.issealed = super->isSealed;
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
 	}
 }
@@ -1034,7 +1007,8 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 	//TODO: is there any valid case for not having a constructor?
 	if(constructor)
 	{
-		asAtom ret=asAtom::fromObject(constructor).callFunction(target,args,argslen);
+		ASATOM_INCREF(target);
+		asAtom ret=asAtom::fromObject(constructor).callFunction(target,args,argslen,true);
 		target.getObject()->constructIndicator = true;
 		assert_and_throw(ret.type == T_UNDEFINED);
 		target = asAtom::fromObject(target.getObject());
@@ -1160,7 +1134,7 @@ void Class_base::linkInterface(Class_base* c) const
 	{
 		LOG_CALL(_("Calling interface init for ") << class_name);
 		asAtom v = asAtom::fromObject(c);
-		asAtom ret=asAtom::fromObject(constructor).callFunction(v,NULL,0);
+		asAtom ret=asAtom::fromObject(constructor).callFunction(v,NULL,0,false);
 		assert_and_throw(ret.type == T_INVALID);
 	}
 }

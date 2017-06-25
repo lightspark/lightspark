@@ -745,14 +745,12 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 			continue;
-		//The object needs to be used multiple times
-		e->incRef();
 		//tmpListener is now also owned by the vector
 		ASATOM_INCREF(tmpListener[i].f);
 		//If the f is a class method, the 'this' is ignored
 		asAtom arg0= asAtom::fromObject(e.getPtr());
 		asAtom v = asAtom::fromObject(this);
-		asAtom ret=tmpListener[i].f.callFunction(v,&arg0,1);
+		asAtom ret=tmpListener[i].f.callFunction(v,&arg0,1,false);
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);

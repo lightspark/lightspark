@@ -3179,7 +3179,7 @@ void MovieClip::initFrame()
 	//TODO: check order: child or parent first?
 	if(newFrame && frameScripts.count(state.FP))
 	{
-		asAtom v=frameScripts[state.FP].callFunction(asAtom::invalidAtom,NULL,0);
+		asAtom v=frameScripts[state.FP].callFunction(asAtom::invalidAtom,NULL,0,false);
 		ASATOM_DECREF(v);
 	}
 

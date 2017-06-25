@@ -238,18 +238,16 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 		if (th->vec[i].type == T_INVALID)
 			continue;
 		params[0] = th->vec[i];
-		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -280,18 +278,16 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 		if (th->vec[i].type == T_INVALID)
 			continue;
 		params[0] = th->vec[i];
-		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -319,23 +315,19 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 	for(unsigned int i=0; i < th->size(); i++)
 	{
 		if (th->vec[i].type != T_INVALID)
-		{
 			params[0] = th->vec[i];
-			ASATOM_INCREF(th->vec[i]);
-		}
 		else
 			params[0] = asAtom::nullAtom;
 		params[1] = asAtom(i);
 		params[2] = asAtom::fromObject(th);
-		th->incRef();
 
 		if(argslen==1)
 		{
-			funcRet=f.callFunction(asAtom::nullAtom, params, 3);
+			funcRet=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcRet=f.callFunction(args[1], params, 3);
+			funcRet=f.callFunction(args[1], params, 3,false);
 		}
 		if(funcRet.type != T_INVALID)
 		{
@@ -443,19 +435,17 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 		if (th->vec[i].type == T_INVALID)
 			continue;
 		params[0] = th->vec[i];
-		ASATOM_INCREF(th->vec[i]);
 		params[1] = asAtom(i);
 		params[2] = th;
-		th->incRef();
 
 		asAtom funcret;
 		if( argslen == 1 )
 		{
-			funcret=f.callFunction(asAtom::nullAtom, params, 3);
+			funcret=f.callFunction(asAtom::nullAtom, params, 3,false);
 		}
 		else
 		{
-			funcret=f.callFunction(args[1], params, 3);
+			funcret=f.callFunction(args[1], params, 3,false);
 		}
 		ASATOM_DECREF(funcret);
 	}
@@ -746,21 +736,15 @@ bool Vector::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
 {
 	asAtom objs[2];
 	if (d1.type != T_INVALID)
-	{
 		objs[0] = d1;
-		ASATOM_INCREF(objs[0]);
-	}
 	else
 		objs[0] = asAtom::nullAtom;
 	if (d2.type != T_INVALID)
-	{
 		objs[1] = d2;
-		ASATOM_INCREF(objs[1]);
-	}
 	else
 		objs[1] = asAtom::nullAtom;
 
-	asAtom ret= comparator.callFunction(asAtom::nullAtom, objs, 2);
+	asAtom ret= comparator.callFunction(asAtom::nullAtom, objs, 2,false);
 	assert_and_throw(ret.type != T_INVALID);
 	return (ret.toNumber()<0); //Less
 }
@@ -854,11 +838,9 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 	{
 		asAtom funcArgs[3];
 		funcArgs[0]=th->vec[i];
-		ASATOM_INCREF(funcArgs[0]);
 		funcArgs[1]=asAtom(i);
 		funcArgs[2]=asAtom::fromObject(th);
-		ASATOM_INCREF(funcArgs[2]);
-		asAtom funcRet=func.callFunction(thisObject, funcArgs, 3);
+		asAtom funcRet=func.callFunction(thisObject, funcArgs, 3,false);
 		assert_and_throw(funcRet.type != T_INVALID);
 		ASATOM_INCREF(funcRet);
 		ret->vec.push_back(funcRet);
@@ -1123,9 +1105,8 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 			asAtom params[2];
 			
 			params[0] = asAtom(i);
-			ASATOM_INCREF(params[0]);
 			params[1] = o;
-			asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2);
+			asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,false);
 			if (funcret.type != T_INVALID)
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}

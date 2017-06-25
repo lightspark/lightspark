@@ -83,11 +83,13 @@ void Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOW
 	asAtom args[2];
 	args[0]=asAtom::fromObject(namearg);
 	args[1]=o;
+	ASATOM_INCREF(o);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::setProperty"));
 	asAtom v = asAtom::fromObject(this);
-	asAtom ret=proxySetter.callFunction(v,args,2);
+	ASATOM_INCREF(v);
+	asAtom ret=proxySetter.callFunction(v,args,2,true);
 	assert_and_throw(ret.type == T_UNDEFINED);
 	implEnable=true;
 }
@@ -122,7 +124,8 @@ asAtom Proxy::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION 
 	implEnable=false;
 	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
 	asAtom v = asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,&arg,1);
+	ASATOM_INCREF(v);
+	asAtom ret=o.callFunction(v,&arg,1,true);
 	implEnable=true;
 	return ret;
 }
@@ -158,7 +161,8 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	implEnable=false;
 	LOG_CALL(_("Proxy::hasProperty"));
 	asAtom v = asAtom::fromObject(this);
-	asAtom ret=proxyHasProperty.callFunction(v,&arg,1);
+	ASATOM_INCREF(v);
+	asAtom ret=proxyHasProperty.callFunction(v,&arg,1,true);
 	implEnable=true;
 	return ret.Boolean_concrete();
 }
@@ -191,7 +195,8 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	implEnable=false;
 	LOG_CALL(_("Proxy::deleteProperty"));
 	asAtom v = asAtom::fromObject(this);
-	asAtom ret= proxyDeleter.callFunction(v,&arg,1);
+	ASATOM_INCREF(v);
+	asAtom ret= proxyDeleter.callFunction(v,&arg,1,true);
 	implEnable=true;
 	return ret.Boolean_concrete();
 }
@@ -209,7 +214,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	assert_and_throw(o.type==T_FUNCTION);
 	asAtom arg=asAtom(cur_index);
 	asAtom v = asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,&arg,1);
+	asAtom ret=o.callFunction(v,&arg,1,false);
 	uint32_t newIndex=ret.toInt();
 	ASATOM_DECREF(ret);
 	return newIndex;
@@ -228,7 +233,7 @@ asAtom Proxy::nextName(uint32_t index)
 	assert_and_throw(o.type==T_FUNCTION);
 	asAtom arg=asAtom(index);
 	asAtom v = asAtom::fromObject(this);
-	return o.callFunction(v,&arg,1);
+	return o.callFunction(v,&arg,1,false);
 }
 
 asAtom Proxy::nextValue(uint32_t index)
@@ -244,7 +249,7 @@ asAtom Proxy::nextValue(uint32_t index)
 	assert_and_throw(o.type==T_FUNCTION);
 	asAtom arg=asAtom(index);
 	asAtom v = asAtom::fromObject(this);
-	return o.callFunction(v,&arg,1);
+	return o.callFunction(v,&arg,1,false);
 }
 bool Proxy::isConstructed() const
 {

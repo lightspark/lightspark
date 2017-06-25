@@ -234,10 +234,10 @@ public:
 	static asAtom falseAtom;
 	/*
 	 * Calls this function with the given object and args.
-	 * One reference of each args[i] is consumed.
+	 * if args_refcounted is true, one reference of obj and of each arg is consumed by this method.
 	 * Return the asAtom the function returned.
 	 */
-	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args);
+	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args, bool args_refcounted);
 	void replace(ASObject* obj);
 	std::string toDebugString();
 	void applyProxyProperty(multiname& name);

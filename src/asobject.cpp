@@ -365,7 +365,7 @@ _R<ASObject> ASObject::call_valueOf()
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0);
+	asAtom ret=o.callFunction(v,NULL,0,false);
 	return _MR(ret.toObject(getSystemState()));
 }
 
@@ -398,7 +398,7 @@ _R<ASObject> ASObject::call_toString()
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0);
+	asAtom ret=o.callFunction(v,NULL,0,false);
 	return _MR(ret.toObject(getSystemState()));
 }
 
@@ -419,7 +419,7 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	if (o.type != T_FUNCTION)
 		return res;
 	asAtom v=asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0);
+	asAtom ret=o.callFunction(v,NULL,0,false);
 	if (ret.type == T_STRING)
 	{
 		res += "\"";
@@ -767,7 +767,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		asAtom* arg1 = &o;
 
 		asAtom v =asAtom::fromObject(target);
-		asAtom ret= obj->setter.callFunction(v,arg1,1);
+		asAtom ret= obj->setter.callFunction(v,arg1,1,false);
 		assert_and_throw(ret.type == T_UNDEFINED);
 		LOG_CALL(_("End of setter"));
 	}
@@ -1255,9 +1255,8 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			target=this;
 		
 		asAtom v =asAtom::fromObject(target);
-		asAtom ret=obj->getter.callFunction(v,NULL,0);
+		asAtom ret=obj->getter.callFunction(v,NULL,0,false);
 		LOG_CALL(_("End of getter"));
-		// No incRef because ret is a new instance
 		return ret;
 	}
 	else
@@ -1310,7 +1309,7 @@ asAtom ASObject::executeASMethod(const tiny_string& methodName,
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, methodName);
 	asAtom v =asAtom::fromObject(this);
-	return o.callFunction(v,args,num_args);
+	return o.callFunction(v,args,num_args,false);
 }
 
 void ASObject::check() const
@@ -1557,7 +1556,7 @@ asAtom ASObject::getValueAt(int index)
 		//Call the getter
 		LOG_CALL(_("Calling the getter"));
 		asAtom v=asAtom::fromObject(this);
-		asAtom ret = obj->getter.callFunction(v,NULL,0);
+		asAtom ret = obj->getter.callFunction(v,NULL,0,false);
 		LOG_CALL(_("End of getter"));
 		return ret;
 	}
@@ -1690,10 +1689,9 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 		asAtom o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
-		out->incRef();
 		asAtom tmpArg[1] = { asAtom::fromObject(out) };
 		asAtom v=asAtom::fromObject(this);
-		o.callFunction(v, tmpArg, 1);
+		o.callFunction(v, tmpArg, 1,false);
 		return;
 	}
 
@@ -1945,7 +1943,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				if (varIt->second.getter.type != T_INVALID)
 				{
 					asAtom t=asAtom::fromObject(this);
-					v=varIt->second.getter.callFunction(t,NULL,0).toObject(getSystemState());
+					v=varIt->second.getter.callFunction(t,NULL,0,false).toObject(getSystemState());
 				}
 				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
@@ -1972,7 +1970,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						params[0] = asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first)));
 						params[1] = asAtom::fromObject(v);
 						ASATOM_INCREF(params[1]);
-						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2);
+						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,true);
 						if (funcret.type != T_INVALID)
 							res += funcret.toString();
 						else
@@ -2047,7 +2045,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	{
 		asAtom arg1= asAtom::fromObject(obj);
 		asAtom v=asAtom::fromObject(this);
-		ret->setter.callFunction(v,&arg1,1);
+		ret->setter.callFunction(v,&arg1,1,false);
 	}
 	else
 		ret->setVar(asAtom::fromObject(obj),getSystemState());
@@ -2115,7 +2113,7 @@ asAtom asAtom::fromFunction(ASObject *f, ASObject *closure)
 	return a;
 }
 
-asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args)
+asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted)
 {
 	assert_and_throw(type == T_FUNCTION);
 		
@@ -2127,14 +2125,29 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args)
 	{ /* closure_this can never been overriden */
 		LOG_CALL(_("Calling with closure ") << toDebugString());
 		c=asAtom::fromObject(closure);
+		ASATOM_INCREF(c);
 	}
 	else
 		c = obj;
-	ASATOM_INCREF(c);
-	
 	if (objval->is<SyntheticFunction>())
+	{
+		if (!args_refcounted)
+		{
+			for (uint32_t i = 0; i < num_args; i++)
+				ASATOM_INCREF(args[i]);
+		}
 		return objval->as<SyntheticFunction>()->call(c, args, num_args);
-	return objval->as<Function>()->call(c, args, num_args);
+	}
+	// when calling builtin functions, normally no refcounting is needed
+	// if it is, it has to be done inside the called function
+	asAtom ret = objval->as<Function>()->call(c, args, num_args);
+	if (args_refcounted)
+	{
+		for (uint32_t i = 0; i < num_args; i++)
+			ASATOM_DECREF(args[i]);
+		ASATOM_DECREF(c);
+	}
+	return ret;
 }
 
 void asAtom::replace(ASObject *obj)

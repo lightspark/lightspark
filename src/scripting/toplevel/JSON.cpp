@@ -224,7 +224,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 			ASATOM_INCREF(params[1]);
 		}
 
-		asAtom funcret=reviver.callFunction(asAtom::nullAtom, params, 2);
+		asAtom funcret=reviver.callFunction(asAtom::nullAtom, params, 2,true);
 		if(funcret.type != T_INVALID)
 		{
 			if (haskey)

@@ -1241,7 +1241,6 @@ void ABCVm::abc_setproperty(call_context* context,memorystream& code)
 	//Do not allow to set contant traits
 	ASObject* o = obj.toObject(context->context->root->getSystemState());
 	o->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
-	o->decRef();
 
 	name->resetNameIfObject();
 }

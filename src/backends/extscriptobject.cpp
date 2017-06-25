@@ -402,7 +402,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			}
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			result = func.callFunction(asAtom::nullAtom, newArgs, argc).toObject(func.getObject()->getSystemState());
+			result = func.callFunction(asAtom::nullAtom, newArgs, argc,false).toObject(func.getObject()->getSystemState());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

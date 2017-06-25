@@ -831,7 +831,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 				subargs[capturingGroups+1]=asAtom((int32_t)(ovector[0]-retDiff));
 				
 				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(sys,data));
-				asAtom ret=args[1].callFunction(asAtom::nullAtom, subargs, 3+capturingGroups);
+				asAtom ret=args[1].callFunction(asAtom::nullAtom, subargs, 3+capturingGroups,true);
 				replaceWithTmp=ret.toString().raw_buf();
 				ASATOM_DECREF(ret);
 			} else {

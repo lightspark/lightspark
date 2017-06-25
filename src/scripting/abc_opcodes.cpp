@@ -391,7 +391,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 					//We now suppress special handling
 					LOG_CALL(_("Proxy::callProperty"));
 					ASATOM_INCREF(oproxy);
-					asAtom ret=oproxy.callFunction(obj,proxyArgs,m+1);
+					asAtom ret=oproxy.callFunction(obj,proxyArgs,m+1,true);
 					ASATOM_DECREF(oproxy);
 					if(keepReturn)
 						RUNTIME_STACK_PUSH(th,ret);
@@ -801,7 +801,7 @@ asAtom ABCVm::constructFunction(call_context* th, asAtom &f, asAtom *args, int a
 	ret.getObject()->setVariableByQName("constructor","",constructor,DECLARED_TRAIT);
 
 	ASATOM_INCREF(f);
-	asAtom ret2=f.callFunction(ret,args,argslen);
+	asAtom ret2=f.callFunction(ret,args,argslen,true);
 	ASATOM_DECREF(f);
 
 	//ECMA: "return ret2 if it is an object, else ret"
@@ -1635,7 +1635,6 @@ void ABCVm::constructSuper(call_context* th, int m)
 	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
-	ASATOM_DECREF(obj);
 	LOG_CALL(_("End super construct "));
 }
 
@@ -2246,7 +2245,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		LOG_CALL(_("Exception during object construction. Returning Undefined"));
 		//Handle eventual exceptions from the constructor, to fix the stack
 		RUNTIME_STACK_PUSH(th,obj);
-		ASATOM_DECREF(obj);
 		throw;
 	}
 	RUNTIME_STACK_PUSH(th,ret);
@@ -2354,7 +2352,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			LOG_CALL(_("Proxy::getDescendants"));
 			ASATOM_INCREF(o);
 			asAtom v = asAtom::fromObject(obj);
-			asAtom ret=o.callFunction(v,proxyArgs,1);
+			asAtom ret=o.callFunction(v,proxyArgs,1,true);
 			ASATOM_DECREF(o);
 			RUNTIME_STACK_PUSH(th,ret);
 			
@@ -2679,7 +2677,7 @@ void ABCVm::newClass(call_context* th, int n)
 	try
 	{
 		asAtom v = asAtom::fromObject(ret);
-		ret2=asAtom::fromObject(cinit).callFunction(v,NULL,0);
+		ret2=asAtom::fromObject(cinit).callFunction(v,NULL,0,true);
 	}
 	catch(ASObject* exc)
 	{
@@ -2775,12 +2773,12 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	LOG_CALL(_("call ") << m << ' ' << f.type);
 	callImpl(th, f, obj, args, m, true);
 }
-
+// this consumes one reference of obj and of each arg
 void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int m, bool keepReturn)
 {
 	if(f.is<IFunction>())
 	{
-		asAtom ret=f.callFunction(obj,args,m);
+		asAtom ret=f.callFunction(obj,args,m,true);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else
@@ -2803,6 +2801,8 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 			RUNTIME_STACK_PUSH(th,ret);
 		else
 			ASATOM_DECREF(ret);
+		for(int i=0;i<m;++i)
+			ASATOM_DECREF(args[i]);
 	}
 	else
 	{

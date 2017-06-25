@@ -52,13 +52,14 @@ TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 
 #With STATICDEPS, all deps are compiled into spark
 IF(NOT STATICDEPS)
-  TARGET_LINK_LIBRARIES(lightsparkplugin spark ${X11_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(lightsparkplugin spark ${X11_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTK_LIBRARIES})
 ENDIF()
 
 IF(WIN32)
   #For win32 firefox, plugins have to start with 'np'
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--enable-stdcall-fixup")
+  TARGET_LINK_LIBRARIES(lightsparkplugin ${GTK_LIBRARIES} -lopengl32 spark)
 ENDIF()
 
 PACK_LIBRARY(lightsparkplugin)

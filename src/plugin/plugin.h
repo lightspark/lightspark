@@ -123,7 +123,7 @@ public:
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
-	void SwapBuffers();
+	void DoSwapBuffers();
 	void InitOpenGL();
 	void DeinitOpenGL();
 };

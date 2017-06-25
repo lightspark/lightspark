@@ -910,7 +910,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 	stringstream code(body->code);
 	for (unsigned int i=0;i<body->exceptions.size();i++)
 	{
-		exception_info& exc=body->exceptions[i];
+		exception_info_abc& exc=body->exceptions[i];
 		LOG(LOG_TRACE,"Exception handler: from " << exc.from << " to " << exc.to << " handled by " << exc.target);
 	}
 	//We try to analyze the blocks first to find if locals can survive the jumps
@@ -937,7 +937,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderW
 			/* check if the local_ip is the beginning of a catch block */
 			for (unsigned int i=0;i<body->exceptions.size();i++)
 			{
-				exception_info& exc=body->exceptions[i];
+				exception_info_abc& exc=body->exceptions[i];
 				if(exc.target == local_ip)
 				{
 					addBlock(blocks,local_ip,"catch");
@@ -2050,7 +2050,7 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 		/* start at an catch handler if its ip is given in exec_pos*/
 		for (unsigned int i=0;i<body->exceptions.size();i++)
 		{
-			exception_info& exc=body->exceptions[i];
+			exception_info_abc& exc=body->exceptions[i];
 			Case=llvm::BasicBlock::Create(llvm_context,"exec_pos_handler", llvmf);
 			constant = static_cast<llvm::ConstantInt*>(llvm::ConstantInt::get(int_type, exc.target));
 			sw->addCase(constant, Case);

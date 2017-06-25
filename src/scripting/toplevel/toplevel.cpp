@@ -514,7 +514,7 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 			LOG(LOG_TRACE, "pos=" << pos);
 			for (unsigned int i=0;i<mi->body->exceptions.size();i++)
 			{
-				exception_info exc=mi->body->exceptions[i];
+				exception_info_abc exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, NULL);
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to << " type=" << *name);
 				if (pos >= exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))

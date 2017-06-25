@@ -43,7 +43,10 @@ Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),windowID(0),visual(0)
+EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true)
+#ifndef _WIN32
+  ,windowID(0),visual(0)
+#endif
 {
 }
 

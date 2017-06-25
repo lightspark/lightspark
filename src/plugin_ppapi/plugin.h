@@ -201,7 +201,7 @@ public:
 	
 	static void swapbuffer_done_callback(void* userdata,int result);
 	static void swapbuffer_start_callback(void* userdata,int result);
-	void SwapBuffers();
+	void DoSwapBuffers();
 	void InitOpenGL();
 	void DeinitOpenGL();
 	bool getGLError(uint32_t &errorCode) const;

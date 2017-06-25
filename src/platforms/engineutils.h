@@ -112,7 +112,7 @@ public:
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	
 	// OpenGL methods
-	virtual void SwapBuffers() = 0;
+	virtual void DoSwapBuffers() = 0;
 	virtual void InitOpenGL() = 0;
 	virtual void DeinitOpenGL() = 0;
 	virtual bool getGLError(uint32_t& errorCode) const;

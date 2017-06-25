@@ -231,7 +231,7 @@ struct script_info
 	std::vector<traits_info> traits;
 };
 
-struct exception_info
+struct exception_info_abc
 {
 	uint32_t from;
 	uint32_t to;
@@ -282,7 +282,7 @@ struct method_body_info
 	u30 init_scope_depth;
 	u30 max_scope_depth;
 	std::string code;
-	std::vector<exception_info> exceptions;
+	std::vector<exception_info_abc> exceptions;
 	u30 trait_count;
 	std::vector<traits_info> traits;
 	//The hit_count belongs here, since it is used to manipulate the code
@@ -305,7 +305,7 @@ std::istream& operator>>(std::istream& in, namespace_info& v);
 std::istream& operator>>(std::istream& in, ns_set_info& v);
 std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
-std::istream& operator>>(std::istream& in, exception_info& v);
+std::istream& operator>>(std::istream& in, exception_info_abc& v);
 std::istream& operator>>(std::istream& in, method_info_simple& v);
 std::istream& operator>>(std::istream& in, method_body_info& v);
 std::istream& operator>>(std::istream& in, instance_info& v);

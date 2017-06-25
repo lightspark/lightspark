@@ -93,7 +93,7 @@ public:
 		return 96.0;
 #endif
 	}
-	void SwapBuffers()
+	void DoSwapBuffers()
 	{
 		uint32_t err;
 		if (getGLError(err))

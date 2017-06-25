@@ -130,13 +130,13 @@ DEFDLLMAIN(cairo);
 extern "C"
 BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-	RUNDLLMAIN(gio);
+	//RUNDLLMAIN(gio); //taken care of by patches from mxe
 	RUNDLLMAIN(glib);
 	//RUNDLLMAIN(cairo); //taken care of by patches from mxe
-	RUNDLLMAIN(atk);
+	//RUNDLLMAIN(atk); //taken care of by patches from mxe
 	//RUNDLLMAIN(pango); //taken care of by patches from mxe
-	RUNDLLMAIN(gdk);
-	RUNDLLMAIN(gtk);
+	//RUNDLLMAIN(gdk); //taken care of by patches from mxe
+	//RUNDLLMAIN(gtk); //taken care of by patches from mxe
 	return TRUE;
 }
 

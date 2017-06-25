@@ -355,7 +355,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	//Create a map of addresses to fixups to rewrite the exception data: from, to and target
 	for(uint32_t i=0;i<mi->body->exceptions.size();i++)
 	{
-		exception_info& ei=mi->body->exceptions[i];
+		exception_info_abc& ei=mi->body->exceptions[i];
 		//Also create a new basic block at the exception target address,
 		//otherwise that code might be considered unreachable and lost
 		if(basicBlocks.find(ei.target)==basicBlocks.end())
@@ -1672,7 +1672,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 	uint32_t originalExceptionSize=mi->body->exceptions.size();
 	for(uint32_t i=0;i<originalExceptionSize;i++)
 	{
-		exception_info* ei=&mi->body->exceptions[i];
+		exception_info_abc* ei=&mi->body->exceptions[i];
 		//Find out where the exception begins
 		uint32_t excStart = ei->from;
 		assert(instructionsMap.find(ei->target)!=instructionsMap.end());

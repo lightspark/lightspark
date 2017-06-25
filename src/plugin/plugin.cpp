@@ -28,6 +28,7 @@
 #include <algorithm>
 #ifdef _WIN32
 #	include <gdk/gdkwin32.h>
+#	include <wingdi.h>
 #endif
 #include "backends/urlutils.h"
 
@@ -35,7 +36,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
 #include <gtk/gtk.h>
+#ifndef _WIN32
 #include <gdk/gdkx.h>
+#endif
 #if GTK_CHECK_VERSION (2,21,8)
 #include <gdk/gdkkeysyms-compat.h> 
 #else
@@ -737,9 +740,7 @@ SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 	widget_gtk = gtk_plug_new(instance->mWindow);
 	gdk_threads_enter();
 	gtk_widget_realize(widget_gtk);
-#if _WIN32
-	windowID = GDK_WINDOW_HWND(gtk_widget_get_window(widget_gtk));
-#else
+#ifndef _WIN32
 	windowID = GDK_WINDOW_XID(gtk_widget_get_window(widget_gtk));
 #endif
 	
@@ -754,8 +755,11 @@ SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 		GDK_LEAVE_NOTIFY_MASK);
 	inputHandlerId = g_signal_connect(widget_gtk, "event", G_CALLBACK(inputDispatch), this);
 	sizeHandlerId = g_signal_connect(widget_gtk, "size-allocate", G_CALLBACK(sizeDispatch), this);
-	
+#ifdef _WIN32
+	SDL_Window* sdlwin = SDL_CreateWindowFrom((const void*)gtk_widget_get_window(widget_gtk));
+#else
 	SDL_Window* sdlwin = SDL_CreateWindowFrom((const void*)gdk_x11_drawable_get_xid(gtk_widget_get_window(widget_gtk)));
+#endif
 	gdk_threads_leave();
 	return sdlwin;
 }
@@ -1069,7 +1073,7 @@ void PluginEngineData::stopMainDownload()
 
 uint32_t PluginEngineData::getWindowForGnash()
 {
-	return instance->mWindow;
+	return (uint32_t)instance->mWindow;
 }
 
 struct linkOpenData
@@ -1105,7 +1109,7 @@ void PluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_stri
 {
 	instance->openLink(url, window);
 }
-void PluginEngineData::SwapBuffers()
+void PluginEngineData::DoSwapBuffers()
 {
 #if defined(_WIN32)
 	SwapBuffers(mDC);
@@ -1137,7 +1141,7 @@ void PluginEngineData::InitOpenGL()
 			0,
 			0, 0, 0
 		};
-	if(!(mDC = GetDC((HWND)engineData->window)))
+	if(!(mDC = GetDC((HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget_gtk)))))
 		throw RunTimeException("GetDC failed");
 	int PixelFormat;
 	if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))

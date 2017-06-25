@@ -204,6 +204,9 @@ INSTALL(TARGETS spark RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DESTINATION $
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
   ADD_EXECUTABLE(lightspark main.cpp)
+  IF(MINGW)
+    SET_TARGET_PROPERTIES(lightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
+  ENDIF()
   TARGET_LINK_LIBRARIES(lightspark spark)
   #With STATICDEPS, all deps are compiled into spark
   IF(NOT STATICDEPS)
@@ -221,6 +224,9 @@ ENDIF(COMPILE_LIGHTSPARK)
 IF(COMPILE_TIGHTSPARK)
   ADD_EXECUTABLE(tightspark tightspark.cpp)
   TARGET_LINK_LIBRARIES(tightspark spark)
+  IF(MINGW)
+    SET_TARGET_PROPERTIES(tightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
+  ENDIF()
   #With STATICDEPS, all deps are compiled into spark
   IF(NOT STATICDEPS)
     TARGET_LINK_LIBRARIES(tightspark ${Boost_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTHREAD_LIBRARIES})

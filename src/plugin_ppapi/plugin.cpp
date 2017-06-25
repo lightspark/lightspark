@@ -71,11 +71,15 @@
 
 #include "GLES2/gl2.h"
 
+#ifdef _WIN32
+#define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
+#else
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
 #else
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
+#endif
 #endif
 
 using namespace lightspark;
@@ -1728,7 +1732,7 @@ void ppPluginEngineData::swapbuffer_start_callback(void* userdata,int result)
 		LOG(LOG_ERROR,"swapbuffer failed:"<<res);
 	data->sys->sendMainSignal();
 }
-void ppPluginEngineData::SwapBuffers()
+void ppPluginEngineData::DoSwapBuffers()
 {
 	buffersswapped = false;
 	if (!g_core_interface->IsMainThread())
@@ -1770,10 +1774,18 @@ uint8_t *ppPluginEngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
 	//TODO See if a more elegant way of handling the non-PBO case can be found.
 	//for now, each frame is uploaded one at a time synchronously to the server
 	if(!currentPixelBufPtr)
+#ifdef _WIN32
+		currentPixelBufPtr = (uint8_t*)_aligned_malloc(w*h*4, 16);
+		if (!currentPixelBufPtr) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+			return NULL;
+		}
+#else
 		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
 			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
 			return NULL;
 		}
+#endif
 	return currentPixelBufPtr;
 }
 

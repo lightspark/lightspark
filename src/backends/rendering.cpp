@@ -257,7 +257,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		//Call glFlush to offload work on the GPU
 		engineData->exec_glFlush();
 	}
-	engineData->SwapBuffers();
+	engineData->DoSwapBuffers();
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
 	renderNeeded=false;

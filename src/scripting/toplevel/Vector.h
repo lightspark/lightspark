@@ -40,7 +40,7 @@ class Vector: public ASObject
 		bool isDescending;
 	public:
 		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
-		bool operator()(asAtom& d1, asAtom& d2);
+		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	class sortComparatorWrapper
 	{
@@ -49,7 +49,7 @@ class Vector: public ASObject
 		const Type* vec_type;
 	public:
 		sortComparatorWrapper(asAtom c, const Type* v):comparator(c),vec_type(v){}
-		bool operator()(asAtom& d1, asAtom& d2);
+		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 public:
 	Vector(Class_base* c, const Type *vtype=NULL);

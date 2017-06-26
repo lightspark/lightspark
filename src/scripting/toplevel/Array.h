@@ -55,7 +55,7 @@ private:
 		bool isDescending;
 	public:
 		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
-		bool operator()(asAtom& d1, asAtom& d2);
+		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	class sortComparatorWrapper
 	{
@@ -63,7 +63,7 @@ private:
 		asAtom comparator;
 	public:
 		sortComparatorWrapper(asAtom c):comparator(c){}
-		bool operator()(asAtom& d1, asAtom& d2);
+		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	class sortOnComparator
 	{
@@ -71,7 +71,7 @@ private:
 		std::vector<sorton_field> fields;
 	public:
 		sortOnComparator(const std::vector<sorton_field>& sf):fields(sf){}
-		bool operator()(asAtom& d1, asAtom& d2);
+		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	void constructorImpl(asAtom *args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false);

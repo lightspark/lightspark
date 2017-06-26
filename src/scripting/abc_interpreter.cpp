@@ -1174,7 +1174,8 @@ void ABCVm::abc_findpropstrict(call_context* context,memorystream& code)
 //		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
-		RUNTIME_STACK_PUSH(context,findPropStrictCache(context,code));
+	asAtom o = findPropStrictCache(context,code);
+	RUNTIME_STACK_PUSH(context,o);
 }
 void ABCVm::abc_findproperty(call_context* context,memorystream& code)
 {

@@ -693,13 +693,15 @@ ASFUNCTIONBODY_ATOM(Vector,indexOf)
 	}
 	return asAtom(ret);
 }
-bool Vector::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
+bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
 {
+	asAtom o1 = d1;
+	asAtom o2 = d2;
 	if(isNumeric)
 	{
-		number_t a=d1.toNumber();
+		number_t a=o1.toNumber();
 
-		number_t b=d2.toNumber();
+		number_t b=o2.toNumber();
 
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
@@ -711,8 +713,8 @@ bool Vector::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 	else
 	{
 		//Comparison is always in lexicographic order
-		tiny_string s1 = d1.toString();
-		tiny_string s2 = d2.toString();
+		tiny_string s1 = o1.toString();
+		tiny_string s2 = o2.toString();
 
 		if(isDescending)
 		{
@@ -732,7 +734,7 @@ bool Vector::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 		}
 	}
 }
-bool Vector::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
+bool Vector::sortComparatorWrapper::operator()(const asAtom& d1, const asAtom& d2)
 {
 	asAtom objs[2];
 	if (d1.type != T_INVALID)
@@ -781,6 +783,8 @@ ASFUNCTIONBODY_ATOM(Vector,_sort)
 	for(auto it=th->vec.begin();it != th->vec.end();++it)
 	{
 		tmp[i++]= *it;
+		// ensure ASObjects are created
+		it->toObject(sys);
 	}
 	
 	if(comp.type != T_INVALID)

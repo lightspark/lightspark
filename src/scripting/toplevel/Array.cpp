@@ -672,14 +672,16 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 	return ret;
 }
 
-bool Array::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
+bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
 {
+	asAtom o1 = d1;
+	asAtom o2 = d2;
 	if(isNumeric)
 	{
 		number_t a=numeric_limits<double>::quiet_NaN();
 		number_t b=numeric_limits<double>::quiet_NaN();
-		a=d1.toNumber();
-		b=d2.toNumber();
+		a=o1.toNumber();
+		b=o2.toNumber();
 
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
@@ -693,8 +695,8 @@ bool Array::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 		//Comparison is always in lexicographic order
 		tiny_string s1;
 		tiny_string s2;
-		s1=d1.toString();
-		s2=d2.toString();
+		s1=o1.toString();
+		s2=o2.toString();
 
 		if(isDescending)
 		{
@@ -715,7 +717,7 @@ bool Array::sortComparatorDefault::operator()(asAtom& d1, asAtom& d2)
 	}
 }
 
-bool Array::sortComparatorWrapper::operator()(asAtom& d1, asAtom& d2)
+bool Array::sortComparatorWrapper::operator()(const asAtom& d1, const asAtom& d2)
 {
 	asAtom objs[2];
 	objs[0]=d1;
@@ -760,6 +762,8 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	{
 		if (it->second.type==T_INVALID || it->second.type==T_UNDEFINED)
 			continue;
+		// ensure ASObjects are created
+		it->second.toObject(sys);
 		tmp.push_back(it->second);
 	}
 	
@@ -779,13 +783,13 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	return obj;
 }
 
-bool Array::sortOnComparator::operator()(asAtom& d1, asAtom& d2)
+bool Array::sortOnComparator::operator()(const asAtom& d1, const asAtom& d2)
 {
 	std::vector<sorton_field>::iterator it=fields.begin();
 	for(;it != fields.end();++it)
 	{
-		asAtom obj1 = d1.toObject(getSys())->getVariableByMultiname(it->fieldname);
-		asAtom obj2 = d2.toObject(getSys())->getVariableByMultiname(it->fieldname);
+		asAtom obj1 = d1.getObject()->getVariableByMultiname(it->fieldname);
+		asAtom obj2 = d2.getObject()->getVariableByMultiname(it->fieldname);
 		if(it->isNumeric)
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
@@ -796,13 +800,10 @@ bool Array::sortOnComparator::operator()(asAtom& d1, asAtom& d2)
 			
 			if(std::isnan(a) || std::isnan(b))
 				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
-			if (b != a)
-			{
-				if(it->isDescending)
-					return b>a;
-				else
-					return a<b;
-			}
+			if(it->isDescending)
+				return b>a;
+			else
+				return a<b;
 		}
 		else
 		{
@@ -903,6 +904,8 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	{
 		if (it->second.type==T_UNDEFINED)
 			continue;
+		// ensure ASObjects are created
+		it->second.toObject(sys);
 		tmp.push_back(it->second);
 	}
 	
@@ -910,7 +913,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 
 	th->data.clear();
 	std::vector<asAtom>::iterator ittmp=tmp.begin();
-	int i = 0;
+	uint32_t i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
 		th->data[i++]= *ittmp;

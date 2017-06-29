@@ -40,10 +40,10 @@ class Array: public ASObject
 friend class ABCVm;
 protected:
 	uint64_t currentsize;
-	typedef std::unordered_map<uint32_t,asAtom> arrayType;
+	// data is split into a vector for the first ARRAY_SIZE_THRESHOLD indexes, and a map for bigger indexes
+	std::vector<asAtom> data_first;
+	std::unordered_map<uint32_t,asAtom> data_second;
 	
-	typedef std::unordered_map<uint32_t,asAtom>::iterator data_iterator;
-	arrayType data;
 	void outofbounds(unsigned int index) const;
 	~Array();
 private:
@@ -82,11 +82,16 @@ public:
 	Array(Class_base* c);
 	bool destruct()
 	{
-		for (auto it=data.begin() ; it != data.end(); ++it)
+		for (auto it=data_first.begin() ; it != data_first.end(); ++it)
+		{
+			ASATOM_DECREF_POINTER(it);
+		}
+		for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 		{
 			ASATOM_DECREF(it->second);
 		}
-		data.clear();
+		data_first.clear();
+		data_second.clear();
 		currentsize=0;
 		return ASObject::destruct();
 	}
@@ -102,12 +107,12 @@ public:
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_push);
 	ASFUNCTION_ATOM(_push_as3);
-	ASFUNCTION(_concat);
+	ASFUNCTION_ATOM(_concat);
 	ASFUNCTION_ATOM(_pop);
 	ASFUNCTION_ATOM(join);
 	ASFUNCTION_ATOM(shift);
 	ASFUNCTION_ATOM(unshift);
-	ASFUNCTION(splice);
+	ASFUNCTION_ATOM(splice);
 	ASFUNCTION_ATOM(_sort);
 	ASFUNCTION_ATOM(sortOn);
 	ASFUNCTION_ATOM(filter);
@@ -115,19 +120,19 @@ public:
 	ASFUNCTION_ATOM(_getLength);
 	ASFUNCTION_ATOM(_setLength);
 	ASFUNCTION_ATOM(forEach);
-	ASFUNCTION(_reverse);
+	ASFUNCTION_ATOM(_reverse);
 	ASFUNCTION_ATOM(lastIndexOf);
 	ASFUNCTION_ATOM(_map);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_toLocaleString);
-	ASFUNCTION(slice);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_toLocaleString);
+	ASFUNCTION_ATOM(slice);
 	ASFUNCTION_ATOM(every);
 	ASFUNCTION_ATOM(some);
 	ASFUNCTION_ATOM(insertAt);
-	ASFUNCTION(removeAt);
+	ASFUNCTION_ATOM(removeAt);
 
 	asAtom at(unsigned int index);
-	void set(unsigned int index, asAtom &o);
+	void set(unsigned int index, asAtom &o, bool checkbounds = true);
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);

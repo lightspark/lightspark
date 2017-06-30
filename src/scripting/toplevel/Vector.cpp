@@ -436,7 +436,7 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 			continue;
 		params[0] = th->vec[i];
 		params[1] = asAtom(i);
-		params[2] = th;
+		params[2] = asAtom::fromObject(th);
 
 		asAtom funcret;
 		if( argslen == 1 )

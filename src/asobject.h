@@ -211,7 +211,7 @@ private:
 		ASObject* closure_this; // used for T_FUNCTION objects
 	};
 	ASObject* objval;
-	void decRef();
+	inline void decRef();
 public:
 	SWFOBJECT_TYPE type;
 	asAtom():objval(NULL),type(T_INVALID) {}
@@ -223,8 +223,21 @@ public:
 	ASObject* toObject(SystemState* sys);
 	// returns NULL if this atom is a primitive;
 	inline ASObject* getObject() const { return objval; }
-	static asAtom fromObject(ASObject* obj);
-	static asAtom fromFunction(ASObject* f, ASObject* closure);
+	static asAtom fromObject(ASObject* obj)
+	{
+		asAtom a;
+		if (obj)
+			a.replace(obj);
+		return a;
+	}
+	
+	static asAtom fromFunction(ASObject *f, ASObject *closure)
+	{
+		asAtom a;
+		a.replace(f);
+		a.closure_this = closure;
+		return a;
+	}
 	inline bool isBound() const { return type == T_FUNCTION && closure_this; }
 	inline ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
 	static asAtom undefinedAtom;
@@ -240,51 +253,51 @@ public:
 	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args, bool args_refcounted);
 	void replace(ASObject* obj);
 	std::string toDebugString();
-	void applyProxyProperty(multiname& name);
-	TRISTATE isLess(SystemState *sys, asAtom& v2);
-	bool isEqual(SystemState *sys, asAtom& v2);
-	bool isEqualStrict(SystemState *sys, asAtom& v2);
-	bool isConstructed() const;
-	bool isPrimitive() const;
+	inline void applyProxyProperty(multiname& name);
+	inline TRISTATE isLess(SystemState *sys, asAtom& v2);
+	inline bool isEqual(SystemState *sys, asAtom& v2);
+	inline bool isEqualStrict(SystemState *sys, asAtom& v2);
+	inline bool isConstructed() const;
+	inline bool isPrimitive() const;
 	asAtom asTypelate(asAtom& atomtype);
-	number_t toNumber();
-	int32_t toInt();
-	int64_t toInt64();
-	uint32_t toUInt();
+	inline number_t toNumber();
+	inline int32_t toInt();
+	inline int64_t toInt64();
+	inline uint32_t toUInt();
 	tiny_string toString();
 	tiny_string toLocaleString();
 	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
 	bool Boolean_concrete();
-	void convert_i();
-	void convert_u();
-	void convert_d();
+	inline void convert_i();
+	inline void convert_u();
+	inline void convert_d();
 	void convert_b();
-	void setInt(int32_t val);
-	void setUInt(uint32_t val);
-	void setNumber(number_t val);
-	void setBool(bool val);
-	void increment();
-	void decrement();
-	void increment_i();
-	void decrement_i();
+	inline void setInt(int32_t val);
+	inline void setUInt(uint32_t val);
+	inline void setNumber(number_t val);
+	inline void setBool(bool val);
+	inline void increment();
+	inline void decrement();
+	inline void increment_i();
+	inline void decrement_i();
 	void add(asAtom& v2, SystemState *sys);
-	void bitnot();
-	void subtract(asAtom& v2);
-	void multiply(asAtom& v2);
-	void divide(asAtom& v2);
-	void modulo(asAtom& v2);
-	void lshift(asAtom& v1);
-	void rshift(asAtom& v1);
-	void urshift(asAtom& v1);
-	void bit_and(asAtom& v1);
-	void bit_or(asAtom& v1);
-	void bit_xor(asAtom& v1);
-	void _not();
-	void negate_i();
-	void add_i(asAtom& v2);
-	void subtract_i(asAtom& v2);
-	void multiply_i(asAtom& v2);
+	inline void bitnot();
+	inline void subtract(asAtom& v2);
+	inline void multiply(asAtom& v2);
+	inline void divide(asAtom& v2);
+	inline void modulo(asAtom& v2);
+	inline void lshift(asAtom& v1);
+	inline void rshift(asAtom& v1);
+	inline void urshift(asAtom& v1);
+	inline void bit_and(asAtom& v1);
+	inline void bit_or(asAtom& v1);
+	inline void bit_xor(asAtom& v1);
+	inline void _not();
+	inline void negate_i();
+	inline void add_i(asAtom& v2);
+	inline void subtract_i(asAtom& v2);
+	inline void multiply_i(asAtom& v2);
 	template<class T> bool is() const;
 	template<class T> const T* as() const { return static_cast<const T*>(this->objval); }
 	template<class T> T* as() { return static_cast<T*>(this->objval); }
@@ -953,6 +966,845 @@ template<> inline bool asAtom::is<Type>() const { return type==T_CLASS; }
 template<> inline bool asAtom::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool asAtom::is<Undefined>() const { return type==T_UNDEFINED; }
 
+
+void asAtom::decRef()
+{
+	if (objval && objval->decRef())
+		objval = NULL;
+}
+
+static int32_t NumbertoInt(number_t val)
+{
+	double posInt;
+
+	/* step 2 */
+	if(std::isnan(val) || std::isinf(val) || val == 0.0)
+		return 0;
+	/* step 3 */
+	posInt = std::floor(std::abs(val));
+	/* step 4 */
+	if (posInt > 4294967295.0)
+		posInt = fmod(posInt, 4294967296.0);
+	/* step 5 */
+	if (posInt >= 2147483648.0) {
+		// follow tamarin
+		if(val < 0.0)
+			return 0x80000000 - (int32_t)(posInt - 2147483648.0);
+		else
+			return 0x80000000 + (int32_t)(posInt - 2147483648.0);
+	}
+	return (int32_t)(val < 0.0 ? -posInt : posInt);
+}
+
+int32_t asAtom::toInt()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return NumbertoInt(numberval);
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toInt();
+	}
+}
+number_t asAtom::toNumber()
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NULL:
+			return 0;
+		case T_UNDEFINED:
+			return std::numeric_limits<double>::quiet_NaN();
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toNumber();
+	}
+}
+int64_t asAtom::toInt64()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toInt64();
+	}
+}
+uint32_t asAtom::toUInt()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			return 0;
+		case T_NULL:
+			return 0;
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_INVALID:
+			return 0;
+		default:
+			assert(objval);
+			return objval->toUInt();
+	}
+}
+
+void asAtom::applyProxyProperty(multiname &name)
+{
+	switch(type)
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+		case T_NULL:
+		case T_UNDEFINED:
+		case T_INVALID:
+			break;
+		default:
+			assert(objval);
+			objval->applyProxyProperty(name);
+			break;
+	}
+}
+TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
+{
+	switch (type)
+	{
+		case T_INTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (intval < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (intval < 0 || ((uint32_t)intval)  < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (intval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (intval < v2.toInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (intval < 0)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_UINTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (v2.intval > 0 && (uintval < (uint32_t)v2.intval))?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (uintval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (uintval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (uintval < v2.toUInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_NUMBER:
+		{
+			if(std::isnan(numberval))
+				return TUNDEFINED;
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (numberval  < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (numberval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (numberval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (numberval < v2.toInt())?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (numberval < 0)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_BOOLEAN:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (boolval < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (boolval < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (boolval < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (boolval < v2.boolval)?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return (boolval)?TTRUE:TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_NULL:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return (0 < v2.intval)?TTRUE:TFALSE;
+				case T_UINTEGER:
+					return (0 < v2.uintval)?TTRUE:TFALSE;
+				case T_NUMBER:
+					if(std::isnan(v2.numberval))
+						return TUNDEFINED;
+					return (0 < v2.numberval)?TTRUE:TFALSE;
+				case T_BOOLEAN:
+					return (0 < v2.boolval)?TTRUE:TFALSE;
+				case T_UNDEFINED:
+					return TUNDEFINED;
+				case T_NULL:
+					return TFALSE;
+				default:
+					break;
+			}
+			break;
+		}
+		case T_UNDEFINED:
+			return TUNDEFINED;
+		case T_INVALID:
+			return TUNDEFINED;
+		default:
+			break;
+	}
+	return toObject(sys)->isLess(v2.toObject(sys));
+}
+bool asAtom::isEqual(SystemState *sys, asAtom &v2)
+{
+	switch (type)
+	{
+		case T_INTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return intval==v2.toInt();
+				case T_UINTEGER:
+					return intval >= 0 && intval==v2.toInt();
+				case T_NUMBER:
+					return intval==v2.toNumber();
+				case T_BOOLEAN:
+					return intval==v2.toInt();
+				case T_STRING:
+					return intval==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_UINTEGER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+					return v2.intval >= 0 && uintval==v2.toUInt();
+				case T_UINTEGER:
+				case T_NUMBER:
+				case T_STRING:
+				case T_BOOLEAN:
+					return uintval==v2.toUInt();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_NUMBER:
+		{
+			switch (v2.type)
+			{
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_BOOLEAN:
+					return toNumber()==v2.toNumber();
+				case T_NUMBER:
+				case T_STRING:
+					return toNumber()==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_BOOLEAN:
+		{
+			switch (v2.type)
+			{
+				case T_BOOLEAN:
+					return boolval==v2.boolval;
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return false;
+					return boolval==v2.toNumber();
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_NUMBER:
+					return boolval==v2.toNumber();
+				case T_NULL:
+				case T_UNDEFINED:
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_NULL:
+		{
+			switch (v2.type)
+			{
+				case T_NULL:
+				case T_UNDEFINED:
+					return true;
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_NUMBER:
+				case T_BOOLEAN:
+					return false;
+				case T_FUNCTION:
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+			break;
+		}
+		case T_UNDEFINED:
+		{
+			switch (v2.type)
+			{
+				case T_UNDEFINED:
+				case T_NULL:
+					return true;
+				case T_NUMBER:
+				case T_INTEGER:
+				case T_UINTEGER:
+				case T_BOOLEAN:
+					return false;
+				case T_FUNCTION:
+				case T_STRING:
+					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+			}
+		}
+		case T_FUNCTION:
+		{
+			switch (v2.type)
+			{
+				case T_FUNCTION:
+					if (closure_this != NULL && v2.closure_this != NULL && closure_this != v2.closure_this)
+						return false;
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
+				default:
+					return false;
+			}
+		}
+		case T_INVALID:
+			return false;
+		default:
+			break;
+	}
+	return toObject(sys)->isEqual(v2.toObject(sys));
+}
+
+bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
+{
+	if(type!=v2.type)
+	{
+		//Type conversions are ok only for numeric types
+		switch(type)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			case T_NULL:
+				if (!v2.isConstructed() && v2.type!=T_CLASS)
+					return true;
+				return false;
+			default:
+				return false;
+		}
+		switch(v2.type)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			case T_NULL:
+				if (!isConstructed() && type!=T_CLASS)
+					return true;
+				return false;
+			default:
+				return false;
+		}
+	}
+	return isEqual(sys,v2);
+	
+}
+
+bool asAtom::isConstructed() const
+{
+	switch(type)
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+		case T_NULL:
+		case T_UNDEFINED:
+			return true;
+		case T_INVALID:
+			return false;
+		default:
+			assert(objval);
+			return objval->isConstructed();
+	}
+}
+
+bool asAtom::isPrimitive() const
+{
+	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
+	// because they are special cases of Number
+	return type==T_NUMBER || type ==T_UNDEFINED || type == T_NULL ||
+		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
+			type==T_UINTEGER;
+}
+
+void asAtom::setInt(int32_t val)
+{
+	type = T_INTEGER;
+	intval = val;
+	objval = NULL;
+}
+
+void asAtom::setUInt(uint32_t val)
+{
+	type = T_UINTEGER;
+	uintval = val;
+	objval = NULL;
+}
+
+void asAtom::setNumber(number_t val)
+{
+	type = T_NUMBER;
+	numberval = val;
+	objval = NULL;
+}
+
+void asAtom::setBool(bool val)
+{
+	type = T_BOOLEAN;
+	boolval = val;
+	objval = NULL;
+}
+
+void asAtom::increment()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			setNumber(std::numeric_limits<double>::quiet_NaN());
+			break;
+		case T_NULL:
+			setInt(1);
+			break;
+		case T_INTEGER:
+			setInt(intval+1);
+			break;
+		case T_UINTEGER:
+			setUInt(uintval+1);
+			break;
+		case T_NUMBER:
+			setNumber(numberval+1);
+			break;
+		case T_BOOLEAN:
+			setInt((boolval ? 1 : 0)+1);
+			break;
+		default:
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n+1);
+			break;
+	}
+}
+
+void asAtom::decrement()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+			setNumber(std::numeric_limits<double>::quiet_NaN());
+			break;
+		case T_NULL:
+			setInt(-1);
+			break;
+		case T_INTEGER:
+			setInt(intval-1);
+			break;
+		case T_UINTEGER:
+		{
+			if (uintval > 0)
+				setUInt(uintval-1);
+			else
+			{
+				number_t val = uintval;
+				setNumber(val-1);
+			}
+			break;
+		}
+		case T_NUMBER:
+			setNumber(numberval-1);
+			break;
+		case T_BOOLEAN:
+			setInt((boolval ? 1 : 0)-1);
+			break;
+		default:
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n-1);
+			break;
+	}
+
+}
+
+void asAtom::increment_i()
+{
+	setInt(toInt()+1);
+}
+void asAtom::decrement_i()
+{
+	setInt(toInt()-1);
+}
+
+void asAtom::convert_i()
+{
+	if (type == T_INTEGER)
+		return;
+	int32_t v = toInt();
+	decRef();
+	setInt(v);
+}
+
+void asAtom::convert_u()
+{
+	if (type == T_UINTEGER)
+		return;
+	uint32_t v = toUInt();
+	decRef();
+	setUInt(v);
+}
+
+void asAtom::convert_d()
+{
+	if (type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER)
+		return;
+	number_t v = toNumber();
+	decRef();
+	setNumber(v);
+}
+
+void asAtom::bit_xor(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("bitXor ") << std::hex << i1 << '^' << i2 << std::dec);
+	setInt(i1^i2);
+}
+
+void asAtom::bitnot()
+{
+	int32_t i1=toInt();
+	decRef();
+	LOG_CALL(_("bitNot ") << std::hex << i1 << std::dec);
+	setInt(~i1);
+}
+
+void asAtom::subtract(asAtom &v2)
+{
+	if( (type == T_INTEGER || type == T_UINTEGER) &&
+		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		int64_t num1=toInt64();
+		int64_t num2=v2.toInt64();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
+		int64_t res = num1-num2;
+		if (res > INT32_MIN && res < INT32_MAX)
+			setInt(res);
+		else if (res >= 0 && res < UINT32_MAX)
+			setUInt(res);
+		else
+			setNumber(res);
+	}
+	else
+	{
+		number_t num2=v2.toNumber();
+		number_t num1=toNumber();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("subtract ") << num1 << '-' << num2);
+		setNumber(num1-num2);
+	}
+}
+
+void asAtom::multiply(asAtom &v2)
+{
+	if( (type == T_INTEGER || type == T_UINTEGER) &&
+		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+	{
+		int64_t num1=toInt64();
+		int64_t num2=v2.toInt64();
+	
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("multiplyI ") << num1 << '*' << num2);
+		int64_t res = num1*num2;
+		if (res > INT32_MIN && res < INT32_MAX)
+			setInt(res);
+		else if (res >= 0 && res < UINT32_MAX)
+			setUInt(res);
+		else
+			setNumber(res);
+	}
+	else
+	{
+		double num1=v2.toNumber();
+		double num2=toNumber();
+		LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	
+		setNumber(num1*num2);
+	}
+}
+
+void asAtom::divide(asAtom &v2)
+{
+	double num1=toNumber();
+	double num2=v2.toNumber();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	// handling of infinity according to ECMA-262, chapter 11.5.2
+	if (std::isinf(num1))
+	{
+		if (std::isinf(num2) || std::isnan(num2))
+			setNumber(std::numeric_limits<double>::quiet_NaN());
+		else
+		{
+			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
+			setNumber( needssign  ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
+		}
+	}
+	else
+		setNumber(num1/num2);
+}
+
+void asAtom::modulo(asAtom &v2)
+{
+	// if both values are Integers the result is also an int
+	if( ((type == T_INTEGER) || (type == T_UINTEGER)) &&
+		((v2.type == T_INTEGER) || (v2.type == T_UINTEGER)))
+	{
+		int32_t num1=toInt();
+		int32_t num2=v2.toInt();
+		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
+		if (num2 == 0)
+			setNumber(std::numeric_limits<double>::quiet_NaN());
+		else
+			setInt(num1%num2);
+	}
+	else
+	{
+		number_t num1=toNumber();
+		number_t num2=v2.toNumber();
+
+		decRef();
+		ASATOM_DECREF(v2);
+		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
+		/* fmod returns NaN if num2 == 0 as the spec mandates */
+		setNumber(::fmod(num1,num2));
+	}
+}
+
+void asAtom::lshift(asAtom &v1)
+{
+	int32_t i2=toInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("lShift ")<<std::hex<<i2<<_("<<")<<i1<<std::dec);
+	//Left shift are supposed to always work in 32bit
+	setInt(i2<<i1);
+}
+
+void asAtom::rshift(asAtom &v1)
+{
+	int32_t i2=toInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("rShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	setInt(i2>>i1);
+}
+
+void asAtom::urshift(asAtom &v1)
+{
+	uint32_t i2=toUInt();
+	uint32_t i1=v1.toUInt()&0x1f;
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("urShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	setUInt(i2>>i1);
+}
+void asAtom::bit_and(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	ASATOM_DECREF(v1);
+	decRef();
+	LOG_CALL(_("bitAnd_oo ") << std::hex << i1 << '&' << i2 << std::dec);
+	setInt(i1&i2);
+}
+void asAtom::bit_or(asAtom &v1)
+{
+	int32_t i1=v1.toInt();
+	int32_t i2=toInt();
+	LOG_CALL(_("bitOr ") << std::hex << i1 << '|' << i2 << std::dec);
+	setInt(i1|i2);
+}
+void asAtom::_not()
+{
+	LOG_CALL( _("not:") <<this->toDebugString()<<" "<<!Boolean_concrete());
+	
+	bool ret=!Boolean_concrete();
+	decRef();
+	setBool(ret);
+}
+
+void asAtom::negate_i()
+{
+	LOG_CALL(_("negate_i"));
+	int n=toInt();
+	decRef();
+	setInt(-n);
+}
+
+void asAtom::add_i(asAtom &v2)
+{
+	int32_t num2=v2.toInt();
+	int32_t num1=toInt();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("add_i ") << num1 << '+' << num2);
+	setInt(num1+num2);
+}
+
+void asAtom::subtract_i(asAtom &v2)
+{
+	int num2=v2.toInt();
+	int num1=toInt();
+
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("subtract_i ") << num1 << '-' << num2);
+	setInt(num1-num2);
+}
+
+void asAtom::multiply_i(asAtom &v2)
+{
+	int num1=toInt();
+	int num2=v2.toInt();
+	decRef();
+	ASATOM_DECREF(v2);
+	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	setInt(num1*num2);
+}
 
 }
 #endif /* ASOBJECT_H */

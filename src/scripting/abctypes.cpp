@@ -208,9 +208,11 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 		case 0x0f:
 		case 0x10:
 			in >> v.name;
+			v.runtimeargs = 1;
 			break;
 		case 0x11:
 		case 0x12:
+			v.runtimeargs = 2;
 			break;
 		case 0x09:
 		case 0x0e:
@@ -219,6 +221,7 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 		case 0x1b:
 		case 0x1c:
 			in >> v.ns_set;
+			v.runtimeargs = 1;
 			break;
 		case 0x1d:
 		{

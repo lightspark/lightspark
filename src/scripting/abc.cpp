@@ -752,14 +752,15 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
  */
 multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 {
+	int fromStack = 0;
 	if(n!=0)
 	{
 		const multiname_info* m=&constant_pool.multinames[n];
 		if (m->cached && m->cached->isStatic)
 			return m->cached;
+		fromStack = m->runtimeargs;
 	}
 	
-	int fromStack = getMultinameRTData(n);
 	asAtom rt1;
 	ASObject* rt2 = NULL;
 	if(fromStack > 0)
@@ -851,7 +852,6 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 						ret->hasBuiltinNS = true;
 					ret->ns.emplace_back(ns);
 				}
-				//sort(ret->ns.begin(),ret->ns.end());
 
 				if (m->name)
 				{
@@ -864,6 +864,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			case 0x1c: //MultinameLA
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+				ret->isStatic = false;
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
@@ -874,12 +875,12 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 						ret->hasBuiltinNS = true;
 					ret->ns.emplace_back(ns);
 				}
-				//sort(ret->ns.begin(),ret->ns.end());
 				break;
 			}
 			case 0x0f: //RTQName
 			case 0x10: //RTQNameA
 			{
+				ret->isStatic = false;
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s_id=getString(m->name);
 				break;
@@ -888,6 +889,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			case 0x12: //RTQNameLA
 			{
 				//Everything is dynamic
+				ret->isStatic = false;
 				break;
 			}
 			case 0x1d: //Template instance Name
@@ -927,7 +929,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 
 	/* Now resolve its dynamic parts */
 	ret=m->cached;
-	if(midx==0)
+	if(midx==0 || ret->isStatic)
 		return ret;
 	switch(m->kind)
 	{
@@ -946,10 +948,18 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		{
 			assert(n.type != T_INVALID && !n2);
 
-			ret->isStatic = false;
 			//Testing shows that the namespace from a
 			//QName is used even in MultinameL
-			if (n.type == T_QNAME)
+			if (n.type == T_INTEGER)
+			{
+				ret->name_i=n.intval;
+				ret->name_type = multiname::NAME_INT;
+				ret->name_s_id = UINT32_MAX;
+				ASATOM_DECREF(n);
+				n.applyProxyProperty(*ret);
+				break;
+			}
+			else if (n.type == T_QNAME)
 			{
 				ASQName *qname = n.objval->as<ASQName>();
 				// don't overwrite any static parts
@@ -973,7 +983,6 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		{
 			assert(n.type != T_INVALID && !n2);
 			assert_and_throw(n.type== T_NAMESPACE);
-			ret->isStatic = false;
 			Namespace* tmpns=static_cast<Namespace*>(n.objval);
 			ret->ns.clear();
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
@@ -987,7 +996,6 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		{
 			assert(n.type != T_INVALID && n2);
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass(n2->getSystemState()));
-			ret->isStatic = false;
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);

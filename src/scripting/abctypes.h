@@ -134,9 +134,10 @@ struct multiname_info
 	u30 ns_set;
 	u30 type_definition;
 	std::vector<u30> param_types;
+	int runtimeargs;
 	multiname* cached;
 	multiname* dynamic;
-	multiname_info():cached(NULL),dynamic(NULL){}
+	multiname_info():runtimeargs(0),cached(NULL),dynamic(NULL){}
 	~multiname_info(){delete cached;if (dynamic) {delete dynamic;};}
 	bool isAttributeName() const;
 };

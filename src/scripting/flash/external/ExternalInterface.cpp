@@ -35,14 +35,13 @@ void ExternalInterface::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),call),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY(ExternalInterface,_getAvailable)
+ASFUNCTIONBODY_ATOM(ExternalInterface,_getAvailable)
 {
-	return abstract_b(getSys(),getSys()->extScriptObject != NULL);
+	return asAtom(sys->extScriptObject != NULL);
 }
 
-ASFUNCTIONBODY(ExternalInterface,_getObjectID)
+ASFUNCTIONBODY_ATOM(ExternalInterface,_getObjectID)
 {
-	SystemState* sys = getSys();
 	if(sys->extScriptObject == NULL)
 		return abstract_s(sys,"");
 
@@ -52,51 +51,50 @@ ASFUNCTIONBODY(ExternalInterface,_getObjectID)
 
 	const ExtVariant& object = so->getProperty("name");
 	std::string result = object.getString();
-	return abstract_s(sys,result);
+	return asAtom::fromObject(abstract_s(sys,result));
 }
 
-ASFUNCTIONBODY(ExternalInterface, _getMarshallExceptions)
+ASFUNCTIONBODY_ATOM(ExternalInterface, _getMarshallExceptions)
 {
-	if(getSys()->extScriptObject == NULL)
-		return abstract_b(getSys(),false);
+	if(sys->extScriptObject == NULL)
+		return asAtom::falseAtom;
 	else
-		return abstract_b(getSys(),getSys()->extScriptObject->getMarshallExceptions());
+		return asAtom(sys->extScriptObject->getMarshallExceptions());
 }
 
-ASFUNCTIONBODY(ExternalInterface, _setMarshallExceptions)
+ASFUNCTIONBODY_ATOM(ExternalInterface, _setMarshallExceptions)
 {
-	if(getSys()->extScriptObject != NULL)
-		getSys()->extScriptObject->setMarshallExceptions(Boolean_concrete(args[0]));
-	return NULL;
+	if(sys->extScriptObject != NULL)
+		sys->extScriptObject->setMarshallExceptions(args[0].Boolean_concrete());
+	return asAtom::invalidAtom;
 }
 
 
-ASFUNCTIONBODY(ExternalInterface,addCallback)
+ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 {
-	if(getSys()->extScriptObject == NULL)
-		return abstract_b(getSys(),false);
+	if(sys->extScriptObject == NULL)
+		return asAtom::falseAtom;
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
-	if(args[1]->getObjectType() == T_NULL)
-		getSys()->extScriptObject->removeMethod(args[0]->toString().raw_buf());
+	if(args[1].type == T_NULL)
+		sys->extScriptObject->removeMethod(args[0].toString().raw_buf());
 	else
 	{
-		IFunction* f=static_cast<IFunction*>(args[1]);
-		getSys()->extScriptObject->setMethod(args[0]->toString().raw_buf(), new ExtASCallback(f));
+		sys->extScriptObject->setMethod(args[0].toString().raw_buf(), new ExtASCallback(args[1]));
 	}
-	return abstract_b(getSys(),true);
+	return asAtom::trueAtom;
 }
 
-ASFUNCTIONBODY(ExternalInterface,call)
+ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 {
-	if(getSys()->extScriptObject == NULL)
-		return getSys()->getNullRef();
+	if(sys->extScriptObject == NULL)
+		return asAtom::nullAtom;
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
-	const tiny_string& arg0=args[0]->toString();
+	const tiny_string& arg0=args[0].toString();
 
 	// TODO: Check security constraints & throw SecurityException
 
@@ -105,13 +103,13 @@ ASFUNCTIONBODY(ExternalInterface,call)
 	std::map<const ASObject*, std::unique_ptr<ExtObject>> objectsMap;
 	for(uint32_t i = 0; i < argslen-1; i++)
 	{
-		args[i+1]->incRef();
-		callArgs[i] = new ExtVariant(objectsMap,_MR(args[i+1]));
+		ASATOM_INCREF(args[i+1]);
+		callArgs[i] = new ExtVariant(objectsMap,_MR(args[i+1].toObject(sys)));
 	}
 
 	ASObject* asobjResult = NULL;
 	// Let the external script object call the external method
-	bool callSuccess = getSys()->extScriptObject->callExternal(arg0.raw_buf(), callArgs, argslen-1, &asobjResult);
+	bool callSuccess = sys->extScriptObject->callExternal(arg0.raw_buf(), callArgs, argslen-1, &asobjResult);
 
 	// Delete converted arguments
 	for(uint32_t i = 0; i < argslen-1; i++)
@@ -122,8 +120,8 @@ ASFUNCTIONBODY(ExternalInterface,call)
 		assert(asobjResult==NULL);
 		LOG(LOG_INFO, "External function failed, returning null: " << arg0);
 		// If the call fails, return null
-		asobjResult = getSys()->getNullRef();
+		return asAtom::nullAtom;
 	}
 
-	return asobjResult;
+	return asAtom::fromObject(asobjResult);
 }

@@ -33,7 +33,7 @@ class ElementFormat;
 class ContentElement: public ASObject
 {
 public:
-	ContentElement(Class_base* c): ASObject(c),elementFormat(NULL) {}
+	ContentElement(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_CONTENTELEMENT),elementFormat(NULL) {}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<ElementFormat>,elementFormat);
 };
@@ -76,7 +76,7 @@ public:
 class FontDescription: public ASObject
 {
 public:
-	FontDescription(Class_base* c): ASObject(c), 
+	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
 		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
@@ -184,7 +184,7 @@ public:
 class TextElement: public ContentElement
 {
 public:
-	TextElement(Class_base* c): ContentElement(c) {}
+	TextElement(Class_base* c): ContentElement(c) { subtype = SUBTYPE_TEXTELEMENT; }
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);

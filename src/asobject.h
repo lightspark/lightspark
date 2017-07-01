@@ -794,7 +794,7 @@ public:
 	virtual tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 	/* returns true if the current object is of type T */
 	template<class T> bool is() const { 
-		LOG(LOG_ERROR,"dynamic cast:"<<this->getClassName());
+		LOG(LOG_INFO,"dynamic cast:"<<this->getClassName());
 		return dynamic_cast<const T*>(this); 
 	}
 	/* returns this object casted to the given type.
@@ -839,14 +839,17 @@ class Boolean;
 class ByteArray;
 class Class_inherit;
 class ColorTransform;
+class ContentElement;
 class ContextMenu;
 class ContextMenuBuiltInItems;
 class Date;
 class DisplayObject;
 class DisplayObjectContainer;
+class ElementFormat;
 class Event;
 class Function;
 class Function_object;
+class FontDescription;
 class Global;
 class IFunction;
 class Integer;
@@ -875,6 +878,8 @@ class Sprite;
 class Stage;
 class SyntheticFunction;
 class Template_base;
+class TextBlock;
+class TextElement;
 class TextField;
 class TextFormat;
 class Type;
@@ -900,12 +905,15 @@ template<> inline bool ASObject::is<ByteArray>() const { return subtype==SUBTYPE
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
 template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }
+template<> inline bool ASObject::is<ContentElement>() const { return subtype==SUBTYPE_CONTENTELEMENT || subtype == SUBTYPE_TEXTELEMENT; }
 template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
 template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP; }
+template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
 template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT; }
+template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
 template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
@@ -936,6 +944,8 @@ template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SP
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
+template<> inline bool ASObject::is<TextBlock>() const { return subtype==SUBTYPE_TEXTBLOCK; }
+template<> inline bool ASObject::is<TextElement>() const { return subtype==SUBTYPE_TEXTELEMENT; }
 template<> inline bool ASObject::is<TextField>() const { return subtype==SUBTYPE_TEXTFIELD; }
 template<> inline bool ASObject::is<TextFormat>() const { return subtype==SUBTYPE_TEXTFORMAT; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }

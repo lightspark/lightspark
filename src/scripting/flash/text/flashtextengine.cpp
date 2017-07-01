@@ -35,7 +35,7 @@ void ContentElement::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_GETTER_SETTER(ContentElement,elementFormat)
 
-ElementFormat::ElementFormat(Class_base *c): ASObject(c),
+ElementFormat::ElementFormat(Class_base *c): ASObject(c,T_OBJECT,SUBTYPE_ELEMENTFORMAT),
 	alignmentBaseline("useDominantBaseline"),
 	alpha(1.0),
 	baselineShift(0.0),
@@ -268,7 +268,7 @@ ASFUNCTIONBODY(EastAsianJustifier, _constructor)
 }
 
 
-TextBlock::TextBlock(Class_base *c): ASObject(c)
+TextBlock::TextBlock(Class_base *c): ASObject(c,T_OBJECT,SUBTYPE_TEXTBLOCK)
   ,applyNonLinearFontScaling(true),baselineFontSize(12),baselineZero("roman"),bidiLevel(0),firstLine(NullRef),lastLine(NullRef),lineRotation("rotate0")
 {
 }

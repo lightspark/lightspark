@@ -370,7 +370,7 @@ public:
 	bool getSecure() const { return secure; }
 
 	//Does this entry allow a given URL?
-	bool allowsAccessFrom(const URLInfo& url, uint16_t toPort=0) const;
+	bool allowsAccessFrom(const URLInfo& url, uint16_t toPort=0, bool bCheckHttps=true) const;
 };
 
 //Permit HTTP request header sending (only for HTTP)

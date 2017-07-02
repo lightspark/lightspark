@@ -620,7 +620,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		}
 	}
 
-	LOG(LOG_INFO, _("SECURITY: DISALLOWED: No policy file explicitly allowed access"));
+	LOG(LOG_INFO, _("SECURITY: DISALLOWED: No policy file explicitly allowed access:")<<url);
 	delete files;
 
 	return NA_CROSSDOMAIN_POLICY;
@@ -1126,7 +1126,8 @@ bool URLPolicyFile::allowsAccessFrom(const URLInfo& requestingUrl, const URLInfo
 	for(; i != allowAccessFrom.end(); ++i)
 	{
 		//This allow-access-from entry applies to our domain AND it allows our domain
-		if((*i)->allowsAccessFrom(requestingUrl))
+		// we allow access to https urls even if the main url is not https
+		if((*i)->allowsAccessFrom(requestingUrl,0,requestingUrl.getProtocol()=="https"))
 			return true;
 	}
 	return false;
@@ -1469,7 +1470,7 @@ PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
  * \param url The URL to check this entry against
  * \return \c true if this entry allows the given URL access, otherwise \c false
  */
-bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url, uint16_t toPort) const
+bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url, uint16_t toPort, bool bCheckHttps) const
 {
 	//TODO: resolve domain names using DNS before checking for a match?
 	//See section 1.5.9 in specification
@@ -1479,14 +1480,16 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url, uint16_t toPort
 		return false;
 
 	//Check if the requesting URL is secure, if needed
-	if(file->getType() == PolicyFile::URL && 
-			dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS && 
-			secure && url.getProtocol() != "https")
-		return false;
-	if(file->getType() == PolicyFile::SOCKET && 
-			secure && url.getProtocol() != "https")
-		return false;
-
+	if (bCheckHttps)
+	{
+		if(file->getType() == PolicyFile::URL && 
+				dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS && 
+				secure && url.getProtocol() != "https")
+			return false;
+		if(file->getType() == PolicyFile::SOCKET && 
+				secure && url.getProtocol() != "https")
+			return false;
+	}
 	//Check for to-ports (only applies to SOCKET connections)
 	if(file->getType() == PolicyFile::SOCKET)
 	{

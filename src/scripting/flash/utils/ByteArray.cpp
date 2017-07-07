@@ -339,7 +339,7 @@ void ByteArray::setLength(uint32_t newLen)
 		if (bytes)
 		{
 #ifdef MEMORY_USAGE_PROFILING
-			getClass()->memoryAccount->removeBytes(th->real_len);
+			getClass()->memoryAccount->removeBytes(real_len);
 #endif
 			free(bytes);
 		}

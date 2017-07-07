@@ -2600,7 +2600,7 @@ void ABCVm::newClass(call_context* th, int n)
 #ifdef PROFILING_SUPPORT
 		if(!constructor->validProfName)
 		{
-			constructor->profName=mname->normalizedName()+"::__CONSTRUCTOR__";
+			constructor->profName=mname->normalizedName(th->context->root->getSystemState())+"::__CONSTRUCTOR__";
 			constructor->validProfName=true;
 		}
 #endif

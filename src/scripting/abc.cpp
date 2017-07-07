@@ -1893,7 +1893,7 @@ void ABCVm::Run(ABCVm* th)
 		profile->accountTime(chronometer.checkpoint());
 #ifdef MEMORY_USAGE_PROFILING
 		if((snapshotCount%100)==0)
-			m_sys->saveMemoryUsageInformation(memoryProfile, snapshotCount);
+			th->m_sys->saveMemoryUsageInformation(memoryProfile, snapshotCount);
 		snapshotCount++;
 #endif
 	}

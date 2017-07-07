@@ -28,6 +28,7 @@
 #include <map>
 #include <unordered_map>
 #include <boost/intrusive/list.hpp>
+#include <limits>
 
 // this is deprecated, please use ASFUNCTION_ATOM
 #define ASFUNCTION(name) \
@@ -178,6 +179,7 @@
 	CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
 	c->setConstructor(Class<IFunction>::getFunction(c->getSystemState(),(constructor), (ctorlength)));
 
+using namespace std;
 namespace lightspark
 {
 
@@ -1044,7 +1046,7 @@ number_t asAtom::toNumber()
 		case T_NULL:
 			return 0;
 		case T_UNDEFINED:
-			return std::numeric_limits<double>::quiet_NaN();
+			return numeric_limits<double>::quiet_NaN();
 		case T_INVALID:
 			return 0;
 		default:
@@ -1493,7 +1495,7 @@ void asAtom::increment()
 	switch(type)
 	{
 		case T_UNDEFINED:
-			setNumber(std::numeric_limits<double>::quiet_NaN());
+			setNumber(numeric_limits<double>::quiet_NaN());
 			break;
 		case T_NULL:
 			setInt(1);
@@ -1523,7 +1525,7 @@ void asAtom::decrement()
 	switch(type)
 	{
 		case T_UNDEFINED:
-			setNumber(std::numeric_limits<double>::quiet_NaN());
+			setNumber(numeric_limits<double>::quiet_NaN());
 			break;
 		case T_NULL:
 			setInt(-1);
@@ -1683,11 +1685,11 @@ void asAtom::divide(asAtom &v2)
 	if (std::isinf(num1))
 	{
 		if (std::isinf(num2) || std::isnan(num2))
-			setNumber(std::numeric_limits<double>::quiet_NaN());
+			setNumber(numeric_limits<double>::quiet_NaN());
 		else
 		{
 			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
-			setNumber( needssign  ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
+			setNumber( needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
 		}
 	}
 	else
@@ -1704,7 +1706,7 @@ void asAtom::modulo(asAtom &v2)
 		int32_t num2=v2.toInt();
 		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
 		if (num2 == 0)
-			setNumber(std::numeric_limits<double>::quiet_NaN());
+			setNumber(numeric_limits<double>::quiet_NaN());
 		else
 			setInt(num1%num2);
 	}

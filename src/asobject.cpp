@@ -21,7 +21,6 @@
 #include "asobject.h"
 #include "scripting/class.h"
 #include <algorithm>
-#include <limits>
 #include "compat.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"

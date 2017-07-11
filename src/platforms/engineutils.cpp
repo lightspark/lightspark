@@ -44,9 +44,6 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true)
-#ifndef _WIN32
-  ,windowID(0),visual(0)
-#endif
 {
 }
 
@@ -94,7 +91,7 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 					{
 						//Signal the renderThread
 						if (sys && sys->getRenderThread())
-							sys->getRenderThread()->draw(false);
+							sys->getRenderThread()->draw(sys->isOnError());
 						break;
 					}
 						
@@ -204,9 +201,11 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 
 	assert(!widget);
 	widget = createWidget(w,h);
-	this->width = w;
-	this->height = h;
-	if (widget)
+	this->width = this->origwidth = w;
+	this->height = this->origheight = h;
+	
+	// plugins create a hidden window that should not be shown
+	if (widget && !(SDL_GetWindowFlags(widget) & SDL_WINDOW_HIDDEN))
 		SDL_ShowWindow(widget);
 	grabFocus();
 	

@@ -76,33 +76,23 @@ public:
 
 class PluginEngineData:	public EngineData
 {
+friend class nsPluginInstance;
 private:
 	nsPluginInstance* instance;
 	gulong inputHandlerId;
 	gulong sizeHandlerId;
-	GtkWidget* widget_gtk;
-#ifdef _WIN32
-	HGLRC mRC;
-	HDC mDC;
-#else
-	Display* mDisplay;
-	Window mWindow;
-#ifndef ENABLE_GLES2
-	GLXFBConfig mFBConfig;
-	GLXContext mContext;
-#else
-	EGLDisplay mEGLDisplay;
-	EGLContext mEGLContext;
-	EGLConfig mEGLConfig;
-	EGLSurface mEGLSurface;
-#endif
-#endif
+	SDL_GLContext mSDLContext;
+	unsigned char * mPixels;
+	bool inRendering;
+	Mutex resizeMutex;
 public:
 	SystemState* sys;
-	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),widget_gtk(NULL),sys(_sys)
+	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
 	{
 		width = w;
 		height = h;
+		mPixels = NULL;
+		inRendering = false;
 	}
 	~PluginEngineData() 
 	{
@@ -110,6 +100,8 @@ public:
 			g_signal_handler_disconnect(widget, inputHandlerId);
 		if(sizeHandlerId)
 			g_signal_handler_disconnect(widget, sizeHandlerId);
+		if (mPixels)
+			delete[] mPixels;
 	}
 
 	void stopMainDownload();
@@ -123,9 +115,16 @@ public:
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
+	static void forceRedraw(SystemState* sys);
 	void DoSwapBuffers();
 	void InitOpenGL();
 	void DeinitOpenGL();
+	void draw(void *event, uint32_t evx, uint32_t evy, uint32_t evwidth, uint32_t evheight);
+	void runInMainThread(SystemState *sys, void (*func)(SystemState *));
+	static void pluginCallHandler(void* d)
+	{
+		mainloop_from_plugin((SystemState*)d);
+	}
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -147,11 +146,11 @@ public:
 	void    StreamAsFile(NPStream* stream, const char* fname);
 	void    URLNotify(const char* url, NPReason reason,
 			void* notifyData);
+	uint16_t  HandleEvent(void* event);
 	void openLink(const tiny_string& url, const tiny_string& window);
 
 	// locals
 	const char * getVersion();
-	void draw();
 
 	lightspark::SystemState* m_sys;
 private:
@@ -168,7 +167,9 @@ private:
 	 * draw into that.
 	 */
 	GdkNativeWindow mWindow;
-	int mX, mY;
+#ifdef _WIN32
+	HDC mDC;
+#endif
 
 	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;

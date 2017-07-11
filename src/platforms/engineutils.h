@@ -61,13 +61,11 @@ public:
 	SDL_Window* widget;
 	static uint32_t userevent;
 	static Thread* mainLoopThread;
-	int width;
-	int height;
+	uint32_t width;
+	uint32_t height;
+	uint32_t origwidth;
+	uint32_t origheight;
 	bool needrenderthread;
-#ifndef _WIN32
-	XID windowID;
-	VisualID visual;
-#endif
 	EngineData();
 	virtual ~EngineData();
 	virtual bool isSizable() const = 0;

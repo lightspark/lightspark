@@ -368,6 +368,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			}
 			//The SWF file url should be getted from NewStream
 		}
+		NPN_SetValue(aInstance,NPPVpluginWindowBool,(void*)false);
 		//basedir is a qualified URL or a path relative to the HTML page
 		URLInfo page(getPageURL());
 		m_sys->mainClip->setBaseURL(page.goToURL(baseURL).getURL());
@@ -377,7 +378,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
 	EngineData::mainthread_running = true;
-	g_idle_add((GSourceFunc)EngineData::mainloop_from_plugin,m_sys);
+//	g_idle_add((GSourceFunc)EngineData::mainloop_from_plugin,m_sys);
 	//The sys var should be NULL in this thread
 	setTLSSys( NULL );
 }
@@ -401,13 +402,6 @@ nsPluginInstance::~nsPluginInstance()
 	delete m_sys;
 	delete m_pt;
 	setTLSSys(NULL);
-}
-
-void nsPluginInstance::draw()
-{
-/*	if(m_rt==NULL || m_it==NULL)
-		return;
-	m_rt->draw();*/
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -572,204 +566,15 @@ SDL_Keycode getSDLKeyCode(unsigned gdkKeyval)
 		case GDK_z: return SDLK_z;
 	}
 	return SDLK_UNKNOWN;
-};
-static uint16_t getKeyModifier(GdkEvent *event)
-{
-	uint16_t res = KMOD_NONE;
-	if (event->key.state & GDK_CONTROL_MASK)
-		res |= KMOD_CTRL;
-	if (event->key.state & GDK_MOD1_MASK)
-		res |= KMOD_ALT;
-	if (event->key.state & GDK_SHIFT_MASK)
-		res |= KMOD_SHIFT;
-	return res;
 }
-
-static gboolean inputDispatch(GtkWidget *widget, GdkEvent *event, PluginEngineData* e)
-{
-	SDL_Event ev;
-	switch (event->type)
-	{
-		case GDK_EXPOSE:
-		{
-			ev.type = SDL_WINDOWEVENT;
-			ev.window.event = SDL_WINDOWEVENT_EXPOSED;
-			ev.window.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_KEY_PRESS:
-		{
-			ev.type = SDL_KEYDOWN;
-			ev.key.keysym.sym = getSDLKeyCode(event->key.keyval);
-			ev.key.keysym.mod = getKeyModifier(event);
-			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
-			ev.key.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_KEY_RELEASE:
-		{
-			ev.type = SDL_KEYUP;
-			ev.key.keysym.sym = getSDLKeyCode(event->key.keyval);
-			ev.key.keysym.mod = getKeyModifier(event);
-			SDL_SetModState((SDL_Keymod)ev.key.keysym.mod);
-			ev.key.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_BUTTON_PRESS:
-		{
-			ev.type = SDL_MOUSEBUTTONDOWN;
-			switch (event->button.button)
-			{
-				case 1:
-					ev.button.button = SDL_BUTTON_LEFT;
-					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				case 2:
-					ev.button.button = SDL_BUTTON_RIGHT;
-					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				default:
-					ev.button.button = 0;
-					ev.button.state = SDL_RELEASED;
-					break;
-			}
-			ev.button.clicks = 1;
-			ev.button.x = event->button.x;
-			ev.button.y = event->button.y;
-			ev.button.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_2BUTTON_PRESS:
-		{
-			ev.type = SDL_MOUSEBUTTONDOWN;
-			switch (event->button.button)
-			{
-				case 1:
-					ev.button.button = SDL_BUTTON_LEFT;
-					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				case 2:
-					ev.button.button = SDL_BUTTON_RIGHT;
-					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				default:
-					ev.button.button = 0;
-					ev.button.state = SDL_RELEASED;
-					break;
-			}
-			ev.button.clicks = 2;
-			ev.button.x = event->button.x;
-			ev.button.y = event->button.y;
-			ev.button.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_BUTTON_RELEASE:
-		{
-			ev.type = SDL_MOUSEBUTTONUP;
-			switch (event->button.button)
-			{
-				case 1:
-					ev.button.button = SDL_BUTTON_LEFT;
-					ev.button.state = event->button.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				case 2:
-					ev.button.button = SDL_BUTTON_RIGHT;
-					ev.button.state = event->button.state & GDK_BUTTON2_MASK ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				default:
-					ev.button.button = 0;
-					ev.button.state = SDL_RELEASED;
-					break;
-			}
-			ev.button.clicks = 0;
-			ev.button.x = event->button.x;
-			ev.button.y = event->button.y;
-			ev.button.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_MOTION_NOTIFY:
-		{
-			ev.type = SDL_MOUSEMOTION;
-			ev.motion.state = event->motion.state & GDK_BUTTON1_MASK ? SDL_PRESSED : SDL_RELEASED;
-			ev.motion.x = event->motion.x;
-			ev.motion.y = event->motion.y;
-			ev.motion.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_SCROLL:
-		{
-			ev.type = SDL_MOUSEWHEEL;
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-			ev.wheel.direction = event->scroll.state == GDK_SCROLL_UP ? SDL_MOUSEWHEEL_NORMAL : SDL_MOUSEWHEEL_FLIPPED ;
-#endif
-			ev.wheel.x = event->scroll.x;
-			ev.wheel.y = event->scroll.y;
-			ev.wheel.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		case GDK_LEAVE_NOTIFY:
-		{
-			ev.type = SDL_WINDOWEVENT_LEAVE;
-			ev.wheel.windowID = SDL_GetWindowID(e->widget);
-			break;
-		}
-		default:
-#ifdef EXPENSIVE_DEBUG
-			LOG(LOG_INFO, "GDKTYPE " << event->type);
-#endif
-			return false;
-	}
-	EngineData::mainloop_handleevent(&ev,e->sys);
-	return true;
-}
-static void sizeDispatch(GtkWidget* widget, GdkRectangle* allocation, PluginEngineData* e)
-{
-	SDL_Event ev;
-	ev.type = SDL_WINDOWEVENT;
-	ev.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
-	ev.window.data1 = allocation->width;
-	ev.window.data2 = allocation->height;
-	ev.window.windowID = SDL_GetWindowID(e->widget);
-	
-	EngineData::mainloop_handleevent(&ev,e->sys);
-}
-
 
 SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 {
-	widget_gtk = gtk_plug_new(instance->mWindow);
-	gdk_threads_enter();
-	gtk_widget_realize(widget_gtk);
-#ifndef _WIN32
-	windowID = GDK_WINDOW_XID(gtk_widget_get_window(widget_gtk));
-#endif
-	
-	gtk_widget_set_size_request(widget_gtk, w, h);
-	gtk_widget_show(widget_gtk);
-	gtk_widget_map(widget_gtk);
-	gtk_widget_set_can_focus(widget_gtk,TRUE);
-	gtk_widget_add_events(widget_gtk,
-		GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
-		GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-		GDK_POINTER_MOTION_MASK | GDK_EXPOSURE_MASK |
-		GDK_LEAVE_NOTIFY_MASK);
-	inputHandlerId = g_signal_connect(widget_gtk, "event", G_CALLBACK(inputDispatch), this);
-	sizeHandlerId = g_signal_connect(widget_gtk, "size-allocate", G_CALLBACK(sizeDispatch), this);
-#ifdef _WIN32
-	SDL_Window* sdlwin = SDL_CreateWindowFrom((const void*)gtk_widget_get_window(widget_gtk));
-#else
-	SDL_Window* sdlwin = SDL_CreateWindowFrom((const void*)gdk_x11_drawable_get_xid(gtk_widget_get_window(widget_gtk)));
-#endif
-	gdk_threads_leave();
-	return sdlwin;
+	return SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN| SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 }
 
 void PluginEngineData::grabFocus()
 {
-	if (!widget_gtk)
-		return;
-
-	gtk_widget_grab_focus(widget_gtk);
 }
 
 void PluginEngineData::setClipboardText(const std::string txt)
@@ -802,43 +607,24 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	if(aWindow == NULL)
 		return NPERR_GENERIC_ERROR;
 
-	mX = aWindow->x;
-	mY = aWindow->y;
-	uint32_t width = aWindow->width;
-	uint32_t height = aWindow->height;
-	/* aWindow->window is always a void*,
-	 * GdkNativeWindow is int on linux and void* on win32.
-	 * Casting void* to int gvies an error (loss of precision), so we cast to intptr_t.
-	 */
-#ifdef _WIN32
-	GdkNativeWindow win = reinterpret_cast<GdkNativeWindow>(aWindow->window);
-#else
-	GdkNativeWindow win = reinterpret_cast<intptr_t>(aWindow->window);
-#endif
-	if (mWindow == win )
-	{
-		// The page with the plugin is being resized.
-		// Save any UI information because the next time
-		// around expect a SetWindow with a new window id.
-		LOG(LOG_ERROR,"Resize not supported");
+	PluginEngineData* e = ((PluginEngineData*)m_sys->getEngineData());
+	if (!e || !m_sys->mainClip)
 		return NPERR_NO_ERROR;
+
+	// only resize if the plugin is displayed larger than the size of the main clip
+	if ((e->width != aWindow->width || e->height < aWindow->height) &&
+			(e->origwidth<aWindow->width || e->origheight<aWindow->height))
+	{
+		Locker l(e->resizeMutex);
+		if (e->mPixels)
+		{
+			delete[] e->mPixels;
+			e->mPixels = NULL;
+		}
+		e->width=aWindow->width;
+		e->height=aWindow->height;
+		SDL_SetWindowSize(e->widget,e->width,e->height);
 	}
-	assert(mWindow==0);
-
-	PluginEngineData* e = new PluginEngineData(this, width, height,m_sys);
-	mWindow = win;
-
-	LOG(LOG_INFO,"From Browser: Window " << mWindow << " Width: " << width << " Height: " << height);
-
-#ifndef _WIN32
-	NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
-	//mDisplay = ws_info->display;
-	//mDepth = ws_info->depth;
-	//mColormap = ws_info->colormap;
-	if (ws_info->visual)
-		e->visual = XVisualIDFromVisual(ws_info->visual);
-#endif
-	m_sys->setParamsAndEngine(e, false);
 	return NPERR_NO_ERROR;
 }
 
@@ -1065,6 +851,113 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	downloaderFinished(dl, url, reason);
 }
 
+uint16_t nsPluginInstance::HandleEvent(void *event)
+{
+	EngineData::mainloop_from_plugin(m_sys);
+#if defined(MOZ_X11)
+	XEvent* nsEvent = (XEvent*)event;
+	switch (nsEvent->type)
+	{
+		case GraphicsExpose:
+		{
+			const XGraphicsExposeEvent& expose = nsEvent->xgraphicsexpose;
+			this->mWindow = reinterpret_cast<XID>(expose.drawable);
+			if (!m_sys->getEngineData())
+			{
+				PluginEngineData* e = new PluginEngineData(this, expose.width, expose.height,m_sys);
+				m_sys->setParamsAndEngine(e, false);
+			}
+			((PluginEngineData*)m_sys->getEngineData())->draw(event, expose.x,expose.y,expose.width, expose.height);
+			return true;
+		}
+		case KeyPress:
+		case KeyRelease:
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			{
+				SDL_Event ev;
+				ev.type = nsEvent->type == KeyPress ? SDL_KEYDOWN : SDL_KEYUP;
+				ev.key.keysym.sym = getSDLKeyCode(XLookupKeysym(&nsEvent->xkey,0));
+				ev.key.keysym.mod = KMOD_NONE;
+				if (nsEvent->xkey.state & ControlMask)
+					ev.key.keysym.mod |= KMOD_CTRL;
+				if (nsEvent->xkey.state & Mod1Mask)
+					ev.key.keysym.mod |= KMOD_ALT;
+				if (nsEvent->xkey.state & ShiftMask)
+					ev.key.keysym.mod |= KMOD_SHIFT;
+				ev.key.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
+				return EngineData::mainloop_handleevent(&ev,m_sys);
+			}
+			break;
+		case MotionNotify: 
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			{
+				XMotionEvent* event = &nsEvent->xmotion;
+				SDL_Event ev;
+				ev.type = SDL_MOUSEMOTION;
+				ev.motion.state = event->state & Button1Mask ? SDL_PRESSED : SDL_RELEASED;
+				ev.motion.x = event->x;
+				ev.motion.y = event->y;
+				ev.motion.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
+				return EngineData::mainloop_handleevent(&ev,m_sys);
+			}
+			break;
+		case ButtonPress:
+		case ButtonRelease: 
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			{
+				SDL_Event ev;
+				XButtonEvent* event = &nsEvent->xbutton;
+				ev.type = (nsEvent->type == ButtonPress) ? SDL_MOUSEBUTTONDOWN :SDL_MOUSEBUTTONUP;
+				switch (event->button)
+				{
+					case 1:
+						ev.button.button = SDL_BUTTON_LEFT;
+						ev.button.state = event->state & Button1Mask ? SDL_PRESSED : SDL_RELEASED;
+						break;
+					case 2:
+						ev.button.button = SDL_BUTTON_RIGHT;
+						ev.button.state = event->state & Button2Mask ? SDL_PRESSED : SDL_RELEASED;
+						break;
+					default:
+						ev.button.button = 0;
+						ev.button.state = SDL_RELEASED;
+						break;
+				}
+				ev.button.x = event->x;
+				ev.button.y = event->y;
+				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
+				return EngineData::mainloop_handleevent(&ev,m_sys);
+			}
+			break;
+	}
+#endif
+#if defined XP_WIN
+	
+	NPEvent *npevent = reinterpret_cast<NPEvent *> (event);
+	switch (npevent->event)
+	{
+		case WM_PAINT:
+		{
+			mDC = reinterpret_cast<HDC> (npevent->wParam);
+			if (!mDC) {
+				return false;
+			}
+			RECTL *clipRect = reinterpret_cast<RECTL *> (npevent->lParam);
+			if (!m_sys->getEngineData())
+			{
+				PluginEngineData* e = new PluginEngineData(this, clipRect->right-clipRect->left, clipRect->bottom-clipRect->top,m_sys);
+				m_sys->setParamsAndEngine(e, false);
+			}
+			int savedID = SaveDC(mDC);
+			((PluginEngineData*)m_sys->getEngineData())->draw(event,clipRect->left,clipRect->top,clipRect->right-clipRect->left, clipRect->bottom-clipRect->top);
+			RestoreDC(mDC, savedID);
+			return true;
+		}
+	}
+#endif
+	return 0;
+}
+
 void PluginEngineData::stopMainDownload()
 {
 	if(instance->mainDownloader)
@@ -1109,167 +1002,95 @@ void PluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_stri
 {
 	instance->openLink(url, window);
 }
+
+void PluginEngineData::forceRedraw(SystemState* sys)
+{
+   NPRect rect;
+   rect.left = 0;
+   rect.top = 0;
+   rect.right = ((PluginEngineData*)sys->getEngineData())->width;
+   rect.bottom = ((PluginEngineData*)sys->getEngineData())->height;
+   NPN_InvalidateRect(((PluginEngineData*)sys->getEngineData())->instance->mInstance, &rect);
+   NPN_ForceRedraw(((PluginEngineData*)sys->getEngineData())->instance->mInstance);
+}
+
+void PluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemState*) )
+{
+	EngineData::runInMainThread(sys,func);
+	NPN_PluginThreadAsyncCall(instance->mInstance,pluginCallHandler,sys);
+}
+
 void PluginEngineData::DoSwapBuffers()
 {
-#if defined(_WIN32)
-	SwapBuffers(mDC);
-#elif !defined(ENABLE_GLES2)
-	glXSwapBuffers(mDisplay, windowID);
-#else
-	eglSwapBuffers(mEGLDisplay, mEGLSurface);
-#endif
+	if (inRendering)
+	{
+		SDL_GL_SwapWindow(widget);
+		return;
+	}
+	{
+		Locker l(resizeMutex);
+		inRendering = true;
+		if (!mPixels)
+			mPixels = new unsigned char[width*height*4]; // 4 bytes for BGRA
+		char* buf = g_newa(char, width*height*4);
+
+		glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);
+		// received image is upside down, so flip it vertically
+		for (uint32_t i= 0; i < height; i++)
+		{
+			memcpy(mPixels+i*width*4,buf+(height-i)*width*4,width*4);
+		}
+		SDL_GL_SwapWindow(widget);
+		runInMainThread(instance->m_sys,forceRedraw);
+	}
 }
 void PluginEngineData::InitOpenGL()
 {
-#if defined(_WIN32)
-	PIXELFORMATDESCRIPTOR pfd =
-		{
-			sizeof(PIXELFORMATDESCRIPTOR),
-			1,
-			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
-			PFD_TYPE_RGBA,            //The kind of framebuffer. RGBA or palette.
-			32,                        //Colordepth of the framebuffer.
-			0, 0, 0, 0, 0, 0,
-			0,
-			0,
-			0,
-			0, 0, 0, 0,
-			24,                        //Number of bits for the depthbuffer
-			0,                        //Number of bits for the stencilbuffer
-			0,                        //Number of Aux buffers in the framebuffer.
-			PFD_MAIN_PLANE,
-			0,
-			0, 0, 0
-		};
-	if(!(mDC = GetDC((HWND)GDK_WINDOW_HWND(gtk_widget_get_window(widget_gtk)))))
-		throw RunTimeException("GetDC failed");
-	int PixelFormat;
-	if (!(PixelFormat=ChoosePixelFormat(mDC,&pfd)))
-		throw RunTimeException("ChoosePixelFormat failed");
-	if(!SetPixelFormat(mDC,PixelFormat,&pfd))
-		throw RunTimeException("SetPixelFormat failed");
-	if (!(mRC=wglCreateContext(mDC)))
-		throw RunTimeException("wglCreateContext failed");
-	if(!wglMakeCurrent(mDC,mRC))
-		throw RunTimeException("wglMakeCurrent failed");
-#elif !defined(ENABLE_GLES2)
-	mDisplay = XOpenDisplay(NULL);
-	int a,b;
-	Bool glx_present=glXQueryVersion(mDisplay, &a, &b);
-	if(!glx_present)
-	{
-		XCloseDisplay(mDisplay);
-		throw RunTimeException("glX not present");
-	}
-
-	int attrib[10]={GLX_DOUBLEBUFFER, True, 0L};
-	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
-	if(!fb)
-	{
-		attrib[6]=0L;
-		LOG(LOG_ERROR,_("Falling back to no double buffering"));
-		fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
-	}
-	if(!fb)
-	{
-		XCloseDisplay(mDisplay);
-		throw RunTimeException(_("Could not find any GLX configuration"));
-	}
-	int i;
-	for(i=0;i<a;i++)
-	{
-		int id;
-		glXGetFBConfigAttrib(mDisplay, fb[i],GLX_VISUAL_ID,&id);
-		if(visual == 0 || id==(int)visual)
-			break;
-	}
-	if(i==a)
-	{
-		//No suitable id found
-		XCloseDisplay(mDisplay);
-		throw RunTimeException(_("No suitable graphics configuration available"));
-	}
-	mFBConfig=fb[i];
-	LOG(LOG_INFO, "Chosen config " << hex << fb[i] << dec);
-	XFree(fb);
-		mContext = glXCreateNewContext(mDisplay, mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeCurrent(mDisplay, windowID, mContext);
-	if(!glXIsDirect(mDisplay, mContext))
-		LOG(LOG_INFO, "Indirect!!");
-#else //egl
-	mDisplay = XOpenDisplay(NULL);
-	int a;
-	eglBindAPI(EGL_OPENGL_ES_API);
-	mEGLDisplay = eglGetDisplay(mDisplay);
-	if (mEGLDisplay == EGL_NO_DISPLAY)
-		throw RunTimeException(_("EGL not present"));
-	EGLint major, minor;
-	if (eglInitialize(mEGLDisplay, &major, &minor) == EGL_FALSE)
-		throw RunTimeException(_("EGL initialization failed"));
-
-	LOG(LOG_INFO, _("EGL version: ") << eglQueryString(mEGLDisplay, EGL_VERSION));
-	EGLint config_attribs[] = {
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RED_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_BLUE_SIZE, 8,
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-		EGL_NONE
-		};
-	EGLint context_attribs[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
-		EGL_NONE
-	};
-	if (!eglChooseConfig(mEGLDisplay, config_attribs, 0, 0, &a))
-		throw RunTimeException(_("Could not get number of EGL configurations"));
-	else
-		LOG(LOG_INFO, "Number of EGL configurations: " << a);
-	EGLConfig *conf = new EGLConfig[a];
-	if (!eglChooseConfig(mEGLDisplay, config_attribs, conf, a, &a))
-		throw RunTimeException(_("Could not find any EGL configuration"));
-
-	int i;
-	for(i=0;i<a;i++)
-	{
-		EGLint id;
-		eglGetConfigAttrib(mEGLDisplay, conf[i], EGL_NATIVE_VISUAL_ID, &id);
-		if(visual == 0 || id==(int)visual)
-			break;
-	}
-	if(i==a)
-	{
-		//No suitable id found
-		throw RunTimeException(_("No suitable graphics configuration available"));
-	}
-	mEGLConfig=conf[i];
-	LOG(LOG_INFO, "Chosen config " << hex << conf[i] << dec);
-	mEGLContext = eglCreateContext(mEGLDisplay, mEGLConfig, EGL_NO_CONTEXT, context_attribs);
-	if (mEGLContext == EGL_NO_CONTEXT)
-		throw RunTimeException(_("Could not create EGL context"));
-	mEGLSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, windowID, NULL);
-	if (mEGLSurface == EGL_NO_SURFACE)
-		throw RunTimeException(_("Could not create EGL surface"));
-	eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext);
-#endif
-
+	mSDLContext = SDL_GL_CreateContext(widget);
+	if (!mSDLContext)
+		LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
 	initGLEW();
+	return;
 }
 
 void PluginEngineData::DeinitOpenGL()
 {
-#if defined(_WIN32)
-	wglMakeCurrent(NULL,NULL);
-	wglDeleteContext(mRC);
-	/* Do not ReleaseDC(e->window,hDC); as our window does not have CS_OWNDC */
-#elif !defined(ENABLE_GLES2)
-	glXMakeCurrent(mDisplay, 0L, NULL);
-	glXDestroyContext(mDisplay, mContext);
-	XCloseDisplay(mDisplay);
-#else
-	eglMakeCurrent(mEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-	eglDestroyContext(mEGLDisplay, mEGLContext);
-	XCloseDisplay(mDisplay);
+	SDL_GL_DeleteContext(mSDLContext);
+}
+void PluginEngineData::draw(void *event,uint32_t evx, uint32_t evy, uint32_t evwidth, uint32_t evheight)
+{
+	if (!mPixels)
+	{
+		inRendering=false;
+		return;
+	}
+#if defined MOZ_X11
+	Display *dpy = ((XEvent*)event)->xexpose.display;
+	int screen = DefaultScreen(dpy);
+	Visual* vi = DefaultVisual(dpy,screen);
+	XImage *xi = XCreateImage(dpy, vi, 24, ZPixmap, 0,(char*)mPixels, width, height, 32, 4*width);
+	XPutImage(dpy,((XEvent*)event)->xexpose.window,DefaultGC(dpy, screen), xi, 0, 0, evx, evy, evwidth, evheight);
+	XFree(xi);
 #endif
+#if defined XP_WIN
+	// taken from https://code.videolan.org/videolan/npapi-vlc/blob/master/npapi/vlcwindowless_win.cpp
+	BITMAPINFO BmpInfo; ZeroMemory(&BmpInfo, sizeof(BmpInfo));
+	BITMAPINFOHEADER& BmpH = BmpInfo.bmiHeader;
+	BmpH.biSize = sizeof(BITMAPINFOHEADER);
+	BmpH.biWidth = width;
+	BmpH.biHeight = -((int)height);
+	BmpH.biPlanes = 1;
+	BmpH.biBitCount = 4*8;
+	BmpH.biCompression = BI_RGB;
+	//following members are already zeroed
+	//BmpH.biSizeImage = 0;
+	//BmpH.biXPelsPerMeter = 0;
+	//BmpH.biYPelsPerMeter = 0;
+	//BmpH.biClrUsed = 0;
+	//BmpH.biClrImportant = 0;
+	SetDIBitsToDevice(instance->mDC,evx,evy,evwidth,evheight,0,0,0,evheight,mPixels,&BmpInfo, DIB_RGB_COLORS);
+#endif
+	inRendering=false;
 }
 
 #ifdef _WIN32

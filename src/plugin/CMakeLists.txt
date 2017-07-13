@@ -48,8 +48,6 @@ ENDIF(WIN32)
 
 ADD_LIBRARY(lightsparkplugin MODULE ${PLUGIN_SOURCES})
 
-TARGET_LINK_LIBRARIES(lightsparkplugin spark)
-
 #With STATICDEPS, all deps are compiled into spark
 IF(NOT STATICDEPS)
 TARGET_LINK_LIBRARIES(lightsparkplugin spark ${X11_LIBRARIES} ${GLIBMM_LIBRARIES} ${GTK_LIBRARIES})

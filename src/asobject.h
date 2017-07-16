@@ -423,7 +423,7 @@ public:
 		if (mname.isEmpty())
 			return NULL;
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
-		assert(!mname.ns.empty());
+		bool noNS = mname.ns.empty(); // no Namespace in multiname means we don't care about the namespace and take the first match
 
 		var_iterator ret=Variables.find(name);
 		auto nsIt=mname.ns.cbegin();
@@ -432,7 +432,7 @@ public:
 		{
 			//breaks when the namespace is not found
 			const nsNameAndKind& ns=ret->second.ns;
-			if(ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
+			if(noNS || ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
 			{
 				if(ret->second.kind & traitKinds)
 				{

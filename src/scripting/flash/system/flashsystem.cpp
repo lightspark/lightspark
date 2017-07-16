@@ -230,39 +230,39 @@ void ApplicationDomain::finalize()
 		i->second->decRef();
 }
 
-ASFUNCTIONBODY(ApplicationDomain,_constructor)
+ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
-	ApplicationDomain* th = Class<ApplicationDomain>::cast(obj);
+	ApplicationDomain* th = obj.as<ApplicationDomain>();
 	_NR<ApplicationDomain> parentDomain;
-	ARG_UNPACK (parentDomain, NullRef);
+	ARG_UNPACK_ATOM (parentDomain, NullRef);
 	if(!th->parentDomain.isNull())
 		// Don't override parentDomain if it was set in the
 		// C++ constructor
-		return NULL;
+		return asAtom::invalidAtom;
 	else if(parentDomain.isNull())
-		th->parentDomain =  obj->getSystemState()->systemDomain;
+		th->parentDomain =  sys->systemDomain;
 	else
 		th->parentDomain = parentDomain;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ApplicationDomain,_getMinDomainMemoryLength)
+ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	return abstract_ui(obj->getSystemState(),MIN_DOMAIN_MEMORY_LIMIT);
+	return asAtom((uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
 }
 
-ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
+ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
+	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
 	ret->incRef();
-	return ret.getPtr();
+	return asAtom::fromObject(ret.getPtr());
 }
 
-ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
+ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 {
-	ApplicationDomain* th = obj->as<ApplicationDomain>();
+	ApplicationDomain* th = obj.as<ApplicationDomain>();
 	assert(argslen==1);
-	const tiny_string& tmp=args[0]->toString();
+	const tiny_string& tmp=args[0].toString();
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
@@ -270,29 +270,30 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=getSys()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(obj->getSystemState(),nsName,NAMESPACE));
+	name.name_s_id=sys->getUniqueStringId(tmpName);
+	if (nsName != "")
+		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o==NULL)
-		return abstract_b(obj->getSystemState(),false);
+		return asAtom::falseAtom;
 	else
 	{
 		if(o->getObjectType()!=T_CLASS)
-			return abstract_b(obj->getSystemState(),false);
+			return asAtom::falseAtom;
 
 		LOG(LOG_CALLS,_("Found definition for ") << name);
-		return abstract_b(obj->getSystemState(),true);
+		return asAtom::trueAtom;
 	}
 }
 
-ASFUNCTIONBODY(ApplicationDomain,getDefinition)
+ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 {
-	ApplicationDomain* th = obj->as<ApplicationDomain>();
+	ApplicationDomain* th = obj.as<ApplicationDomain>();
 	assert(argslen==1);
-	const tiny_string& tmp=args[0]->toString();
+	const tiny_string& tmp=args[0].toString();
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
@@ -300,21 +301,22 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=getSys()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(obj->getSystemState(),nsName,NAMESPACE));
+	name.name_s_id=sys->getUniqueStringId(tmpName);
+	if (nsName != "")
+		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
 	if(o == NULL)
-		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(obj->getSystemState()));
+		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
 
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	o->incRef();
-	return o;
+	return asAtom::fromObject(o);
 }
 
 void ApplicationDomain::registerGlobalScope(Global* scope)

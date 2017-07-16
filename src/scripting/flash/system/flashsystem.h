@@ -79,11 +79,11 @@ public:
 	 * Only returns the value if the variable has been already defined.
 	 */
 	ASObject* getVariableByMultinameOpportunistic(const multiname& name);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getCurrentDomain);
-	ASFUNCTION(_getMinDomainMemoryLength);
-	ASFUNCTION(hasDefinition);
-	ASFUNCTION(getDefinition);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getCurrentDomain);
+	ASFUNCTION_ATOM(_getMinDomainMemoryLength);
+	ASFUNCTION_ATOM(hasDefinition);
+	ASFUNCTION_ATOM(getDefinition);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
 	ASPROPERTY_GETTER(_NR<ApplicationDomain>, parentDomain);
 	template<class T>

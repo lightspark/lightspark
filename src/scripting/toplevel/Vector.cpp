@@ -22,6 +22,8 @@
 #include "scripting/class.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/XML.h"
+#include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace std;
 using namespace lightspark;
@@ -30,12 +32,12 @@ void Vector::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),getLength),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),setLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),getFixed),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),setFixed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),getFixed,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fixed","",Class<IFunction>::getFunction(c->getSystemState(),setFixed,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every),NORMAL_METHOD,true);
@@ -352,6 +354,34 @@ void Vector::append(asAtom &o)
 	}
 
 	vec.push_back(vec_type->coerce(getSystemState(),o));
+}
+
+ASObject *Vector::describeType() const
+{
+	pugi::xml_document p;
+	pugi::xml_node root = p.append_child("type");
+
+	// type attributes
+	Class_base* prot=getClass();
+	if(prot)
+	{
+		root.append_attribute("name").set_value(prot->getQualifiedClassName(true).raw_buf());
+		root.append_attribute("base").set_value("__AS3__.vec::Vector.<*>");
+	}
+	bool isDynamic = getClass() && !getClass()->isSealed;
+	root.append_attribute("isDynamic").set_value(isDynamic);
+	root.append_attribute("isFinal").set_value(false);
+	root.append_attribute("isStatic").set_value(false);
+	pugi::xml_node node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("__AS3__.vec::Vector.<*>");
+
+	if(prot)
+		prot->describeInstance(root,true);
+
+	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getSystemState(),root)->toXMLString_internal());
+
+	return XML::createFromNode(root);
+	
 }
 
 ASFUNCTIONBODY_ATOM(Vector,push)

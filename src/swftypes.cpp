@@ -37,12 +37,14 @@
 using namespace std;
 using namespace lightspark;
 
-const tiny_string multiname::qualifiedString(SystemState* sys) const
+const tiny_string multiname::qualifiedString(SystemState* sys, bool forDescribeType) const
 {
 	assert_and_throw(ns.size()>=1);
 	assert_and_throw(name_type==NAME_STRING);
+	if (forDescribeType && name_s_id == BUILTIN_STRINGS::ANY)
+		return "*";
 	const tiny_string nsName=sys->getStringFromUniqueId(ns[0].nsNameId);
-	const tiny_string& name=sys->getStringFromUniqueId(name_s_id);
+	const tiny_string name=sys->getStringFromUniqueId(name_s_id);
 	if(nsName.empty())
 		return name;
 	else
@@ -50,6 +52,13 @@ const tiny_string multiname::qualifiedString(SystemState* sys) const
 		tiny_string ret=nsName;
 		ret+="::";
 		ret+=name;
+		if (forDescribeType && ret.startsWith("__AS3__.vec::Vector$"))
+		{
+			tiny_string ret2 = "__AS3__.vec::Vector.<";
+			ret2 += ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
+			ret2 += ">";
+			return ret2;
+		}
 		return ret;
 	}
 }
@@ -1484,7 +1493,7 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(0),explicit_FP(false)
 {
 }
 
-tiny_string QName::getQualifiedName(SystemState *sys) const
+tiny_string QName::getQualifiedName(SystemState *sys,bool forDescribeType) const
 {
 	tiny_string ret;
 	if(nsStringId != BUILTIN_STRINGS::EMPTY)
@@ -1493,6 +1502,13 @@ tiny_string QName::getQualifiedName(SystemState *sys) const
 		ret+="::";
 	}
 	ret+=sys->getStringFromUniqueId(nameId);
+	if (forDescribeType && ret.startsWith("__AS3__.vec::Vector$"))
+	{
+		tiny_string ret2 = "__AS3__.vec::Vector.<";
+		ret2 += ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
+		ret2 += ">";
+		return ret2;
+	}
 	return ret;
 }
 

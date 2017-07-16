@@ -13,15 +13,15 @@ import pickle
 
 #These regexp are used for finding important pieces in the source
 sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
-rconstructor = re.compile('[^/]*ASFUNCTIONBODY\( *([^,]*), *\_constructor\)')
+rconstructor = re.compile('[^/]*ASFUNCTIONBODY[\_ATOM]*\( *([^,]*), *\_constructor\)')
 #looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\)\)\)')
 rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
 #the line may start with anything but a comment character
-rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*, *GETTER_METHOD, *([^ ]*)')
-rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*, *SETTER_METHOD, *([^ ]*)')
-rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *NORMAL_METHOD, *([^ ]*)')
+rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *GETTER_METHOD, *([^ ]*)')
+rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
+rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *NORMAL_METHOD, *([^ ]*)')
 rmet2 = re.compile('[^/]*->prototype->setVariableByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')

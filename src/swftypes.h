@@ -114,7 +114,7 @@ public:
 		else
 			return nsStringId<r.nsStringId;
 	}
-	tiny_string getQualifiedName(SystemState* sys) const;
+	tiny_string getQualifiedName(SystemState* sys, bool forDescribeType = false) const;
 	operator multiname() const;
 };
 
@@ -405,7 +405,7 @@ struct multiname: public memory_reporter
 	*/
 	const tiny_string normalizedNameUnresolved(SystemState *sys) const;
 
-	const tiny_string qualifiedString(SystemState *sys) const;
+	const tiny_string qualifiedString(SystemState *sys, bool forDescribeType=false) const;
 	/* sets name_type, name_s/name_d based on the object n */
 	void setName(class asAtom &n, SystemState *sys);
 	void resetNameIfObject();

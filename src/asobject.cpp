@@ -1801,9 +1801,9 @@ ASObject *ASObject::describeType() const
 	Class_base* prot=getClass();
 	if(prot)
 	{
-		root.append_attribute("name").set_value(prot->getQualifiedClassName().raw_buf());
+		root.append_attribute("name").set_value(prot->getQualifiedClassName(true).raw_buf());
 		if(prot->super)
-			root.append_attribute("base").set_value(prot->super->getQualifiedClassName().raw_buf());
+			root.append_attribute("base").set_value(prot->super->getQualifiedClassName(true).raw_buf());
 	}
 	bool isDynamic = classdef && !classdef->isSealed;
 	root.append_attribute("isDynamic").set_value(isDynamic?"true":"false");
@@ -1812,10 +1812,9 @@ ASObject *ASObject::describeType() const
 	root.append_attribute("isStatic").set_value("false");
 
 	if(prot)
-		prot->describeInstance(root);
+		prot->describeInstance(root,false);
 
-	// TODO: undocumented constructor node
-	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(root)->toXMLString_internal());
+	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getSystemState(),root)->toXMLString_internal());
 
 	return XML::createFromNode(root);
 }

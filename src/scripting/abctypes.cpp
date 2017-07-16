@@ -270,9 +270,14 @@ istream& lightspark::operator>>(istream& in, metadata_info& v)
 	in >> v.item_count;
 
 	v.items.resize(v.item_count);
+	// it seems that metadata is stored as key1,key2,key3...,value2,value2,value3...
 	for(unsigned int i=0;i<v.item_count;i++)
 	{
-		in >> v.items[i].key >> v.items[i].value;
+		in >> v.items[i].key;
+	}
+	for(unsigned int i=0;i<v.item_count;i++)
+	{
+		in >> v.items[i].value;
 	}
 	return in;
 }

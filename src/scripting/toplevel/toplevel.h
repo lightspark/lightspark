@@ -189,10 +189,12 @@ private:
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns);
 	IFunction* constructor;
-	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits) const;
-	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
-	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map) const;
+	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const;
+	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate) const;
+	void describeConstructor(pugi::xml_node &root) const;
+	virtual void describeClassMetadata(pugi::xml_node &root) const {}
 protected:
+	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION(_toString);
 	void initStandardProps();
@@ -244,12 +246,12 @@ public:
          * If considerInterfaces is true, check interfaces, too.
 	 */
 	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
-	tiny_string getQualifiedClassName() const;
+	tiny_string getQualifiedClassName(bool forDescribeType = false) const;
 	tiny_string getName() const;
 	tiny_string toString();
 	virtual asAtom generator(asAtom* args, const unsigned int argslen);
 	ASObject *describeType() const;
-	void describeInstance(pugi::xml_node &root) const;
+	void describeInstance(pugi::xml_node &root, bool istemplate) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
 	/*
 	 * Converts the given object to an object of this Class_base's type.
@@ -421,6 +423,7 @@ class FunctionPrototype;
 class Function : public IFunction
 {
 friend class Class<IFunction>;
+friend class Class_base;
 public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 	typedef asAtom (*as_atom_function)(SystemState*, asAtom&, asAtom*, const unsigned int);
@@ -430,6 +433,8 @@ protected:
 	as_function val;
 	/* Function pointer to the C-function implementation with atom arguments */
 	as_atom_function val_atom;
+	// type of the return value;
+	Class_base* returnType;
 	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v),val_atom(NULL) {}
 	method_info* getMethodInfo() const { return NULL; }
 public:
@@ -460,6 +465,7 @@ class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
 friend class Class<IFunction>;
+friend class Class_base;
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 private:
@@ -534,7 +540,7 @@ public:
 		ret->constructorCallComplete = true;
 		return ret;
 	}
-	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0)
+	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=NULL)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
@@ -542,6 +548,7 @@ public:
 			ret=new (c->memoryAccount) Function(c, NULL);
 		ret->val= NULL;
 		ret->val_atom = v;
+		ret->returnType = returnType;
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

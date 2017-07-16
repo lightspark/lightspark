@@ -56,7 +56,7 @@ ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls,uint32_t le
 
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m):Class_base(name, m),tag(NULL),bindedToRoot(false)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait)
 {
 	this->incRef(); //create on reference for the classes map
 #ifndef NDEBUG
@@ -128,6 +128,14 @@ void Class_inherit::setupDeclaredTraits(ASObject *target) const
 		target->initialized=true;
 	#endif
 		target->traitsInitialized = true;
+	}
+}
+
+void Class_inherit::describeClassMetadata(pugi::xml_node &root) const
+{
+	if(classtrait && classtrait->kind&traits_info::Metadata)
+	{
+		describeMetadata(root, *classtrait);
 	}
 }
 

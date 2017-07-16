@@ -49,8 +49,9 @@ private:
 	DictionaryTag const* tag;
 	bool bindedToRoot;
 	void recursiveBuild(ASObject* target) const;
+	const traits_info* classtrait;
 public:
-	Class_inherit(const QName& name, MemoryAccount* m);
+	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait);
 	bool destruct()
 	{
 		auto it = class_scope.begin();
@@ -78,6 +79,8 @@ public:
 	}
 	//Closure stack
 	std::vector<scope_entry> class_scope;
+	virtual void describeClassMetadata(pugi::xml_node &root) const;
+
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

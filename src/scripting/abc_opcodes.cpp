@@ -2521,7 +2521,7 @@ void ABCVm::newClass(call_context* th, int n)
 			return;
 		}
 		
-		ret=new (th->context->root->getSystemState()->unaccountedMemory) Class_inherit(className, th->context->root->getSystemState()->unaccountedMemory);
+		ret=new (th->context->root->getSystemState()->unaccountedMemory) Class_inherit(className, th->context->root->getSystemState()->unaccountedMemory,NULL);
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->context);
 		//Add the class to the ones being currently defined in this context

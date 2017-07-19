@@ -285,7 +285,7 @@ public:
 			return asAtom::nullAtom;
 		if(obj.type == T_UNDEFINED)
 			return asAtom::undefinedAtom;
-		if(v.type != T_INVALID && obj.type != v.type)
+		if(v.type != T_INVALID && !v.checkArgumentConversion(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj.toObject(getSys())->getClassName(),
                                                   "?"); // TODO

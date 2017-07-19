@@ -261,6 +261,7 @@ public:
 	inline bool isEqualStrict(SystemState *sys, asAtom& v2);
 	inline bool isConstructed() const;
 	inline bool isPrimitive() const;
+	inline bool checkArgumentConversion(const asAtom& obj) const;
 	asAtom asTypelate(asAtom& atomtype);
 	inline number_t toNumber();
 	inline int32_t toInt();
@@ -1460,6 +1461,15 @@ bool asAtom::isPrimitive() const
 	return type==T_NUMBER || type ==T_UNDEFINED || type == T_NULL ||
 		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
 			type==T_UINTEGER;
+}
+bool asAtom::checkArgumentConversion(const asAtom& obj) const
+{
+	if (type == obj.type)
+		return true;
+	if ((type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER) &&
+		(obj.type==T_NUMBER || obj.type==T_INTEGER || obj.type==T_UINTEGER))
+		return true;
+	return false;
 }
 
 void asAtom::setInt(int32_t val)

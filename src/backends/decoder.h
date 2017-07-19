@@ -140,6 +140,7 @@ class NullVideoDecoder: public VideoDecoder
 public:
 	NullVideoDecoder() {status=VALID;}
 	~NullVideoDecoder() { while(fenceCount); }
+	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint){};
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
@@ -305,6 +306,7 @@ public:
 		sampleRate=44100;
 		channelCount=2;
 	}
+	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen){};
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time){return 0;}
 };
 

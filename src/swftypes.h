@@ -379,14 +379,15 @@ struct multiname: public memory_reporter
 		ASObject* name_o;
 	};
 	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
-	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_UINT,NAME_NUMBER,NAME_OBJECT};
-	NAME_TYPE name_type;
-	bool isAttribute;
-	bool isStatic;
-	bool hasEmptyNS;
-	bool hasBuiltinNS;
 	const Type* cachedType;
-	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasEmptyNS(true),hasBuiltinNS(false),cachedType(NULL)
+	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_UINT,NAME_NUMBER,NAME_OBJECT};
+	NAME_TYPE name_type:3;
+	bool isAttribute:1;
+	bool isStatic:1;
+	bool hasEmptyNS:1;
+	bool hasBuiltinNS:1;
+	bool hasGlobalNS:1;
+	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(NULL),ns(reporter_allocator<nsNameAndKind>(m)),cachedType(NULL),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasEmptyNS(true),hasBuiltinNS(false),hasGlobalNS(true)
 	{
 	}
 	

@@ -818,11 +818,13 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->isAttribute=false;
 			ret->hasEmptyNS=true;
 			ret->hasBuiltinNS=false;
+			ret->hasGlobalNS=true;
 			return ret;
 		}
 		ret->isAttribute=m->isAttributeName();
 		ret->hasEmptyNS = false;
 		ret->hasBuiltinNS=false;
+		ret->hasGlobalNS=false;
 		switch(m->kind)
 		{
 			case 0x07: //QName
@@ -831,6 +833,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->ns.emplace_back(constant_pool.namespaces[m->ns].getNS(this,m->ns));
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 				if (m->name)
 				{
 					ret->name_s_id=getString(m->name);
@@ -850,6 +853,8 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 						ret->hasEmptyNS = true;
 					if (ns.hasBuiltinName())
 						ret->hasBuiltinNS = true;
+					if (ns.kind == NAMESPACE)
+						ret->hasGlobalNS = true;
 					ret->ns.emplace_back(ns);
 				}
 
@@ -873,6 +878,8 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 						ret->hasEmptyNS = true;
 					if (ns.hasBuiltinName())
 						ret->hasBuiltinNS = true;
+					if (ns.kind == NAMESPACE)
+						ret->hasGlobalNS = true;
 					ret->ns.emplace_back(ns);
 				}
 				break;
@@ -917,6 +924,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->ns.emplace_back(constant_pool.namespaces[td->ns].getNS(this,td->ns));
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -971,6 +979,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->ns.emplace_back(root->getSystemState(),qname->getURI(),NAMESPACE);
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 			}
 			else
 				n.applyProxyProperty(*ret);
@@ -988,6 +997,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 			ASATOM_DECREF(n);
 			break;
 		}
@@ -1001,6 +1011,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 			ret->setName(n,root->getSystemState());
 			ASATOM_DECREF(n);
 			n2->decRef();

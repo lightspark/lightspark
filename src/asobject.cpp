@@ -87,6 +87,7 @@ void ASObject::applyProxyProperty(multiname &name)
 	name.isAttribute = this->proxyMultiName->isAttribute;
 	name.hasEmptyNS = false;
 	name.hasBuiltinNS = false;
+	name.hasGlobalNS = false;
 	name.ns.clear();
 	name.ns.reserve(this->proxyMultiName->ns.size());
 	for(unsigned int i=0;i<this->proxyMultiName->ns.size();i++)
@@ -95,6 +96,8 @@ void ASObject::applyProxyProperty(multiname &name)
 			name.hasEmptyNS = true;
 		if (this->proxyMultiName->ns[i].hasBuiltinName())
 			name.hasBuiltinNS = true;
+		if (this->proxyMultiName->ns[i].kind == NAMESPACE)
+			name.hasGlobalNS = true;
 		name.ns.push_back(this->proxyMultiName->ns[i]);
 	}
 }
@@ -752,9 +755,19 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
 		}
 
+		obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 		//Create a new dynamic variable
-		obj=Variables.findObjVar(getSystemState(),name,DYNAMIC_TRAIT,DYNAMIC_TRAIT);
-		++varcount;
+		if(!obj)
+		{
+			if(this->is<Global>() && !name.hasGlobalNS)
+				throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), this->getClassName());
+			
+			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
+				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind())));
+			obj = &inserted->second;
+			++varcount;
+		}
+		
 	}
 
 	if(obj->setter.type != T_INVALID)
@@ -920,8 +933,6 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 		return NULL;
 	if(createKind == DYNAMIC_TRAIT)
 	{
-		if(!mname.hasEmptyNS)
-			throwError<ReferenceError>(kWriteSealedError, mname.normalizedNameUnresolved(sys), "" /* TODO: class name */);
 		var_iterator inserted=Variables.insert(Variables.cbegin(),
 			make_pair(name,variable(createKind,nsNameAndKind())));
 		return &inserted->second;
@@ -1285,6 +1296,7 @@ asAtom ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_
 	varName.name_s_id=getSystemState()->getUniqueStringId(name);
 	varName.hasEmptyNS = false;
 	varName.hasBuiltinNS = false;
+	varName.hasGlobalNS = false;
 	for (auto ns=namespaces.begin(); ns!=namespaces.end(); ns++)
 	{
 		nsNameAndKind newns(getSystemState(),*ns,NAMESPACE);
@@ -1293,6 +1305,8 @@ asAtom ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_
 			varName.hasEmptyNS = true;
 		if (newns.hasBuiltinName())
 			varName.hasBuiltinNS = true;
+		if (newns.kind == NAMESPACE)
+			varName.hasGlobalNS = true;
 	}
 	varName.isAttribute = false;
 

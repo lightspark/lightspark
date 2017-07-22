@@ -39,7 +39,7 @@ public:
 	static void sinit(Class_base* c);
 	inline number_t toNumber() { return val; }
 	inline bool destruct() { val=0; return ASObject::destruct(); }
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(_toString);
 	tiny_string toString();
 	static tiny_string toString(int32_t val);
 	int32_t toInt()
@@ -52,12 +52,12 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
-	ASFUNCTION(_valueOf);
-	ASFUNCTION(_toExponential);
-	ASFUNCTION(_toFixed);
-	ASFUNCTION(_toPrecision);
+	ASFUNCTION_ATOM(_valueOf);
+	ASFUNCTION_ATOM(_toExponential);
+	ASFUNCTION_ATOM(_toFixed);
+	ASFUNCTION_ATOM(_toPrecision);
 	std::string toDebugString() { return toString()+"i"; }
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

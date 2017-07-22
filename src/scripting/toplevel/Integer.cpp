@@ -26,50 +26,50 @@
 using namespace std;
 using namespace lightspark;
 
-ASFUNCTIONBODY(Integer,_toString)
+ASFUNCTIONBODY_ATOM(Integer,_toString)
 {
-	if(Class<Integer>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_s(obj->getSystemState(),"0");
+	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom::fromObject(abstract_s(sys,"0"));
 
-	Integer* th=static_cast<Integer*>(obj);
+	Integer* th=obj.as<Integer>();
 	int radix=10;
 	if(argslen==1)
-		radix=args[0]->toUInt();
+		radix=args[0].toUInt();
 
 	if(radix==10)
 	{
 		char buf[20];
 		snprintf(buf,20,"%i",th->val);
-		return abstract_s(obj->getSystemState(),buf);
+		return asAtom::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
-		return abstract_s(obj->getSystemState(),s);
+		return asAtom::fromObject(abstract_s(sys,s));
 	}
 }
 
-ASFUNCTIONBODY(Integer,_valueOf)
+ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
-	if(Class<Integer>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_i(obj->getSystemState(),0);
+	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom(0);
 
-	if(!obj->is<Integer>())
-			throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
+	if(!obj.is<Integer>())
+			throw Class<TypeError>::getInstanceS(sys,"");
 
-	return abstract_i(obj->getSystemState(),obj->as<Integer>()->val);
+	return obj;
 }
 
-ASFUNCTIONBODY(Integer,_constructor)
+ASFUNCTIONBODY_ATOM(Integer,_constructor)
 {
-	Integer* th=static_cast<Integer*>(obj);
+	Integer* th=obj.as<Integer>();
 	if(argslen==0)
 	{
 		//The int is already initialized to 0
-		return NULL;
+		return asAtom::invalidAtom;
 	}
-	th->val=args[0]->toInt();
-	return NULL;
+	th->val=args[0].toInt();
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Integer,generator)
@@ -196,8 +196,8 @@ void Integer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableByQName("MAX_VALUE","",abstract_i(c->getSystemState(),numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",abstract_i(c->getSystemState(),numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toExponential,1),NORMAL_METHOD,true);
@@ -292,36 +292,36 @@ int32_t Integer::stringToASInteger(const char* cur, int radix)
 		return static_cast<int32_t>(value & 0xFFFFFFFF);
 }
 
-ASFUNCTIONBODY(Integer,_toExponential)
+ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 {
-	Integer *th=obj->as<Integer>();
+	Integer *th=obj.as<Integer>();
 	double v = (double)th->val;
 	int32_t fractionDigits;
-	ARG_UNPACK(fractionDigits, 0);
-	if (argslen == 0 || args[0]->is<Undefined>())
+	ARG_UNPACK_ATOM(fractionDigits, 0);
+	if (argslen == 0 || args[0].is<Undefined>())
 	{
 		if (v == 0)
 			fractionDigits = 1;
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
 	}
-	return abstract_s(obj->getSystemState(),Number::toExponentialString(v, fractionDigits));
+	return asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
 }
 
-ASFUNCTIONBODY(Integer,_toFixed)
+ASFUNCTIONBODY_ATOM(Integer,_toFixed)
 {
-	Integer *th=obj->as<Integer>();
+	Integer *th=obj.as<Integer>();
 	int fractiondigits;
-	ARG_UNPACK (fractiondigits, 0);
-	return abstract_s(obj->getSystemState(),Number::toFixedString(th->val, fractiondigits));
+	ARG_UNPACK_ATOM (fractiondigits, 0);
+	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(th->val, fractiondigits)));
 }
 
-ASFUNCTIONBODY(Integer,_toPrecision)
+ASFUNCTIONBODY_ATOM(Integer,_toPrecision)
 {
-	Integer *th=obj->as<Integer>();
-	if (argslen == 0 || args[0]->is<Undefined>())
-		return abstract_s(obj->getSystemState(),th->toString());
+	Integer *th=obj.as<Integer>();
+	if (argslen == 0 || args[0].is<Undefined>())
+		return asAtom::fromObject(abstract_s(sys,th->toString()));
 	int precision;
-	ARG_UNPACK (precision);
-	return abstract_s(obj->getSystemState(),Number::toPrecisionString(th->val, precision));
+	ARG_UNPACK_ATOM (precision);
+	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(th->val, precision)));
 }

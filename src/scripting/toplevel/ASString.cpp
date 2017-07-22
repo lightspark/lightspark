@@ -750,7 +750,7 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 		throwError<ArgumentError>(kWrongArgumentCountError, "localeCompare", "1",Integer::toString(argslen));
 
 	int ret = data.compare(other);
-	return abstract_i(sys,ret);
+	return asAtom(ret);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,fromCharCode)

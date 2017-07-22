@@ -806,11 +806,11 @@ void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASOb
 	asAtom v = asAtom::fromObject(o);
 	setVariableAtomByQName(nameId, ns, v, traitKind, isEnumerable);
 }
-void ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable)
+void ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
 }
-void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable)
+void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
@@ -819,7 +819,7 @@ void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, 
 	++varcount;
 }
 
-void ASObject::initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
+void ASObject::initializeVariableByMultiname(const multiname& name, asAtom &o, multiname* typemname,
 		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable)
 {
 	check();
@@ -943,7 +943,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, ASObject* obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
+void variables_map::initializeVar(const multiname& mname, asAtom& obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
 {
 	const Type* type = NULL;
 	if (typemname->isStatic)
@@ -959,15 +959,15 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 		type = Type::getTypeFromMultiname(typemname,context);
 	if(type==NULL)
 	{
-		if (obj == NULL) // create dynamic object
+		if (obj.type == T_INVALID) // create dynamic object
 		{
 			value = asAtom::undefinedAtom;
 		}
 		else
 		{
-			assert_and_throw(obj->is<Null>() || obj->is<Undefined>());
-			value = asAtom::fromObject(obj);
-			if(obj->is<Undefined>())
+			assert_and_throw(obj.is<Null>() || obj.is<Undefined>());
+			value = obj;
+			if(obj.is<Undefined>())
 			{
 				//Casting undefined to an object (of unknown class)
 				//results in Null
@@ -977,7 +977,7 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 	}
 	else
 	{
-		if (obj == NULL) // create dynamic object
+		if (obj.type == T_INVALID) // create dynamic object
 		{
 			if(mainObj->is<Class_base>() 
 				&& mainObj->as<Class_base>()->class_name.nameId == typemname->normalizedNameId(mainObj->getSystemState())
@@ -985,13 +985,13 @@ void variables_map::initializeVar(const multiname& mname, ASObject* obj, multina
 				&& typemname->ns[0].kind == NAMESPACE)
 			{
 				// avoid recursive construction
-				value = asAtom(T_UNDEFINED);
+				value = asAtom::undefinedAtom;
 			}
 			else
 				value = type->coerce(mainObj->getSystemState(),asAtom::undefinedAtom);
 		}
 		else
-			value = asAtom::fromObject(obj);
+			value = obj;
 
 		if (typemname->isStatic && typemname->cachedType == NULL)
 			typemname->cachedType = type;

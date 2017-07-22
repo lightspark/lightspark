@@ -111,7 +111,7 @@ public:
 	bool hasOptional() { return info.hasOptional(); }
 	bool hasDXNS() { return info.hasDXNS(); }
 	bool hasParamNames() { return info.hasParamNames(); }
-	ASObject* getOptional(unsigned int i);
+	asAtom getOptional(unsigned int i);
 	uint32_t numOptions() { return info.option_count; }
 	uint32_t numArgs() { return info.param_count; }
 	const multiname* paramTypeName(uint32_t i) const;
@@ -162,7 +162,7 @@ public:
 	static multiname* s_getMultiname(ABCContext*, asAtom& rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
-	ASObject* getConstant(int kind, int index);
+	asAtom getConstant(int kind, int index);
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;

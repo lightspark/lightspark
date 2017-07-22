@@ -433,7 +433,7 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 		int iOptional = mi->numOptions()-args_len+i;
 		if(iOptional >= 0)
 		{
-			asAtom v = asAtom::fromObject(mi->getOptional(iOptional));
+			asAtom v = mi->getOptional(iOptional);
 			cc.locals[i+1]=mi->paramTypes[i]->coerce(getSystemState(),v);
 		} else {
 			assert(mi->paramTypes[i] == Type::anyType);

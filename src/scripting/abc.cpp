@@ -2173,32 +2173,32 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	}
 }
 
-ASObject* ABCContext::getConstant(int kind, int index)
+asAtom ABCContext::getConstant(int kind, int index)
 {
 	switch(kind)
 	{
 		case 0x00: //Undefined
-			return root->getSystemState()->getUndefinedRef();
+			return asAtom::undefinedAtom;
 		case 0x01: //String
-			return abstract_s(root->getSystemState(),constant_pool.strings[index]);
+			return asAtom::fromObject(abstract_s(root->getSystemState(),constant_pool.strings[index]));
 		case 0x03: //Int
-			return abstract_i(root->getSystemState(),constant_pool.integer[index]);
+			return asAtom(constant_pool.integer[index]);
 		case 0x06: //Double
-			return abstract_d(root->getSystemState(),constant_pool.doubles[index]);
+			return asAtom(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 		{
 			assert_and_throw(constant_pool.namespaces[index].name);
 			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[index].kind);
 			if (constant_pool.namespaces[index].kind != 0)
 				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
-			return ret;
+			return asAtom::fromObject(ret);
 		}
 		case 0x0a: //False
-			return abstract_b(root->getSystemState(),false);
+			return asAtom::falseAtom;
 		case 0x0b: //True
-			return abstract_b(root->getSystemState(),true);
+			return asAtom::trueAtom;
 		case 0x0c: //Null
-			return root->getSystemState()->getNullRef();
+			return asAtom::nullAtom;
 		default:
 		{
 			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
@@ -2396,14 +2396,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 
 			multiname* tname=getMultiname(t->type_name,NULL);
-			ASObject* ret;
+			asAtom ret;
 			//If the index is valid we set the constant
 			if(t->vindex)
 				ret=getConstant(t->vkind,t->vindex);
 			else
-				ret=obj->getSystemState()->getUndefinedRef();
+				ret=asAtom::undefinedAtom;
 
-			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret->toDebugString());
+			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret.toDebugString());
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id,isenumerable);
 			break;
@@ -2415,16 +2415,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				return;
 
 			multiname* tname=getMultiname(t->type_name,NULL);
-			ASObject* ret;
+			asAtom ret;
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				LOG_CALL(_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret->toDebugString() <<" "<<isBorrowed);
+				LOG_CALL(_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret.toDebugString() <<" "<<isBorrowed);
 			}
 			else
 			{
 				LOG_CALL(_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname<<" "<<isBorrowed);
-				ret = NULL;
+				ret = asAtom::invalidAtom;
 			}
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id,isenumerable);
@@ -2439,7 +2439,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 }
 
 
-ASObject* method_info::getOptional(unsigned int i)
+asAtom method_info::getOptional(unsigned int i)
 {
 	assert_and_throw(i<info.options.size());
 	return context->getConstant(info.options[i].kind,info.options[i].val);

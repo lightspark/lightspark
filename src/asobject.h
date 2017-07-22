@@ -320,8 +320,8 @@ struct variable
 	asAtom setter;
 	asAtom getter;
 	nsNameAndKind ns;
-	TRAIT_KIND kind;
-	TRAIT_STATE traitState;
+	TRAIT_KIND kind:4;
+	TRAIT_STATE traitState:2;
 	bool isenumerable:1;
 	bool issealed:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
@@ -459,7 +459,7 @@ public:
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, ASObject* obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
+	void initializeVar(const multiname& mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
 	asAtom getSlot(unsigned int n);
 	/*
@@ -676,18 +676,14 @@ public:
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
-	void initializeVariableByMultiname(const multiname& name, ASObject* o, multiname* typemname,
+	void initializeVariableByMultiname(const multiname& name, asAtom& o, multiname* typemname,
 			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
-	/*
-	 * Called by ABCVm::initProperty (implementation of ABC instruction), it is allowed to set CONSTANT_TRAIT
-	 */
-	void initializeVariableByMultiname(const multiname& name, ASObject* o);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom& o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);

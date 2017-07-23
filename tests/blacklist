@@ -10,4 +10,6 @@ tamarin-SWF/versioning/bugcompat.swf
 tamarin-SWF/versioning/classes.swf
 tamarin-SWF/versioning/globals.swf
 tamarin-SWF/spidermonkey/js1_5/Object/regress-308806-01.swf
+tamarin-SWF/spidermonkey/js1_5/Scope/regress-185485.swf
+tamarin-SWF/spidermonkey/js1_5/Scope/scope-004.swf
 template.swf

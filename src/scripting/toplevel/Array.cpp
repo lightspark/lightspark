@@ -1240,11 +1240,11 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 ASFUNCTIONBODY_ATOM(Array,_toString)
 {
 	if(obj.getObject() == Class<Number>::getClass(sys)->prototype->getObj())
-		return asAtom::fromObject(abstract_s(sys,""));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	if(!obj.is<Array>())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toString");
-		return asAtom::fromObject(abstract_s(sys,""));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	}
 	
 	Array* th=obj.as<Array>();
@@ -1254,11 +1254,11 @@ ASFUNCTIONBODY_ATOM(Array,_toString)
 ASFUNCTIONBODY_ATOM(Array,_toLocaleString)
 {
 	if(obj.getObject() == Class<Number>::getClass(sys)->prototype->getObj())
-		return asAtom::fromObject(abstract_s(sys,""));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	if(!obj.is<Array>())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toLocaleString");
-		return asAtom::fromObject(abstract_s(sys,""));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	}
 	
 	Array* th=obj.as<Array>();

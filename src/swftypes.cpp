@@ -164,8 +164,13 @@ void multiname::setName(asAtom& n,SystemState* sys)
 		break;
 	case T_STRING:
 		{
-			ASString* o=static_cast<ASString*>(n.objval);
-			name_s_id=o->hasId ? o->toStringId() : o->getSystemState()->getUniqueStringId(o->getData());
+			if (n.stringID != UINT32_MAX)
+				name_s_id=n.stringID;
+			else
+			{
+				ASString* o=static_cast<ASString*>(n.objval);
+				name_s_id=o->hasId ? o->toStringId() : o->getSystemState()->getUniqueStringId(o->getData());
+			}
 			name_type = NAME_STRING;
 		}
 		break;

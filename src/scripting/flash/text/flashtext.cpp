@@ -495,9 +495,9 @@ ASFUNCTIONBODY_ATOM(TextField, _getter_type)
 {
 	TextField* th=obj.as<TextField>();
 	if (th->type == ET_READ_ONLY)
-		return asAtom::fromObject(abstract_s(sys,"dynamic"));
+		return asAtom::fromString(sys,"dynamic");
 	else
-		return asAtom::fromObject(abstract_s(sys,"input"));
+		return asAtom::fromString(sys,"input");
 }
 
 ASFUNCTIONBODY_ATOM(TextField, _setter_type)

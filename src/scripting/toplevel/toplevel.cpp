@@ -1790,9 +1790,9 @@ asAtom ASQName::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return asAtom::fromObject(abstract_s(getSystemState(),"uri"));
+			return asAtom::fromString(getSystemState(),"uri");
 		case 2:
-			return asAtom::fromObject(abstract_s(getSystemState(),"localName"));
+			return asAtom::fromString(getSystemState(),"localName");
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -1807,9 +1807,9 @@ asAtom ASQName::nextValue(uint32_t index)
 			if (uri_is_null)
 				return asAtom::nullAtom;
 			else
-				return asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(this->uri)));
+				return asAtom::fromStringID(this->uri);
 		case 2:
-			return asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(this->local_name)));
+			return asAtom::fromStringID(this->local_name);
 		default:
 			return ASObject::nextValue(index-2);
 	}
@@ -2108,9 +2108,9 @@ asAtom Namespace::nextName(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return asAtom::fromObject(abstract_s(getSystemState(),"uri"));
+			return asAtom::fromString(getSystemState(),"uri");
 		case 2:
-			return asAtom::fromObject(abstract_s(getSystemState(),"prefix"));
+			return asAtom::fromString(getSystemState(),"prefix");
 		default:
 			return ASObject::nextName(index-2);
 	}
@@ -2122,12 +2122,12 @@ asAtom Namespace::nextValue(uint32_t index)
 	switch(index)
 	{
 		case 1:
-			return asAtom::fromObject(abstract_s(getSystemState(),this->uri));
+			return asAtom::fromStringID(this->uri);
 		case 2:
 			if(prefix_is_undefined)
 				return asAtom::undefinedAtom;
 			else
-				return asAtom::fromObject(abstract_s(getSystemState(),this->prefix));
+				return asAtom::fromStringID(this->prefix);
 		default:
 			return ASObject::nextValue(index-2);
 	}

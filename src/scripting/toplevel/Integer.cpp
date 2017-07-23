@@ -29,7 +29,7 @@ using namespace lightspark;
 ASFUNCTIONBODY_ATOM(Integer,_toString)
 {
 	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromObject(abstract_s(sys,"0"));
+		return asAtom::fromString(sys,"0");
 
 	Integer* th=obj.as<Integer>();
 	int radix=10;

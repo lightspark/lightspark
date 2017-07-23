@@ -890,7 +890,8 @@ void ABCVm::abc_pushstring(call_context* context,memorystream& code)
 {
 	//pushstring
 	uint32_t t = code.readu30();
-	RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushString(context,t)));
+	LOG_CALL( _("pushString ") << context->context->root->getSystemState()->getStringFromUniqueId(context->context->getString(t)) );
+	RUNTIME_STACK_PUSH(context,asAtom::fromStringID(context->context->getString(t)));
 }
 void ABCVm::abc_pushint(call_context* context,memorystream& code)
 {

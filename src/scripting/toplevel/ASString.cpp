@@ -259,7 +259,7 @@ ASFUNCTIONBODY_ATOM(ASString,match)
 ASFUNCTIONBODY_ATOM(ASString,_toString)
 {
 	if(Class<ASString>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromObject(abstract_s(sys));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	if(!obj.is<ASString>())
 	{
 		LOG(LOG_ERROR,"String.toString is not generic:"<<obj.toDebugString());
@@ -365,7 +365,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 
 			if (data.numChars() == 0)
 			{
-				ret->push(asAtom::fromObject(abstract_s(sys)));
+				ret->push(asAtom::fromStringID(BUILTIN_STRINGS::EMPTY));
 			}
 			uint32_t j = 0;
 			for(auto i=data.begin();i!=data.end();++i)
@@ -392,7 +392,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 			ret->push(asAtom::fromObject(s));
 			start=match+del.numChars();
 			if (start == len)
-				ret->push(asAtom::fromObject(abstract_s(sys)));
+				ret->push(asAtom::fromStringID(BUILTIN_STRINGS::EMPTY));
 		}
 		while(start<len && ret->size() < limit);
 	}
@@ -409,7 +409,7 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 		if (!std::isnan(args[0].toNumber()))
 			start=args[0].toInt();
 		if (start >= 0  && std::isinf(args[0].toNumber()))
-			return asAtom::fromObject(abstract_s(sys));
+			return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	}
 	if(start<0) {
 		start=data.numChars()+start;
@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 	if(endIndex>(int)data.numChars())
 		endIndex=data.numChars();
 	if(endIndex<=startIndex)
-		return asAtom::fromObject(abstract_s(sys));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	else
 		return asAtom::fromObject(abstract_s(sys,data.substr(startIndex,endIndex-startIndex)));
 }
@@ -645,14 +645,14 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 		int maxIndex=obj.as<ASString>()->getData().numChars();
 		
 		if(index<0 || index>=maxIndex || std::isinf(index))
-			return asAtom::fromObject(abstract_s(sys));
+			return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(obj.as<ASString>()->getData().charAt(index)) ));
 	}
 
 	tiny_string data = obj.toString();
 	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex || std::isinf(index))
-		return asAtom::fromObject(abstract_s(sys));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	return asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(data.charAt(index)) ));
 }
 
@@ -918,7 +918,7 @@ ASFUNCTIONBODY_ATOM(ASString,generator)
 {
 	assert(argslen<=1);
 	if (argslen == 0)
-		return asAtom::fromObject(abstract_s(sys));
+		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	else
 		return asAtom::fromObject(abstract_s(sys,args[0].toString()));
 }

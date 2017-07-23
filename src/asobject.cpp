@@ -1979,7 +1979,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 							res += " ";
 						asAtom params[2];
 						
-						params[0] = asAtom::fromObject(abstract_s(getSystemState(),getSystemState()->getStringFromUniqueId(varIt->first)));
+						params[0] = asAtom::fromStringID(varIt->first);
 						params[1] = asAtom::fromObject(v);
 						ASATOM_INCREF(params[1]);
 						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,true);
@@ -2100,6 +2100,10 @@ ASObject *asAtom::toObject(SystemState *sys)
 			return sys->getNullRef();
 		case T_UNDEFINED:
 			return sys->getUndefinedRef();
+		case T_STRING:
+			if (stringID != UINT32_MAX)
+				objval = abstract_s(sys,stringID);
+			break;
 		case T_INVALID:
 			LOG(LOG_ERROR,"calling toObject on invalid asAtom, should not happen");
 			return objval;
@@ -2107,6 +2111,15 @@ ASObject *asAtom::toObject(SystemState *sys)
 			break;
 	}
 	return objval;
+}
+
+asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
+{
+	asAtom a;
+	a.type = T_STRING;
+	a.stringID = sys->getUniqueStringId(s);
+	a.objval = NULL;
+	return a;
 }
 
 asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted)
@@ -2183,6 +2196,9 @@ void asAtom::replace(ASObject *obj)
 		case T_FUNCTION:
 			closure_this = NULL;
 			break;
+		case T_STRING:
+			stringID = UINT32_MAX;
+			break;
 		default:
 			break;
 	}
@@ -2207,6 +2223,10 @@ std::string asAtom::toDebugString()
 			return "Undefined";
 		case T_INVALID:
 			return "Invalid";
+		case T_STRING:
+			if (!objval && stringID != UINT32_MAX)
+				return getSys()->getStringFromUniqueId(stringID);
+			return objval->as<ASString>()->getData();
 		case T_FUNCTION:
 			assert(objval);
 			if (closure_this)
@@ -2284,8 +2304,10 @@ tiny_string asAtom::toString()
 		case T_UINTEGER:
 			return UInteger::toString(uintval);
 		case T_STRING:
+			if (!objval && stringID != UINT32_MAX)
+				return getSys()->getStringFromUniqueId(stringID);
 			assert(objval);
-			return objval->as<ASString>()->getData();
+			return objval->toString();
 		case T_INVALID:
 			return "";
 		default:
@@ -2309,6 +2331,11 @@ tiny_string asAtom::toLocaleString()
 			return Integer::toString(intval);
 		case T_UINTEGER:
 			return UInteger::toString(uintval);
+		case T_STRING:
+			if (!objval && stringID != UINT32_MAX)
+				objval = abstract_s(getSys(),stringID);
+			assert(objval);
+			return objval->toLocaleString();
 		case T_INVALID:
 			return "";
 		default:
@@ -2319,6 +2346,8 @@ tiny_string asAtom::toLocaleString()
 
 uint32_t asAtom::toStringId(SystemState* sys)
 {
+	if (type == T_STRING && stringID != UINT32_MAX && !objval)
+		return stringID;
 	return toObject(sys)->toStringId();
 }
 
@@ -2351,7 +2380,7 @@ asAtom asAtom::typeOf(SystemState* sys)
 		default:
 			break;
 	}
-	return asAtom::fromObject(abstract_s(sys,ret));
+	return asAtom::fromString(sys,ret);
 }
 
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
@@ -2371,7 +2400,8 @@ bool asAtom::Boolean_concrete()
 		case T_UINTEGER:
 			return uintval != 0;
 		case T_STRING:
-			assert(objval);
+			if (stringID != UINT32_MAX && !objval)
+				return stringID != BUILTIN_STRINGS::EMPTY;
 			if (!objval->isConstructed())
 				return false;
 			return !objval->as<ASString>()->isEmpty();
@@ -2412,7 +2442,9 @@ void asAtom::convert_b()
 			v= uintval != 0;
 			break;
 		case T_STRING:
-			if (objval->isConstructed())
+			if (stringID != UINT32_MAX && !objval)
+				v = stringID != BUILTIN_STRINGS::EMPTY;
+			else if (objval->isConstructed())
 				v= !objval->as<ASString>()->isEmpty();
 			break;
 		case T_FUNCTION:
@@ -2465,6 +2497,7 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		decRef();
 		ASATOM_DECREF(v2);
 		type = T_STRING;
+		stringID = UINT32_MAX;
 		objval = abstract_s(sys,a + b);
 	}
 	else
@@ -2504,6 +2537,7 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 				val1->decRef();
 				val2->decRef();
 				type = T_STRING;
+				stringID = UINT32_MAX;
 				objval = abstract_s(sys,a+b);
 			}
 			else

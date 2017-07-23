@@ -208,6 +208,7 @@ private:
 	{
 		int32_t intval;
 		uint32_t uintval;
+		uint32_t stringID;
 		number_t numberval;
 		bool boolval;
 		ASObject* closure_this; // used for T_FUNCTION objects
@@ -240,6 +241,16 @@ public:
 		a.closure_this = closure;
 		return a;
 	}
+	static asAtom fromStringID(uint32_t sID)
+	{
+		asAtom a;
+		a.type = T_STRING;
+		a.stringID = sID;
+		a.objval = NULL;
+		return a;
+	}
+	// only use this for strings that should get an internal stringID
+	static asAtom fromString(SystemState *sys, const tiny_string& s);
 	inline bool isBound() const { return type == T_FUNCTION && closure_this; }
 	inline ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
 	static asAtom undefinedAtom;
@@ -255,7 +266,7 @@ public:
 	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args, bool args_refcounted);
 	void replace(ASObject* obj);
 	std::string toDebugString();
-	inline void applyProxyProperty(multiname& name);
+	inline void applyProxyProperty(SystemState *sys, multiname& name);
 	inline TRISTATE isLess(SystemState *sys, asAtom& v2);
 	inline bool isEqual(SystemState *sys, asAtom& v2);
 	inline bool isEqualStrict(SystemState *sys, asAtom& v2);
@@ -1023,6 +1034,10 @@ int32_t asAtom::toInt()
 			return boolval;
 		case T_INVALID:
 			return 0;
+		case T_STRING:
+			if (stringID != UINT32_MAX && !objval)
+				objval = (ASObject*)abstract_s(getSys(),stringID);
+			return objval->toInt();
 		default:
 			assert(objval);
 			return objval->toInt();
@@ -1046,6 +1061,10 @@ number_t asAtom::toNumber()
 			return numeric_limits<double>::quiet_NaN();
 		case T_INVALID:
 			return 0;
+		case T_STRING:
+			if (stringID != UINT32_MAX && !objval)
+				objval = (ASObject*)abstract_s(getSys(),stringID);
+			return objval->toNumber();
 		default:
 			assert(objval);
 			return objval->toNumber();
@@ -1069,6 +1088,10 @@ int64_t asAtom::toInt64()
 			return boolval;
 		case T_INVALID:
 			return 0;
+		case T_STRING:
+			if (stringID != UINT32_MAX && !objval)
+				objval = (ASObject*)abstract_s(getSys(),stringID);
+			return objval->toInt64();
 		default:
 			assert(objval);
 			return objval->toInt64();
@@ -1092,13 +1115,17 @@ uint32_t asAtom::toUInt()
 			return boolval;
 		case T_INVALID:
 			return 0;
+		case T_STRING:
+			if (stringID != UINT32_MAX && !objval)
+				objval = (ASObject*)abstract_s(getSys(),stringID);
+			return objval->toUInt();
 		default:
 			assert(objval);
 			return objval->toUInt();
 	}
 }
 
-void asAtom::applyProxyProperty(multiname &name)
+void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
 {
 	switch(type)
 	{
@@ -1109,6 +1136,12 @@ void asAtom::applyProxyProperty(multiname &name)
 		case T_NULL:
 		case T_UNDEFINED:
 		case T_INVALID:
+			break;
+		case T_STRING:
+			if (!objval && stringID != UINT32_MAX)
+				objval = toObject(sys);
+			assert(objval);
+			objval->applyProxyProperty(name);
 			break;
 		default:
 			assert(objval);
@@ -1317,7 +1350,7 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 				case T_BOOLEAN:
 					return boolval==v2.boolval;
 				case T_STRING:
-					if (!v2.objval->isConstructed())
+					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
 						return false;
 					return boolval==v2.toNumber();
 				case T_INTEGER:
@@ -1345,8 +1378,11 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 				case T_BOOLEAN:
 					return false;
 				case T_FUNCTION:
-				case T_STRING:
 					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				case T_STRING:
+					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
 						return true;
 					return false;
 				default:
@@ -1367,8 +1403,11 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 				case T_BOOLEAN:
 					return false;
 				case T_FUNCTION:
-				case T_STRING:
 					if (!v2.objval->isConstructed())
+						return true;
+					return false;
+				case T_STRING:
+					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
 						return true;
 					return false;
 				default:
@@ -1389,6 +1428,22 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 		}
 		case T_INVALID:
 			return false;
+		case T_STRING:
+		{
+			if (stringID != UINT32_MAX)
+			{
+				switch (v2.type)
+				{
+					case T_STRING:
+						if (v2.stringID != UINT32_MAX)
+							return v2.stringID == stringID;
+						break;
+					default:
+						break;
+				}
+			}
+			break;
+		}
 		default:
 			break;
 	}
@@ -1444,6 +1499,8 @@ bool asAtom::isConstructed() const
 			return true;
 		case T_INVALID:
 			return false;
+		case T_STRING:
+			return stringID != UINT32_MAX || objval->isConstructed();
 		default:
 			assert(objval);
 			return objval->isConstructed();
@@ -1518,11 +1575,22 @@ void asAtom::increment()
 		case T_BOOLEAN:
 			setInt((boolval ? 1 : 0)+1);
 			break;
-		default:
+		case T_STRING:
+		{
+			if(!objval && stringID != UINT32_MAX)
+				toObject(getSys());
 			number_t n=objval->toNumber();
 			objval->decRef();
 			setNumber(n+1);
 			break;
+		}
+		default:
+		{
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n+1);
+			break;
+		}
 	}
 }
 
@@ -1556,11 +1624,22 @@ void asAtom::decrement()
 		case T_BOOLEAN:
 			setInt((boolval ? 1 : 0)-1);
 			break;
-		default:
+		case T_STRING:
+		{
+			if(!objval && stringID != UINT32_MAX)
+				toObject(getSys());
 			number_t n=objval->toNumber();
 			objval->decRef();
 			setNumber(n-1);
 			break;
+		}
+		default:
+		{
+			number_t n=objval->toNumber();
+			objval->decRef();
+			setNumber(n-1);
+			break;
+		}
 	}
 
 }

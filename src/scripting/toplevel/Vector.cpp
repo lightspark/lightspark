@@ -269,7 +269,7 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 	if (argslen < 1)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
 	if (!args[0].is<IFunction>())
-		throwError<TypeError>(kCheckTypeFailedError, args[0].getObject()->getClassName(), "Function");
+		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(sys)->getClassName(), "Function");
 	Vector* th=static_cast<Vector*>(obj.getObject());
 	asAtom f = args[0];
 	asAtom params[3];

@@ -964,7 +964,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->name_type = multiname::NAME_INT;
 				ret->name_s_id = UINT32_MAX;
 				ASATOM_DECREF(n);
-				n.applyProxyProperty(*ret);
+				n.applyProxyProperty(root->getSystemState(),*ret);
 				break;
 			}
 			else if (n.type == T_QNAME)
@@ -982,7 +982,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 			}
 			else
-				n.applyProxyProperty(*ret);
+				n.applyProxyProperty(root->getSystemState(),*ret);
 			ret->setName(n,root->getSystemState());
 			ASATOM_DECREF(n);
 			break;
@@ -2180,7 +2180,7 @@ asAtom ABCContext::getConstant(int kind, int index)
 		case 0x00: //Undefined
 			return asAtom::undefinedAtom;
 		case 0x01: //String
-			return asAtom::fromObject(abstract_s(root->getSystemState(),constant_pool.strings[index]));
+			return asAtom::fromStringID(constant_pool.strings[index]);
 		case 0x03: //Int
 			return asAtom(constant_pool.integer[index]);
 		case 0x06: //Double

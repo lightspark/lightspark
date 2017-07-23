@@ -219,7 +219,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 		}
 		else
 		{
-			params[0] = asAtom::fromObject(abstract_s(getSys(),""));
+			params[0] = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 			params[1] = asAtom::fromObject(*parent);
 			ASATOM_INCREF(params[1]);
 		}

@@ -22,11 +22,11 @@ rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
 rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *NORMAL_METHOD, *([^ ]*)')
-rmet2 = re.compile('[^/]*->prototype->setVariableByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
+rmet2 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
-rconst = re.compile('[^/]*->setVariableByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
+rconst = re.compile('[^/]*->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
 rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
 

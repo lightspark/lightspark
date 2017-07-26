@@ -42,13 +42,13 @@ public:
 	inline uint32_t toUInt() { return val; }
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_valueOf);
-	ASFUNCTION(_toExponential);
-	ASFUNCTION(_toFixed);
-	ASFUNCTION(_toPrecision);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_valueOf);
+	ASFUNCTION_ATOM(_toExponential);
+	ASFUNCTION_ATOM(_toFixed);
+	ASFUNCTION_ATOM(_toPrecision);
 	std::string toDebugString() { return toString()+"ui"; }
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

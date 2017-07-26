@@ -47,13 +47,13 @@ public:
 	bool isfloat:1;
 	inline number_t toNumber() { return isfloat ? dval : ival; }
 	inline bool destruct() { dval=Number::NaN; isfloat = true; return ASObject::destruct(); }
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_toLocaleString);
-	ASFUNCTION(toExponential);
-	ASFUNCTION(toPrecision);
-	ASFUNCTION(toFixed);
-	ASFUNCTION(_valueOf);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_toLocaleString);
+	ASFUNCTION_ATOM(toExponential);
+	ASFUNCTION_ATOM(toPrecision);
+	ASFUNCTION_ATOM(toFixed);
+	ASFUNCTION_ATOM(_valueOf);
 	tiny_string toString();
 	static tiny_string toString(number_t val);
 	static tiny_string toStringRadix(number_t val, int radix);

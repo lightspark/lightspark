@@ -272,7 +272,9 @@ public:
 	inline bool isEqualStrict(SystemState *sys, asAtom& v2);
 	inline bool isConstructed() const;
 	inline bool isPrimitive() const;
+	inline bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
 	inline bool checkArgumentConversion(const asAtom& obj) const;
+	inline void checkString();
 	asAtom asTypelate(asAtom& atomtype);
 	inline number_t toNumber();
 	inline int32_t toInt();
@@ -287,6 +289,8 @@ public:
 	inline void convert_u();
 	inline void convert_d();
 	void convert_b();
+	inline int32_t getInt() const { assert(type == T_INTEGER); return intval; }
+	inline uint32_t getUInt() const{ assert(type == T_UINTEGER); return uintval; }
 	inline void setInt(int32_t val);
 	inline void setUInt(uint32_t val);
 	inline void setNumber(number_t val);
@@ -1015,14 +1019,20 @@ static int32_t NumbertoInt(number_t val)
 	}
 	return (int32_t)(val < 0.0 ? -posInt : posInt);
 }
+void asAtom::checkString()
+{
+	assert(type == T_STRING);
+	if (stringID != UINT32_MAX && !objval)
+		objval = (ASObject*)abstract_s(getSys(),stringID);
+}
 
 int32_t asAtom::toInt()
 {
 	switch(type)
 	{
 		case T_UNDEFINED:
-			return 0;
 		case T_NULL:
+		case T_INVALID:
 			return 0;
 		case T_INTEGER:
 			return intval;
@@ -1032,11 +1042,8 @@ int32_t asAtom::toInt()
 			return NumbertoInt(numberval);
 		case T_BOOLEAN:
 			return boolval;
-		case T_INVALID:
-			return 0;
 		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
-				objval = (ASObject*)abstract_s(getSys(),stringID);
+			checkString();
 			return objval->toInt();
 		default:
 			assert(objval);
@@ -1062,8 +1069,7 @@ number_t asAtom::toNumber()
 		case T_INVALID:
 			return 0;
 		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
-				objval = (ASObject*)abstract_s(getSys(),stringID);
+			checkString();
 			return objval->toNumber();
 		default:
 			assert(objval);
@@ -1089,8 +1095,7 @@ int64_t asAtom::toInt64()
 		case T_INVALID:
 			return 0;
 		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
-				objval = (ASObject*)abstract_s(getSys(),stringID);
+			checkString();
 			return objval->toInt64();
 		default:
 			assert(objval);
@@ -1116,8 +1121,7 @@ uint32_t asAtom::toUInt()
 		case T_INVALID:
 			return 0;
 		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
-				objval = (ASObject*)abstract_s(getSys(),stringID);
+			checkString();
 			return objval->toUInt();
 		default:
 			assert(objval);

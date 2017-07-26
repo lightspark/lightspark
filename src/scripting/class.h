@@ -246,19 +246,9 @@ inline asAtom Class<Number>::coerce(SystemState* sys,asAtom& o) const
 	switch (o.type)
 	{
 		case T_NUMBER:
-			return o;
 		case T_INTEGER:
-		{
-			int32_t n = o.toInt();
-			ASATOM_DECREF(o);
-			return asAtom(n);
-		}
 		case T_UINTEGER:
-		{
-			uint32_t n = o.toUInt();
-			ASATOM_DECREF(o);
-			return asAtom(n);
-		}
+			return o;
 		default:
 		{
 			number_t n = o.toNumber();

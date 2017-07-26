@@ -177,43 +177,45 @@ void Number::purgeTrailingZeroes(char* buf)
 	}
 }
 
-ASFUNCTIONBODY(Number,_toString)
+ASFUNCTIONBODY_ATOM(Number,_toString)
 {
-	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_s(obj->getSystemState(),"0");
-	if(!obj->is<Number>())
+	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom::fromString(sys,"0");
+	if(!obj.isNumeric())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
-	Number* th=static_cast<Number*>(obj);
 	int radix=10;
-	ARG_UNPACK (radix,10);
+	ARG_UNPACK_ATOM (radix,10);
 
-	if(radix==10 || (th->isfloat && std::isnan(th->dval)) || (th->isfloat && std::isinf(th->dval)))
+	if((radix==10) || (obj.is<Number>() && 
+					   ((obj.as<Number>()->isfloat && std::isnan(obj.as<Number>()->dval)) || 
+					   (obj.as<Number>()->isfloat && std::isinf(obj.as<Number>()->dval)))))
 	{
 		//see e 15.7.4.2
-		return abstract_s(obj->getSystemState(),th->toString());
+		return asAtom::fromObject(abstract_s(sys,obj.toString()));
 	}
 	else
 	{
-		return abstract_s(obj->getSystemState(),Number::toStringRadix(th->toNumber(), radix));
+		return asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
 	}
 }
-ASFUNCTIONBODY(Number,_toLocaleString)
+ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 {
-	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_s(obj->getSystemState(),"0");
-	if(!obj->is<Number>())
-		return abstract_s(obj->getSystemState(),"0");
-	Number* th=static_cast<Number*>(obj);
+	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom::fromString(sys,"0");
+	if(!obj.isNumeric())
+		return asAtom::fromString(sys,"0");
 	int radix=10;
 
-	if(radix==10 || (th->isfloat && std::isnan(th->dval)) || (th->isfloat && std::isinf(th->dval)))
+	if((radix==10) || (obj.is<Number>() && 
+					   ((obj.as<Number>()->isfloat && std::isnan(obj.as<Number>()->dval)) || 
+					   (obj.as<Number>()->isfloat && std::isinf(obj.as<Number>()->dval)))))
 	{
 		//see e 15.7.4.2
-		return abstract_s(obj->getSystemState(),th->toString());
+		return asAtom::fromObject(abstract_s(sys,obj.toString()));
 	}
 	else
 	{
-		return abstract_s(obj->getSystemState(),Number::toStringRadix(th->toNumber(), radix));
+		return asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
 	}
 }
 
@@ -285,11 +287,11 @@ void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableByQName("NEGATIVE_INFINITY","",abstract_d(c->getSystemState(),-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableByQName("POSITIVE_INFINITY","",abstract_d(c->getSystemState(),numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableByQName("MAX_VALUE","",abstract_d(c->getSystemState(),numeric_limits<double>::max()),CONSTANT_TRAIT);
-	c->setVariableByQName("MIN_VALUE","",abstract_d(c->getSystemState(),numeric_limits<double>::min()),CONSTANT_TRAIT);
-	c->setVariableByQName("NaN","",abstract_d(c->getSystemState(),numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtom(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtom(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom(numeric_limits<double>::max()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom(numeric_limits<double>::min()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),toExponential,1),NORMAL_METHOD,true);
@@ -305,14 +307,14 @@ void Number::sinit(Class_base* c)
 	// if needed add AVMPLUS definitions
 	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
 	{
-		c->setVariableByQName("E","",abstract_d(c->getSystemState(),2.71828182845905),CONSTANT_TRAIT,false);
-		c->setVariableByQName("LN10","",abstract_d(c->getSystemState(),2.302585092994046),CONSTANT_TRAIT,false);
-		c->setVariableByQName("LN2","",abstract_d(c->getSystemState(),0.6931471805599453),CONSTANT_TRAIT,false);
-		c->setVariableByQName("LOG10E","",abstract_d(c->getSystemState(),0.4342944819032518),CONSTANT_TRAIT,false);
-		c->setVariableByQName("LOG2E","",abstract_d(c->getSystemState(),1.442695040888963387),CONSTANT_TRAIT,false);
-		c->setVariableByQName("PI","",abstract_d(c->getSystemState(),3.141592653589793),CONSTANT_TRAIT,false);
-		c->setVariableByQName("SQRT1_2","",abstract_d(c->getSystemState(),0.7071067811865476),CONSTANT_TRAIT,false);
-		c->setVariableByQName("SQRT2","",abstract_d(c->getSystemState(),1.4142135623730951),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(2.71828182845905),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(2.302585092994046),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(0.6931471805599453),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(0.4342944819032518),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(1.442695040888963387),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(3.141592653589793),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(0.7071067811865476),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(1.4142135623730951),CONSTANT_TRAIT,false);
 		
 		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),Math::abs,1),NORMAL_METHOD,false,false);
 		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),Math::acos,1),NORMAL_METHOD,false,false);
@@ -335,9 +337,9 @@ void Number::sinit(Class_base* c)
 	}
 }
 
-ASFUNCTIONBODY(Number,_constructor)
+ASFUNCTIONBODY_ATOM(Number,_constructor)
 {
-	Number* th=static_cast<Number*>(obj);
+	Number* th=obj.as<Number>();
 	if(argslen==0)
 	{
 		// not constructed Numbers are set to NaN, so we have to set it to the default value during dynamic construction
@@ -346,30 +348,30 @@ ASFUNCTIONBODY(Number,_constructor)
 			th->ival = 0;
 			th->isfloat =false;
 		}
-		return NULL;
+		return asAtom::invalidAtom;
 	}
-	switch (args[0]->getObjectType())
+	switch (args[0].type)
 	{
 		case T_INTEGER:
 		case T_BOOLEAN:
 		case T_UINTEGER:
-			th->ival = args[0]->toInt();
+			th->ival = args[0].toInt();
 			th->isfloat = false;
 			break;
 		default:
-			th->dval=args[0]->toNumber();
+			th->dval=args[0].toNumber();
 			th->isfloat = true;
 			break;
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Number,toFixed)
+ASFUNCTIONBODY_ATOM(Number,toFixed)
 {
-	number_t val = obj->toNumber();
+	number_t val = obj.toNumber();
 	int fractiondigits;
-	ARG_UNPACK (fractiondigits,0);
-	return abstract_s(obj->getSystemState(),toFixedString(val, fractiondigits));
+	ARG_UNPACK_ATOM (fractiondigits,0);
+	return asAtom::fromObject(abstract_s(sys,toFixedString(val, fractiondigits)));
 }
 
 tiny_string Number::toFixedString(double v, int32_t fractiondigits)
@@ -406,15 +408,15 @@ tiny_string Number::toFixedString(double v, int32_t fractiondigits)
 	return res;
 }
 
-ASFUNCTIONBODY(Number,toExponential)
+ASFUNCTIONBODY_ATOM(Number,toExponential)
 {
-	Number* th=obj->as<Number>();
+	Number* th=obj.as<Number>();
 	double v = th->toNumber();
 	int32_t fractionDigits;
-	ARG_UNPACK(fractionDigits, 0);
-	if (argslen == 0 || args[0]->is<Undefined>())
+	ARG_UNPACK_ATOM(fractionDigits, 0);
+	if (argslen == 0 || args[0].is<Undefined>())
 		fractionDigits = imin(imax(Number::countSignificantDigits(v)-1, 1), 20);
-	return abstract_s(obj->getSystemState(),toExponentialString(v, fractionDigits));
+	return asAtom::fromObject(abstract_s(sys,toExponentialString(v, fractionDigits)));
 }
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
@@ -513,16 +515,16 @@ int32_t Number::countSignificantDigits(double v) {
 	return digits;
 }
 
-ASFUNCTIONBODY(Number,toPrecision)
+ASFUNCTIONBODY_ATOM(Number,toPrecision)
 {
-	Number* th=obj->as<Number>();
+	Number* th=obj.as<Number>();
 	double v = th->toNumber();
-	if (argslen == 0 || args[0]->is<Undefined>())
-		return abstract_s(obj->getSystemState(),toString(v));
+	if (argslen == 0 || args[0].is<Undefined>())
+		return asAtom::fromObject(abstract_s(sys,toString(v)));
 
 	int32_t precision;
-	ARG_UNPACK(precision);
-	return abstract_s(obj->getSystemState(),toPrecisionString(v, precision));
+	ARG_UNPACK_ATOM(precision);
+	return asAtom::fromObject(abstract_s(sys,toPrecisionString(v, precision)));
 }
 
 tiny_string Number::toPrecisionString(double v, int32_t precision)
@@ -553,16 +555,15 @@ tiny_string Number::toPrecisionString(double v, int32_t precision)
 	}
 }
 
-ASFUNCTIONBODY(Number,_valueOf)
+ASFUNCTIONBODY_ATOM(Number,_valueOf)
 {
-	if(Class<Number>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_di(obj->getSystemState(),0);
+	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom(0);
 
-	if(!obj->is<Number>())
+	if(!obj.isNumeric())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
-	return obj->as<Number>()->isfloat ? abstract_d(obj->getSystemState(),obj->as<Number>()->dval) 
-									  : abstract_d(obj->getSystemState(),obj->as<Number>()->ival);
+	return obj;
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

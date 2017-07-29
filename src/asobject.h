@@ -274,7 +274,7 @@ public:
 	inline bool isPrimitive() const;
 	inline bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
 	inline bool checkArgumentConversion(const asAtom& obj) const;
-	inline void checkString();
+	inline ASObject* checkObject();
 	asAtom asTypelate(asAtom& atomtype);
 	inline number_t toNumber();
 	inline int32_t toInt();
@@ -1019,21 +1019,18 @@ static int32_t NumbertoInt(number_t val)
 	}
 	return (int32_t)(val < 0.0 ? -posInt : posInt);
 }
-void asAtom::checkString()
+ASObject* asAtom::checkObject()
 {
-	assert(type == T_STRING);
-	if (stringID != UINT32_MAX && !objval)
+	if (type == T_STRING && stringID != UINT32_MAX && !objval)
 		objval = (ASObject*)abstract_s(getSys(),stringID);
+	assert(objval);
+	return objval;
 }
 
 int32_t asAtom::toInt()
 {
 	switch(type)
 	{
-		case T_UNDEFINED:
-		case T_NULL:
-		case T_INVALID:
-			return 0;
 		case T_INTEGER:
 			return intval;
 		case T_UINTEGER:
@@ -1042,12 +1039,12 @@ int32_t asAtom::toInt()
 			return NumbertoInt(numberval);
 		case T_BOOLEAN:
 			return boolval;
-		case T_STRING:
-			checkString();
-			return objval->toInt();
+		case T_UNDEFINED:
+		case T_NULL:
+		case T_INVALID:
+			return 0;
 		default:
-			assert(objval);
-			return objval->toInt();
+			return checkObject()->toInt();
 	}
 }
 number_t asAtom::toNumber()
@@ -1068,12 +1065,8 @@ number_t asAtom::toNumber()
 			return numeric_limits<double>::quiet_NaN();
 		case T_INVALID:
 			return 0;
-		case T_STRING:
-			checkString();
-			return objval->toNumber();
 		default:
-			assert(objval);
-			return objval->toNumber();
+			return checkObject()->toNumber();
 	}
 }
 int64_t asAtom::toInt64()
@@ -1094,12 +1087,8 @@ int64_t asAtom::toInt64()
 			return boolval;
 		case T_INVALID:
 			return 0;
-		case T_STRING:
-			checkString();
-			return objval->toInt64();
 		default:
-			assert(objval);
-			return objval->toInt64();
+			return checkObject()->toInt64();
 	}
 }
 uint32_t asAtom::toUInt()
@@ -1120,12 +1109,8 @@ uint32_t asAtom::toUInt()
 			return boolval;
 		case T_INVALID:
 			return 0;
-		case T_STRING:
-			checkString();
-			return objval->toUInt();
 		default:
-			assert(objval);
-			return objval->toUInt();
+			return checkObject()->toUInt();
 	}
 }
 
@@ -1579,18 +1564,9 @@ void asAtom::increment()
 		case T_BOOLEAN:
 			setInt((boolval ? 1 : 0)+1);
 			break;
-		case T_STRING:
-		{
-			if(!objval && stringID != UINT32_MAX)
-				toObject(getSys());
-			number_t n=objval->toNumber();
-			objval->decRef();
-			setNumber(n+1);
-			break;
-		}
 		default:
 		{
-			number_t n=objval->toNumber();
+			number_t n=checkObject()->toNumber();
 			objval->decRef();
 			setNumber(n+1);
 			break;
@@ -1628,18 +1604,9 @@ void asAtom::decrement()
 		case T_BOOLEAN:
 			setInt((boolval ? 1 : 0)-1);
 			break;
-		case T_STRING:
-		{
-			if(!objval && stringID != UINT32_MAX)
-				toObject(getSys());
-			number_t n=objval->toNumber();
-			objval->decRef();
-			setNumber(n-1);
-			break;
-		}
 		default:
 		{
-			number_t n=objval->toNumber();
+			number_t n=checkObject()->toNumber();
 			objval->decRef();
 			setNumber(n-1);
 			break;

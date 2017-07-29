@@ -39,15 +39,14 @@ public:
 class ASFont: public ASObject
 {
 private:
-	static std::vector<ASObject*>* getFontList();
+	static std::vector<asAtom>* getFontList();
 public:
 	ASFont(Class_base* c):ASObject(c),fontType("device"){}
 	void SetFont(tiny_string& fontname,bool is_bold,bool is_italic, bool is_Embedded, bool is_EmbeddedCFF);
 	static void sinit(Class_base* c);
-//	static void buildTraits(ASObject* o);
-	ASFUNCTION(enumerateFonts);
-	ASFUNCTION(registerFont);
-	ASFUNCTION(hasGlyphs);
+	ASFUNCTION_ATOM(enumerateFonts);
+	ASFUNCTION_ATOM(registerFont);
+	ASFUNCTION_ATOM(hasGlyphs);
 	ASPROPERTY_GETTER(tiny_string, fontName);
 	ASPROPERTY_GETTER(tiny_string, fontStyle);
 	ASPROPERTY_GETTER(tiny_string, fontType);
@@ -56,13 +55,13 @@ public:
 class StyleSheet: public EventDispatcher
 {
 private:
-	std::map<tiny_string, _R<ASObject> > styles;
+	std::map<tiny_string, asAtom > styles;
 public:
 	StyleSheet(Class_base* c):EventDispatcher(c){}
 	void finalize();
-	ASFUNCTION(getStyle);
-	ASFUNCTION(setStyle);
-	ASFUNCTION(_getStyleNames);
+	ASFUNCTION_ATOM(getStyle);
+	ASFUNCTION_ATOM(setStyle);
+	ASFUNCTION_ATOM(_getStyleNames);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -121,46 +120,46 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
-	ASFUNCTION(appendText);
-	ASFUNCTION(_getAntiAliasType);
-	ASFUNCTION(_setAntiAliasType);
-	ASFUNCTION(_getGridFitType);
-	ASFUNCTION(_setGridFitType);
-	ASFUNCTION(_getLength);
-	ASFUNCTION(_getWidth);
-	ASFUNCTION(_setWidth);
-	ASFUNCTION(_getHeight);
-	ASFUNCTION(_setHeight);
-	ASFUNCTION(_getHtmlText);
-	ASFUNCTION(_setHtmlText);
-	ASFUNCTION(_getText);
-	ASFUNCTION(_setText);
-	ASFUNCTION(_setAutoSize);
-	ASFUNCTION(_getAutoSize);
-	ASFUNCTION(_setWordWrap);
-	ASFUNCTION(_getWordWrap);
-	ASFUNCTION(_getTextWidth);
-	ASFUNCTION(_getTextHeight);
-	ASFUNCTION(_getTextFormat);
-	ASFUNCTION(_setTextFormat);
-	ASFUNCTION(_getDefaultTextFormat);
-	ASFUNCTION(_setDefaultTextFormat);
-	ASFUNCTION(_getLineIndexAtPoint);
-	ASFUNCTION(_getLineIndexOfChar);
-	ASFUNCTION(_getLineLength);
-	ASFUNCTION(_getLineMetrics);
-	ASFUNCTION(_getLineOffset);
-	ASFUNCTION(_getLineText);
-	ASFUNCTION(_getNumLines);
-	ASFUNCTION(_getMaxScrollH);
-	ASFUNCTION(_getMaxScrollV);
-	ASFUNCTION(_getBottomScrollV);
-	ASFUNCTION(_getRestrict);
-	ASFUNCTION(_setRestrict);
-	ASFUNCTION(_getTextInteractionMode);
-	ASFUNCTION(_setSelection);
-	ASFUNCTION(_replaceText);
-	ASFUNCTION(_replaceSelectedText);
+	ASFUNCTION_ATOM(appendText);
+	ASFUNCTION_ATOM(_getAntiAliasType);
+	ASFUNCTION_ATOM(_setAntiAliasType);
+	ASFUNCTION_ATOM(_getGridFitType);
+	ASFUNCTION_ATOM(_setGridFitType);
+	ASFUNCTION_ATOM(_getLength);
+	ASFUNCTION_ATOM(_getWidth);
+	ASFUNCTION_ATOM(_setWidth);
+	ASFUNCTION_ATOM(_getHeight);
+	ASFUNCTION_ATOM(_setHeight);
+	ASFUNCTION_ATOM(_getHtmlText);
+	ASFUNCTION_ATOM(_setHtmlText);
+	ASFUNCTION_ATOM(_getText);
+	ASFUNCTION_ATOM(_setText);
+	ASFUNCTION_ATOM(_setAutoSize);
+	ASFUNCTION_ATOM(_getAutoSize);
+	ASFUNCTION_ATOM(_setWordWrap);
+	ASFUNCTION_ATOM(_getWordWrap);
+	ASFUNCTION_ATOM(_getTextWidth);
+	ASFUNCTION_ATOM(_getTextHeight);
+	ASFUNCTION_ATOM(_getTextFormat);
+	ASFUNCTION_ATOM(_setTextFormat);
+	ASFUNCTION_ATOM(_getDefaultTextFormat);
+	ASFUNCTION_ATOM(_setDefaultTextFormat);
+	ASFUNCTION_ATOM(_getLineIndexAtPoint);
+	ASFUNCTION_ATOM(_getLineIndexOfChar);
+	ASFUNCTION_ATOM(_getLineLength);
+	ASFUNCTION_ATOM(_getLineMetrics);
+	ASFUNCTION_ATOM(_getLineOffset);
+	ASFUNCTION_ATOM(_getLineText);
+	ASFUNCTION_ATOM(_getNumLines);
+	ASFUNCTION_ATOM(_getMaxScrollH);
+	ASFUNCTION_ATOM(_getMaxScrollV);
+	ASFUNCTION_ATOM(_getBottomScrollV);
+	ASFUNCTION_ATOM(_getRestrict);
+	ASFUNCTION_ATOM(_setRestrict);
+	ASFUNCTION_ATOM(_getTextInteractionMode);
+	ASFUNCTION_ATOM(_setSelection);
+	ASFUNCTION_ATOM(_replaceText);
+	ASFUNCTION_ATOM(_replaceSelectedText);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
@@ -195,24 +194,24 @@ public:
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,align);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,blockIndent);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,bold);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,bullet);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,color);
+	ASPROPERTY_GETTER_SETTER(asAtom,blockIndent);
+	ASPROPERTY_GETTER_SETTER(asAtom,bold);
+	ASPROPERTY_GETTER_SETTER(asAtom,bullet);
+	ASPROPERTY_GETTER_SETTER(asAtom,color);
 	ASPROPERTY_GETTER_SETTER(tiny_string,font);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,indent);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,italic);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,kerning);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,leading);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,leftMargin);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,letterSpacing);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,rightMargin);
+	ASPROPERTY_GETTER_SETTER(asAtom,indent);
+	ASPROPERTY_GETTER_SETTER(asAtom,italic);
+	ASPROPERTY_GETTER_SETTER(asAtom,kerning);
+	ASPROPERTY_GETTER_SETTER(asAtom,leading);
+	ASPROPERTY_GETTER_SETTER(asAtom,leftMargin);
+	ASPROPERTY_GETTER_SETTER(asAtom,letterSpacing);
+	ASPROPERTY_GETTER_SETTER(asAtom,rightMargin);
 	ASPROPERTY_GETTER_SETTER(int32_t,size);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,tabStops);
 	ASPROPERTY_GETTER_SETTER(tiny_string,target);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,underline);
+	ASPROPERTY_GETTER_SETTER(asAtom,underline);
 	ASPROPERTY_GETTER_SETTER(tiny_string,url);
 };
 
@@ -240,7 +239,7 @@ public:
 class StaticText: public DisplayObject, public TokenContainer
 {
 private:
-	ASFUNCTION(_getText);
+	ASFUNCTION_ATOM(_getText);
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
@@ -249,9 +248,9 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:
-	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this) {};
+	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this) {}
 	StaticText(Class_base* c, const tokensVector& tokens):
-		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {};
+		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
@@ -315,7 +314,7 @@ public:
 		: ASObject(c), ascent(_ascent), descent(_descent),
 		  height(_height), leading(_leading), width(_width), x(_x) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 };

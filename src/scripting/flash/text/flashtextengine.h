@@ -44,8 +44,8 @@ class ElementFormat: public ASObject
 public:
 	ElementFormat(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_clone);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_clone);
 	ASPROPERTY_GETTER_SETTER(tiny_string,alignmentBaseline);
 	ASPROPERTY_GETTER_SETTER(number_t,alpha);
 	ASPROPERTY_GETTER_SETTER(number_t,baselineShift);
@@ -79,8 +79,8 @@ public:
 	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
 		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_clone);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_clone);
 	ASPROPERTY_GETTER_SETTER(tiny_string,cffHinting);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontLookup);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontName);
@@ -108,7 +108,7 @@ class FontMetrics: public ASObject
 public:
 	FontMetrics(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class Kerning: public ASObject
@@ -136,7 +136,7 @@ class TextJustifier: public ASObject
 public:
 	TextJustifier(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class SpaceJustifier: public TextJustifier
@@ -144,7 +144,7 @@ class SpaceJustifier: public TextJustifier
 public:
 	SpaceJustifier(Class_base* c): TextJustifier(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class EastAsianJustifier: public TextJustifier
@@ -152,7 +152,7 @@ class EastAsianJustifier: public TextJustifier
 public:
 	EastAsianJustifier(Class_base* c): TextJustifier(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class TextLine;
@@ -161,10 +161,10 @@ class TextBlock: public ASObject
 public:
 	TextBlock(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(createTextLine);
-	ASFUNCTION(recreateTextLine);
-	ASFUNCTION(releaseLines);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(createTextLine);
+	ASFUNCTION_ATOM(recreateTextLine);
+	ASFUNCTION_ATOM(releaseLines);
 	ASPROPERTY_GETTER_SETTER(bool,applyNonLinearFontScaling);
 	ASPROPERTY_GETTER_SETTER(_NR<FontDescription>, baselineFontDescription);
 	ASPROPERTY_GETTER_SETTER(number_t,baselineFontSize);
@@ -186,7 +186,7 @@ class TextElement: public ContentElement
 public:
 	TextElement(Class_base* c): ContentElement(c) { subtype = SUBTYPE_TEXTELEMENT; }
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
 };
 class GroupElement: public ContentElement
@@ -194,7 +194,7 @@ class GroupElement: public ContentElement
 public:
 	GroupElement(Class_base* c): ContentElement(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 class TextLine: public DisplayObjectContainer, public TextData
 {
@@ -210,17 +210,17 @@ public:
 	TextLine(Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);
 	void updateSizes();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
 	ASPROPERTY_GETTER(_NR<TextLine>, nextLine);
 	ASPROPERTY_GETTER(_NR<TextLine>, previousLine);
 	ASPROPERTY_GETTER_SETTER(tiny_string,validity);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,userData);
-	ASFUNCTION(getDescent);
-	ASFUNCTION(getAscent);
-	ASFUNCTION(getTextWidth);
-	ASFUNCTION(getTextHeight);
-	ASFUNCTION(getBaselinePosition);
+	ASFUNCTION_ATOM(getDescent);
+	ASFUNCTION_ATOM(getAscent);
+	ASFUNCTION_ATOM(getTextWidth);
+	ASFUNCTION_ATOM(getTextHeight);
+	ASFUNCTION_ATOM(getBaselinePosition);
 	ASPROPERTY_GETTER(bool,hasGraphicElement);
 	ASPROPERTY_GETTER(bool,hasTabs);
 	ASPROPERTY_GETTER(int,rawTextLength);
@@ -233,7 +233,7 @@ class TabStop: public ASObject
 public:
 	TabStop(Class_base* c): ASObject(c) {}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class BreakOpportunity: public ASObject

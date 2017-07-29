@@ -900,9 +900,9 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	uint32_t name=mname.normalizedNameId(sys);
-	assert(!mname.ns.empty());
 
 	var_iterator ret=Variables.find(name);
+	bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
 	auto nsIt=mname.ns.begin();
 
 	//Find the namespace
@@ -910,12 +910,16 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	{
 		//breaks when the namespace is not found
 		const nsNameAndKind& ns=ret->second.ns;
-		if(ns==*nsIt)
+		if((noNS && ns.hasEmptyName()) || (!noNS && ns==*nsIt))
 		{
 			if(ret->second.kind & traitKinds)
 				return &ret->second;
 			else
 				return NULL;
+		}
+		else if (noNS)
+		{
+			++ret;
 		}
 		else
 		{
@@ -2553,5 +2557,3 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		}
 	}
 }
-
-

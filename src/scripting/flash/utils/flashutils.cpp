@@ -155,7 +155,8 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=args[0]->getSystemState()->getUniqueStringId(tmpName);
-	name.ns.push_back(nsNameAndKind(args[0]->getSystemState(),nsName,NAMESPACE));
+	if (nsName != "")
+		name.ns.push_back(nsNameAndKind(args[0]->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;

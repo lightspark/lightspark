@@ -2284,13 +2284,12 @@ void ABCVm::newObject(call_context* th, int n)
 	//Duplicated keys overwrite the previous value
 	multiname propertyName(NULL);
 	propertyName.name_type=multiname::NAME_STRING;
-	propertyName.ns.emplace_back(th->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	for(int i=0;i<n;i++)
 	{
 		RUNTIME_STACK_POP_CREATE(th,value);
-		RUNTIME_STACK_POP_CREATE_ASOBJECT(th,name, th->context->root->getSystemState());
-		propertyName.name_s_id=name->toStringId();
-		name->decRef();
+		RUNTIME_STACK_POP_CREATE(th,name);
+		propertyName.name_s_id=name.toStringId(th->context->root->getSystemState());
+		ASATOM_DECREF(name);
 		ret->setVariableByMultiname(propertyName, value, ASObject::CONST_NOT_ALLOWED);
 	}
 

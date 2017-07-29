@@ -1391,6 +1391,7 @@ asAtom Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION 
 		if (data_first.size() > index)
 		{
 			asAtom a = data_first[index];
+			ASATOM_INCREF(a);
 			if (a.type != T_INVALID)
 				return a;
 		}
@@ -1398,6 +1399,7 @@ asAtom Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION 
 	auto it = data_second.find(index);
 	if(it != data_second.end())
 	{
+		ASATOM_INCREF(it->second);
 		return it->second;
 	}
 	if (name.hasEmptyNS)
@@ -1642,28 +1644,30 @@ asAtom Array::nextValue(uint32_t index)
 uint32_t Array::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	if(cur_index<size())
+	uint32_t s = size();
+	if(cur_index<s)
 	{
-		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<size() && cur_index < data_first.size() && data_first[cur_index].type == T_INVALID)
+		uint32_t firstsize = data_first.size();
+		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<s && cur_index < firstsize && data_first[cur_index].type == T_INVALID)
 		{
 			cur_index++;
 		}
-		if(cur_index<data_first.size())
+		if(cur_index<firstsize)
 			return cur_index+1;
 		
-		while (!data_second.count(cur_index) && cur_index<size())
+		while (!data_second.count(cur_index) && cur_index<s)
 		{
 			cur_index++;
 		}
-		if(cur_index<size())
+		if(cur_index<s)
 			return cur_index+1;
 	}
 	//Fall back on object properties
-	uint32_t ret=ASObject::nextNameIndex(cur_index-size());
+	uint32_t ret=ASObject::nextNameIndex(cur_index-s);
 	if(ret==0)
 		return 0;
 	else
-		return ret+size();
+		return ret+s;
 	
 }
 

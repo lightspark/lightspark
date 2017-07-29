@@ -721,7 +721,10 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 	if(XML::isValidMultiname(getSystemState(),name,index))
 	{
 		if(index<nodes.size())
+		{
+			nodes[index]->incRef();
 			return asAtom::fromObject(nodes[index].getPtr());
+		}
 		else
 			return asAtom::undefinedAtom;
 	}
@@ -741,7 +744,6 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
 			return asAtom::invalidAtom;
 
-		this->incRef();
 		return asAtom::fromObject(create(getSystemState(),retnodes,this,name));
 	}
 }

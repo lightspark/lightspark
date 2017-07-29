@@ -845,13 +845,10 @@ void Class_base::copyBorrowedTraitsFromSuper()
 
 void Class_base::initStandardProps()
 {
-	incRef();
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
-	constructorprop->incRef();
 	addConstructorGetter();
 	
 	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
-	incRef();
 	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
 
 	if(super)

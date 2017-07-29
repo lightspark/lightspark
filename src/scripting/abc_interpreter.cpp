@@ -1312,10 +1312,6 @@ void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 		prop = asAtom::undefinedAtom;
 	}
-	else
-	{
-		ASATOM_INCREF(prop);
-	}
 	obj->decRef();
 	name->resetNameIfObject();
 

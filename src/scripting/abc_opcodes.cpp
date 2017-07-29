@@ -1528,7 +1528,6 @@ void ABCVm::getSuper(call_context* th, int n)
 	name->resetNameIfObject();
 
 	obj->decRef();
-	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(th,ret);
 }
 
@@ -2258,8 +2257,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
 	LOG_CALL("hasNext2 " << n << ' ' << m);
-	ASObject* obj=th->locals[n].toObject(th->context->root->getSystemState());
-	//If the local is not assigned bail out
+	ASObject* obj=th->locals[n].getObject();
+	//If the local is not assigned or is a primitive bail out
 	if(obj==NULL)
 		return false;
 
@@ -2271,7 +2270,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	if(newIndex==0)
 	{
 		ASATOM_DECREF(th->locals[n]);
-		th->locals[n]=asAtom::fromObject(th->context->root->getSystemState()->getNullRef());
+		th->locals[n]=asAtom::nullAtom;
 		return false;
 	}
 	return true;
@@ -2617,7 +2616,6 @@ void ABCVm::newClass(call_context* th, int n)
 	//Add prototype variable
 	ret->prototype = _MNR(new_objectPrototype(ret->getSystemState()));
 	//Add the constructor variable to the class prototype
-	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
 	if(ret->super)
 		ret->prototype->prevPrototype=ret->super->prototype;
@@ -2627,7 +2625,6 @@ void ABCVm::newClass(call_context* th, int n)
 	else
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,0));
 	
-	ret->constructorprop->incRef();
 	ret->addConstructorGetter();
 
 	//add implemented interfaces
@@ -2721,7 +2718,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act= NULL;
-	ASObject* caller = th->locals[0].toObject(th->context->root->getSystemState());
+	ASObject* caller = th->locals[0].getObject();
 	if (caller != NULL && caller->is<Function_object>())
 	{
 		act = new_functionObject(caller->as<Function_object>()->functionPrototype);
@@ -2732,6 +2729,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 #ifndef NDEBUG
 	act->initialized=false;
 #endif
+	act->Variables.Variables.reserve(mi->body->trait_count);
 	for(unsigned int i=0;i<mi->body->trait_count;i++)
 		th->context->buildTrait(act,&mi->body->traits[i],false,-1,false);
 #ifndef NDEBUG

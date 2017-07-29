@@ -219,7 +219,10 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 
 			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 			if(it != data.end())
+			{
+				it->second->incRef();
 				return asAtom::fromObject(it->second.getPtr());
+			}
 			else
 				return asAtom::invalidAtom;
 		}

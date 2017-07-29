@@ -786,6 +786,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 	else
 	{
 		assert_and_throw(obj->getter.type == T_INVALID);
+		ASATOM_INCREF(o);
 		obj->setVar(o,getSystemState());
 	}
 }
@@ -1276,6 +1277,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 	else
 	{
 		assert_and_throw(obj->setter.type == T_INVALID);
+		ASATOM_INCREF(obj->var);
 		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
 			if (obj->var.isBound())
@@ -2138,7 +2140,11 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 	{ /* closure_this can never been overriden */
 		LOG_CALL(_("Calling with closure ") << toDebugString());
 		c=asAtom::fromObject(closure);
-		ASATOM_INCREF(c);
+		if (args_refcounted)
+		{
+			ASATOM_INCREF(c);
+			ASATOM_DECREF(obj);
+		}
 	}
 	else
 		c = obj;

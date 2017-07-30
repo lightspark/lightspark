@@ -75,28 +75,28 @@ public:
 					  _NR<Vector> uvtData,
 					  tiny_string culling,
 					  tokensVector &tokens);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(lineBitmapStyle);
-	ASFUNCTION(lineGradientStyle);
-	ASFUNCTION(lineStyle);
-	ASFUNCTION(beginFill);
-	ASFUNCTION(beginGradientFill);
-	ASFUNCTION(beginBitmapFill);
-	ASFUNCTION(endFill);
-	ASFUNCTION(drawRect);
-	ASFUNCTION(drawRoundRect);
-	ASFUNCTION(drawRoundRectComplex);// this is an undocumented function (probably taken from mx.utils.GraphicsUtil)
-	ASFUNCTION(drawCircle);
-	ASFUNCTION(drawEllipse);
-	ASFUNCTION(drawGraphicsData);
-	ASFUNCTION(drawPath);
-	ASFUNCTION(drawTriangles);
-	ASFUNCTION(moveTo);
-	ASFUNCTION(lineTo);
-	ASFUNCTION(curveTo);
-	ASFUNCTION(cubicCurveTo);
-	ASFUNCTION(clear);
-	ASFUNCTION(copyFrom);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(lineBitmapStyle);
+	ASFUNCTION_ATOM(lineGradientStyle);
+	ASFUNCTION_ATOM(lineStyle);
+	ASFUNCTION_ATOM(beginFill);
+	ASFUNCTION_ATOM(beginGradientFill);
+	ASFUNCTION_ATOM(beginBitmapFill);
+	ASFUNCTION_ATOM(endFill);
+	ASFUNCTION_ATOM(drawRect);
+	ASFUNCTION_ATOM(drawRoundRect);
+	ASFUNCTION_ATOM(drawRoundRectComplex);// this is an undocumented function (probably taken from mx.utils.GraphicsUtil)
+	ASFUNCTION_ATOM(drawCircle);
+	ASFUNCTION_ATOM(drawEllipse);
+	ASFUNCTION_ATOM(drawGraphicsData);
+	ASFUNCTION_ATOM(drawPath);
+	ASFUNCTION_ATOM(drawTriangles);
+	ASFUNCTION_ATOM(moveTo);
+	ASFUNCTION_ATOM(lineTo);
+	ASFUNCTION_ATOM(curveTo);
+	ASFUNCTION_ATOM(cubicCurveTo);
+	ASFUNCTION_ATOM(clear);
+	ASFUNCTION_ATOM(copyFrom);
 };
 
 };

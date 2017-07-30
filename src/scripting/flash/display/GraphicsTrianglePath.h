@@ -35,7 +35,7 @@ public:
 	GraphicsTrianglePath(Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, culling);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, indices);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, uvtData);

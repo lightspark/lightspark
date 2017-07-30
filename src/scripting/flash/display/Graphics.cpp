@@ -73,94 +73,94 @@ void Graphics::checkAndSetScaling()
 	}
 }
 
-ASFUNCTIONBODY(Graphics,_constructor)
+ASFUNCTIONBODY_ATOM(Graphics,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,clear)
+ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 	th->owner->tokens.clear();
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
-	return NULL;
+	th->owner->owner->requestInvalidation(sys);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,moveTo)
+ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 
-	int32_t x=args[0]->toInt();
-	int32_t y=args[1]->toInt();
+	int32_t x=args[0].toInt();
+	int32_t y=args[1].toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,lineTo)
+ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==2);
 	th->checkAndSetScaling();
 
-	int x=args[0]->toInt();
-	int y=args[1]->toInt();
+	int x=args[0].toInt();
+	int y=args[1].toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,curveTo)
+ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
-	int controlX=args[0]->toInt();
-	int controlY=args[1]->toInt();
+	int controlX=args[0].toInt();
+	int controlY=args[1].toInt();
 
-	int anchorX=args[2]->toInt();
-	int anchorY=args[3]->toInt();
+	int anchorX=args[2].toInt();
+	int anchorY=args[3].toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,cubicCurveTo)
+ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==6);
 	th->checkAndSetScaling();
 
-	int control1X=args[0]->toInt();
-	int control1Y=args[1]->toInt();
+	int control1X=args[0].toInt();
+	int control1Y=args[1].toInt();
 
-	int control2X=args[2]->toInt();
-	int control2Y=args[3]->toInt();
+	int control2X=args[2].toInt();
+	int control2Y=args[3].toInt();
 
-	int anchorX=args[4]->toInt();
-	int anchorY=args[5]->toInt();
+	int anchorX=args[4].toInt();
+	int anchorY=args[5].toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY)));
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 /* KAPPA = 4 * (sqrt2 - 1) / 3
@@ -172,20 +172,20 @@ ASFUNCTIONBODY(Graphics,cubicCurveTo)
  */
 const double KAPPA = 0.55228474983079356;
 
-ASFUNCTIONBODY(Graphics,drawRoundRect)
+ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==5 || argslen==6);
 	th->checkAndSetScaling();
 
-	double x=args[0]->toNumber();
-	double y=args[1]->toNumber();
-	double width=args[2]->toNumber();
-	double height=args[3]->toNumber();
-	double ellipseWidth=args[4]->toNumber();
+	double x=args[0].toNumber();
+	double y=args[1].toNumber();
+	double width=args[2].toNumber();
+	double height=args[3].toNumber();
+	double ellipseWidth=args[4].toNumber();
 	double ellipseHeight;
 	if (argslen == 6)
-		ellipseHeight=args[5]->toNumber();
+		ellipseHeight=args[5].toNumber();
 
 	if (argslen == 5 || std::isnan(ellipseHeight))
 		ellipseHeight=ellipseWidth;
@@ -248,22 +248,22 @@ ASFUNCTIONBODY(Graphics,drawRoundRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 	
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,drawRoundRectComplex)
+ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Graphics.drawRoundRectComplex currently draws a normal rect");
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen>=4);
 	th->checkAndSetScaling();
 
-	int x=args[0]->toInt();
-	int y=args[1]->toInt();
-	int width=args[2]->toInt();
-	int height=args[3]->toInt();
+	int x=args[0].toInt();
+	int y=args[1].toInt();
+	int width=args[2].toInt();
+	int height=args[3].toInt();
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -276,20 +276,20 @@ ASFUNCTIONBODY(Graphics,drawRoundRectComplex)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 	
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,drawCircle)
+ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==3);
 	th->checkAndSetScaling();
 
-	double x=args[0]->toNumber();
-	double y=args[1]->toNumber();
-	double radius=args[2]->toNumber();
+	double x=args[0].toNumber();
+	double y=args[1].toNumber();
+	double radius=args[2].toNumber();
 
 	double kappa = KAPPA*radius;
 
@@ -321,21 +321,21 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	                        Vector2(x+radius, y       )));
 
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 	
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,drawEllipse)
+ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
-	double left=args[0]->toNumber();
-	double top=args[1]->toNumber();
-	double width=args[2]->toNumber();
-	double height=args[3]->toNumber();
+	double left=args[0].toNumber();
+	double top=args[1].toNumber();
+	double width=args[2].toNumber();
+	double height=args[3].toNumber();
 
 	double xkappa = KAPPA*width/2;
 	double ykappa = KAPPA*height/2;
@@ -368,21 +368,21 @@ ASFUNCTIONBODY(Graphics,drawEllipse)
 	                        Vector2(left+width, top+height/2)));
 
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,drawRect)
+ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
-	int x=args[0]->toInt();
-	int y=args[1]->toInt();
-	int width=args[2]->toInt();
-	int height=args[3]->toInt();
+	int x=args[0].toInt();
+	int y=args[1].toInt();
+	int width=args[2].toInt();
+	int height=args[3].toInt();
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -395,20 +395,20 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 	
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,drawPath)
+ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	_NR<Vector> commands;
 	_NR<Vector> data;
 	tiny_string winding;
-	ARG_UNPACK (commands) (data) (winding, "evenOdd");
+	ARG_UNPACK_ATOM (commands) (data) (winding, "evenOdd");
 
 	if (commands.isNull() || data.isNull())
 		throwError<ArgumentError>(kInvalidParamError);
@@ -416,9 +416,9 @@ ASFUNCTIONBODY(Graphics,drawPath)
 	pathToTokens(commands, data, winding, th->owner->tokens);
 
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
@@ -544,22 +544,22 @@ void Graphics::solveVertexMapping(double x1, double y1,
 	}
 }
 
-ASFUNCTIONBODY(Graphics,drawTriangles)
+ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	_NR<Vector> vertices;
 	_NR<Vector> indices;
 	_NR<Vector> uvtData;
 	tiny_string culling;
-	ARG_UNPACK (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
+	ARG_UNPACK_ATOM (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
 	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens);
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, _NR<Vector> uvtData, tiny_string culling, tokensVector& tokens)
@@ -673,13 +673,13 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 	}
 }
 
-ASFUNCTIONBODY(Graphics,drawGraphicsData)
+ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	_NR<Vector> graphicsData;
-	ARG_UNPACK(graphicsData);
+	ARG_UNPACK_ATOM(graphicsData);
 
 	for (unsigned int i=0; i<graphicsData->size(); i++)
 	{
@@ -694,28 +694,28 @@ ASFUNCTIONBODY(Graphics,drawGraphicsData)
 	}
 
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(obj->getSystemState());
+	th->owner->owner->requestInvalidation(sys);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,lineStyle)
+ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	if (argslen == 0)
 	{
 		th->owner->tokens.emplace_back(CLEAR_STROKE);
-		return NULL;
+		return asAtom::invalidAtom;
 	}
 	uint32_t color = 0;
 	uint8_t alpha = 255;
-	UI16_SWF thickness = UI16_SWF(imax(args[0]->toNumber() * 20, 0));
+	UI16_SWF thickness = UI16_SWF(imax(args[0].toNumber() * 20, 0));
 	if (argslen >= 2)
-		color = args[1]->toUInt();
+		color = args[1].toUInt();
 	if (argslen >= 3)
-		alpha = uint8_t(args[1]->toNumber() * 255);
+		alpha = uint8_t(args[1].toNumber() * 255);
 
 	// TODO: pixel hinting, scaling, caps, miter, joints
 	
@@ -723,21 +723,21 @@ ASFUNCTIONBODY(Graphics,lineStyle)
 	style.Color = RGBA(color, alpha);
 	style.Width = thickness;
 	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,lineBitmapStyle)
+ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
-	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+	ARG_UNPACK_ATOM (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
 
 	if (bitmap.isNull())
-		return NULL;
+		return asAtom::invalidAtom;
 
 	LINESTYLE2 style(0xff);
 	style.Width = th->owner->getCurrentLineWidth();
@@ -746,12 +746,12 @@ ASFUNCTIONBODY(Graphics,lineBitmapStyle)
 	
 	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,lineGradientStyle)
+ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	tiny_string type;
@@ -762,7 +762,7 @@ ASFUNCTIONBODY(Graphics,lineGradientStyle)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	ARG_UNPACK (type) (colors) (alphas) (ratios) (matrix, NullRef)
+	ARG_UNPACK_ATOM (type) (colors) (alphas) (ratios) (matrix, NullRef)
 		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
 
 	LINESTYLE2 style(0xff);
@@ -774,12 +774,12 @@ ASFUNCTIONBODY(Graphics,lineGradientStyle)
 
 	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,beginGradientFill)
+ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 
 	tiny_string type;
@@ -790,14 +790,14 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	ARG_UNPACK (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
+	ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
 		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
 
 	//Work around for bug in YouTube player of July 13 2011
 	if (!ratiosParam->is<Array>())
-		return NULL;
+		return asAtom::invalidAtom;
 	if (ratiosParam.isNull())
-		return NULL;
+		return asAtom::invalidAtom;
 
 	ratiosParam->incRef();
 	_NR<Array> ratios = _MNR(ratiosParam->as<Array>());
@@ -807,7 +807,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 					     focalPointRatio);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
@@ -907,56 +907,56 @@ FILLSTYLE Graphics::createSolidFill(uint32_t color, uint8_t alpha)
 	return style;
 }
 
-ASFUNCTIONBODY(Graphics,beginBitmapFill)
+ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 {
-	Graphics* th = obj->as<Graphics>();
+	Graphics* th = obj.as<Graphics>();
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
-	ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+	ARG_UNPACK_ATOM (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
 
 	if(bitmap.isNull())
-		return NULL;
+		return asAtom::invalidAtom;
 
 	th->checkAndSetScaling();
 
 	FILLSTYLE style = createBitmapFill(bitmap, matrix, repeat, smooth);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,beginFill)
+ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)
-		color=args[0]->toUInt();
+		color=args[0].toUInt();
 	if(argslen>=2)
-		alpha=(uint8_t(args[1]->toNumber()*0xff));
+		alpha=(uint8_t(args[1].toNumber()*0xff));
 	FILLSTYLE style = Graphics::createSolidFill(color, alpha);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,endFill)
+ASFUNCTIONBODY_ATOM(Graphics,endFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
 	th->owner->tokens.emplace_back(CLEAR_FILL);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Graphics,copyFrom)
+ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+	Graphics* th=obj.as<Graphics>();
 	_NR<Graphics> source;
-	ARG_UNPACK(source);
+	ARG_UNPACK_ATOM(source);
 	if (source.isNull())
-		return NULL;
+		return asAtom::invalidAtom;
 
 	th->owner->tokens.assign(source->owner->tokens.begin(),
 				 source->owner->tokens.end());
-	return NULL;
+	return asAtom::invalidAtom;
 }

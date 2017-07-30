@@ -45,12 +45,11 @@ void GraphicsBitmapFill::sinit(Class_base* c)
 	IGraphicsData::linkTraits(c);
 }
 
-ASFUNCTIONBODY(GraphicsBitmapFill, _constructor)
+ASFUNCTIONBODY_ATOM(GraphicsBitmapFill, _constructor)
 {
-	GraphicsBitmapFill* th = obj->as<GraphicsBitmapFill>();
-	ASObject::_constructor(obj,NULL,0);
-	ARG_UNPACK (th->bitmapData, NullRef) (th->matrix, NullRef) (th->repeat, true) (th->smooth, false);
-	return NULL;
+	GraphicsBitmapFill* th = obj.as<GraphicsBitmapFill>();
+	ARG_UNPACK_ATOM (th->bitmapData, NullRef) (th->matrix, NullRef) (th->repeat, true) (th->smooth, false);
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, bitmapData);

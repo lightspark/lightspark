@@ -35,7 +35,7 @@ public:
 	GraphicsStroke(Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, caps);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, fill); // really IGraphicsFill
 	ASPROPERTY_GETTER_SETTER(tiny_string, joints);

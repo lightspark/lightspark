@@ -75,10 +75,10 @@ public:
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,focusRect);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_setMouseEnabled);
-	ASFUNCTION(_getMouseEnabled);
-	ASFUNCTION(_setDoubleClickEnabled);
-	ASFUNCTION(_getDoubleClickEnabled);
+	ASFUNCTION_ATOM(_setMouseEnabled);
+	ASFUNCTION_ATOM(_getMouseEnabled);
+	ASFUNCTION_ATOM(_setDoubleClickEnabled);
+	ASFUNCTION_ATOM(_getDoubleClickEnabled);
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -120,22 +120,22 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getNumChildren);
-	ASFUNCTION(addChild);
-	ASFUNCTION(removeChild);
-	ASFUNCTION(removeChildAt);
-	ASFUNCTION(removeChildren);
-	ASFUNCTION(addChildAt);
-	ASFUNCTION(_getChildIndex);
-	ASFUNCTION(_setChildIndex);
-	ASFUNCTION(getChildAt);
-	ASFUNCTION(getChildByName);
-	ASFUNCTION(getObjectsUnderPoint);
-	ASFUNCTION(contains);
-	ASFUNCTION(_getMouseChildren);
-	ASFUNCTION(_setMouseChildren);
-	ASFUNCTION(swapChildren);
-	ASFUNCTION(swapChildrenAt);
+	ASFUNCTION_ATOM(_getNumChildren);
+	ASFUNCTION_ATOM(addChild);
+	ASFUNCTION_ATOM(removeChild);
+	ASFUNCTION_ATOM(removeChildAt);
+	ASFUNCTION_ATOM(removeChildren);
+	ASFUNCTION_ATOM(addChildAt);
+	ASFUNCTION_ATOM(_getChildIndex);
+	ASFUNCTION_ATOM(_setChildIndex);
+	ASFUNCTION_ATOM(getChildAt);
+	ASFUNCTION_ATOM(getChildByName);
+	ASFUNCTION_ATOM(getObjectsUnderPoint);
+	ASFUNCTION_ATOM(contains);
+	ASFUNCTION_ATOM(_getMouseChildren);
+	ASFUNCTION_ATOM(_setMouseChildren);
+	ASFUNCTION_ATOM(swapChildren);
+	ASFUNCTION_ATOM(swapChildrenAt);
 };
 
 /* This is really ugly, but the parent of the current
@@ -171,18 +171,18 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getUpState);
-	ASFUNCTION(_setUpState);
-	ASFUNCTION(_getDownState);
-	ASFUNCTION(_setDownState);
-	ASFUNCTION(_getOverState);
-	ASFUNCTION(_setOverState);
-	ASFUNCTION(_getHitTestState);
-	ASFUNCTION(_setHitTestState);
-	ASFUNCTION(_getEnabled);
-	ASFUNCTION(_setEnabled);
-	ASFUNCTION(_getUseHandCursor);
-	ASFUNCTION(_setUseHandCursor);
+	ASFUNCTION_ATOM(_getUpState);
+	ASFUNCTION_ATOM(_setUpState);
+	ASFUNCTION_ATOM(_getDownState);
+	ASFUNCTION_ATOM(_setDownState);
+	ASFUNCTION_ATOM(_getOverState);
+	ASFUNCTION_ATOM(_setOverState);
+	ASFUNCTION_ATOM(_getHitTestState);
+	ASFUNCTION_ATOM(_setHitTestState);
+	ASFUNCTION_ATOM(_getEnabled);
+	ASFUNCTION_ATOM(_setEnabled);
+	ASFUNCTION_ATOM(_getUseHandCursor);
+	ASFUNCTION_ATOM(_setUseHandCursor);
 };
 
 class Shape: public DisplayObject, public TokenContainer
@@ -202,7 +202,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getGraphics);
+	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
 	{ return TokenContainer::invalidate(target, initialMatrix); }
@@ -266,17 +266,17 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getLoaderURL);
-	ASFUNCTION(_getURL);
-	ASFUNCTION(_getBytesLoaded);
-	ASFUNCTION(_getBytesTotal);
-	ASFUNCTION(_getBytes);
-	ASFUNCTION(_getApplicationDomain);
-	ASFUNCTION(_getLoader);
-	ASFUNCTION(_getContent);
-	ASFUNCTION(_getSharedEvents);
-	ASFUNCTION(_getWidth);
-	ASFUNCTION(_getHeight);
+	ASFUNCTION_ATOM(_getLoaderURL);
+	ASFUNCTION_ATOM(_getURL);
+	ASFUNCTION_ATOM(_getBytesLoaded);
+	ASFUNCTION_ATOM(_getBytesTotal);
+	ASFUNCTION_ATOM(_getBytes);
+	ASFUNCTION_ATOM(_getApplicationDomain);
+	ASFUNCTION_ATOM(_getLoader);
+	ASFUNCTION_ATOM(_getContent);
+	ASFUNCTION_ATOM(_getSharedEvents);
+	ASFUNCTION_ATOM(_getWidth);
+	ASFUNCTION_ATOM(_getHeight);
 	void objectHasLoaded(_R<DisplayObject> obj);
 	void setWaitedObject(_NR<DisplayObject> w);
 	//ILoadable interface
@@ -331,13 +331,13 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(close);
-	ASFUNCTION(load);
-	ASFUNCTION(loadBytes);
-	ASFUNCTION(_unload);
-	ASFUNCTION(_unloadAndStop);
-	ASFUNCTION(_getContentLoaderInfo);
-	ASFUNCTION(_getContent);
+	ASFUNCTION_ATOM(close);
+	ASFUNCTION_ATOM(load);
+	ASFUNCTION_ATOM(loadBytes);
+	ASFUNCTION_ATOM(_unload);
+	ASFUNCTION_ATOM(_unloadAndStop);
+	ASFUNCTION_ATOM(_getContentLoaderInfo);
+	ASFUNCTION_ATOM(_getContent);
 	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
 	int getDepth() const
 	{
@@ -367,9 +367,9 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getGraphics);
-	ASFUNCTION(_startDrag);
-	ASFUNCTION(_stopDrag);
+	ASFUNCTION_ATOM(_getGraphics);
+	ASFUNCTION_ATOM(_startDrag);
+	ASFUNCTION_ATOM(_stopDrag);
 	ASPROPERTY_GETTER_SETTER(bool, buttonMode);
 	ASPROPERTY_GETTER_SETTER(_NR<Sprite>, hitArea);
 	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
@@ -397,8 +397,8 @@ public:
 	FrameLabel(Class_base* c, const FrameLabel_data& data);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_getFrame);
-	ASFUNCTION(_getName);
+	ASFUNCTION_ATOM(_getFrame);
+	ASFUNCTION_ATOM(_getName);
 };
 
 struct Scene_data
@@ -418,10 +418,10 @@ public:
 	Scene(Class_base* c);
 	Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getLabels);
-	ASFUNCTION(_getName);
-	ASFUNCTION(_getNumFrames);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getLabels);
+	ASFUNCTION_ATOM(_getName);
+	ASFUNCTION_ATOM(_getNumFrames);
 };
 
 class Frame
@@ -486,7 +486,7 @@ public:
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
 	bool destruct();
-	ASObject* gotoAnd(ASObject* const* args, const unsigned int argslen, bool stop);
+	asAtom gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	/*
@@ -496,22 +496,22 @@ public:
 	 */
 	virtual bool hasFinishedLoading() { return true; }
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(swapDepths);
+	ASFUNCTION_ATOM(swapDepths);
 	ASFUNCTION_ATOM(addFrameScript);
-	ASFUNCTION(stop);
-	ASFUNCTION(play);
-	ASFUNCTION(gotoAndStop);
-	ASFUNCTION(gotoAndPlay);
-	ASFUNCTION(prevFrame);
-	ASFUNCTION(nextFrame);
-	ASFUNCTION(_getCurrentFrame);
-	ASFUNCTION(_getCurrentFrameLabel);
-	ASFUNCTION(_getCurrentLabel);
-	ASFUNCTION(_getCurrentLabels);
-	ASFUNCTION(_getTotalFrames);
-	ASFUNCTION(_getFramesLoaded);
-	ASFUNCTION(_getScenes);
-	ASFUNCTION(_getCurrentScene);
+	ASFUNCTION_ATOM(stop);
+	ASFUNCTION_ATOM(play);
+	ASFUNCTION_ATOM(gotoAndStop);
+	ASFUNCTION_ATOM(gotoAndPlay);
+	ASFUNCTION_ATOM(prevFrame);
+	ASFUNCTION_ATOM(nextFrame);
+	ASFUNCTION_ATOM(_getCurrentFrame);
+	ASFUNCTION_ATOM(_getCurrentFrameLabel);
+	ASFUNCTION_ATOM(_getCurrentLabel);
+	ASFUNCTION_ATOM(_getCurrentLabels);
+	ASFUNCTION_ATOM(_getTotalFrames);
+	ASFUNCTION_ATOM(_getFramesLoaded);
+	ASFUNCTION_ATOM(_getScenes);
+	ASFUNCTION_ATOM(_getCurrentScene);
 
 	void advanceFrame();
 	void initFrame();
@@ -543,25 +543,25 @@ public:
 	_NR<Stage> getStage();
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getAllowFullScreen);
-	ASFUNCTION(_getAllowFullScreenInteractive);
-	ASFUNCTION(_getColorCorrectionSupport);
-	ASFUNCTION(_getStageWidth);
-	ASFUNCTION(_getStageHeight);
-	ASFUNCTION(_getScaleMode);
-	ASFUNCTION(_setScaleMode);
-	ASFUNCTION(_getLoaderInfo);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getAllowFullScreen);
+	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);
+	ASFUNCTION_ATOM(_getColorCorrectionSupport);
+	ASFUNCTION_ATOM(_getStageWidth);
+	ASFUNCTION_ATOM(_getStageHeight);
+	ASFUNCTION_ATOM(_getScaleMode);
+	ASFUNCTION_ATOM(_setScaleMode);
+	ASFUNCTION_ATOM(_getLoaderInfo);
 	ASFUNCTION_ATOM(_getStageVideos);
-	ASFUNCTION(_getFocus);
-	ASFUNCTION(_setFocus);
-	ASFUNCTION(_setTabChildren);
-	ASFUNCTION(_getFrameRate);
-	ASFUNCTION(_setFrameRate);
-	ASFUNCTION(_getWmodeGPU);
-	ASFUNCTION(_invalidate);
-	ASFUNCTION(_getColor);
-	ASFUNCTION(_setColor);
+	ASFUNCTION_ATOM(_getFocus);
+	ASFUNCTION_ATOM(_setFocus);
+	ASFUNCTION_ATOM(_setTabChildren);
+	ASFUNCTION_ATOM(_getFrameRate);
+	ASFUNCTION_ATOM(_setFrameRate);
+	ASFUNCTION_ATOM(_getWmodeGPU);
+	ASFUNCTION_ATOM(_invalidate);
+	ASFUNCTION_ATOM(_getColor);
+	ASFUNCTION_ATOM(_setColor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
@@ -716,7 +716,7 @@ class Shader : public ASObject
 public:
 	Shader(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class BitmapDataChannel : public ASObject
@@ -725,7 +725,7 @@ public:
 	enum {RED=1, GREEN=2, BLUE=4, ALPHA=8};
 	BitmapDataChannel(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static unsigned int channelShift(uint32_t channelConstant);
 };
 

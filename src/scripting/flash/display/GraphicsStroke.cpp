@@ -56,12 +56,11 @@ void GraphicsStroke::finalize()
 	fill.reset();
 }
 
-ASFUNCTIONBODY(GraphicsStroke, _constructor)
+ASFUNCTIONBODY_ATOM(GraphicsStroke, _constructor)
 {
-	GraphicsStroke* th = obj->as<GraphicsStroke>();
+	GraphicsStroke* th = obj.as<GraphicsStroke>();
 	_NR<ASObject> fill;
-	ASObject::_constructor(obj,NULL,0);
-	ARG_UNPACK (th->thickness, std::numeric_limits<double>::quiet_NaN())
+	ARG_UNPACK_ATOM (th->thickness, std::numeric_limits<double>::quiet_NaN())
 		(th->pixelHinting, false)
 		(th->scaleMode, "normal")
 		(th->caps, "none")
@@ -69,7 +68,7 @@ ASFUNCTIONBODY(GraphicsStroke, _constructor)
 		(th->miterLimit, 3.0)
 		(th->fill, NullRef);
 	th->validateFill(NullRef);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, caps);

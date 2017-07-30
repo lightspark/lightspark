@@ -285,7 +285,7 @@ public:
 			return asAtom::nullAtom;
 		if(obj.type == T_UNDEFINED)
 			return asAtom::undefinedAtom;
-		if(v.type != T_INVALID && !v.checkArgumentConversion(obj))
+		if(v.type != T_INVALID && v.type != T_NULL && v.type != T_UNDEFINED && !v.checkArgumentConversion(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj.toObject(getSys())->getClassName(),
                                                   "?"); // TODO
@@ -337,8 +337,8 @@ public:
                         throwError<ArgumentError>(kCheckTypeFailedError,
 												  obj.toObject(getSys())->getClassName(),
                                                   Class<T>::getClass(getSys())->getQualifiedClassName());
-        T* o = obj.as<T>();
-		o->incRef();
+		ASATOM_INCREF(obj);
+		T* o = obj.as<T>();
 		return _MNR(o);
 	}
 	static asAtom toAbstract(SystemState* sys,const NullableRef<T>& val)

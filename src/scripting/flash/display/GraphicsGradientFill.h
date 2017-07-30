@@ -37,7 +37,7 @@ public:
 	GraphicsGradientFill(Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize();
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, alphas);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, colors);
 	ASPROPERTY_GETTER_SETTER(number_t, focalPointRatio);

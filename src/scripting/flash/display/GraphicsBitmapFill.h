@@ -35,7 +35,7 @@ class GraphicsBitmapFill: public ASObject, public IGraphicsFill, public IGraphic
 public:
 	GraphicsBitmapFill(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>, bitmapData);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 	ASPROPERTY_GETTER_SETTER(bool, repeat);

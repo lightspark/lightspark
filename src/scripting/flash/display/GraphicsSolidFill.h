@@ -32,7 +32,7 @@ class GraphicsSolidFill: public ASObject, public IGraphicsFill, public IGraphics
 public:
 	GraphicsSolidFill(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, alpha);
 	ASPROPERTY_GETTER_SETTER(uint32_t, color);
 	FILLSTYLE toFillStyle();

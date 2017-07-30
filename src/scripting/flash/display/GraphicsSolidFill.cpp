@@ -41,12 +41,11 @@ void GraphicsSolidFill::sinit(Class_base* c)
 	IGraphicsData::linkTraits(c);
 }
 
-ASFUNCTIONBODY(GraphicsSolidFill, _constructor)
+ASFUNCTIONBODY_ATOM(GraphicsSolidFill, _constructor)
 {
-	GraphicsSolidFill* th = obj->as<GraphicsSolidFill>();
-	ASObject::_constructor(obj,NULL,0);
-	ARG_UNPACK (th->color, 0) (th->alpha, 1.0);
-	return NULL;
+	GraphicsSolidFill* th = obj.as<GraphicsSolidFill>();
+	ARG_UNPACK_ATOM (th->color, 0) (th->alpha, 1.0);
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsSolidFill, alpha);

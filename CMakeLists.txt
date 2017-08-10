@@ -197,7 +197,7 @@ SET(ENABLE_RTMP TRUE CACHE BOOL "Enable librtmp and dependent functionality?")
 SET(ENABLE_PROFILING FALSE CACHE BOOL "Enable profiling support? (Causes performance issues)")
 SET(ENABLE_MEMORY_USAGE_PROFILING FALSE CACHE BOOL "Enable profiling of memory usage? (Causes performance issues)")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
-SET(PPAPI_PLUGIN_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/PepperFlash" CACHE STRING "Directory to install PPAPI plugin to")
+SET(PPAPI_PLUGIN_DIRECTORY "${LIBDIR}/PepperFlash" CACHE STRING "Directory to install PPAPI plugin to")
 SET(MANUAL_DIRECTORY "share/man" CACHE STRING "Directory to install manual to (UNIX only)")
 SET(ENABLE_SSE2 TRUE CACHE BOOL "Enable use of SSE2 asm instructions (x86/x86_64 only)")
 

@@ -152,14 +152,14 @@ void IFunction::sinit(Class_base* c)
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
-ASFUNCTIONBODY(IFunction,_length)
+ASFUNCTIONBODY_ATOM(IFunction,_length)
 {
-	if (obj->is<IFunction>())
+	if (obj.is<IFunction>())
 	{
-		IFunction* th=static_cast<IFunction*>(obj);
-		return abstract_i(obj->getSystemState(),th->length);
+		IFunction* th=obj.as<IFunction>();
+		return asAtom(th->length);
 	}
-	return abstract_i(obj->getSystemState(),1);
+	return asAtom(1);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,apply)
@@ -369,7 +369,6 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 		argumentsArray->resize(numArgs);
 		for(uint32_t j=0;j<numArgs;j++)
 		{
-			ASATOM_INCREF(args[j]);
 			argumentsArray->set(j,args[j]);
 		}
 		//Add ourself as the callee property
@@ -392,8 +391,14 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.stack=stack;
 	cc.stack_index=0;
 	cc.context=mi->context;
-	//cc.code= new istringstream(mi->body->code);
 	cc.parent_scope_stack=func_scope;
+	if (!func_scope.isNull())
+	{
+		for (auto it = cc.parent_scope_stack->scope.begin(); it != cc.parent_scope_stack->scope.end(); it++)
+		{
+			ASATOM_INCREF((it->object));
+		}
+	}
 	cc.exec_pos=0;
 	
 	cc.max_scope_stack = mi->body->max_scope_depth;
@@ -455,7 +460,6 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
 		{
-			ASATOM_INCREF(args[passedToLocals+j]);
 			rest->set(j,args[passedToLocals+j]);
 		}
 
@@ -558,6 +562,26 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	if(ret.type == T_INVALID)
 		ret=asAtom::undefinedAtom;
 	return mi->returnType->coerce(getSystemState(),ret);
+}
+
+bool SyntheticFunction::destruct()
+{
+	// the scope may contain objects that have pointers to this function
+	// which may lead to calling destruct() recursively
+	// so we have to make sure to cleanup the func_scope only once
+	if (!func_scope.isNull())
+	{
+		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
+		{
+			ASObject* o = it->object.getObject();
+			if (o && (o->is<Activation_object>() || o->is<Function_object>()))
+				o->decRef();
+		}
+	}
+	func_scope.reset();
+	val = NULL;
+	mi = NULL;
+	return IFunction::destruct();
 }
 
 /**
@@ -2140,7 +2164,6 @@ IFunction* Class<IFunction>::getNopFunction()
 	IFunction* ret=new (this->memoryAccount) Function(this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
 	ret->prototype = _MR(new_asobject(ret->getSystemState()));
-	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 	return ret;
 }
@@ -2173,7 +2196,6 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		ret->setSuper(Class<ASObject>::getRef(s));
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
 		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
-		ret->incRef();
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 		ret->prototype->getObj()->setConstructIndicator();
 		ret->incRef();

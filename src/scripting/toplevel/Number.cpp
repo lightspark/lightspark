@@ -563,6 +563,7 @@ ASFUNCTIONBODY_ATOM(Number,_valueOf)
 	if(!obj.isNumeric())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
+	ASATOM_INCREF(obj);
 	return obj;
 }
 

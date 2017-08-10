@@ -57,6 +57,7 @@ ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 	if(!obj.is<Integer>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
+	ASATOM_INCREF(obj);
 	return obj;
 }
 

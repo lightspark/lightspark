@@ -1226,7 +1226,10 @@ asAtom XMLList::nextName(uint32_t index)
 asAtom XMLList::nextValue(uint32_t index)
 {
 	if(index<=nodes.size())
+	{
+		nodes[index-1]->incRef();
 		return asAtom::fromObject(nodes[index-1].getPtr());
+	}
 	else
 		throw RunTimeException("XMLList::nextValue out of bounds");
 }

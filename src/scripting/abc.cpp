@@ -1646,14 +1646,21 @@ call_context::~call_context()
 		}
 	}
 
-	for(uint32_t i=locals_size;--i;)
+	for(uint32_t i=0;i<locals_size;i++)
 	{
-		ASATOM_DECREF(locals[i-1]);
+		ASATOM_DECREF(locals[i]);
 	}
-	while (curr_scope_stack)
+	for(uint32_t i=0;i<max_scope_stack;i++)
 	{
-		--curr_scope_stack;
-		ASATOM_DECREF(scope_stack[curr_scope_stack]);
+		ASATOM_DECREF(scope_stack[i]);
+	}
+	curr_scope_stack=0;
+	if (!parent_scope_stack.isNull())
+	{
+		for (auto it = parent_scope_stack->scope.begin(); it != parent_scope_stack->scope.end(); it++)
+		{
+			ASATOM_DECREF((it->object));
+		}
 	}
 }
 
@@ -1674,7 +1681,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	ASObject* ret=root->applicationDomain->getVariableAndTargetByMultiname(*name, target);
 	if(!ret) //Could not retrieve type
 	{
-		LOG(LOG_ERROR,_("Cannot retrieve type"));
+		LOG(LOG_ERROR,"isInstance: Cannot retrieve type:"<<*name);
 		return false;
 	}
 
@@ -1773,9 +1780,8 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m);
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m,m->numArgs());
 	
-	ASATOM_INCREF(g);
 	entry->addToScope(scope_entry(g,false));
 
 	asAtom ret=asAtom::fromObject(entry).callFunction(g,NULL,0,false);
@@ -1783,7 +1789,6 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	ASATOM_DECREF(ret);
 
 	entry->decRef();
-	
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
@@ -2352,7 +2357,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else if(kind == traits_info::Method)
 				LOG(LOG_CALLS,"Method trait: " << *mname << _(" #") << t->method);
 			method_info* m=&methods[t->method];
-			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m,m->numArgs());
 
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
@@ -2371,14 +2376,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				f->acquireScope(prot->class_scope);
 				if(isBorrowed)
 				{
-					obj->incRef();
 					f->addToScope(scope_entry(asAtom::fromObject(obj),false));
 				}
 			}
 			else
 			{
 				assert(scriptid != -1);
-				obj->incRef();
 				f->addToScope(scope_entry(asAtom::fromObject(obj),false));
 			}
 			if(kind == traits_info::Getter)

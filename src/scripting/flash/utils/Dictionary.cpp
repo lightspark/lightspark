@@ -322,7 +322,7 @@ asAtom Dictionary::nextName(uint32_t index)
 		map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
 		for(unsigned int i=1;i<index;i++)
 			++it;
-
+		it->first->incRef();
 		return asAtom::fromObject(it->first.getPtr());
 	}
 	else
@@ -341,6 +341,7 @@ asAtom Dictionary::nextValue(uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 
+		it->second->incRef();
 		return asAtom::fromObject(it->second.getPtr());
 	}
 	else

@@ -1046,7 +1046,7 @@ ASFUNCTIONBODY_ATOM(Scene,_getLabels)
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
 		asAtom v = asAtom::fromObject(Class<FrameLabel>::getInstanceS(sys,th->labels[i]));
-		ret->set(i, v);
+		ret->set(i, v,false,false);
 	}
 	return asAtom::fromObject(ret);
 }
@@ -1385,7 +1385,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
 		asAtom v = asAtom::fromObject(Class<Scene>::getInstanceS(sys,th->scenes[i],numFrames));
-		ret->set(i, v);
+		ret->set(i, v,false,false);
 	}
 	return asAtom::fromObject(ret);
 }
@@ -1468,7 +1468,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
 		asAtom v = asAtom::fromObject(Class<FrameLabel>::getInstanceS(sys,sc.labels[i]));
-		ret->set(i, v);
+		ret->set(i, v,false,false);
 	}
 	return asAtom::fromObject(ret);
 }

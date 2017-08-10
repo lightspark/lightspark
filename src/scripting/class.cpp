@@ -54,6 +54,11 @@ ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls,uint32_t le
 	return new (cls->memoryAccount) ObjectConstructor(cls, length);
 }
 
+Activation_object* lightspark::new_activationObject(SystemState* sys)
+{
+	Class_base* c=Class<ASObject>::getClass(sys);
+	return new (c->memoryAccount) Activation_object(c);
+}
 
 
 Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait)

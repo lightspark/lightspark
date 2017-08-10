@@ -289,14 +289,12 @@ public:
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj.toObject(getSys())->getClassName(),
                                                   "?"); // TODO
-		ASATOM_INCREF(obj);
 		return obj;
 	}
 	static asAtom toAbstract(SystemState* sys,asAtom val)
 	{
 		if(val.type == T_INVALID)
 			return asAtom::nullAtom;
-		ASATOM_INCREF(val);
 		return val;
 	}
 };

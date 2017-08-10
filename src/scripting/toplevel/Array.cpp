@@ -130,7 +130,6 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 		resize(argslen);
 		for(unsigned int i=0;i<argslen;i++)
 		{
-			ASATOM_INCREF(args[i]);
 			set(i,args[i],false);
 		}
 	}
@@ -181,7 +180,6 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 		else
 		{
 			//Insert the argument
-			ASATOM_INCREF(args[i]);
 			ret->push(args[i]);
 		}
 	}
@@ -195,12 +193,12 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	Array* ret=Class<Array>::getInstanceSNoArgs(sys);
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL)
+	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::fromObject(ret);
 
 	asAtom params[3];
 	asAtom funcRet;
-
+	ASATOM_INCREF(f);
 	uint32_t index = 0;
 	while (index < th->currentsize)
 	{
@@ -238,13 +236,12 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		{
 			if(funcRet.Boolean_concrete())
 				ret->push(origval);
-			else
-			{
-				ASATOM_DECREF(origval);
-			}
 			ASATOM_DECREF(funcRet);
 		}
+		ASATOM_DECREF(origval);
 	}
+	ASATOM_DECREF(f);
+
 	return asAtom::fromObject(ret);
 }
 
@@ -253,12 +250,13 @@ ASFUNCTIONBODY_ATOM(Array, some)
 	Array* th=obj.as<Array>();
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL)
+	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::falseAtom;
 
 	asAtom params[3];
 	asAtom funcRet;
 
+	ASATOM_INCREF(f);
 	uint32_t index = 0;
 	while (index < th->currentsize)
 	{
@@ -292,11 +290,13 @@ ASFUNCTIONBODY_ATOM(Array, some)
 		{
 			if(funcRet.Boolean_concrete())
 			{
+				ASATOM_DECREF(f);
 				return funcRet;
 			}
 			ASATOM_DECREF(funcRet);
 		}
 	}
+	ASATOM_DECREF(f);
 	return asAtom::falseAtom;
 }
 
@@ -305,11 +305,12 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	Array* th=obj.as<Array>();
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL)
+	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::trueAtom;
 
 	asAtom params[3];
 	asAtom funcRet;
+	ASATOM_INCREF(f);
 
 	uint32_t index = 0;
 	while (index < th->currentsize)
@@ -344,11 +345,13 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		{
 			if(!funcRet.Boolean_concrete())
 			{
+				ASATOM_DECREF(f);
 				return funcRet;
 			}
 			ASATOM_DECREF(funcRet);
 		}
 	}
+	ASATOM_DECREF(f);
 	return asAtom::trueAtom;
 }
 
@@ -377,10 +380,11 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	Array* th=obj.as<Array>();
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL)
+	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::invalidAtom;
 	asAtom params[3];
 
+	ASATOM_INCREF(f);
 	uint32_t index = 0;
 	uint32_t s = th->size(); // remember current size, as it may change inside the called function
 	while (index < s)
@@ -416,6 +420,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 		}
 		ASATOM_DECREF(funcret);
 	}
+	ASATOM_DECREF(f);
 
 	return asAtom::invalidAtom;
 }
@@ -670,7 +675,6 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2;i<argslen;i++)
 	{
-		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	// move remembered items to new position
@@ -1142,7 +1146,6 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 	uint64_t s = th->currentsize;
 	for(unsigned int i=0;i<argslen;i++)
 	{
-		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	// currentsize is set even if push fails
@@ -1177,7 +1180,6 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 	{
 		if (th->size() >= UINT32_MAX)
 			break;
-		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	return asAtom((int32_t)th->size());
@@ -1305,7 +1307,6 @@ ASFUNCTIONBODY_ATOM(Array,insertAt)
 		th->currentsize++;
 		th->set(index,o,false);
 	}
-	LOG(LOG_ERROR,"insertat:"<<index<<" "<<th->toString_priv());
 	return asAtom::invalidAtom;
 }
 
@@ -1862,7 +1863,7 @@ Array::~Array()
 {
 }
 
-void Array::set(unsigned int index, asAtom& o, bool checkbounds)
+void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 {
 	if(index<currentsize)
 	{
@@ -1872,7 +1873,8 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds)
 				ASATOM_DECREF(data_first[index]);
 			else
 				data_first.resize(index+1);
-			ASATOM_INCREF(o);
+			if (addref)
+				ASATOM_INCREF(o);
 			
 			data_first[index]=o;
 		}
@@ -1880,7 +1882,8 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds)
 		{
 			if(data_second.find(index) != data_second.end())
 				ASATOM_DECREF(data_second[index]);
-			ASATOM_INCREF(o);
+			if (addref)
+				ASATOM_INCREF(o);
 			data_second[index]=o;
 		}
 	}

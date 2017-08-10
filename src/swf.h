@@ -85,7 +85,7 @@ private:
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
-	void finalize();
+	bool destruct();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;

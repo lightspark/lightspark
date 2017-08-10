@@ -89,6 +89,7 @@ Prototype* new_objectPrototype(SystemState *sys);
 Prototype* new_functionPrototype(Class_base* functionClass, _NR<Prototype> p);
 Function_object* new_functionObject(_NR<ASObject> p);
 ObjectConstructor* new_objectConstructor(Class_base* cls,uint32_t length);
+Activation_object* new_activationObject(SystemState* sys);
 
 template<class T,std::size_t N>
 struct newWithOptionalClass

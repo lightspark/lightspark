@@ -132,7 +132,7 @@ public:
 	ASFUNCTION_ATOM(removeAt);
 
 	asAtom at(unsigned int index);
-	void set(unsigned int index, asAtom &o, bool checkbounds = true);
+	void set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);

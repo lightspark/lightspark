@@ -62,6 +62,11 @@ string ASObject::toDebugString()
 	{
 		assert(false);
 	}
+#ifndef _NDEBUG
+	char buf[300];
+	sprintf(buf,"(%p / %d)",this,this->getRefCount());
+	ret += buf;
+#endif
 	return ret;
 }
 
@@ -780,13 +785,14 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 
 		asAtom v =asAtom::fromObject(target);
 		asAtom ret= obj->setter.callFunction(v,arg1,1,false);
-		assert_and_throw(ret.type == T_UNDEFINED);
+		ASATOM_DECREF(ret);
+		// it seems that Adobe allows setters with return values...
+		//assert_and_throw(ret.type == T_UNDEFINED);
 		LOG_CALL(_("End of setter"));
 	}
 	else
 	{
 		assert_and_throw(obj->getter.type == T_INVALID);
-		ASATOM_INCREF(o);
 		obj->setVar(o,getSystemState());
 	}
 }
@@ -811,11 +817,11 @@ void ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKi
 {
 	setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
 }
-void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable)
+void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted)
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
-	obj->setVar(o,getSystemState());
+	obj->setVar(o,getSystemState(),isRefcounted);
 	obj->isenumerable=isEnumerable;
 	++varcount;
 }
@@ -829,7 +835,7 @@ void ASObject::initializeVariableByMultiname(const multiname& name, asAtom &o, m
 }
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
-		: var(_v),typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false)
+		: var(_v),typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
 {
 	if(_type)
 	{
@@ -843,7 +849,7 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 	}
 }
 
-void variable::setVar(asAtom v, SystemState* sys)
+void variable::setVar(asAtom v, SystemState* sys, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
@@ -856,8 +862,10 @@ void variable::setVar(asAtom v, SystemState* sys)
 	}
 	if((traitState&TYPE_RESOLVED) && type)
 		v = type->coerce(sys,v);
-	ASATOM_DECREF(var);
+	if(isrefcounted)
+		ASATOM_DECREF(var);
 	var=v;
+	isrefcounted = _isrefcounted;
 }
 
 void variable::setVarNoCoerce(asAtom &v)
@@ -1264,14 +1272,14 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 	if(obj->getter.type != T_INVALID)
 	{
 		//Call the getter
-		LOG_CALL("Calling the getter for " << name);
+		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
 		ASObject* target=NULL;
 		if (!obj->getter.isBound())
 			target=this;
 		
 		asAtom v =asAtom::fromObject(target);
 		asAtom ret=obj->getter.callFunction(v,NULL,0,false);
-		LOG_CALL(_("End of getter"));
+		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
 		return ret;
 	}
 	else
@@ -1287,7 +1295,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			}
 			else
 			{
-				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name);
+				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
 				return asAtom::fromFunction(obj->var.getObject(),this);
 			}
 		}
@@ -1415,9 +1423,12 @@ void variables_map::destroyContents()
 	var_iterator it=Variables.begin();
 	while(it!=Variables.cend())
 	{
-		ASATOM_DECREF(it->second.var);
-		ASATOM_DECREF(it->second.setter);
-		ASATOM_DECREF(it->second.getter);
+		if (it->second.isrefcounted)
+		{
+			ASATOM_DECREF(it->second.var);
+			ASATOM_DECREF(it->second.setter);
+			ASATOM_DECREF(it->second.getter);
+		}
 		it = Variables.erase(it);
 	}
 }
@@ -1576,7 +1587,7 @@ asAtom ASObject::getValueAt(int index)
 		LOG_CALL(_("Calling the getter"));
 		asAtom v=asAtom::fromObject(this);
 		asAtom ret = obj->getter.callFunction(v,NULL,0,false);
-		LOG_CALL(_("End of getter"));
+		LOG_CALL("End of getter at index "<<index<<":"<< obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
 		return ret;
 	}
 	else
@@ -1939,7 +1950,6 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 			tmpIt++;
 			if (tmpIt == tmp.end() && bObjectVars)
 			{
-				LOG(LOG_ERROR,"tojson");
 				bObjectVars = false;
 				if (this->getClass())
 				{
@@ -2042,7 +2052,6 @@ ASObject* ASObject::getprop_prototype()
 void ASObject::setprop_prototype(_NR<ASObject>& o)
 {
 	ASObject* obj = o.getPtr();
-	obj->incRef();
 
 	multiname prototypeName(NULL);
 	prototypeName.name_type=multiname::NAME_STRING;
@@ -2066,7 +2075,10 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 		ret->setter.callFunction(v,&arg1,1,false);
 	}
 	else
+	{
+		obj->incRef();
 		ret->setVar(asAtom::fromObject(obj),getSystemState());
+	}
 }
 
 tiny_string ASObject::getClassName() const
@@ -2136,7 +2148,7 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 	if ((obj.type == T_FUNCTION && obj.closure_this) || obj.is<XML>() || obj.is<XMLList>())
 		closure = NULL; // force use of function closure in call
 	asAtom c;
-	if(closure)
+	if(closure && closure != obj.getObject())
 	{ /* closure_this can never been overriden */
 		LOG_CALL(_("Calling with closure ") << toDebugString());
 		c=asAtom::fromObject(closure);
@@ -2155,7 +2167,10 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 			for (uint32_t i = 0; i < num_args; i++)
 				ASATOM_INCREF(args[i]);
 		}
-		return objval->as<SyntheticFunction>()->call(c, args, num_args);
+		asAtom ret = objval->as<SyntheticFunction>()->call(c, args, num_args);
+		if (args_refcounted)
+			ASATOM_DECREF(c);
+		return ret;
 	}
 	// when calling builtin functions, normally no refcounting is needed
 	// if it is, it has to be done inside the called function
@@ -2236,11 +2251,11 @@ std::string asAtom::toDebugString()
 		case T_STRING:
 			if (!objval && stringID != UINT32_MAX)
 				return getSys()->getStringFromUniqueId(stringID);
-			return objval->as<ASString>()->getData();
+			return objval->toDebugString();
 		case T_FUNCTION:
 			assert(objval);
 			if (closure_this)
-				return objval->toDebugString()+ "(closure:"+closure_this->toDebugString()+")";
+				return objval->toDebugString()+"(closure:"+closure_this->toDebugString()+")";
 			return objval->toDebugString();
 		default:
 			assert(objval);

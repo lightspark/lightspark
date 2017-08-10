@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length" };
+static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor" };
 
 extern uint32_t asClassCount;
 
@@ -2034,11 +2034,11 @@ void RootMovieClip::advanceFrame()
 	MovieClip::advanceFrame();
 }
 
-void RootMovieClip::finalize()
+bool RootMovieClip::destruct()
 {
-	MovieClip::finalize();
 	applicationDomain.reset();
 	securityDomain.reset();
+	return MovieClip::destruct();
 }
 
 void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)

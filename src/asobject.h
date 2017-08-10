@@ -321,8 +321,8 @@ public:
 	template<class T> T* as() { return static_cast<T*>(this->objval); }
 };
 #define ASATOM_INCREF(a) if (a.getObject()) a.getObject()->incRef()
-#define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b) b->decRef(); } while (0)
-#define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b) b->decRef(); } while (0)
+#define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
+#define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
 struct variable
 {
 	asAtom var;
@@ -339,10 +339,11 @@ struct variable
 	TRAIT_STATE traitState:2;
 	bool isenumerable:1;
 	bool issealed:1;
+	bool isrefcounted:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false) {}
+		: typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(asAtom v, SystemState* sys);
+	void setVar(asAtom v, SystemState* sys, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
@@ -611,6 +612,7 @@ public:
 	bool initialized:1;
 #endif
 	bool implEnable:1;
+
 	Class_base* getClass() const { return classdef; }
 	ASFUNCTION(_constructor);
 	// constructor for subclasses that can't be instantiated.
@@ -698,7 +700,7 @@ public:
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true, bool isRefcounted = true);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
@@ -843,6 +845,7 @@ public:
 	CLASS_SUBTYPE getSubtype() const { return subtype;}
 };
 
+class Activation_object;
 class ApplicationDomain;
 class Array;
 class ASQName;
@@ -907,6 +910,7 @@ class XMLList;
 
 // this is used to avoid calls to dynamic_cast when testing for some classes
 // keep in mind that when adding a class here you have to take care of the class inheritance and add the new SUBTYPE_ to all apropriate is<> methods 
+template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }

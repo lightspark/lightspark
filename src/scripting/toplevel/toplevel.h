@@ -364,6 +364,12 @@ public:
 };
 
 
+class Activation_object: public ASObject
+{
+public:
+    Activation_object(Class_base* c) : ASObject(c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
+};
+
 /* Special object returned when new func() syntax is used.
  * This object looks for properties on the prototype object that is passed in the constructor
  */
@@ -386,7 +392,7 @@ class IFunction: public ASObject
 {
 public:
 	uint32_t length;
-	ASFUNCTION(_length);
+	ASFUNCTION_ATOM(_length);
 protected:
 	IFunction(Class_base *c,CLASS_SUBTYPE st);
 public:
@@ -479,13 +485,7 @@ private:
 public:
 	~SyntheticFunction() {}
 	asAtom call(asAtom& obj, asAtom *args, uint32_t num_args);
-	inline bool destruct()
-	{
-		func_scope.reset();
-		val = NULL;
-		mi = NULL;
-		return IFunction::destruct();
-	}
+	bool destruct();
 	
 	_NR<scope_entry_list> func_scope;
 	bool isEqual(ASObject* r)
@@ -496,7 +496,6 @@ public:
 	{
 		if (func_scope.isNull())
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
-			
 		assert_and_throw(func_scope->scope.empty());
 		func_scope->scope=scope;
 	}
@@ -555,7 +554,7 @@ public:
 		return ret;
 	}
 
-	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m)
+	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m, uint32_t _length)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		SyntheticFunction*  ret;
@@ -567,9 +566,10 @@ public:
 		else
 		{
 			ret->mi = m;
+			ret->length = _length;
 			ret->objfreelist = &c->freelist[1];
 		}
-		
+
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		asAtom obj = asAtom::fromObject(ret);

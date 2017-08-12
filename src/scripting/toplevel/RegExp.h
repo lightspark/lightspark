@@ -35,11 +35,11 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASObject *match(const tiny_string& str);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(exec);
-	ASFUNCTION(test);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(test);
+	ASFUNCTION_ATOM(_toString);
 	ASPROPERTY_GETTER(bool, dotall);
 	ASPROPERTY_GETTER(bool, global);
 	ASPROPERTY_GETTER(bool, ignoreCase);

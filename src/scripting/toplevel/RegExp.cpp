@@ -59,27 +59,27 @@ void RegExp::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(RegExp,_constructor)
+ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 {
-	RegExp* th=static_cast<RegExp*>(obj);
-	if(argslen > 0 && args[0]->is<RegExp>())
+	RegExp* th=obj.as<RegExp>();
+	if(argslen > 0 && args[0].is<RegExp>())
 	{
-		if(argslen > 1 && !args[1]->is<Undefined>())
+		if(argslen > 1 && !args[1].is<Undefined>())
 			throwError<TypeError>(kRegExpFlagsArgumentError);
-		RegExp *src=args[0]->as<RegExp>();
+		RegExp *src=args[0].as<RegExp>();
 		th->source=src->source;
 		th->dotall=src->dotall;
 		th->global=src->global;
 		th->ignoreCase=src->ignoreCase;
 		th->extended=src->extended;
 		th->multiline=src->multiline;
-		return NULL;
+		return asAtom::invalidAtom;
 	}
 	else if(argslen > 0)
-		th->source=args[0]->toString().raw_buf();
-	if(argslen>1 && !args[1]->is<Undefined>())
+		th->source=args[0].toString().raw_buf();
+	if(argslen>1 && !args[1].is<Undefined>())
 	{
-		const tiny_string& flags=args[1]->toString();
+		const tiny_string& flags=args[1].toString();
 		for(auto i=flags.begin();i!=flags.end();++i)
 		{
 			switch(*i)
@@ -106,7 +106,7 @@ ASFUNCTIONBODY(RegExp,_constructor)
 			}
 		}
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 
@@ -228,23 +228,23 @@ ASObject *RegExp::match(const tiny_string& str)
 	return a;
 }
 
-ASFUNCTIONBODY(RegExp,test)
+ASFUNCTIONBODY_ATOM(RegExp,test)
 {
-	if (!obj->is<RegExp>())
-		return abstract_b(obj->getSystemState(),true);
-	RegExp* th=static_cast<RegExp*>(obj);
+	if (!obj.is<RegExp>())
+		return asAtom::trueAtom;
+	RegExp* th=obj.as<RegExp>();
 
-	const tiny_string& arg0 = args[0]->toString();
+	const tiny_string& arg0 = args[0].toString();
 	pcre* pcreRE = th->compile();
 	if (!pcreRE)
-		return obj->getSystemState()->getNullRef();
+		return asAtom::nullAtom;
 
 	int capturingGroups;
 	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		return obj->getSystemState()->getNullRef();
+		return asAtom::nullAtom;
 	}
 	int ovector[(capturingGroups+1)*3];
 	
@@ -255,18 +255,17 @@ ASFUNCTIONBODY(RegExp,test)
 	int rc = pcre_exec(pcreRE, &extra, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	bool ret = (rc >= 0);
 	pcre_free(pcreRE);
-
-	return abstract_b(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
 
-ASFUNCTIONBODY(RegExp,_toString)
+ASFUNCTIONBODY_ATOM(RegExp,_toString)
 {
-	if(Class<RegExp>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_s(obj->getSystemState(),"/(?:)/");
-	if(!obj->is<RegExp>())
-		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"RegExp.toString is not generic");
+	if(Class<RegExp>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom::fromString(sys,"/(?:)/");
+	if(!obj.is<RegExp>())
+		throw Class<TypeError>::getInstanceS(sys,"RegExp.toString is not generic");
 
-	RegExp* th=static_cast<RegExp*>(obj);
+	RegExp* th=obj.as<RegExp>();
 	tiny_string ret;
 	ret = "/";
 	ret += th->source;
@@ -279,7 +278,7 @@ ASFUNCTIONBODY(RegExp,_toString)
 		ret += "m";
 	if(th->dotall)
 		ret += "s";
-	return abstract_s(obj->getSystemState(),ret);
+	return asAtom::fromObject(abstract_s(sys,ret));
 }
 
 pcre* RegExp::compile()

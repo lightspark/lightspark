@@ -34,7 +34,7 @@ class Endian : public ASObject
 public:
 	static const char* bigEndian;
 	static const char* littleEndian;
-	Endian(Class_base* c):ASObject(c){};
+	Endian(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
 
@@ -58,18 +58,17 @@ public:
 
 
 
-ASObject* getQualifiedClassName(ASObject*, ASObject* const* args, const unsigned int len);
-ASObject* getQualifiedSuperclassName(ASObject*, ASObject* const* args, const unsigned int len);
-ASObject* getDefinitionByName(ASObject*, ASObject* const* args, const unsigned int len);
-ASObject* getTimer(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+asAtom getQualifiedClassName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom getQualifiedSuperclassName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom getDefinitionByName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom getTimer(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 asAtom setInterval(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 asAtom setTimeout(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-ASObject* clearInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* clearTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* describeType(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* escapeMultiByte(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* unescapeMultiByte(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-
+asAtom clearInterval(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom clearTimeout(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom describeType(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom escapeMultiByte(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom unescapeMultiByte(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 }
 
 #endif /* SCRIPTING_FLASH_UTILS_FLASHUTILS_H */

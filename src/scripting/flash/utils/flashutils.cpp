@@ -40,8 +40,8 @@ const char* Endian::bigEndian = "bigEndian";
 void Endian::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("LITTLE_ENDIAN","",abstract_s(c->getSystemState(),littleEndian),DECLARED_TRAIT);
-	c->setVariableByQName("BIG_ENDIAN","",abstract_s(c->getSystemState(),bigEndian),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LITTLE_ENDIAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),littleEndian),DECLARED_TRAIT);
+	c->setVariableAtomByQName("BIG_ENDIAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),bigEndian),DECLARED_TRAIT);
 }
 
 void IExternalizable::linkTraits(Class_base* c)
@@ -91,18 +91,18 @@ void IDataOutput::linkTraits(Class_base* c)
 
 
 
-ASFUNCTIONBODY(lightspark,getQualifiedClassName)
+ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 {
 	//CHECK: what to do if ns is empty
-	ASObject* target=args[0];
+	ASObject* target=args[0].toObject(sys);
 	Class_base* c;
 	switch(target->getObjectType())
 	{
 		case T_NULL:
-			return abstract_s(target->getSystemState(),"null");
+			return asAtom::fromString(sys,"null");
 		case T_UNDEFINED:
 			// Testing shows that this really returns "void"!
-			return abstract_s(target->getSystemState(),"void");
+			return asAtom::fromString(sys,"void");
 		case T_CLASS:
 			c=static_cast<Class_base*>(target);
 			break;
@@ -116,19 +116,21 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 			else 
 				c=target->getClass();
 			break;
+		case T_TEMPLATE:
+			return asAtom::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
 		default:
 			assert_and_throw(target->getClass());
 			c=target->getClass();
 			break;
 	}
 
-	return abstract_s(obj->getSystemState(),c->getQualifiedClassName());
+	return asAtom::fromString(sys,c->getQualifiedClassName());
 }
 
-ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
+ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 {
 	//CHECK: what to do is ns is empty
-	ASObject* target=args[0];
+	ASObject* target=args[0].toObject(sys);
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
@@ -139,28 +141,28 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 		c=static_cast<Class_base*>(target)->super.getPtr();
 
 	if (!c)
-		return target->getSystemState()->getNullRef();
+		return asAtom::nullAtom;
 
-	return abstract_s(obj->getSystemState(),c->getQualifiedClassName());
+	return asAtom::fromString(sys,c->getQualifiedClassName());
 }
 
-ASFUNCTIONBODY(lightspark,getDefinitionByName)
+ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
-	const tiny_string& tmp=args[0]->toString();
+	const tiny_string& tmp=args[0].toString();
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=args[0]->getSystemState()->getUniqueStringId(tmpName);
+	name.name_s_id=sys->getUniqueStringId(tmpName);
 	if (nsName != "")
-		name.ns.push_back(nsNameAndKind(args[0]->getSystemState(),nsName,NAMESPACE));
+		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm(args[0]->getSystemState())->currentCallContext)->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultiname(name,target);
 
 	if(o==NULL)
 	{
@@ -171,19 +173,19 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	o->incRef();
-	return o;
+	return asAtom::fromObject(o);
 }
 
-ASFUNCTIONBODY(lightspark,describeType)
+ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	return args[0]->describeType();
+	return asAtom::fromObject(args[0].toObject(sys)->describeType());
 }
 
-ASFUNCTIONBODY(lightspark,getTimer)
+ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
-	uint64_t ret=compat_msectiming() - obj->getSystemState()->startTime;
-	return abstract_i(obj->getSystemState(),ret);
+	uint64_t ret=compat_msectiming() - sys->startTime;
+	return asAtom((int32_t)ret);
 }
 
 
@@ -231,29 +233,29 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	return asAtom((int32_t)id);
 }
 
-ASFUNCTIONBODY(lightspark,clearInterval)
+ASFUNCTIONBODY_ATOM(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	args[0]->getSystemState()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
-	return NULL;
+	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::INTERVAL, true);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(lightspark,clearTimeout)
+ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	args[0]->getSystemState()->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
-	return NULL;
+	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::TIMEOUT, true);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(lightspark,escapeMultiByte)
+ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
-ASFUNCTIONBODY(lightspark,unescapeMultiByte)
+ASFUNCTIONBODY_ATOM(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }

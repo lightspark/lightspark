@@ -31,11 +31,11 @@ class avmplusFile : public ASObject
 public:
 	avmplusFile(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(exists);
-	ASFUNCTION(read);
-	ASFUNCTION(write);
-	ASFUNCTION(readByteArray);
-	ASFUNCTION(writeByteArray);
+	ASFUNCTION_ATOM(exists);
+	ASFUNCTION_ATOM(read);
+	ASFUNCTION_ATOM(write);
+	ASFUNCTION_ATOM(readByteArray);
+	ASFUNCTION_ATOM(writeByteArray);
 };
 
 class avmplusSystem : public ASObject
@@ -43,22 +43,22 @@ class avmplusSystem : public ASObject
 public:
 	avmplusSystem(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(getFeatures);
-	ASFUNCTION(queueCollection);
-	ASFUNCTION(forceFullCollection);
-	ASFUNCTION(getAvmplusVersion);
-	ASFUNCTION(pauseForGCIfCollectionImminent);
-	ASFUNCTION(getRunmode);
-	ASFUNCTION(isDebugger);
-	ASFUNCTION(isGlobal);
-	ASFUNCTION(_freeMemory);
-	ASFUNCTION(_totalMemory);
-	ASFUNCTION(_privateMemory);
-	ASFUNCTION(argv);
-	ASFUNCTION(exec);
-	ASFUNCTION(write);
-	ASFUNCTION(exit);
-	ASFUNCTION(canonicalizeNumber);
+	ASFUNCTION_ATOM(getFeatures);
+	ASFUNCTION_ATOM(queueCollection);
+	ASFUNCTION_ATOM(forceFullCollection);
+	ASFUNCTION_ATOM(getAvmplusVersion);
+	ASFUNCTION_ATOM(pauseForGCIfCollectionImminent);
+	ASFUNCTION_ATOM(getRunmode);
+	ASFUNCTION_ATOM(isDebugger);
+	ASFUNCTION_ATOM(isGlobal);
+	ASFUNCTION_ATOM(_freeMemory);
+	ASFUNCTION_ATOM(_totalMemory);
+	ASFUNCTION_ATOM(_privateMemory);
+	ASFUNCTION_ATOM(argv);
+	ASFUNCTION_ATOM(exec);
+	ASFUNCTION_ATOM(write);
+	ASFUNCTION_ATOM(exit);
+	ASFUNCTION_ATOM(canonicalizeNumber);
 };
 
 class avmplusDomain : public ASObject
@@ -68,14 +68,14 @@ private:
 public:
 	avmplusDomain(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(load);
-	ASFUNCTION(loadBytes);
-	ASFUNCTION(getClass);
-	ASFUNCTION(_getCurrentDomain);
-	ASFUNCTION(_getMinDomainMemoryLength);
-	ASFUNCTION(_getDomainMemory);
-	ASFUNCTION(_setDomainMemory);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(load);
+	ASFUNCTION_ATOM(loadBytes);
+	ASFUNCTION_ATOM(getClass);
+	ASFUNCTION_ATOM(_getCurrentDomain);
+	ASFUNCTION_ATOM(_getMinDomainMemoryLength);
+	ASFUNCTION_ATOM(_getDomainMemory);
+	ASFUNCTION_ATOM(_setDomainMemory);
 };
 
 }

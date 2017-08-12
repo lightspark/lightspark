@@ -40,34 +40,34 @@ void avmplusFile::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeByteArray","",Class<IFunction>::getFunction(c->getSystemState(),writeByteArray),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY(avmplusFile,exists)
+ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.exists is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusFile,read)
+ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.read is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusFile,write)
+ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.write is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusFile,readByteArray)
+ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
 	//avmplusFile* th=static_cast<avmplusFile*>(obj);
 	tiny_string filename;
-	ARG_UNPACK(filename);
+	ARG_UNPACK_ATOM(filename);
 	
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.readByteArray is unimplemented."));
-	return Class<ByteArray>::getInstanceS(obj->getSystemState());
+	return asAtom::fromObject(Class<ByteArray>::getInstanceS(sys));
 }
-ASFUNCTIONBODY(avmplusFile,writeByteArray)
+ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.writeByteArray is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 avmplusSystem::avmplusSystem(Class_base* c):
@@ -97,89 +97,89 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("canonicalizeNumber","",Class<IFunction>::getFunction(c->getSystemState(),canonicalizeNumber),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY(avmplusSystem,getFeatures)
+ASFUNCTIONBODY_ATOM(avmplusSystem,getFeatures)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getFeatures is unimplemented."));
-	return abstract_s(getSys(),"");
+	return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 }
-ASFUNCTIONBODY(avmplusSystem,getRunmode)
+ASFUNCTIONBODY_ATOM(avmplusSystem,getRunmode)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getRunmode is unimplemented."));
-	return abstract_s(getSys(),"jit");
+	return asAtom::fromString(sys,"jit");
 }
 
-ASFUNCTIONBODY(avmplusSystem,queueCollection)
+ASFUNCTIONBODY_ATOM(avmplusSystem,queueCollection)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.queueCollection is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(avmplusSystem,forceFullCollection)
+ASFUNCTIONBODY_ATOM(avmplusSystem,forceFullCollection)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.forceFullCollection is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(avmplusSystem,getAvmplusVersion)
+ASFUNCTIONBODY_ATOM(avmplusSystem,getAvmplusVersion)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getAvmplusVersion is unimplemented."));
-	return abstract_s(getSys(),"0");
+	return asAtom::fromString(sys,"0");
 }
-ASFUNCTIONBODY(avmplusSystem,pauseForGCIfCollectionImminent)
+ASFUNCTIONBODY_ATOM(avmplusSystem,pauseForGCIfCollectionImminent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.pauseForGCIfCollectionImminent is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(avmplusSystem,isDebugger)
+ASFUNCTIONBODY_ATOM(avmplusSystem,isDebugger)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
-	return abstract_b(obj->getSystemState(),false);
+	return asAtom::falseAtom;
 }
-ASFUNCTIONBODY(avmplusSystem,isGlobal)
+ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
-	return abstract_b(obj->getSystemState(),false);
+	return asAtom::falseAtom;
 }
-ASFUNCTIONBODY(avmplusSystem,_freeMemory)
+ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.freeMemory is unimplemented."));
-	return abstract_d(obj->getSystemState(),1024);
+	return asAtom(1024);
 }
-ASFUNCTIONBODY(avmplusSystem,_totalMemory)
+ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.totalMemory is unimplemented."));
-	return abstract_d(obj->getSystemState(),1024);
+	return asAtom(1024);
 }
-ASFUNCTIONBODY(avmplusSystem,_privateMemory)
+ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));
-	return abstract_d(obj->getSystemState(),1024);
+	return asAtom(1024);
 }
-ASFUNCTIONBODY(avmplusSystem,argv)
+ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.argv is unimplemented."));
-	return Class<Array>::getInstanceS(getSys());
+	return asAtom::fromObject(Class<Array>::getInstanceS(sys));
 }
-ASFUNCTIONBODY(avmplusSystem,exec)
+ASFUNCTIONBODY_ATOM(avmplusSystem,exec)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exec is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusSystem,write)
+ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.write is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusSystem,exit)
+ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exit is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusSystem,canonicalizeNumber)
+ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 {
 	_NR<ASObject> o;
-	ARG_UNPACK(o);
+	ARG_UNPACK_ATOM(o);
 	switch(o->getObjectType())
 	{
 		case T_NUMBER:
@@ -188,13 +188,13 @@ ASFUNCTIONBODY(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			return abstract_d(o->getSystemState(),o->toNumber());
+			return asAtom(o->toNumber());
 		case T_QNAME:
 		case T_NAMESPACE:
-			return abstract_d(o->getSystemState(),Number::NaN);
+			return asAtom(Number::NaN);
 		default:
 			o->incRef();
-			return o.getPtr();
+			return asAtom::fromObject(o.getPtr());
 	}
 }
 
@@ -214,51 +214,51 @@ void avmplusDomain::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_getDomainMemory),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_setDomainMemory),SETTER_METHOD,true);
 }
-ASFUNCTIONBODY(avmplusDomain,_constructor)
+ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 {
 	_NR<avmplusDomain> parentDomain;
-	ARG_UNPACK(parentDomain);
-	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	ARG_UNPACK_ATOM(parentDomain);
+	avmplusDomain* th = obj.as<avmplusDomain>();
 	if (parentDomain.isNull())
-		th->appdomain = ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
+		th->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
 	else
-		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(getSys(),parentDomain->appdomain));
-	return NULL;
+		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(sys,parentDomain->appdomain));
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(avmplusDomain,_getCurrentDomain)
+ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 {
-	avmplusDomain* ret = Class<avmplusDomain>::getInstanceSNoArgs(getSys());
-	ret->appdomain = ABCVm::getCurrentApplicationDomain(getVm(getSys())->currentCallContext);
-	return ret;
+	avmplusDomain* ret = Class<avmplusDomain>::getInstanceSNoArgs(sys);
+	ret->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+	return asAtom::fromObject(ret);
 }
-ASFUNCTIONBODY(avmplusDomain,_getMinDomainMemoryLength)
+ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 {
-	return abstract_ui(obj->getSystemState(),MIN_DOMAIN_MEMORY_LIMIT);
+	return asAtom(MIN_DOMAIN_MEMORY_LIMIT);
 }
-ASFUNCTIONBODY(avmplusDomain,load)
+ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
 	tiny_string filename;
 	LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented.");
-	ARG_UNPACK(filename);
+	ARG_UNPACK_ATOM(filename);
 	throwError<ASError>(kFileOpenError,filename);
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusDomain,loadBytes)
+ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 {
-	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	avmplusDomain* th = obj.as<avmplusDomain>();
 	_NR<ByteArray> bytes;
 	uint32_t swfversion;
-	ARG_UNPACK (bytes)(swfversion, 0);
+	ARG_UNPACK_ATOM (bytes)(swfversion, 0);
 
 	if (swfversion != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Domain.loadBytes ignores parameter swfVersion");
-	MemoryStreamCache mc(obj->getSystemState());
+	MemoryStreamCache mc(sys);
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
 	
-	RootMovieClip* root=getVm(getSys())->currentCallContext->context->root.getPtr();
+	RootMovieClip* root=getVm(sys)->currentCallContext->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
@@ -266,33 +266,33 @@ ASFUNCTIONBODY(avmplusDomain,loadBytes)
 	context.exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(avmplusDomain,getClass)
+ASFUNCTIONBODY_ATOM(avmplusDomain,getClass)
 {
-	return getDefinitionByName(obj,args,argslen);
+	return getDefinitionByName(sys,obj,args,argslen);
 }
-ASFUNCTIONBODY(avmplusDomain,_getDomainMemory)
+ASFUNCTIONBODY_ATOM(avmplusDomain,_getDomainMemory)
 {
-	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	avmplusDomain* th = obj.as<avmplusDomain>();
 	if (th->appdomain->domainMemory.isNull())
-		return NULL;
+		return asAtom::invalidAtom;
 	th->appdomain->domainMemory->incRef();
-	return th->appdomain->domainMemory.getPtr();
+	return asAtom::fromObject(th->appdomain->domainMemory.getPtr());
 }
-ASFUNCTIONBODY(avmplusDomain,_setDomainMemory)
+ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 {
 	_NR<ByteArray> b;
-	ARG_UNPACK(b);
-	avmplusDomain* th = Class<avmplusDomain>::cast(obj);
+	ARG_UNPACK_ATOM(b);
+	avmplusDomain* th = obj.as<avmplusDomain>();
 	if (b.isNull())
 	{
 		th->appdomain->domainMemory = b;
-		return NULL;
+		return asAtom::invalidAtom;
 	}
 		
 	if (b->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
 		throwError<RangeError>(kEndOfFileError);
 	th->appdomain->domainMemory = b;
-	return NULL;
+	return asAtom::invalidAtom;
 }

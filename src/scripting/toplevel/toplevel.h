@@ -279,6 +279,7 @@ private:
 public:
 	Template_base(QName name);
 	virtual Class_base* applyType(const std::vector<const Type*>& t,_NR<ApplicationDomain> appdomain)=0;
+	QName getTemplateName() { return template_name; }
 };
 
 class Class_object: public Class_base

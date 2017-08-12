@@ -1080,10 +1080,9 @@ void ABCVm::abc_constructprop(call_context* context,memorystream& code)
 void ABCVm::abc_callproplex(call_context* context,memorystream& code)
 {
 	//callproplex
-	LOG(LOG_NOT_IMPLEMENTED,"callproplex behaves exactly like callproperty");
 	uint32_t t = code.readu30();
 	uint32_t t2 = code.readu30();
-	callProperty(context,t,t2,NULL,true);
+	callPropLex(context,t,t2,NULL,true);
 }
 void ABCVm::abc_callsupervoid(call_context* context,memorystream& code)
 {

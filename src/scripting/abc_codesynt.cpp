@@ -210,6 +210,7 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"kill",(void*)&ABCVm::kill,ARGS_INT},
 	{"jump",(void*)&ABCVm::jump,ARGS_INT},
 	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT_INT_BOOL},
+	{"callPropLex",(void*)&ABCVm::callPropLex,ARGS_CONTEXT_INT_INT_INT_BOOL},
 	{"constructProp",(void*)&ABCVm::constructProp,ARGS_CONTEXT_INT_INT},
 	{"callSuper",(void*)&ABCVm::callSuper,ARGS_CONTEXT_INT_INT_INT_BOOL},
 	{"not_impl",(void*)&ABCVm::not_impl,ARGS_INT},
@@ -3284,10 +3285,8 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 #endif
 				break;
 			}
-			case 0x4c: //callproplex
 			case 0x46: //callproperty
 			{
-				//Both opcodes are fully equal
 				//TODO: Implement static resolution where possible
 				LOG(LOG_TRACE, _("synt callproperty") );
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -3398,6 +3397,37 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 #else
 				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), context, constant, constant2);
 #endif
+				break;
+			}
+			case 0x4c: //callproplex
+			{
+				//TODO: Implement static resolution where possible
+				LOG(LOG_TRACE, _("synt callproperty") );
+				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(int_type, t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(int_type, t);
+				constant3 = llvm::ConstantInt::get(int_type, 0);
+				constant4 = llvm::ConstantInt::get(bool_type, 1);
+	/*				//Pop the stack arguments
+				vector<llvm::Value*> args(t+1);
+				for(int i=0;i<t;i++)
+					args[t-i]=static_stack_pop(Builder,static_stack,m).first;*/
+				//Call the function resolver, static case could be resolved at this time (TODO)
+#ifdef LLVM_37
+				Builder.CreateCall(ex->FindFunctionNamed("callPropLex"), {context, constant, constant2, constant3, constant4});
+#else
+				Builder.CreateCall5(ex->FindFunctionNamed("callPropLex"), context, constant, constant2, constant3, constant4);
+#endif
+	/*				//Pop the function object, and then the object itself
+				llvm::Value* fun=static_stack_pop(Builder,static_stack,m).first;
+
+				llvm::Value* fun2=Builder.CreateBitCast(fun,synt_method_prototype(t));
+				args[0]=static_stack_pop(Builder,static_stack,m).first;
+				Builder.CreateCall(fun2,args.begin(),args.end());*/
+
 				break;
 			}
 			case 0x4e:

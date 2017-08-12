@@ -319,12 +319,23 @@ int32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 
 void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
+	callPropIntern(th, n, m, keepReturn, false);
+}
+
+void ABCVm::callPropLex(call_context *th, int n, int m, method_info **called_mi, bool keepReturn)
+{
+	callPropIntern(th, n, m, keepReturn, true);
+}
+
+void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool callproplex)
+{
 	asAtom* args=g_newa(asAtom, m);
 	for(int i=0;i<m;i++)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 
 	multiname* name=th->context->getMultiname(n,th);
-	LOG_CALL( (keepReturn ? "callProperty " : "callPropVoid") << *name << ' ' << m);
+	
+	LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << *name << ' ' << m);
 
 	RUNTIME_STACK_POP_CREATE(th,obj);
 
@@ -354,6 +365,14 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 				break;
 			tmpcls = tmpcls->super;
 		}
+	}
+	if (callproplex)
+	{
+		// according to spec, callproplex should use null as the "this", but 
+		// using null or undefined as "this" indicates use of the global object
+		// see avm2overview chapter 2.4
+		obj = asAtom::fromObject(getGlobalScope(th));
+		ASATOM_INCREF(obj);
 	}
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
@@ -444,7 +463,7 @@ void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi
 		}
 
 	}
-	LOG_CALL(_("End of calling ") << *name <<" "<<obj.toDebugString());
+	LOG_CALL(_("End of calling ") << *name);
 }
 
 void ABCVm::callMethod(call_context* th, int n, int m)
@@ -2807,8 +2826,8 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 			ASATOM_DECREF(args[i]);
 		throwError<TypeError>(kCallOfNonFunctionError, "Object");
 	}
-	ASATOM_DECREF(f);
 	LOG_CALL(_("End of call ") << m << ' ' << f.toDebugString());
+	ASATOM_DECREF(f);
 }
 
 bool ABCVm::deleteProperty(ASObject* obj, multiname* name)

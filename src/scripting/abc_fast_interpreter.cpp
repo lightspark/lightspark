@@ -713,7 +713,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t t2=data->uints[1];
 				method_info* called_mi=NULL;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-				callProperty(context,t,t2,&called_mi,true);
+				callPropLex(context,t,t2,&called_mi,true);
 				if(called_mi)
 					PROF_ACCOUNT_TIME(mi->profCalls[called_mi],profilingCheckpoint(startTime));
 				else

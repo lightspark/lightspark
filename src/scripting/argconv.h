@@ -271,7 +271,7 @@ template<class T>
 class ArgumentConversionAtom
 {
 public:
-	static T toConcrete(asAtom obj,const T& v);
+	static T toConcrete(SystemState* sys,asAtom obj,const T& v);
 	static asAtom toAbstract(SystemState* sys,const T& val);
 };
 
@@ -279,7 +279,7 @@ template<>
 class ArgumentConversionAtom<asAtom>
 {
 public:
-	static asAtom toConcrete(asAtom obj,const asAtom& v)
+	static asAtom toConcrete(SystemState* sys,asAtom obj,const asAtom& v)
 	{
 		if(obj.type == T_NULL)
 			return asAtom::nullAtom;
@@ -287,7 +287,7 @@ public:
 			return asAtom::undefinedAtom;
 		if(v.type != T_INVALID && v.type != T_NULL && v.type != T_UNDEFINED && !v.checkArgumentConversion(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
-                                                  obj.toObject(getSys())->getClassName(),
+                                                  obj.toObject(sys)->getClassName(),
                                                   "?"); // TODO
 		return obj;
 	}
@@ -295,6 +295,7 @@ public:
 	{
 		if(val.type == T_INVALID)
 			return asAtom::nullAtom;
+		ASATOM_INCREF(val);
 		return val;
 	}
 };
@@ -303,12 +304,12 @@ template<class T>
 class ArgumentConversionAtom<Ref<T>>
 {
 public:
-	static Ref<T> toConcrete(asAtom obj,const Ref<T> v)
+	static Ref<T> toConcrete(SystemState* sys,asAtom obj,const Ref<T> v)
 	{
 		if(!obj.is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,
-                                                  obj.toObject(getSys())->getClassName(),
-                                                  Class<T>::getClass(getSys())->getQualifiedClassName());
+                                                  obj.toObject(sys)->getClassName(),
+                                                  Class<T>::getClass(sys)->getQualifiedClassName());
         T* o = obj.as<T>();
 		o->incRef();
 		return _MR(o);
@@ -324,7 +325,7 @@ template<class T>
 class ArgumentConversionAtom<NullableRef<T>>
 {
 public:
-	static NullableRef<T> toConcrete(asAtom obj,const NullableRef<T>& v)
+	static NullableRef<T> toConcrete(SystemState* sys,asAtom obj,const NullableRef<T>& v)
 	{
 		if(obj.type == T_NULL)
 			return NullRef;
@@ -333,8 +334,8 @@ public:
 
         if(!obj.is<T>())
                         throwError<ArgumentError>(kCheckTypeFailedError,
-												  obj.toObject(getSys())->getClassName(),
-                                                  Class<T>::getClass(getSys())->getQualifiedClassName());
+												  obj.toObject(sys)->getClassName(),
+                                                  Class<T>::getClass(sys)->getQualifiedClassName());
 		ASATOM_INCREF(obj);
 		T* o = obj.as<T>();
 		return _MNR(o);
@@ -352,9 +353,9 @@ template<>
 class ArgumentConversionAtom<NullableRef<ASObject>>
 {
 public:
-	static NullableRef<ASObject> toConcrete(asAtom obj,const NullableRef<ASObject>& v)
+	static NullableRef<ASObject> toConcrete(SystemState* sys,asAtom obj,const NullableRef<ASObject>& v)
 	{
-		ASObject* o = obj.toObject(getSys());
+		ASObject* o = obj.toObject(sys);
 		o->incRef();
 		return _MNR(o);
 	}
@@ -368,43 +369,43 @@ public:
 };
 
 template<>
-inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(asAtom obj,const number_t& v)
+inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(SystemState* sys,asAtom obj,const number_t& v)
 {
 	return obj.toNumber();
 }
 
 template<>
-inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(asAtom obj,const bool& v)
+inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(SystemState* sys,asAtom obj,const bool& v)
 {
 	return obj.Boolean_concrete();
 }
 
 template<>
-inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(asAtom obj,const uint32_t& v)
+inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(SystemState* sys,asAtom obj,const uint32_t& v)
 {
 	return obj.toUInt();
 }
 
 template<>
-inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(asAtom obj,const int32_t& v)
+inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(SystemState* sys,asAtom obj,const int32_t& v)
 {
 	return obj.toInt();
 }
 
 template<>
-inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(asAtom obj,const int64_t& v)
+inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(SystemState* sys,asAtom obj,const int64_t& v)
 {
 	return obj.toInt64();
 }
 
 template<>
-inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(asAtom obj,const tiny_string& v)
+inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(SystemState* sys,asAtom obj,const tiny_string& v)
 {
 	return obj.toString();
 }
 
 template<>
-inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(asAtom obj,const RGB& v)
+inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(SystemState* sys,asAtom obj,const RGB& v)
 {
 	return RGB(obj.toUInt());
 }
@@ -445,24 +446,25 @@ inline asAtom lightspark::ArgumentConversionAtom<RGB>::toAbstract(SystemState* s
 	return asAtom(val.toUInt());
 }
 
-#define ARG_UNPACK_ATOM ArgUnpackAtom(args,argslen,false)
-#define ARG_UNPACK_ATOM_MORE_ALLOWED ArgUnpackAtom(args,argslen,true)
+#define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen,false)
+#define ARG_UNPACK_ATOM_MORE_ALLOWED ArgUnpackAtom(sys,args,argslen,true)
 
 class ArgUnpackAtom
 {
 private:
+	SystemState* sys;
 	asAtom* args;
 	int argslen;
 	bool moreAllowed;
 public:
-	ArgUnpackAtom(asAtom* _args, int _argslen, bool _moreAllowed) : args(_args), argslen(_argslen), moreAllowed(_moreAllowed) {}
+	ArgUnpackAtom(SystemState* _sys,asAtom* _args, int _argslen, bool _moreAllowed) : sys(_sys),args(_args), argslen(_argslen), moreAllowed(_moreAllowed) {}
 
 	template<class T> ArgUnpackAtom& operator()(T& v)
 	{
 		if(argslen == 0)
                         throwError<ArgumentError>(kWrongArgumentCountError, "object", "?", "?");
 
-		v = ArgumentConversionAtom<T>::toConcrete(args[0],v);
+		v = ArgumentConversionAtom<T>::toConcrete(sys,args[0],v);
 		args++;
 		argslen--;
 		return *this;
@@ -471,7 +473,7 @@ public:
 	{
 		if(argslen > 0)
 		{
-			v = ArgumentConversionAtom<T>::toConcrete(args[0],v);
+			v = ArgumentConversionAtom<T>::toConcrete(sys,args[0],v);
 			args++;
 			argslen--;
 		}

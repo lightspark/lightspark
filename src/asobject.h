@@ -102,7 +102,7 @@
 		c* th = obj.as<c>(); \
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
 		return asAtom::invalidAtom; \
 	}
 
@@ -115,7 +115,7 @@
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " setter is not implemented"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
 		return asAtom::invalidAtom; \
 	}
 
@@ -131,7 +131,7 @@
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(args[0],th->name); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
 		th->callback(oldValue); \
 		return asAtom::invalidAtom; \
 	}
@@ -1132,7 +1132,7 @@ void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
 			break;
 		case T_STRING:
 			if (!objval && stringID != UINT32_MAX)
-				objval = toObject(sys);
+				break; // no need to create string, as it won't have a proxyMultiName
 			assert(objval);
 			objval->applyProxyProperty(name);
 			break;
@@ -1427,6 +1427,9 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 			{
 				switch (v2.type)
 				{
+					case T_NULL:
+					case T_UNDEFINED:
+						return false;
 					case T_STRING:
 						if (v2.stringID != UINT32_MAX)
 							return v2.stringID == stringID;

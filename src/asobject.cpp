@@ -786,6 +786,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		asAtom v =asAtom::fromObject(target);
 		asAtom ret= obj->setter.callFunction(v,arg1,1,false);
 		ASATOM_DECREF(ret);
+		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
 		//assert_and_throw(ret.type == T_UNDEFINED);
 		LOG_CALL(_("End of setter"));
@@ -2179,6 +2180,8 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 	{
 		for (uint32_t i = 0; i < num_args; i++)
 			ASATOM_DECREF(args[i]);
+		if (closure_this && c.getObject() && c.getObject()->isLastRef() && c.getObject()==closure_this)
+			closure_this = NULL;
 		ASATOM_DECREF(c);
 	}
 	return ret;

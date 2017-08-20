@@ -1269,12 +1269,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 
 void PlaceObject2Tag::execute(DisplayObjectContainer* parent) const
 {
-	//TODO: support clipping
-	if(ClipDepth!=0)
-	{
-		LOG(LOG_ERROR,"ClipDepth is not supported, but object is created anyway");
-	}
-
 	if(!PlaceFlagHasCharacter && !PlaceFlagMove)
 	{
 		LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that does nothing"));

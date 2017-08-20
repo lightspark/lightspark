@@ -1075,6 +1075,7 @@ void Frame::execute(_R<DisplayObjectContainer> displayList)
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 		(*it)->execute(displayList.getPtr());
+	displayList->checkClipDepth();
 }
 
 FrameContainer::FrameContainer():framesLoaded(0)
@@ -1601,6 +1602,24 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	{
 		deleteLegacyChildAt(i->left);
 		i = depthToLegacyChild.begin();
+	}
+}
+
+void DisplayObjectContainer::checkClipDepth()
+{
+	DisplayObject* clipobj = NULL;
+	int depth = 0;
+	for (auto it=dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		depth++;
+		DisplayObject* obj = (*it).getPtr();
+		if (obj->ClipDepth)
+			clipobj = obj;
+		else if (clipobj && clipobj->ClipDepth > depth)
+		{
+			clipobj->incRef();
+			obj->setMask(_NR<DisplayObject>(clipobj));
+		}
 	}
 }
 

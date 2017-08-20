@@ -71,7 +71,6 @@ private:
 	*/
 	_NR<DisplayObject> maskOf;
 	void becomeMaskOf(_NR<DisplayObject> m);
-	void setMask(_NR<DisplayObject> m);
 	_NR<DisplayObjectContainer> parent;
 	/* cachedSurface may only be read/written from within the render thread
 	 * It is the cached version of the object for fast draw on the Stage
@@ -121,6 +120,7 @@ protected:
 	}
 
 public:
+	void setMask(_NR<DisplayObject> m);
 	void constructionComplete();
 	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;

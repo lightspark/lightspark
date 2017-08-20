@@ -115,6 +115,7 @@ public:
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
 	void purgeLegacyChildren();
+	void checkClipDepth();
 	void advanceFrame();
 	void initFrame();
 	static void sinit(Class_base* c);

@@ -3163,6 +3163,8 @@ void MovieClip::initFrame()
 	for(;it!=dynamicDisplayList.end();it++)
 		(*it)->initFrame();
 
+	bool firstframe = state.last_FP < 0;
+	
 	/* Set last_FP to reflect the frame that we have initialized currently.
 	 * This must be set before the constructor of this MovieClip is run,
 	 * or it will call initFrame(). */
@@ -3173,9 +3175,12 @@ void MovieClip::initFrame()
 	DisplayObject::initFrame();
 
 	/* Run framescripts if this is a new frame. We do it at the end because our constructor
-	 * may just have registered one. */
+	 * may just have registered one. 
+	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
+	 * we can't execute the framescript of the first frame now (it will be executed in afterConstruction)
+	 */
 	//TODO: check order: child or parent first?
-	if(newFrame && frameScripts.count(state.FP))
+	if(!firstframe && newFrame && frameScripts.count(state.FP))
 	{
 		asAtom v=frameScripts[state.FP].callFunction(asAtom::invalidAtom,NULL,0,false);
 		ASATOM_DECREF(v);
@@ -3239,6 +3244,16 @@ void MovieClip::constructionComplete()
 	 * now */
 	if(state.last_FP == -1)
 		initFrame();
+}
+
+void MovieClip::afterConstruction()
+{
+	// execute framescript of frame 0 after construction is completed
+	if(frameScripts.count(0))
+	{
+		asAtom v=frameScripts[0].callFunction(asAtom::invalidAtom,NULL,0,false);
+		ASATOM_DECREF(v);
+	}
 }
 
 void AVM1Movie::sinit(Class_base* c)

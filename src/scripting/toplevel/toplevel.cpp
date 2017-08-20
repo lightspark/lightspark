@@ -1041,6 +1041,10 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 			ASATOM_DECREF(args[i]);
 		//throwError<TypeError>(kConstructOfNonFunctionError);
 	}
+	if(buildAndLink)
+	{
+		target.getObject()->afterConstruction();
+	}
 }
 
 

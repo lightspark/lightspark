@@ -482,6 +482,7 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
 	void constructionComplete();
+	void afterConstruction();
 	RunState state;
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);

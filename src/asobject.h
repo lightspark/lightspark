@@ -795,6 +795,10 @@ public:
 	inline virtual void constructionComplete()
 	{
 	}
+	//Called after the object Actionscript constructor was executed. Used by MovieClip implementation
+	inline virtual void afterConstruction()
+	{
+	}
 
 	/**
 	  Serialization interface

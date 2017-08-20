@@ -808,7 +808,7 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 		a=o1.toNumber();
 		b=o2.toNumber();
 
-		if(std::isnan(a) || std::isnan(b))
+		if((!o1.isNumeric() && std::isnan(a)) || (!o2.isNumeric() && std::isnan(b)))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
 			return b>a;
@@ -933,7 +933,7 @@ bool Array::sortOnComparator::operator()(const asAtom& d1, const asAtom& d2)
 			
 			b=obj2.toNumber();
 			
-			if(std::isnan(a) || std::isnan(b))
+			if((!obj1.isNumeric() && std::isnan(a)) || (!obj2.isNumeric() && std::isnan(b)))
 				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 			if(it->isDescending)
 				return b>a;

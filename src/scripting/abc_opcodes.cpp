@@ -1754,17 +1754,17 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
+			multiname m(NULL);
+			m.name_type = multiname::NAME_STRING;
+			m.name_s_id = name->name_s_id;
+			m.isAttribute = false;
 			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 			{
 				ASObject* r = th->scope_stack[i-1].toObject(th->context->root->getSystemState());
 				if (!r->is<Class_base>())
 					continue;
-				if (r->as<Class_base>()->findBorrowedGettable(*name))
-				{
-					if (!r->as<Class_base>()->isSealed)
-						break;
+				if (r->as<Class_base>()->checkExistingFunction(m))
 					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
-				}
 			}
 			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
 			return th->context->root->getSystemState()->getUndefinedRef();
@@ -1836,17 +1836,17 @@ asAtom ABCVm::findPropStrictCache(call_context* th, memorystream& code)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
+			multiname m(NULL);
+			m.name_type = multiname::NAME_STRING;
+			m.name_s_id = name->name_s_id;
+			m.isAttribute = false;
 			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 			{
 				ASObject* r = th->scope_stack[i-1].toObject(th->context->root->getSystemState());
 				if (!r->is<Class_base>())
 					continue;
-				if (r->as<Class_base>()->findBorrowedGettable(*name))
-				{
-					if (!r->as<Class_base>()->isSealed)
-						break;
+				if (r->as<Class_base>()->checkExistingFunction(m))
 					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
-				}
 			}
 			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->context->root->getSystemState()));
 			return th->context->root->getSystemState()->getUndefinedRef();

@@ -1374,7 +1374,18 @@ void Class_base::describeConstructor(pugi::xml_node &root) const
 		return;
 	if (!this->constructor->is<SyntheticFunction>())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"describeConstructor for builtin classes is not implemented");
+		if (!this->getTemplate())
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"describeConstructor for builtin classes is not completely implemented");
+			pugi::xml_node node=root.append_child("constructor");
+			for (uint32_t i = 0; i < this->constructor->as<IFunction>()->length; i++)
+			{
+				pugi::xml_node paramnode = node.append_child("parameter");
+				paramnode.append_attribute("index").set_value(i+1);
+				paramnode.append_attribute("type").set_value("*"); // TODO
+				paramnode.append_attribute("optional").set_value(false); // TODO
+			}
+		}
 		return;
 	}
 	method_info* mi = this->constructor->getMethodInfo();
@@ -1575,6 +1586,18 @@ EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) 
 		return BINDED;
 	else
 		return NOT_BINDED;
+}
+
+bool Class_base::checkExistingFunction(const multiname &name)
+{
+	variable* v = Variables.findObjVar(getSystemState(),name, DECLARED_TRAIT);
+	if (!v)
+		v = borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT);
+	if (v && v->var.type != T_INVALID)
+		return this->isSealed;
+	if (!super.isNull())
+		return super->checkExistingFunction(name);
+	return false;
 }
 
 ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)

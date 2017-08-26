@@ -774,6 +774,10 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		}
 		
 	}
+	// it seems that instance traits are changed into declared traits if they are overwritten in class objects
+	// see tamarin test as3/Definitions/FunctionAccessors/GetSetStatic
+	if (this->is<Class_base>() && obj->kind == INSTANCE_TRAIT)
+		obj->kind =DECLARED_TRAIT;
 
 	if(obj->setter.type != T_INVALID)
 	{
@@ -1261,10 +1265,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 	}
 
 
-	if ( this->is<Class_base>() && obj->kind == INSTANCE_TRAIT &&
-			(obj->var.type == T_INVALID || !obj->var.isConstructed() ||
-			 obj->var.type == T_UNDEFINED ||
-			 obj->var.type == T_NULL))
+	if ( this->is<Class_base>() && obj->kind == INSTANCE_TRAIT)
 	{
 		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));

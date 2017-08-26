@@ -1309,6 +1309,8 @@ void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 	asAtom prop=obj->getVariableByMultiname(*name);
 	if(prop.type == T_INVALID)
 	{
+		if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
+			throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 		if (obj->getClass() && obj->getClass()->isSealed)
 			throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
 		if (name->isEmpty() || !name->hasEmptyNS)

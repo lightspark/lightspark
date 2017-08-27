@@ -21,10 +21,11 @@
 #define BACKENDS_CONFIG_H 1
 
 #include "parsing/config.h"
+#include "compat.h"
 
 namespace lightspark
 {
-	class Config
+	class DLL_PUBLIC Config
 	{
 	private:
 		ConfigParser* parser;
@@ -45,6 +46,8 @@ namespace lightspark
 		std::string cachePrefix;
 		//Specifies the filename including full path of the gnash executable
 		std::string gnashPath;
+		//Specifies the directory where the app can store files
+		std::string dataDirectory;
 
 		//Specifies if rendering should be done
 		bool renderingEnabled;
@@ -56,6 +59,8 @@ namespace lightspark
 
 		const std::string& getCacheDirectory() const { return cacheDirectory; }
 		const std::string& getCachePrefix() const { return cachePrefix; }
+		const std::string& getDataDirectory() const { return dataDirectory; }
+		
 		const std::string& getGnashPath() const { return gnashPath; }
 
 		bool isRenderingEnabled() const { return renderingEnabled; }

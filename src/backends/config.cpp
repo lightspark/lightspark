@@ -136,7 +136,20 @@ Config::Config():
 				defaultCacheDirectory);
 		cacheDirectory = defaultCacheDirectory;
 	}
-
+	try
+	{
+		path dataDirectoryP(cacheDirectory);
+		dataDirectoryP /= "files";
+		dataDirectoryP /= "%%%%-%%%%-%%%%-%%%%";
+		dataDirectoryP = unique_path(dataDirectoryP);
+		create_directories(dataDirectoryP);
+		dataDirectory = dataDirectoryP.c_str();
+	}
+	catch(const filesystem_error& e)
+	{
+		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
+		dataDirectory = "";
+	}
 #ifdef _WIN32
 	std::string regGnashPath = readRegistryEntry("GnashPath");
 	if(regGnashPath.empty())

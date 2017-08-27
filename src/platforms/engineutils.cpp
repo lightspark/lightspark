@@ -170,6 +170,33 @@ bool EngineData::startSDLMain()
 	return mainthread_running;
 }
 
+bool EngineData::FileExists(const tiny_string &filename)
+{
+	LOG(LOG_ERROR,"FileExists not implemented");
+	return false;
+}
+
+tiny_string EngineData::FileRead(const tiny_string &filename)
+{
+	LOG(LOG_ERROR,"FileRead not implemented");
+	return "";
+}
+
+void EngineData::FileWrite(const tiny_string &filename, const tiny_string &data)
+{
+	LOG(LOG_ERROR,"FileWrite not implemented");
+}
+
+void EngineData::FileReadByteArray(const tiny_string &filename,ByteArray* res)
+{
+	LOG(LOG_ERROR,"FileReadByteArray not implemented");
+}
+
+void EngineData::FileWriteByteArray(const tiny_string &filename, ByteArray *data)
+{
+	LOG(LOG_ERROR,"FileWriteByteArray not implemented");
+}
+
 void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2

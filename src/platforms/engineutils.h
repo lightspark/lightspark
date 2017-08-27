@@ -25,6 +25,7 @@
 #include "threading.h"
 #include "tiny_string.h"
 #include "backends/graphics.h"
+#include "flash/utils/ByteArray.h"
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 8192
 
@@ -97,6 +98,11 @@ public:
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain();
 
+	virtual bool FileExists(const tiny_string& filename);
+	virtual tiny_string FileRead(const tiny_string& filename);
+	virtual void FileWrite(const tiny_string& filename, const tiny_string& data);
+	virtual void FileReadByteArray(const tiny_string &filename,ByteArray* res);
+	virtual void FileWriteByteArray(const tiny_string& filename, ByteArray* data);
 	void initGLEW();
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	void bindCurrentBuffer();

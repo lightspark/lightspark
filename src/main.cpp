@@ -19,11 +19,14 @@
 
 #include "version.h"
 #include "backends/security.h"
+#include "backends/config.h"
 #include "swf.h"
 #include "logger.h"
 #include "platforms/engineutils.h"
 #include "compat.h"
 #include <SDL2/SDL.h>
+#include "boost/filesystem.hpp"
+#include "flash/utils/ByteArray.h"
 
 
 using namespace std;
@@ -38,6 +41,9 @@ public:
 	}
 	~StandaloneEngineData()
 	{
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (!p.empty())
+			boost::filesystem::remove_all(p);
 	}
 	SDL_Window* createWidget(uint32_t w, uint32_t h)
 	{
@@ -63,12 +69,12 @@ public:
 	{
 		return true;
 	}
-        void grabFocus()
+	void grabFocus()
 	{
 		/* Nothing to do because the standalone main window is
 		 * always focused */
 	}
-        void openPageInBrowser(const tiny_string& url, const tiny_string& window)
+	void openPageInBrowser(const tiny_string& url, const tiny_string& window)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "openPageInBrowser not implemented in the standalone mode");
 	}
@@ -110,6 +116,85 @@ public:
 	void DeinitOpenGL()
 	{
 		SDL_GL_DeleteContext(mSDLContext);
+	}
+	bool FileExists(const tiny_string& filename)
+	{
+		if (!boost::filesystem::portable_file_name(filename))
+			return false;
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (p.empty())
+			return false;
+		p /= filename;
+		return boost::filesystem::exists(p);
+	}
+	tiny_string FileRead(const tiny_string& filename)
+	{
+		if (!boost::filesystem::portable_file_name(filename))
+			return "";
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (p.empty())
+			return "";
+		p /= filename;
+		if (!boost::filesystem::exists(p))
+			return "";
+		uint32_t len = boost::filesystem::file_size(p);
+		std::ifstream file;
+		
+		file.open(p.c_str(), std::ios::in|std::ios::binary);
+		
+		tiny_string res(file,len);
+		file.close();
+		return res;
+	}
+	void FileWrite(const tiny_string& filename, const tiny_string& data)
+	{
+		if (!boost::filesystem::portable_file_name(filename))
+			return;
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (p.empty())
+			return;
+		p /= filename;
+		std::ofstream file;
+		
+		file.open(p.c_str(), std::ios::out|std::ios::binary);
+		file << data;
+		file.close();
+	}
+	void FileReadByteArray(const tiny_string &filename,ByteArray* res)
+	{
+		if (!boost::filesystem::portable_file_name(filename))
+			return;
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (p.empty())
+			return;
+		p /= filename;
+		if (!boost::filesystem::exists(p))
+			return;
+		uint32_t len = boost::filesystem::file_size(p);
+		std::ifstream file;
+		uint8_t buf[len];
+		file.open(p.c_str(), std::ios::in|std::ios::binary);
+		file.read((char*)buf,len);
+		res->writeBytes(buf,len);
+		file.close();
+	}
+	
+	void FileWriteByteArray(const tiny_string &filename, ByteArray *data)
+	{
+		if (data == NULL)
+			return;
+		if (!boost::filesystem::portable_file_name(filename))
+			return;
+		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		if (p.empty())
+			return;
+		p /= filename;
+		std::ofstream file;
+		
+		file.open(p.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
+		uint8_t* buf = data->getBuffer(data->getLength(),false);
+		file.write((char*)buf,data->getLength());
+		file.close();
 	}
 };
 

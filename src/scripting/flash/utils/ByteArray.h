@@ -27,7 +27,7 @@
 namespace lightspark
 {
 
-class ByteArray: public ASObject, public IDataInput, public IDataOutput
+class DLL_PUBLIC ByteArray: public ASObject, public IDataInput, public IDataOutput
 {
 friend class LoaderThread;
 friend class URLLoader;

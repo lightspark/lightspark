@@ -42,31 +42,42 @@ void avmplusFile::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.exists is unimplemented."));
-	return asAtom::invalidAtom;
+	tiny_string filename;
+	ARG_UNPACK_ATOM(filename);
+	return asAtom(sys->getEngineData()->FileExists(filename));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.read is unimplemented."));
-	return asAtom::invalidAtom;
+	tiny_string filename;
+	ARG_UNPACK_ATOM(filename);
+	if (!sys->getEngineData()->FileExists(filename))
+		throwError<ASError>(kFileOpenError,filename);
+	return asAtom::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(filename)));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.write is unimplemented."));
+	tiny_string filename;
+	tiny_string data;
+	ARG_UNPACK_ATOM(filename)(data);
+	sys->getEngineData()->FileWrite(filename,data);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
-	//avmplusFile* th=static_cast<avmplusFile*>(obj);
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.readByteArray is unimplemented."));
-	return asAtom::fromObject(Class<ByteArray>::getInstanceS(sys));
+	if (!sys->getEngineData()->FileExists(filename))
+		throwError<ASError>(kFileOpenError,filename);
+	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
+	sys->getEngineData()->FileReadByteArray(filename,res);
+	return asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.File.writeByteArray is unimplemented."));
+	tiny_string filename;
+	_NR<ByteArray> data;
+	ARG_UNPACK_ATOM(filename)(data);
+	sys->getEngineData()->FileWriteByteArray(filename,data.getPtr());
 	return asAtom::invalidAtom;
 }
 
@@ -238,10 +249,30 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
+	avmplusDomain* th = obj.as<avmplusDomain>();
 	tiny_string filename;
-	LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented.");
-	ARG_UNPACK_ATOM(filename);
-	throwError<ASError>(kFileOpenError,filename);
+	uint32_t swfVersion;
+	ARG_UNPACK_ATOM(filename)(swfVersion, 0);
+	if (swfVersion != 0)
+		LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented for swfVersion "<<swfVersion);
+	if (!sys->getEngineData()->FileExists(filename))
+		throwError<ASError>(kFileOpenError,filename);
+	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
+	sys->getEngineData()->FileReadByteArray(filename,bytes.getPtr());
+
+	// execute loaded abc file
+	MemoryStreamCache mc(sys);
+	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
+	std::streambuf *sbuf = mc.createReader();
+	std::istream s(sbuf);
+	RootMovieClip* root=getVm(sys)->currentCallContext->context->root.getPtr();
+	_NR<ApplicationDomain> origdomain = root->applicationDomain;
+	root->applicationDomain = th->appdomain;
+	root->incRef();
+	ABCContext* context = new ABCContext(_MR(root), s, getVm(root->getSystemState()));
+	context->exec(false);
+	root->applicationDomain = origdomain;
+	delete sbuf;
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
@@ -258,12 +289,13 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
 	
+	// execute loaded abc bytes
 	RootMovieClip* root=getVm(sys)->currentCallContext->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
-	ABCContext context(_MR(root), s, getVm(root->getSystemState()));
-	context.exec(false);
+	ABCContext* context = new ABCContext(_MR(root), s, getVm(root->getSystemState()));
+	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
 	return asAtom::invalidAtom;

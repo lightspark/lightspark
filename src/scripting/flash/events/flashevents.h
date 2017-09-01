@@ -49,11 +49,11 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	virtual void setTarget(asAtom t) {target = t; }
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_preventDefault);
-	ASFUNCTION(_isDefaultPrevented);
-	ASFUNCTION(formatToString);
-	ASFUNCTION(clone);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_preventDefault);
+	ASFUNCTION_ATOM(_isDefaultPrevented);
+	ASFUNCTION_ATOM(formatToString);
+	ASFUNCTION_ATOM(clone);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	ASPROPERTY_GETTER(bool,bubbles);
 	ASPROPERTY_GETTER(bool,cancelable);
@@ -64,8 +64,8 @@ public:
 	//and the handling is serialized
 	ASPROPERTY_GETTER(asAtom,target);
 	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
-	ASFUNCTION(stopPropagation);
-	ASFUNCTION(stopImmediatePropagation);
+	ASFUNCTION_ATOM(stopPropagation);
+	ASFUNCTION_ATOM(stopImmediatePropagation);
 private:
 	/*
 	 * To be implemented by each derived class to allow redispatching
@@ -115,7 +115,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_GETTER_SETTER(altKey);
 	ASFUNCTION_GETTER_SETTER(commandKey);
 	ASFUNCTION_GETTER_SETTER(controlKey);
@@ -131,7 +131,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class FullScreenEvent: public Event
@@ -142,7 +142,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class NetStatusEvent: public Event
@@ -155,7 +155,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class HTTPStatusEvent: public Event
@@ -166,7 +166,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class TextEvent: public Event
@@ -179,7 +179,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class ErrorEvent: public TextEvent
@@ -194,7 +194,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class IOErrorEvent: public ErrorEvent
@@ -227,7 +227,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class UncaughtErrorEvent: public ErrorEvent
@@ -238,7 +238,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 
@@ -253,7 +253,7 @@ public:
 	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class TimerEvent: public Event
@@ -265,7 +265,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(updateAfterEvent);
+	ASFUNCTION_ATOM(updateAfterEvent);
 };
 
 class MouseEvent: public Event
@@ -282,7 +282,7 @@ public:
 	static void buildTraits(ASObject* o);
 	void setTarget(asAtom t);
 	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool,buttonDown);
 	ASFUNCTION_GETTER_SETTER(altKey);
 	ASFUNCTION_GETTER_SETTER(controlKey);
@@ -294,7 +294,7 @@ public:
 	ASPROPERTY_GETTER(number_t,stageX);
 	ASPROPERTY_GETTER(number_t,stageY);
 	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,relatedObject);
-	ASFUNCTION(updateAfterEvent);
+	ASFUNCTION_ATOM(updateAfterEvent);
 };
 
 class NativeDragEvent: public MouseEvent
@@ -303,7 +303,7 @@ public:
 	NativeDragEvent(Class_base* c);
 	
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class InvokeEvent: public Event
@@ -312,7 +312,7 @@ public:
 	InvokeEvent(Class_base* c) : Event(c, "invoke"){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class listener
@@ -372,7 +372,7 @@ public:
 	ASFUNCTION_ATOM(addEventListener);
 	ASFUNCTION_ATOM(removeEventListener);
 	ASFUNCTION_ATOM(dispatchEvent);
-	ASFUNCTION(_hasEventListener);
+	ASFUNCTION_ATOM(_hasEventListener);
 };
 
 class StatusEvent: public Event
@@ -391,7 +391,7 @@ public:
 	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "data"), data(_data) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o) {}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, data);
 };
 
@@ -512,7 +512,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class DRMStatusEvent: public Event
@@ -523,7 +523,7 @@ public:
 	static void buildTraits(ASObject* o)
 	{
 	}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class VideoEvent: public Event
@@ -533,7 +533,7 @@ private:
 public:
 	VideoEvent(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,status);
 };
 
@@ -544,7 +544,7 @@ private:
 public:
 	StageVideoEvent(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,colorSpace);
 	ASPROPERTY_GETTER(tiny_string,status);
 };
@@ -556,7 +556,7 @@ private:
 public:
 	StageVideoAvailabilityEvent(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,availability);
 };
 

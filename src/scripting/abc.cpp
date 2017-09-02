@@ -830,10 +830,17 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			case 0x07: //QName
 			case 0x0D: //QNameA
 			{
-				ret->ns.emplace_back(constant_pool.namespaces[m->ns].getNS(this,m->ns));
-				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
-				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
-				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
+				if (constant_pool.namespaces[m->ns].kind == 0)
+				{
+					ret->hasGlobalNS=true;
+				}
+				else
+				{
+					ret->ns.emplace_back(constant_pool.namespaces[m->ns].getNS(this,m->ns));
+					ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
+					ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
+					ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
+				}
 				if (m->name)
 				{
 					ret->name_s_id=getString(m->name);

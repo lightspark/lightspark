@@ -2332,13 +2332,9 @@ void ABCVm::getDescendants(call_context* th, int n)
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
 		targetobject = xmlObj->getChildrenlist();
-		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
+		uint32_t ns_uri = BUILTIN_STRINGS::STRING_WILDCARD;
 		if (name->ns.size() > 0)
-		{
 			ns_uri = name->ns[0].nsNameId;
-			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
-				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
-		}
 		xmlObj->getDescendantsByQName(name->normalizedName(th->context->root->getSystemState()), ns_uri,name->isAttribute, ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass(th->context->root->getSystemState()))
@@ -2868,7 +2864,6 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 			o->incRef();
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}
-
 	//Create the prototype object
 	f->prototype = _MR(new_asobject(f->getSystemState()));
 	// the constructor object will not be refcounted, because otherwise the function object will never reach reference count 0

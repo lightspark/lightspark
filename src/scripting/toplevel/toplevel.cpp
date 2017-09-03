@@ -68,10 +68,10 @@ Undefined::Undefined():ASObject((Class_base*)(NULL),T_UNDEFINED)
 	constructorCallComplete = true;
 }
 
-ASFUNCTIONBODY(Undefined,call)
+ASFUNCTIONBODY_ATOM(Undefined,call)
 {
 	LOG_CALL(_("Undefined function"));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 TRISTATE Undefined::isLess(ASObject* r)
@@ -240,9 +240,11 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	return obj.callFunction(newObj,newArgs,newArgsLen,false);
 }
 
-ASFUNCTIONBODY(IFunction,_toString)
+ASFUNCTIONBODY_ATOM(IFunction,_toString)
 {
-	return abstract_s(obj->getSystemState(),"function Function() {}");
+	if (obj.is<Class_base>())
+		return asAtom::fromString(sys,"[class Function]");
+	return asAtom::fromString(sys,"function Function() {}");
 }
 
 asAtom Class<IFunction>::generator(asAtom* args, const unsigned int argslen)
@@ -633,7 +635,7 @@ bool Function::isEqual(ASObject* r)
 	if (!r->is<Function>())
 		return false;
 	Function* f=r->as<Function>();
-	return (val==f->val);
+	return (val==f->val && val_atom==f->val_atom);
 }
 
 bool Null::isEqual(ASObject* r)
@@ -927,14 +929,14 @@ void Class_base::setSuper(Ref<Class_base> super_)
 	copyBorrowedTraitsFromSuper();
 }
 
-ASFUNCTIONBODY(Class_base,_toString)
+ASFUNCTIONBODY_ATOM(Class_base,_toString)
 {
-	Class_base* th = obj->as<Class_base>();
+	Class_base* th = obj.as<Class_base>();
 	tiny_string ret;
 	ret = "[class ";
-	ret += obj->getSystemState()->getStringFromUniqueId(th->class_name.nameId);
+	ret += sys->getStringFromUniqueId(th->class_name.nameId);
 	ret += "]";
-	return abstract_s(obj->getSystemState(),ret);
+	return asAtom::fromString(sys,ret);
 }
 
 void Class_base::addConstructorGetter()
@@ -1618,85 +1620,9 @@ void ASQName::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
-ASFUNCTIONBODY(ASQName,_constructor)
+ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 {
-	ASQName* th=static_cast<ASQName*>(obj);
-	assert_and_throw(argslen<3);
-
-	ASObject *nameval;
-	ASObject *namespaceval;
-
-	if(argslen==0)
-	{
-		th->local_name=BUILTIN_STRINGS::EMPTY;
-		th->uri_is_null=false;
-		th->uri=obj->getSystemState()->getUniqueStringId(getVm(obj->getSystemState())->getDefaultXMLNamespace());
-		return NULL;
-	}
-	if(argslen==1)
-	{
-		nameval=args[0];
-		namespaceval=NULL;
-	}
-	else if(argslen==2)
-	{
-		namespaceval=args[0];
-		nameval=args[1];
-	}
-
-	// Set local_name
-	if(nameval->getObjectType()==T_QNAME)
-	{
-		ASQName *q=static_cast<ASQName*>(nameval);
-		th->local_name=q->local_name;
-		if(!namespaceval)
-		{
-			th->uri_is_null=q->uri_is_null;
-			th->uri=q->uri;
-			return NULL;
-		}
-	}
-	else if(nameval->getObjectType()==T_UNDEFINED)
-		th->local_name=BUILTIN_STRINGS::EMPTY;
-	else
-		th->local_name=nameval->toStringId();
-
-	// Set uri
-	th->uri_is_null=false;
-	if(!namespaceval || namespaceval->getObjectType()==T_UNDEFINED)
-	{
-		if(th->local_name==BUILTIN_STRINGS::STRING_WILDCARD)
-		{
-			th->uri_is_null=true;
-			th->uri=BUILTIN_STRINGS::EMPTY;
-		}
-		else
-		{
-			th->uri=obj->getSystemState()->getUniqueStringId(getVm(obj->getSystemState())->getDefaultXMLNamespace());
-		}
-	}
-	else if(namespaceval->getObjectType()==T_NULL)
-	{
-		th->uri_is_null=true;
-		th->uri=BUILTIN_STRINGS::EMPTY;
-	}
-	else
-	{
-		if(namespaceval->getObjectType()==T_QNAME && 
-		   !(static_cast<ASQName*>(namespaceval)->uri_is_null))
-		{
-			ASQName* q=static_cast<ASQName*>(namespaceval);
-			th->uri=q->uri;
-		}
-		else
-			th->uri=namespaceval->toStringId();
-	}
-
-	return NULL;
-}
-ASFUNCTIONBODY_ATOM(ASQName,generator)
-{
-	ASQName* th=Class<ASQName>::getInstanceS(getSys());
+	ASQName* th=obj.as<ASQName>();
 	assert_and_throw(argslen<3);
 
 	asAtom nameval;
@@ -1706,7 +1632,82 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 	{
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 		th->uri_is_null=false;
-		th->uri=th->getSystemState()->getUniqueStringId(getVm(getSys())->getDefaultXMLNamespace());
+		th->uri=sys->getUniqueStringId(getVm(sys)->getDefaultXMLNamespace());
+		return asAtom::invalidAtom;
+	}
+	if(argslen==1)
+	{
+		nameval=args[0];
+	}
+	else if(argslen==2)
+	{
+		namespaceval=args[0];
+		nameval=args[1];
+	}
+
+	// Set local_name
+	if(nameval.type ==T_QNAME)
+	{
+		ASQName *q=nameval.as<ASQName>();
+		th->local_name=q->local_name;
+		if(namespaceval.type == T_INVALID)
+		{
+			th->uri_is_null=q->uri_is_null;
+			th->uri=q->uri;
+			return asAtom::invalidAtom;
+		}
+	}
+	else if(nameval.type==T_UNDEFINED)
+		th->local_name=BUILTIN_STRINGS::EMPTY;
+	else
+		th->local_name=nameval.toStringId(sys);
+
+	// Set uri
+	th->uri_is_null=false;
+	if(namespaceval.type==T_INVALID || namespaceval.type==T_UNDEFINED)
+	{
+		if(th->local_name==BUILTIN_STRINGS::STRING_WILDCARD)
+		{
+			th->uri_is_null=true;
+			th->uri=BUILTIN_STRINGS::EMPTY;
+		}
+		else
+		{
+			th->uri=getVm(sys)->getDefaultXMLNamespaceID();
+		}
+	}
+	else if(namespaceval.type==T_NULL)
+	{
+		th->uri_is_null=true;
+		th->uri=BUILTIN_STRINGS::EMPTY;
+	}
+	else
+	{
+		if(namespaceval.type==T_QNAME && 
+		   !(namespaceval.as<ASQName>()->uri_is_null))
+		{
+			ASQName* q=namespaceval.as<ASQName>();
+			th->uri=q->uri;
+		}
+		else if (namespaceval.type != T_INVALID)
+			th->uri=namespaceval.toStringId(sys);
+	}
+
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(ASQName,generator)
+{
+	ASQName* th=Class<ASQName>::getInstanceS(sys);
+	assert_and_throw(argslen<3);
+
+	asAtom nameval;
+	asAtom namespaceval;
+
+	if(argslen==0)
+	{
+		th->local_name=BUILTIN_STRINGS::EMPTY;
+		th->uri_is_null=false;
+		th->uri=getVm(sys)->getDefaultXMLNamespaceID();
 		return asAtom::fromObject(th);
 	}
 	if(argslen==1)
@@ -1735,11 +1736,11 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 	else if(nameval.type==T_UNDEFINED)
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=nameval.toStringId(getSys());
+		th->local_name=nameval.toStringId(sys);
 
 	// Set uri
 	th->uri_is_null=false;
-	if(namespaceval.type == T_INVALID || namespaceval.type==T_UNDEFINED)
+	if(namespaceval.type==T_INVALID || namespaceval.type==T_UNDEFINED)
 	{
 		if(th->local_name==BUILTIN_STRINGS::STRING_WILDCARD)
 		{
@@ -1748,7 +1749,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 		}
 		else
 		{
-			th->uri=th->getSystemState()->getUniqueStringId(getVm(th->getSystemState())->getDefaultXMLNamespace());
+			th->uri=getVm(sys)->getDefaultXMLNamespaceID();
 		}
 	}
 	else if(namespaceval.type == T_NULL)
@@ -1764,33 +1765,33 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 			ASQName* q=namespaceval.as<ASQName>();
 			th->uri=q->uri;
 		}
-		else
-			th->uri=namespaceval.toStringId(getSys());
+		else if (namespaceval.type != T_INVALID)
+			th->uri=namespaceval.toStringId(sys);
 	}
 	return asAtom::fromObject(th);
 }
 
-ASFUNCTIONBODY(ASQName,_getURI)
+ASFUNCTIONBODY_ATOM(ASQName,_getURI)
 {
-	ASQName* th=static_cast<ASQName*>(obj);
+	ASQName* th=obj.as<ASQName>();
 	if(th->uri_is_null)
-		return obj->getSystemState()->getNullRef();
+		return asAtom::nullAtom;
 	else
-		return abstract_s(obj->getSystemState(),obj->getSystemState()->getStringFromUniqueId(th->uri));
+		return asAtom::fromStringID(th->uri);
 }
 
-ASFUNCTIONBODY(ASQName,_getLocalName)
+ASFUNCTIONBODY_ATOM(ASQName,_getLocalName)
 {
-	ASQName* th=static_cast<ASQName*>(obj);
-	return abstract_s(obj->getSystemState(),obj->getSystemState()->getStringFromUniqueId(th->local_name));
+	ASQName* th=obj.as<ASQName>();
+	return asAtom::fromStringID(th->local_name);
 }
 
-ASFUNCTIONBODY(ASQName,_toString)
+ASFUNCTIONBODY_ATOM(ASQName,_toString)
 {
-	if(!obj->is<ASQName>())
-		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"QName.toString is not generic");
-	ASQName* th=static_cast<ASQName*>(obj);
-	return abstract_s(obj->getSystemState(),th->toString());
+	if(!obj.is<ASQName>())
+		throw Class<TypeError>::getInstanceS(sys,"QName.toString is not generic");
+	ASQName* th=obj.as<ASQName>();
+	return asAtom::fromString(sys,th->toString());
 }
 
 bool ASQName::isEqual(ASObject* o)
@@ -2063,23 +2064,23 @@ ASFUNCTIONBODY_ATOM(Namespace,generator)
 	return asAtom::fromObject(th);
 }
 /*
-ASFUNCTIONBODY(Namespace,_setURI)
+ASFUNCTIONBODY_ATOM(Namespace,_setURI)
 {
-	Namespace* th=static_cast<Namespace*>(obj);
-	th->uri=args[0]->toString();
-	return NULL;
+	Namespace* th=obj.as<Namespace>();
+	th->uri=args[0].toString();
+	return asAtom::invalidAtom;
 }
 */
-ASFUNCTIONBODY(Namespace,_getURI)
+ASFUNCTIONBODY_ATOM(Namespace,_getURI)
 {
-	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(obj->getSystemState(),th->uri);
+	Namespace* th=obj.as<Namespace>();
+	return asAtom::fromStringID(th->uri);
 }
 /*
-ASFUNCTIONBODY(Namespace,_setPrefix)
+ASFUNCTIONBODY_ATOM(Namespace,_setPrefix)
 {
-	Namespace* th=static_cast<Namespace*>(obj);
-	if(args[0]->getObjectType()==T_UNDEFINED)
+	Namespace* th=obj.as<Namespace>();
+	if(args[0].type==T_UNDEFINED)
 	{
 		th->prefix_is_undefined=true;
 		th->prefix="";
@@ -2087,39 +2088,39 @@ ASFUNCTIONBODY(Namespace,_setPrefix)
 	else
 	{
 		th->prefix_is_undefined=false;
-		th->prefix=args[0]->toString();
+		th->prefix=args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 */
-ASFUNCTIONBODY(Namespace,_getPrefix)
+ASFUNCTIONBODY_ATOM(Namespace,_getPrefix)
 {
-	Namespace* th=static_cast<Namespace*>(obj);
+	Namespace* th=obj.as<Namespace>();
 	if(th->prefix_is_undefined)
-		return obj->getSystemState()->getUndefinedRef();
+		return asAtom::undefinedAtom;
 	else
-		return abstract_s(obj->getSystemState(),th->prefix);
+		return asAtom::fromStringID(th->prefix);
 }
 
-ASFUNCTIONBODY(Namespace,_toString)
+ASFUNCTIONBODY_ATOM(Namespace,_toString)
 {
-	if(!obj->is<Namespace>())
-		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace.toString is not generic");
-	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(obj->getSystemState(),th->uri);
+	if(!obj.is<Namespace>())
+		throw Class<TypeError>::getInstanceS(sys,"Namespace.toString is not generic");
+	Namespace* th=obj.as<Namespace>();
+	return asAtom::fromStringID(th->uri);
 }
 
-ASFUNCTIONBODY(Namespace,_valueOf)
+ASFUNCTIONBODY_ATOM(Namespace,_valueOf)
 {
-	return abstract_s(obj->getSystemState(),obj->as<Namespace>()->uri);
+	return asAtom::fromStringID(obj.as<Namespace>()->uri);
 }
 
-ASFUNCTIONBODY(Namespace,_ECMA_valueOf)
+ASFUNCTIONBODY_ATOM(Namespace,_ECMA_valueOf)
 {
-	if(!obj->is<Namespace>())
-		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Namespace.valueOf is not generic");
-	Namespace* th=static_cast<Namespace*>(obj);
-	return abstract_s(obj->getSystemState(),th->uri);
+	if(!obj.is<Namespace>())
+		throw Class<TypeError>::getInstanceS(sys,"Namespace.valueOf is not generic");
+	Namespace* th=obj.as<Namespace>();
+	return asAtom::fromStringID(th->uri);
 }
 
 bool Namespace::isEqual(ASObject* o)
@@ -2286,42 +2287,42 @@ void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 	//setVariableByQName(name,nsNameAndKind(ns,PACKAGE_NAMESPACE),o.getPtr(),DECLARED_TRAIT);
 }
 
-ASFUNCTIONBODY(lightspark,eval)
+ASFUNCTIONBODY_ATOM(lightspark,eval)
 {
     // eval is not allowed in AS3, but an exception should be thrown
-	throw Class<EvalError>::getInstanceS(getSys(),"EvalError");
+	throw Class<EvalError>::getInstanceS(sys,"EvalError");
 }
 
-ASFUNCTIONBODY(lightspark,parseInt)
+ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 {
 	tiny_string str;
 	int radix;
-	ARG_UNPACK (str, "") (radix, 0);
+	ARG_UNPACK_ATOM (str, "") (radix, 0);
 
 	if(radix != 0 && (radix < 2 || radix > 36))
-		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
+		return asAtom(numeric_limits<double>::quiet_NaN());
 
 	const char* cur=str.raw_buf();
 	int64_t ret;
 	bool valid=Integer::fromStringFlashCompatible(cur,ret,radix);
 
 	if(valid==false)
-		return abstract_d(obj->getSystemState(),numeric_limits<double>::quiet_NaN());
+		return asAtom(numeric_limits<double>::quiet_NaN());
 	if(ret==INT64_MAX)
-		return abstract_d(obj->getSystemState(),numeric_limits<double>::infinity());
+		return asAtom(numeric_limits<double>::infinity());
 	if(ret==INT64_MIN)
-		return abstract_d(obj->getSystemState(),-numeric_limits<double>::infinity());
-	return abstract_d(obj->getSystemState(),ret);
+		return asAtom(-numeric_limits<double>::infinity());
+	return asAtom::fromObject(abstract_di(sys,ret));
 }
 
-ASFUNCTIONBODY(lightspark,parseFloat)
+ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "");
+	ARG_UNPACK_ATOM (str, "");
 
-	return abstract_d(obj->getSystemState(),parseNumber(str));
+	return asAtom(parseNumber(str,sys->getSwfVersion()<11));
 }
-number_t lightspark::parseNumber(const tiny_string str)
+number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 {
 	const char *p;
 	char *end;
@@ -2333,6 +2334,37 @@ number_t lightspark::parseNumber(const tiny_string str)
 	if (p1) *p1='Y';
 
 	p=str.raw_buf();
+	if (useoldversion)
+	{
+		tiny_string s = p;
+		tiny_string s2;
+		bool found = false;
+		for (uint32_t i = s.numChars(); i>0 ; i--)
+		{
+			if (s.charAt(i-1) == '.')
+			{
+				if (!found)
+				{
+					tiny_string s3;
+					s3 += s.charAt(i-1);
+					s2 = s3 + s2;
+					found = true;
+				}
+			}
+			else
+			{
+				tiny_string s3;
+				s3 += s.charAt(i-1);
+				s2 = s3 + s2;
+			}
+		}
+		p= s2.raw_buf();
+		double d=strtod(p, &end);
+	
+		if (end==p)
+			return numeric_limits<double>::quiet_NaN();
+		return d;
+	}
 	double d=strtod(p, &end);
 
 	if (end==p)
@@ -2341,89 +2373,83 @@ number_t lightspark::parseNumber(const tiny_string str)
 	return d;
 }
 
-ASFUNCTIONBODY(lightspark,isNaN)
+ASFUNCTIONBODY_ATOM(lightspark,isNaN)
 {
 	if(argslen==0)
-		return abstract_b(getSys(),true);
-	else if(args[0]->getObjectType()==T_UNDEFINED)
-		return abstract_b(args[0]->getSystemState(),true);
-	else if(args[0]->getObjectType()==T_INTEGER)
-		return abstract_b(args[0]->getSystemState(),false);
-	else if(args[0]->getObjectType()==T_BOOLEAN)
-		return abstract_b(args[0]->getSystemState(),false);
-	else if(args[0]->getObjectType()==T_NULL)
-		return abstract_b(args[0]->getSystemState(),false); // because Number(null) == 0
+		return asAtom::trueAtom;
+	else if(args[0].type==T_UNDEFINED)
+		return asAtom::trueAtom;
+	else if(args[0].type==T_INTEGER)
+		return asAtom::falseAtom;
+	else if(args[0].type==T_BOOLEAN)
+		return asAtom::falseAtom;
+	else if(args[0].type==T_NULL)
+		return asAtom::falseAtom; // because Number(null) == 0
 	else
-		return abstract_b(args[0]->getSystemState(),std::isnan(args[0]->toNumber()));
+		return asAtom(std::isnan(args[0].toNumber()));
 }
 
-ASFUNCTIONBODY(lightspark,isFinite)
+ASFUNCTIONBODY_ATOM(lightspark,isFinite)
 {
 	if(argslen==0)
-		return abstract_b(getSys(),false);
+		return asAtom::falseAtom;
 	else
-		return abstract_b(args[0]->getSystemState(),isfinite(args[0]->toNumber()));
+		return asAtom(isfinite(args[0].toNumber()));
 }
 
-ASFUNCTIONBODY(lightspark,encodeURI)
+ASFUNCTIONBODY_ATOM(lightspark,encodeURI)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_URI));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_URI)));
 }
 
-ASFUNCTIONBODY(lightspark,decodeURI)
+ASFUNCTIONBODY_ATOM(lightspark,decodeURI)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_URI));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_URI)));
 }
 
-ASFUNCTIONBODY(lightspark,encodeURIComponent)
+ASFUNCTIONBODY_ATOM(lightspark,encodeURIComponent)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT)));
 }
 
-ASFUNCTIONBODY(lightspark,decodeURIComponent)
+ASFUNCTIONBODY_ATOM(lightspark,decodeURIComponent)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT));
+	ARG_UNPACK_ATOM (str, "undefined");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT)));
 }
 
-ASFUNCTIONBODY(lightspark,escape)
+ASFUNCTIONBODY_ATOM(lightspark,escape)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	if (argslen > 0 && args[0]->is<Undefined>())
-		return abstract_s(getSys(),"null");
-	return abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE));
+	ARG_UNPACK_ATOM (str, "undefined");
+	if (argslen > 0 && args[0].is<Undefined>())
+		return asAtom::fromString(sys,"null");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 
-ASFUNCTIONBODY(lightspark,unescape)
+ASFUNCTIONBODY_ATOM(lightspark,unescape)
 {
 	tiny_string str;
-	ARG_UNPACK (str, "undefined");
-	if (argslen > 0 && args[0]->is<Undefined>())
-		return abstract_s(getSys(),"null");
-	return abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE));
+	ARG_UNPACK_ATOM (str, "undefined");
+	if (argslen > 0 && args[0].is<Undefined>())
+		return asAtom::fromString(sys,"null");
+	return asAtom::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }
 
-ASFUNCTIONBODY(lightspark,print)
+ASFUNCTIONBODY_ATOM(lightspark,print)
 {
-	if(args[0]->getObjectType() == T_STRING)
-	{
-		ASString* str = static_cast<ASString*>(args[0]);
-		Log::print(str->getData());
-	}
-	else
-		Log::print(args[0]->toString());
-	return NULL;
+	Log::print(args[0].toString());
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(lightspark,trace)
+ASFUNCTIONBODY_ATOM(lightspark,trace)
 {
 	stringstream s;
 	for(uint32_t i = 0; i< argslen;i++)
@@ -2431,16 +2457,10 @@ ASFUNCTIONBODY(lightspark,trace)
 		if(i > 0)
 			s << " ";
 
-		if(args[i]->getObjectType() == T_STRING)
-		{
-			ASString* str = static_cast<ASString*>(args[i]);
-			s << str->getData();
-		}
-		else
-			s << args[i]->toString();
+		s << args[i].toString();
 	}
 	Log::print(s.str());
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 bool lightspark::isXMLName(SystemState* sys, asAtom& obj)

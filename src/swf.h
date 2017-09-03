@@ -467,6 +467,7 @@ public:
 	void showMouseCursor(bool visible);
 	void waitRendering() DLL_PUBLIC;
 	EngineData* getEngineData() { return engineData;}
+	uint32_t getSwfVersion();
 
 	// these methods ensure that externalcallevents are executed as soon and as fast as possible
 	// the ppapi plugin needs this because external call events are blocking the main plugin thread 

@@ -53,8 +53,9 @@ private:
 		bool isNumeric;
 		bool isCaseInsensitive;
 		bool isDescending;
+		bool useoldversion;
 	public:
-		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
+		sortComparatorDefault(bool oldversion, bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	class sortComparatorWrapper

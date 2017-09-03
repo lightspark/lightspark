@@ -196,7 +196,7 @@ private:
 protected:
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
 	void copyBorrowedTraitsFromSuper();
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
 	void destroy();
 public:
@@ -415,7 +415,7 @@ public:
 	}
 	ASFUNCTION_ATOM(apply);
 	ASFUNCTION_ATOM(_call);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
@@ -587,7 +587,7 @@ public:
 class Undefined : public ASObject
 {
 public:
-	ASFUNCTION(call);
+	ASFUNCTION_ATOM(call);
 	Undefined();
 	int32_t toInt();
 	int64_t toInt64();
@@ -631,11 +631,11 @@ public:
 	ASQName(Class_base* c);
 	void setByXML(XML* node);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
-	ASFUNCTION(_getURI);
-	ASFUNCTION(_getLocalName);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(_getURI);
+	ASFUNCTION_ATOM(_getLocalName);
+	ASFUNCTION_ATOM(_toString);
 	uint32_t getURI() const { return uri; }
 	uint32_t getLocalName() const { return local_name; }
 	bool isEqual(ASObject* o);
@@ -663,14 +663,14 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
-	ASFUNCTION(_getURI);
+	ASFUNCTION_ATOM(_getURI);
 	// according to ECMA-357 and tamarin tests uri/prefix properties are readonly
-	//ASFUNCTION(_setURI);
-	ASFUNCTION(_getPrefix);
-	//ASFUNCTION(_setPrefix);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_valueOf);
-	ASFUNCTION(_ECMA_valueOf);
+	//ASFUNCTION_ATOM(_setURI);
+	ASFUNCTION_ATOM(_getPrefix);
+	//ASFUNCTION_ATOM(_setPrefix);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_valueOf);
+	ASFUNCTION_ATOM(_ECMA_valueOf);
 	bool isEqual(ASObject* o);
 	uint32_t getURI() const { return uri; }
 	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
@@ -698,22 +698,22 @@ public:
 	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o);
 };
 
-ASObject* eval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* isFinite(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* encodeURI(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* decodeURI(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* encodeURIComponent(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* decodeURIComponent(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* escape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+asAtom eval(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom parseInt(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom parseFloat(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom isNaN(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom isFinite(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom encodeURI(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom decodeURI(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom encodeURIComponent(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom decodeURIComponent(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom escape(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom unescape(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom print(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+asAtom trace(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 bool isXMLName(SystemState *sys, asAtom &obj);
 asAtom _isXMLName(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-number_t parseNumber(const tiny_string str);
+number_t parseNumber(const tiny_string str, bool useoldversion=false);
 };
 
 #endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

@@ -1979,6 +1979,11 @@ void SystemState::waitRendering()
 	getRenderThread()->waitRendering();
 }
 
+uint32_t SystemState::getSwfVersion()
+{
+	return mainClip->version;
+}
+
 void SystemState::checkExternalCallEvent()
 {
 	if (currentVm && isVmThread())

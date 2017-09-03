@@ -343,15 +343,25 @@ ASFUNCTIONBODY_ATOM(XML,_appendChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		if (sys->mainClip->version > 9)
+		tiny_string s = args[0].toString();
+		if (sys->getSwfVersion() > 9)
 		{
 			arg=createFromString(sys,"dummy");
 			//avoid interpretation of the argument, just set it as text node
-			arg->setTextContent(args[0].toString());
+			arg->setTextContent(s);
 		}
 		else
 		{
-			arg=createFromString(sys,args[0].toString());
+			try
+			{
+				arg=createFromString(sys,s,true);
+			}
+			catch(ASObject* exception)
+			{
+				arg=createFromString(sys,"dummy");
+				//avoid interpretation of the argument, just set it as text node
+				arg->setTextContent(s);
+			}
 		}
 	}
 
@@ -377,8 +387,6 @@ void XML::appendChild(_R<XML> newChild)
 		newChild->parentNode = _NR<XML>(this);
 		childrenlist->append(newChild);
 	}
-	else
-		newChild->decRef();
 }
 
 /* returns the named attribute in an XMLList */
@@ -2101,10 +2109,11 @@ void XML::CheckCyclicReference(XML* node)
 	}
 }
 
-XML *XML::createFromString(SystemState* sys, const tiny_string &s)
+XML *XML::createFromString(SystemState* sys, const tiny_string &s,bool usefirstchild)
 {
 	XML* res = Class<XML>::getInstanceSNoArgs(sys);
-	res->createTree(res->buildFromString(s, getParseMode()),false);
+	pugi::xml_node root = res->buildFromString(s, getParseMode());
+	res->createTree(usefirstchild ? root.first_child() : root,false);
 	return res;
 }
 
@@ -2619,8 +2628,11 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 {
 	pugi::xml_node node = rootnode;
 	bool done = false;
-	this->childrenlist = _MR(Class<XMLList>::getInstanceSNoArgs(getSystemState()));
-	this->childrenlist->incRef();
+	if (this->childrenlist.isNull() || this->childrenlist->nodes.size() > 0)
+	{
+		this->childrenlist = _MR(Class<XMLList>::getInstanceSNoArgs(getSystemState()));
+		this->childrenlist->incRef();
+	}
 	if (parentNode.isNull() && !fromXMLList)
 	{
 		while (true)
@@ -2679,6 +2691,8 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 			if (done)
 				break;
 			node = node.next_sibling();
+			if (node.type() == pugi::node_null)
+				break;
 		}
 		//LOG(LOG_INFO,"constructed:"<<this->toXMLString_internal());
 	}
@@ -2855,15 +2869,25 @@ ASFUNCTIONBODY_ATOM(XML,_prependChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		if (sys->mainClip->version > 9)
+		tiny_string s = args[0].toString();
+		if (sys->getSwfVersion() > 9)
 		{
 			arg=createFromString(sys,"dummy");
 			//avoid interpretation of the argument, just set it as text node
-			arg->setTextContent(args[0].toString());
+			arg->setTextContent(s);
 		}
 		else
 		{
-			arg=createFromString(sys,args[0].toString());
+			try
+			{
+				arg=createFromString(sys,s,true);
+			}
+			catch(ASObject* exception)
+			{
+				arg=createFromString(sys,"dummy");
+				//avoid interpretation of the argument, just set it as text node
+				arg->setTextContent(s);
+			}
 		}
 	}
 
@@ -2888,8 +2912,6 @@ void XML::prependChild(_R<XML> newChild)
 		newChild->parentNode = _NR<XML>(this);
 		childrenlist->prepend(newChild);
 	}
-	else
-		newChild->decRef();
 }
 
 ASFUNCTIONBODY_ATOM(XML,_replace)

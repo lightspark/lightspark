@@ -193,11 +193,12 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		index++;
 	}
 	//Insert the arguments in the vector
+	int pos = sys->getSwfVersion() < 11 ? argslen-1 : 0;
 	for(unsigned int i=0;i<argslen;i++)
 	{
-		if (args[i].is<Vector>())
+		if (args[pos].is<Vector>())
 		{
-			Vector* arg=args[i].as<Vector>();
+			Vector* arg=args[pos].as<Vector>();
 			ret->vec.resize(index+arg->size(), asAtom::invalidAtom);
 			auto it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
@@ -214,10 +215,11 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		}
 		else
 		{
-			ret->vec[index] = th->vec_type->coerce(th->getSystemState(),args[i]);
+			ret->vec[index] = th->vec_type->coerce(sys,args[pos]);
 			ASATOM_INCREF(ret->vec[index]);
 			index++;
 		}
+		pos += (sys->getSwfVersion() < 11 ?-1 : 1);
 	}	
 	return asAtom::fromObject(ret);
 }

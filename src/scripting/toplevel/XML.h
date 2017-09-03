@@ -145,7 +145,7 @@ public:
 	
 	static bool getPrettyPrinting();
 	static unsigned int getParseMode();
-	static XML* createFromString(SystemState *sys, const tiny_string& s);
+	static XML* createFromString(SystemState *sys, const tiny_string& s, bool usefirstchild=false);
 	static XML* createFromNode(const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
 
 	const tiny_string getName() const { return nodename;}

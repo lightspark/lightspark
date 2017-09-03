@@ -100,6 +100,7 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("freeMemory","",Class<IFunction>::getFunction(c->getSystemState(),_freeMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(c->getSystemState(),_totalMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("privateMemory","",Class<IFunction>::getFunction(c->getSystemState(),_privateMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("swfVersion","",Class<IFunction>::getFunction(c->getSystemState(),_swfVersion),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("argv","",Class<IFunction>::getFunction(c->getSystemState(),argv),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(c->getSystemState(),write),NORMAL_METHOD,false);
@@ -167,6 +168,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));
 	return asAtom(1024);
 }
+ASFUNCTIONBODY_ATOM(avmplusSystem,_swfVersion)
+{
+	return asAtom(sys->getSwfVersion());
+}
+
 ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.argv is unimplemented."));

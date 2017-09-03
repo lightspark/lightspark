@@ -39,11 +39,11 @@ void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_di(c->getSystemState(),CASEINSENSITIVE),CONSTANT_TRAIT);
-	c->setVariableByQName("DESCENDING","",abstract_di(c->getSystemState(),DESCENDING),CONSTANT_TRAIT);
-	c->setVariableByQName("NUMERIC","",abstract_di(c->getSystemState(),NUMERIC),CONSTANT_TRAIT);
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_di(c->getSystemState(),RETURNINDEXEDARRAY),CONSTANT_TRAIT);
-	c->setVariableByQName("UNIQUESORT","",abstract_di(c->getSystemState(),UNIQUESORT),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CASEINSENSITIVE",nsNameAndKind(),asAtom(CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DESCENDING",nsNameAndKind(),asAtom(DESCENDING),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NUMERIC",nsNameAndKind(),asAtom(NUMERIC),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RETURNINDEXEDARRAY",nsNameAndKind(),asAtom(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("UNIQUESORT",nsNameAndKind(),asAtom(UNIQUESORT),CONSTANT_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,true);
@@ -195,6 +195,9 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	ARG_UNPACK_ATOM(f);
 	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::fromObject(ret);
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"filter",th->getClass()->getQualifiedClassName());
 
 	asAtom params[3];
 	asAtom funcRet;
@@ -252,6 +255,9 @@ ASFUNCTIONBODY_ATOM(Array, some)
 	ARG_UNPACK_ATOM(f);
 	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::falseAtom;
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"some",th->getClass()->getQualifiedClassName());
 
 	asAtom params[3];
 	asAtom funcRet;
@@ -307,6 +313,9 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	ARG_UNPACK_ATOM(f);
 	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::trueAtom;
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"every",th->getClass()->getQualifiedClassName());
 
 	asAtom params[3];
 	asAtom funcRet;
@@ -382,6 +391,9 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	ARG_UNPACK_ATOM(f);
 	if (f.type == T_NULL || th->currentsize == 0)
 		return asAtom::invalidAtom;
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"foreach",th->getClass()->getQualifiedClassName());
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
@@ -454,6 +466,9 @@ ASFUNCTIONBODY_ATOM(Array, _reverse)
 ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 {
 	Array* th=obj.as<Array>();
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"lastIndexOf",th->getClass()->getQualifiedClassName());
 	number_t index;
 	asAtom arg0;
 	ARG_UNPACK_ATOM(arg0) (index, 0x7fffffff);
@@ -622,6 +637,9 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	ret->resize(deleteCount);
 	if(deleteCount)
 	{
+		// Derived classes may be sealed!
+		if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+			throwError<ReferenceError>(kReadSealedError,"splice",th->getClass()->getQualifiedClassName());
 		// write deleted items to return array
 		for(int i=0;i<deleteCount;i++)
 		{
@@ -694,6 +712,9 @@ ASFUNCTIONBODY_ATOM(Array,join)
 	tiny_string del;
 	ARG_UNPACK_ATOM(del, ",");
 
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"join",th->getClass()->getQualifiedClassName());
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		asAtom o = th->at(i);
@@ -708,6 +729,9 @@ ASFUNCTIONBODY_ATOM(Array,join)
 ASFUNCTIONBODY_ATOM(Array,indexOf)
 {
 	Array* th=obj.as<Array>();
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"indexOf",th->getClass()->getQualifiedClassName());
 	int32_t ret=-1;
 	int32_t index;
 	asAtom arg0;
@@ -797,6 +821,7 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 	return ret;
 }
 
+
 bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
 {
 	asAtom o1 = d1;
@@ -805,9 +830,16 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 	{
 		number_t a=numeric_limits<double>::quiet_NaN();
 		number_t b=numeric_limits<double>::quiet_NaN();
-		a=o1.toNumber();
-		b=o2.toNumber();
-
+		if (useoldversion)
+		{
+			a=o1.toInt() & 0x1fffffff;
+			b=o2.toInt() & 0x1fffffff;
+		}
+		else
+		{
+			a=o1.toNumber();
+			b=o2.toNumber();
+		}
 		if((!o1.isNumeric() && std::isnan(a)) || (!o2.isNumeric() && std::isnan(b)))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
@@ -857,6 +889,9 @@ bool Array::sortComparatorWrapper::operator()(const asAtom& d1, const asAtom& d2
 ASFUNCTIONBODY_ATOM(Array,_sort)
 {
 	Array* th=obj.as<Array>();
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"sort",th->getClass()->getQualifiedClassName());
 	asAtom comp;
 	bool isNumeric=false;
 	bool isCaseInsensitive=false;
@@ -904,7 +939,7 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	if(comp.type != T_INVALID)
 		sort(tmp.begin(),tmp.end(),sortComparatorWrapper(comp));
 	else
-		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive,isDescending));
+		sort(tmp.begin(),tmp.end(),sortComparatorDefault(sys->getSwfVersion() < 11, isNumeric,isCaseInsensitive,isDescending));
 
 	th->data_first.clear();
 	th->data_second.clear();
@@ -1090,7 +1125,7 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 	}
 	Array* th=obj.as<Array>();
 	// Derived classes may be sealed!
-	if (th->getClass() && th->getClass()->isSealed)
+	if (th->getSystemState()->getSwfVersion() > 12 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,"unshift",th->getClass()->getQualifiedClassName());
 	if (argslen > 0)
 	{
@@ -1191,6 +1226,9 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 
 	if(argslen < 1)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Array.map", "1", Integer::toString(argslen));
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"map",th->getClass()->getQualifiedClassName());
 	asAtom func;
 	if (!args[0].is<RegExp>())
 	{
@@ -1250,6 +1288,9 @@ ASFUNCTIONBODY_ATOM(Array,_toString)
 	}
 	
 	Array* th=obj.as<Array>();
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"toString",th->getClass()->getQualifiedClassName());
 	return asAtom::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
@@ -1264,6 +1305,9 @@ ASFUNCTIONBODY_ATOM(Array,_toLocaleString)
 	}
 	
 	Array* th=obj.as<Array>();
+	// Derived classes may be sealed!
+	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,"toLocaleString",th->getClass()->getQualifiedClassName());
 	return asAtom::fromObject(abstract_s(sys,th->toString_priv(true)));
 }
 
@@ -1387,6 +1431,9 @@ asAtom Array::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION 
 	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::getVariableByMultiname(name,opt);
 
+	if (getClass() && getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError,name.normalizedNameUnresolved(getSystemState()),getClass()->getQualifiedClassName());
+	
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		if (data_first.size() > index)
@@ -1450,6 +1497,9 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	if(!isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 
+	// Derived classes may be sealed!
+	if (getClass() && getClass()->isSealed)
+		return false;
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		return data_first.size() > index ? (data_first[index].type != T_INVALID) : false;
@@ -1915,7 +1965,7 @@ void Array::push(asAtom o)
 	if (currentsize == UINT32_MAX)
 		return;
 	// Derived classes may be sealed!
-	if (getClass() && getClass()->isSealed)
+	if (getSystemState()->getSwfVersion() > 12 && getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,"push",getClass()->getQualifiedClassName());
 	currentsize++;
 	set(currentsize-1,o);

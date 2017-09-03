@@ -54,6 +54,7 @@ public:
 	ASFUNCTION_ATOM(_freeMemory);
 	ASFUNCTION_ATOM(_totalMemory);
 	ASFUNCTION_ATOM(_privateMemory);
+	ASFUNCTION_ATOM(_swfVersion);
 	ASFUNCTION_ATOM(argv);
 	ASFUNCTION_ATOM(exec);
 	ASFUNCTION_ATOM(write);

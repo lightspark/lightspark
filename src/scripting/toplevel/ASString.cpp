@@ -738,6 +738,11 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 	ARG_UNPACK_ATOM_MORE_ALLOWED(other);
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED,"localeCompare with more than one parameter not implemented");
+	if (sys->getSwfVersion() < 11)
+	{
+		if (args[0].is<Null>() || args[0].is<Undefined>())
+			return asAtom(data == "" ? 1 : 0);
+	}
 	int ret = data.compare(other);
 	return asAtom(ret);
 }
@@ -749,6 +754,11 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 	if (argslen > 1)
 		throwError<ArgumentError>(kWrongArgumentCountError, "localeCompare", "1",Integer::toString(argslen));
 
+	if (sys->getSwfVersion() < 11)
+	{
+		if (args[0].is<Null>() || args[0].is<Undefined>())
+			return asAtom(data == "" ? 1 : 0);
+	}
 	int ret = data.compare(other);
 	return asAtom(ret);
 }

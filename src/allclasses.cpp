@@ -55,6 +55,7 @@
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/printing/flashprinting.h"
+#include "scripting/flash/sampler/flashsampler.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"

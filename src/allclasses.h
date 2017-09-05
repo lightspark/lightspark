@@ -231,6 +231,12 @@ REGISTER_CLASS_NAME(MemoryError,"flash.errors")
 REGISTER_CLASS_NAME(ScriptTimeoutError,"flash.errors")
 REGISTER_CLASS_NAME(StackOverflowError,"flash.errors")
 
+//Sampler
+REGISTER_CLASS_NAME(DeleteObjectSample,"flash.sampler")
+REGISTER_CLASS_NAME(NewObjectSample,"flash.sampler")
+REGISTER_CLASS_NAME(Sample,"flash.sampler")
+REGISTER_CLASS_NAME(StackFrame,"flash.sampler")
+
 //Sensors
 REGISTER_CLASS_NAME(Accelerometer,"flash.sensors")
 

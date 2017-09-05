@@ -99,6 +99,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/NetStreamPlayTransitions.cpp
   scripting/flash/printing/flashprinting.cpp
   scripting/flash/errors/flasherrors.cpp
+  scripting/flash/sampler/flashsampler.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp
   scripting/flash/text/flashtext.cpp

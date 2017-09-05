@@ -105,6 +105,7 @@
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/printing/flashprinting.h"
+#include "scripting/flash/sampler/flashsampler.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
@@ -498,6 +499,25 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef(m_sys));
 
+	builtin->registerBuiltin("clearSamples","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,clearSamples)));
+	builtin->registerBuiltin("getInvocationCount","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getInvocationCount)));
+	builtin->registerBuiltin("getLexicalScopes","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getLexicalScopes)));
+	builtin->registerBuiltin("getMasterString","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getMasterString)));
+	builtin->registerBuiltin("getMemberNames","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getMemberNames)));
+	builtin->registerBuiltin("getSampleCount","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getSampleCount)));
+	builtin->registerBuiltin("getSamples","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getSamples)));
+	builtin->registerBuiltin("getSize","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,getSize)));
+	builtin->registerBuiltin("isGetterSetter","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,isGetterSetter)));
+	builtin->registerBuiltin("pauseSampling","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,pauseSampling)));
+	builtin->registerBuiltin("sampleInternalAllocs","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,sampleInternalAllocs)));
+	builtin->registerBuiltin("startSampling","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,startSampling)));
+	builtin->registerBuiltin("stopSampling","flash.sampler",_MR(Class<IFunction>::getFunction(m_sys,stopSampling)));
+	builtin->registerBuiltin("DeleteObjectSample","flash.sampler",Class<DeleteObjectSample>::getRef(m_sys));
+	builtin->registerBuiltin("NewObjectSample","flash.sampler",Class<NewObjectSample>::getRef(m_sys));
+	builtin->registerBuiltin("Sample","flash.sampler",Class<Sample>::getRef(m_sys));
+	builtin->registerBuiltin("StackFrame","flash.sampler",Class<StackFrame>::getRef(m_sys));
+	
+	
 
 	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(m_sys,fscommand)));
 	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));

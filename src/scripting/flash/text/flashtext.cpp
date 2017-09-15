@@ -310,25 +310,21 @@ void TextField::setSizeAndPositionFromAutoSize()
 	if (autoSize == AS_NONE)
 		return;
 
-	height = textHeight;
-	if (!wordWrap && width < textWidth)
+	//height = textHeight;
+	if (!wordWrap)
 	{
 		if (autoSize == AS_RIGHT)
 		{
-			number_t oldX = getXY().x;
-			setX(oldX+width-textWidth);
-			width = textWidth;
+			//number_t oldX = getXY().x;
+			setX(width-textWidth);
 		}
 		else if (autoSize == AS_CENTER)
 		{
-			number_t oldX = getXY().x;
-			setX(oldX + width/2 - textWidth/2);
-			width = textWidth;
+			//number_t oldX = getXY().x;
+			setX(width/2 - textWidth/2);
 		}
-		else // AS_LEFT, because AS_NONE was handled before
-		{
+		if (width < textWidth)
 			width = textWidth;
-		}
 	}
 }
 
@@ -883,9 +879,9 @@ void TextField::updateSizes()
 	h = height;
 	//Compute (text)width, (text)height
 	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-	width = w; //TODO: check the case when w,h == 0
+//	width = w; //TODO: check the case when w,h == 0
 	textWidth=tw;
-	height = h;
+//	height = h;
 	textHeight=th;
 }
 
@@ -931,6 +927,9 @@ void TextField::setHtmlText(const tiny_string& html)
 	{
 		parser.parseTextAndFormating(html, this);
 	}
+	updateSizes();
+	setSizeAndPositionFromAutoSize();
+	hasChanged=true;
 	textUpdated();
 }
 
@@ -1083,6 +1082,25 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			    !textdata->text.endsWith("\n"))
 				textdata->text += "\n";
 		}
+		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
+		{
+			tiny_string attrname = it->name();
+			tiny_string value = it->value();
+			if (attrname == "align")
+			{
+				if (value == "left")
+					textdata->autoSize = TextData::AS_LEFT;
+				if (value == "center")
+					textdata->autoSize = TextData::AS_CENTER;
+				if (value == "right")
+					textdata->autoSize = TextData::AS_RIGHT;
+			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <p>: unsupported attribute:"<<attrname);
+			}
+		}
+
 	}
 	else if (name == "font")
 	{

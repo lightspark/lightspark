@@ -431,6 +431,16 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
+class FileFilter: public ASObject
+{
+public:
+	FileFilter(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string,description);
+	ASPROPERTY_GETTER_SETTER(tiny_string,extension);
+	ASPROPERTY_GETTER_SETTER(tiny_string,macType);
+};
 class ASSocket: public EventDispatcher, IDataInput, IDataOutput
 {
 public:

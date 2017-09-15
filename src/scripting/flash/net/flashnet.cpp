@@ -2513,6 +2513,29 @@ ASFUNCTIONBODY_ATOM(FileReference, _constructor)
 	return asAtom::invalidAtom;
 }
 
+FileFilter::FileFilter(Class_base* c):
+	ASObject(c)
+{
+}
+
+void FileFilter::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	REGISTER_GETTER_SETTER(c,description);
+	REGISTER_GETTER_SETTER(c,extension);
+	REGISTER_GETTER_SETTER(c,macType);
+}
+ASFUNCTIONBODY_GETTER_SETTER(FileFilter, description);
+ASFUNCTIONBODY_GETTER_SETTER(FileFilter, extension);
+ASFUNCTIONBODY_GETTER_SETTER(FileFilter, macType);
+
+ASFUNCTIONBODY_ATOM(FileFilter, _constructor)
+{
+	FileFilter* th = obj.as<FileFilter>();
+	ARG_UNPACK_ATOM(th->description)(th->extension)(th->macType,"");
+	return asAtom::invalidAtom;
+}
+
 ASSocket::ASSocket(Class_base* c):
 	EventDispatcher(c)
 {

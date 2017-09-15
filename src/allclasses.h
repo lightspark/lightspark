@@ -192,6 +192,7 @@ REGISTER_CLASS_NAME(VideoStatus,"flash.media")
 REGISTER_CLASS_NAME(Microphone,"flash.media")
 
 //Net
+REGISTER_CLASS_NAME(FileFilter,"flash.net")
 REGISTER_CLASS_NAME(FileReference,"flash.net")
 REGISTER_CLASS_NAME(LocalConnection,"flash.net")
 REGISTER_CLASS_NAME(NetConnection,"flash.net")

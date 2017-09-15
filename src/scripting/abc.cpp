@@ -472,6 +472,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
+	builtin->registerBuiltin("FileFilter","flash.net",Class<FileFilter>::getRef(m_sys));
 	builtin->registerBuiltin("FileReference","flash.net",Class<FileReference>::getRef(m_sys));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef(m_sys));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef(m_sys));
@@ -2215,6 +2216,8 @@ asAtom ABCContext::getConstant(int kind, int index)
 			return asAtom::fromStringID(constant_pool.strings[index]);
 		case 0x03: //Int
 			return asAtom(constant_pool.integer[index]);
+		case 0x04: //UInt
+			return asAtom(constant_pool.uinteger[index]);
 		case 0x06: //Double
 			return asAtom(constant_pool.doubles[index]);
 		case 0x08: //Namespace

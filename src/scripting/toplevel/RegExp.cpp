@@ -196,6 +196,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	{
 		//No matches or error
 		pcre_free(pcreRE);
+		lastIndex=0;
 		return getSystemState()->getNullRef();
 	}
 	Array* a=Class<Array>::getInstanceSNoArgs(getSystemState());

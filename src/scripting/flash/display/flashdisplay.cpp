@@ -2376,6 +2376,16 @@ _NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 	return ret;
 }
 
+_NR<RootMovieClip> Stage::getRoot()
+{
+	return root;
+}
+
+void Stage::setRoot(_NR<RootMovieClip> _root)
+{
+	root = _root;
+}
+
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;

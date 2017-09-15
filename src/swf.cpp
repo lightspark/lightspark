@@ -262,6 +262,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	loaderInfo->setBytesTotal(0);
 	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
 	stage=Class<Stage>::getInstanceS(this);
+	stage->setRoot(_MR(mainClip));
 	mainClip->incRef();
 	stage->_addChildAt(_MR(mainClip),0);
 	//Get starting time

@@ -202,8 +202,10 @@ void multiname::resetNameIfObject()
 	}
 }
 
-bool multiname::toUInt(SystemState* sys,uint32_t& index, bool acceptStringFractions) const
+bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFractions, bool *isNumber) const
 {
+	if (isNumber)
+		*isNumber = false;
 	switch(name_type)
 	{
 		//We try to convert this to an index, otherwise bail out
@@ -232,12 +234,15 @@ bool multiname::toUInt(SystemState* sys,uint32_t& index, bool acceptStringFracti
 					++i;
 					for (; i!=str.end(); ++i)
 						if (*i != '0')
+						{
+							if (isNumber)
+								*isNumber = true;
 							return false;
+						}
 					break;
 				}
 				else if(!i.isdigit())
 					return false;
-
 				parsed*=10;
 				parsed+=i.digit_value();
 				if (parsed > UINT32_MAX)

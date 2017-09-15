@@ -1222,6 +1222,12 @@ ASObject *Class_base::describeType() const
 	root.append_attribute("isFinal").set_value("true");
 	root.append_attribute("isStatic").set_value("true");
 
+	// extendsClass
+	pugi::xml_node node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("Class");
+	node=root.append_child("extendsClass");
+	node.append_attribute("type").set_value("Object");
+
 	// prototype
 	pugi::xml_node prototypenode=root.append_child("accessor");
 	prototypenode.append_attribute("name").set_value("prototype");
@@ -1229,12 +1235,6 @@ ASObject *Class_base::describeType() const
 	prototypenode.append_attribute("type").set_value("*");
 	prototypenode.append_attribute("declaredBy").set_value("Class");
 	
-	// extendsClass
-	pugi::xml_node node=root.append_child("extendsClass");
-	node.append_attribute("type").set_value("Class");
-	node=root.append_child("extendsClass");
-	node.append_attribute("type").set_value("Object");
-
 	std::map<varName,pugi::xml_node> propnames;
 	// variable
 	if(class_index>=0)
@@ -1378,6 +1378,8 @@ void Class_base::describeConstructor(pugi::xml_node &root) const
 	{
 		if (!this->getTemplate())
 		{
+			if (this->constructor->as<IFunction>()->length == 0)
+				return;
 			LOG(LOG_NOT_IMPLEMENTED,"describeConstructor for builtin classes is not completely implemented");
 			pugi::xml_node node=root.append_child("constructor");
 			for (uint32_t i = 0; i < this->constructor->as<IFunction>()->length; i++)
@@ -1391,13 +1393,15 @@ void Class_base::describeConstructor(pugi::xml_node &root) const
 		return;
 	}
 	method_info* mi = this->constructor->getMethodInfo();
+	if (mi->numArgs() == 0)
+		return;
 	pugi::xml_node node=root.append_child("constructor");
 
 	for (uint32_t i = 0; i < mi->numArgs(); i++)
 	{
 		pugi::xml_node paramnode = node.append_child("parameter");
 		paramnode.append_attribute("index").set_value(i+1);
-		paramnode.append_attribute("type").set_value(mi->paramTypeName(i)->normalizedName(getSystemState()).raw_buf());
+		paramnode.append_attribute("type").set_value(mi->paramTypeName(i)->qualifiedString(getSystemState(),true).raw_buf());
 		paramnode.append_attribute("optional").set_value(i >= mi->numArgs()-mi->numOptions());
 	}
 }

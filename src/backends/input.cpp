@@ -152,7 +152,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 		return NullRef;
 	}
 	assert(selected); /* atleast we hit the stage */
-	assert_and_throw(selected->getClass()->isSubClass(Class<InteractiveObject>::getClass(m_sys)));
+	assert_and_throw(selected->is<InteractiveObject>());
 	return selected;
 }
 
@@ -336,6 +336,15 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			else
 				LOG(LOG_INFO, "No error to be copied to clipboard");
 			break;
+#ifndef NDEBUG
+		case SDLK_l:
+			// switch between log levels LOG_CALLS and LOG_INFO
+			if (Log::getLevel() == LOG_CALLS)
+				Log::setLogLevel(LOG_INFO);
+			else
+				Log::setLogLevel(LOG_CALLS);
+			break;
+#endif
 		default:
 			break;
 	}

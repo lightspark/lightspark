@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* remove gtk2 dependency
 	* fix Reference counting, significantly reduces memory usage
 
 Version 0.8:

@@ -31,8 +31,6 @@
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
 #include "plugin/npscriptobject.h"
-#include <gtk/gtk.h>
-#include <gdk/gdk.h>
 #include "backends/lsopengl.h"
 
 namespace lightspark
@@ -112,7 +110,6 @@ public:
 	/* must be called within mainLoopThread */
 	void grabFocus();
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
-	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);
 	double getScreenDPI();
 	static void forceRedraw(SystemState* sys);
@@ -166,7 +163,7 @@ private:
 	 * window we draw into. We create a child of mWindow and
 	 * draw into that.
 	 */
-	GdkNativeWindow mWindow;
+	uint32_t mWindow;
 #ifdef _WIN32
 	HDC mDC;
 #endif

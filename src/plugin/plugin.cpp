@@ -26,24 +26,14 @@
 #include "compat.h"
 #include <string>
 #include <algorithm>
-#ifdef _WIN32
-#	include <gdk/gdkwin32.h>
-#	include <wingdi.h>
-#endif
 #include "backends/urlutils.h"
 
 #include "plugin/npscriptobject.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
-#include <gtk/gtk.h>
 #ifndef _WIN32
-#include <gdk/gdkx.h>
+#include <X11/keysym.h>
 #endif
-#if GTK_CHECK_VERSION (2,21,8)
-#include <gdk/gdkkeysyms-compat.h> 
-#else
-#include <gdk/gdkkeysyms.h>
-#endif 
 
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
@@ -244,20 +234,12 @@ char* NPP_GetMIMEDescription(void)
 NPError NS_PluginInitialize()
 {
 	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
-
-	/* setup glib/gtk, this is already done on firefox/linux, but needs to be done
-	 * on firefox/windows (because there we statically link to gtk) */
+	/* setup glib, this is already done on firefox/linux, but needs to be done
+	 * on firefox/windows (because there we statically link to glib) */
 #ifdef HAVE_G_THREAD_INIT
 	if(!g_thread_supported())
 		g_thread_init(NULL);
 #endif
-#ifdef _WIN32
-	//Calling gdk_threads_init multiple times (once by firefox, once by us)
-	//will break in various different ways (hangs, segfaults, etc.)
-	gdk_threads_init();
-	gtk_init(NULL, NULL);
-#endif
-
 	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
 	if (envvar)
 		log_level=(LOG_LEVEL) min(4, max(0, atoi(envvar)));
@@ -454,120 +436,114 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 	return err;
 
 }
-SDL_Keycode getSDLKeyCode(unsigned gdkKeyval)
+#ifndef _WIN32
+SDL_Keycode getSDLKeyCode(unsigned x11Keyval)
 {
-	switch (gdkKeyval)
+	switch (x11Keyval)
 	{
-		case GDK_a: return SDLK_a;
-		case GDK_Alt_L: return SDLK_LALT;
-		case GDK_b: return SDLK_b;
-		case GDK_Back: return SDLK_AC_BACK;
-		case GDK_grave: return SDLK_BACKQUOTE;
-		case GDK_backslash: return SDLK_BACKSLASH;
-		case GDK_BackSpace: return SDLK_BACKSPACE;
-		case GDK_Blue: return SDLK_UNKNOWN; // TODO
-		case GDK_c: return SDLK_c;
-		case GDK_Caps_Lock: return SDLK_CAPSLOCK;
-		case GDK_comma: return SDLK_COMMA;
-		case GDK_Control_L: return SDLK_LCTRL;
-		case GDK_d: return SDLK_d;
-		case GDK_Delete: return SDLK_DELETE;
-		case GDK_Down: return SDLK_DOWN;
-		case GDK_e: return SDLK_e;
-		case GDK_End: return SDLK_END;
-		case GDK_Return: return SDLK_RETURN;
-		case GDK_equal: return SDLK_EQUALS;
-		case GDK_Escape: return SDLK_ESCAPE;
-		case GDK_f: return SDLK_f;
-		case GDK_F1: return SDLK_F1;
-		case GDK_F2: return SDLK_F2;
-		case GDK_F3: return SDLK_F3;
-		case GDK_F4: return SDLK_F4;
-		case GDK_F5: return SDLK_F5;
-		case GDK_F6: return SDLK_F6;
-		case GDK_F7: return SDLK_F7;
-		case GDK_F8: return SDLK_F8;
-		case GDK_F9: return SDLK_F9;
-		case GDK_F10: return SDLK_F10;
-		case GDK_F11: return SDLK_F11;
-		case GDK_F12: return SDLK_F12;
-		case GDK_F13: return SDLK_F13;
-		case GDK_F14: return SDLK_F14;
-		case GDK_F15: return SDLK_F15;
-		case GDK_g: return SDLK_g;
-		case GDK_Green: return SDLK_UNKNOWN; // TODO
-		case GDK_h: return SDLK_h;
-		case GDK_Help: return SDLK_HELP;
-		case GDK_Home: return SDLK_HOME;
-		case GDK_i: return SDLK_i;
-		case GDK_Insert: return SDLK_INSERT;
-		case GDK_j: return SDLK_j;
-		case GDK_k: return SDLK_k;
-		case GDK_l: return SDLK_l;
-		case GDK_Left: return SDLK_LEFT;
-		case GDK_bracketleft: return SDLK_LEFTBRACKET;
-		case GDK_m: return SDLK_m;
-		case GDK_minus: return SDLK_MINUS;
-		case GDK_n: return SDLK_n;
-		case GDK_0: return SDLK_0;
-		case GDK_1: return SDLK_1;
-		case GDK_2: return SDLK_2;
-		case GDK_3: return SDLK_3;
-		case GDK_4: return SDLK_4;
-		case GDK_5: return SDLK_5;
-		case GDK_6: return SDLK_6;
-		case GDK_7: return SDLK_7;
-		case GDK_8: return SDLK_8;
-		case GDK_9: return SDLK_9;
-		case GDK_KP_0: return SDLK_KP_0;
-		case GDK_KP_1: return SDLK_KP_1;
-		case GDK_KP_2: return SDLK_KP_2;
-		case GDK_KP_3: return SDLK_KP_3;
-		case GDK_KP_4: return SDLK_KP_4;
-		case GDK_KP_5: return SDLK_KP_5;
-		case GDK_KP_6: return SDLK_KP_6;
-		case GDK_KP_7: return SDLK_KP_7;
-		case GDK_KP_8: return SDLK_KP_8;
-		case GDK_KP_9: return SDLK_KP_9;
-		case GDK_KP_Add: return SDLK_KP_MEMADD;
-		case GDK_KP_Separator: return SDLK_KP_PERIOD; // TODO
-		case GDK_KP_Divide: return SDLK_KP_DIVIDE;
-		case GDK_KP_Enter: return SDLK_KP_ENTER;
-		case GDK_KP_Multiply: return SDLK_KP_MULTIPLY;
-		case GDK_KP_Subtract: return SDLK_KP_MINUS;
-		case GDK_o: return SDLK_o;
-		case GDK_p: return SDLK_p;
-		case GDK_Page_Down: return SDLK_PAGEDOWN;
-		case GDK_Page_Up: return SDLK_PAGEUP;
-		case GDK_Pause: return SDLK_PAUSE;
-		case GDK_period: return SDLK_PERIOD;
-		case GDK_q: return SDLK_q;
-		case GDK_quoteright: return SDLK_QUOTE;
-		case GDK_r: return SDLK_r;
-		case GDK_Red: return SDLK_UNKNOWN; // TODO
-		case GDK_Right: return SDLK_RIGHT;
-		case GDK_bracketright: return SDLK_RIGHTBRACKET;
-		case GDK_s: return SDLK_s;
-		case GDK_Search: return SDLK_AC_SEARCH;
-		case GDK_semicolon: return SDLK_SEMICOLON;
-		case GDK_Shift_L: return SDLK_LSHIFT;
-		case GDK_slash: return SDLK_SLASH;
-		case GDK_space: return SDLK_SPACE;
-		case GDK_Subtitle: return SDLK_UNKNOWN; // TODO
-		case GDK_t: return SDLK_t;
-		case GDK_Tab: return SDLK_TAB;
-		case GDK_u: return SDLK_u;
-		case GDK_Up: return SDLK_UP;
-		case GDK_v: return SDLK_v;
-		case GDK_w: return SDLK_w;
-		case GDK_x: return SDLK_x;
-		case GDK_y: return SDLK_y;
-		case GDK_Yellow: return SDLK_UNKNOWN; // TODO
-		case GDK_z: return SDLK_z;
+		case XK_a: return SDLK_a;
+		case XK_Alt_L: return SDLK_LALT;
+		case XK_b: return SDLK_b;
+		case XK_grave: return SDLK_BACKQUOTE;
+		case XK_backslash: return SDLK_BACKSLASH;
+		case XK_BackSpace: return SDLK_BACKSPACE;
+		case XK_c: return SDLK_c;
+		case XK_Caps_Lock: return SDLK_CAPSLOCK;
+		case XK_comma: return SDLK_COMMA;
+		case XK_Control_L: return SDLK_LCTRL;
+		case XK_d: return SDLK_d;
+		case XK_Delete: return SDLK_DELETE;
+		case XK_Down: return SDLK_DOWN;
+		case XK_e: return SDLK_e;
+		case XK_End: return SDLK_END;
+		case XK_Return: return SDLK_RETURN;
+		case XK_equal: return SDLK_EQUALS;
+		case XK_Escape: return SDLK_ESCAPE;
+		case XK_f: return SDLK_f;
+		case XK_F1: return SDLK_F1;
+		case XK_F2: return SDLK_F2;
+		case XK_F3: return SDLK_F3;
+		case XK_F4: return SDLK_F4;
+		case XK_F5: return SDLK_F5;
+		case XK_F6: return SDLK_F6;
+		case XK_F7: return SDLK_F7;
+		case XK_F8: return SDLK_F8;
+		case XK_F9: return SDLK_F9;
+		case XK_F10: return SDLK_F10;
+		case XK_F11: return SDLK_F11;
+		case XK_F12: return SDLK_F12;
+		case XK_F13: return SDLK_F13;
+		case XK_F14: return SDLK_F14;
+		case XK_F15: return SDLK_F15;
+		case XK_g: return SDLK_g;
+		case XK_h: return SDLK_h;
+		case XK_Help: return SDLK_HELP;
+		case XK_Home: return SDLK_HOME;
+		case XK_i: return SDLK_i;
+		case XK_Insert: return SDLK_INSERT;
+		case XK_j: return SDLK_j;
+		case XK_k: return SDLK_k;
+		case XK_l: return SDLK_l;
+		case XK_Left: return SDLK_LEFT;
+		case XK_bracketleft: return SDLK_LEFTBRACKET;
+		case XK_m: return SDLK_m;
+		case XK_minus: return SDLK_MINUS;
+		case XK_n: return SDLK_n;
+		case XK_0: return SDLK_0;
+		case XK_1: return SDLK_1;
+		case XK_2: return SDLK_2;
+		case XK_3: return SDLK_3;
+		case XK_4: return SDLK_4;
+		case XK_5: return SDLK_5;
+		case XK_6: return SDLK_6;
+		case XK_7: return SDLK_7;
+		case XK_8: return SDLK_8;
+		case XK_9: return SDLK_9;
+		case XK_KP_0: return SDLK_KP_0;
+		case XK_KP_1: return SDLK_KP_1;
+		case XK_KP_2: return SDLK_KP_2;
+		case XK_KP_3: return SDLK_KP_3;
+		case XK_KP_4: return SDLK_KP_4;
+		case XK_KP_5: return SDLK_KP_5;
+		case XK_KP_6: return SDLK_KP_6;
+		case XK_KP_7: return SDLK_KP_7;
+		case XK_KP_8: return SDLK_KP_8;
+		case XK_KP_9: return SDLK_KP_9;
+		case XK_KP_Add: return SDLK_KP_MEMADD;
+		case XK_KP_Separator: return SDLK_KP_PERIOD; // TODO
+		case XK_KP_Divide: return SDLK_KP_DIVIDE;
+		case XK_KP_Enter: return SDLK_KP_ENTER;
+		case XK_KP_Multiply: return SDLK_KP_MULTIPLY;
+		case XK_KP_Subtract: return SDLK_KP_MINUS;
+		case XK_o: return SDLK_o;
+		case XK_p: return SDLK_p;
+		case XK_Page_Down: return SDLK_PAGEDOWN;
+		case XK_Page_Up: return SDLK_PAGEUP;
+		case XK_Pause: return SDLK_PAUSE;
+		case XK_period: return SDLK_PERIOD;
+		case XK_q: return SDLK_q;
+		case XK_quoteright: return SDLK_QUOTE;
+		case XK_r: return SDLK_r;
+		case XK_Right: return SDLK_RIGHT;
+		case XK_bracketright: return SDLK_RIGHTBRACKET;
+		case XK_s: return SDLK_s;
+		case XK_semicolon: return SDLK_SEMICOLON;
+		case XK_Shift_L: return SDLK_LSHIFT;
+		case XK_slash: return SDLK_SLASH;
+		case XK_space: return SDLK_SPACE;
+		case XK_t: return SDLK_t;
+		case XK_Tab: return SDLK_TAB;
+		case XK_u: return SDLK_u;
+		case XK_Up: return SDLK_UP;
+		case XK_v: return SDLK_v;
+		case XK_w: return SDLK_w;
+		case XK_x: return SDLK_x;
+		case XK_y: return SDLK_y;
+		case XK_z: return SDLK_z;
 	}
 	return SDLK_UNKNOWN;
 }
-
+#endif
 SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 {
 	return SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN| SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
@@ -577,28 +553,27 @@ void PluginEngineData::grabFocus()
 {
 }
 
-void PluginEngineData::setClipboardText(const std::string txt)
-{
-	GtkClipboard *clipboard;
-	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-	gtk_clipboard_set_text(clipboard, txt.c_str(),txt.size());
-	clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-	gtk_clipboard_set_text(clipboard, txt.c_str(), txt.size());
-	LOG(LOG_INFO, "Copied error to clipboard");
-}
-
 bool PluginEngineData::getScreenData(SDL_DisplayMode *screen)
 {
-	GdkScreen*  s = gdk_screen_get_default();
-	screen->w = gdk_screen_get_width (s);
-	screen->h = gdk_screen_get_height (s);
+	if (SDL_GetDesktopDisplayMode(0, screen) != 0) {
+		LOG(LOG_ERROR,"Capabilities: SDL_GetDesktopDisplayMode failed:"<<SDL_GetError());
+		return false;
+	}
 	return true;
 }
 
 double PluginEngineData::getScreenDPI()
 {
-	GdkScreen*  screen = gdk_screen_get_default();
-	return gdk_screen_get_resolution (screen);
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+		float ddpi;
+		float hdpi;
+		float vdpi;
+		SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(widget),&ddpi,&hdpi,&vdpi);
+		return ddpi;
+#else
+		LOG(LOG_NOT_IMPLEMENTED,"getScreenDPI needs SDL version >= 2.0.4");
+		return 96.0;
+#endif
 }
 
 
@@ -966,7 +941,7 @@ void PluginEngineData::stopMainDownload()
 
 uint32_t PluginEngineData::getWindowForGnash()
 {
-	return (uint32_t)instance->mWindow;
+	return instance->mWindow;
 }
 
 struct linkOpenData

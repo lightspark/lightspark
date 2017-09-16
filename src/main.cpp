@@ -124,7 +124,7 @@ public:
 		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
 		if (p.empty())
 			return false;
-		p /= filename;
+		p /= filename.raw_buf();
 		return boost::filesystem::exists(p);
 	}
 	tiny_string FileRead(const tiny_string& filename)
@@ -134,13 +134,13 @@ public:
 		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
 		if (p.empty())
 			return "";
-		p /= filename;
+		p /= filename.raw_buf();
 		if (!boost::filesystem::exists(p))
 			return "";
 		uint32_t len = boost::filesystem::file_size(p);
 		std::ifstream file;
 		
-		file.open(p.c_str(), std::ios::in|std::ios::binary);
+		file.open(p.string(), std::ios::in|std::ios::binary);
 		
 		tiny_string res(file,len);
 		file.close();
@@ -153,10 +153,10 @@ public:
 		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
 		if (p.empty())
 			return;
-		p /= filename;
+		p /= filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p.c_str(), std::ios::out|std::ios::binary);
+		file.open(p.string(), std::ios::out|std::ios::binary);
 		file << data;
 		file.close();
 	}
@@ -167,13 +167,13 @@ public:
 		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
 		if (p.empty())
 			return;
-		p /= filename;
+		p /= filename.raw_buf();
 		if (!boost::filesystem::exists(p))
 			return;
 		uint32_t len = boost::filesystem::file_size(p);
 		std::ifstream file;
 		uint8_t buf[len];
-		file.open(p.c_str(), std::ios::in|std::ios::binary);
+		file.open(p.string(), std::ios::in|std::ios::binary);
 		file.read((char*)buf,len);
 		res->writeBytes(buf,len);
 		file.close();
@@ -188,10 +188,10 @@ public:
 		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
 		if (p.empty())
 			return;
-		p /= filename;
+		p /= filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
+		file.open(p.string(), std::ios::out|std::ios::binary|std::ios::trunc);
 		uint8_t* buf = data->getBuffer(data->getLength(),false);
 		file.write((char*)buf,data->getLength());
 		file.close();

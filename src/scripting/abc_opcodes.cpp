@@ -2260,8 +2260,10 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		{
 			ret = constructFunction(th, o, args, m);
 		}
-		else
+		else if (o.type == T_TEMPLATE)
 			throwError<TypeError>(kConstructOfNonFunctionError);
+		else
+			throwError<TypeError>(kNotConstructorError);
 	}
 	catch(ASObject* exc)
 	{

@@ -116,8 +116,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,getFeatures)
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,getRunmode)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getRunmode is unimplemented."));
-	return asAtom::fromString(sys,"jit");
+	return asAtom::fromString(sys,sys->useJit ? "jit":"interpreted");
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,queueCollection)

@@ -30,11 +30,11 @@ class Keyboard : public ASObject
 public:
 	Keyboard(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(capsLock);
-	ASFUNCTION(hasVirtualKeyboard);
-	ASFUNCTION(numLock);
-	ASFUNCTION(physicalKeyboardType);
-	ASFUNCTION(isAccessible);
+	ASFUNCTION_ATOM(capsLock);
+	ASFUNCTION_ATOM(hasVirtualKeyboard);
+	ASFUNCTION_ATOM(numLock);
+	ASFUNCTION_ATOM(physicalKeyboardType);
+	ASFUNCTION_ATOM(isAccessible);
 };
 
 class KeyboardType : public ASObject

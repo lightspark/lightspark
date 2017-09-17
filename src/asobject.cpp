@@ -1035,16 +1035,16 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 		return asAtom::fromObject(Class<ASObject>::getInstanceS(getSys()));
 }
 
-ASFUNCTIONBODY(ASObject,_toString)
+ASFUNCTIONBODY_ATOM(ASObject,_toString)
 {
 	tiny_string ret;
-	if (obj->is<Class_base>())
+	if (obj.is<Class_base>())
 	{
 		ret="[object ";
-		ret+=obj->getSystemState()->getStringFromUniqueId(static_cast<Class_base*>(obj)->class_name.nameId);
+		ret+=sys->getStringFromUniqueId(obj.as<Class_base>()->class_name.nameId);
 		ret+="]";
 	}
-	else if(obj->is<IFunction>())
+	else if(obj.is<IFunction>())
 	{
 		// ECMA spec 15.3.4.2 says that toString on a function object is implementation dependent
 		// adobe player returns "[object Function-46]", so we do the same
@@ -1052,50 +1052,50 @@ ASFUNCTIONBODY(ASObject,_toString)
 		ret+="Function-46";
 		ret+="]";
 	}
-	else if(obj->getClass())
+	else if(obj.toObject(sys)->getClass())
 	{
 		ret="[object ";
-		ret+=obj->getSystemState()->getStringFromUniqueId(obj->getClass()->class_name.nameId);
+		ret+=sys->getStringFromUniqueId(obj.getObject()->getClass()->class_name.nameId);
 		ret+="]";
 	}
 	else
 		ret="[object Object]";
 
-	return abstract_s(obj->getSystemState(),ret);
+	return asAtom::fromString(sys,ret);
 }
 
-ASFUNCTIONBODY(ASObject,_toLocaleString)
+ASFUNCTIONBODY_ATOM(ASObject,_toLocaleString)
 {
-	return _toString(obj,args,argslen);
+	return _toString(sys,obj,args,argslen);
 }
 
-ASFUNCTIONBODY(ASObject,hasOwnProperty)
+ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 {
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=args[0]->toStringId();
-	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	name.name_s_id=args[0].toStringId(sys);
+	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
-	bool ret=obj->hasPropertyByMultiname(name, true, false);
-	return abstract_b(obj->getSystemState(),ret);
+	bool ret=obj.toObject(sys)->hasPropertyByMultiname(name, true, false);
+	return asAtom(ret);
 }
 
-ASFUNCTIONBODY(ASObject,valueOf)
+ASFUNCTIONBODY_ATOM(ASObject,valueOf)
 {
-	obj->incRef();
+	ASATOM_INCREF(obj);
 	return obj;
 }
 
-ASFUNCTIONBODY(ASObject,isPrototypeOf)
+ASFUNCTIONBODY_ATOM(ASObject,isPrototypeOf)
 {
 	assert_and_throw(argslen==1);
 	bool ret =false;
-	Class_base* cls = args[0]->getClass();
+	Class_base* cls = args[0].toObject(sys)->getClass();
 	
 	while (cls != NULL)
 	{
-		if (cls->prototype->getObj() == obj)
+		if (cls->prototype->getObj() == obj.getObject())
 		{
 			ret = true;
 			break;
@@ -1105,46 +1105,46 @@ ASFUNCTIONBODY(ASObject,isPrototypeOf)
 			break;
 		cls = clsparent;
 	}
-	return abstract_b(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
 
-ASFUNCTIONBODY(ASObject,propertyIsEnumerable)
+ASFUNCTIONBODY_ATOM(ASObject,propertyIsEnumerable)
 {
 	if (argslen == 0)
-		return abstract_b(obj->getSystemState(),false);
+		return asAtom::falseAtom;
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=args[0]->toStringId();
-	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	name.name_s_id=args[0].toStringId(sys);
+	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
-	if (obj->is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
+	if (obj.is<Array>()) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
-		Array* a = static_cast<Array*>(obj);
+		Array* a = obj.as<Array>();
 		unsigned int index = 0;
-		if (a->isValidMultiname(obj->getSystemState(),name,index))
+		if (a->isValidMultiname(sys,name,index))
 		{
-			return abstract_b(obj->getSystemState(),index < (unsigned int)a->size());
+			return asAtom(index < (unsigned int)a->size());
 		}
 	}
-	variable* v = obj->Variables.findObjVar(obj->getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	variable* v = obj.toObject(sys)->Variables.findObjVar(sys,name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	if (v)
-		return abstract_b(obj->getSystemState(),v->isenumerable);
-	if (obj->hasPropertyByMultiname(name,true,false))
-		return abstract_b(obj->getSystemState(),true);
-	return abstract_b(obj->getSystemState(),false);
+		return asAtom(v->isenumerable);
+	if (obj.getObject()->hasPropertyByMultiname(name,true,false))
+		return asAtom::trueAtom;
+	return asAtom::falseAtom;
 }
-ASFUNCTIONBODY(ASObject,setPropertyIsEnumerable)
+ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 {
 	tiny_string propname;
 	bool isEnum;
-	ARG_UNPACK(propname) (isEnum, true);
+	ARG_UNPACK_ATOM(propname) (isEnum, true);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=args[0]->toStringId();
-	name.ns.emplace_back(obj->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	name.name_s_id=args[0].toStringId(sys);
+	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
-	obj->setIsEnumerable(name, isEnum);
-	return NULL;
+	obj.toObject(sys)->setIsEnumerable(name, isEnum);
+	return asAtom::invalidAtom;
 }
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
@@ -1153,15 +1153,15 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 		v->isenumerable = isEnum;
 }
 
-ASFUNCTIONBODY(ASObject,_constructor)
+ASFUNCTIONBODY_ATOM(ASObject,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ASObject,_constructorNotInstantiatable)
+ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 {
-	throwError<ArgumentError>(kCantInstantiateError, obj->getClassName());
-	return NULL;
+	throwError<ArgumentError>(kCantInstantiateError, obj.toObject(sys)->getClassName());
+	return asAtom::invalidAtom;
 }
 
 void ASObject::initSlot(unsigned int n, const multiname& name)

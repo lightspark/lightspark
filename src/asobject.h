@@ -614,17 +614,17 @@ public:
 	bool implEnable:1;
 
 	Class_base* getClass() const { return classdef; }
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	// constructor for subclasses that can't be instantiated.
 	// Throws ArgumentError.
-	ASFUNCTION(_constructorNotInstantiatable);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_toLocaleString);
-	ASFUNCTION(hasOwnProperty);
-	ASFUNCTION(valueOf);
-	ASFUNCTION(isPrototypeOf);
-	ASFUNCTION(propertyIsEnumerable);
-	ASFUNCTION(setPropertyIsEnumerable);
+	ASFUNCTION_ATOM(_constructorNotInstantiatable);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_toLocaleString);
+	ASFUNCTION_ATOM(hasOwnProperty);
+	ASFUNCTION_ATOM(valueOf);
+	ASFUNCTION_ATOM(isPrototypeOf);
+	ASFUNCTION_ATOM(propertyIsEnumerable);
+	ASFUNCTION_ATOM(setPropertyIsEnumerable);
 	void check() const;
 	static void s_incRef(ASObject* o)
 	{

@@ -143,7 +143,7 @@ Config::Config():
 		dataDirectoryP /= "%%%%-%%%%-%%%%-%%%%";
 		dataDirectoryP = unique_path(dataDirectoryP);
 		create_directories(dataDirectoryP);
-		dataDirectory = dataDirectoryP.c_str();
+		dataDirectory = dataDirectoryP.string();
 	}
 	catch(const filesystem_error& e)
 	{

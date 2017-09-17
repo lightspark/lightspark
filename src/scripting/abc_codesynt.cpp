@@ -1901,7 +1901,11 @@ SyntheticFunction::synt_function method_info::synt_method(SystemState* sys)
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, voidptr_type);
 
-	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
+#ifdef LLVM_50
+	auto it=llvmf->arg_begin();
+#else
+	auto it=llvmf->getArgumentList().begin();
+#endif
 	//The first and only argument to this function is the call_context*
 #ifdef LLVM_38
 	llvm::Value* context=&(*it);

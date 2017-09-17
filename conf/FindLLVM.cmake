@@ -41,27 +41,14 @@ endif (WIN32)
 if (LLVM_INCLUDE_DIR)
   set(LLVM_FOUND TRUE)
 else (LLVM_INCLUDE_DIR)
-
+  file(GLOB LLVM_SEARCHPATHS /usr/lib/llvm*/bin)
   find_program(LLVM_CONFIG_EXECUTABLE
     NAMES llvm-config
     PATHS
     /opt/local/bin
     /opt/llvm/2.7/bin
     /opt/llvm/bin
-    /usr/lib/llvm-2.7/bin
-    /usr/lib/llvm-2.8/bin
-    /usr/lib/llvm-2.9/bin
-    /usr/lib/llvm-3.0/bin
-    /usr/lib/llvm-3.1/bin
-    /usr/lib/llvm-3.2/bin
-    /usr/lib/llvm-3.3/bin
-    /usr/lib/llvm-3.4/bin
-    /usr/lib/llvm-3.5/bin
-    /usr/lib/llvm-3.6/bin
-    /usr/lib/llvm-3.7/bin
-    /usr/lib/llvm-3.8/bin
-    /usr/lib/llvm-3.9/bin
-    /usr/lib/llvm-4.0/bin
+    ${LLVM_SEARCHPATHS}
     )
 
   find_program(LLVM_GCC_EXECUTABLE
@@ -71,20 +58,7 @@ else (LLVM_INCLUDE_DIR)
     /opt/llvm/2.7/bin
     /opt/llvm/bin
     /Developer/usr/bin
-    /usr/lib/llvm-2.7/bin
-    /usr/lib/llvm-2.8/bin
-    /usr/lib/llvm-2.9/bin
-    /usr/lib/llvm-3.0/bin
-    /usr/lib/llvm-3.1/bin
-    /usr/lib/llvm-3.2/bin
-    /usr/lib/llvm-3.3/bin
-    /usr/lib/llvm-3.4/bin
-    /usr/lib/llvm-3.5/bin
-    /usr/lib/llvm-3.6/bin
-    /usr/lib/llvm-3.7/bin
-    /usr/lib/llvm-3.8/bin
-    /usr/lib/llvm-3.9/bin
-    /usr/lib/llvm-4.0/bin
+    ${LLVM_SEARCHPATHS}
     )
 
   find_program(LLVM_GXX_EXECUTABLE
@@ -95,20 +69,7 @@ else (LLVM_INCLUDE_DIR)
     /opt/llvm/bin
     /Developer/usr/bin
     /usr/lib/llvm/llvm/gcc-4.2/bin
-    /usr/lib/llvm-2.7/bin
-    /usr/lib/llvm-2.8/bin
-    /usr/lib/llvm-2.9/bin
-    /usr/lib/llvm-3.0/bin
-    /usr/lib/llvm-3.1/bin
-    /usr/lib/llvm-3.2/bin
-    /usr/lib/llvm-3.3/bin
-    /usr/lib/llvm-3.4/bin
-    /usr/lib/llvm-3.5/bin
-    /usr/lib/llvm-3.6/bin
-    /usr/lib/llvm-3.7/bin
-    /usr/lib/llvm-3.8/bin
-    /usr/lib/llvm-3.9/bin
-    /usr/lib/llvm-4.0/bin
+    ${LLVM_SEARCHPATHS}
     )
 
   if(LLVM_GCC_EXECUTABLE)

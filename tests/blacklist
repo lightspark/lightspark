@@ -5,6 +5,7 @@ tamarin-SWF/ecma3/RegExp/eregress_119909.swf
 tamarin-SWF/as3/ByteArray/ByteArrayLzmaThirdParty.swf
 tamarin-SWF/as3/Vector/concat.swf
 tamarin-SWF/recursion/pcre_find_fixedlength.swf
+tamarin-SWF/regress/bug_599357.swf
 tamarin-SWF/regress/bug_606478.swf
 tamarin-SWF/regress/bug_660985.swf
 tamarin-SWF/versioning/bugcompat.swf

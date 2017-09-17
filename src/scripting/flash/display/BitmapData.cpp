@@ -37,11 +37,17 @@ BitmapData::BitmapData(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pi
 
 BitmapData::BitmapData(Class_base* c, _R<BitmapContainer> b):ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),transparent(true)
 {
+	traitsInitialized = true;
+	constructIndicator = true;
+	constructorCallComplete = true;
 }
 
 BitmapData::BitmapData(Class_base* c, const BitmapData& other)
   : ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(other.pixels),locked(other.locked),transparent(other.transparent)
 {
+	traitsInitialized = other.traitsInitialized;
+	constructIndicator = other.constructIndicator;
+	constructorCallComplete = other.constructorCallComplete;
 }
 
 BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)

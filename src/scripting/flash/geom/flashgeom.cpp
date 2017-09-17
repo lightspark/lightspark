@@ -28,6 +28,8 @@ using namespace std;
 void Rectangle::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
+	
 	IFunction* gleft=Class<IFunction>::getFunction(c->getSystemState(),_getLeft);
 	c->setDeclaredMethodByQName("left","",gleft,GETTER_METHOD,true);
 	gleft->incRef();
@@ -91,234 +93,243 @@ const lightspark::RECT Rectangle::getRect() const
 	return lightspark::RECT(x,x+width,y,y+height);
 }
 
-ASFUNCTIONBODY(Rectangle,_constructor)
+bool Rectangle::destruct()
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	x=0;
+	y=0;
+	width=0;
+	height=0;
+	return ASObject::destruct();
+}
+
+ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
+{
+	Rectangle* th=obj.as<Rectangle>();
 
 	if(argslen>=1)
-		th->x=args[0]->toNumber();
+		th->x=args[0].toNumber();
 	if(argslen>=2)
-		th->y=args[1]->toNumber();
+		th->y=args[1].toNumber();
 	if(argslen>=3)
-		th->width=args[2]->toNumber();
+		th->width=args[2].toNumber();
 	if(argslen>=4)
-		th->height=args[3]->toNumber();
+		th->height=args[3].toNumber();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getLeft)
+ASFUNCTIONBODY_ATOM(Rectangle,_getLeft)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->x);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->x);
 }
 
-ASFUNCTIONBODY(Rectangle,_setLeft)
+ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->x=args[0]->toNumber();
-	return NULL;
+	th->x=args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getRight)
+ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->x + th->width);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->x + th->width);
 }
 
-ASFUNCTIONBODY(Rectangle,_setRight)
+ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->width=(args[0]->toNumber()-th->x);
-	return NULL;
+	th->width=(args[0].toNumber()-th->x);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getWidth)
+ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->width);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->width);
 }
 
-ASFUNCTIONBODY(Rectangle,_setWidth)
+ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->width=args[0]->toNumber();
-	return NULL;
+	th->width=args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getTop)
+ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->y);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->y);
 }
 
-ASFUNCTIONBODY(Rectangle,_setTop)
+ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->y=args[0]->toNumber();
-	return NULL;
+	th->y=args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getBottom)
+ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->y + th->height);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->y + th->height);
 }
 
-ASFUNCTIONBODY(Rectangle,_setBottom)
+ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->height=(args[0]->toNumber()-th->y);
-	return NULL;
+	th->height=(args[0].toNumber()-th->y);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getBottomRight)
+ASFUNCTIONBODY_ATOM(Rectangle,_getBottomRight)
 {
 	assert_and_throw(argslen==0);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->x + th->width, th->y + th->height);
-	return ret;
+	Rectangle* th=obj.as<Rectangle>();
+	Point* ret = Class<Point>::getInstanceS(sys,th->x + th->width, th->y + th->height);
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,_setBottomRight)
+ASFUNCTIONBODY_ATOM(Rectangle,_setBottomRight)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* br = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* br = args[0].as<Point>();
 	th->width = br->getX() - th->x;
 	th->height = br->getY() - th->y;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getTopLeft)
+ASFUNCTIONBODY_ATOM(Rectangle,_getTopLeft)
 {
 	assert_and_throw(argslen==0);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->x, th->y);
-	return ret;
+	Rectangle* th=obj.as<Rectangle>();
+	Point* ret = Class<Point>::getInstanceS(sys,th->x, th->y);
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,_setTopLeft)
+ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* br = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* br = args[0].as<Point>();
 	th->width = br->getX();
 	th->height = br->getY();
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getSize)
+ASFUNCTIONBODY_ATOM(Rectangle,_getSize)
 {
 	assert_and_throw(argslen==0);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* ret = Class<Point>::getInstanceS(obj->getSystemState(),th->width, th->height);
-	return ret;
+	Rectangle* th=obj.as<Rectangle>();
+	Point* ret = Class<Point>::getInstanceS(sys,th->width, th->height);
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,_setSize)
+ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* br = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* br = args[0].as<Point>();
 	th->width = br->getX();
 	th->height = br->getY();
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_getHeight)
+ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	return abstract_d(obj->getSystemState(),th->height);
+	Rectangle* th=obj.as<Rectangle>();
+	return asAtom(th->height);
 }
 
-ASFUNCTIONBODY(Rectangle,_setHeight)
+ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
-	th->height=args[0]->toNumber();
-	return NULL;
+	th->height=args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,clone)
+ASFUNCTIONBODY_ATOM(Rectangle,clone)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
-	Rectangle* ret=Class<Rectangle>::getInstanceS(obj->getSystemState());
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* ret=Class<Rectangle>::getInstanceS(sys);
 	ret->x=th->x;
 	ret->y=th->y;
 	ret->width=th->width;
 	ret->height=th->height;
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,contains)
+ASFUNCTIONBODY_ATOM(Rectangle,contains)
 {
 	assert_and_throw(argslen == 2);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	number_t x = args[0]->toNumber();
-	number_t y = args[1]->toNumber();
+	Rectangle* th=obj.as<Rectangle>();
+	number_t x = args[0].toNumber();
+	number_t y = args[1].toNumber();
 
-	return abstract_b(obj->getSystemState(), th->x <= x && x <= th->x + th->width
+	return asAtom(th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
-ASFUNCTIONBODY(Rectangle,containsPoint)
+ASFUNCTIONBODY_ATOM(Rectangle,containsPoint)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* br = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* br = args[0].as<Point>();
 	number_t x = br->getX();
 	number_t y = br->getY();
 
-	return abstract_b(obj->getSystemState(), th->x <= x && x <= th->x + th->width
+	return asAtom(th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
-ASFUNCTIONBODY(Rectangle,containsRect)
+ASFUNCTIONBODY_ATOM(Rectangle,containsRect)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* cr = static_cast<Rectangle*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* cr = args[0].as<Rectangle>();
 
-	return abstract_b(obj->getSystemState(), th->x <= cr->x && cr->x + cr->width <= th->x + th->width
+	return asAtom(th->x <= cr->x && cr->x + cr->width <= th->x + th->width
 						&& th->y <= cr->y && cr->y + cr->height <= th->y + th->height );
 }
 
-ASFUNCTIONBODY(Rectangle,equals)
+ASFUNCTIONBODY_ATOM(Rectangle,equals)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* co = static_cast<Rectangle*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* co = args[0].as<Rectangle>();
 
-	return abstract_b(obj->getSystemState(), th->x == co->x && th->width == co->width
+	return asAtom(th->x == co->x && th->width == co->width
 						&& th->y == co->y && th->height == co->height );
 }
 
-ASFUNCTIONBODY(Rectangle,inflate)
+ASFUNCTIONBODY_ATOM(Rectangle,inflate)
 {
 	assert_and_throw(argslen == 2);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	number_t dx = args[0]->toNumber();
-	number_t dy = args[1]->toNumber();
+	Rectangle* th=obj.as<Rectangle>();
+	number_t dx = args[0].toNumber();
+	number_t dy = args[1].toNumber();
 
 	th->x -= dx;
 	th->width += 2 * dx;
 	th->y -= dy;
 	th->height += 2 * dy;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,inflatePoint)
+ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* po = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* po = args[0].as<Point>();
 	number_t dx = po->getX();
 	number_t dy = po->getY();
 
@@ -327,15 +338,15 @@ ASFUNCTIONBODY(Rectangle,inflatePoint)
 	th->y -= dy;
 	th->height += 2 * dy;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,intersection)
+ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* ti = static_cast<Rectangle*>(args[0]);
-	Rectangle* ret = Class<Rectangle>::getInstanceS(obj->getSystemState());
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* ti = args[0].as<Rectangle>();
+	Rectangle* ret = Class<Rectangle>::getInstanceS(sys);
 
 	number_t thtop = th->y;
 	number_t thleft = th->x;
@@ -355,7 +366,7 @@ ASFUNCTIONBODY(Rectangle,intersection)
 		ret->y = 0;
 		ret->width = 0;
 		ret->height = 0;
-		return ret;
+		return asAtom::fromObject(ret);
 	}
 
 	Rectangle* leftmost = ti;
@@ -383,14 +394,14 @@ ASFUNCTIONBODY(Rectangle,intersection)
 	ret->y = bottommost->y;
 	ret->height = min(topmost->y + topmost->height, bottommost->y + bottommost->height) - bottommost->y;
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,intersects)
+ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* ti = static_cast<Rectangle*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* ti = args[0].as<Rectangle>();
 
 	number_t thtop = th->y;
 	number_t thleft = th->x;
@@ -402,60 +413,60 @@ ASFUNCTIONBODY(Rectangle,intersects)
 	number_t tiright = ti->x + ti->width;
 	number_t tibottom = ti->y + ti->height;
 
-	return abstract_b(obj->getSystemState(), !(thtop > tibottom || thright < tileft ||
+	return asAtom(!(thtop > tibottom || thright < tileft ||
 						thbottom < titop || thleft > tiright) );
 }
 
-ASFUNCTIONBODY(Rectangle,isEmpty)
+ASFUNCTIONBODY_ATOM(Rectangle,isEmpty)
 {
 	assert_and_throw(argslen == 0);
-	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 
-	return abstract_b(obj->getSystemState(), th->width <= 0 || th->height <= 0 );
+	return asAtom(th->width <= 0 || th->height <= 0 );
 }
 
-ASFUNCTIONBODY(Rectangle,offset)
+ASFUNCTIONBODY_ATOM(Rectangle,offset)
 {
 	assert_and_throw(argslen == 2);
-	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 
-	th->x += args[0]->toNumber();
-	th->y += args[1]->toNumber();
+	th->x += args[0].toNumber();
+	th->y += args[1].toNumber();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,offsetPoint)
+ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Point* po = static_cast<Point*>(args[0]);
+	Rectangle* th=obj.as<Rectangle>();
+	Point* po = args[0].as<Point>();
 
 	th->x += po->getX();
 	th->y += po->getY();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,setEmpty)
+ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
 {
 	assert_and_throw(argslen == 0);
-	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 
 	th->x = 0;
 	th->y = 0;
 	th->width = 0;
 	th->height = 0;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Rectangle,_union)
+ASFUNCTIONBODY_ATOM(Rectangle,_union)
 {
 	assert_and_throw(argslen == 1);
-	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* ti = static_cast<Rectangle*>(args[0]);
-	Rectangle* ret = Class<Rectangle>::getInstanceS(obj->getSystemState());
+	Rectangle* th=obj.as<Rectangle>();
+	Rectangle* ti = args[0].as<Rectangle>();
+	Rectangle* ret = Class<Rectangle>::getInstanceS(sys);
 
 	ret->x = th->x;
 	ret->y = th->y;
@@ -464,7 +475,7 @@ ASFUNCTIONBODY(Rectangle,_union)
 
 	if ( ti->width == 0 || ti->height == 0 )
 	{
-		return ret;
+		return asAtom::fromObject(ret);
 	}
 
 	ret->x = min(th->x, ti->x);
@@ -472,27 +483,27 @@ ASFUNCTIONBODY(Rectangle,_union)
 	ret->width = max(th->x + th->width, ti->x + ti->width);
 	ret->height = max(th->y + th->height, ti->y + ti->height);
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Rectangle,_toString)
+ASFUNCTIONBODY_ATOM(Rectangle,_toString)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	char buf[512];
 	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",th->x,th->y,th->width,th->height);
-	return abstract_s(obj->getSystemState(),buf);
+	return asAtom::fromObject(abstract_s(sys,buf));
 }
 
-ASFUNCTIONBODY(Rectangle,setTo)
+ASFUNCTIONBODY_ATOM(Rectangle,setTo)
 {
-	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* th=obj.as<Rectangle>();
 	number_t x,y,w,h;
-	ARG_UNPACK(x)(y)(w)(h);
+	ARG_UNPACK_ATOM(x)(y)(w)(h);
 	th->x = x;
 	th->y = y;
 	th->width = w;
 	th->height = h;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
@@ -505,6 +516,7 @@ ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
 void ColorTransform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 
 	// properties
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),getColor),GETTER_METHOD,true);
@@ -537,50 +549,50 @@ void ColorTransform::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ColorTransform,_constructor)
+ASFUNCTIONBODY_ATOM(ColorTransform,_constructor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* th=obj.as<ColorTransform>();
 	assert_and_throw(argslen<=8);
 	if(0 < argslen)
-		th->redMultiplier=args[0]->toNumber();
+		th->redMultiplier=args[0].toNumber();
 	else
 		th->redMultiplier=1.0;
 	if(1 < argslen)
-		th->greenMultiplier=args[1]->toNumber();
+		th->greenMultiplier=args[1].toNumber();
 	else
 		th->greenMultiplier=1.0;
 	if(2 < argslen)
-		th->blueMultiplier=args[2]->toNumber();
+		th->blueMultiplier=args[2].toNumber();
 	else
 		th->blueMultiplier=1.0;
 	if(3 < argslen)
-		th->alphaMultiplier=args[3]->toNumber();
+		th->alphaMultiplier=args[3].toNumber();
 	else
 		th->alphaMultiplier=1.0;
 	if(4 < argslen)
-		th->redOffset=args[4]->toNumber();
+		th->redOffset=args[4].toNumber();
 	else
 		th->redOffset=0.0;
 	if(5 < argslen)
-		th->greenOffset=args[5]->toNumber();
+		th->greenOffset=args[5].toNumber();
 	else
 		th->greenOffset=0.0;
 	if(6 < argslen)
-		th->blueOffset=args[6]->toNumber();
+		th->blueOffset=args[6].toNumber();
 	else
 		th->blueOffset=0.0;
 	if(7 < argslen)
-		th->alphaOffset=args[7]->toNumber();
+		th->alphaOffset=args[7].toNumber();
 	else
 		th->alphaOffset=0.0;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,setColor)
+ASFUNCTIONBODY_ATOM(ColorTransform,setColor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* th=obj.as<ColorTransform>();
 	assert_and_throw(argslen==1);
-	uint32_t tmp=args[0]->toInt();
+	uint32_t tmp=args[0].toInt();
 	//Setting multiplier to 0
 	th->redMultiplier=0;
 	th->greenMultiplier=0;
@@ -591,12 +603,12 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 	th->redOffset=(tmp>>16)&0xff;
 	th->greenOffset=(tmp>>8)&0xff;
 	th->blueOffset=tmp&0xff;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,getColor)
+ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* th=obj.as<ColorTransform>();
 
 	int ao, ro, go, bo;
 	ao = static_cast<int>(th->alphaOffset) & 0xff;
@@ -606,126 +618,126 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 
 	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
 
-	return abstract_d(obj->getSystemState(),color);
+	return asAtom(color);
 }
 
-ASFUNCTIONBODY(ColorTransform,getRedMultiplier)
+ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->redMultiplier);
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->redMultiplier);
 }
 
-ASFUNCTIONBODY(ColorTransform,setRedMultiplier)
-{
-	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->redMultiplier = args[0]->toNumber();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ColorTransform,getGreenMultiplier)
-{
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->greenMultiplier);
-}
-
-ASFUNCTIONBODY(ColorTransform,setGreenMultiplier)
+ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
 {
 	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->greenMultiplier = args[0]->toNumber();
-	return NULL;
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->redMultiplier = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,getBlueMultiplier)
+ASFUNCTIONBODY_ATOM(ColorTransform,getGreenMultiplier)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->blueMultiplier);
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->greenMultiplier);
 }
 
-ASFUNCTIONBODY(ColorTransform,setBlueMultiplier)
-{
-	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->blueMultiplier = args[0]->toNumber();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ColorTransform,getAlphaMultiplier)
-{
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->alphaMultiplier);
-}
-
-ASFUNCTIONBODY(ColorTransform,setAlphaMultiplier)
+ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
 {
 	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->alphaMultiplier = args[0]->toNumber();
-	return NULL;
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->greenMultiplier = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,getRedOffset)
+ASFUNCTIONBODY_ATOM(ColorTransform,getBlueMultiplier)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->redOffset);
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->blueMultiplier);
 }
 
-ASFUNCTIONBODY(ColorTransform,setRedOffset)
-{
-	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->redOffset = args[0]->toNumber();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ColorTransform,getGreenOffset)
-{
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->greenOffset);
-}
-
-ASFUNCTIONBODY(ColorTransform,setGreenOffset)
+ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
 {
 	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->greenOffset = args[0]->toNumber();
-	return NULL;
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->blueMultiplier = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,getBlueOffset)
+ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaMultiplier)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->blueOffset);
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->alphaMultiplier);
 }
 
-ASFUNCTIONBODY(ColorTransform,setBlueOffset)
-{
-	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->blueOffset = args[0]->toNumber();
-	return NULL;
-}
-
-ASFUNCTIONBODY(ColorTransform,getAlphaOffset)
-{
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	return abstract_d(obj->getSystemState(),th->alphaOffset);
-}
-
-ASFUNCTIONBODY(ColorTransform,setAlphaOffset)
+ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
 {
 	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	th->alphaOffset = args[0]->toNumber();
-	return NULL;
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->alphaMultiplier = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,concat)
+ASFUNCTIONBODY_ATOM(ColorTransform,getRedOffset)
+{
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->redOffset);
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
 {
 	assert_and_throw(argslen==1);
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	ColorTransform* ct=static_cast<ColorTransform*>(args[0]);
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->redOffset = args[0].toNumber();
+	return asAtom::invalidAtom;
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,getGreenOffset)
+{
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->greenOffset);
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->greenOffset = args[0].toNumber();
+	return asAtom::invalidAtom;
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,getBlueOffset)
+{
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->blueOffset);
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->blueOffset = args[0].toNumber();
+	return asAtom::invalidAtom;
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaOffset)
+{
+	ColorTransform* th=obj.as<ColorTransform>();
+	return asAtom(th->alphaOffset);
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=obj.as<ColorTransform>();
+	th->alphaOffset = args[0].toNumber();
+	return asAtom::invalidAtom;
+}
+
+ASFUNCTIONBODY_ATOM(ColorTransform,concat)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=obj.as<ColorTransform>();
+	ColorTransform* ct=args[0].as<ColorTransform>();
 
 	th->redMultiplier *= ct->redMultiplier;
 	th->redOffset = th->redOffset * ct->redMultiplier + ct->redOffset;
@@ -736,22 +748,23 @@ ASFUNCTIONBODY(ColorTransform,concat)
 	th->alphaMultiplier *= ct->alphaMultiplier;
 	th->alphaOffset = th->alphaOffset * ct->alphaMultiplier + ct->alphaOffset;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ColorTransform,_toString)
+ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* th=obj.as<ColorTransform>();
 	char buf[1024];
 	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)",
 			th->redOffset, th->redMultiplier, th->greenOffset, th->greenMultiplier, th->blueOffset, th->blueMultiplier, th->alphaOffset, th->alphaMultiplier);
 	
-	return abstract_s(obj->getSystemState(),buf);
+	return asAtom::fromObject(abstract_s(sys,buf));
 }
 
 void Point::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getlength),GETTER_METHOD,true);
@@ -774,12 +787,12 @@ void Point::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Point,_toString)
+ASFUNCTIONBODY_ATOM(Point,_toString)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f)",th->x,th->y);
-	return abstract_s(obj->getSystemState(),buf);
+	return asAtom::fromObject(abstract_s(sys,buf));
 }
 
 number_t Point::lenImpl(number_t x, number_t y)
@@ -792,154 +805,154 @@ number_t Point::len() const
 	return lenImpl(x, y);
 }
 
-ASFUNCTIONBODY(Point,_constructor)
+ASFUNCTIONBODY_ATOM(Point,_constructor)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	if(argslen>=1)
-		th->x=args[0]->toNumber();
+		th->x=args[0].toNumber();
 	if(argslen>=2)
-		th->y=args[1]->toNumber();
+		th->y=args[1].toNumber();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Point,_getX)
+ASFUNCTIONBODY_ATOM(Point,_getX)
 {
-	Point* th=static_cast<Point*>(obj);
-	return abstract_d(obj->getSystemState(),th->x);
+	Point* th=obj.as<Point>();
+	return asAtom(th->x);
 }
 
-ASFUNCTIONBODY(Point,_getY)
+ASFUNCTIONBODY_ATOM(Point,_getY)
 {
-	Point* th=static_cast<Point*>(obj);
-	return abstract_d(obj->getSystemState(),th->y);
+	Point* th=obj.as<Point>();
+	return asAtom(th->y);
 }
 
-ASFUNCTIONBODY(Point,_setX)
+ASFUNCTIONBODY_ATOM(Point,_setX)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
-	th->x = args[0]->toNumber();
-	return NULL;
+	th->x = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Point,_setY)
+ASFUNCTIONBODY_ATOM(Point,_setY)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
-	th->y = args[0]->toNumber();
-	return NULL;
+	th->y = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Point,_getlength)
+ASFUNCTIONBODY_ATOM(Point,_getlength)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==0);
-	return abstract_d(obj->getSystemState(),th->len());
+	return asAtom(th->len());
 }
 
-ASFUNCTIONBODY(Point,interpolate)
+ASFUNCTIONBODY_ATOM(Point,interpolate)
 {
 	assert_and_throw(argslen==3);
-	Point* pt1=static_cast<Point*>(args[0]);
-	Point* pt2=static_cast<Point*>(args[1]);
-	number_t f=args[2]->toNumber();
-	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
+	Point* pt1=args[0].as<Point>();
+	Point* pt2=args[1].as<Point>();
+	number_t f=args[2].toNumber();
+	Point* ret=Class<Point>::getInstanceS(sys);
 	ret->x = pt1->x + pt2->x * f;
 	ret->y = pt1->y + pt2->y * f;
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Point,distance)
+ASFUNCTIONBODY_ATOM(Point,distance)
 {
 	assert_and_throw(argslen==2);
-	Point* pt1=static_cast<Point*>(args[0]);
-	Point* pt2=static_cast<Point*>(args[1]);
+	Point* pt1=args[0].as<Point>();
+	Point* pt2=args[1].as<Point>();
 	number_t ret=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
-	return abstract_d(obj->getSystemState(),ret);
+	return asAtom(ret);
 }
 
-ASFUNCTIONBODY(Point,add)
+ASFUNCTIONBODY_ATOM(Point,add)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
-	Point* v=static_cast<Point*>(args[0]);
-	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
+	Point* v=args[0].as<Point>();
+	Point* ret=Class<Point>::getInstanceS(sys);
 	ret->x = th->x + v->x;
 	ret->y = th->y + v->y;
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Point,subtract)
+ASFUNCTIONBODY_ATOM(Point,subtract)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
-	Point* v=static_cast<Point*>(args[0]);
-	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
+	Point* v=args[0].as<Point>();
+	Point* ret=Class<Point>::getInstanceS(sys);
 	ret->x = th->x - v->x;
 	ret->y = th->y - v->y;
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Point,clone)
+ASFUNCTIONBODY_ATOM(Point,clone)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==0);
-	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
+	Point* ret=Class<Point>::getInstanceS(sys);
 	ret->x = th->x;
 	ret->y = th->y;
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Point,equals)
+ASFUNCTIONBODY_ATOM(Point,equals)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
-	Point* toCompare=static_cast<Point*>(args[0]);
-	return abstract_b(obj->getSystemState(),(th->x == toCompare->x) & (th->y == toCompare->y));
+	Point* toCompare=args[0].as<Point>();
+	return asAtom((th->x == toCompare->x) & (th->y == toCompare->y));
 }
 
-ASFUNCTIONBODY(Point,normalize)
+ASFUNCTIONBODY_ATOM(Point,normalize)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen<2);
-	number_t thickness = argslen > 0 ? args[0]->toNumber() : 1.0;
+	number_t thickness = argslen > 0 ? args[0].toNumber() : 1.0;
 	number_t len = th->len();
 	th->x = len == 0 ? 0 : th->x * thickness / len;
 	th->y = len == 0 ? 0 : th->y * thickness / len;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Point,offset)
+ASFUNCTIONBODY_ATOM(Point,offset)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==2);
-	number_t dx = args[0]->toNumber();
-	number_t dy = args[1]->toNumber();
+	number_t dx = args[0].toNumber();
+	number_t dy = args[1].toNumber();
 	th->x += dx;
 	th->y += dy;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Point,polar)
+ASFUNCTIONBODY_ATOM(Point,polar)
 {
 	assert_and_throw(argslen==2);
-	number_t len = args[0]->toNumber();
-	number_t angle = args[1]->toNumber();
-	Point* ret=Class<Point>::getInstanceS(obj->getSystemState());
+	number_t len = args[0].toNumber();
+	number_t angle = args[1].toNumber();
+	Point* ret=Class<Point>::getInstanceS(sys);
 	ret->x = len * cos(angle);
 	ret->y = len * sin(angle);
-	return ret;
+	return asAtom::fromObject(ret);
 }
-ASFUNCTIONBODY(Point,setTo)
+ASFUNCTIONBODY_ATOM(Point,setTo)
 {
-	Point* th=static_cast<Point*>(obj);
+	Point* th=obj.as<Point>();
 	number_t x;
 	number_t y;
-	ARG_UNPACK(x)(y);
+	ARG_UNPACK_ATOM(x)(y);
 	th->x = x;
 	th->y = y;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 Transform::Transform(Class_base* c):ASObject(c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
 {
@@ -948,15 +961,18 @@ Transform::Transform(Class_base* c, _R<DisplayObject> o):ASObject(c),owner(o),pe
 {
 }
 
-void Transform::finalize()
+bool Transform::destruct()
 {
 	owner.reset();
-	ASObject::finalize();
+	perspectiveProjection.reset();
+	matrix3D.reset();
+	return ASObject::destruct();
 }
 
 void Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(c->getSystemState(),_getColorTransform),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",Class<IFunction>::getFunction(c->getSystemState(),_setColorTransform),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_setMatrix),SETTER_METHOD,true);
@@ -969,58 +985,58 @@ void Transform::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D);
 
-ASFUNCTIONBODY(Transform,_constructor)
+ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {
 	assert_and_throw(argslen==0);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Transform,_getMatrix)
+ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
 {
-	Transform* th=Class<Transform>::cast(obj);
+	Transform* th=obj.as<Transform>();
 	assert_and_throw(argslen==0);
 	if (th->owner->matrix.isNull())
-		return obj->getSystemState()->getNullRef();
+		return asAtom::nullAtom;
 	const MATRIX& ret=th->owner->getMatrix();
-	return Class<Matrix>::getInstanceS(obj->getSystemState(),ret);
+	return asAtom::fromObject(Class<Matrix>::getInstanceS(sys,ret));
 }
 
-ASFUNCTIONBODY(Transform,_setMatrix)
+ASFUNCTIONBODY_ATOM(Transform,_setMatrix)
 {
-	Transform* th=Class<Transform>::cast(obj);
+	Transform* th=obj.as<Transform>();
 	_NR<Matrix> m;
-	ARG_UNPACK(m);
+	ARG_UNPACK_ATOM(m);
 	th->owner->setMatrix(m);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Transform,_getColorTransform)
+ASFUNCTIONBODY_ATOM(Transform,_getColorTransform)
 {
-	Transform* th=Class<Transform>::cast(obj);
+	Transform* th=obj.as<Transform>();
 	if (th->owner->colorTransform.isNull())
-		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState()));
+		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(sys));
 	th->owner->colorTransform->incRef();
-	return th->owner->colorTransform.getPtr();
+	return asAtom::fromObject(th->owner->colorTransform.getPtr());
 }
 
-ASFUNCTIONBODY(Transform,_setColorTransform)
+ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 {
-	Transform* th=Class<Transform>::cast(obj);
+	Transform* th=obj.as<Transform>();
 	_NR<ColorTransform> ct;
-	ARG_UNPACK(ct);
+	ARG_UNPACK_ATOM(ct);
 	if (ct.isNull())
 		throwError<TypeError>(kNullPointerError, "colorTransform");
 
 	ct->incRef();
 	th->owner->colorTransform = ct;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Transform,_getConcatenatedMatrix)
+ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
 {
-	Transform* th=Class<Transform>::cast(obj);
-	return Class<Matrix>::getInstanceS(obj->getSystemState(),th->owner->getConcatenatedMatrix());
+	Transform* th=obj.as<Transform>();
+	return asAtom::fromObject(Class<Matrix>::getInstanceS(sys,th->owner->getConcatenatedMatrix()));
 }
 
 void Transform::buildTraits(ASObject* o)
@@ -1069,12 +1085,11 @@ void Matrix::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
-ASFUNCTIONBODY(Matrix,_constructor)
+ASFUNCTIONBODY_ATOM(Matrix,_constructor)
 {
 	assert_and_throw(argslen <= 6);
-	ASObject::_constructor(obj,NULL,0);
 	
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	
 	//Mapping to cairo_matrix_t
 	//a -> xx
@@ -1085,32 +1100,32 @@ ASFUNCTIONBODY(Matrix,_constructor)
 	//ty -> y0
 	
 	if (argslen >= 1)
-		th->matrix.xx = args[0]->toNumber();
+		th->matrix.xx = args[0].toNumber();
 	if (argslen >= 2)
-		th->matrix.yx = args[1]->toNumber();
+		th->matrix.yx = args[1].toNumber();
 	if (argslen >= 3)
-		th->matrix.xy = args[2]->toNumber();
+		th->matrix.xy = args[2].toNumber();
 	if (argslen >= 4)
-		th->matrix.yy = args[3]->toNumber();
+		th->matrix.yy = args[3].toNumber();
 	if (argslen >= 5)
-		th->matrix.x0 = args[4]->toNumber();
+		th->matrix.x0 = args[4].toNumber();
 	if (argslen == 6)
-		th->matrix.y0 = args[5]->toNumber();
+		th->matrix.y0 = args[5].toNumber();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Matrix::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Matrix,_toString)
+ASFUNCTIONBODY_ATOM(Matrix,_toString)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
 			th->matrix.xx, th->matrix.yx, th->matrix.xy, th->matrix.yy, th->matrix.x0, th->matrix.y0);
-	return abstract_s(obj->getSystemState(),buf);
+	return asAtom::fromObject(abstract_s(sys,buf));
 }
 
 MATRIX Matrix::getMATRIX() const
@@ -1118,158 +1133,164 @@ MATRIX Matrix::getMATRIX() const
 	return matrix;
 }
 
-ASFUNCTIONBODY(Matrix,_get_a)
+bool Matrix::destruct()
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.xx);
+	matrix = MATRIX();
+	return ASObject::destruct();
 }
 
-ASFUNCTIONBODY(Matrix,_set_a)
+ASFUNCTIONBODY_ATOM(Matrix,_get_a)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.xx);
+}
+
+ASFUNCTIONBODY_ATOM(Matrix,_set_a)
+{
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.xx = args[0]->toNumber();
-	return NULL;
+	th->matrix.xx = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,_get_b)
+ASFUNCTIONBODY_ATOM(Matrix,_get_b)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.yx);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.yx);
 }
 
-ASFUNCTIONBODY(Matrix,_set_b)
+ASFUNCTIONBODY_ATOM(Matrix,_set_b)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.yx = args[0]->toNumber();
-	return NULL;
+	th->matrix.yx = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,_get_c)
+ASFUNCTIONBODY_ATOM(Matrix,_get_c)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.xy);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.xy);
 }
 
-ASFUNCTIONBODY(Matrix,_set_c)
+ASFUNCTIONBODY_ATOM(Matrix,_set_c)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.xy = args[0]->toNumber();
-	return NULL;
+	th->matrix.xy = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,_get_d)
+ASFUNCTIONBODY_ATOM(Matrix,_get_d)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.yy);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.yy);
 }
 
-ASFUNCTIONBODY(Matrix,_set_d)
+ASFUNCTIONBODY_ATOM(Matrix,_set_d)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.yy = args[0]->toNumber();
-	return NULL;
+	th->matrix.yy = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,_get_tx)
+ASFUNCTIONBODY_ATOM(Matrix,_get_tx)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.x0);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.x0);
 }
 
-ASFUNCTIONBODY(Matrix,_set_tx)
+ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.x0 = args[0]->toNumber();
-	return NULL;
+	th->matrix.x0 = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,_get_ty)
+ASFUNCTIONBODY_ATOM(Matrix,_get_ty)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
-	return abstract_d(obj->getSystemState(),th->matrix.y0);
+	Matrix* th=obj.as<Matrix>();
+	return asAtom(th->matrix.y0);
 }
 
-ASFUNCTIONBODY(Matrix,_set_ty)
+ASFUNCTIONBODY_ATOM(Matrix,_set_ty)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
-	th->matrix.y0 = args[0]->toNumber();
-	return NULL;
+	th->matrix.y0 = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,clone)
+ASFUNCTIONBODY_ATOM(Matrix,clone)
 {
 	assert_and_throw(argslen==0);
 
-	Matrix* th=static_cast<Matrix*>(obj);
-	Matrix* ret=Class<Matrix>::getInstanceS(obj->getSystemState(),th->matrix);
-	return ret;
+	Matrix* th=obj.as<Matrix>();
+	Matrix* ret=Class<Matrix>::getInstanceS(sys,th->matrix);
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Matrix,concat)
+ASFUNCTIONBODY_ATOM(Matrix,concat)
 {
 	assert_and_throw(argslen==1);
 
-	Matrix* th=static_cast<Matrix*>(obj);
-	Matrix* m=static_cast<Matrix*>(args[0]);
+	Matrix* th=obj.as<Matrix>();
+	Matrix* m=args[0].as<Matrix>();
 
 	//Premultiply, which is flash convention
 	cairo_matrix_multiply(&th->matrix,&th->matrix,&m->matrix);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,identity)
+ASFUNCTIONBODY_ATOM(Matrix,identity)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==0);
 	
 	cairo_matrix_init_identity(&th->matrix);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,invert)
+ASFUNCTIONBODY_ATOM(Matrix,invert)
 {
 	assert_and_throw(argslen==0);
-	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* th=obj.as<Matrix>();
 	th->matrix=th->matrix.getInverted();
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,translate)
+ASFUNCTIONBODY_ATOM(Matrix,translate)
 {
 	assert_and_throw(argslen==2);
-	Matrix* th=static_cast<Matrix*>(obj);
-	number_t dx = args[0]->toNumber();
-	number_t dy = args[1]->toNumber();
+	Matrix* th=obj.as<Matrix>();
+	number_t dx = args[0].toNumber();
+	number_t dy = args[1].toNumber();
 
 	th->matrix.translate(dx,dy);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,rotate)
+ASFUNCTIONBODY_ATOM(Matrix,rotate)
 {
 	assert_and_throw(argslen==1);
-	Matrix* th=static_cast<Matrix*>(obj);
-	number_t angle = args[0]->toNumber();
+	Matrix* th=obj.as<Matrix>();
+	number_t angle = args[0].toNumber();
 
 	th->matrix.rotate(angle);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,scale)
+ASFUNCTIONBODY_ATOM(Matrix,scale)
 {
 	assert_and_throw(argslen==2);
-	Matrix* th=static_cast<Matrix*>(obj);
-	number_t sx = args[0]->toNumber();
-	number_t sy = args[1]->toNumber();
+	Matrix* th=obj.as<Matrix>();
+	number_t sx = args[0].toNumber();
+	number_t sy = args[1].toNumber();
 
 	th->matrix.scale(sx, sy);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y) {
@@ -1288,75 +1309,76 @@ void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, numbe
 	matrix.translate(x,y);
 }
 
-ASFUNCTIONBODY(Matrix,createBox)
+ASFUNCTIONBODY_ATOM(Matrix,createBox)
 {
 	assert_and_throw(argslen>=2 && argslen <= 5);
-	Matrix* th=static_cast<Matrix*>(obj);
-	number_t scaleX = args[0]->toNumber();
-	number_t scaleY = args[1]->toNumber();
+	Matrix* th=obj.as<Matrix>();
+	number_t scaleX = args[0].toNumber();
+	number_t scaleY = args[1].toNumber();
 
 	number_t angle = 0;
-	if ( argslen > 2 ) angle = args[2]->toNumber();
+	if ( argslen > 2 ) angle = args[2].toNumber();
 
 	number_t translateX = 0;
-	if ( argslen > 3 ) translateX = args[3]->toNumber();
+	if ( argslen > 3 ) translateX = args[3].toNumber();
 
 	number_t translateY = 0;
-	if ( argslen > 4 ) translateY = args[4]->toNumber();
+	if ( argslen > 4 ) translateY = args[4].toNumber();
 
 	th->_createBox(scaleX, scaleY, angle, translateX, translateY);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,createGradientBox)
+ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
 {
 	assert_and_throw(argslen>=2 && argslen <= 5);
-	Matrix* th=static_cast<Matrix*>(obj);
-	number_t width  = args[0]->toNumber();
-	number_t height = args[1]->toNumber();
+	Matrix* th=obj.as<Matrix>();
+	number_t width  = args[0].toNumber();
+	number_t height = args[1].toNumber();
 
 	number_t angle = 0;
-	if ( argslen > 2 ) angle = args[2]->toNumber();
+	if ( argslen > 2 ) angle = args[2].toNumber();
 
 	number_t translateX = width/2;
-	if ( argslen > 3 ) translateX += args[3]->toNumber();
+	if ( argslen > 3 ) translateX += args[3].toNumber();
 
 	number_t translateY = height/2;
-	if ( argslen > 4 ) translateY += args[4]->toNumber();
+	if ( argslen > 4 ) translateY += args[4].toNumber();
 
 	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX, translateY);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Matrix,transformPoint)
+ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 {
 	assert_and_throw(argslen==1);
-	Matrix* th=static_cast<Matrix*>(obj);
-	Point* pt=static_cast<Point*>(args[0]);
+	Matrix* th=obj.as<Matrix>();
+	Point* pt=args[0].as<Point>();
 
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
-	return Class<Point>::getInstanceS(obj->getSystemState(),ttx, tty);
+	return asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
 }
 
-ASFUNCTIONBODY(Matrix,deltaTransformPoint)
+ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 {
 	assert_and_throw(argslen==1);
-	Matrix* th=static_cast<Matrix*>(obj);
-	Point* pt=static_cast<Point*>(args[0]);
+	Matrix* th=obj.as<Matrix>();
+	Point* pt=args[0].as<Point>();
 
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
-	return Class<Point>::getInstanceS(obj->getSystemState(),ttx, tty);
+	return asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
 }
 
 void Vector3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 
 	// constants
 	Vector3D* tx = new (c->memoryAccount) Vector3D(c);
@@ -1403,12 +1425,11 @@ void Vector3D::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
-ASFUNCTIONBODY(Vector3D,_constructor)
+ASFUNCTIONBODY_ATOM(Vector3D,_constructor)
 {
 	assert_and_throw(argslen <= 4);
-	ASObject::_constructor(obj,NULL,0);
 	
-	Vector3D * th=static_cast<Vector3D*>(obj);
+	Vector3D* th=obj.as<Vector3D>();
 	
 	th->w = 0;
 	th->x = 0;
@@ -1416,189 +1437,198 @@ ASFUNCTIONBODY(Vector3D,_constructor)
 	th->z = 0;
 	
 	if (argslen >= 1)
-		th->x = args[0]->toNumber();
+		th->x = args[0].toNumber();
 	if (argslen >= 2)
-		th->y = args[1]->toNumber();
+		th->y = args[1].toNumber();
 	if (argslen >= 3)
-		th->z = args[2]->toNumber();
+		th->z = args[2].toNumber();
 	if (argslen == 4)
-		th->w = args[3]->toNumber();
+		th->w = args[3].toNumber();
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void Vector3D::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Vector3D,_toString)
+bool Vector3D::destruct()
 {
-	Vector3D* th=static_cast<Vector3D*>(obj);
+	w = 0;
+	x = 0;
+	y = 0;
+	z = 0;
+	return ASObject::destruct();
+}
+
+ASFUNCTIONBODY_ATOM(Vector3D,_toString)
+{
+	Vector3D* th=obj.as<Vector3D>();
 	char buf[512];
 	snprintf(buf,512,"(x=%f, y=%f, z=%f)", th->x, th->y, th->z);
-	return abstract_s(obj->getSystemState(),buf);
+	return asAtom::fromObject(abstract_s(sys,buf));
 }
 
-ASFUNCTIONBODY(Vector3D,_get_w)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_w)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),th->w);
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(th->w);
 }
 
-ASFUNCTIONBODY(Vector3D,_set_w)
+ASFUNCTIONBODY_ATOM(Vector3D,_set_w)
 {
 	assert_and_throw(argslen==1);
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	th->w = args[0]->toNumber();
-	return NULL;
+	Vector3D* th=obj.as<Vector3D>();
+	th->w = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,_get_x)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_x)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),th->x);
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(th->x);
 }
 
-ASFUNCTIONBODY(Vector3D,_set_x)
+ASFUNCTIONBODY_ATOM(Vector3D,_set_x)
 {
 	assert_and_throw(argslen==1);
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	th->x = args[0]->toNumber();
-	return NULL;
+	Vector3D* th=obj.as<Vector3D>();
+	th->x = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,_get_y)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_y)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),th->y);
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(th->y);
 }
 
-ASFUNCTIONBODY(Vector3D,_set_y)
+ASFUNCTIONBODY_ATOM(Vector3D,_set_y)
 {
 	assert_and_throw(argslen==1);
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	th->y = args[0]->toNumber();
-	return NULL;
+	Vector3D* th=obj.as<Vector3D>();
+	th->y = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,_get_z)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_z)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),th->z);
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(th->z);
 }
 
-ASFUNCTIONBODY(Vector3D,_set_z)
+ASFUNCTIONBODY_ATOM(Vector3D,_set_z)
 {
 	assert_and_throw(argslen==1);
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	th->z = args[0]->toNumber();
-	return NULL;
+	Vector3D* th=obj.as<Vector3D>();
+	th->z = args[0].toNumber();
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,_get_length)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_length)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
 }
 
-ASFUNCTIONBODY(Vector3D,_get_lengthSquared)
+ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	return abstract_d(obj->getSystemState(),th->x * th->x + th->y * th->y + th->z * th->z);
+	Vector3D* th=obj.as<Vector3D>();
+	return asAtom(th->x * th->x + th->y * th->y + th->z * th->z);
 }
 
-ASFUNCTIONBODY(Vector3D,clone)
+ASFUNCTIONBODY_ATOM(Vector3D,clone)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
 
 	ret->w = th->w;
 	ret->x = th->x;
 	ret->y = th->y;
 	ret->z = th->z;
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Vector3D,add)
+ASFUNCTIONBODY_ATOM(Vector3D,add)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
 
 	ret->x = th->x + vc->x;
 	ret->y = th->y + vc->y;
 	ret->z = th->z + vc->z;
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Vector3D,angleBetween)
+ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
 {
 	assert_and_throw(argslen==2);
 
-	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
-	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
+	Vector3D* vc1=args[0].as<Vector3D>();
+	Vector3D* vc2=args[1].as<Vector3D>();
 
 	number_t angle = vc1->x * vc2->x + vc1->y * vc2->y + vc1->z * vc2->z;
 	angle /= sqrt(vc1->x * vc1->x + vc1->y * vc1->y + vc1->z * vc1->z);
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
 	angle = acos(angle);
 
-	return abstract_d(obj->getSystemState(),angle);
+	return asAtom(angle);
 }
 
-ASFUNCTIONBODY(Vector3D,crossProduct)
+ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
 
 	ret->x = th->y * vc->z - th->z * vc->y;
 	ret->y = th->z * vc->x - th->x * vc->z;
 	ret->z = th->x * vc->y - th->y * vc->x;
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
-ASFUNCTIONBODY(Vector3D,decrementBy)
+ASFUNCTIONBODY_ATOM(Vector3D,decrementBy)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
 
 	th->x -= vc->x;
 	th->y -= vc->y;
 	th->z -= vc->z;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,distance)
+ASFUNCTIONBODY_ATOM(Vector3D,distance)
 {
 	assert_and_throw(argslen==2);
 
-	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
-	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
+	Vector3D* vc1=args[0].as<Vector3D>();
+	Vector3D* vc2=args[1].as<Vector3D>();
 
 	number_t dx, dy, dz, dist;
 	dx = vc1->x - vc2->x;
@@ -1606,63 +1636,61 @@ ASFUNCTIONBODY(Vector3D,distance)
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-	return abstract_d(obj->getSystemState(),dist);
+	return asAtom(dist);
 }
 
-ASFUNCTIONBODY(Vector3D,dotProduct)
+ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
 
-	return abstract_d(obj->getSystemState(),th->x * vc->x + th->y * vc->y + th->z * vc->z);
+	return asAtom(th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
-ASFUNCTIONBODY(Vector3D,equals)
+ASFUNCTIONBODY_ATOM(Vector3D,equals)
 {
 	assert_and_throw(argslen==1 || argslen==2);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
 	int32_t allfour = 0;
 
 	if ( argslen == 2 )
 	{
-		Boolean* af=static_cast<Boolean*>(args[1]);
-		allfour = af->toInt();
+		allfour = args[1].toInt();
 	}
 
-	return abstract_b(obj->getSystemState(),th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
+	return asAtom(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
 }
 
-ASFUNCTIONBODY(Vector3D,incrementBy)
+ASFUNCTIONBODY_ATOM(Vector3D,incrementBy)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
 
 	th->x += vc->x;
 	th->y += vc->y;
 	th->z += vc->z;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,nearEquals)
+ASFUNCTIONBODY_ATOM(Vector3D,nearEquals)
 {
 	assert_and_throw(argslen==2 && argslen==3);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	number_t tolerance = args[1]->toNumber();
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
+	number_t tolerance = args[1].toNumber();
 	int32_t allfour = 0;
 
 	if (argslen == 3 )
 	{
-		Boolean* af=static_cast<Boolean*>(args[2]);
-		allfour = af->toInt();
+		allfour = args[2].toInt();
 	}
 
 	bool dx, dy, dz, dw;
@@ -1671,27 +1699,27 @@ ASFUNCTIONBODY(Vector3D,nearEquals)
 	dz = (th->z - vc->z) < tolerance;
 	dw = allfour ? (th->w - vc->w) < tolerance : true;
 
-	return abstract_b(obj->getSystemState(),dx && dy && dz && dw);
+	return asAtom(dx && dy && dz && dw);
 }
 
-ASFUNCTIONBODY(Vector3D,negate)
+ASFUNCTIONBODY_ATOM(Vector3D,negate)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* th=obj.as<Vector3D>();
 
 	th->x = -th->x;
 	th->y = -th->y;
 	th->z = -th->z;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,normalize)
+ASFUNCTIONBODY_ATOM(Vector3D,normalize)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* th=obj.as<Vector3D>();
 
 	number_t len = sqrt(th->x * th->x + th->y * th->y + th->z * th->z);
 
@@ -1699,125 +1727,148 @@ ASFUNCTIONBODY(Vector3D,normalize)
 	th->y /= len;
 	th->z /= len;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,project)
+ASFUNCTIONBODY_ATOM(Vector3D,project)
 {
 	assert_and_throw(argslen==0);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* th=obj.as<Vector3D>();
 
 	th->x /= th->w;
 	th->y /= th->w;
 	th->z /= th->w;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,scaleBy)
+ASFUNCTIONBODY_ATOM(Vector3D,scaleBy)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	number_t scale = args[0]->toNumber();
+	Vector3D* th=obj.as<Vector3D>();
+	number_t scale = args[0].toNumber();
 
 	th->x *= scale;
 	th->y *= scale;
 	th->z *= scale;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Vector3D,subtract)
+ASFUNCTIONBODY_ATOM(Vector3D,subtract)
 {
 	assert_and_throw(argslen==1);
 
-	Vector3D* th=static_cast<Vector3D*>(obj);
-	Vector3D* vc=static_cast<Vector3D*>(args[0]);
-	Vector3D* ret=Class<Vector3D>::getInstanceS(obj->getSystemState());
+	Vector3D* th=obj.as<Vector3D>();
+	Vector3D* vc=args[0].as<Vector3D>();
+	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
 
 	ret->x = th->x - vc->x;
 	ret->y = th->y - vc->y;
 	ret->z = th->z - vc->z;
 
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
 
 void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("recompose","",Class<IFunction>::getFunction(c->getSystemState(),recompose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prepend","",Class<IFunction>::getFunction(c->getSystemState(),prepend),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendTranslation","",Class<IFunction>::getFunction(c->getSystemState(),appendTranslation),NORMAL_METHOD,true);
 	
 }
 
-ASFUNCTIONBODY(Matrix3D,_constructor)
+bool Matrix3D::destruct()
+{
+	return ASObject::destruct();
+}
+
+ASFUNCTIONBODY_ATOM(Matrix3D,_constructor)
 {
 	//Matrix3D * th=static_cast<Matrix3D*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D is not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(Matrix3D,clone)
+ASFUNCTIONBODY_ATOM(Matrix3D,clone)
 {
 	//Matrix3D * th=static_cast<Matrix3D*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D.clone is not implemented");
-	return Class<Matrix3D>::getInstanceS(obj->getSystemState());
+	return asAtom::fromObject(Class<Matrix3D>::getInstanceS(sys));
 }
-ASFUNCTIONBODY(Matrix3D,recompose)
+ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 {
 	_NR<Vector> components;
 	tiny_string orientationStyle;
-	ARG_UNPACK(components)(orientationStyle, "eulerAngles");
+	ARG_UNPACK_ATOM(components)(orientationStyle, "eulerAngles");
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.recompose does nothing");
-	return abstract_b(obj->getSystemState(),false);
+	return asAtom::falseAtom;
 }
-ASFUNCTIONBODY(Matrix3D,prependScale)
+ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
+{
+	_NR<Matrix3D> mat;
+	ARG_UNPACK_ATOM(mat);
+
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prepend does nothing");
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
 {
 	number_t xScale, yScale, zScale;
-	ARG_UNPACK(xScale) (yScale) (zScale);
+	ARG_UNPACK_ATOM(xScale) (yScale) (zScale);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependScale does nothing");
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(Matrix3D,prependTranslation)
+ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 {
 	number_t x, y, z;
-	ARG_UNPACK(x) (y) (z);
+	ARG_UNPACK_ATOM(x) (y) (z);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependTranslation does nothing");
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(Matrix3D,appendTranslation)
+ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 {
 	number_t x, y, z;
-	ARG_UNPACK(x) (y) (z);
+	ARG_UNPACK_ATOM(x) (y) (z);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.appendTranslation does nothing");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void PerspectiveProjection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-
+	c->isReusable = true;
 	REGISTER_GETTER_SETTER(c, fieldOfView);
 	REGISTER_GETTER_SETTER(c, focalLength);
 	REGISTER_GETTER_SETTER(c, projectionCenter);
 	
 }
+
+bool PerspectiveProjection::destruct()
+{
+	fieldOfView = 0;
+	focalLength= 0;
+	projectionCenter.reset();
+	return ASObject::destruct();
+}
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, fieldOfView);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, focalLength);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, projectionCenter);
 
-ASFUNCTIONBODY(PerspectiveProjection,_constructor)
+ASFUNCTIONBODY_ATOM(PerspectiveProjection,_constructor)
 {
 	//PerspectiveProjection * th=static_cast<PerspectiveProjection*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PerspectiveProjection is not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }

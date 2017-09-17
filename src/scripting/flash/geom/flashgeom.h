@@ -34,45 +34,45 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	const RECT getRect() const;
-
+	bool destruct();
 	// properties
-	ASFUNCTION(_getBottom);
-	ASFUNCTION(_setBottom);
-	ASFUNCTION(_getBottomRight);
-	ASFUNCTION(_setBottomRight);
-	ASFUNCTION(_getHeight);
-	ASFUNCTION(_setHeight);
-	ASFUNCTION(_getLeft);
-	ASFUNCTION(_setLeft);
-	ASFUNCTION(_getRight);
-	ASFUNCTION(_setRight);
-	ASFUNCTION(_getSize);
-	ASFUNCTION(_setSize);
-	ASFUNCTION(_getTop);
-	ASFUNCTION(_setTop);
-	ASFUNCTION(_getTopLeft);
-	ASFUNCTION(_setTopLeft);
-	ASFUNCTION(_getWidth);
-	ASFUNCTION(_setWidth);
+	ASFUNCTION_ATOM(_getBottom);
+	ASFUNCTION_ATOM(_setBottom);
+	ASFUNCTION_ATOM(_getBottomRight);
+	ASFUNCTION_ATOM(_setBottomRight);
+	ASFUNCTION_ATOM(_getHeight);
+	ASFUNCTION_ATOM(_setHeight);
+	ASFUNCTION_ATOM(_getLeft);
+	ASFUNCTION_ATOM(_setLeft);
+	ASFUNCTION_ATOM(_getRight);
+	ASFUNCTION_ATOM(_setRight);
+	ASFUNCTION_ATOM(_getSize);
+	ASFUNCTION_ATOM(_setSize);
+	ASFUNCTION_ATOM(_getTop);
+	ASFUNCTION_ATOM(_setTop);
+	ASFUNCTION_ATOM(_getTopLeft);
+	ASFUNCTION_ATOM(_setTopLeft);
+	ASFUNCTION_ATOM(_getWidth);
+	ASFUNCTION_ATOM(_setWidth);
 
 	// methods
-	ASFUNCTION(_constructor);
-	ASFUNCTION(clone);
-	ASFUNCTION(contains);
-	ASFUNCTION(containsPoint);
-	ASFUNCTION(containsRect);
-	ASFUNCTION(equals);
-	ASFUNCTION(inflate);
-	ASFUNCTION(inflatePoint);
-	ASFUNCTION(intersection);
-	ASFUNCTION(intersects);
-	ASFUNCTION(isEmpty);
-	ASFUNCTION(offset);
-	ASFUNCTION(offsetPoint);
-	ASFUNCTION(setEmpty);
-	ASFUNCTION(setTo);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_union);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(contains);
+	ASFUNCTION_ATOM(containsPoint);
+	ASFUNCTION_ATOM(containsRect);
+	ASFUNCTION_ATOM(equals);
+	ASFUNCTION_ATOM(inflate);
+	ASFUNCTION_ATOM(inflatePoint);
+	ASFUNCTION_ATOM(intersection);
+	ASFUNCTION_ATOM(intersects);
+	ASFUNCTION_ATOM(isEmpty);
+	ASFUNCTION_ATOM(offset);
+	ASFUNCTION_ATOM(offsetPoint);
+	ASFUNCTION_ATOM(setEmpty);
+	ASFUNCTION_ATOM(setTo);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_union);
 };
 
 class Point: public ASObject
@@ -84,23 +84,23 @@ public:
 	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getX);
-	ASFUNCTION(_getY);
-	ASFUNCTION(_setX);
-	ASFUNCTION(_setY);
-	ASFUNCTION(_getlength);
-	ASFUNCTION(interpolate);
-	ASFUNCTION(distance);
-	ASFUNCTION(add);
-	ASFUNCTION(subtract);
-	ASFUNCTION(clone);
-	ASFUNCTION(equals);
-	ASFUNCTION(normalize);
-	ASFUNCTION(offset);
-	ASFUNCTION(polar);
-	ASFUNCTION(_toString);
-	ASFUNCTION(setTo);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getX);
+	ASFUNCTION_ATOM(_getY);
+	ASFUNCTION_ATOM(_setX);
+	ASFUNCTION_ATOM(_setY);
+	ASFUNCTION_ATOM(_getlength);
+	ASFUNCTION_ATOM(interpolate);
+	ASFUNCTION_ATOM(distance);
+	ASFUNCTION_ATOM(add);
+	ASFUNCTION_ATOM(subtract);
+	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(equals);
+	ASFUNCTION_ATOM(normalize);
+	ASFUNCTION_ATOM(offset);
+	ASFUNCTION_ATOM(polar);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(setTo);
 	
 	number_t len() const;
 	number_t getX() const { return x; }
@@ -119,30 +119,30 @@ public:
 	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(setColor);
-	ASFUNCTION(getColor);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(setColor);
+	ASFUNCTION_ATOM(getColor);
 
-	ASFUNCTION(getRedMultiplier);
-	ASFUNCTION(setRedMultiplier);
-	ASFUNCTION(getGreenMultiplier);
-	ASFUNCTION(setGreenMultiplier);
-	ASFUNCTION(getBlueMultiplier);
-	ASFUNCTION(setBlueMultiplier);
-	ASFUNCTION(getAlphaMultiplier);
-	ASFUNCTION(setAlphaMultiplier);
+	ASFUNCTION_ATOM(getRedMultiplier);
+	ASFUNCTION_ATOM(setRedMultiplier);
+	ASFUNCTION_ATOM(getGreenMultiplier);
+	ASFUNCTION_ATOM(setGreenMultiplier);
+	ASFUNCTION_ATOM(getBlueMultiplier);
+	ASFUNCTION_ATOM(setBlueMultiplier);
+	ASFUNCTION_ATOM(getAlphaMultiplier);
+	ASFUNCTION_ATOM(setAlphaMultiplier);
 
-	ASFUNCTION(getRedOffset);
-	ASFUNCTION(setRedOffset);
-	ASFUNCTION(getGreenOffset);
-	ASFUNCTION(setGreenOffset);
-	ASFUNCTION(getBlueOffset);
-	ASFUNCTION(setBlueOffset);
-	ASFUNCTION(getAlphaOffset);
-	ASFUNCTION(setAlphaOffset);
+	ASFUNCTION_ATOM(getRedOffset);
+	ASFUNCTION_ATOM(setRedOffset);
+	ASFUNCTION_ATOM(getGreenOffset);
+	ASFUNCTION_ATOM(setGreenOffset);
+	ASFUNCTION_ATOM(getBlueOffset);
+	ASFUNCTION_ATOM(setBlueOffset);
+	ASFUNCTION_ATOM(getAlphaOffset);
+	ASFUNCTION_ATOM(setAlphaOffset);
 
-	ASFUNCTION(concat);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(concat);
+	ASFUNCTION_ATOM(_toString);
 };
 
 class Matrix: public ASObject
@@ -157,36 +157,36 @@ public:
 	static void buildTraits(ASObject* o);
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);
 	MATRIX getMATRIX() const;
-
-	ASFUNCTION(_constructor);
+	bool destruct();
+	ASFUNCTION_ATOM(_constructor);
 	
 	//Methods
-	ASFUNCTION(clone);
-	ASFUNCTION(concat);
-	ASFUNCTION(createBox);
-	ASFUNCTION(createGradientBox);
-	ASFUNCTION(deltaTransformPoint);
-	ASFUNCTION(identity);
-	ASFUNCTION(invert);
-	ASFUNCTION(rotate);
-	ASFUNCTION(scale);
-	ASFUNCTION(transformPoint);
-	ASFUNCTION(translate);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(concat);
+	ASFUNCTION_ATOM(createBox);
+	ASFUNCTION_ATOM(createGradientBox);
+	ASFUNCTION_ATOM(deltaTransformPoint);
+	ASFUNCTION_ATOM(identity);
+	ASFUNCTION_ATOM(invert);
+	ASFUNCTION_ATOM(rotate);
+	ASFUNCTION_ATOM(scale);
+	ASFUNCTION_ATOM(transformPoint);
+	ASFUNCTION_ATOM(translate);
+	ASFUNCTION_ATOM(_toString);
 	
 	//Properties
-	ASFUNCTION(_get_a);
-	ASFUNCTION(_get_b);
-	ASFUNCTION(_get_c);
-	ASFUNCTION(_get_d);
-	ASFUNCTION(_get_tx);
-	ASFUNCTION(_get_ty);
-	ASFUNCTION(_set_a);
-	ASFUNCTION(_set_b);
-	ASFUNCTION(_set_c);
-	ASFUNCTION(_set_d);
-	ASFUNCTION(_set_tx);
-	ASFUNCTION(_set_ty);
+	ASFUNCTION_ATOM(_get_a);
+	ASFUNCTION_ATOM(_get_b);
+	ASFUNCTION_ATOM(_get_c);
+	ASFUNCTION_ATOM(_get_d);
+	ASFUNCTION_ATOM(_get_tx);
+	ASFUNCTION_ATOM(_get_ty);
+	ASFUNCTION_ATOM(_set_a);
+	ASFUNCTION_ATOM(_set_b);
+	ASFUNCTION_ATOM(_set_c);
+	ASFUNCTION_ATOM(_set_d);
+	ASFUNCTION_ATOM(_set_tx);
+	ASFUNCTION_ATOM(_set_ty);
 };
 
 class DisplayObject;
@@ -200,15 +200,15 @@ private:
 public:
 	Transform(Class_base* c);
 	Transform(Class_base* c, _R<DisplayObject> o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void finalize();
-	ASFUNCTION(_getColorTransform);
-	ASFUNCTION(_setColorTransform);
-	ASFUNCTION(_getMatrix);
-	ASFUNCTION(_setMatrix);
-	ASFUNCTION(_getConcatenatedMatrix);
+	bool destruct();
+	ASFUNCTION_ATOM(_getColorTransform);
+	ASFUNCTION_ATOM(_setColorTransform);
+	ASFUNCTION_ATOM(_getMatrix);
+	ASFUNCTION_ATOM(_setMatrix);
+	ASFUNCTION_ATOM(_getConcatenatedMatrix);
 	ASPROPERTY_GETTER_SETTER(_NR<PerspectiveProjection>, perspectiveProjection);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix3D>, matrix3D);
 
@@ -221,39 +221,39 @@ public:
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	
-	ASFUNCTION(_constructor);
+	bool destruct();
+	ASFUNCTION_ATOM(_constructor);
 	
 	//Methods
-	ASFUNCTION(add);
-	ASFUNCTION(angleBetween);
-	ASFUNCTION(clone);
-	ASFUNCTION(crossProduct);
-	ASFUNCTION(decrementBy);
-	ASFUNCTION(distance);
-	ASFUNCTION(dotProduct);
-	ASFUNCTION(equals);
-	ASFUNCTION(incrementBy);
-	ASFUNCTION(nearEquals);
-	ASFUNCTION(negate);
-	ASFUNCTION(normalize);
-	ASFUNCTION(project);
-	ASFUNCTION(scaleBy);
-	ASFUNCTION(subtract);
+	ASFUNCTION_ATOM(add);
+	ASFUNCTION_ATOM(angleBetween);
+	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(crossProduct);
+	ASFUNCTION_ATOM(decrementBy);
+	ASFUNCTION_ATOM(distance);
+	ASFUNCTION_ATOM(dotProduct);
+	ASFUNCTION_ATOM(equals);
+	ASFUNCTION_ATOM(incrementBy);
+	ASFUNCTION_ATOM(nearEquals);
+	ASFUNCTION_ATOM(negate);
+	ASFUNCTION_ATOM(normalize);
+	ASFUNCTION_ATOM(project);
+	ASFUNCTION_ATOM(scaleBy);
+	ASFUNCTION_ATOM(subtract);
 	
 	//Properties
-	ASFUNCTION(_get_w);
-	ASFUNCTION(_get_x);
-	ASFUNCTION(_get_y);
-	ASFUNCTION(_get_z);
-	ASFUNCTION(_get_length);
-	ASFUNCTION(_get_lengthSquared);
+	ASFUNCTION_ATOM(_get_w);
+	ASFUNCTION_ATOM(_get_x);
+	ASFUNCTION_ATOM(_get_y);
+	ASFUNCTION_ATOM(_get_z);
+	ASFUNCTION_ATOM(_get_length);
+	ASFUNCTION_ATOM(_get_lengthSquared);
 
-	ASFUNCTION(_set_w);
-	ASFUNCTION(_set_x);
-	ASFUNCTION(_set_y);
-	ASFUNCTION(_set_z);
-	ASFUNCTION(_toString);
+	ASFUNCTION_ATOM(_set_w);
+	ASFUNCTION_ATOM(_set_x);
+	ASFUNCTION_ATOM(_set_y);
+	ASFUNCTION_ATOM(_set_z);
+	ASFUNCTION_ATOM(_toString);
 };
 
 class Matrix3D: public ASObject
@@ -261,21 +261,22 @@ class Matrix3D: public ASObject
 public:
 	Matrix3D(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	
-	ASFUNCTION(_constructor);
-	ASFUNCTION(clone);
-	ASFUNCTION(recompose);
-	ASFUNCTION(prependScale);
-	ASFUNCTION(prependTranslation);
-	ASFUNCTION(appendTranslation);
+	bool destruct();
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(recompose);
+	ASFUNCTION_ATOM(prepend);
+	ASFUNCTION_ATOM(prependScale);
+	ASFUNCTION_ATOM(prependTranslation);
+	ASFUNCTION_ATOM(appendTranslation);
 };
 class PerspectiveProjection: public ASObject
 {
 public:
 	PerspectiveProjection(Class_base* c):ASObject(c),fieldOfView(0),focalLength(0) {}
 	static void sinit(Class_base* c);
-	
-	ASFUNCTION(_constructor);
+	bool destruct();
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, fieldOfView);
 	ASPROPERTY_GETTER_SETTER(number_t, focalLength);
 	ASPROPERTY_GETTER_SETTER(_NR<Point>, projectionCenter);

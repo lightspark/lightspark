@@ -262,6 +262,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	loaderInfo->setBytesTotal(0);
 	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
 	stage=Class<Stage>::getInstanceS(this);
+	mainClip->incRef();
 	stage->setRoot(_MR(mainClip));
 	mainClip->incRef();
 	stage->_addChildAt(_MR(mainClip),0);
@@ -1770,7 +1771,8 @@ void SystemState::tick()
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up)
 	 * and their frameScripts (Step 5) (bottom-up) */
-	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(mainClip->getStage())));
+	stage->incRef();
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
 
 	/* Step 4: dispatch frameConstructed events */
 	/* (TODO: should be run between step 3 and 5 */

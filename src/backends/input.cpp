@@ -138,7 +138,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		_NR<DisplayObject> dispobj=m_sys->mainClip->getStage()->hitTest(NullRef,x,y, type);
+		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type);
 		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
 		{
 			dispobj->incRef();
@@ -292,7 +292,7 @@ void InputThread::handleMouseLeave()
 	if(m_sys->currentVm == NULL)
 		return;
 
-	_NR<Stage> stage = m_sys->mainClip->getStage();
+	_NR<Stage> stage = _MR(m_sys->stage);
 	stage->incRef();
 	m_sys->currentVm->addEvent(stage,
 		_MR(Class<Event>::getInstanceS(m_sys,"mouseLeave")));
@@ -503,7 +503,7 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 
 	Locker locker(mutexListeners);
 
-	_NR<DisplayObject> target = m_sys->mainClip->getStage()->getFocusTarget();
+	_NR<DisplayObject> target = m_sys->stage->getFocusTarget();
 	if (target.isNull())
 		return;
 

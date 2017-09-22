@@ -541,7 +541,7 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->mainClip->getStage()->Render(*this);
+	m_sys->stage->Render(*this);
 
 	if(m_sys->showProfilingData)
 		plotProfilingData();

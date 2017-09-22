@@ -1450,7 +1450,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				//AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				m_sys->mainClip->getStage()->advanceFrame();
+				m_sys->stage->advanceFrame();
 				//ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
 				break;
 			}

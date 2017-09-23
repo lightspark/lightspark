@@ -35,6 +35,7 @@ class ContentElement: public ASObject
 public:
 	ContentElement(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_CONTENTELEMENT),elementFormat(NULL) {}
 	static void sinit(Class_base* c);
+	ASPROPERTY_GETTER(tiny_string,rawText);
 	ASPROPERTY_GETTER_SETTER(_NR<ElementFormat>,elementFormat);
 };
 
@@ -79,8 +80,10 @@ public:
 	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
 		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
+	bool destruct();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_clone);
+	ASFUNCTION_ATOM(isFontCompatible);
 	ASPROPERTY_GETTER_SETTER(tiny_string,cffHinting);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontLookup);
 	ASPROPERTY_GETTER_SETTER(tiny_string,fontName);
@@ -183,11 +186,15 @@ public:
 
 class TextElement: public ContentElement
 {
+private:
+	void settext_cb(tiny_string oldValue);
 public:
 	TextElement(Class_base* c): ContentElement(c) { subtype = SUBTYPE_TEXTELEMENT; }
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(replaceText);
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
+	
 };
 class GroupElement: public ContentElement
 {
@@ -221,6 +228,7 @@ public:
 	ASFUNCTION_ATOM(getTextWidth);
 	ASFUNCTION_ATOM(getTextHeight);
 	ASFUNCTION_ATOM(getBaselinePosition);
+	ASFUNCTION_ATOM(getUnjustifiedTextWidth);
 	ASPROPERTY_GETTER(bool,hasGraphicElement);
 	ASPROPERTY_GETTER(bool,hasTabs);
 	ASPROPERTY_GETTER(int,rawTextLength);

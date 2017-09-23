@@ -75,7 +75,7 @@ ASFUNCTIONBODY_ATOM(ASFont,enumerateFonts)
 
 	if (enumerateDeviceFonts)
 		LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
-	Array* ret = Class<Array>::getInstanceSNoArgs(getSys());
+	Array* ret = Class<Array>::getInstanceSNoArgs(sys);
 	std::vector<asAtom>* fontlist = getFontList();
 	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
 	{
@@ -86,7 +86,18 @@ ASFUNCTIONBODY_ATOM(ASFont,enumerateFonts)
 }
 ASFUNCTIONBODY_ATOM(ASFont,registerFont)
 {
-	getFontList()->push_back(args[0]);
+	_NR<ASObject> fontclass;
+	ARG_UNPACK_ATOM(fontclass);
+	if (!fontclass->is<Class_inherit>())
+		throwError<ArgumentError>(kCheckTypeFailedError,
+								  obj.toObject(sys)->getClassName(),
+								  Class<ASFont>::getClass(sys)->getQualifiedClassName());
+		
+	ASFont* font = new (fontclass->as<Class_base>()->memoryAccount) ASFont(fontclass->as<Class_base>());
+	fontclass->as<Class_base>()->setupDeclaredTraits(font);
+	font->constructionComplete();
+	font->setConstructIndicator();
+	getFontList()->push_back(asAtom::fromObject(font));
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)

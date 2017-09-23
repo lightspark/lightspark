@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/text/flashtext.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/argconv.h"
@@ -31,9 +32,11 @@ using namespace lightspark;
 void ContentElement::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
+	REGISTER_GETTER(c,rawText);
 	REGISTER_GETTER_SETTER(c,elementFormat);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ContentElement,elementFormat)
+ASFUNCTIONBODY_GETTER(ContentElement,rawText)
 
 ElementFormat::ElementFormat(Class_base *c): ASObject(c,T_OBJECT,SUBTYPE_ELEMENTFORMAT),
 	alignmentBaseline("useDominantBaseline"),
@@ -147,7 +150,9 @@ void FontLookup::sinit(Class_base* c)
 void FontDescription::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable = true;
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isFontCompatible","",Class<IFunction>::getFunction(c->getSystemState(),isFontCompatible),NORMAL_METHOD,false);
 	REGISTER_GETTER_SETTER(c,cffHinting);
 	REGISTER_GETTER_SETTER(c,fontLookup);
 	REGISTER_GETTER_SETTER(c,fontName);
@@ -155,6 +160,18 @@ void FontDescription::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,fontWeight);
 	REGISTER_GETTER_SETTER(c,locked);
 	REGISTER_GETTER_SETTER(c,renderingMode);
+}
+
+bool FontDescription::destruct()
+{
+	cffHinting = "horizontalStem";
+	fontLookup = "device";
+	fontName = "_serif";
+	fontPosture = "normal";
+	fontWeight = "normal";
+	locked = false;
+	renderingMode = "cff";
+	return ASObject::destruct();
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription, _constructor)
@@ -183,6 +200,36 @@ ASFUNCTIONBODY_ATOM(FontDescription, _clone)
 	newfontdescription->renderingMode = th->renderingMode;
 	newfontdescription->locked = false;
 	return asAtom::fromObject(newfontdescription);
+}
+ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
+{
+	tiny_string fontName;
+	tiny_string fontWeight;
+	tiny_string fontPosture;
+	ARG_UNPACK_ATOM(fontName)(fontWeight)(fontPosture);
+	bool italic = false;
+	bool bold = false;
+	if (fontWeight == "bold")
+		bold = true;
+	else if (fontWeight != "normal")
+		throwError<ArgumentError>(kInvalidArgumentError,"fontWeight");
+	if (fontPosture == "italic")
+		italic = true;
+	else if (fontPosture != "normal")
+		throwError<ArgumentError>(kInvalidArgumentError,"fontPosture");
+	tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
+	std::vector<asAtom>* flist = ASFont::getFontList();
+	auto it = flist->begin();
+	while (it != flist->end())
+	{
+		ASFont* f = it->as<ASFont>();
+		if (f->fontName == fontName &&
+			f->fontType == "embeddedCFF" &&
+			f->fontStyle == fontStyle)
+			return asAtom::trueAtom;
+		it++;
+	}
+	return asAtom::falseAtom;
 }
 
 void FontPosture::sinit(Class_base* c)
@@ -302,8 +349,8 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineZero);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, bidiLevel);
 ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstInvalidLine );
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstLine);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, lastLine);
+ASFUNCTIONBODY_GETTER(TextBlock, firstLine);
+ASFUNCTIONBODY_GETTER(TextBlock, lastLine);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, lineRotation);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, textJustifier);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, tabStops);
@@ -409,7 +456,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: textLine");
 	}
 
-	if (th != textLine->textBlock.getPtr())
+	if (!textLine->textBlock.isNull() && th != textLine->textBlock.getPtr())
 	{
 		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: textLine is in different textBlock");
 	}
@@ -435,9 +482,8 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	_NR<TextLine> lastLine;
 	ARG_UNPACK_ATOM (firstLine) (lastLine);
 
-
 	// TODO handle non TextElement Content
-	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+	if (th->content.isNull() || !th->content->is<TextElement>())
 		return asAtom::invalidAtom;
 
 	if (firstLine.isNull() || firstLine->textBlock != th)
@@ -452,6 +498,10 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	bool afterlast = false;
 	_NR<TextLine> tmpLine;
 	_NR<TextLine> tmpLine2;
+	if (th->firstLine == firstLine)
+		th->firstLine = lastLine->nextLine;
+	if (th->lastLine == lastLine)
+		th->lastLine = lastLine->nextLine;
 	while (!firstLine.isNull())
 	{
 		firstLine->validity = "invalid";
@@ -475,13 +525,19 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	return asAtom::invalidAtom;
 }
 
+void TextElement::settext_cb(tiny_string /*oldValue*/)
+{
+	rawText = text;
+}
+
 void TextElement::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ContentElement, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),replaceText),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, text);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextElement, text);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextElement, text,settext_cb);
 
 ASFUNCTIONBODY_ATOM(TextElement, _constructor)
 {
@@ -489,6 +545,31 @@ ASFUNCTIONBODY_ATOM(TextElement, _constructor)
 	ARG_UNPACK_ATOM (th->text, "");
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextElement constructor ignores some parameters");
+
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(TextElement, replaceText)
+{
+	TextElement* th=obj.as<TextElement>();
+	int beginIndex;
+	int endIndex;
+	tiny_string newtext;
+	ARG_UNPACK_ATOM (beginIndex)(endIndex)(newtext);
+	if (beginIndex < 0 || endIndex < 0 || beginIndex > (int32_t)th->text.numChars())
+		throwError<RangeError>(kParamRangeError);
+	if (beginIndex > endIndex)
+	{
+		int tmp = endIndex;
+		endIndex = beginIndex;
+		beginIndex = tmp;
+	}
+	tiny_string s;
+	if ( beginIndex > 0)
+		s = th->text.substr(0,(uint32_t)beginIndex);
+	s += newtext;
+	if (endIndex < (int32_t)th->text.numChars())
+		s += th->text.substr(endIndex,th->text.numChars()-endIndex);
+	th->text = s;
 
 	return asAtom::invalidAtom;
 }
@@ -509,6 +590,7 @@ TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
   : DisplayObjectContainer(c), TextData(),nextLine(NULL),previousLine(NULL),userData(NULL)
   ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
+	subtype = SUBTYPE_TEXTLINE;
 	textBlock = owner;
 
 	text = linetext;
@@ -525,6 +607,7 @@ void TextLine::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(c->getSystemState(),getAscent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),getTextWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("unjustifiedTextWidth","",Class<IFunction>::getFunction(c->getSystemState(),getUnjustifiedTextWidth),GETTER_METHOD,true);
 	REGISTER_GETTER(c, textBlock);
 	REGISTER_GETTER(c, nextLine);
 	REGISTER_GETTER(c, previousLine);
@@ -588,6 +671,11 @@ ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 	return asAtom(th->textHeight);
 }
 
+ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
+{
+	TextLine* th=obj.as<TextLine>();
+	return asAtom(th->width);
+}
 
 void TextLine::updateSizes()
 {

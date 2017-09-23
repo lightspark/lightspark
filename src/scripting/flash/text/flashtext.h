@@ -38,9 +38,8 @@ public:
 
 class ASFont: public ASObject
 {
-private:
-	static std::vector<asAtom>* getFontList();
 public:
+	static std::vector<asAtom>* getFontList();
 	ASFont(Class_base* c):ASObject(c),fontType("device"){}
 	void SetFont(tiny_string& fontname,bool is_bold,bool is_italic, bool is_Embedded, bool is_EmbeddedCFF);
 	static void sinit(Class_base* c);

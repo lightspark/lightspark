@@ -190,7 +190,7 @@ private:
 	void onAlign(const tiny_string& old);
 public:
 	TextFormat(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_TEXTFORMAT){}
-	void finalize();
+	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -212,6 +212,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,target);
 	ASPROPERTY_GETTER_SETTER(asAtom,underline);
 	ASPROPERTY_GETTER_SETTER(tiny_string,url);
+	ASPROPERTY_GETTER_SETTER(tiny_string,display);
 };
 
 class TextFieldType: public ASObject

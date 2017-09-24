@@ -1198,6 +1198,7 @@ void TextFieldType::sinit(Class_base* c)
 void TextFormatAlign::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable = true;
 	c->setVariableAtomByQName("CENTER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"center"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("END",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"end"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("JUSTIFY",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"justify"),CONSTANT_TRAIT);
@@ -1227,11 +1228,12 @@ void TextFormat::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,target);
 	REGISTER_GETTER_SETTER(c,underline);
 	REGISTER_GETTER_SETTER(c,url);
+	// not in spec, but available in adobe player
+	REGISTER_GETTER_SETTER(c,display);
 }
 
-void TextFormat::finalize()
+bool TextFormat::destruct()
 {
-	ASObject::finalize();
 	blockIndent = asAtom::nullAtom;
 	bold = asAtom::nullAtom;
 	bullet = asAtom::nullAtom;
@@ -1245,6 +1247,13 @@ void TextFormat::finalize()
 	rightMargin = asAtom::nullAtom;
 	tabStops.reset();
 	underline = asAtom::nullAtom;
+	display = "";
+	align="";
+	url="";
+	target="";
+	font="";
+	size=12;
+	return ASObject::destruct();
 }
 
 ASFUNCTIONBODY_ATOM(TextFormat,_constructor)
@@ -1284,6 +1293,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextFormat,tabStops);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline);
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url);
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,display);
 
 void TextFormat::buildTraits(ASObject* o)
 {
@@ -1291,7 +1301,7 @@ void TextFormat::buildTraits(ASObject* o)
 
 void TextFormat::onAlign(const tiny_string& old)
 {
-	if (align != "center" && align != "end" && align != "justify" && 
+	if (align != "" && align != "center" && align != "end" && align != "justify" && 
 	    align != "left" && align != "right" && align != "start")
 	{
 		align = old;

@@ -987,7 +987,9 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D);
 
 ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {
-	assert_and_throw(argslen==0);
+	Transform* th=obj.as<Transform>();
+	// it's not in the specs but it seems to be possible to construct a Transform object with an owner as argment
+	ARG_UNPACK_ATOM(th->owner,NullRef);
 	return asAtom::invalidAtom;
 }
 

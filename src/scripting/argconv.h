@@ -314,10 +314,10 @@ public:
 		o->incRef();
 		return _MR(o);
 	}
-	static ASObject* toAbstract(SystemState* /*sys*/,const Ref<T>& val)
+	static asAtom toAbstract(SystemState* /*sys*/,const Ref<T>& val)
 	{
 		val->incRef();
-		return val.getPtr();
+		return asAtom::fromObject(val.getPtr());
 	}
 };
 

@@ -1633,7 +1633,7 @@ bool ABCVm::getLex(call_context* th, int n)
 
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(th,o);
-	return canCache;
+	return canCache && !o.isPrimitive(); // don't cache primitive values as they may change
 }
 
 void ABCVm::constructSuper(call_context* th, int m)

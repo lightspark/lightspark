@@ -1508,7 +1508,7 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 		else
 			return asAtom::fromObject(getSystemState()->getUndefinedRef());
 	}
-	else
+	else if (!childrenlist.isNull())
 	{
 		if (normalizedName == "*")
 		{
@@ -1531,6 +1531,8 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 			return ch;
 		}
 	}
+	else
+		return asAtom::invalidAtom;
 }
 
 void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
@@ -1795,7 +1797,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 		// object is treated as a single-item XMLList.
 		return(index==0);
 	}
-	else
+	else if (!childrenlist.isNull())
 	{
 		//Lookup children
 		for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)

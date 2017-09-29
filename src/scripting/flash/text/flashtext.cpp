@@ -1329,6 +1329,7 @@ void StyleSheet::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(c->getSystemState(),_getStyleNames),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(c->getSystemState(),setStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(c->getSystemState(),getStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parseCSS","",Class<IFunction>::getFunction(c->getSystemState(),parseCSS),NORMAL_METHOD,true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)
@@ -1380,6 +1381,15 @@ ASFUNCTIONBODY_ATOM(StyleSheet,_getStyleNames)
 	for(;it!=th->styles.end();++it)
 		ret->push(asAtom::fromObject(abstract_s(sys,it->first)));
 	return asAtom::fromObject(ret);
+}
+
+ASFUNCTIONBODY_ATOM(StyleSheet,parseCSS)
+{
+	//StyleSheet* th=obj.as<StyleSheet>();
+	tiny_string css;
+	ARG_UNPACK_ATOM(css);
+	LOG(LOG_NOT_IMPLEMENTED,"StyleSheet.parseCSS does nothing");
+	return asAtom::invalidAtom;
 }
 
 void StaticText::sinit(Class_base* c)

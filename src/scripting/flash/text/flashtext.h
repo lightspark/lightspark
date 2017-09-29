@@ -61,6 +61,7 @@ public:
 	ASFUNCTION_ATOM(getStyle);
 	ASFUNCTION_ATOM(setStyle);
 	ASFUNCTION_ATOM(_getStyleNames);
+	ASFUNCTION_ATOM(parseCSS);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };

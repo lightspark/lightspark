@@ -2016,16 +2016,6 @@ void RootMovieClip::initFrame()
 	if(getFramesLoaded() == 0)
 		return;
 
-	ABCVm *vm = getVm(getSystemState());
-	auto it=classesToBeBound.begin();
-	while(it!=classesToBeBound.end())
-	{
-		if (it->second->bindedTo != NULL || vm->buildClassAndBindTag(it->first.raw_buf(), it->second))
-			it = classesToBeBound.erase(it);
-		else
-			++it;
-	}
-
 	MovieClip::initFrame();
 	
 	if (finishedLoading && (loaderInfo->getBytesTotal() != loaderInfo->getBytesLoaded()))
@@ -2126,6 +2116,9 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 		Class_inherit* cls = typeObject->as<Class_inherit>();
 		if (cls)
 		{
+			ABCVm *vm = getVm(getSystemState());
+			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag);
+			
 			tag->bindedTo=cls;
 			tag->bindingclassname = "";
 			cls->bindToTag(tag);

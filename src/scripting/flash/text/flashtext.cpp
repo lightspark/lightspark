@@ -41,7 +41,7 @@ void ASFont::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(c->getSystemState(),enumerateFonts),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("hasGlyphs","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasGlyphs","",Class<IFunction>::getFunction(c->getSystemState(),hasGlyphs),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,fontName);
 	REGISTER_GETTER(c,fontStyle);
@@ -90,9 +90,8 @@ ASFUNCTIONBODY_ATOM(ASFont,registerFont)
 	ARG_UNPACK_ATOM(fontclass);
 	if (!fontclass->is<Class_inherit>())
 		throwError<ArgumentError>(kCheckTypeFailedError,
-								  obj.toObject(sys)->getClassName(),
+								  fontclass->getClassName(),
 								  Class<ASFont>::getClass(sys)->getQualifiedClassName());
-		
 	ASFont* font = new (fontclass->as<Class_base>()->memoryAccount) ASFont(fontclass->as<Class_base>());
 	fontclass->as<Class_base>()->setupDeclaredTraits(font);
 	font->constructionComplete();
@@ -102,7 +101,16 @@ ASFUNCTIONBODY_ATOM(ASFont,registerFont)
 }
 ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Font.hasGlyphs always returns true");
+	ASFont* th = obj.as<ASFont>();
+	tiny_string text;
+	ARG_UNPACK_ATOM(text);
+	if (th->fontType == "embedded")
+	{
+		DefineFont3Tag* f = sys->mainClip->getEmbeddedFont(th->fontName);
+		if (f)
+			return f->hasGlyphs(text);
+	}
+	LOG(LOG_NOT_IMPLEMENTED,"Font.hasGlyphs always returns true for not embedded fonts:"<<text<<" "<<th->fontName<<" "<<th->fontStyle<<" "<<th->fontType);
 	return asAtom::trueAtom;
 }
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)

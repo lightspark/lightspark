@@ -789,6 +789,25 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	}
 }
 
+bool DefineFont3Tag::hasGlyphs(const tiny_string text) const
+{
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		bool found = false;
+		for (unsigned int i = 0; i < CodeTable.size(); i++)
+		{
+			if (CodeTable[i] == *it)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
 DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
 {
 	LOG(LOG_TRACE,_("DefineFont4"));

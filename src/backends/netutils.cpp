@@ -305,6 +305,7 @@ void Downloader::setFailed()
 void Downloader::setFinished()
 {
 	length = cache->markFinished();
+	LOG(LOG_INFO,"download finished:"<<url<<" "<<length);
 }
 
 /**
@@ -836,6 +837,14 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 												 "connection to domain not allowed by securityManager")));
 			return false;
 		}
+	}
+	if (url.getPathFile().endsWith("swz"))
+	{
+		// url points to an adobe signed library which we cannot handle, so we abort here
+		LOG(LOG_NOT_IMPLEMENTED,"we don't handle adobe signed libraries");
+		dispatcher->incRef();
+		getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<IOErrorEvent>::getInstanceS(dispatcher->getSystemState())));
+		return false;
 	}
 
 	if(threadAborting)

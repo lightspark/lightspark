@@ -1807,6 +1807,15 @@ asAtom ABCVm::findPropStrictCache(call_context* th, memorystream& code)
 		{
 			//We have to return the object, not the property
 			ret=th->scope_stack[i-1];
+			// we can cache the property if the found scope_stack object is a non-dynamic class
+			// and no dynamic objects are at higher levels of the scope_stack
+			if (ret.is<Class_base>() && !hasdynamic)
+			{
+				// put object in cache
+				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+				cachepos->obj = ret.toObject(th->context->root->getSystemState());
+				cachepos->closure =ret.getClosure();
+			}
 			break;
 		}
 	}

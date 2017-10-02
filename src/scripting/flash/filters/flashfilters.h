@@ -34,7 +34,7 @@ public:
 	BitmapFilter(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
-	ASFUNCTION(clone);
+	ASFUNCTION_ATOM(clone);
 };
 
 class GlowFilter: public BitmapFilter
@@ -53,7 +53,7 @@ public:
 	GlowFilter(Class_base* c);
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class DropShadowFilter: public BitmapFilter
@@ -75,7 +75,7 @@ public:
 	DropShadowFilter(Class_base* c);
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class GradientGlowFilter: public BitmapFilter
@@ -85,7 +85,7 @@ private:
 public:
 	GradientGlowFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class BevelFilter: public BitmapFilter
@@ -95,7 +95,7 @@ private:
 public:
 	BevelFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, angle);
 	ASPROPERTY_GETTER_SETTER(number_t,blurX);
 	ASPROPERTY_GETTER_SETTER(number_t,blurY);
@@ -116,7 +116,7 @@ private:
 public:
 	ColorMatrixFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
 };
 class BlurFilter: public BitmapFilter
@@ -126,7 +126,7 @@ private:
 public:
 	BlurFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
 	ASPROPERTY_GETTER_SETTER(number_t, blurY);
 	ASPROPERTY_GETTER_SETTER(int, quality);
@@ -138,7 +138,7 @@ private:
 public:
 	ConvolutionFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 class DisplacementMapFilter: public BitmapFilter
 {
@@ -147,7 +147,7 @@ private:
 public:
 	DisplacementMapFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 class GradientBevelFilter: public BitmapFilter
 {
@@ -156,7 +156,7 @@ private:
 public:
 	GradientBevelFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 class ShaderFilter: public BitmapFilter
 {
@@ -165,7 +165,7 @@ private:
 public:
 	ShaderFilter(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class BitmapFilterQuality: public ASObject

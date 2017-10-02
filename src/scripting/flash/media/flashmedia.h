@@ -62,8 +62,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
-	ASFUNCTION(play);
-	ASFUNCTION(close);
+	ASFUNCTION_ATOM(play);
+	ASFUNCTION_ATOM(close);
 };
 
 class SoundTransform: public ASObject
@@ -77,7 +77,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,rightToLeft);
 	ASPROPERTY_GETTER_SETTER(number_t,rightToRight);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class SoundChannel : public EventDispatcher, public IThreadJob
@@ -103,7 +103,7 @@ public:
 	ASPROPERTY_GETTER(number_t,position);
 	ASPROPERTY_GETTER(number_t,rightPeak);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(stop);
+	ASFUNCTION_ATOM(stop);
 
 	//IThreadJob interface
 	void execute();
@@ -127,15 +127,15 @@ public:
 	~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getVideoWidth);
-	ASFUNCTION(_getVideoHeight);
-	ASFUNCTION(_getWidth);
-	ASFUNCTION(_setWidth);
-	ASFUNCTION(_getHeight);
-	ASFUNCTION(_setHeight);
-	ASFUNCTION(attachNetStream);
-	ASFUNCTION(clear);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getVideoWidth);
+	ASFUNCTION_ATOM(_getVideoHeight);
+	ASFUNCTION_ATOM(_getWidth);
+	ASFUNCTION_ATOM(_setWidth);
+	ASFUNCTION_ATOM(_getHeight);
+	ASFUNCTION_ATOM(_setHeight);
+	ASFUNCTION_ATOM(attachNetStream);
+	ASFUNCTION_ATOM(clear);
 	void renderImpl(RenderContext& ctxt) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
@@ -148,8 +148,8 @@ public:
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
-	ASFUNCTION(stopAll);
-	ASFUNCTION(computeSpectrum);
+	ASFUNCTION_ATOM(stopAll);
+	ASFUNCTION_ATOM(computeSpectrum);
 };
 class SoundLoaderContext : public ASObject
 {
@@ -159,7 +159,7 @@ private:
 public:
 	SoundLoaderContext(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class StageVideo : public EventDispatcher
@@ -172,10 +172,10 @@ public:
 	StageVideo(Class_base* c):EventDispatcher(c),videoWidth(0),videoHeight(0){}
 	void finalize();
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getVideoWidth);
-	ASFUNCTION(_getVideoHeight);
-	ASFUNCTION(attachNetStream);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getVideoWidth);
+	ASFUNCTION_ATOM(_getVideoHeight);
+	ASFUNCTION_ATOM(attachNetStream);
 };
 
 class StageVideoAvailability : public ASObject
@@ -198,7 +198,7 @@ public:
 	Microphone(Class_base* c):ASObject(c),isSupported(false){}
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(bool ,isSupported);
-	ASFUNCTION(getMicrophone);
+	ASFUNCTION_ATOM(getMicrophone);
 };
 
 }

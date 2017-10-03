@@ -1458,7 +1458,7 @@ void ParseThread::parseSWF(UI8 ver)
 					break;
 				}
 				case DISPLAY_LIST_TAG:
-					root->addToFrame(static_cast<const DisplayListTag*>(tag));
+					root->addToFrame(static_cast<DisplayListTag*>(tag));
 					empty=false;
 					break;
 				case SHOW_TAG:

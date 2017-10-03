@@ -161,6 +161,8 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
+	// used by MorphShapes
+	virtual void checkRatio(uint32_t ratio) {}
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);

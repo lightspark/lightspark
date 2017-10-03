@@ -111,6 +111,7 @@ public:
 	DisplayObjectContainer(Class_base* c);
 	bool destruct();
 	bool hasLegacyChildAt(uint32_t depth);
+	void checkRatioForLegacyChildAt(uint32_t depth, uint32_t ratio);
 	void deleteLegacyChildAt(uint32_t depth);
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
@@ -209,16 +210,27 @@ public:
 	{ return TokenContainer::invalidate(target, initialMatrix); }
 };
 
-class MorphShape: public DisplayObject
+class DefineMorphShapeTag;
+class MorphShape: public DisplayObject, public TokenContainer
 {
+private:
+	DefineMorphShapeTag* morphshapetag;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
-	virtual void renderImpl(RenderContext& ctxt) const {}
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	void renderImpl(RenderContext& ctxt) const
+		{ TokenContainer::renderImpl(ctxt); }
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
-	MorphShape(Class_base* c):DisplayObject(c){}
+	MorphShape(Class_base* c);
+	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+	{ return TokenContainer::invalidate(target, initialMatrix); }
+	void checkRatio(uint32_t ratio);
 };
 
 class Loader;
@@ -428,8 +440,8 @@ public:
 class Frame
 {
 public:
-	std::list<const DisplayListTag*> blueprint;
-	void execute(_R<DisplayObjectContainer> displayList);
+	std::list<DisplayListTag*> blueprint;
+	void execute(DisplayObjectContainer* displayList);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -456,7 +468,7 @@ protected:
 	 */
 	std::list<Frame> frames;
 	std::vector<Scene_data> scenes;
-	void addToFrame(const DisplayListTag* r);
+	void addToFrame(DisplayListTag *r);
 	uint32_t getFramesLoaded() { return framesLoaded; }
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();

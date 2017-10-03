@@ -304,3 +304,122 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::l
 	}
 }
 
+void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio)
+{
+	joinOutlines();
+	//Try to greedily condense as much as possible the output
+	map< unsigned int, vector< vector<ShapePathSegment> > >::iterator it=filledShapesMap.begin();
+	//For each color
+	for(;it!=filledShapesMap.end();++it)
+	{
+		assert(!it->second.empty());
+		//Find the style given the index
+		std::list<MORPHFILLSTYLE>::const_iterator stylesIt=styles.begin();
+		assert(it->first);
+		for(unsigned int i=0;i<it->first-1;i++)
+		{
+			++stylesIt;
+			assert(stylesIt!=styles.end());
+		}
+		//Set the fill style
+		FILLSTYLE f = *stylesIt;
+		switch (stylesIt->FillStyleType)
+		{
+			case LINEAR_GRADIENT:
+			{
+				f.Matrix = stylesIt->StartGradientMatrix;
+				f.Gradient.GradientRecords.reserve(stylesIt->StartColors.size());
+				GRADRECORD gr(0xff);
+				uint8_t compratio = ratio>>8;
+				for (uint32_t i1=0; i1 < stylesIt->StartColors.size(); i1++)
+				{
+					switch (compratio)
+					{
+						case 0:
+							gr.Color = stylesIt->StartColors[i1];
+							gr.Ratio = stylesIt->StartRatios[i1];
+							break;
+						case 0xff:
+							gr.Color = stylesIt->EndColors[i1];
+							gr.Ratio = stylesIt->EndRatios[i1];
+							break;
+						default:
+						{
+							gr.Color.Red = stylesIt->StartColors[i1].Red + ((stylesIt->EndColors[i1].Red-stylesIt->StartColors[i1].Red)/compratio);
+							gr.Color.Green = stylesIt->StartColors[i1].Green + ((stylesIt->EndColors[i1].Green-stylesIt->StartColors[i1].Green)/compratio);
+							gr.Color.Blue = stylesIt->StartColors[i1].Blue + ((stylesIt->EndColors[i1].Blue-stylesIt->StartColors[i1].Blue)/compratio);
+							gr.Color.Alpha = stylesIt->StartColors[i1].Alpha + ((stylesIt->EndColors[i1].Alpha-stylesIt->StartColors[i1].Alpha)/compratio);
+							uint8_t diff = stylesIt->EndRatios[i1]-stylesIt->StartRatios[i1];
+							gr.Ratio = stylesIt->StartRatios[i1] + (diff/compratio);
+							break;
+						}
+					}
+					f.Gradient.GradientRecords.push_back(gr);
+				}
+				break;
+			}
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"morphing for fill style type:"<<stylesIt->FillStyleType);
+				break;
+		}
+		tokens.emplace_back(GeomToken(SET_FILL,f));
+		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
+		for(unsigned int i=0;i<outlinesForColor.size();i++)
+		{
+			vector<ShapePathSegment>& segments=outlinesForColor[i];
+			assert (segments[0].type == PATH_START);
+			tokens.push_back(GeomToken(MOVE, getVertex(segments[0].i)));
+			for(unsigned int j=1;j<segments.size();j++) {
+				ShapePathSegment segment = segments[j];
+				assert(segment.type != PATH_START);
+				if (segment.type == PATH_STRAIGHT)
+					tokens.push_back(GeomToken(STRAIGHT, getVertex(segment.i)));
+				if (segment.type == PATH_CURVE_QUADRATIC)
+					tokens.push_back(GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i)));
+			}
+		}
+	}
+	if (strokeShapesMap.size() > 0)
+	{
+		tokens.emplace_back(GeomToken(CLEAR_FILL));
+		it=strokeShapesMap.begin();
+		//For each stroke
+		for(;it!=strokeShapesMap.end();++it)
+		{
+			assert(!it->second.empty());
+			//Find the style given the index
+			std::list<MORPHLINESTYLE2>::const_iterator stylesIt=linestyles.begin();
+			assert(it->first);
+			for(unsigned int i=0;i<it->first-1;i++)
+			{
+				++stylesIt;
+				assert(stylesIt!=linestyles.end());
+			}
+			//Set the line style
+			LOG(LOG_NOT_IMPLEMENTED,"morphing for line styles");
+			vector<vector<ShapePathSegment> >& outlinesForStroke=it->second;
+			tokens.emplace_back(GeomToken(SET_STROKE,*stylesIt));
+			for(unsigned int i=0;i<outlinesForStroke.size();i++)
+			{
+				vector<ShapePathSegment>& segments=outlinesForStroke[i];
+				assert (segments[0].type == PATH_START);
+				tokens.push_back(GeomToken(MOVE, getVertex(segments[0].i)));
+				for(unsigned int j=1;j<segments.size();j++) {
+					ShapePathSegment segment = segments[j];
+					assert(segment.type != PATH_START);
+					if (segment.type == PATH_STRAIGHT)
+						tokens.push_back(GeomToken(STRAIGHT, getVertex(segment.i)));
+					if (segment.type == PATH_CURVE_QUADRATIC)
+						tokens.push_back(GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i)));
+				}
+			}
+		}
+		
+	}
+}
+
+
+GeomToken::GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2 _s):fillStyle(0xff),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0)
+{
+	
+}

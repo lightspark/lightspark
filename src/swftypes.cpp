@@ -567,6 +567,12 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 			MORPHLINESTYLE t;
 			s >> t;
 			v.LineStyles.emplace_back(t);
+			MORPHLINESTYLE2 tmp2;
+			tmp2.StartWidth = t.StartWidth;
+			tmp2.EndWidth = t.EndWidth;
+			tmp2.StartColor = t.StartColor;
+			tmp2.EndColor = t.EndColor;
+			v.LineStyles2.push_back(tmp2);
 		}
 	}
 	else
@@ -1440,6 +1446,7 @@ ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 
 ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 {
+	LOG(LOG_INFO,"abstract_d");
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->dval = i;
 	ret->isfloat = true;
@@ -1447,6 +1454,7 @@ ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 }
 ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)
 {
+	LOG(LOG_INFO,"abstract_di");
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->ival = i;
 	ret->isfloat = false;

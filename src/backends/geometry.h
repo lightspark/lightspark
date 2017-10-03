@@ -83,6 +83,7 @@ public:
 	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):fillStyle(_f),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
 	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):fillStyle(0xff),lineStyle(_s),type(_t),p1(0,0),p2(0,0),p3(0,0){}
 	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):fillStyle(0xff),lineStyle(0xff),textureTransform(_m),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2 _s);
 };
 
 typedef std::vector<GeomToken, reporter_allocator<GeomToken>> tokensVector;
@@ -121,6 +122,7 @@ public:
 		@param tokens A vector that will be filled with tokens
 	*/
 	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2> &linestyles, tokensVector& tokens);
+	void outputMorphTokens(const std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio);
 	void clear();
 };
 

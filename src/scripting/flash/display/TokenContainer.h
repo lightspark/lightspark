@@ -31,10 +31,12 @@ namespace lightspark
 
 class DisplayObject;
 class InteractiveObject;
+class DefineMorphShapeTag;
 
 class TokenContainer
 {
 	friend class Graphics;
+	friend class MorphShape;
 public:
 	DisplayObject* owner;
 	/* multiply shapes' coordinates by this
@@ -50,6 +52,8 @@ public:
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>());
+	static void FromDefineMorphShapeTagToShapeVector(SystemState *sys, DefineMorphShapeTag *tag,
+					 tokensVector& tokens, uint16_t ratio);
 	static void getTextureSize(tokensVector& tokens, int *width, int *height);
 	uint16_t getCurrentLineWidth() const;
 	float scaling;

@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* partially implement MorphShape rendering
+	* add support for llvm 5.0
 	* remove gtk2 dependency
 	* fix Reference counting, significantly reduces memory usage
 

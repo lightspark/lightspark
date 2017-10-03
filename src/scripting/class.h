@@ -46,7 +46,7 @@ class Class_inherit:public Class_base
 {
 private:
 	asAtom getInstance(bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass);
-	DictionaryTag const* tag;
+	DictionaryTag* tag;
 	bool bindedToRoot;
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
@@ -65,7 +65,7 @@ public:
 	}
 	void buildInstanceTraits(ASObject* o) const;
 	void setupDeclaredTraits(ASObject *target) const;
-	void bindToTag(DictionaryTag const* t)
+	void bindToTag(DictionaryTag* t)
 	{
 		tag=t;
 	}

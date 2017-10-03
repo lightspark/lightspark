@@ -863,7 +863,7 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		//Skip the drawing of masks
-		if((*it)->isMask())
+		if((*it)->isMask() || (*it)->ClipDepth)
 			continue;
 		(*it)->Render(ctxt);
 	}
@@ -1070,11 +1070,11 @@ void Frame::destroyTags()
 		delete (*it);
 }
 
-void Frame::execute(_R<DisplayObjectContainer> displayList)
+void Frame::execute(DisplayObjectContainer* displayList)
 {
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
-		(*it)->execute(displayList.getPtr());
+		(*it)->execute(displayList);
 	displayList->checkClipDepth();
 }
 
@@ -1091,7 +1091,7 @@ FrameContainer::FrameContainer(const FrameContainer& f):frames(f.frames),scenes(
 /* This runs in parser thread context,
  * but no locking is needed here as it only accesses the last frame.
  * See comment on the 'frames' member. */
-void FrameContainer::addToFrame(const DisplayListTag* t)
+void FrameContainer::addToFrame(DisplayListTag* t)
 {
 	frames.back().blueprint.push_back(t);
 }
@@ -1536,6 +1536,16 @@ bool DisplayObjectContainer::hasLegacyChildAt(uint32_t depth)
 {
 	auto i = depthToLegacyChild.left.find(depth);
 	return i != depthToLegacyChild.left.end();
+}
+
+void DisplayObjectContainer::checkRatioForLegacyChildAt(uint32_t depth,uint32_t ratio)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth");
+		return;
+	}
+	depthToLegacyChild.left.at(depth)->checkRatio(ratio);
 }
 
 void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
@@ -2230,10 +2240,18 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	return asAtom::fromObject(th->graphics.getPtr());
 }
 
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(NULL)
+{
+	scaling = 1.0f/20.0f;
+}
+
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
+{
+	scaling = 1.0f/20.0f;
+}
+
 void MorphShape::sinit(Class_base* c)
 {
-	// FIXME: should use _constructorNotInstantiatable but then
-	// DefineMorphShapeTag::instance breaks
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
@@ -2242,16 +2260,11 @@ void MorphShape::buildTraits(ASObject* o)
 	//No traits
 }
 
-bool MorphShape::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+void MorphShape::checkRatio(uint32_t ratio)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "MorphShape::boundsRect is a stub");
-	return false;
+	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
 }
 
-_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
-{
-	return NullRef;
-}
 
 void Stage::sinit(Class_base* c)
 {
@@ -2567,9 +2580,10 @@ ASFUNCTIONBODY_ATOM(Stage,_invalidate)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"invalidate not implemented yet");
 	// TODO this crashes lightspark
-	//Stage* th=obj->as<Stage>();
-	//_R<FlushInvalidationQueueEvent> event=_MR(new (sys->unaccountedMemory) FlushInvalidationQueueEvent());
-	//getVm()->addEvent(_MR(th),event);
+	Stage* th=obj.as<Stage>();
+	th->incRef();
+	_R<FlushInvalidationQueueEvent> event=_MR(new (sys->unaccountedMemory) FlushInvalidationQueueEvent());
+	getVm(sys)->addEvent(_MR(th),event);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Stage,_getColor)
@@ -3179,8 +3193,7 @@ void MovieClip::initFrame()
 		{
 			if((int)state.FP < state.last_FP || (int)i > state.last_FP)
 			{
-				this->incRef(); //TODO kill ref from execute's declaration
-				iter->execute(_MR(this));
+				iter->execute(this);
 			}
 			++iter;
 		}
@@ -3248,7 +3261,7 @@ void MovieClip::advanceFrame()
 	{
 		if(hasFinishedLoading())
 		{
-			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded"));
+			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded:")<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString());
 			state.next_FP = state.FP;
 		}
 		return;

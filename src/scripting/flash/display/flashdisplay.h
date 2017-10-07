@@ -119,6 +119,8 @@ public:
 	void checkClipDepth();
 	void advanceFrame();
 	void initFrame();
+	void executeFrameScript();
+	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -489,6 +491,7 @@ private:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	std::map<uint32_t,asAtom > frameScripts;
 	bool fromDefineSpriteTag;
+	uint32_t frameScriptToExecute;
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
@@ -529,6 +532,7 @@ public:
 
 	void advanceFrame();
 	void initFrame();
+	void executeFrameScript();
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 };

@@ -1769,13 +1769,11 @@ void SystemState::tick()
 	}
 
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
-	 * run their constructors (bottom-up)
-	 * and their frameScripts (Step 5) (bottom-up) */
+	 * run their constructors (bottom-up) */
 	stage->incRef();
 	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
 
 	/* Step 4: dispatch frameConstructed events */
-	/* (TODO: should be run between step 3 and 5 */
 	{
 		Locker l(mutexFrameListeners);
 		if(!frameListeners.empty())
@@ -1786,6 +1784,10 @@ void SystemState::tick()
 				getVm(this)->addEvent(*it,e);
 		}
 	}
+	/* Step 5: run all frameScripts (bottom-up) */
+	stage->incRef();
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
+
 	/* Step 6: dispatch exitFrame event */
 	{
 		Locker l(mutexFrameListeners);

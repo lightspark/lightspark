@@ -246,8 +246,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
 	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
-	builtin->registerBuiltin("NaN","",_MR(abstract_d(m_sys,numeric_limits<double>::quiet_NaN())));
-	builtin->registerBuiltin("Infinity","",_MR(abstract_d(m_sys,numeric_limits<double>::infinity())));
+	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtom(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
 	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));
@@ -1444,6 +1444,14 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"INIT_FRAME");
 				assert(!ev->clip.isNull());
 				ev->clip->initFrame();
+				break;
+			}
+			case EXECUTE_FRAMESCRIPT:
+			{
+				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
+				assert(!ev->clip.isNull());
+				ev->clip->executeFrameScript();
 				break;
 			}
 			case ADVANCE_FRAME:

@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT };
 
 class ABCContext;
 class DictionaryTag;
@@ -476,6 +476,17 @@ private:
 public:
 	InitFrameEvent(_NR<DisplayObject> m) : Event(NULL, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
+};
+
+class ExecuteFrameScriptEvent: public Event
+{
+friend class ABCVm;
+private:
+	_NR<DisplayObject> clip;
+public:
+	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(NULL, "ExecuteFrameScriptEvent"),clip(m) {}
+	static void sinit(Class_base*);
+	EVENT_TYPE getEventType() const { return EXECUTE_FRAMESCRIPT; }
 };
 
 class AdvanceFrameEvent: public WaitableEvent

@@ -1142,12 +1142,12 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -1343,6 +1343,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	{
 		th->advanceFrame();
 		th->initFrame();
+		th->executeFrameScript();
 	}
 	return asAtom::invalidAtom;
 }
@@ -1357,6 +1358,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	{
 		th->advanceFrame();
 		th->initFrame();
+		th->executeFrameScript();
 	}
 	return asAtom::invalidAtom;
 }
@@ -3158,6 +3160,20 @@ void DisplayObjectContainer::initFrame()
 	DisplayObject::initFrame();
 }
 
+void DisplayObjectContainer::executeFrameScript()
+{
+	// elements of the dynamicDisplayList may be removed during executeFrameScript() calls,
+	// so we create a temporary list containing all elements
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
+		(*it)->executeFrameScript();
+}
+
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
  * frame top-down. At the same time, call their
@@ -3221,13 +3237,22 @@ void MovieClip::initFrame()
 	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
 	 * we can't execute the framescript of the first frame now (it will be executed in afterConstruction)
 	 */
-	//TODO: check order: child or parent first?
 	if(!firstframe && newFrame && frameScripts.count(state.FP))
 	{
-		asAtom v=frameScripts[state.FP].callFunction(asAtom::invalidAtom,NULL,0,false);
+		frameScriptToExecute=state.FP;
+	}
+}
+
+void MovieClip::executeFrameScript()
+{
+	if (frameScriptToExecute != UINT32_MAX)
+	{
+		uint32_t f = frameScriptToExecute;
+		frameScriptToExecute = UINT32_MAX;
+		asAtom v=frameScripts[f].callFunction(asAtom::invalidAtom,NULL,0,false);
 		ASATOM_DECREF(v);
 	}
-
+	Sprite::executeFrameScript();
 }
 
 /* This is run in vm's thread context */
@@ -3292,10 +3317,7 @@ void MovieClip::afterConstruction()
 {
 	// execute framescript of frame 0 after construction is completed
 	if(frameScripts.count(0))
-	{
-		asAtom v=frameScripts[0].callFunction(asAtom::invalidAtom,NULL,0,false);
-		ASATOM_DECREF(v);
-	}
+		frameScriptToExecute = 0;
 }
 
 void AVM1Movie::sinit(Class_base* c)

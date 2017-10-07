@@ -59,61 +59,65 @@ void Capabilities::sinit(Class_base* c)
 	
 }
 
-ASFUNCTIONBODY(Capabilities,_getPlayerType)
+ASFUNCTIONBODY_ATOM(Capabilities,_getPlayerType)
 {
-	switch (getSys()->flashMode)
+	switch (sys->flashMode)
 	{
 		case SystemState::AVMPLUS:
-			return abstract_s(getSys(),"AVMPlus");
+			return asAtom::fromString(sys,"AVMPlus");
 		case SystemState::AIR:
-			return abstract_s(getSys(),"Desktop");
+			return asAtom::fromString(sys,"Desktop");
 		default:
-			return abstract_s(getSys(),"PlugIn");
+			return asAtom::fromString(sys,"PlugIn");
 	}
 }
 
-ASFUNCTIONBODY(Capabilities,_getLanguage)
+ASFUNCTIONBODY_ATOM(Capabilities,_getLanguage)
 {
-	return abstract_s(getSys(),"en");
+	return asAtom::fromString(sys,"en");
 }
 
-ASFUNCTIONBODY(Capabilities,_getCPUArchitecture)
+ASFUNCTIONBODY_ATOM(Capabilities,_getCPUArchitecture)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.cpuArchitecture is not implemented");
-	return abstract_s(getSys(),"x86");
+	return asAtom::fromString(sys,"x86");
 }
 
-ASFUNCTIONBODY(Capabilities,_getIsDebugger)
+ASFUNCTIONBODY_ATOM(Capabilities,_getIsDebugger)
 {
-	return abstract_b(getSys(),false);
+	return asAtom::falseAtom;
 }
 
-ASFUNCTIONBODY(Capabilities,_getIsEmbeddedInAcrobat)
+ASFUNCTIONBODY_ATOM(Capabilities,_getIsEmbeddedInAcrobat)
 {
-	return abstract_b(getSys(),false);
+	return asAtom::falseAtom;
 }
 
-ASFUNCTIONBODY(Capabilities,_getLocalFileReadDisable)
+ASFUNCTIONBODY_ATOM(Capabilities,_getLocalFileReadDisable)
 {
-	return abstract_b(getSys(),true);
+	return asAtom::trueAtom;
 }
 
-ASFUNCTIONBODY(Capabilities,_getManufacturer)
+ASFUNCTIONBODY_ATOM(Capabilities,_getManufacturer)
 {
-	return abstract_s(getSys(),MANUFACTURER);
+	return asAtom::fromString(sys,MANUFACTURER);
 }
 
-ASFUNCTIONBODY(Capabilities,_getOS)
+ASFUNCTIONBODY_ATOM(Capabilities,_getOS)
 {
-	return abstract_s(getSys(),"Linux");
+#ifdef _WIN32
+	return asAtom::fromString(sys,"Windows");
+#else
+	return asAtom::fromString(sys,"Linux");
+#endif
 }
 
-ASFUNCTIONBODY(Capabilities,_getVersion)
+ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
 {
-	return abstract_s(getSys(),EMULATED_VERSION);
+	return asAtom::fromString(sys,EMULATED_VERSION);
 }
 
-ASFUNCTIONBODY(Capabilities,_getServerString)
+ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Capabilities: not all capabilities are reported in ServerString");
 	tiny_string res = "A=t&SA=t&SV=t&MP3=t&OS=Linux&PT=PlugIn&L=en&TLS=t&DD=t";
@@ -123,7 +127,7 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 	res += MANUFACTURER;
 
 	SDL_DisplayMode screen;
-	if (obj->getSystemState()->getEngineData()->getScreenData(&screen)) {
+	if (sys->getEngineData()->getScreenData(&screen)) {
 		gint width = screen.w;
 		gint height = screen.h;
 		char buf[40];
@@ -166,31 +170,31 @@ ASFUNCTIONBODY(Capabilities,_getServerString)
 	supports DTS-HD High Resolution Audio	DTH
 	supports DTS-HD Master Audio	DTM
 	*/
-	return abstract_s(getSys(),res);
+	return asAtom::fromString(sys,res);
 }
-ASFUNCTIONBODY(Capabilities,_getScreenResolutionX)
+ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
-	if (!obj->getSystemState()->getEngineData()->getScreenData(&screen))
-		return abstract_di(obj->getSystemState(),0);
-	return abstract_di(obj->getSystemState(),screen.w);
+	if (!sys->getEngineData()->getScreenData(&screen))
+		return asAtom(0);
+	return asAtom(screen.w);
 }
-ASFUNCTIONBODY(Capabilities,_getScreenResolutionY)
+ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionY)
 {
 	SDL_DisplayMode screen;
-	if (!obj->getSystemState()->getEngineData()->getScreenData(&screen))
-		return abstract_di(obj->getSystemState(),0);
-	return abstract_di(obj->getSystemState(),screen.h);
+	if (!sys->getEngineData()->getScreenData(&screen))
+		return asAtom(0);
+	return asAtom(screen.h);
 }
-ASFUNCTIONBODY(Capabilities,_getHasAccessibility)
+ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
-	return abstract_b(getSys(),false);
+	return asAtom::falseAtom;
 }
-ASFUNCTIONBODY(Capabilities,_getScreenDPI)
+ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
-	number_t dpi = obj->getSystemState()->getEngineData()->getScreenDPI();
-	return abstract_d(obj->getSystemState(),dpi);
+	number_t dpi = sys->getEngineData()->getScreenDPI();
+	return asAtom(dpi);
 }
 
 ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)
@@ -443,13 +447,13 @@ void LoaderContext::finalize()
 	securityDomain.reset();
 }
 
-ASFUNCTIONBODY(LoaderContext,_constructor)
+ASFUNCTIONBODY_ATOM(LoaderContext,_constructor)
 {
-	LoaderContext* th=Class<LoaderContext>::cast(obj);
-	ARG_UNPACK (th->checkPolicyFile, false)
+	LoaderContext* th=obj.as<LoaderContext>();
+	ARG_UNPACK_ATOM (th->checkPolicyFile, false)
 		(th->applicationDomain, NullRef)
 		(th->securityDomain, NullRef);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport);
@@ -480,16 +484,16 @@ void SecurityDomain::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(SecurityDomain,_constructor)
+ASFUNCTIONBODY_ATOM(SecurityDomain,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(SecurityDomain,_getCurrentDomain)
+ASFUNCTIONBODY_ATOM(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm(getSys())->currentCallContext);
+	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm(sys)->currentCallContext);
 	ret->incRef();
-	return ret.getPtr();
+	return asAtom::fromObject(ret.getPtr());
 }
 
 void Security::sinit(Class_base* c)
@@ -499,96 +503,92 @@ void Security::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(c->getSystemState(),_getExactSettings),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("exactSettings","",Class<IFunction>::getFunction(c->getSystemState(),_setExactSettings),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("sandboxType","",Class<IFunction>::getFunction(c->getSystemState(),_getSandboxType),GETTER_METHOD,false);
-	c->setVariableByQName("LOCAL_TRUSTED","",
-			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
-	c->setVariableByQName("LOCAL_WITH_FILE","",
-			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
-	c->setVariableByQName("LOCAL_WITH_NETWORK","",
-			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
-	c->setVariableByQName("REMOTE","",
-			abstract_s(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LOCAL_TRUSTED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LOCAL_WITH_FILE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LOCAL_WITH_NETWORK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)),DECLARED_TRAIT);
+	c->setVariableAtomByQName("REMOTE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),c->getSystemState()->securityManager->getSandboxName(SecurityManager::REMOTE)),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowDomain),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowInsecureDomain),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(c->getSystemState(),loadPolicyFile),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("showSettings","",Class<IFunction>::getFunction(c->getSystemState(),showSettings),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("pageDomain","",Class<IFunction>::getFunction(c->getSystemState(),pageDomain),GETTER_METHOD,false);
 
-	getSys()->securityManager->setExactSettings(true, false);
+	c->getSystemState()->securityManager->setExactSettings(true, false);
 }
 
-ASFUNCTIONBODY(Security,_getExactSettings)
+ASFUNCTIONBODY_ATOM(Security,_getExactSettings)
 {
-	return abstract_b(getSys(),getSys()->securityManager->getExactSettings());
+	return asAtom(sys->securityManager->getExactSettings());
 }
 
-ASFUNCTIONBODY(Security,_setExactSettings)
+ASFUNCTIONBODY_ATOM(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(args[0]->getSystemState()->securityManager->getExactSettingsLocked())
+	if(sys->securityManager->getExactSettingsLocked())
 	{
-		throw Class<SecurityError>::getInstanceS(args[0]->getSystemState(),"SecurityError: Security.exactSettings already set");
+		throw Class<SecurityError>::getInstanceS(sys,"SecurityError: Security.exactSettings already set");
 	}
-	getSys()->securityManager->setExactSettings(Boolean_concrete(args[0]));
-	return NULL;
+	sys->securityManager->setExactSettings(args[0].Boolean_concrete());
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security,_getSandboxType)
+ASFUNCTIONBODY_ATOM(Security,_getSandboxType)
 {
-	if(getSys()->securityManager->getSandboxType() == SecurityManager::REMOTE)
-		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::REMOTE));
-	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
-		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
-	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
-	else if(getSys()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
-		return abstract_s(getSys(),getSys()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
+	if(sys->securityManager->getSandboxType() == SecurityManager::REMOTE)
+		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::REMOTE));
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
+		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
+		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
 	assert(false);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security, allowDomain)
+ASFUNCTIONBODY_ATOM(Security, allowDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowDomain"));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security, allowInsecureDomain)
+ASFUNCTIONBODY_ATOM(Security, allowInsecureDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowInsecureDomain"));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security, loadPolicyFile)
+ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
 {
-	tiny_string url = args[0]->toString();
-	LOG(LOG_INFO, "Loading policy file: " << getSys()->mainClip->getOrigin().goToURL(url));
-	getSys()->securityManager->addPolicyFile(getSys()->mainClip->getOrigin().goToURL(url));
+	tiny_string url = args[0].toString();
+	LOG(LOG_INFO, "Loading policy file: " << sys->mainClip->getOrigin().goToURL(url));
+	sys->securityManager->addPolicyFile(sys->mainClip->getOrigin().goToURL(url));
 	assert_and_throw(argslen == 1);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security, showSettings)
+ASFUNCTIONBODY_ATOM(Security, showSettings)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::showSettings"));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Security, pageDomain)
+ASFUNCTIONBODY_ATOM(Security, pageDomain)
 {
-	tiny_string s = getSys()->mainClip->getBaseURL().getProtocol()+"://"+getSys()->mainClip->getBaseURL().getHostname();
-	return abstract_s(getSys(),s);
+	tiny_string s = sys->mainClip->getBaseURL().getProtocol()+"://"+sys->mainClip->getBaseURL().getHostname();
+	return asAtom::fromString(sys,s);
 }
 
-ASFUNCTIONBODY(lightspark, fscommand)
+ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 {
 	assert_and_throw(argslen >= 1 && argslen <= 2);
-	assert_and_throw(args[0]->getObjectType() == T_STRING);
-	tiny_string command = Class<ASString>::cast(args[0])->toString();
+	assert_and_throw(args[0].type == T_STRING);
+	tiny_string command = args[0].toString();
 	if(command == "quit")
 	{
-		getSys()->setShutdownFlag();
+		sys->setShutdownFlag();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 
@@ -601,15 +601,15 @@ void System::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("gc","",Class<IFunction>::getFunction(c->getSystemState(),gc),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY(System,totalMemory)
+ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	return abstract_d(obj->getSystemState(),1024);
+	return asAtom(1024);
 }
-ASFUNCTIONBODY(System,disposeXML)
+ASFUNCTIONBODY_ATOM(System,disposeXML)
 {
 	_NR<XML> xmlobj;
-	ARG_UNPACK (xmlobj);
+	ARG_UNPACK_ATOM (xmlobj);
 	LOG(LOG_NOT_IMPLEMENTED,"disposeXML only removes the node from its parent");
 	if (!xmlobj.isNull() && xmlobj->getParentNode()->is<XML>())
 	{
@@ -619,19 +619,19 @@ ASFUNCTIONBODY(System,disposeXML)
 			l->removeNode(xmlobj.getPtr());
 		parent->decRef();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(System,pauseForGCIfCollectionImminent)
+ASFUNCTIONBODY_ATOM(System,pauseForGCIfCollectionImminent)
 {
 	number_t imminence;
-	ARG_UNPACK (imminence,0.75);
+	ARG_UNPACK_ATOM (imminence,0.75);
 	LOG(LOG_NOT_IMPLEMENTED, "System.pauseForGCIfCollectionImminent not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(System,gc)
+ASFUNCTIONBODY_ATOM(System,gc)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.gc not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASWorker::ASWorker(Class_base* c):
@@ -646,21 +646,21 @@ void ASWorker::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),getSharedProperty),NORMAL_METHOD,true);
 }
-ASFUNCTIONBODY(ASWorker,_getCurrent)
+ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
-	return Class<ASObject>::getInstanceS(getSys());
+	return asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }
-ASFUNCTIONBODY(ASWorker,getSharedProperty)
+ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker.getSharedProperty not implemented");
-	return Class<ASObject>::getInstanceS(getSys());
+	return asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }
 
 void ImageDecodingPolicy::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ON_DEMAND","",abstract_s(c->getSystemState(),"onDemand"),CONSTANT_TRAIT);
-	c->setVariableByQName("ON_LOAD","",abstract_s(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ON_DEMAND",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"onDemand"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ON_LOAD",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
 }
 

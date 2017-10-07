@@ -39,20 +39,20 @@ public:
 	static const char* MANUFACTURER;
 	Capabilities(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_getLanguage);
-	ASFUNCTION(_getPlayerType);
-	ASFUNCTION(_getCPUArchitecture);
-	ASFUNCTION(_getIsDebugger);
-	ASFUNCTION(_getIsEmbeddedInAcrobat);
-	ASFUNCTION(_getLocalFileReadDisable);
-	ASFUNCTION(_getManufacturer);
-	ASFUNCTION(_getOS);
-	ASFUNCTION(_getVersion);
-	ASFUNCTION(_getServerString);
-	ASFUNCTION(_getScreenResolutionX);
-	ASFUNCTION(_getScreenResolutionY);
-	ASFUNCTION(_getHasAccessibility);
-	ASFUNCTION(_getScreenDPI);
+	ASFUNCTION_ATOM(_getLanguage);
+	ASFUNCTION_ATOM(_getPlayerType);
+	ASFUNCTION_ATOM(_getCPUArchitecture);
+	ASFUNCTION_ATOM(_getIsDebugger);
+	ASFUNCTION_ATOM(_getIsEmbeddedInAcrobat);
+	ASFUNCTION_ATOM(_getLocalFileReadDisable);
+	ASFUNCTION_ATOM(_getManufacturer);
+	ASFUNCTION_ATOM(_getOS);
+	ASFUNCTION_ATOM(_getVersion);
+	ASFUNCTION_ATOM(_getServerString);
+	ASFUNCTION_ATOM(_getScreenResolutionX);
+	ASFUNCTION_ATOM(_getScreenResolutionY);
+	ASFUNCTION_ATOM(_getHasAccessibility);
+	ASFUNCTION_ATOM(_getScreenDPI);
 };
 
 class ApplicationDomain: public ASObject
@@ -114,7 +114,7 @@ class LoaderContext: public ASObject
 public:
 	LoaderContext(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool, allowCodeImport);
 	ASPROPERTY_GETTER_SETTER(_NR<ApplicationDomain>, applicationDomain);
 	ASPROPERTY_GETTER_SETTER(bool, checkPolicyFile);
@@ -132,8 +132,8 @@ public:
 	SecurityDomain(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_getCurrentDomain);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getCurrentDomain);
 };
 
 class Security: public ASObject
@@ -141,35 +141,35 @@ class Security: public ASObject
 public:
 	Security(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(_getExactSettings);
-	ASFUNCTION(_setExactSettings);
-	ASFUNCTION(_getSandboxType);
-	ASFUNCTION(allowDomain);
-	ASFUNCTION(allowInsecureDomain);
-	ASFUNCTION(loadPolicyFile);
-	ASFUNCTION(showSettings);
-	ASFUNCTION(pageDomain);
+	ASFUNCTION_ATOM(_getExactSettings);
+	ASFUNCTION_ATOM(_setExactSettings);
+	ASFUNCTION_ATOM(_getSandboxType);
+	ASFUNCTION_ATOM(allowDomain);
+	ASFUNCTION_ATOM(allowInsecureDomain);
+	ASFUNCTION_ATOM(loadPolicyFile);
+	ASFUNCTION_ATOM(showSettings);
+	ASFUNCTION_ATOM(pageDomain);
 };
 
-ASObject* fscommand(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+asAtom fscommand(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
 
 class System: public ASObject
 {
 public:
 	System(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(totalMemory);
-	ASFUNCTION(disposeXML);
-	ASFUNCTION(pauseForGCIfCollectionImminent);
-	ASFUNCTION(gc);
+	ASFUNCTION_ATOM(totalMemory);
+	ASFUNCTION_ATOM(disposeXML);
+	ASFUNCTION_ATOM(pauseForGCIfCollectionImminent);
+	ASFUNCTION_ATOM(gc);
 };
 class ASWorker: public EventDispatcher
 {
 public:
 	ASWorker(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_getCurrent);
-	ASFUNCTION(getSharedProperty);
+	ASFUNCTION_ATOM(_getCurrent);
+	ASFUNCTION_ATOM(getSharedProperty);
 };
 class ImageDecodingPolicy: public ASObject
 {

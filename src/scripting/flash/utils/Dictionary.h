@@ -31,22 +31,29 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	typedef std::map<_R<ASObject>,_R<ASObject>,std::less<_R<ASObject>>,
-	       reporter_allocator<std::pair<const _R<ASObject>, _R<ASObject>>>> dictType;
+	typedef std::map<_R<ASObject>,asAtom,std::less<_R<ASObject>>,
+	       reporter_allocator<std::pair<const _R<ASObject>, asAtom>>> dictType;
 	dictType data;
 	dictType::iterator findKey(ASObject *);
+	bool weakkeys;
 public:
 	Dictionary(Class_base* c);
 	bool destruct()
 	{
+		Dictionary::dictType::iterator it = data.begin();
+		while(it!=data.end())
+		{
+			ASATOM_DECREF(it->second);
+			it++;
+		}
 		data.clear();
 		return ASObject::destruct();
 	}
 	
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_toJSON);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toJSON);
 
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)

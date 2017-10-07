@@ -30,7 +30,7 @@ using namespace std;
 using namespace lightspark;
 
 Dictionary::Dictionary(Class_base* c):ASObject(c),
-	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount))
+	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount)),weakkeys(false)
 {
 }
 
@@ -44,18 +44,16 @@ void Dictionary::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(Dictionary,_constructor)
+ASFUNCTIONBODY_ATOM(Dictionary,_constructor)
 {
-	bool weak = false;
-	ARG_UNPACK(weak, false);
-	if (weak)
-		LOG(LOG_NOT_IMPLEMENTED,"Dictionary:weak keys not implemented");
-	return NULL;
+	Dictionary* th=obj.as<Dictionary>();
+	ARG_UNPACK_ATOM(th->weakkeys, false);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Dictionary,_toJSON)
+ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)
 {
-	return abstract_s(getSys(),"Dictionary");
+	return asAtom::fromString(sys,"Dictionary");
 }
 
 Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
@@ -115,9 +113,12 @@ void Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 
 		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it!=data.end())
-			it->second=_MR(o.toObject(getSystemState()));
+		{
+			ASATOM_DECREF(it->second);
+			it->second=o;
+		}
 		else
-			data.insert(make_pair(name_o,_MR(o.toObject(getSystemState()))));
+			data.insert(make_pair(name_o,o));
 	}
 	else
 	{
@@ -167,6 +168,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it != data.end())
 		{
+			ASATOM_DECREF(it->second);
 			data.erase(it);
 			return true;
 		}
@@ -214,14 +216,23 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 				default:
 					break;
 			}
+			bool islastref = name.name_o->isLastRef();
 			name.name_o->incRef();
 			_R<ASObject> name_o(name.name_o);
 
 			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 			if(it != data.end())
 			{
-				it->second->incRef();
-				return asAtom::fromObject(it->second.getPtr());
+				asAtom res = it->second;
+				if (islastref)
+				{
+					LOG(LOG_INFO,"erasing weak key from dictionary:"<< name.name_o->toDebugString());
+					name.name_o->decRef();
+					data.erase(it);
+				}
+				else
+					ASATOM_INCREF(res);
+				return res;
 			}
 			else
 				return asAtom::invalidAtom;
@@ -319,7 +330,7 @@ asAtom Dictionary::nextName(uint32_t index)
 	assert_and_throw(implEnable);
 	if(index<=data.size())
 	{
-		map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
+		auto it=data.begin();
 		for(unsigned int i=1;i<index;i++)
 			++it;
 		it->first->incRef();
@@ -337,12 +348,12 @@ asAtom Dictionary::nextValue(uint32_t index)
 	assert_and_throw(implEnable);
 	if(index<=data.size())
 	{
-		map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
+		auto it=data.begin();
 		for(unsigned int i=1;i<index;i++)
 			++it;
 
-		it->second->incRef();
-		return asAtom::fromObject(it->second.getPtr());
+		ASATOM_INCREF(it->second);
+		return it->second;
 	}
 	else
 	{
@@ -355,12 +366,12 @@ tiny_string Dictionary::toString()
 {
 	std::stringstream retstr;
 	retstr << "{";
-	map<_R<ASObject>,_R<ASObject> >::iterator it=data.begin();
+	auto it=data.begin();
 	while(it != data.end())
 	{
 		if(it != data.begin())
 			retstr << ", ";
-		retstr << "{" << it->first->toString() << ", " << it->second->toString() << "}";
+		retstr << "{" << it->first->toString() << ", " << it->second.toString() << "}";
 		++it;
 	}
 	retstr << "}";

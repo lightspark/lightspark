@@ -84,6 +84,7 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 		}
 		LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
 	}
+//	Log::setLogLevel(LOG_CALLS);
 	return msg.str();
 }
 
@@ -101,12 +102,11 @@ ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const 
 	}
 }
 
-ASFUNCTIONBODY(ASError,_getStackTrace)
+ASFUNCTIONBODY_ATOM(ASError,_getStackTrace)
 {
-	ASError* th=static_cast<ASError*>(obj);
+	ASError* th=obj.as<ASError>();
 
-	ASString* ret=abstract_s(obj->getSystemState(),th->getStackTraceString());
-	return ret;
+	return asAtom::fromObject(abstract_s(sys,th->getStackTraceString()));
 }
 tiny_string ASError::getStackTraceString()
 {
@@ -127,30 +127,30 @@ tiny_string ASError::toString()
 	return ret;
 }
 
-ASFUNCTIONBODY(ASError,_toString)
+ASFUNCTIONBODY_ATOM(ASError,_toString)
 {
-	ASError* th=static_cast<ASError*>(obj);
-	return abstract_s(obj->getSystemState(),th->ASError::toString());
+	ASError* th=obj.as<ASError>();
+	return asAtom::fromObject(abstract_s(sys,th->ASError::toString()));
 }
 
-ASFUNCTIONBODY(ASError,_constructor)
+ASFUNCTIONBODY_ATOM(ASError,_constructor)
 {
-	ASError* th=static_cast<ASError*>(obj);
+	ASError* th=obj.as<ASError>();
 	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
 	if(argslen == 2)
 	{
-		th->errorID = static_cast<Integer*>(args[1])->toInt();
+		th->errorID = args[1].toInt();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ASError,generator)
 {
-	ASError* th=Class<ASError>::getInstanceS(getSys());
+	ASError* th=Class<ASError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -187,20 +187,20 @@ void ASError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(SecurityError,_constructor)
+ASFUNCTIONBODY_ATOM(SecurityError,_constructor)
 {
 	assert(argslen<=1);
-	SecurityError* th=static_cast<SecurityError*>(obj);
+	SecurityError* th=obj.as<SecurityError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SecurityError,generator)
 {
-	ASError* th=Class<SecurityError>::getInstanceS(getSys());
+	ASError* th=Class<SecurityError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -214,20 +214,20 @@ void SecurityError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ArgumentError,_constructor)
+ASFUNCTIONBODY_ATOM(ArgumentError,_constructor)
 {
 	assert(argslen<=1);
-	ArgumentError* th=static_cast<ArgumentError*>(obj);
+	ArgumentError* th=obj.as<ArgumentError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ArgumentError,generator)
 {
-	ASError* th=Class<ArgumentError>::getInstanceS(getSys());
+	ASError* th=Class<ArgumentError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -241,20 +241,20 @@ void ArgumentError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(DefinitionError,_constructor)
+ASFUNCTIONBODY_ATOM(DefinitionError,_constructor)
 {
 	assert(argslen<=1);
-	DefinitionError* th=static_cast<DefinitionError*>(obj);
+	DefinitionError* th=obj.as<DefinitionError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(DefinitionError,generator)
 {
-	ASError* th=Class<DefinitionError>::getInstanceS(getSys());
+	ASError* th=Class<DefinitionError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -268,20 +268,20 @@ void DefinitionError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(EvalError,_constructor)
+ASFUNCTIONBODY_ATOM(EvalError,_constructor)
 {
 	assert(argslen<=1);
-	EvalError* th=static_cast<EvalError*>(obj);
+	EvalError* th=obj.as<EvalError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(EvalError,generator)
 {
-	ASError* th=Class<EvalError>::getInstanceS(getSys());
+	ASError* th=Class<EvalError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -295,20 +295,20 @@ void EvalError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(RangeError,_constructor)
+ASFUNCTIONBODY_ATOM(RangeError,_constructor)
 {
 	assert(argslen<=1);
-	RangeError* th=static_cast<RangeError*>(obj);
+	RangeError* th=obj.as<RangeError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(RangeError,generator)
 {
-	ASError* th=Class<RangeError>::getInstanceS(getSys());
+	ASError* th=Class<RangeError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -322,20 +322,20 @@ void RangeError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ReferenceError,_constructor)
+ASFUNCTIONBODY_ATOM(ReferenceError,_constructor)
 {
 	assert(argslen<=1);
-	ReferenceError* th=static_cast<ReferenceError*>(obj);
+	ReferenceError* th=obj.as<ReferenceError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ReferenceError,generator)
 {
-	ASError* th=Class<ReferenceError>::getInstanceS(getSys());
+	ASError* th=Class<ReferenceError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -349,20 +349,20 @@ void ReferenceError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(SyntaxError,_constructor)
+ASFUNCTIONBODY_ATOM(SyntaxError,_constructor)
 {
 	assert(argslen<=1);
-	SyntaxError* th=static_cast<SyntaxError*>(obj);
+	SyntaxError* th=obj.as<SyntaxError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SyntaxError,generator)
 {
-	ASError* th=Class<SyntaxError>::getInstanceS(getSys());
+	ASError* th=Class<SyntaxError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -376,20 +376,20 @@ void SyntaxError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(TypeError,_constructor)
+ASFUNCTIONBODY_ATOM(TypeError,_constructor)
 {
 	assert(argslen<=1);
-	TypeError* th=static_cast<TypeError*>(obj);
+	TypeError* th=obj.as<TypeError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(TypeError,generator)
 {
-	ASError* th=Class<TypeError>::getInstanceS(getSys());
+	ASError* th=Class<TypeError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -403,20 +403,20 @@ void TypeError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(URIError,_constructor)
+ASFUNCTIONBODY_ATOM(URIError,_constructor)
 {
 	assert(argslen<=1);
-	URIError* th=static_cast<URIError*>(obj);
+	URIError* th=obj.as<URIError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URIError,generator)
 {
-	ASError* th=Class<URIError>::getInstanceS(getSys());
+	ASError* th=Class<URIError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -430,20 +430,20 @@ void URIError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(VerifyError,_constructor)
+ASFUNCTIONBODY_ATOM(VerifyError,_constructor)
 {
 	assert(argslen<=1);
-	VerifyError* th=static_cast<VerifyError*>(obj);
+	VerifyError* th=obj.as<VerifyError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(VerifyError,generator)
 {
-	ASError* th=Class<VerifyError>::getInstanceS(getSys());
+	ASError* th=Class<VerifyError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }
@@ -457,20 +457,20 @@ void VerifyError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(UninitializedError,_constructor)
+ASFUNCTIONBODY_ATOM(UninitializedError,_constructor)
 {
 	assert(argslen<=1);
-	UninitializedError* th=static_cast<UninitializedError*>(obj);
+	UninitializedError* th=obj.as<UninitializedError>();
 	if(argslen == 1)
 	{
-		th->message = args[0]->toString();
+		th->message = args[0].toString();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(UninitializedError,generator)
 {
-	ASError* th=Class<UninitializedError>::getInstanceS(getSys());
+	ASError* th=Class<UninitializedError>::getInstanceS(sys);
 	errorGenerator(th, args, argslen);
 	return asAtom::fromObject(th);
 }

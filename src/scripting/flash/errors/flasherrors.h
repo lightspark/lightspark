@@ -31,7 +31,7 @@ class IOError: public ASError
 public:
 	IOError(Class_base* c,const tiny_string& error_message = "", int id = 0, tiny_string name = "IOError"):
 		ASError(c, error_message, id, name){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -40,7 +40,7 @@ class EOFError: public IOError
 {
 public:
 	EOFError(Class_base* c, const tiny_string& error_message = "", int id = 0) : IOError(c, error_message, id, "EOFError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -50,7 +50,7 @@ class IllegalOperationError: public ASError
 public:
 	IllegalOperationError(Class_base* c, const tiny_string& error_message = "", int id = 0):
 		ASError(c, error_message, id, "IllegalOperationError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -59,7 +59,7 @@ class InvalidSWFError: public ASError
 {
 public:
 	InvalidSWFError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "InvalidSWFError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -68,7 +68,7 @@ class MemoryError: public ASError
 {
 public:
 	MemoryError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "MemoryError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -78,7 +78,7 @@ class ScriptTimeoutError: public ASError
 public:
 	ScriptTimeoutError(Class_base* c, const tiny_string& error_message = "", int id = 0):
 		ASError(c, error_message, id, "ScriptTimeoutError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
@@ -88,7 +88,7 @@ class StackOverflowError: public ASError
 public:
 	StackOverflowError(Class_base* c, const tiny_string& error_message = "", int id = 0):
 		ASError(c, error_message, id, "StackOverflowError"){}
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };

@@ -23,11 +23,11 @@
 
 using namespace lightspark;
 
-ASFUNCTIONBODY(IOError,_constructor)
+ASFUNCTIONBODY_ATOM(IOError,_constructor)
 {
-	IOError* th=static_cast<IOError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	IOError* th=obj.as<IOError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void IOError::sinit(Class_base* c)
@@ -39,11 +39,11 @@ void IOError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(EOFError,_constructor)
+ASFUNCTIONBODY_ATOM(EOFError,_constructor)
 {
-	EOFError* th=static_cast<EOFError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	EOFError* th=obj.as<EOFError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void EOFError::sinit(Class_base* c)
@@ -55,11 +55,11 @@ void EOFError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(IllegalOperationError,_constructor)
+ASFUNCTIONBODY_ATOM(IllegalOperationError,_constructor)
 {
-	IllegalOperationError* th=static_cast<IllegalOperationError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	IllegalOperationError* th=obj.as<IllegalOperationError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void IllegalOperationError::sinit(Class_base* c)
@@ -71,13 +71,13 @@ void IllegalOperationError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(InvalidSWFError,_constructor)
+ASFUNCTIONBODY_ATOM(InvalidSWFError,_constructor)
 {
-	InvalidSWFError* th=static_cast<InvalidSWFError*>(obj);
+	InvalidSWFError* th=obj.as<InvalidSWFError>();
 	int32_t errorID;
-	ARG_UNPACK(th->message, "") (errorID, 0);
+	ARG_UNPACK_ATOM(th->message, "") (errorID, 0);
 	th->setErrorID(errorID);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void InvalidSWFError::sinit(Class_base* c)
@@ -89,11 +89,11 @@ void InvalidSWFError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(MemoryError,_constructor)
+ASFUNCTIONBODY_ATOM(MemoryError,_constructor)
 {
-	MemoryError* th=static_cast<MemoryError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	MemoryError* th=obj.as<MemoryError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void MemoryError::sinit(Class_base* c)
@@ -105,11 +105,11 @@ void MemoryError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ScriptTimeoutError,_constructor)
+ASFUNCTIONBODY_ATOM(ScriptTimeoutError,_constructor)
 {
-	ScriptTimeoutError* th=static_cast<ScriptTimeoutError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	ScriptTimeoutError* th=obj.as<ScriptTimeoutError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void ScriptTimeoutError::sinit(Class_base* c)
@@ -121,11 +121,11 @@ void ScriptTimeoutError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(StackOverflowError,_constructor)
+ASFUNCTIONBODY_ATOM(StackOverflowError,_constructor)
 {
-	StackOverflowError* th=static_cast<StackOverflowError*>(obj);
-	ARG_UNPACK(th->message, "");
-	return NULL;
+	StackOverflowError* th=obj.as<StackOverflowError>();
+	ARG_UNPACK_ATOM(th->message, "");
+	return asAtom::invalidAtom;
 }
 
 void StackOverflowError::sinit(Class_base* c)

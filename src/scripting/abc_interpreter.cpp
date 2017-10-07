@@ -1398,7 +1398,13 @@ void ABCVm::abc_convert_s(call_context* context,memorystream& code)
 {
 	//convert_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->replace(convert_s(pval->toObject(context->context->root->getSystemState())));
+	LOG_CALL( _("convert_s") );
+	if(pval->type != T_STRING)
+	{
+		tiny_string s = pval->toString();
+		ASATOM_DECREF_POINTER(pval);
+		pval->replace((ASObject*)abstract_s(context->context->root->getSystemState(),s));
+	}
 }
 void ABCVm::abc_esc_xelem(call_context* context,memorystream& code)
 {

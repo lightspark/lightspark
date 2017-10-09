@@ -44,13 +44,13 @@ void Proxy::sinit(Class_base* c)
 void Proxy::buildTraits(ASObject* o)
 {
 }
-ASFUNCTIONBODY(Proxy,_isAttribute)
+ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)
 {
 	_NR<ASObject> name;
-	ARG_UNPACK(name);
+	ARG_UNPACK_ATOM(name);
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	return abstract_b(obj->getSystemState(),mname.isAttribute);
+	return asAtom(mname.isAttribute);
 }
 
 void Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)

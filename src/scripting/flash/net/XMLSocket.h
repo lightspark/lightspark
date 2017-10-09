@@ -55,15 +55,15 @@ protected:
 
 	ASPROPERTY_GETTER_SETTER(int,timeout);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_close);
-	ASFUNCTION(_connect);
-	ASFUNCTION(_send);
-	ASFUNCTION(_connected);
+	ASFUNCTION_ATOM(_close);
+	ASFUNCTION_ATOM(_connect);
+	ASFUNCTION_ATOM(_send);
+	ASFUNCTION_ATOM(_connected);
 
 	void connect(tiny_string host, int port);
 	bool isConnected();
 public:
-	XMLSocket(Class_base* c) : EventDispatcher(c), job(NULL), timeout(20000) {};
+	XMLSocket(Class_base* c) : EventDispatcher(c), job(NULL), timeout(20000) {}
 	~XMLSocket();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

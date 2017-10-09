@@ -30,9 +30,6 @@
 #include <boost/intrusive/list.hpp>
 #include <limits>
 
-// this is deprecated, please use ASFUNCTION_ATOM
-#define ASFUNCTION(name) \
-	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
 #define ASFUNCTION_ATOM(name) \
 	static asAtom name(SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
 
@@ -62,10 +59,6 @@
 	ASFUNCTION_ATOM( _setter_##name)
 
 /* general purpose body for an AS function */
-// this is deprecated, please use ASFUNCTIONBODY_ATOM
-#define ASFUNCTIONBODY(c,name) \
-	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
-
 #define ASFUNCTIONBODY_ATOM(c,name) \
 	asAtom c::name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
 

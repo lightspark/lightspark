@@ -34,7 +34,7 @@ class Accelerometer: public EventDispatcher {
 		Accelerometer(Class_base* c);
 		static void sinit(Class_base* c);
 		static void buildTraits(ASObject* o);
-		ASFUNCTION(_isSupported);
+		ASFUNCTION_ATOM(_isSupported);
 };
 }
 #endif /* SCRIPTING_FLASH_SENSORS_FLASHSENSORS_H */

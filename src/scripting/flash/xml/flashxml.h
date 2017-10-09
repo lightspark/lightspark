@@ -49,20 +49,20 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	tiny_string toString();
-	ASFUNCTION(_constructor);
-	ASFUNCTION(firstChild);
-	ASFUNCTION(lastChild);
-	ASFUNCTION(childNodes);
-	ASFUNCTION(attributes);
-	ASFUNCTION(_getNodeType);
-	ASFUNCTION(_getNodeName);
-	ASFUNCTION(_getNodeValue);
-	ASFUNCTION(_getLocalName);
-	ASFUNCTION(nextSibling);
-	ASFUNCTION(parentNode);
-	ASFUNCTION(previousSibling);
-	ASFUNCTION(_toString);
-	ASFUNCTION(appendChild);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(firstChild);
+	ASFUNCTION_ATOM(lastChild);
+	ASFUNCTION_ATOM(childNodes);
+	ASFUNCTION_ATOM(attributes);
+	ASFUNCTION_ATOM(_getNodeType);
+	ASFUNCTION_ATOM(_getNodeName);
+	ASFUNCTION_ATOM(_getNodeValue);
+	ASFUNCTION_ATOM(_getLocalName);
+	ASFUNCTION_ATOM(nextSibling);
+	ASFUNCTION_ATOM(parentNode);
+	ASFUNCTION_ATOM(previousSibling);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(appendChild);
 };
 
 class XMLDocument: public XMLNode, public XMLBase
@@ -77,11 +77,11 @@ public:
 	static void buildTraits(ASObject* o);
 	tiny_string toString();
 	ASPROPERTY_GETTER_SETTER(bool, ignoreWhite);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(parseXML);
-	ASFUNCTION(firstChild);
-	ASFUNCTION(_toString);
-	ASFUNCTION(createElement);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(parseXML);
+	ASFUNCTION_ATOM(firstChild);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(createElement);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

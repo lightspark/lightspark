@@ -525,6 +525,7 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to << " type=" << *name);
 				if (pos >= exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{
+					LOG(LOG_INFO,"Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< obj.toDebugString());
 					no_handler = false;
 					cc.exec_pos = exc.target;
 					cc.runtime_stack_clear();
@@ -601,31 +602,8 @@ asAtom Function::call(asAtom& obj, asAtom *args, uint32_t num_args)
 	 */
 	asAtom ret;
 	assert_and_throw(obj.type != T_INVALID);
-	if (val_atom)
-	{
-		// use the asAtom based call interface
-		ret=val_atom(getSystemState(),obj,args,num_args);
-		if(ret.type == T_INVALID)
-			ret=asAtom::undefinedAtom;
-		return ret;
-	}
-	
-	// use old ASObject* based call interface 
-	// TODO this can be removed once all functions are using the asAtom based interface
-	ASObject** newArgs=NULL;
-	if (num_args > 0)
-	{
-		newArgs=g_newa(ASObject*, num_args);
-		for (uint32_t i = 0; i < num_args; i++)
-		{
-			if (args[i].type == T_FUNCTION && args[i].getClosure())
-				LOG(LOG_NOT_IMPLEMENTED,"builtin function not converted to asAtom called with function as argument:"<<obj.toDebugString()<<"."<<getSys()->getStringFromUniqueId(functionname)<<" "<<args[i].toDebugString() );
-			newArgs[i] = args[i].toObject(getSystemState());
-		}
-	}
-
-	ret=asAtom::fromObject(val(obj.toObject(getSystemState()),newArgs,num_args));
-
+	// use the asAtom based call interface
+	ret=val_atom(getSystemState(),obj,args,num_args);
 	if(ret.type == T_INVALID)
 		ret=asAtom::undefinedAtom;
 	return ret;
@@ -635,7 +613,7 @@ bool Function::isEqual(ASObject* r)
 	if (!r->is<Function>())
 		return false;
 	Function* f=r->as<Function>();
-	return (val==f->val && val_atom==f->val_atom);
+	return (val_atom==f->val_atom);
 }
 
 bool Null::isEqual(ASObject* r)
@@ -1041,7 +1019,6 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		target.getObject()->constructIndicator = true;
 		for(uint32_t i=0;i<argslen;i++)
 			ASATOM_DECREF(args[i]);
-		//throwError<TypeError>(kConstructOfNonFunctionError);
 	}
 	if(buildAndLink)
 	{
@@ -2186,9 +2163,9 @@ asAtom Namespace::nextValue(uint32_t index)
 	}
 }
 
-ASObject* ASNop(ASObject* obj, ASObject* const* args, const unsigned int argslen)
+asAtom ASNop(SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
 {
-	return obj->getSystemState()->getUndefinedRef();
+	return asAtom::undefinedAtom;
 }
 
 IFunction* Class<IFunction>::getNopFunction()
@@ -2316,6 +2293,8 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 		return asAtom(numeric_limits<double>::infinity());
 	if(ret==INT64_MIN)
 		return asAtom(-numeric_limits<double>::infinity());
+	if (ret < INT32_MAX && ret > INT32_MIN)
+		return asAtom((int32_t)ret);
 	return asAtom::fromObject(abstract_di(sys,ret));
 }
 

@@ -32,13 +32,13 @@ class Mouse : public ASObject
 public:
 	Mouse(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-	ASFUNCTION(hide);
-	ASFUNCTION(show);
-	ASFUNCTION(getCursor);
-	ASFUNCTION(setCursor);
-	ASFUNCTION(getSupportsCursor);
-	ASFUNCTION(getSupportsNativeCursor);
-	ASFUNCTION(registerCursor);
+	ASFUNCTION_ATOM(hide);
+	ASFUNCTION_ATOM(show);
+	ASFUNCTION_ATOM(getCursor);
+	ASFUNCTION_ATOM(setCursor);
+	ASFUNCTION_ATOM(getSupportsCursor);
+	ASFUNCTION_ATOM(getSupportsNativeCursor);
+	ASFUNCTION_ATOM(registerCursor);
 };
 
 class MouseCursor : public ASObject
@@ -53,7 +53,7 @@ class MouseCursorData : public ASObject
 public:
 	MouseCursorData(Class_base* c);
 	static void sinit(Class_base* c);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>,data);
 	ASPROPERTY_GETTER_SETTER(number_t,frameRate);
 	ASPROPERTY_GETTER_SETTER(_NR<Point>,hotSpot);

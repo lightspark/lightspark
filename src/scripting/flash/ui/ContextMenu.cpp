@@ -46,10 +46,10 @@ ASFUNCTIONBODY_ATOM(ContextMenu,_constructor)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(ContextMenu,hideBuiltInItems)
+ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu hideBuiltInItems is a stub");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 

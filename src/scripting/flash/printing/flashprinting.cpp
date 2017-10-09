@@ -54,16 +54,16 @@ void PrintJobOptions::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY(PrintJobOptions, _constructor)
+ASFUNCTIONBODY_ATOM(PrintJobOptions, _constructor)
 {
 	//PrintJobOptions* th=Class<PrintJobOptions>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJobOptions is not implemented");
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void PrintJobOrientation::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED| CLASS_FINAL);
-	c->setVariableByQName("LANDSCAPE","",abstract_s(c->getSystemState(),"landscape"),CONSTANT_TRAIT);
-	c->setVariableByQName("PORTRAIT","",abstract_s(c->getSystemState(),"portrait"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LANDSCAPE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"landscape"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PORTRAIT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"portrait"),CONSTANT_TRAIT);
 }

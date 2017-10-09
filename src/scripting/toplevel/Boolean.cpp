@@ -88,7 +88,7 @@ void Boolean::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 {
-	Boolean* th=static_cast<Boolean*>(obj.getObject());
+	Boolean* th=obj.as<Boolean>();
 	if(argslen==0)
 	{
 		//No need to handle default argument. The object is initialized to false anyway
@@ -98,29 +98,30 @@ ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Boolean,_toString)
+ASFUNCTIONBODY_ATOM(Boolean,_toString)
 {
-	if(Class<Boolean>::getClass(obj->getSystemState())->prototype->getObj() == obj) //See ECMA 15.6.4
-		return abstract_s(obj->getSystemState(),"false");
+	LOG(LOG_ERROR,"bool to string:"<<obj.toDebugString());
+	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject()) //See ECMA 15.6.4
+		return asAtom::fromString(sys,"false");
 
-	if(!obj->is<Boolean>())
-		throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
+	if(!obj.is<Boolean>())
+		throw Class<TypeError>::getInstanceS(sys,"");
 
-	Boolean* th=static_cast<Boolean*>(obj);
-	return abstract_s(obj->getSystemState(),th->toString());
+	return asAtom::fromString(sys,obj.toString());
 }
 
-ASFUNCTIONBODY(Boolean,_valueOf)
+ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 {
-	if(Class<Boolean>::getClass(obj->getSystemState())->prototype->getObj() == obj)
-		return abstract_b(obj->getSystemState(),false);
+	LOG(LOG_ERROR,"bool value of:"<<obj.toDebugString());
+	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject())
+		return asAtom::falseAtom;
 
-	if(!obj->is<Boolean>())
-			throw Class<TypeError>::getInstanceS(obj->getSystemState(),"");
+	if(!obj.is<Boolean>())
+			throw Class<TypeError>::getInstanceS(sys,"");
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object
-	return abstract_b(obj->getSystemState(),obj->as<Boolean>()->val);
+	return asAtom(obj.Boolean_concrete());
 }
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

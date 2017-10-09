@@ -54,84 +54,84 @@ void XMLNode::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(XMLNode,_constructor)
+ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 {
 	if(argslen==0)
-		return NULL;
-	XMLNode* th=Class<XMLNode>::cast(obj);
+		return asAtom::invalidAtom;
+	XMLNode* th=obj.as<XMLNode>();
 	uint32_t type;
 	tiny_string value;
-	ARG_UNPACK(type)(value);
+	ARG_UNPACK_ATOM(type)(value);
 	assert_and_throw(type==1);
-	th->root=_MR(Class<XMLDocument>::getInstanceS(obj->getSystemState()));
+	th->root=_MR(Class<XMLDocument>::getInstanceS(sys));
 	if(type==1)
 	{
 		th->root->parseXMLImpl(value);
 		th->node=th->root->rootNode;
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(XMLNode,firstChild)
+ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 	pugi::xml_node newNode =th->node.first_child();
 	if(newNode.type() == pugi::node_null)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 	assert_and_throw(!th->root.isNull());
-	return Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root,newNode);
+	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
 }
 
-ASFUNCTIONBODY(XMLNode,lastChild)
+ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 	pugi::xml_node newNode =th->node.last_child();
 	if(newNode.type() == pugi::node_null)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 	assert_and_throw(!th->root.isNull());
-	return Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root,newNode);
+	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
 }
 
-ASFUNCTIONBODY(XMLNode,childNodes)
+ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
-	Array* ret = Class<Array>::getInstanceSNoArgs(obj->getSystemState());
+	XMLNode* th=obj.as<XMLNode>();
+	Array* ret = Class<Array>::getInstanceSNoArgs(sys);
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null)
-		return ret;
+		return asAtom::fromObject(ret);
 	assert_and_throw(!th->root.isNull());
 	auto it = th->node.begin();
 	for(;it!=th->node.end();++it)
 	{
 		if(it->type()!=pugi::node_pcdata) {
-			ret->push(asAtom::fromObject(Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root, *it)));
+			ret->push(asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, *it)));
 		}
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
 
-ASFUNCTIONBODY(XMLNode,attributes)
+ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
-	ASObject* ret=Class<ASObject>::getInstanceS(obj->getSystemState());
+	ASObject* ret=Class<ASObject>::getInstanceS(sys);
 	if(th->node.type()==pugi::node_null)
 		return ret;
 	auto it=th->node.attributes_begin();
 	for(;it!=th->node.attributes_end();++it)
 	{
 		tiny_string attrName = it->name();
-		ASString* attrValue=abstract_s(obj->getSystemState(),it->value());
+		ASString* attrValue=abstract_s(sys,it->value());
 		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
-	return ret;
+	return asAtom::fromObject(ret);
 }
 
 pugi::xml_node XMLNode::getParentNode()
@@ -139,45 +139,45 @@ pugi::xml_node XMLNode::getParentNode()
 	return node.parent();
 }
 
-ASFUNCTIONBODY(XMLNode,parentNode)
+ASFUNCTIONBODY_ATOM(XMLNode,parentNode)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	pugi::xml_node parent = th->getParentNode();
 	if (parent.type()!=pugi::node_null)
-		return Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root, parent);
+		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, parent));
 	else
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 }
 
-ASFUNCTIONBODY(XMLNode,nextSibling)
+ASFUNCTIONBODY_ATOM(XMLNode,nextSibling)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type()==pugi::node_null)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 
 	pugi::xml_node sibling = th->node.next_sibling();
 	if (sibling.type()!=pugi::node_null)
-		return Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root, sibling);
+		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
 	else
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 }
 
-ASFUNCTIONBODY(XMLNode,previousSibling)
+ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type()==pugi::node_null)
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 
 	pugi::xml_node sibling = th->node.previous_sibling();
 	if (sibling.type()!=pugi::node_null)
-		return Class<XMLNode>::getInstanceS(obj->getSystemState(),th->root, sibling);
+		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
 	else
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 }
 
-ASFUNCTIONBODY(XMLNode,_getNodeType)
+ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	int t = 0;
 	switch (th->node.type())
 	{
@@ -200,46 +200,46 @@ ASFUNCTIONBODY(XMLNode,_getNodeType)
 			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
 			break;
 	}
-	return abstract_i(obj->getSystemState(),t);
+	return asAtom(t);
 }
 
-ASFUNCTIONBODY(XMLNode,_getNodeName)
+ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
-	return abstract_s(obj->getSystemState(),th->node.name());
+	XMLNode* th=obj.as<XMLNode>();
+	return asAtom::fromObject(abstract_s(sys,th->node.name()));
 }
 
-ASFUNCTIONBODY(XMLNode,_getNodeValue)
+ASFUNCTIONBODY_ATOM(XMLNode,_getNodeValue)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type() == pugi::node_pcdata)
-		return abstract_s(obj->getSystemState(),th->node.value());
+		return asAtom::fromObject(abstract_s(sys,th->node.value()));
 	else
-		return getSys()->getNullRef();
+		return asAtom::nullAtom;
 }
 
-ASFUNCTIONBODY(XMLNode,_toString)
+ASFUNCTIONBODY_ATOM(XMLNode,_toString)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
-	return abstract_s(obj->getSystemState(),th->toString_priv(th->node));
+	XMLNode* th=obj.as<XMLNode>();
+	return asAtom::fromObject(abstract_s(sys,th->toString_priv(th->node)));
 }
 
-ASFUNCTIONBODY(XMLNode,_getLocalName)
+ASFUNCTIONBODY_ATOM(XMLNode,_getLocalName)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	tiny_string localname =th->node.name();
 	uint32_t pos = localname.find(".");
 	if (pos != tiny_string::npos)
 	{
 		localname = localname.substr(pos,localname.numChars()-pos);
 	}
-	return abstract_s(obj->getSystemState(),localname);
+	return asAtom::fromString(sys,localname);
 }
-ASFUNCTIONBODY(XMLNode,appendChild)
+ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 {
-	XMLNode* th=Class<XMLNode>::cast(obj);
+	XMLNode* th=obj.as<XMLNode>();
 	_NR<XMLNode> c;
-	ARG_UNPACK(c);
+	ARG_UNPACK_ATOM(c);
 	th->node.append_move(c->node);
 	if (!c->root.isNull())
 		c->root->decRef();
@@ -254,7 +254,7 @@ ASFUNCTIONBODY(XMLNode,appendChild)
 		c->root = th->root;
 		th->root->incRef();
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 tiny_string XMLNode::toString()
 {
@@ -297,16 +297,16 @@ void XMLDocument::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(XMLDocument,_constructor)
+ASFUNCTIONBODY_ATOM(XMLDocument,_constructor)
 {
-	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	XMLDocument* th=obj.as<XMLDocument>();
 	tiny_string source;
 
-	ARG_UNPACK(source, "");
+	ARG_UNPACK_ATOM(source, "");
 	if(!source.empty())
 		th->parseXMLImpl(source);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -330,12 +330,12 @@ void XMLDocument::parseXMLImpl(const string& str)
 	rootNode=buildFromString(str, parsemode);
 }
 
-ASFUNCTIONBODY(XMLDocument,_toString)
+ASFUNCTIONBODY_ATOM(XMLDocument,_toString)
 {
 	//TODO: should output xmlDecl and docTypeDecl, see the
 	//documentation on XMLNode.tostring()
-	XMLDocument* th=Class<XMLDocument>::cast(obj);
-	return abstract_s(obj->getSystemState(),th->toString_priv(th->rootNode));
+	XMLDocument* th=obj.as<XMLDocument>();
+	return asAtom::fromObject(abstract_s(sys,th->toString_priv(th->rootNode)));
 }
 
 tiny_string XMLDocument::toString()
@@ -343,32 +343,31 @@ tiny_string XMLDocument::toString()
 	return toString_priv(rootNode);
 }
 
-ASFUNCTIONBODY(XMLDocument,parseXML)
+ASFUNCTIONBODY_ATOM(XMLDocument,parseXML)
 {
-	XMLDocument* th=Class<XMLDocument>::cast(obj);
-	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
-	ASString* str=Class<ASString>::cast(args[0]);
-	th->parseXMLImpl(str->getData());
-	return NULL;
+	XMLDocument* th=obj.as<XMLDocument>();
+	assert_and_throw(argslen==1 && args[0].type==T_STRING);
+	th->parseXMLImpl(args[0].toString());
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(XMLDocument,firstChild)
+ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 {
-	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	XMLDocument* th=obj.as<XMLDocument>();
 	assert_and_throw(argslen==0);
 	assert(th->node==NULL);
 	pugi::xml_node newNode=th->rootNode;
 	th->incRef();
-	return Class<XMLNode>::getInstanceS(obj->getSystemState(),_MR(th),newNode);
+	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
 }
-ASFUNCTIONBODY(XMLDocument,createElement)
+ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 {
-	XMLDocument* th=Class<XMLDocument>::cast(obj);
+	XMLDocument* th=obj.as<XMLDocument>();
 	assert(th->node==NULL);
 	tiny_string name;
-	ARG_UNPACK(name);
+	ARG_UNPACK_ATOM(name);
 	pugi::xml_node newNode;
 	newNode.set_name(name.raw_buf());
 	th->incRef();
-	return Class<XMLNode>::getInstanceS(obj->getSystemState(),_MR(th),newNode);
+	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
 }

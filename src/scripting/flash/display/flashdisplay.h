@@ -569,7 +569,9 @@ public:
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);
 	ASFUNCTION_ATOM(_getColorCorrectionSupport);
 	ASFUNCTION_ATOM(_getStageWidth);
+	ASFUNCTION_ATOM(_setStageWidth);
 	ASFUNCTION_ATOM(_getStageHeight);
+	ASFUNCTION_ATOM(_setStageHeight);
 	ASFUNCTION_ATOM(_getScaleMode);
 	ASFUNCTION_ATOM(_setScaleMode);
 	ASFUNCTION_ATOM(_getLoaderInfo);

@@ -48,15 +48,15 @@ public:
 	Timer(Class_base* c):EventDispatcher(c),running(false),delay(0),repeatCount(0),currentCount(0){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_getCurrentCount);
-	ASFUNCTION(_getRepeatCount);
-	ASFUNCTION(_setRepeatCount);
-	ASFUNCTION(_getRunning);
-	ASFUNCTION(_getDelay);
-	ASFUNCTION(_setDelay);
-	ASFUNCTION(start);
-	ASFUNCTION(reset);
-	ASFUNCTION(stop);
+	ASFUNCTION_ATOM(_getCurrentCount);
+	ASFUNCTION_ATOM(_getRepeatCount);
+	ASFUNCTION_ATOM(_setRepeatCount);
+	ASFUNCTION_ATOM(_getRunning);
+	ASFUNCTION_ATOM(_getDelay);
+	ASFUNCTION_ATOM(_setDelay);
+	ASFUNCTION_ATOM(start);
+	ASFUNCTION_ATOM(reset);
+	ASFUNCTION_ATOM(stop);
 };
 
 

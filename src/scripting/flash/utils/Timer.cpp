@@ -81,23 +81,23 @@ ASFUNCTIONBODY_ATOM(Timer,_constructor)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Timer,_getCurrentCount)
+ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
-	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(obj->getSystemState(),th->currentCount);
+	Timer* th=obj.as<Timer>();
+	return asAtom(th->currentCount);
 }
 
-ASFUNCTIONBODY(Timer,_getRepeatCount)
+ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
-	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(obj->getSystemState(),th->repeatCount);
+	Timer* th=obj.as<Timer>();
+	return asAtom(th->repeatCount);
 }
 
-ASFUNCTIONBODY(Timer,_setRepeatCount)
+ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 {
 	assert_and_throw(argslen==1);
-	int32_t count=args[0]->toInt();
-	Timer* th=static_cast<Timer*>(obj);
+	int32_t count=args[0].toInt();
+	Timer* th=obj.as<Timer>();
 	th->repeatCount=count;
 	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
 	{
@@ -105,58 +105,58 @@ ASFUNCTIONBODY(Timer,_setRepeatCount)
 		th->running=false;
 		th->tickJobInstance = NullRef;
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Timer,_getRunning)
+ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 {
-	Timer* th=static_cast<Timer*>(obj);
-	return abstract_b(obj->getSystemState(),th->running);
+	Timer* th=obj.as<Timer>();
+	return asAtom(th->running);
 }
 
-ASFUNCTIONBODY(Timer,_getDelay)
+ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
-	Timer* th=static_cast<Timer*>(obj);
-	return abstract_i(obj->getSystemState(),th->delay);
+	Timer* th=obj.as<Timer>();
+	return asAtom(th->delay);
 }
 
-ASFUNCTIONBODY(Timer,_setDelay)
+ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 {
 	assert_and_throw(argslen==1);
-	int32_t newdelay = args[0]->toInt();
+	int32_t newdelay = args[0].toInt();
 	if (newdelay<=0)
-		throw Class<RangeError>::getInstanceS(obj->getSystemState(),"delay must be positive", 2066);
+		throw Class<RangeError>::getInstanceS(sys,"delay must be positive", 2066);
 
-	Timer* th=static_cast<Timer*>(obj);
+	Timer* th=obj.as<Timer>();
 	th->delay=newdelay;
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Timer,start)
+ASFUNCTIONBODY_ATOM(Timer,start)
 {
-	Timer* th=static_cast<Timer*>(obj);
+	Timer* th=obj.as<Timer>();
 	if(th->running)
-		return NULL;
+		return asAtom::invalidAtom;
 	th->running=true;
 	th->stopMe=false;
 	th->incRef();
 	th->tickJobInstance = _MNR(th);
 	// according to spec Adobe handles timers 60 times per second, so minimum delay is 17 ms
 	if(th->repeatCount==1)
-		getSys()->addWait(th->delay < 17 ? 17 : th->delay,th);
+		sys->addWait(th->delay < 17 ? 17 : th->delay,th);
 	else
-		getSys()->addTick(th->delay < 17 ? 17 : th->delay,th);
-	return NULL;
+		sys->addTick(th->delay < 17 ? 17 : th->delay,th);
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Timer,reset)
+ASFUNCTIONBODY_ATOM(Timer,reset)
 {
-	Timer* th=static_cast<Timer*>(obj);
+	Timer* th=obj.as<Timer>();
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		getSys()->removeJob(th);
+		sys->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 		//This is not anymore used by the timer, so it can die
@@ -164,16 +164,16 @@ ASFUNCTIONBODY(Timer,reset)
 		th->running=false;
 	}
 	th->currentCount=0;
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(Timer,stop)
+ASFUNCTIONBODY_ATOM(Timer,stop)
 {
-	Timer* th=static_cast<Timer*>(obj);
+	Timer* th=obj.as<Timer>();
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		getSys()->removeJob(th);
+		sys->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 
@@ -181,6 +181,6 @@ ASFUNCTIONBODY(Timer,stop)
 		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 

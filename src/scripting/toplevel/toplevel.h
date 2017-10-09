@@ -158,7 +158,7 @@ struct asfreelist
 	{
 #ifndef NDEBUG
 		// all ASObjects must be created in the VM thread
-		assert_and_throw(isVmThread());
+		//assert_and_throw(isVmThread());
 #endif
 		return freelistsize ? freelist[--freelistsize] :NULL;
 	}
@@ -166,7 +166,7 @@ struct asfreelist
 	{
 #ifndef NDEBUG
 		// all ASObjects must be created in the VM thread
-		assert_and_throw(isVmThread());
+		//assert_and_throw(isVmThread());
 #endif
 		assert(obj->getRefCount() == 1);
 		if (freelistsize < FREELIST_SIZE)
@@ -433,17 +433,14 @@ class Function : public IFunction
 friend class Class<IFunction>;
 friend class Class_base;
 public:
-	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 	typedef asAtom (*as_atom_function)(SystemState*, asAtom&, asAtom*, const unsigned int);
 protected:
 	/* Function pointer to the C-function implementation */
-	// TODO this can be removed once all builtin functions are using the asAtom-based function pointer
-	as_function val;
 	/* Function pointer to the C-function implementation with atom arguments */
 	as_atom_function val_atom;
 	// type of the return value;
 	Class_base* returnType;
-	Function(Class_base* c, as_function v=NULL):IFunction(c,SUBTYPE_FUNCTION),val(v),val_atom(NULL) {}
+	Function(Class_base* c,as_atom_function v = NULL):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const { return NULL; }
 public:
 	asAtom call(asAtom& obj, asAtom* args, uint32_t num_args);
@@ -527,27 +524,12 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(SystemState* sys,Function::as_function v, int len = 0)
-	{
-		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
-		if (!ret)
-			ret=new (c->memoryAccount) Function(c, v);
-		else
-			ret->val = v;
-		ret->val_atom= NULL;
-		ret->length = len;
-		ret->constructIndicator = true;
-		ret->constructorCallComplete = true;
-		return ret;
-	}
 	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=NULL)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
 		if (!ret)
-			ret=new (c->memoryAccount) Function(c, NULL);
-		ret->val= NULL;
+			ret=new (c->memoryAccount) Function(c);
 		ret->val_atom = v;
 		ret->returnType = returnType;
 		ret->length = len;

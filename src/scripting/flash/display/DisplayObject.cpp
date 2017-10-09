@@ -150,14 +150,12 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(c->getSystemState(),_getBlendMode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(c->getSystemState(),_setBlendMode),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(c->getSystemState(),_getScale9Grid),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",Class<IFunction>::getFunction(c->getSystemState(),_setScale9Grid),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stage","",Class<IFunction>::getFunction(c->getSystemState(),_getStage),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(c->getSystemState(),_getMask),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(c->getSystemState(),_getAlpha),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alpha","",Class<IFunction>::getFunction(c->getSystemState(),_setAlpha),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("opaqueBackground","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getRect","",Class<IFunction>::getFunction(c->getSystemState(),_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseX","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseX),GETTER_METHOD,true);
@@ -174,6 +172,7 @@ void DisplayObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,scrollRect);
 	REGISTER_GETTER_SETTER(c, rotationX);
 	REGISTER_GETTER_SETTER(c, rotationY);
+	REGISTER_GETTER_SETTER(c, opaqueBackground);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	IBitmapDrawable::linkTraits(c);
@@ -186,6 +185,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground);
 
 bool DisplayObject::computeCacheAsBitmap() const
 {
@@ -799,6 +799,12 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getStage)
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScale9Grid)
+{
+	//DisplayObject* th=obj.as<DisplayObject>();
+	LOG(LOG_NOT_IMPLEMENTED,"DispalyObject.Scale9Grid");
+	return asAtom::undefinedAtom;
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,_setScale9Grid)
 {
 	//DisplayObject* th=obj.as<DisplayObject>();
 	LOG(LOG_NOT_IMPLEMENTED,"DispalyObject.Scale9Grid");

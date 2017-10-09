@@ -33,7 +33,7 @@ public:
 	ContextMenu(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(hideBuiltInItems);
+	ASFUNCTION_ATOM(hideBuiltInItems);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);
 };

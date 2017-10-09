@@ -34,27 +34,27 @@ void ASMutex::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("tryLock","",Class<IFunction>::getFunction(c->getSystemState(),_trylock),NORMAL_METHOD,true);
 }
 
-ASFUNCTIONBODY(ASMutex,_constructor)
+ASFUNCTIONBODY_ATOM(ASMutex,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASMutex,_lock)
+ASFUNCTIONBODY_ATOM(ASMutex,_lock)
 {
-	ASMutex* th=obj->as<ASMutex>();
+	ASMutex* th=obj.as<ASMutex>();
 	th->mutex.lock();
 	th->lockcount++;
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASMutex,_unlock)
+ASFUNCTIONBODY_ATOM(ASMutex,_unlock)
 {
-	ASMutex* th=obj->as<ASMutex>();
+	ASMutex* th=obj.as<ASMutex>();
 	th->mutex.unlock();
 	th->lockcount--;
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASMutex,_trylock)
+ASFUNCTIONBODY_ATOM(ASMutex,_trylock)
 {
-	ASMutex* th=obj->as<ASMutex>();
-	return abstract_b(obj->getSystemState(),th->mutex.trylock());
+	ASMutex* th=obj.as<ASMutex>();
+	return asAtom(th->mutex.trylock());
 }
 

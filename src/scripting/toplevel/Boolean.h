@@ -51,8 +51,8 @@ public:
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION(_toString);
-	ASFUNCTION(_valueOf);
+	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_valueOf);
 	ASFUNCTION_ATOM(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

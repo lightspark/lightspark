@@ -31,7 +31,7 @@ public:
 	JSON(Class_base* c);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_parse);
 	ASFUNCTION_ATOM(_stringify);

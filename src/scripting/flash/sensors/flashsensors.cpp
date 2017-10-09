@@ -42,7 +42,7 @@ void Accelerometer::buildTraits(ASObject *o)
 {
 }
 
-ASFUNCTIONBODY(Accelerometer,_isSupported)
+ASFUNCTIONBODY_ATOM(Accelerometer,_isSupported)
 {
-	return abstract_b(getSys(),false);
+	return asAtom::falseAtom;
 }

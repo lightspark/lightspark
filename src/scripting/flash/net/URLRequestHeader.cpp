@@ -19,11 +19,11 @@ void URLRequestHeader::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(URLRequestHeader,_constructor)
+ASFUNCTIONBODY_ATOM(URLRequestHeader,_constructor)
 {
-	URLRequestHeader* th=Class<URLRequestHeader>::cast(obj);
-	ARG_UNPACK (th->name, "") (th->value, "");
-	return NULL;
+	URLRequestHeader* th=obj.as<URLRequestHeader>();
+	ARG_UNPACK_ATOM (th->name, "") (th->value, "");
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(URLRequestHeader,name);

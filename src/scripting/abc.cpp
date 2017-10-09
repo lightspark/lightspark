@@ -2502,12 +2502,6 @@ istream& lightspark::operator>>(istream& in, method_info& v)
 	return in >> v.info;
 }
 
-ASFUNCTIONBODY(lightspark,undefinedFunction)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("Function not implemented"));
-	return NULL;
-}
-
 /* Multiname types that end in 'A' are attributes names */
 bool multiname_info::isAttributeName() const
 {

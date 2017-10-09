@@ -30,10 +30,10 @@ public:
 	Multitouch(Class_base* c):ASObject(c),inputMode("gesture") {}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(tiny_string,inputMode);
-	ASFUNCTION(getMaxTouchPoints);
-	ASFUNCTION(getSupportedGestures);
-	ASFUNCTION(getSupportsGestureEvents);
-	ASFUNCTION(getSupportsTouchEvents);
+	ASFUNCTION_ATOM(getMaxTouchPoints);
+	ASFUNCTION_ATOM(getSupportedGestures);
+	ASFUNCTION_ATOM(getSupportsGestureEvents);
+	ASFUNCTION_ATOM(getSupportsTouchEvents);
 };
 class MultitouchInputMode : public ASObject
 {

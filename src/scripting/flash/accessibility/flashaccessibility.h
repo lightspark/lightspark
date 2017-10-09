@@ -37,7 +37,7 @@ private:
 public:
 	AccessibilityProperties(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class AccessibilityImplementation : public ASObject
@@ -45,7 +45,7 @@ class AccessibilityImplementation : public ASObject
 public:
 	AccessibilityImplementation(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 };
 
 class Accessibility : public ASObject
@@ -55,7 +55,7 @@ private:
 public:
 	Accessibility(Class_base* c):ASObject(c),properties(NULL){}
 	static void sinit(Class_base*);
-	ASFUNCTION(updateProperties);
+	ASFUNCTION_ATOM(updateProperties);
 };
 
 }

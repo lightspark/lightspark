@@ -49,9 +49,9 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,rewind);
 ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,save);
 ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,zoom);
 
-ASFUNCTIONBODY(ContextMenuBuiltInItems,_constructor)
+ASFUNCTIONBODY_ATOM(ContextMenuBuiltInItems,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 

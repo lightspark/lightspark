@@ -775,8 +775,6 @@ public:
 	void execute(RootMovieClip* root) const;
 };
 
-ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-
 inline ABCVm* getVm(SystemState* sys)
 {
 	return sys->currentVm;

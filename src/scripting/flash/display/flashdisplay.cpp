@@ -2277,9 +2277,9 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_setStageWidth),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),undefinedFunction),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_setStageHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,true);
@@ -2433,10 +2433,24 @@ ASFUNCTIONBODY_ATOM(Stage,_getStageWidth)
 	return asAtom(th->internalGetWidth());
 }
 
+ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
+{
+	//Stage* th=obj.as<Stage>();
+	LOG(LOG_NOT_IMPLEMENTED,"Stage.stageWidth setter");
+	return asAtom::invalidAtom;
+}
+
 ASFUNCTIONBODY_ATOM(Stage,_getStageHeight)
 {
 	Stage* th=obj.as<Stage>();
 	return asAtom(th->internalGetHeight());
+}
+
+ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
+{
+	//Stage* th=obj.as<Stage>();
+	LOG(LOG_NOT_IMPLEMENTED,"Stage.stageHeight setter");
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getLoaderInfo)

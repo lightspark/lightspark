@@ -224,6 +224,7 @@ public:
 	ASFUNCTION_ATOM(_getBlendMode);
 	ASFUNCTION_ATOM(_setBlendMode);
 	ASFUNCTION_ATOM(_getScale9Grid);
+	ASFUNCTION_ATOM(_setScale9Grid);
 	ASFUNCTION_ATOM(_setRotation);
 	ASFUNCTION_ATOM(_getMouseX);
 	ASFUNCTION_ATOM(_getMouseY);
@@ -235,6 +236,7 @@ public:
 	ASFUNCTION_ATOM(hitTestPoint);
 	ASPROPERTY_GETTER_SETTER(number_t, rotationX);
 	ASPROPERTY_GETTER_SETTER(number_t, rotationY);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, opaqueBackground);
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

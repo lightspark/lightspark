@@ -38,10 +38,10 @@ void JSON::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(JSON,_constructor)
+ASFUNCTIONBODY_ATOM(JSON,_constructor)
 {
 	throwError<ArgumentError>(kCantInstantiateError);
-	return NULL;
+	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(JSON,generator)
 {

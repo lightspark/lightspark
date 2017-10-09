@@ -39,11 +39,11 @@ void ASCondition::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER(ASCondition,mutex);
 
-ASFUNCTIONBODY(ASCondition,_constructor)
+ASFUNCTIONBODY_ATOM(ASCondition,_constructor)
 {
-	ASCondition* th=obj->as<ASCondition>();
+	ASCondition* th=obj.as<ASCondition>();
 	_NR<ASObject> arg;
-	ARG_UNPACK(arg);
+	ARG_UNPACK_ATOM(arg);
 	if (arg->is<Null>())
 		throwError<ArgumentError>(kNullPointerError);
 	
@@ -52,30 +52,30 @@ ASFUNCTIONBODY(ASCondition,_constructor)
 	arg->incRef();
 	th->mutex = _NR<ASMutex>(arg->as<ASMutex>());
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASCondition,_notify)
+ASFUNCTIONBODY_ATOM(ASCondition,_notify)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"condition notify not implemented");
-	ASCondition* th=obj->as<ASCondition>();
+	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotNotify) ;
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASCondition,_notifyAll)
+ASFUNCTIONBODY_ATOM(ASCondition,_notifyAll)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"condition notifyAll not implemented");
-	ASCondition* th=obj->as<ASCondition>();
+	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotNotifyAll) ;
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASFUNCTIONBODY(ASCondition,_wait)
+ASFUNCTIONBODY_ATOM(ASCondition,_wait)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"condition wait not implemented");
-	ASCondition* th=obj->as<ASCondition>();
+	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotWait) ;
-	return abstract_b(obj->getSystemState(),true);
+	return asAtom::trueAtom;
 }
 

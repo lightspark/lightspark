@@ -31,10 +31,10 @@ class ASCondition: public ASObject
 public:
 	ASCondition(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_notify);
-	ASFUNCTION(_notifyAll);
-	ASFUNCTION(_wait);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_notify);
+	ASFUNCTION_ATOM(_notifyAll);
+	ASFUNCTION_ATOM(_wait);
 };
 
 }

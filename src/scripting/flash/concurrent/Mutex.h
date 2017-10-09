@@ -33,10 +33,10 @@ private:
 public:
 	ASMutex(Class_base* c);
 	static void sinit(Class_base*);
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_lock);
-	ASFUNCTION(_unlock);
-	ASFUNCTION(_trylock);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_lock);
+	ASFUNCTION_ATOM(_unlock);
+	ASFUNCTION_ATOM(_trylock);
 	int getLockCount() { return lockcount; }
 };
 

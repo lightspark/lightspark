@@ -35,8 +35,8 @@ public:
 	Proxy(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROXY),proxyconstructionCompleted(false){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-//	ASFUNCTION(_constructor);
-	ASFUNCTION(_isAttribute);
+//	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_isAttribute);
 	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)
 	{

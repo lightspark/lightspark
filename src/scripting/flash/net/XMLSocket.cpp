@@ -224,9 +224,9 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _constructor)
 	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(XMLSocket, _close)
+ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 {
-	XMLSocket* th=obj->as<XMLSocket>();
+	XMLSocket* th=obj.as<XMLSocket>();
 	SpinlockLocker l(th->joblock);
 
 	if (th->job)
@@ -234,7 +234,7 @@ ASFUNCTIONBODY(XMLSocket, _close)
 		th->job->requestClose();
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 void XMLSocket::connect(tiny_string host, int port)
@@ -278,28 +278,28 @@ void XMLSocket::connect(tiny_string host, int port)
 	job = thread;
 }
 
-ASFUNCTIONBODY(XMLSocket, _connect)
+ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
 {
-	XMLSocket* th=obj->as<XMLSocket>();
+	XMLSocket* th=obj.as<XMLSocket>();
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK (host) (port);
-	host_is_null = argslen > 0 && args[0]->is<Null>();
+	ARG_UNPACK_ATOM (host) (port);
+	host_is_null = argslen > 0 && args[0].is<Null>();
 
 	if (host_is_null)
 		th->connect("", port);
 	else
 		th->connect(host, port);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
-ASFUNCTIONBODY(XMLSocket, _send)
+ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 {
-	XMLSocket* th=obj->as<XMLSocket>();
+	XMLSocket* th=obj.as<XMLSocket>();
 	tiny_string data;
-	ARG_UNPACK (data);
+	ARG_UNPACK_ATOM (data);
 
 	SpinlockLocker l(th->joblock);
 	if (th->job)
@@ -308,10 +308,10 @@ ASFUNCTIONBODY(XMLSocket, _send)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(obj->getSystemState(),"Socket is not connected");
+		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
 	}
 
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 bool XMLSocket::isConnected()
@@ -320,10 +320,10 @@ bool XMLSocket::isConnected()
 	return job && job->isConnected();
 }
 
-ASFUNCTIONBODY(XMLSocket, _connected)
+ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
 {
-	XMLSocket* th=obj->as<XMLSocket>();
-	return abstract_b(obj->getSystemState(),th->isConnected());
+	XMLSocket* th=obj.as<XMLSocket>();
+	return asAtom(th->isConnected());
 }
 
 void XMLSocket::threadFinished()

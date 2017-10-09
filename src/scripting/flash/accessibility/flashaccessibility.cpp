@@ -39,9 +39,9 @@ void AccessibilityProperties::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, silent);
 }
 
-ASFUNCTIONBODY(AccessibilityProperties,_constructor)
+ASFUNCTIONBODY_ATOM(AccessibilityProperties,_constructor)
 {
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(AccessibilityProperties, description);
@@ -56,10 +56,10 @@ void AccessibilityImplementation::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY(AccessibilityImplementation,_constructor)
+ASFUNCTIONBODY_ATOM(AccessibilityImplementation,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("AccessibilityImplementation class is unimplemented."));
-	return NULL;
+	return asAtom::invalidAtom;
 }
 
 
@@ -69,11 +69,11 @@ void Accessibility::sinit(Class_base* c)
 	c->setVariableByQName("active","",abstract_b(c->getSystemState(),false),CONSTANT_TRAIT);
 }
 
-ASFUNCTIONBODY(Accessibility,updateProperties)
+ASFUNCTIONBODY_ATOM(Accessibility,updateProperties)
 {
-	Accessibility* th=obj->as<Accessibility>();
+	Accessibility* th=obj.as<Accessibility>();
 	LOG(LOG_NOT_IMPLEMENTED, "Accessibility is not supported.");
-	ARG_UNPACK (th->properties);
+	ARG_UNPACK_ATOM (th->properties);
 
-	return NULL;
+	return asAtom::invalidAtom;
 }

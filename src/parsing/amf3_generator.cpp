@@ -150,7 +150,7 @@ asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 			break;
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		ASATOM_INCREF(value);
-		ret->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value, DYNAMIC_TRAIT);
+		ret->setVariableAtomByQName(varName,nsNameAndKind(),value, DYNAMIC_TRAIT);
 	}
 
 	//Read the dense portion
@@ -292,7 +292,7 @@ asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
 		LOG(LOG_NOT_IMPLEMENTED,"handling of weak keys in Dictionary");
 	Dictionary* ret=Class<Dictionary>::getInstanceS(input->getSystemState());
 	//Add object to the map
-	objMap.push_back(ret);
+	objMap.push_back(asAtom::fromObject(ret));
 
 	
 	int32_t count = dictRef >> 1;
@@ -440,7 +440,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 			break;
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		ASATOM_INCREF(value);
-		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
@@ -615,7 +615,7 @@ asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 		}
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		ASATOM_INCREF(value);
-		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
 	}
 	return ret;
 }
@@ -661,7 +661,7 @@ asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		ASATOM_INCREF(value);
 
-		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),value,DYNAMIC_TRAIT);
+		ret.getObject()->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
 	}
 	return ret;
 }

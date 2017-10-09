@@ -1122,18 +1122,7 @@ void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 	}
 	number_t val = getMsSinceEpoch();
 	out->writeByte(date_marker);
-	auto it=objMap.find(this);
-	if(it!=objMap.end())
-	{
-		//The least significant bit is 0 to signal a reference
-		out->writeU29(it->second << 1);
-	}
-	else
-	{
-		//Add the Date to the map
-		objMap.insert(make_pair(this, objMap.size()));
-		// write milliseconds since 1970 as double
-		out->serializeDouble(val);
-	}
+	// write milliseconds since 1970 as double
+	out->serializeDouble(val);
 }
 

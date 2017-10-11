@@ -163,6 +163,7 @@ public:
 	//Methods
 	ASFUNCTION_ATOM(clone);
 	ASFUNCTION_ATOM(concat);
+	ASFUNCTION_ATOM(copyFrom);
 	ASFUNCTION_ATOM(createBox);
 	ASFUNCTION_ATOM(createGradientBox);
 	ASFUNCTION_ATOM(deltaTransformPoint);
@@ -170,6 +171,7 @@ public:
 	ASFUNCTION_ATOM(invert);
 	ASFUNCTION_ATOM(rotate);
 	ASFUNCTION_ATOM(scale);
+	ASFUNCTION_ATOM(setTo);
 	ASFUNCTION_ATOM(transformPoint);
 	ASFUNCTION_ATOM(translate);
 	ASFUNCTION_ATOM(_toString);
@@ -269,6 +271,7 @@ public:
 	ASFUNCTION_ATOM(prependScale);
 	ASFUNCTION_ATOM(prependTranslation);
 	ASFUNCTION_ATOM(appendTranslation);
+	ASFUNCTION_ATOM(copyRawDataFrom);
 };
 class PerspectiveProjection: public ASObject
 {

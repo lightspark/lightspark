@@ -1075,6 +1075,7 @@ void Matrix::sinit(Class_base* c)
 	//Methods 
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),concat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createBox","",Class<IFunction>::getFunction(c->getSystemState(),createBox),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createGradientBox","",Class<IFunction>::getFunction(c->getSystemState(),createGradientBox),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(c->getSystemState(),deltaTransformPoint),NORMAL_METHOD,true);
@@ -1082,6 +1083,7 @@ void Matrix::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(c->getSystemState(),invert),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("rotate","",Class<IFunction>::getFunction(c->getSystemState(),rotate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scale","",Class<IFunction>::getFunction(c->getSystemState(),scale),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transformPoint","",Class<IFunction>::getFunction(c->getSystemState(),transformPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("translate","",Class<IFunction>::getFunction(c->getSystemState(),translate),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
@@ -1375,6 +1377,38 @@ ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 	number_t tty = pt->getY();
 	cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
 	return asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
+}
+
+ASFUNCTIONBODY_ATOM(Matrix,setTo)
+{
+	Matrix* th=obj.as<Matrix>();
+	
+	//Mapping to cairo_matrix_t
+	//a -> xx
+	//b -> yx
+	//c -> xy
+	//d -> yy
+	//tx -> x0
+	//ty -> y0
+	
+	ARG_UNPACK_ATOM(th->matrix.xx)(th->matrix.yx)(th->matrix.xy)(th->matrix.yy)(th->matrix.x0)(th->matrix.y0);
+
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
+{
+	Matrix* th=obj.as<Matrix>();
+	
+	_NR<Matrix> sourceMatrix;
+	ARG_UNPACK_ATOM(sourceMatrix);
+	th->matrix.xx = sourceMatrix->matrix.xx;
+	th->matrix.yx = sourceMatrix->matrix.yx;
+	th->matrix.xy = sourceMatrix->matrix.xy;
+	th->matrix.yy = sourceMatrix->matrix.yy;
+	th->matrix.x0 = sourceMatrix->matrix.x0;
+	th->matrix.y0 = sourceMatrix->matrix.y0;
+
+	return asAtom::invalidAtom;
 }
 
 void Vector3D::sinit(Class_base* c)
@@ -1785,7 +1819,7 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendTranslation","",Class<IFunction>::getFunction(c->getSystemState(),appendTranslation),NORMAL_METHOD,true);
-	
+	c->setDeclaredMethodByQName("copyRawDataFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataFrom),NORMAL_METHOD,true);
 }
 
 bool Matrix3D::destruct()
@@ -1846,7 +1880,18 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.appendTranslation does nothing");
 	return asAtom::invalidAtom;
 }
+ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
+{
+	_NR<Vector> vector;
+	uint32_t index;
+	bool transpose;
+	ARG_UNPACK_ATOM(vector) (index,0) (transpose,false);
+	
+	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom does nothing");
+	return asAtom::invalidAtom;
+}
 
+		
 void PerspectiveProjection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);

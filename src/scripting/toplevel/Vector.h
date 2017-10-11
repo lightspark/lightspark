@@ -42,16 +42,15 @@ class Vector: public ASObject
 		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
+public:
 	class sortComparatorWrapper
 	{
 	private:
 		asAtom comparator;
-		const Type* vec_type;
 	public:
-		sortComparatorWrapper(asAtom c, const Type* v):comparator(c),vec_type(v){}
-		bool operator()(const asAtom& d1, const asAtom& d2);
+		sortComparatorWrapper(asAtom c):comparator(c){}
+		number_t compare(const asAtom& d1, const asAtom& d2);
 	};
-public:
 	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
 	bool destruct()

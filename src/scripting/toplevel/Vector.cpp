@@ -766,7 +766,7 @@ bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d
 		}
 	}
 }
-bool Vector::sortComparatorWrapper::operator()(const asAtom& d1, const asAtom& d2)
+number_t Vector::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d2)
 {
 	asAtom objs[2];
 	if (d1.type != T_INVALID)
@@ -777,10 +777,48 @@ bool Vector::sortComparatorWrapper::operator()(const asAtom& d1, const asAtom& d
 		objs[1] = d2;
 	else
 		objs[1] = asAtom::nullAtom;
-
 	asAtom ret= comparator.callFunction(asAtom::nullAtom, objs, 2,false);
 	assert_and_throw(ret.type != T_INVALID);
-	return (ret.toNumber()<0); //Less
+	return ret.toNumber();
+}
+
+// std::sort expects strict weak ordering for the comparison function
+// this is not guarranteed by user defined comparison functions, so we need our own sorting method.
+// TODO this is just a simple quicksort implementation, not optimized for performance
+void simplequicksortVector(std::vector<asAtom>& v, Vector::sortComparatorWrapper& comp, int32_t lo, int32_t hi)
+{
+	if (lo < hi)
+	{
+		asAtom pivot = v[lo];
+		int32_t i = lo - 1;
+		int32_t j = hi + 1;
+		while (true)
+		{
+			do
+			{
+				i++;
+			}
+			while (i < hi && (comp.compare(v[i],pivot) < 0));
+			
+			do
+			{
+				j--;
+			}
+			while (j >= 0 && (comp.compare(v[j],pivot) > 0));
+	
+			if (i >= j)
+				break;
+	
+			asAtom tmp = v[i];
+			v[i] = v[j];
+			v[j] = tmp;
+		}
+		if (j >= 0)
+		{
+			simplequicksortVector(v, comp, lo, j);
+			simplequicksortVector(v, comp, j + 1, hi);
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_sort)
@@ -815,12 +853,13 @@ ASFUNCTIONBODY_ATOM(Vector,_sort)
 	for(auto it=th->vec.begin();it != th->vec.end();++it)
 	{
 		tmp[i++]= *it;
-		// ensure ASObjects are created
-		it->toObject(sys);
 	}
 	
 	if(comp.type != T_INVALID)
-		sort(tmp.begin(),tmp.end(),sortComparatorWrapper(comp,th->vec_type));
+	{
+		sortComparatorWrapper c(comp);
+		simplequicksortVector(tmp,c,0,tmp.size()-1);
+	}
 	else
 		sort(tmp.begin(),tmp.end(),sortComparatorDefault(isNumeric,isCaseInsensitive,isDescending));
 

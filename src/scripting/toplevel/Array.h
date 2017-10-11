@@ -58,14 +58,6 @@ private:
 		sortComparatorDefault(bool oldversion, bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
-	class sortComparatorWrapper
-	{
-	private:
-		asAtom comparator;
-	public:
-		sortComparatorWrapper(asAtom c):comparator(c){}
-		bool operator()(const asAtom& d1, const asAtom& d2);
-	};
 	class sortOnComparator
 	{
 	private:
@@ -78,6 +70,14 @@ private:
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
 public:
+	class sortComparatorWrapper
+	{
+	private:
+		asAtom comparator;
+	public:
+		sortComparatorWrapper(asAtom c):comparator(c){}
+		number_t compare(const asAtom& d1, const asAtom& d2);
+	};
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);

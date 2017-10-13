@@ -813,7 +813,7 @@ void simplequicksortVector(std::vector<asAtom>& v, Vector::sortComparatorWrapper
 			v[i] = v[j];
 			v[j] = tmp;
 		}
-		if (j >= 0)
+		if (j >= lo)
 		{
 			simplequicksortVector(v, comp, lo, j);
 			simplequicksortVector(v, comp, j + 1, hi);

@@ -904,7 +904,7 @@ void simplequicksortArray(std::vector<asAtom>& v, Array::sortComparatorWrapper& 
 			v[i] = v[j];
 			v[j] = tmp;
 		}
-		if (j >= 0)
+		if (j >= lo)
 		{
 			simplequicksortArray(v, comp, lo, j);
 			simplequicksortArray(v, comp, j + 1, hi);
@@ -967,8 +967,6 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	{
 		if (it2->second.type==T_INVALID || it2->second.type==T_UNDEFINED)
 			continue;
-		// ensure ASObjects are created
-		it2->second.toObject(sys);
 		tmp.push_back(it2->second);
 	}
 	

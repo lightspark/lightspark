@@ -313,7 +313,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
 	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
-	mainDownloader(NULL),scriptObject(NULL),m_pt(NULL)
+	mainDownloader(NULL),scriptObject(NULL),m_pt(NULL),lastclicktime(0)
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 	setTLSSys( NULL );
@@ -900,6 +900,16 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				}
 				ev.button.x = event->x;
 				ev.button.y = event->y;
+				if (nsEvent->type == ButtonPress)
+				{
+					gint64 now=g_get_monotonic_time();
+					if (now-lastclicktime < 500000) // TODO get double click intervall from elsewehere instead of hard coded 500 milliseconds?
+						ev.button.clicks = 2;
+					else
+						ev.button.clicks = 1;
+					lastclicktime = now;
+				}
+
 				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
 				return EngineData::mainloop_handleevent(&ev,m_sys);
 			}

@@ -173,6 +173,7 @@ private:
 	NPDownloader* mainDownloader;
 	NPScriptObjectGW* scriptObject;
 	lightspark::ParseThread* m_pt;
+	gint64 lastclicktime;
 };
 
 }

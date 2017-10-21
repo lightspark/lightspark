@@ -1746,9 +1746,9 @@ void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED
 	}
 }
 
-bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
+bool XML::hasProperty(const multiname& name, bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype)
 {
-	if(considerDynamic == false)
+	if(considerDynamic == false && !checkXMLPropsOnly)
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	if (!isConstructed())
 		return false;
@@ -1812,8 +1812,13 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 	}
 
 	//Try the normal path as the last resource
-	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+	return checkXMLPropsOnly ? false : ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
+bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
+{
+	return hasProperty(name,false,considerDynamic,considerPrototype);
+}
+
 bool XML::deleteVariableByMultiname(const multiname& name)
 {
 	unsigned int index=0;
@@ -2395,6 +2400,7 @@ ASFUNCTIONBODY_ATOM(XML,_propertyIsEnumerable)
 }
 ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 {
+	XML* th=obj.as<XML>();
 	tiny_string prop;
 	ARG_UNPACK_ATOM(prop);
 
@@ -2409,7 +2415,7 @@ ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute=false;
-		ret=obj.getObject()->hasPropertyByMultiname(name, true, true);
+		ret=th->hasProperty(name,th == obj.getObject()->getprop_prototype(), true, true);
 	}
 	return asAtom(ret);
 }

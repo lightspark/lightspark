@@ -137,6 +137,7 @@ void XMLList::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("comments",AS3,Class<IFunction>::getFunction(c->getSystemState(),comments),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("processingInstructions",AS3,Class<IFunction>::getFunction(c->getSystemState(),processingInstructions),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,Class<IFunction>::getFunction(c->getSystemState(),_propertyIsEnumerable),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasOwnProperty),NORMAL_METHOD,true);
 	REGISTER_XML_DELEGATE(addNamespace);
 	REGISTER_XML_DELEGATE2(appendChild,_appendChild);
 	REGISTER_XML_DELEGATE(childIndex);
@@ -575,6 +576,31 @@ ASFUNCTIONBODY_ATOM(XMLList,_propertyIsEnumerable)
 	{
 		int32_t n = args[0].toInt();
 		return asAtom(n < (int32_t)th->nodes.size());
+	}
+	return asAtom::falseAtom;
+}
+ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
+{
+	XMLList* th=obj.as<XMLList>();
+	tiny_string prop;
+	ARG_UNPACK_ATOM(prop);
+
+	multiname name(NULL);
+	name.name_type=multiname::NAME_STRING;
+	name.name_s_id=args[0].toStringId(sys);
+	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	name.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
+	name.isAttribute=false;
+
+	unsigned int index=0;
+	if(XML::isValidMultiname(sys,name,index))
+		return asAtom(index<th->nodes.size());
+
+	auto it=th->nodes.begin();
+	for(; it!=th->nodes.end(); ++it)
+	{
+		if ((*it)->hasProperty(name,true, true, true))
+			return asAtom::trueAtom;
 	}
 	return asAtom::falseAtom;
 }

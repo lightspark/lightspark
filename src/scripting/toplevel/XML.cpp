@@ -888,11 +888,11 @@ ASFUNCTIONBODY_ATOM(XML,inScopeNamespaces)
 		{
 			bool b;
 			_R<Namespace> tmpns = tmp->namespacedefs[i];
-			if(seen_prefix.find(tmpns->getPrefix(b))==seen_prefix.end())
+			if(seen_prefix.count(tmpns->getPrefix(b))==0)
 			{
 				tmpns->incRef();
 				namespaces->push(asAtom::fromObject(tmpns.getPtr()));
-				seen_prefix.insert(tmp->nodenamespace_prefix);
+				seen_prefix.insert(tmpns->getPrefix(b));
 			}
 		}
 		if (tmp->parentNode)

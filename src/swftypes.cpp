@@ -1446,7 +1446,6 @@ ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 
 ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 {
-	LOG(LOG_INFO,"abstract_d");
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->dval = i;
 	ret->isfloat = true;
@@ -1454,7 +1453,6 @@ ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 }
 ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)
 {
-	LOG(LOG_INFO,"abstract_di");
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->ival = i;
 	ret->isfloat = false;

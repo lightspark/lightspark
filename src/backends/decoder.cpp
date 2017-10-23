@@ -183,7 +183,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 		status=INIT;
 }
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecID codecID, double frameRateHint):
+FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frameRateHint):
 	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0)
 {
 	status=INIT;
@@ -193,7 +193,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecID codecID, double frameRateHint):
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 	//The tag is the header, initialize decoding
-	switch(codecID)
+	switch(codecPar->codec_id)
 	{
 		case CODEC_ID_H264:
 			videoCodec=H264;
@@ -207,7 +207,8 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecID codecID, double frameRateHint):
 		default:
 			return;
 	}
-	AVCodec* codec=avcodec_find_decoder(codecID);
+	avcodec_parameters_to_context(codecContext,codecPar);
+	AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
@@ -646,19 +647,20 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 }
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecID codecID):engine(eng),ownedContext(true),codecContext(NULL)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar):engine(eng),ownedContext(true),codecContext(NULL)
 #ifdef HAVE_LIBAVRESAMPLE
 	,resamplecontext(NULL)
 #endif
 {
 	status=INIT;
-	AVCodec* codec=avcodec_find_decoder(codecID);
+	AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
 	assert(codec);
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
 	codecContext=avcodec_alloc_context3(NULL);
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
+	avcodec_parameters_to_context(codecContext,codecPar);
 
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
@@ -1148,7 +1150,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 #endif
 		double frameRate=av_q2d(rateRational);
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codecpar->codec_id,frameRate);
+		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codecpar,frameRate);
 #else
 		customVideoDecoder=new FFMpegVideoDecoder(formatCtx->streams[videoIndex]->codec,frameRate);
 #endif
@@ -1161,7 +1163,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 			customAudioDecoder=new FFMpegAudioDecoder(eng,format->codec,format->sampleRate,format->channels,true);
 		else
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar->codec_id);
+			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar);
 #else
 			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codec);
 #endif

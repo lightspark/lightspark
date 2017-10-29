@@ -30,7 +30,7 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 {
 }
 
-bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format)
+bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format, bool convertendianess)
 {
 	if(!rgb)
 		return false;
@@ -39,7 +39,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	height = h;
 	size_t dataSize;
 	if(format==ARGB32)
-		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride);
+		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride,convertendianess);
 	else
 		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15);
 	delete[] rgb;
@@ -85,7 +85,7 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format,false);
 }
 bool BitmapContainer::fromPNG(uint8_t* data, int len)
 {
@@ -95,7 +95,7 @@ bool BitmapContainer::fromPNG(uint8_t* data, int len)
 	uint8_t *rgb=ImageDecoder::decodePNG(data,len, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
-	return fromRGB(rgb, (int32_t)w, (int32_t)h, format);
+	return fromRGB(rgb, (int32_t)w, (int32_t)h, format,false);
 }
 
 bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP)

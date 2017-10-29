@@ -605,7 +605,7 @@ void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOff
 }
 
 void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-		uint32_t height, size_t* dataSize, size_t* stride)
+		uint32_t height, size_t* dataSize, size_t* stride, bool convertendianess)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
@@ -618,7 +618,7 @@ void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_
 		for(uint32_t j = 0; j < width; j++)
 		{
 			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
-			*outDataPos = GINT32_FROM_BE( *(inData32+(i*width+j)) );
+			*outDataPos = convertendianess ? GUINT32_FROM_BE( *(inData32+(i*width+j)) ) : *(inData32+(i*width+j));
 		}
 	}
 }
@@ -665,7 +665,7 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 			else
 				copyRGB24To24(rgbData, inData+(i*width+j)*3);
 			/* cairo needs this in host endianess */
-			*outDataPos = GINT32_FROM_BE(pdata);
+			*outDataPos = GUINT32_FROM_BE(pdata);
 		}
 	}
 }

@@ -35,8 +35,8 @@
 
 	//there are no multiple buffers in GLES 2.0
 	#define glDrawBuffer(x)
-	#define glBindBuffer(...)
-	#define glBufferData(...)
+//	#define glBindBuffer(...)
+//	#define glBufferData(...)
 	#define glPixelStorei(...)
 #else
 	//GLEW_NO_GLU tells glew.h to not include glu.h. Required to

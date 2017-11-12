@@ -197,6 +197,7 @@ void RenderThread::worker()
 		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Exception in RenderThread, stopping rendering",e.what(),engineData->widget);
 	}
 
 	/* cleanup */
@@ -340,7 +341,7 @@ void RenderThread::commonGLDeinit()
 		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
 		delete[] largeTextures[i].bitmap;
 	}
-	engineData->exec_glDeleteBuffers();
+	engineData->exec_glDeleteBuffers(2,engineData->pixelBuffers);
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 }
 
@@ -352,7 +353,7 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
 	engineData->exec_glEnable_GL_BLEND();
 
-	engineData->exec_glActiveTexture_GL_TEXTURE0();
+	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
 	//Viewport setup is left for GLResize	
 
 	//Get the maximum allowed texture size, up to 1024
@@ -362,7 +363,8 @@ void RenderThread::commonGLInit(int width, int height)
 	largeTextureSize=min(maxTexSize,1024);
 
 	//Create the PBOs
-	engineData->exec_glGenBuffers();
+	engineData->exec_glGenBuffers(2,engineData->pixelBuffers);
+	
 
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);
@@ -469,8 +471,8 @@ void RenderThread::mapCairoTexture(int w, int h)
 
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
-	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
-	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 2, 0, texture_coords);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
@@ -506,8 +508,8 @@ void RenderThread::plotProfilingData()
 	for (int i=0;i<80;i++)
 		color_coords[i] = 0.7;
 
-	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
-	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 4, 0, color_coords);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 0, color_coords,FLOAT_4);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(COLOR_ATTRIB);
 	engineData->exec_glDrawArrays_GL_LINES(0, 20);
@@ -538,11 +540,15 @@ void RenderThread::coreRendering()
 	RGB bg=m_sys->mainClip->getBackground();
 	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+	engineData->exec_glUseProgram(gpu_program);
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
 	m_sys->stage->Render(*this);
 
+	engineData->exec_glUseProgram(gpu_program);
+	lsglLoadIdentity();
+	setMatrixUniform(LSGL_MODELVIEW);
 	if(m_sys->showProfilingData)
 		plotProfilingData();
 

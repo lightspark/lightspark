@@ -93,12 +93,12 @@ protected:
 
 	~GLRenderContext(){}
 
+public:
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-public:
 	GLRenderContext() : RenderContext(GL),engineData(NULL), largeTextureSize(0)
 	{
 	}

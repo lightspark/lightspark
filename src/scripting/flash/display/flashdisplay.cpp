@@ -2304,6 +2304,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,quality);
 	REGISTER_GETTER_SETTER(c,stageFocusRect);
 	REGISTER_GETTER(c,allowsFullScreen);
+	REGISTER_GETTER(c,stage3Ds);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
@@ -2314,6 +2315,7 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRec
 ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,stageFocusRect);  // stub
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen);  // stub
+ASFUNCTIONBODY_GETTER(Stage,stage3Ds); 
 
 void Stage::onDisplayState(const tiny_string&)
 {
@@ -2355,16 +2357,35 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 	}
 }
 
+void Stage::renderImpl(RenderContext &ctxt) const
+{
+	for (uint32_t i = 0; i < stage3Ds->size(); i++)
+	{
+		stage3Ds->at(i).as<Stage3D>()->renderImpl(ctxt);
+	}
+	DisplayObjectContainer::renderImpl(ctxt);
+}
+
 void Stage::buildTraits(ASObject* o)
 {
 }
 
 Stage::Stage(Class_base* c):
-	DisplayObjectContainer(c), colorCorrection("default"),
-	showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
+	DisplayObjectContainer(c), colorCorrection("default"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	subtype = SUBTYPE_STAGE;
 	onStage = true;
+	stage3Ds = _R<Vector>(Template<Vector>::getInstanceS(getSystemState(),Class<Stage3D>::getClass(getSystemState()),NullRef).as<Vector>());
+	// according to specs, Desktop computers usually have 4 Stage3D objects available
+	asAtom v;
+	v =asAtom::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	stage3Ds->append(v);
+	v =asAtom::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	stage3Ds->append(v);
+	v =asAtom::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	stage3Ds->append(v);
+	v =asAtom::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	stage3Ds->append(v);
 }
 
 _NR<Stage> Stage::getStage()
@@ -3400,3 +3421,52 @@ void LineScaleMode::sinit(Class_base* c)
 	c->setVariableAtomByQName("NORMAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("VERTICAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"vertical"),CONSTANT_TRAIT);
 }
+
+void Stage3D::renderImpl(RenderContext &ctxt) const
+{
+	if (!visible || context3D.isNull())
+		return;
+	context3D->renderImpl(ctxt);
+}
+
+void Stage3D::sinit(Class_base *c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("requestContext3D","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3D),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("requestContext3DMatchingProfiles","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3DMatchingProfiles),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c,x);
+	REGISTER_GETTER_SETTER(c,y);
+	REGISTER_GETTER_SETTER(c,visible);
+	REGISTER_GETTER(c,context3D);
+}
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,x);
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,y);
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,visible);
+ASFUNCTIONBODY_GETTER(Stage3D,context3D);
+
+ASFUNCTIONBODY_ATOM(Stage3D,_constructor)
+{
+	//Stage3D* th=obj.as<Stage3D>();
+	return EventDispatcher::_constructor(sys,obj,NULL,0);
+}
+ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
+{
+	Stage3D* th=obj.as<Stage3D>();
+	tiny_string context3DRenderMode;
+	tiny_string profile;
+	ARG_UNPACK_ATOM(context3DRenderMode,"auto")(profile,"baseline");
+	
+	th->context3D = _MR(Class<Context3D>::getInstanceS(sys));
+	th->incRef();
+	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"context3DCreate")));
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(Stage3D,requestContext3DMatchingProfiles)
+{
+	//Stage3D* th=obj.as<Stage3D>();
+	_NR<Vector> profiles;
+	ARG_UNPACK_ATOM(profiles);
+	LOG(LOG_NOT_IMPLEMENTED,"Stage3D.requestContext3DMatchingProfiles does nothing");
+	return asAtom::invalidAtom;
+}
+

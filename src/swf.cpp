@@ -1152,8 +1152,8 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		color_coords[i*4+3] = 1;
 	}
 	assert_and_throw(engineData);
-	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
-	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 4, 0, color_coords);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 0, color_coords,FLOAT_4);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(COLOR_ATTRIB);
 	engineData->exec_glDrawArrays_GL_LINE_STRIP(0, data.size());

@@ -44,6 +44,8 @@
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
+#include "scripting/flash/display3d/flashdisplay3dtextures.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/flash/filters/flashfilters.h"

@@ -35,6 +35,7 @@ class ThreadProfile;
 class DLL_PUBLIC RenderThread: public ITickJob, public GLRenderContext
 {
 friend class DisplayObject;
+friend class Context3D;
 private:
 	SystemState* m_sys;
 	Thread* t;

@@ -1809,6 +1809,69 @@ ASFUNCTIONBODY_ATOM(Vector3D,subtract)
 }
 
 
+void Matrix3D::append(float *otherdata)
+{
+	float m111 = data[0];
+	float m121 = data[4];
+	float m131 = data[8];
+	float m141 = data[12];
+
+	float m112 = data[1];
+	float m122 = data[5];
+	float m132 = data[9];
+	float m142 = data[13];
+
+	float m113 = data[2];
+	float m123 = data[6];
+	float m133 = data[10];
+	float m143 = data[14];
+
+	float m114 = data[3];
+	float m124 = data[7];
+	float m134 = data[11];
+	float m144 = data[15];
+
+	float m211 = otherdata[0];
+	float m221 = otherdata[4];
+	float m231 = otherdata[8];
+	float m241 = otherdata[12];
+
+	float m212 = otherdata[1];
+	float m222 = otherdata[5];
+	float m232 = otherdata[9];
+	float m242 = otherdata[13];
+
+	float m213 = otherdata[2];
+	float m223 = otherdata[6];
+	float m233 = otherdata[10];
+	float m243 = otherdata[14];
+
+	float m214 = otherdata[3];
+	float m224 = otherdata[7];
+	float m234 = otherdata[11];
+	float m244 = otherdata[15];
+
+	data[0] = m111 * m211 + m112 * m221 + m113 * m231 + m114 * m241;
+	data[1] = m111 * m212 + m112 * m222 + m113 * m232 + m114 * m242;
+	data[2] = m111 * m213 + m112 * m223 + m113 * m233 + m114 * m243;
+	data[3] = m111 * m214 + m112 * m224 + m113 * m234 + m114 * m244;
+
+	data[4] = m121 * m211 + m122 * m221 + m123 * m231 + m124 * m241;
+	data[5] = m121 * m212 + m122 * m222 + m123 * m232 + m124 * m242;
+	data[6] = m121 * m213 + m122 * m223 + m123 * m233 + m124 * m243;
+	data[7] = m121 * m214 + m122 * m224 + m123 * m234 + m124 * m244;
+
+	data[8] = m131 * m211 + m132 * m221 + m133 * m231 + m134 * m241;
+	data[9] = m131 * m212 + m132 * m222 + m133 * m232 + m134 * m242;
+	data[10] = m131 * m213 + m132 * m223 + m133 * m233 + m134 * m243;
+	data[11] = m131 * m214 + m132 * m224 + m133 * m234 + m134 * m244;
+
+	data[12] = m141 * m211 + m142 * m221 + m143 * m231 + m144 * m241;
+	data[13] = m141 * m212 + m142 * m222 + m143 * m232 + m144 * m242;
+	data[14] = m141 * m213 + m142 * m223 + m143 * m233 + m144 * m243;
+	data[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
+}
+
 void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
@@ -1819,6 +1882,7 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendTranslation","",Class<IFunction>::getFunction(c->getSystemState(),appendTranslation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendRotation","",Class<IFunction>::getFunction(c->getSystemState(),appendRotation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyRawDataFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataFrom),NORMAL_METHOD,true);
 }
 
@@ -1829,15 +1893,46 @@ bool Matrix3D::destruct()
 
 ASFUNCTIONBODY_ATOM(Matrix3D,_constructor)
 {
-	//Matrix3D * th=static_cast<Matrix3D*>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D is not implemented");
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Vector> v;
+	ARG_UNPACK_ATOM(v,NullRef);
+	if (v.isNull())
+	{
+		// Identity Matrix
+		uint32_t i = 0;
+		th->data[i++] = 1.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		
+		th->data[i++] = 0.0;
+		th->data[i++] = 1.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 1.0;
+		th->data[i++] = 0.0;
+		
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 0.0;
+		th->data[i++] = 1.0;
+	}
+	else
+	{
+		for (uint32_t i = 0; i < v->size() && i < 4*4; i++)
+			th->data[i] = v->at(i).toNumber();
+	}
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,clone)
 {
-	//Matrix3D * th=static_cast<Matrix3D*>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Matrix3D.clone is not implemented");
-	return asAtom::fromObject(Class<Matrix3D>::getInstanceS(sys));
+	Matrix3D * th=obj.as<Matrix3D>();
+	Matrix3D * res = Class<Matrix3D>::getInstanceS(sys);
+	memcpy(res->data,th->data,4*4*sizeof(float));
+	return asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 {
@@ -1878,6 +1973,62 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 	ARG_UNPACK_ATOM(x) (y) (z);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.appendTranslation does nothing");
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	number_t degrees;
+	_NR<Vector3D> axis;
+	_NR<Vector3D> pivotPoint;
+	
+	ARG_UNPACK_ATOM(degrees) (axis) (pivotPoint,NullRef);
+	
+	// algorithm taken from https://github.com/openfl/openfl/blob/develop/openfl/geom/Matrix3D.hx
+	float tx = 0;
+	float ty = 0;
+	float tz = 0;
+	
+	if (!pivotPoint.isNull()) {
+		tx = pivotPoint->x;
+		ty = pivotPoint->y;
+		tz = pivotPoint->z;
+	}
+	float radian = degrees * 3.141592653589793/180;
+	float cos = std::cos(radian);
+	float sin = std::sin(radian);
+	float x = axis->x;
+	float y = axis->y;
+	float z = axis->z;
+	float x2 = x * x;
+	float y2 = y * y;
+	float z2 = z * z;
+	float ls = x2 + y2 + z2;
+	if (ls != 0) {
+		float l = std::sqrt(ls);
+		x /= l;
+		y /= l;
+		z /= l;
+		x2 /= ls;
+		y2 /= ls;
+		z2 /= ls;
+	}
+	float ccos = 1 - cos;
+	float d[4*4];
+	d[0]  = x2 + (y2 + z2) * cos;
+	d[1]  = x * y * ccos + z * sin;
+	d[2]  = x * z * ccos - y * sin;
+	d[4]  = x * y * ccos - z * sin;
+	d[5]  = y2 + (x2 + z2) * cos;
+	d[6]  = y * z * ccos + x * sin;
+	d[8]  = x * z * ccos + y * sin;
+	d[9]  = y * z * ccos - x * sin;
+	d[10] = z2 + (x2 + y2) * cos;
+	d[12] = (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin;
+	d[13] = (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin;
+	d[14] = (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin;
+	d[15] = 1.0;
+	th->append(d);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)

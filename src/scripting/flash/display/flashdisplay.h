@@ -31,6 +31,7 @@
 #include "backends/netutils.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
 
@@ -41,6 +42,7 @@ class RootMovieClip;
 class DisplayListTag;
 class InteractiveObject;
 class Downloader;
+class RenderContext;
 class RenderContext;
 class ApplicationDomain;
 class SecurityDomain;
@@ -92,7 +94,6 @@ private:
 	bool _contains(_R<DisplayObject> child);
 	void getObjectsFromPoint(Point* point, Array* ar);
 protected:
-	void requestInvalidation(InvalidateQueue* q);
 	//This is shared between RenderThread and VM
 	std::vector < _R<DisplayObject> > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
@@ -104,6 +105,7 @@ protected:
 	void renderImpl(RenderContext& ctxt) const;
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 public:
+	void requestInvalidation(InvalidateQueue* q);
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(_R<DisplayObject> child);
@@ -553,6 +555,7 @@ private:
 	_NR<RootMovieClip> root;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
+	void renderImpl(RenderContext& ctxt) const;
 public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	void setOnStage(bool staged) { assert(false); /* we are the stage */}
@@ -593,6 +596,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,quality);
 	ASPROPERTY_GETTER_SETTER(bool,stageFocusRect);
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
+	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 };
 
 class StageScaleMode: public ASObject
@@ -628,6 +632,24 @@ public:
 	StageDisplayState(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
+
+class Stage3D: public EventDispatcher
+{
+friend class Stage;
+protected:
+	void renderImpl(RenderContext &ctxt) const;
+public:
+	Stage3D(Class_base* c):EventDispatcher(c),x(0),y(0),visible(true){ subtype = SUBTYPE_STAGE3D; }
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(requestContext3D);
+	ASFUNCTION_ATOM(requestContext3DMatchingProfiles);
+	ASPROPERTY_GETTER_SETTER(number_t,x);
+	ASPROPERTY_GETTER_SETTER(number_t,y);
+	ASPROPERTY_GETTER_SETTER(bool,visible);
+	ASPROPERTY_GETTER(_NR<Context3D>,context3D);
+};
+
 
 class LineScaleMode: public ASObject
 {

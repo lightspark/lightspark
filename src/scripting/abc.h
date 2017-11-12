@@ -255,6 +255,7 @@ private:
 
 	llvm::Module* module;
 
+	void registerClassesToplevel(Global* builtin);
 	void registerClasses();
 
 	void registerFunctions();

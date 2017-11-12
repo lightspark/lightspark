@@ -219,7 +219,7 @@ public:
 class Vector3D: public ASObject
 {
 public:
-	Vector3D(Class_base* c):ASObject(c){}
+	Vector3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_VECTOR3D){}
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -260,8 +260,12 @@ public:
 
 class Matrix3D: public ASObject
 {
+friend class Context3D;
+private:
+	float data[4*4];
+	void append(float* otherdata);
 public:
-	Matrix3D(Class_base* c):ASObject(c){}
+	Matrix3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX3D){}
 	static void sinit(Class_base* c);
 	bool destruct();
 	ASFUNCTION_ATOM(_constructor);
@@ -271,6 +275,7 @@ public:
 	ASFUNCTION_ATOM(prependScale);
 	ASFUNCTION_ATOM(prependTranslation);
 	ASFUNCTION_ATOM(appendTranslation);
+	ASFUNCTION_ATOM(appendRotation);
 	ASFUNCTION_ATOM(copyRawDataFrom);
 };
 class PerspectiveProjection: public ASObject

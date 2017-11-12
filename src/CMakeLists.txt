@@ -84,6 +84,8 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/GraphicsSolidFill.cpp
   scripting/flash/display/GraphicsStroke.cpp
   scripting/flash/display/GraphicsTrianglePath.cpp
+  scripting/flash/display3d/flashdisplay3d.cpp
+  scripting/flash/display3d/flashdisplay3dtextures.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/filters/flashfilters.cpp

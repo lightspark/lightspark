@@ -1799,9 +1799,19 @@ void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
 	g_gles2_interface->BindTexture(instance->m_graphics,GL_TEXTURE_2D,id);
 }
 
-void ppPluginEngineData::exec_glVertexAttribPointer(uint32_t index, int32_t size, int32_t stride, const void *coords)
+void ppPluginEngineData::exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void *coords, VERTEXBUFFER_FORMAT format)
 {
-	g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, size, GL_FLOAT, GL_FALSE, stride, coords);
+	switch (format)
+	{
+		case BYTES_4: g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, coords); break;
+		case FLOAT_4: g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, 4, GL_FLOAT, GL_FALSE, stride, coords); break;
+		case FLOAT_3: g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, 3, GL_FLOAT, GL_FALSE, stride, coords); break;
+		case FLOAT_2: g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, 2, GL_FLOAT, GL_FALSE, stride, coords); break;
+		case FLOAT_1: g_gles2_interface->VertexAttribPointer(instance->m_graphics,index, 1, GL_FLOAT, GL_FALSE, stride, coords); break;
+		default:
+			LOG(LOG_ERROR,"invalid VERTEXBUFFER_FORMAT");
+			break;
+	}
 }
 
 void ppPluginEngineData::exec_glEnableVertexAttribArray(uint32_t index)
@@ -1812,6 +1822,10 @@ void ppPluginEngineData::exec_glEnableVertexAttribArray(uint32_t index)
 void ppPluginEngineData::exec_glDrawArrays_GL_TRIANGLES(int32_t first, int32_t count)
 {
 	g_gles2_interface->DrawArrays(instance->m_graphics,GL_TRIANGLES,first,count);
+}
+void ppPluginEngineData::exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(int32_t count,const void* indices)
+{
+	g_gles2_interface->DrawElements(instance->m_graphics,GL_TRIANGLES,count,GL_UNSIGNED_SHORT,indices);
 }
 void ppPluginEngineData::exec_glDrawArrays_GL_LINE_STRIP(int32_t first, int32_t count)
 {
@@ -1840,8 +1854,16 @@ void ppPluginEngineData::exec_glUniformMatrix4fv(int32_t location, int32_t count
 
 void ppPluginEngineData::exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer)
 {
-	// PPAPI has no BindBuffer
+	// ppapi doesn't know GL_PIXEL_UNPACK_BUFFER
 	//g_gles2_interface->BindBuffer(instance->m_graphics,GL_PIXEL_UNPACK_BUFFER, buffer);
+}
+void ppPluginEngineData::exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buffer)
+{
+	g_gles2_interface->BindBuffer(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER, buffer);
+}
+void ppPluginEngineData::exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer)
+{
+	g_gles2_interface->BindBuffer(instance->m_graphics,GL_ARRAY_BUFFER, buffer);
 }
 uint8_t* ppPluginEngineData::exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY()
 {
@@ -1863,6 +1885,48 @@ void ppPluginEngineData::exec_glEnable_GL_TEXTURE_2D()
 void ppPluginEngineData::exec_glEnable_GL_BLEND()
 {
 	g_gles2_interface->Enable(instance->m_graphics,GL_BLEND);
+}
+void ppPluginEngineData::exec_glEnable_GL_DEPTH_TEST()
+{
+	g_gles2_interface->Enable(instance->m_graphics,GL_DEPTH_TEST);
+}
+void ppPluginEngineData::exec_glDepthFunc(DEPTH_FUNCTION depthfunc)
+{
+	switch (depthfunc)
+	{
+		case ALWAYS:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_ALWAYS);
+			break;
+		case EQUAL:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_EQUAL);
+			break;
+		case GREATER:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_GREATER);
+			break;
+		case GREATER_EQUAL:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_GEQUAL);
+			break;
+		case LESS:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_LESS);
+			break;
+		case LESS_EQUAL:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_LEQUAL);
+			break;
+		case NEVER:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_NEVER);
+			break;
+		case NOT_EQUAL:
+			g_gles2_interface->DepthFunc(instance->m_graphics,GL_NOTEQUAL);
+			break;
+	}
+}
+void ppPluginEngineData::exec_glDisable_GL_DEPTH_TEST()
+{
+	g_gles2_interface->Disable(instance->m_graphics,GL_DEPTH_TEST);
+}
+void ppPluginEngineData::exec_glEnable_GL_STENCIL_TEST()
+{
+	g_gles2_interface->Enable(instance->m_graphics,GL_STENCIL_TEST);
 }
 
 void ppPluginEngineData::exec_glDisable_GL_TEXTURE_2D()
@@ -1899,6 +1963,11 @@ void ppPluginEngineData::exec_glGetShaderInfoLog(uint32_t shader,int32_t bufSize
 	g_gles2_interface->GetShaderInfoLog(instance->m_graphics,shader,bufSize,length,infoLog);
 }
 
+void ppPluginEngineData::exec_glGetProgramInfoLog(uint32_t program,int32_t bufSize,int32_t* length,char* infoLog)
+{
+	g_gles2_interface->GetProgramInfoLog(instance->m_graphics,program,bufSize,length,infoLog);
+}
+
 void ppPluginEngineData::exec_glGetShaderiv_GL_COMPILE_STATUS(uint32_t shader,int32_t* params)
 {
 	g_gles2_interface->GetShaderiv(instance->m_graphics,shader,GL_COMPILE_STATUS,params);
@@ -1914,9 +1983,18 @@ void ppPluginEngineData::exec_glBindAttribLocation(uint32_t program,uint32_t ind
 	g_gles2_interface->BindAttribLocation(instance->m_graphics,program,index,name);
 }
 
+int32_t ppPluginEngineData::exec_glGetAttribLocation(uint32_t program, const char *name)
+{
+	return g_gles2_interface->GetAttribLocation(instance->m_graphics,program,name);
+}
+
 void ppPluginEngineData::exec_glAttachShader(uint32_t program, uint32_t shader)
 {
 	g_gles2_interface->AttachShader(instance->m_graphics,program,shader);
+}
+void ppPluginEngineData::exec_glDeleteShader(uint32_t shader)
+{
+	g_gles2_interface->DeleteShader(instance->m_graphics,shader);
 }
 
 void ppPluginEngineData::exec_glLinkProgram(uint32_t program)
@@ -1939,9 +2017,9 @@ void ppPluginEngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
 	g_gles2_interface->DeleteTextures(instance->m_graphics,n,textures);
 }
 
-void ppPluginEngineData::exec_glDeleteBuffers()
+void ppPluginEngineData::exec_glDeleteBuffers(uint32_t size, uint32_t* buffers)
 {
-	g_gles2_interface->DeleteBuffers(instance->m_graphics,2,pixelBuffers);
+	g_gles2_interface->DeleteBuffers(instance->m_graphics,size, buffers);
 }
 
 void ppPluginEngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
@@ -1949,19 +2027,23 @@ void ppPluginEngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
 	g_gles2_interface->BlendFunc(instance->m_graphics,GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void ppPluginEngineData::exec_glActiveTexture_GL_TEXTURE0()
+void ppPluginEngineData::exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex)
 {
-	g_gles2_interface->ActiveTexture(instance->m_graphics,GL_TEXTURE0);
+	g_gles2_interface->ActiveTexture(instance->m_graphics,GL_TEXTURE0+textureindex);
 }
 
-void ppPluginEngineData::exec_glGenBuffers()
+void ppPluginEngineData::exec_glGenBuffers(uint32_t size, uint32_t* buffers)
 {
-	g_gles2_interface->GenBuffers(instance->m_graphics,2,pixelBuffers);
+	g_gles2_interface->GenBuffers(instance->m_graphics, size, buffers);
 }
 
 void ppPluginEngineData::exec_glUseProgram(uint32_t program)
 {
 	g_gles2_interface->UseProgram(instance->m_graphics,program);
+}
+void ppPluginEngineData::exec_glDeleteProgram(uint32_t program)
+{
+	g_gles2_interface->DeleteProgram(instance->m_graphics,program);
 }
 
 int32_t ppPluginEngineData::exec_glGetUniformLocation(uint32_t program,const char* name)
@@ -1973,6 +2055,12 @@ void ppPluginEngineData::exec_glUniform1i(int32_t location,int32_t v0)
 {
 	g_gles2_interface->Uniform1i(instance->m_graphics,location,v0);
 }
+
+void ppPluginEngineData::exec_glUniform4fv(int32_t location,uint32_t count, float* v0)
+{
+	g_gles2_interface->Uniform4fv(instance->m_graphics,location,count,v0);
+}
+
 
 void ppPluginEngineData::exec_glGenTextures(int32_t n,uint32_t* textures)
 {
@@ -1986,8 +2074,24 @@ void ppPluginEngineData::exec_glViewport(int32_t x,int32_t y,int32_t width,int32
 
 void ppPluginEngineData::exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size,const void* data)
 {
-	// PPAPI has no BufferData
+	// ppapi doesn't know GL_PIXEL_UNPACK_BUFFER
 	//g_gles2_interface->BufferData(instance->m_graphics,GL_PIXEL_UNPACK_BUFFER,size, data,GL_STREAM_DRAW);
+}
+void ppPluginEngineData::exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size,const void* data)
+{
+	g_gles2_interface->BufferData(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER,size, data,GL_STATIC_DRAW);
+}
+void ppPluginEngineData::exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size,const void* data)
+{
+	g_gles2_interface->BufferData(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER,size, data,GL_DYNAMIC_DRAW);
+}
+void ppPluginEngineData::exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size,const void* data)
+{
+	g_gles2_interface->BufferData(instance->m_graphics,GL_ARRAY_BUFFER,size, data,GL_STATIC_DRAW);
+}
+void ppPluginEngineData::exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size,const void* data)
+{
+	g_gles2_interface->BufferData(instance->m_graphics,GL_ARRAY_BUFFER,size, data,GL_DYNAMIC_DRAW);
 }
 
 void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR()
@@ -2020,9 +2124,34 @@ void ppPluginEngineData::exec_glClearColor(float red,float green,float blue,floa
 	g_gles2_interface->ClearColor(instance->m_graphics,red,green,blue,alpha);
 }
 
+void ppPluginEngineData::exec_glClearStencil(uint32_t stencil)
+{
+	g_gles2_interface->ClearStencil(instance->m_graphics,stencil);
+}
+void ppPluginEngineData::exec_glClearDepthf(float depth)
+{
+	g_gles2_interface->ClearDepthf(instance->m_graphics,depth);
+}
+
 void ppPluginEngineData::exec_glClear_GL_COLOR_BUFFER_BIT()
 {
 	g_gles2_interface->Clear(instance->m_graphics,GL_COLOR_BUFFER_BIT);
+}
+void ppPluginEngineData::exec_glClear(CLEARMASK mask)
+{
+	uint32_t clearmask = 0;
+	if ((mask & CLEARMASK::COLOR) != 0)
+		clearmask |= GL_COLOR_BUFFER_BIT;
+	if ((mask & CLEARMASK::DEPTH) != 0)
+		clearmask |= GL_DEPTH_BUFFER_BIT;
+	if ((mask & CLEARMASK::STENCIL) != 0)
+		clearmask |= GL_STENCIL_BUFFER_BIT;
+	g_gles2_interface->Clear(instance->m_graphics,clearmask);
+}
+
+void ppPluginEngineData::exec_glDepthMask(bool flag)
+{
+	g_gles2_interface->DepthMask(instance->m_graphics,flag);
 }
 
 void ppPluginEngineData::exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param)

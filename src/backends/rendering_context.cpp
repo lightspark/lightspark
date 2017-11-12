@@ -211,8 +211,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 		}
 	}
 
-	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 2, 0, vertex_coords);
-	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 2, 0, texture_coords);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, curChunk*6);
@@ -341,7 +341,7 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf)
 {
 	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
-	assert(ret.second);
+//	assert(ret.second);
 	CachedSurface& surface=ret.first->second;
 	surface.tex.chunks=(uint32_t*)texBuf;
 	return surface;

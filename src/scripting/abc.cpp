@@ -94,6 +94,8 @@
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
+#include "scripting/flash/display3d/flashdisplay3dtextures.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/flash/filters/flashfilters.h"
@@ -238,10 +240,8 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
 }
 
-void ABCVm::registerClasses()
+void ABCVm::registerClassesToplevel(Global* builtin)
 {
-	Global* builtin=Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
-	//Register predefined types, ASObject are enough for not implemented classes
 	builtin->registerBuiltin("Object","",Class<ASObject>::getRef(m_sys));
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
@@ -289,6 +289,13 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(m_sys,escape,1)));
 	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(m_sys,unescape,1)));
 	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(m_sys,ASObject::_toString)));
+}
+
+void ABCVm::registerClasses()
+{
+	Global* builtin=Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+	//Register predefined types, ASObject are enough for not implemented classes
+	registerClassesToplevel(builtin);
 
 	builtin->registerBuiltin("AccessibilityProperties","flash.accessibility",Class<AccessibilityProperties>::getRef(m_sys));
 	builtin->registerBuiltin("AccessibilityImplementation","flash.accessibility",Class<AccessibilityImplementation>::getRef(m_sys));
@@ -309,6 +316,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Sprite","flash.display",Class<Sprite>::getRef(m_sys));
 	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef(m_sys));
+	builtin->registerBuiltin("Stage3D","flash.display",Class<Stage3D>::getRef(m_sys));
 	builtin->registerBuiltin("Graphics","flash.display",Class<Graphics>::getRef(m_sys));
 	builtin->registerBuiltin("GraphicsBitmapFill","flash.display",Class<GraphicsBitmapFill>::getRef(m_sys));
 	builtin->registerBuiltin("GraphicsEndFill","flash.display",Class<GraphicsEndFill>::getRef(m_sys));
@@ -343,6 +351,31 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef(m_sys));
 	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef(m_sys));
+
+	builtin->registerBuiltin("Context3D","flash.display3D",Class<Context3D>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DBlendFactor","flash.display3D",Class<Context3DBlendFactor>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DBufferUsage","flash.display3D",Class<Context3DBufferUsage>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DClearMask","flash.display3D",Class<Context3DClearMask>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DCompareMode","flash.display3D",Class<Context3DCompareMode>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DMipFilter","flash.display3D",Class<Context3DMipFilter>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DProfile","flash.display3D",Class<Context3DProfile>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DProgramType","flash.display3D",Class<Context3DProgramType>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DRenderMode","flash.display3D",Class<Context3DRenderMode>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DStencilAction","flash.display3D",Class<Context3DStencilAction>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DTextureFilter","flash.display3D",Class<Context3DTextureFilter>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DTextureFormat","flash.display3D",Class<Context3DTextureFormat>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DTriangleFace","flash.display3D",Class<Context3DTriangleFace>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DVertexBufferFormat","flash.display3D",Class<Context3DVertexBufferFormat>::getRef(m_sys));
+	builtin->registerBuiltin("Context3DWrapMode","flash.display3D",Class<Context3DWrapMode>::getRef(m_sys));
+	builtin->registerBuiltin("IndexBuffer3D","flash.display3D",Class<IndexBuffer3D>::getRef(m_sys));
+	builtin->registerBuiltin("Program3D","flash.display3D",Class<Program3D>::getRef(m_sys));
+	builtin->registerBuiltin("VertexBuffer3D","flash.display3D",Class<VertexBuffer3D>::getRef(m_sys));
+
+	builtin->registerBuiltin("TextureBase","flash.display3D.textures",Class<TextureBase>::getRef(m_sys));
+	builtin->registerBuiltin("Texture","flash.display3D.textures",Class<Texture>::getRef(m_sys));
+	builtin->registerBuiltin("CubeTexture","flash.display3D.textures",Class<CubeTexture>::getRef(m_sys));
+	builtin->registerBuiltin("RectangleTexture","flash.display3D.textures",Class<RectangleTexture>::getRef(m_sys));
+	builtin->registerBuiltin("VideoTexture","flash.display3D.textures",Class<VideoTexture>::getRef(m_sys));
 
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef(m_sys));
@@ -402,7 +435,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef(m_sys));
 	builtin->registerBuiltin("TextRotation","flash.text.engine",Class<TextRotation>::getRef(m_sys));
 	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef(m_sys));
-
+	
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef(m_sys));
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef(m_sys));
 

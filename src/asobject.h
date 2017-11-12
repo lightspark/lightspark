@@ -854,8 +854,10 @@ class ByteArray;
 class Class_inherit;
 class ColorTransform;
 class ContentElement;
+class Context3D;
 class ContextMenu;
 class ContextMenuBuiltInItems;
+class CubeTexture;
 class Date;
 class DisplayObject;
 class DisplayObjectContainer;
@@ -868,10 +870,12 @@ class Global;
 class IFunction;
 class Integer;
 class InteractiveObject;
+class IndexBuffer3D;
 class KeyboardEvent;
 class LoaderContext;
 class LoaderInfo;
 class Matrix;
+class Matrix3D;
 class MouseEvent;
 class MovieClip;
 class Namespace;
@@ -879,9 +883,11 @@ class Null;
 class Number;
 class ObjectConstructor;
 class Point;
+class Program3D;
 class ProgressEvent;
 class Proxy;
 class Rectangle;
+class RectangleTexture;
 class RegExp;
 class RootMovieClip;
 class SharedObject;
@@ -890,6 +896,7 @@ class SoundChannel;
 class SoundTransform;
 class Sprite;
 class Stage;
+class Stage3D;
 class SyntheticFunction;
 class Template_base;
 class TextBlock;
@@ -897,10 +904,15 @@ class TextElement;
 class TextField;
 class TextFormat;
 class TextLine;
+class Texture;
+class TextureBase;
 class Type;
 class UInteger;
 class Undefined;
 class Vector;
+class Vector3D;
+class VertexBuffer3D;
+class VideoTexture;
 class WaitableEvent;
 class XML;
 class XMLList;
@@ -922,8 +934,10 @@ template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; 
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
 template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }
 template<> inline bool ASObject::is<ContentElement>() const { return subtype==SUBTYPE_CONTENTELEMENT || subtype == SUBTYPE_TEXTELEMENT; }
+template<> inline bool ASObject::is<Context3D>() const { return subtype==SUBTYPE_CONTEXT3D; }
 template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
 template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
+template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTYPE_CUBETEXTURE; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
@@ -934,6 +948,7 @@ template<> inline bool ASObject::is<Function_object>() const { return subtype==S
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
 template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
+template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
 template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
@@ -941,15 +956,18 @@ template<> inline bool ASObject::is<LoaderContext>() const { return subtype==SUB
 template<> inline bool ASObject::is<LoaderInfo>() const { return subtype==SUBTYPE_LOADERINFO; }
 template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
 template<> inline bool ASObject::is<Matrix>() const { return subtype==SUBTYPE_MATRIX; }
+template<> inline bool ASObject::is<Matrix3D>() const { return subtype==SUBTYPE_MATRIX3D; }
 template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYPE_MOUSE_EVENT; }
 template<> inline bool ASObject::is<MovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
 template<> inline bool ASObject::is<Point>() const { return subtype==SUBTYPE_POINT; }
+template<> inline bool ASObject::is<Program3D>() const { return subtype==SUBTYPE_PROGRAM3D; }
 template<> inline bool ASObject::is<ProgressEvent>() const { return subtype==SUBTYPE_PROGRESSEVENT; }
 template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
 template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE_RECTANGLE; }
+template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==SUBTYPE_RECTANGLETEXTURE; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
@@ -958,6 +976,7 @@ template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBT
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
 template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SPRITE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
+template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
 template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
 template<> inline bool ASObject::is<TextBlock>() const { return subtype==SUBTYPE_TEXTBLOCK; }
@@ -965,13 +984,19 @@ template<> inline bool ASObject::is<TextElement>() const { return subtype==SUBTY
 template<> inline bool ASObject::is<TextField>() const { return subtype==SUBTYPE_TEXTFIELD; }
 template<> inline bool ASObject::is<TextFormat>() const { return subtype==SUBTYPE_TEXTFORMAT; }
 template<> inline bool ASObject::is<TextLine>() const { return subtype==SUBTYPE_TEXTLINE; }
+template<> inline bool ASObject::is<Texture>() const { return subtype==SUBTYPE_TEXTURE; }
+template<> inline bool ASObject::is<TextureBase>() const { return subtype==SUBTYPE_TEXTUREBASE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_CUBETEXTURE || subtype==SUBTYPE_RECTANGLETEXTURE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_VIDEOTEXTURE; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
+template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
+template<> inline bool ASObject::is<VertexBuffer3D>() const { return subtype==SUBTYPE_VERTEXBUFFER3D; }
+template<> inline bool ASObject::is<VideoTexture>() const { return subtype==SUBTYPE_VIDEOTEXTURE; }
 template<> inline bool ASObject::is<WaitableEvent>() const { return subtype==SUBTYPE_WAITABLE_EVENT; }
 template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
+
 
 
 template<class T> inline bool asAtom::is() const {

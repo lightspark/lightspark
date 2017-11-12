@@ -892,7 +892,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 		if (BitmapFormat == LOSSLESS_BITMAP_RGB15)
 			format = BitmapContainer::RGB15;
 		else if (version == 1)
-			format = BitmapContainer::RGB24;
+			format = BitmapContainer::RGB32;
 		else
 			format = BitmapContainer::ARGB32;
 

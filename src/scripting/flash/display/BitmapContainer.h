@@ -32,7 +32,7 @@ namespace lightspark
 class BitmapContainer : public RefCountable
 {
 public:
-	enum BITMAP_FORMAT { RGB15, RGB24, ARGB32 };
+	enum BITMAP_FORMAT { RGB15, RGB24, RGB32, ARGB32 };
 protected:
 	size_t stride;
 	int32_t width;

@@ -209,7 +209,7 @@ public:
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
 	static void convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-					 uint32_t height, size_t* dataSize, size_t* stride, bool rgb15);
+					 uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp);
 	/*
 	 * Converts data (which is in ARGB format) to the format internally used by cairo.
 	 */

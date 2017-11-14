@@ -1922,7 +1922,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 			for(int32_t i=0;i<bitmap->getHeight();i++)
 			{
 				for(int32_t j=0;j<bitmap->getWidth();j++)
-					bitmap->setAlpha(i, j, zfstream.get());
+					bitmap->setAlpha(j, i, zfstream.get());
 			}
 		}
 		catch(std::exception& e)

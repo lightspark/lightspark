@@ -2033,15 +2033,19 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
 {
+	Matrix3D * th=obj.as<Matrix3D>();
 	_NR<Vector> vector;
 	uint32_t index;
 	bool transpose;
 	ARG_UNPACK_ATOM(vector) (index,0) (transpose,false);
-	
-	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom does nothing");
+	if (transpose)
+		LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom ignores parameter 'transpose'");
+	for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
+	{
+		th->data[i] = vector->at(index+i).toNumber();
+	}
 	return asAtom::invalidAtom;
 }
-
 		
 void PerspectiveProjection::sinit(Class_base* c)
 {

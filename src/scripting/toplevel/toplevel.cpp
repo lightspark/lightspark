@@ -839,6 +839,8 @@ void Class_base::copyBorrowedTraitsFromSuper()
 	for(;i != super->borrowedVariables.Variables.end(); ++i)
 	{
 		variable& v = i->second;
+		if (borrowedVariables.findObjVar(i->first,v.ns,TRAIT_KIND::NO_CREATE_TRAIT,TRAIT_KIND::DECLARED_TRAIT))
+			continue; // variable is already overwritten in this class
 		v.issealed = super->isSealed;
 		ASATOM_INCREF(v.var);
 		ASATOM_INCREF(v.getter);
@@ -1145,7 +1147,7 @@ void Class_base::linkInterface(Class_base* c) const
 
 bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) const
 {
-	check();
+//	check();
 	if(cls==this || cls==cls->getSystemState()->getObjectClassRef())
 		return true;
 

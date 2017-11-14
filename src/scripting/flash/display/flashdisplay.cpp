@@ -728,8 +728,8 @@ void Sprite::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, useHandCursor);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(Sprite, buttonMode);
-ASFUNCTIONBODY_GETTER_SETTER(Sprite, useHandCursor);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, buttonMode);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, useHandCursor);
 
 void Sprite::buildTraits(ASObject* o)
 {
@@ -1293,8 +1293,9 @@ asAtom MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		uint32_t dest=getFrameIdByLabel(args[0].toString(), sceneName);
 		if(dest==FRAME_NOT_FOUND)
 		{
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<args[0].toString());
-			throwError<ArgumentError>(kInvalidArgumentError,args[0].toString());
+			dest= 0;
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<args[0].toString()<<" in scene "<<sceneName);
+//			throwError<ArgumentError>(kInvalidArgumentError,args[0].toString());
 		}
 
 		next_FP = dest;
@@ -2359,9 +2360,19 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 
 void Stage::renderImpl(RenderContext &ctxt) const
 {
+	bool has3d = false;
 	for (uint32_t i = 0; i < stage3Ds->size(); i++)
 	{
-		stage3Ds->at(i).as<Stage3D>()->renderImpl(ctxt);
+		if (stage3Ds->at(i).as<Stage3D>()->renderImpl(ctxt))
+			has3d = true;
+	}
+	if (has3d)
+	{
+		// setup opengl state for additional 2d rendering
+		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+		getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
+		((GLRenderContext&)ctxt).lsglLoadIdentity();
+		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
 	DisplayObjectContainer::renderImpl(ctxt);
 }
@@ -3422,11 +3433,11 @@ void LineScaleMode::sinit(Class_base* c)
 	c->setVariableAtomByQName("VERTICAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"vertical"),CONSTANT_TRAIT);
 }
 
-void Stage3D::renderImpl(RenderContext &ctxt) const
+bool Stage3D::renderImpl(RenderContext &ctxt) const
 {
 	if (!visible || context3D.isNull())
-		return;
-	context3D->renderImpl(ctxt);
+		return false;
+	return context3D->renderImpl(ctxt);
 }
 
 void Stage3D::sinit(Class_base *c)

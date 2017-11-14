@@ -637,7 +637,7 @@ class Stage3D: public EventDispatcher
 {
 friend class Stage;
 protected:
-	void renderImpl(RenderContext &ctxt) const;
+	bool renderImpl(RenderContext &ctxt) const;
 public:
 	Stage3D(Class_base* c):EventDispatcher(c),x(0),y(0),visible(true){ subtype = SUBTYPE_STAGE3D; }
 	static void sinit(Class_base* c);

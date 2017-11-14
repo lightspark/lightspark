@@ -248,7 +248,8 @@ public:
 	void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
 	void exec_glDeleteTextures(int32_t n,uint32_t* textures);
 	void exec_glDeleteBuffers(uint32_t size, uint32_t* buffers);
-	void exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
+	void exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst);
+	void exec_glCullFace(TRIANGLE_FACE mode);
 	void exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex);
 	void exec_glGenBuffers(uint32_t size, uint32_t* buffers);
 	void exec_glUseProgram(uint32_t program);

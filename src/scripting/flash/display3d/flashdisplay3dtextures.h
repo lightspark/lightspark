@@ -35,10 +35,9 @@ protected:
 	uint32_t textureID;
 	int32_t width;
 	int32_t height;
-	uint32_t miplevel;
-	_NR<BitmapContainer> bitmap;
+	vector<_NR<BitmapContainer>> bitmaparray;
 public:
-	TextureBase(Class_base* c):EventDispatcher(c),textureID(UINT32_MAX),width(0),height(0),miplevel(0){ subtype = SUBTYPE_TEXTUREBASE;}
+	TextureBase(Class_base* c):EventDispatcher(c),textureID(UINT32_MAX),width(0),height(0){ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 };

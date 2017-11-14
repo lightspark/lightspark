@@ -350,7 +350,7 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 
-	engineData->exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
+	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 	engineData->exec_glEnable_GL_BLEND();
 
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
@@ -546,9 +546,6 @@ void RenderThread::coreRendering()
 
 	m_sys->stage->Render(*this);
 
-	engineData->exec_glUseProgram(gpu_program);
-	lsglLoadIdentity();
-	setMatrixUniform(LSGL_MODELVIEW);
 	if(m_sys->showProfilingData)
 		plotProfilingData();
 

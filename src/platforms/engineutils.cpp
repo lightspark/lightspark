@@ -566,9 +566,64 @@ void EngineData::exec_glDeleteBuffers(uint32_t size, uint32_t* buffers)
 	glDeleteBuffers(size,buffers);
 }
 
-void EngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
+void EngineData::exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst)
 {
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	GLenum glsrc, gldst;
+	switch (src)
+	{
+		case BLEND_ONE: glsrc = GL_ONE; break;
+		case BLEND_ZERO: glsrc = GL_ZERO; break;
+		case BLEND_SRC_ALPHA: glsrc = GL_SRC_ALPHA; break;
+		case BLEND_SRC_COLOR: glsrc = GL_SRC_COLOR; break;
+		case BLEND_DST_ALPHA: glsrc = GL_DST_ALPHA; break;
+		case BLEND_DST_COLOR: glsrc = GL_DST_COLOR; break;
+		case BLEND_ONE_MINUS_SRC_ALPHA: glsrc = GL_ONE_MINUS_SRC_ALPHA; break;
+		case BLEND_ONE_MINUS_SRC_COLOR: glsrc = GL_ONE_MINUS_SRC_COLOR; break;
+		case BLEND_ONE_MINUS_DST_ALPHA: glsrc = GL_ONE_MINUS_DST_ALPHA; break;
+		case BLEND_ONE_MINUS_DST_COLOR: glsrc = GL_ONE_MINUS_DST_COLOR; break;
+		default:
+			LOG(LOG_ERROR,"invalid src in glBlendFunc:"<<(uint32_t)src);
+			return;
+	}
+	switch (dst)
+	{
+		case BLEND_ONE: gldst = GL_ONE; break;
+		case BLEND_ZERO: gldst = GL_ZERO; break;
+		case BLEND_SRC_ALPHA: gldst = GL_SRC_ALPHA; break;
+		case BLEND_SRC_COLOR: gldst = GL_SRC_COLOR; break;
+		case BLEND_DST_ALPHA: gldst = GL_DST_ALPHA; break;
+		case BLEND_DST_COLOR: gldst = GL_DST_COLOR; break;
+		case BLEND_ONE_MINUS_SRC_ALPHA: gldst = GL_ONE_MINUS_SRC_ALPHA; break;
+		case BLEND_ONE_MINUS_SRC_COLOR: gldst = GL_ONE_MINUS_SRC_COLOR; break;
+		case BLEND_ONE_MINUS_DST_ALPHA: gldst = GL_ONE_MINUS_DST_ALPHA; break;
+		case BLEND_ONE_MINUS_DST_COLOR: gldst = GL_ONE_MINUS_DST_COLOR; break;
+		default:
+			LOG(LOG_ERROR,"invalid dst in glBlendFunc:"<<(uint32_t)dst);
+			return;
+	}
+	glBlendFunc(glsrc, gldst);
+}
+
+void EngineData::exec_glCullFace(TRIANGLE_FACE mode)
+{
+	switch (mode)
+	{
+		case FACE_BACK:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+			break;
+		case FACE_FRONT:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+			break;
+		case FACE_FRONT_AND_BACK:
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT_AND_BACK);
+			break;
+		case FACE_NONE:
+			glDisable(GL_CULL_FACE);
+			break;
+	}
 }
 
 void EngineData::exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex)

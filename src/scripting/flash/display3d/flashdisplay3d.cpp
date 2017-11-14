@@ -29,10 +29,11 @@
 
 namespace lightspark
 {
-uint32_t currvertexbuffer = 0;
-void Context3D::renderImpl(RenderContext &ctxt)
+bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
+	if (actions[1-currentactionvector].size() == 0)
+		return false;
 	EngineData* engineData = getSystemState()->getEngineData();
 //	engineData->exec_glDisable_GL_TEXTURE_2D();
 //	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
@@ -50,8 +51,6 @@ void Context3D::renderImpl(RenderContext &ctxt)
 				if ((action.udata2 & CLEARMASK::DEPTH) != 0)
 				{
 					engineData->exec_glEnable_GL_DEPTH_TEST();
-					engineData->exec_glDepthFunc(passCompareMode);
-					engineData->exec_glDepthMask(depthMask);
 					engineData->exec_glClearDepthf(action.depth);
 				}
 				if ((action.udata2 & CLEARMASK::STENCIL) != 0)
@@ -141,8 +140,6 @@ void Context3D::renderImpl(RenderContext &ctxt)
 						uint32_t sampid = engineData->exec_glGetUniformLocation(p->gpu_program,buf);
 						if (sampid != UINT32_MAX)
 							engineData->exec_glUniform1i(sampid, 1+p->samplerState[j]);
-						LOG(LOG_INFO,"renderimpl1 "<<sampid<<" "<<1+action.udata1);
-						((GLRenderContext&)ctxt).handleGLErrors();
 					}
 				}
 				p->vertexprogram = "";
@@ -161,8 +158,11 @@ void Context3D::renderImpl(RenderContext &ctxt)
 					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0, t->width, t->height, 0, 0);
-					if (!t->bitmap.isNull())
-						engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(t->miplevel, 0, 0, t->width>>t->miplevel, t->height>>t->miplevel, t->bitmap->getData(),0,0,0);
+					for (uint32_t i = 0; i < t->bitmaparray.size(); i++)
+					{
+						if (!t->bitmaparray[i].isNull())
+							engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(i, 0, 0, t->width>>i, t->height>>i, t->bitmaparray[i]->getData(),0,0,0);
+					}
 					t->textureID = tmp;
 				}
 				else
@@ -206,7 +206,6 @@ void Context3D::renderImpl(RenderContext &ctxt)
 //					}
 //					else 
 //						engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
-					currvertexbuffer=action.udata1;
 					engineData->exec_glVertexAttribPointer(action.udata1, buffer->data32PerVertex*sizeof(float), (buffer->data.data()+action.udata2),(VERTEXBUFFER_FORMAT)action.udata3);
 					engineData->exec_glEnableVertexAttribArray(action.udata1);
 					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
@@ -315,13 +314,15 @@ void Context3D::renderImpl(RenderContext &ctxt)
 				//action.udata1 = sampler
 				if (action.dataobject.isNull())
 				{
-					LOG(LOG_NOT_IMPLEMENTED,"Context3D::setTextureAt with texture null");
+					//LOG(LOG_INFO,"RENDER_SETTEXTUREAT remove:"<<action.udata1);
+					engineData->exec_glActiveTexture_GL_TEXTURE0(1+action.udata1);
+					engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 				}
 				else
 				{
 					TextureBase* tex = action.dataobject->as<TextureBase>();
-					LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<tex->miplevel<<" "<<tex->bitmap.isNull());
-					if (tex->textureID == UINT32_MAX && !tex->bitmap.isNull() && tex->bitmap->getData())
+					//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<action.udata1);
+					if (tex->textureID == UINT32_MAX)
 					{
 						engineData->exec_glEnable_GL_TEXTURE_2D();
 						engineData->exec_glActiveTexture_GL_TEXTURE0(1+action.udata1);
@@ -329,7 +330,11 @@ void Context3D::renderImpl(RenderContext &ctxt)
 						engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
 						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-						engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(tex->miplevel, tex->width>>tex->miplevel, tex->height>>tex->miplevel, 0, tex->bitmap->getData());
+						for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+						{
+							if (!tex->bitmaparray[i].isNull())
+								engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i]->getData());
+						}
 					}
 					else
 					{
@@ -337,10 +342,30 @@ void Context3D::renderImpl(RenderContext &ctxt)
 						engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
 					}
 				}
+				break;
+			}
+			case RENDER_SETBLENDFACTORS:
+			{
+				//action.udata1 = sourcefactor
+				//action.udata2 = destinationfactor
+				engineData->exec_glBlendFunc((BLEND_FACTOR)action.udata1,(BLEND_FACTOR)action.udata2);
+				break;
+			}
+			case RENDER_SETDEPTHTEST:
+			{
+				//action.udata1 = depthMask ? 1:0
+				//action.udata2 = passCompareMode
+				engineData->exec_glDepthMask(action.udata1);
+				engineData->exec_glDepthFunc((DEPTH_FUNCTION)action.udata2);
+				break;
+			}
+			case RENDER_SETCULLING:
+			{
+				//action.udata1 = mode
+				engineData->exec_glCullFace((TRIANGLE_FACE)action.udata1);
+				break;
 			}
 		}
-		LOG(LOG_INFO,"renderimpl:"<<i<<" "<<(int)action.action);
-		((GLRenderContext&)ctxt).handleGLErrors();
 	}
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
@@ -348,14 +373,16 @@ void Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glUseProgram(0);
 	((GLRenderContext&)ctxt).handleGLErrors();
 	actions[1-currentactionvector].clear();
+	return true;
 }
 
-Context3D::Context3D(Class_base *c):EventDispatcher(c),currentactionvector(0),currentprogram(NULL),depthMask(true),passCompareMode(LESS),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
+Context3D::Context3D(Class_base *c):EventDispatcher(c),currentactionvector(0),currentprogram(NULL),depthMask(true),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
 	subtype = SUBTYPE_CONTEXT3D;
 	memset(vertexConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
 	memset(fragmentConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
+	driverInfo = "OpenGL";
 }
 
 void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
@@ -480,7 +507,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	int32_t streamingLevels;
 	Texture* res = Class<Texture>::getInstanceS(sys);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels);
+	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
 	return asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
@@ -548,10 +575,60 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 
 ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setBlendFactors does nothing");
+	Context3D* th = obj.as<Context3D>();
 	tiny_string sourceFactor;
 	tiny_string destinationFactor;
 	ARG_UNPACK_ATOM(sourceFactor)(destinationFactor);
+	BLEND_FACTOR src, dst;
+	if (sourceFactor == "destinationAlpha")
+		src = BLEND_DST_ALPHA;
+	else if (sourceFactor == "destinationColor")
+		src = BLEND_DST_COLOR;
+	else if (sourceFactor == "one")
+		src = BLEND_ONE;
+	else if (sourceFactor == "oneMinusDestinationAlpha")
+		src = BLEND_ONE_MINUS_DST_ALPHA;
+	else if (sourceFactor == "oneMinusDestinationColor")
+		src = BLEND_ONE_MINUS_DST_COLOR;
+	else if (sourceFactor == "oneMinusSourceAlpha")
+		src = BLEND_ONE_MINUS_SRC_ALPHA;
+	else if (sourceFactor == "oneMinusSourceColor")
+		src = BLEND_ONE_MINUS_SRC_COLOR;
+	else if (sourceFactor == "sourceAlpha")
+		src = BLEND_SRC_ALPHA;
+	else if (sourceFactor == "sourceColor")
+		src = BLEND_SRC_COLOR;
+	else if (sourceFactor == "zero")
+		src = BLEND_ZERO;
+	else
+		throwError<ArgumentError>(kInvalidArgumentError);
+	if (destinationFactor == "destinationAlpha")
+		dst = BLEND_DST_ALPHA;
+	else if (destinationFactor == "destinationColor")
+		dst = BLEND_DST_COLOR;
+	else if (destinationFactor == "one")
+		dst = BLEND_ONE;
+	else if (destinationFactor == "oneMinusDestinationAlpha")
+		dst = BLEND_ONE_MINUS_DST_ALPHA;
+	else if (destinationFactor == "oneMinusDestinationColor")
+		dst = BLEND_ONE_MINUS_DST_COLOR;
+	else if (destinationFactor == "oneMinusSourceAlpha")
+		dst = BLEND_ONE_MINUS_SRC_ALPHA;
+	else if (destinationFactor == "oneMinusSourceColor")
+		dst = BLEND_ONE_MINUS_SRC_COLOR;
+	else if (destinationFactor == "sourceAlpha")
+		dst = BLEND_SRC_ALPHA;
+	else if (destinationFactor == "sourceColor")
+		dst = BLEND_SRC_COLOR;
+	else if (destinationFactor == "zero")
+		dst = BLEND_ZERO;
+	else
+		throwError<ArgumentError>(kInvalidArgumentError);
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_SETBLENDFACTORS;
+	action.udata1 = src;
+	action.udata2 = dst;
+	th->actions[th->currentactionvector].push_back(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
@@ -566,32 +643,51 @@ ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setCulling does nothing");
+	Context3D* th = obj.as<Context3D>();
 	tiny_string triangleFaceToCull;
 	ARG_UNPACK_ATOM(triangleFaceToCull);
+	
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_SETCULLING;
+	if (triangleFaceToCull == "none")
+		action.udata1 = FACE_NONE;
+	else if (triangleFaceToCull == "front")
+		action.udata1 = FACE_FRONT;
+	else if (triangleFaceToCull == "back")
+		action.udata1 = FACE_BACK;
+	else if (triangleFaceToCull == "frontAndBack")
+		action.udata1 = FACE_FRONT_AND_BACK;
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 {
 	Context3D* th = obj.as<Context3D>();
+	bool depthMask;
 	tiny_string passCompareMode;
-	ARG_UNPACK_ATOM(th->depthMask)(passCompareMode);
+	ARG_UNPACK_ATOM(depthMask)(passCompareMode);
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_SETDEPTHTEST;
+	action.udata1= depthMask ? 1:0;
 	if (passCompareMode =="always")
-		th->passCompareMode = DEPTH_FUNCTION::ALWAYS;
+		action.udata2 = DEPTH_FUNCTION::ALWAYS;
 	else if (passCompareMode =="equal")
-		th->passCompareMode = DEPTH_FUNCTION::EQUAL;
+		action.udata2 = DEPTH_FUNCTION::EQUAL;
 	else if (passCompareMode =="greater")
-		th->passCompareMode = DEPTH_FUNCTION::GREATER;
+		action.udata2 = DEPTH_FUNCTION::GREATER;
 	else if (passCompareMode =="greaterEqual")
-		th->passCompareMode = DEPTH_FUNCTION::GREATER_EQUAL;
+		action.udata2 = DEPTH_FUNCTION::GREATER_EQUAL;
 	else if (passCompareMode =="less")
-		th->passCompareMode = DEPTH_FUNCTION::LESS;
+		action.udata2 = DEPTH_FUNCTION::LESS;
 	else if (passCompareMode =="lessEqual")
-		th->passCompareMode = DEPTH_FUNCTION::LESS_EQUAL;
+		action.udata2 = DEPTH_FUNCTION::LESS_EQUAL;
 	else if (passCompareMode =="never")
-		th->passCompareMode = DEPTH_FUNCTION::NEVER;
+		action.udata2 = DEPTH_FUNCTION::NEVER;
 	else if (passCompareMode =="notEqual")
-		th->passCompareMode = DEPTH_FUNCTION::NOT_EQUAL;
+		action.udata2 = DEPTH_FUNCTION::NOT_EQUAL;
+	else
+		throwError<ArgumentError>(kInvalidArgumentError,"passCompareMode");
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgram)
@@ -661,9 +757,10 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 
 ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setScissorRectangle does nothing");
 	_NR<Rectangle> rectangle;
 	ARG_UNPACK_ATOM(rectangle);
+	if (!rectangle.isNull())
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setScissorRectangle does nothing:"<<rectangle->toDebugString());
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)

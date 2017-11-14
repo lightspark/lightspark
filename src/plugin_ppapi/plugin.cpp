@@ -2022,9 +2022,64 @@ void ppPluginEngineData::exec_glDeleteBuffers(uint32_t size, uint32_t* buffers)
 	g_gles2_interface->DeleteBuffers(instance->m_graphics,size, buffers);
 }
 
-void ppPluginEngineData::exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA()
+void ppPluginEngineData::exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst)
 {
-	g_gles2_interface->BlendFunc(instance->m_graphics,GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	GLenum glsrc, gldst;
+	switch (src)
+	{
+		case BLEND_ONE: glsrc = GL_ONE; break;
+		case BLEND_ZERO: glsrc = GL_ZERO; break;
+		case BLEND_SRC_ALPHA: glsrc = GL_SRC_ALPHA; break;
+		case BLEND_SRC_COLOR: glsrc = GL_SRC_COLOR; break;
+		case BLEND_DST_ALPHA: glsrc = GL_DST_ALPHA; break;
+		case BLEND_DST_COLOR: glsrc = GL_DST_COLOR; break;
+		case BLEND_ONE_MINUS_SRC_ALPHA: glsrc = GL_ONE_MINUS_SRC_ALPHA; break;
+		case BLEND_ONE_MINUS_SRC_COLOR: glsrc = GL_ONE_MINUS_SRC_COLOR; break;
+		case BLEND_ONE_MINUS_DST_ALPHA: glsrc = GL_ONE_MINUS_DST_ALPHA; break;
+		case BLEND_ONE_MINUS_DST_COLOR: glsrc = GL_ONE_MINUS_DST_COLOR; break;
+		default:
+			LOG(LOG_ERROR,"invalid src in glBlendFunc:"<<(uint32_t)src);
+			return;
+	}
+	switch (dst)
+	{
+		case BLEND_ONE: gldst = GL_ONE; break;
+		case BLEND_ZERO: gldst = GL_ZERO; break;
+		case BLEND_SRC_ALPHA: gldst = GL_SRC_ALPHA; break;
+		case BLEND_SRC_COLOR: gldst = GL_SRC_COLOR; break;
+		case BLEND_DST_ALPHA: gldst = GL_DST_ALPHA; break;
+		case BLEND_DST_COLOR: gldst = GL_DST_COLOR; break;
+		case BLEND_ONE_MINUS_SRC_ALPHA: gldst = GL_ONE_MINUS_SRC_ALPHA; break;
+		case BLEND_ONE_MINUS_SRC_COLOR: gldst = GL_ONE_MINUS_SRC_COLOR; break;
+		case BLEND_ONE_MINUS_DST_ALPHA: gldst = GL_ONE_MINUS_DST_ALPHA; break;
+		case BLEND_ONE_MINUS_DST_COLOR: gldst = GL_ONE_MINUS_DST_COLOR; break;
+		default:
+			LOG(LOG_ERROR,"invalid dst in glBlendFunc:"<<(uint32_t)dst);
+			return;
+	}
+	g_gles2_interface->BlendFunc(instance->m_graphics,glsrc, gldst);
+}
+
+void ppPluginEngineData::exec_glCullFace(TRIANGLE_FACE mode)
+{
+	switch (mode)
+	{
+		case FACE_BACK:
+			g_gles2_interface->Enable(instance->m_graphics,GL_CULL_FACE);
+			g_gles2_interface->CullFace(instance->m_graphics,GL_BACK);
+			break;
+		case FACE_FRONT:
+			g_gles2_interface->Enable(instance->m_graphics,GL_CULL_FACE);
+			g_gles2_interface->CullFace(instance->m_graphics,GL_FRONT);
+			break;
+		case FACE_FRONT_AND_BACK:
+			g_gles2_interface->Enable(instance->m_graphics,GL_CULL_FACE);
+			g_gles2_interface->CullFace(instance->m_graphics,GL_FRONT_AND_BACK);
+			break;
+		case FACE_NONE:
+			g_gles2_interface->Disable(instance->m_graphics,GL_CULL_FACE);
+			break;
+	}
 }
 
 void ppPluginEngineData::exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex)

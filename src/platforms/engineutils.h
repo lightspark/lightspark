@@ -45,7 +45,8 @@ class StreamCache;
 class AudioStream;
 
 enum DEPTH_FUNCTION { ALWAYS, EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, NEVER, NOT_EQUAL };
-
+enum TRIANGLE_FACE { FACE_BACK, FACE_FRONT, FACE_FRONT_AND_BACK, FACE_NONE };
+enum BLEND_FACTOR { BLEND_ONE,BLEND_ZERO,BLEND_SRC_ALPHA,BLEND_SRC_COLOR,BLEND_DST_ALPHA,BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA,BLEND_ONE_MINUS_SRC_COLOR,BLEND_ONE_MINUS_DST_ALPHA,BLEND_ONE_MINUS_DST_COLOR };
 enum VERTEXBUFFER_FORMAT { BYTES_4, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
 
@@ -168,7 +169,8 @@ public:
 	virtual void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
 	virtual void exec_glDeleteTextures(int32_t n,uint32_t* textures);
 	virtual void exec_glDeleteBuffers(uint32_t size, uint32_t* buffers);
-	virtual void exec_glBlendFunc_GL_ONE_GL_ONE_MINUS_SRC_ALPHA();
+	virtual void exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst);
+	virtual void exec_glCullFace(TRIANGLE_FACE mode);
 	virtual void exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex);
 	virtual void exec_glGenBuffers(uint32_t size, uint32_t* buffers);
 	virtual void exec_glUseProgram(uint32_t program);

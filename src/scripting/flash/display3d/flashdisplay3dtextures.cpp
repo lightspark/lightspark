@@ -36,9 +36,19 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 {
 	Texture* th = obj.as<Texture>();
+	uint32_t miplevel;
 	_NR<BitmapData> source;
-	ARG_UNPACK_ATOM(source)(th->miplevel,0);
-	th->bitmap = source->getBitmapContainer();
+	ARG_UNPACK_ATOM(source)(miplevel,0);
+	if (source.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	if (miplevel > 0 && (1<<(miplevel-1) > max(th->width,th->height)))
+	{
+		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
+		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+	}
+	if (th->bitmaparray.size() <= miplevel)
+		th->bitmaparray.resize(miplevel+4);
+	th->bitmaparray[miplevel] = source->getBitmapContainer();
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)

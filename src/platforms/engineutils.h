@@ -147,9 +147,10 @@ public:
 	virtual void exec_glEnable_GL_TEXTURE_2D();
 	virtual void exec_glEnable_GL_BLEND();
 	virtual void exec_glEnable_GL_DEPTH_TEST();
+	virtual void exec_glEnable_GL_STENCIL_TEST();
 	virtual void exec_glDepthFunc(DEPTH_FUNCTION depthfunc);
 	virtual void exec_glDisable_GL_DEPTH_TEST();
-	virtual void exec_glEnable_GL_STENCIL_TEST();
+	virtual void exec_glDisable_GL_STENCIL_TEST();
 	virtual void exec_glDisable_GL_TEXTURE_2D();
 	virtual void exec_glFlush();
 	virtual uint32_t exec_glCreateShader_GL_FRAGMENT_SHADER();

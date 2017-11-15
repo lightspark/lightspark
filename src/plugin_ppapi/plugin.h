@@ -229,6 +229,7 @@ public:
 	void exec_glDepthFunc(DEPTH_FUNCTION depthfunc);
 	void exec_glDisable_GL_DEPTH_TEST();
 	void exec_glEnable_GL_STENCIL_TEST();
+	void exec_glDisable_GL_STENCIL_TEST();
 	void exec_glDisable_GL_TEXTURE_2D();
 	void exec_glFlush();
 	uint32_t exec_glCreateShader_GL_FRAGMENT_SHADER();

@@ -1928,6 +1928,10 @@ void ppPluginEngineData::exec_glEnable_GL_STENCIL_TEST()
 {
 	g_gles2_interface->Enable(instance->m_graphics,GL_STENCIL_TEST);
 }
+void ppPluginEngineData::exec_glDisable_GL_STENCIL_TEST()
+{
+	g_gles2_interface->Disable(instance->m_graphics,GL_STENCIL_TEST);
+}
 
 void ppPluginEngineData::exec_glDisable_GL_TEXTURE_2D()
 {

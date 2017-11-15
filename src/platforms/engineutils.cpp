@@ -431,6 +431,10 @@ void EngineData::exec_glEnable_GL_DEPTH_TEST()
 {
 	glEnable(GL_DEPTH_TEST);
 }
+void EngineData::exec_glDisable_GL_STENCIL_TEST()
+{
+	glDisable(GL_STENCIL_TEST);
+}
 void EngineData::exec_glDepthFunc(DEPTH_FUNCTION depthfunc)
 {
 	switch (depthfunc)

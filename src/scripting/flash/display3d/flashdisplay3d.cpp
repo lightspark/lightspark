@@ -54,14 +54,24 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 					engineData->exec_glClearDepthf(action.depth);
 				}
 				if ((action.udata2 & CLEARMASK::STENCIL) != 0)
+				{
+					engineData->exec_glEnable_GL_STENCIL_TEST();
 					engineData->exec_glClearStencil (action.udata1);
+				}
 				engineData->exec_glClear((CLEARMASK)action.udata2);
 				break;
 			case RENDER_CONFIGUREBACKBUFFER:
-				//action.udata1 = width
-				//action.udata2 = height
-				((RenderThread&)ctxt).commonGLResize();
-				engineData->exec_glViewport(0,0,action.udata1,action.udata2);
+				//action.udata1 = enableDepthAndStencil
+				if (action.udata1)
+				{
+					engineData->exec_glEnable_GL_STENCIL_TEST();
+					engineData->exec_glEnable_GL_DEPTH_TEST();
+				}
+				else
+				{
+					engineData->exec_glDisable_GL_STENCIL_TEST();
+					engineData->exec_glDisable_GL_DEPTH_TEST();
+				}
 				break;
 			case RENDER_SETPROGRAM:
 			{
@@ -470,13 +480,17 @@ ASFUNCTIONBODY_ATOM(Context3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters");
 	Context3D* th = obj.as<Context3D>();
 	int antiAlias;
 	bool enableDepthAndStencil;
 	bool wantsBestResolution;
 	bool wantsBestResolutionOnBrowserZoom;
 	ARG_UNPACK_ATOM(th->backBufferWidth)(th->backBufferHeight)(antiAlias)(enableDepthAndStencil, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
+	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<th->backBufferWidth<<" "<<th->backBufferHeight<<" "<<antiAlias<<" "<<enableDepthAndStencil);
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_CONFIGUREBACKBUFFER;
+	action.udata1 = enableDepthAndStencil ? 1:0;
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
@@ -545,7 +559,7 @@ ASFUNCTIONBODY_ATOM(Context3D,clear)
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CLEAR;
 	ARG_UNPACK_ATOM(action.red,0.0)(action.green,0.0)(action.blue,0.0)(action.alpha,1.0)(action.depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
-	th->actions[th->currentactionvector].push_back(action);
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 

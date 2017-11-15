@@ -1872,6 +1872,17 @@ void Matrix3D::append(float *otherdata)
 	data[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
 }
 
+number_t Matrix3D::getDeterminant()
+{
+	return 1 * ((data[0] * data[5] - data[4] * data[1]) * (data[10] * data[15] - data[14] * data[11])
+			- (data[0] * data[9] - data[8] * data[1]) * (data[6] * data[15] - data[14] * data[7])
+			+ (data[0] * data[13] - data[12] * data[1]) * (data[6] * data[11] - data[10] * data[7])
+			+ (data[4] * data[9] - data[8] * data[5]) * (data[2] * data[15] - data[14] * data[3])
+			- (data[4] * data[13] - data[12] * data[5]) * (data[2] * data[11] - data[10] * data[3])
+			+ (data[8] * data[13] - data[12] * data[9]) * (data[2] * data[7] - data[6] * data[3]));
+
+}
+
 void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
@@ -1881,9 +1892,16 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("prepend","",Class<IFunction>::getFunction(c->getSystemState(),prepend),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("append","",Class<IFunction>::getFunction(c->getSystemState(),append),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendTranslation","",Class<IFunction>::getFunction(c->getSystemState(),appendTranslation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("appendRotation","",Class<IFunction>::getFunction(c->getSystemState(),appendRotation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyRawDataFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataFrom),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(c->getSystemState(),invert),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("determinant","",Class<IFunction>::getFunction(c->getSystemState(),_get_determinant),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_set_position),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_get_position),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("transformVector","",Class<IFunction>::getFunction(c->getSystemState(),transformVector),NORMAL_METHOD,true);
 }
 
 bool Matrix3D::destruct()
@@ -1967,23 +1985,36 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependTranslation does nothing");
 	return asAtom::invalidAtom;
 }
+ASFUNCTIONBODY_ATOM(Matrix3D,append)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Matrix3D> lhs;
+	ARG_UNPACK_ATOM(lhs);
+	if (lhs.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"lhs");
+	th->append(lhs->data);
+	return asAtom::invalidAtom;
+}
 ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 {
+	Matrix3D * th=obj.as<Matrix3D>();
 	number_t x, y, z;
 	ARG_UNPACK_ATOM(x) (y) (z);
-	
-	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.appendTranslation does nothing");
+	th->data[12] += x;
+	th->data[13] += y;
+	th->data[14] += z;
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
+	
 	number_t degrees;
 	_NR<Vector3D> axis;
 	_NR<Vector3D> pivotPoint;
 	
 	ARG_UNPACK_ATOM(degrees) (axis) (pivotPoint,NullRef);
-	
+
 	// algorithm taken from https://github.com/openfl/openfl/blob/develop/openfl/geom/Matrix3D.hx
 	float tx = 0;
 	float ty = 0;
@@ -2024,6 +2055,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 	d[8]  = x * z * ccos + y * sin;
 	d[9]  = y * z * ccos - x * sin;
 	d[10] = z2 + (x2 + y2) * cos;
+	d[11] = 0.0;
 	d[12] = (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin;
 	d[13] = (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin;
 	d[14] = (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin;
@@ -2046,7 +2078,101 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
 	}
 	return asAtom::invalidAtom;
 }
-		
+
+ASFUNCTIONBODY_ATOM(Matrix3D,copyFrom)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Matrix3D> sourceMatrix3D;
+	ARG_UNPACK_ATOM(sourceMatrix3D);
+	if (sourceMatrix3D.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"sourceMatrix3D");
+	for (uint32_t i = 0; i < 4*4; i++)
+	{
+		th->data[i] = sourceMatrix3D->data[i];
+	}
+	return asAtom::invalidAtom;
+}
+
+ASFUNCTIONBODY_ATOM(Matrix3D,invert)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+
+	// algorithm taken from https://github.com/openfl/openfl/blob/develop/openfl/geom/Matrix3D.hx
+	number_t det = th->getDeterminant();
+	bool invertable = abs(det) > 0.00000000001;
+	if (invertable)
+	{
+		number_t d = 1 / det;
+		number_t m11 = th->data[0];	number_t m21 = th->data[4]; number_t m31 = th->data[8]; number_t m41 = th->data[12];
+		number_t m12 = th->data[1]; number_t m22 = th->data[5]; number_t m32 = th->data[9]; number_t m42 = th->data[13];
+		number_t m13 = th->data[2]; number_t m23 = th->data[6]; number_t m33 = th->data[10]; number_t m43 = th->data[14];
+		number_t m14 = th->data[3]; number_t m24 = th->data[7]; number_t m34 = th->data[11]; number_t m44 = th->data[15];
+
+		th->data[0] = d * (m22 * (m33 * m44 - m43 * m34) - m32 * (m23 * m44 - m43 * m24) + m42 * (m23 * m34 - m33 * m24));
+		th->data[1] = -d * (m12 * (m33 * m44 - m43 * m34) - m32 * (m13 * m44 - m43 * m14) + m42 * (m13 * m34 - m33 * m14));
+		th->data[2] = d * (m12 * (m23 * m44 - m43 * m24) - m22 * (m13 * m44 - m43 * m14) + m42 * (m13 * m24 - m23 * m14));
+		th->data[3] = -d * (m12 * (m23 * m34 - m33 * m24) - m22 * (m13 * m34 - m33 * m14) + m32 * (m13 * m24 - m23 * m14));
+		th->data[4] = -d * (m21 * (m33 * m44 - m43 * m34) - m31 * (m23 * m44 - m43 * m24) + m41 * (m23 * m34 - m33 * m24));
+		th->data[5] = d * (m11 * (m33 * m44 - m43 * m34) - m31 * (m13 * m44 - m43 * m14) + m41 * (m13 * m34 - m33 * m14));
+		th->data[6] = -d * (m11 * (m23 * m44 - m43 * m24) - m21 * (m13 * m44 - m43 * m14) + m41 * (m13 * m24 - m23 * m14));
+		th->data[7] = d * (m11 * (m23 * m34 - m33 * m24) - m21 * (m13 * m34 - m33 * m14) + m31 * (m13 * m24 - m23 * m14));
+		th->data[8] = d * (m21 * (m32 * m44 - m42 * m34) - m31 * (m22 * m44 - m42 * m24) + m41 * (m22 * m34 - m32 * m24));
+		th->data[9] = -d * (m11 * (m32 * m44 - m42 * m34) - m31 * (m12 * m44 - m42 * m14) + m41 * (m12 * m34 - m32 * m14));
+		th->data[10] = d * (m11 * (m22 * m44 - m42 * m24) - m21 * (m12 * m44 - m42 * m14) + m41 * (m12 * m24 - m22 * m14));
+		th->data[11] = -d * (m11 * (m22 * m34 - m32 * m24) - m21 * (m12 * m34 - m32 * m14) + m31 * (m12 * m24 - m22 * m14));
+		th->data[12] = -d * (m21 * (m32 * m43 - m42 * m33) - m31 * (m22 * m43 - m42 * m23) + m41 * (m22 * m33 - m32 * m23));
+		th->data[13] = d * (m11 * (m32 * m43 - m42 * m33) - m31 * (m12 * m43 - m42 * m13) + m41 * (m12 * m33 - m32 * m13));
+		th->data[14] = -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13));
+		th->data[15] = d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13));
+	}
+	return asAtom(invertable);
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	return asAtom(th->getDeterminant());
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,_get_position)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	Vector3D* ret = Class<Vector3D>::getInstanceS(sys);
+	ret->w = 0;
+	ret->x = th->data[12];
+	ret->y = th->data[13];
+	ret->z = th->data[14];
+	return asAtom::fromObject(ret);
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,_set_position)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Vector3D> value;
+	ARG_UNPACK_ATOM(value);
+	if (value.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"value");
+	th->data[12] = value->x;
+	th->data[13] = value->y;
+	th->data[14] = value->z;
+	return asAtom::invalidAtom;
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,transformVector)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Vector3D> v;
+	ARG_UNPACK_ATOM(v);
+	if (v.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"v");
+	number_t x = v->x;
+	number_t y = v->y;
+	number_t z = v->z;
+	Vector3D* ret = Class<Vector3D>::getInstanceS(sys);
+	ret->x = (x * th->data[0] + y * th->data[4] + z * th->data[8] + th->data[12]);
+	ret->y = (x * th->data[1] + y * th->data[5] + z * th->data[9] + th->data[13]);
+	ret->z = (x * th->data[2] + y * th->data[6] + z * th->data[10] + th->data[14]);
+	ret->w = (x * th->data[3] + y * th->data[7] + z * th->data[11] + th->data[15]);
+	return asAtom::fromObject(ret);
+}
+
+
 void PerspectiveProjection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);

@@ -239,7 +239,9 @@ protected:
 	tiny_string fragmentprogram;
 	std::vector<uint32_t> samplerState;
 	std::map<uint32_t,uint32_t> vertexregistermap;
+	std::vector<uint32_t> vertexattributes;
 	std::map<uint32_t,uint32_t> fragmentregistermap;
+	std::vector<uint32_t> fragmentattributes;
 public:
 	Program3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX){}
 	Program3D(Class_base* c,_NR<Context3D> _ct):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),context3D(_ct),gpu_program(UINT32_MAX){}
@@ -257,8 +259,9 @@ protected:
 	int32_t data32PerVertex;
 	vector<float> data;
 	tiny_string bufferUsage;
+	bool upload_needed;
 public:
-	VertexBuffer3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(NULL),bufferID(UINT32_MAX),numVertices(0),data32PerVertex(0){}
+	VertexBuffer3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(NULL),bufferID(UINT32_MAX),numVertices(0),data32PerVertex(0),upload_needed(false){}
 	VertexBuffer3D(Class_base* c, Context3D* ctx,int _numVertices,int32_t _data32PerVertex,tiny_string _bufferUsage);
 	~VertexBuffer3D();
 	static void sinit(Class_base* c);

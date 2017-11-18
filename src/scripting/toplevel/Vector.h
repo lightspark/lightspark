@@ -92,6 +92,11 @@ public:
 	{
 		return vec.at(index);
 	}
+	void set(uint32_t index, asAtom v)
+	{
+		if (index < size())
+			vec[index] = v;
+	}
 	//Get value at index, or return defaultValue (a borrowed
 	//reference) if index is out-of-range
 	asAtom at(unsigned int index, asAtom defaultValue) const;

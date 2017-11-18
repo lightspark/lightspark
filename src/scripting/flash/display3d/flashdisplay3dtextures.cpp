@@ -41,6 +41,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 	ARG_UNPACK_ATOM(source)(miplevel,0);
 	if (source.isNull())
 		throwError<TypeError>(kNullArgumentError);
+	th->needrefresh = true;
 	if (miplevel > 0 && (1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);

@@ -214,8 +214,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 				      drawable->getClassName(),
 				      "IBitmapDrawable");
 
-	if(!ctransform.isNull() || !blendMode.empty() || !clipRect.isNull() || smoothing)
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters");
+	if(!ctransform.isNull() || !(blendMode.empty() || blendMode == "null") || !clipRect.isNull() || smoothing)
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters:"<<ctransform.isNull()<<" "<<clipRect.isNull()<<" "<<blendMode);
 
 	if(drawable->is<BitmapData>())
 	{

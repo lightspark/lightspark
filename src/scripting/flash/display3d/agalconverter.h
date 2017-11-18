@@ -3,6 +3,7 @@
 
 #include "tiny_string.h"
 #include <map>
+#include <vector>
 
 using namespace lightspark;
 
@@ -31,10 +32,11 @@ enum RegisterUsage {
 struct RegisterMapEntry
 {
 	tiny_string name;
-	int32_t number;
+	uint32_t number;
 	RegisterType type;
 	RegisterUsage usage;
 	uint32_t arraycount;
+	uint32_t pos;
 };
 tiny_string prefixFromType (RegisterType regType, bool isVertexProgram)
 {
@@ -205,7 +207,7 @@ class RegisterMap
 private:
 	std::vector<RegisterMapEntry> mEntries;
 public:
-	void add (RegisterType type, const tiny_string& name, int32_t number, RegisterUsage usage)
+	void add (RegisterType type, const tiny_string& name, uint32_t number, RegisterUsage usage)
 	{
 		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
 			if (it->type == type && it->name == name && it->number == number) {
@@ -248,7 +250,7 @@ public:
 		}
 		return getUsage (sr.type, sr.toGLSL (false), sr.n);
 	}
-	RegisterUsage getUsage (RegisterType type, tiny_string name, int number)
+	RegisterUsage getUsage (RegisterType type, tiny_string name, uint32_t number)
 	{
 		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
 			if (it->type == type && it->name == name && it->number == number) {
@@ -270,15 +272,16 @@ public:
 			if (entry.usage == RegisterUsage::VECTOR_4_ARRAY) {
 				// find how many registers based on the next entry.
 				if (i < mEntries.size() - 1) {
-					entry.arraycount = mEntries[i + 1].number - entry.number;
+					mEntries[i].arraycount = mEntries[i + 1].number - entry.number;
 				} else {
-					entry.arraycount = 128;
+					mEntries[i].arraycount = 128;
 				}
 			}
 		}
 		std::sort(mEntries.begin(),mEntries.end(), [](const RegisterMapEntry& a, const RegisterMapEntry& b) {
 			return a.type < b.type;
 		});
+		uint32_t attrpos = 0;
 		tiny_string sb;
 		for (uint32_t i = 0; i < mEntries.size(); i++)
 		{
@@ -300,6 +303,7 @@ public:
 				case RegisterType::ATTRIBUTE:
 					// sb.AppendFormat("layout(location = {0}) ", entry.number);
 					sb += "attribute ";
+					mEntries[i].pos = attrpos++;
 					break;
 				case RegisterType::CONSTANT:
 					//sb.AppendFormat("layout(location = {0}) ", entry.number);
@@ -367,14 +371,30 @@ public:
 		}
 		return sb;
 	}
-	void getRegisterUsages( std::map<uint32_t,uint32_t>& registermap)
+	void getConstantUsages( std::map<uint32_t,uint32_t>& constantmap)
 	{
-		registermap.clear();
+		constantmap.clear();
 		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
 			switch (it->type)
 			{
 				case CONSTANT:
-					registermap[it->number] = it->usage;
+					constantmap[it->number] = it->usage;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	void getAttributeList( std::vector<uint32_t>& attributes)
+	{
+		attributes.clear();
+		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
+			switch (it->type)
+			{
+				case ATTRIBUTE:
+					if (it->pos >= attributes.size())
+						attributes.resize(it->pos+1,1000);
+					attributes[it->pos] = it->number;
 					break;
 				default:
 					break;
@@ -391,7 +411,7 @@ uint64_t readUInt64 (ByteArray* byteArray)
 	return ((uint64_t)high)<<32 | low;
 }
 
-tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t>& samplerState,std::map<uint32_t,uint32_t>& registermap)
+tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t>& samplerState,std::map<uint32_t,uint32_t>& constantmap,std::vector<uint32_t>& attributes)
 {
 	agal->setPosition(0);
 	uint8_t by;
@@ -765,7 +785,8 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t
 //	}
 	glsl += "}\n";
 	
-	map.getRegisterUsages(registermap);
+	map.getConstantUsages(constantmap);
+	map.getAttributeList(attributes);
 	return glsl;
 }
 

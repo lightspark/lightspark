@@ -242,6 +242,7 @@ public:
 	ASFUNCTION_ATOM(project);
 	ASFUNCTION_ATOM(scaleBy);
 	ASFUNCTION_ATOM(subtract);
+	ASFUNCTION_ATOM(setTo);
 	
 	//Properties
 	ASFUNCTION_ATOM(_get_w);
@@ -260,10 +261,9 @@ public:
 
 class Matrix3D: public ASObject
 {
-friend class Context3D;
 private:
-	float data[4*4];
-	void append(float* otherdata);
+	number_t data[4*4];
+	void append(number_t* otherdata);
 	number_t getDeterminant();
 public:
 	Matrix3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX3D){}
@@ -278,13 +278,21 @@ public:
 	ASFUNCTION_ATOM(append);
 	ASFUNCTION_ATOM(appendTranslation);
 	ASFUNCTION_ATOM(appendRotation);
+	ASFUNCTION_ATOM(appendScale);
+	ASFUNCTION_ATOM(copyColumnTo);
 	ASFUNCTION_ATOM(copyRawDataFrom);
+	ASFUNCTION_ATOM(copyRawDataTo);
 	ASFUNCTION_ATOM(copyFrom);
+	ASFUNCTION_ATOM(copyToMatrix3D);
+	ASFUNCTION_ATOM(identity);
 	ASFUNCTION_ATOM(invert);
 	ASFUNCTION_ATOM(_get_determinant);
 	ASFUNCTION_ATOM(_get_position);
 	ASFUNCTION_ATOM(_set_position);
 	ASFUNCTION_ATOM(transformVector);
+	void getRowAsFloat(uint32_t rownum,float* rowdata);
+	void getColumnAsFloat(uint32_t rownum,float* rowdata);
+	void getRawDataAsFloat(float* rowdata);
 };
 class PerspectiveProjection: public ASObject
 {

@@ -148,6 +148,15 @@ public:
 	DisplacementMapFilter(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t,alpha);
+	ASPROPERTY_GETTER_SETTER(uint32_t,color);
+	ASPROPERTY_GETTER_SETTER(uint32_t,componentX);
+	ASPROPERTY_GETTER_SETTER(uint32_t,componentY);
+	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,mapBitmap);
+	ASPROPERTY_GETTER_SETTER(_NR<Point>,mapPoint);
+	ASPROPERTY_GETTER_SETTER(tiny_string,mode);
+	ASPROPERTY_GETTER_SETTER(number_t,scaleX);
+	ASPROPERTY_GETTER_SETTER(number_t,scaleY);
 };
 class GradientBevelFilter: public BitmapFilter
 {
@@ -172,6 +181,13 @@ class BitmapFilterQuality: public ASObject
 {
 public:
 	BitmapFilterQuality(Class_base* c):ASObject(c) {}
+	static void sinit(Class_base* c);
+};
+
+class DisplacementMapFilterMode: public ASObject
+{
+public:
+	DisplacementMapFilterMode(Class_base* c):ASObject(c) {}
 	static void sinit(Class_base* c);
 };
 

@@ -193,6 +193,7 @@ REGISTER_CLASS_NAME(ColorMatrixFilter,"flash.filters")
 REGISTER_CLASS_NAME(BlurFilter,"flash.filters")
 REGISTER_CLASS_NAME(ConvolutionFilter,"flash.filters")
 REGISTER_CLASS_NAME(DisplacementMapFilter,"flash.filters")
+REGISTER_CLASS_NAME(DisplacementMapFilterMode,"flash.filters")
 REGISTER_CLASS_NAME(GradientBevelFilter,"flash.filters")
 REGISTER_CLASS_NAME(ShaderFilter,"flash.filters")
 

@@ -20,6 +20,8 @@
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/geom/flashgeom.h"
 
 using namespace std;
 using namespace lightspark;
@@ -326,7 +328,25 @@ DisplacementMapFilter::DisplacementMapFilter(Class_base* c):
 void DisplacementMapFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+	REGISTER_GETTER_SETTER(c,alpha);
+	REGISTER_GETTER_SETTER(c,color);
+	REGISTER_GETTER_SETTER(c,componentX);
+	REGISTER_GETTER_SETTER(c,componentY);
+	REGISTER_GETTER_SETTER(c,mapBitmap);
+	REGISTER_GETTER_SETTER(c,mapPoint);
+	REGISTER_GETTER_SETTER(c,mode);
+	REGISTER_GETTER_SETTER(c,scaleX);
+	REGISTER_GETTER_SETTER(c,scaleY);
 }
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,alpha);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,color);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentX);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentY);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapBitmap);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapPoint);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY);
 
 ASFUNCTIONBODY_ATOM(DisplacementMapFilter, _constructor)
 {
@@ -390,4 +410,13 @@ void BitmapFilterQuality::sinit(Class_base* c)
 	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtom(3),DECLARED_TRAIT);
 	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtom(1),DECLARED_TRAIT);
 	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtom(3),DECLARED_TRAIT);
+}
+
+void DisplacementMapFilterMode::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"clamp"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"color"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ignore"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"wrap"),DECLARED_TRAIT);
 }

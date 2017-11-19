@@ -387,6 +387,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("BlurFilter","flash.filters",Class<BlurFilter>::getRef(m_sys));
 	builtin->registerBuiltin("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef(m_sys));
 	builtin->registerBuiltin("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef(m_sys));
+	builtin->registerBuiltin("DisplacementMapFilterMode","flash.filters",Class<DisplacementMapFilterMode>::getRef(m_sys));
 	builtin->registerBuiltin("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef(m_sys));
 

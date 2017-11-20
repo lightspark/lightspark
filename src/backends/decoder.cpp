@@ -631,6 +631,10 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 	codecContext->codec_id = codecId;
 	codecContext->sample_rate = sampleRate;
 	codecContext->channels = channels;
+	// HACK: it seems the default is 0 for PCM formats, which is invalid.
+	if(channels == 1) {
+		codecContext->channel_layout = AV_CH_LAYOUT_MONO;
+	}
 
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
@@ -724,6 +728,8 @@ CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
 			return CODEC_ID_MP3;
 		case ADPCM:
 			return CODEC_ID_ADPCM_SWF;
+		case LINEAR_PCM_LE:
+			return CODEC_ID_PCM_S16LE;
 		default:
 			return CODEC_ID_NONE;
 	}
@@ -1063,9 +1069,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 			case LS_AUDIO_CODEC::AAC:
 				fmt = av_find_input_format("aac");
 				break;
+			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
+				fmt = av_find_input_format("s16le");
+				break;
 			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
 			case LS_AUDIO_CODEC::ADPCM:
-			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
 				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
 				break;
 			case LS_AUDIO_CODEC::CODEC_NONE:

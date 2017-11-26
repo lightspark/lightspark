@@ -264,6 +264,7 @@ class Matrix3D: public ASObject
 private:
 	number_t data[4*4];
 	void append(number_t* otherdata);
+	void prepend(number_t *otherdata);
 	number_t getDeterminant();
 public:
 	Matrix3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX3D){}
@@ -286,6 +287,8 @@ public:
 	ASFUNCTION_ATOM(copyToMatrix3D);
 	ASFUNCTION_ATOM(identity);
 	ASFUNCTION_ATOM(invert);
+	ASFUNCTION_ATOM(_get_rawData);
+	ASFUNCTION_ATOM(_set_rawData);
 	ASFUNCTION_ATOM(_get_determinant);
 	ASFUNCTION_ATOM(_get_position);
 	ASFUNCTION_ATOM(_set_position);

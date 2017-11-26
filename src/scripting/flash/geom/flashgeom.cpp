@@ -1882,7 +1882,69 @@ void Matrix3D::append(number_t *otherdata)
 	data[14] = m141 * m213 + m142 * m223 + m143 * m233 + m144 * m243;
 	data[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
 }
+void Matrix3D::prepend(number_t *otherdata)
+{
+	number_t m111 = otherdata[0];
+	number_t m121 = otherdata[4];
+	number_t m131 = otherdata[8];
+	number_t m141 = otherdata[12];
 
+	number_t m112 = otherdata[1];
+	number_t m122 = otherdata[5];
+	number_t m132 = otherdata[9];
+	number_t m142 = otherdata[13];
+
+	number_t m113 = otherdata[2];
+	number_t m123 = otherdata[6];
+	number_t m133 = otherdata[10];
+	number_t m143 = otherdata[14];
+
+	number_t m114 = otherdata[3];
+	number_t m124 = otherdata[7];
+	number_t m134 = otherdata[11];
+	number_t m144 = otherdata[15];
+
+
+	number_t m211 = data[0];
+	number_t m221 = data[4];
+	number_t m231 = data[8];
+	number_t m241 = data[12];
+
+	number_t m212 = data[1];
+	number_t m222 = data[5];
+	number_t m232 = data[9];
+	number_t m242 = data[13];
+
+	number_t m213 = data[2];
+	number_t m223 = data[6];
+	number_t m233 = data[10];
+	number_t m243 = data[14];
+
+	number_t m214 = data[3];
+	number_t m224 = data[7];
+	number_t m234 = data[11];
+	number_t m244 = data[15];
+
+	data[0] = m111 * m211 + m112 * m221 + m113 * m231 + m114 * m241;
+	data[1] = m111 * m212 + m112 * m222 + m113 * m232 + m114 * m242;
+	data[2] = m111 * m213 + m112 * m223 + m113 * m233 + m114 * m243;
+	data[3] = m111 * m214 + m112 * m224 + m113 * m234 + m114 * m244;
+	
+	data[4] = m121 * m211 + m122 * m221 + m123 * m231 + m124 * m241;
+	data[5] = m121 * m212 + m122 * m222 + m123 * m232 + m124 * m242;
+	data[6] = m121 * m213 + m122 * m223 + m123 * m233 + m124 * m243;
+	data[7] = m121 * m214 + m122 * m224 + m123 * m234 + m124 * m244;
+	
+	data[8] = m131 * m211 + m132 * m221 + m133 * m231 + m134 * m241;
+	data[9] = m131 * m212 + m132 * m222 + m133 * m232 + m134 * m242;
+	data[10] = m131 * m213 + m132 * m223 + m133 * m233 + m134 * m243;
+	data[11] = m131 * m214 + m132 * m224 + m133 * m234 + m134 * m244;
+	
+	data[12] = m141 * m211 + m142 * m221 + m143 * m231 + m144 * m241;
+	data[13] = m141 * m212 + m142 * m222 + m143 * m232 + m144 * m242;
+	data[14] = m141 * m213 + m142 * m223 + m143 * m233 + m144 * m243;
+	data[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
+}
 number_t Matrix3D::getDeterminant()
 {
 	return 1 * ((data[0] * data[5] - data[4] * data[1]) * (data[10] * data[15] - data[14] * data[11])
@@ -1914,6 +1976,8 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyRawDataTo","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(c->getSystemState(),identity),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(c->getSystemState(),invert),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("rawData","",Class<IFunction>::getFunction(c->getSystemState(),_get_rawData),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rawData","",Class<IFunction>::getFunction(c->getSystemState(),_set_rawData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("determinant","",Class<IFunction>::getFunction(c->getSystemState(),_get_determinant),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_set_position),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_get_position),GETTER_METHOD,true);
@@ -1997,10 +2061,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
 {
-	_NR<Matrix3D> mat;
-	ARG_UNPACK_ATOM(mat);
-
-	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prepend does nothing");
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Matrix3D> rhs;
+	ARG_UNPACK_ATOM(rhs);
+	if (rhs.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"rhs");
+	th->prepend(rhs->data);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
@@ -2272,6 +2338,29 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
 	return asAtom(th->getDeterminant());
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	Vector *result = Template<Vector>::getInstanceS(sys,Class<Number>::getClass(sys),NullRef).as<Vector>();
+	for (uint32_t i = 0; i < 4*4; i++)
+	{
+		asAtom o = asAtom(th->data[i]);
+		result->append(o);
+	}
+	return asAtom::fromObject(result);
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,_set_rawData)
+{
+	Matrix3D * th=obj.as<Matrix3D>();
+	_NR<Vector> data;
+	ARG_UNPACK_ATOM(data);
+	// TODO handle not invertible argument
+	for (uint32_t i = 0; i < data->size(); i++)
+	{
+		th->data[i] = data->at(i).toNumber();
+	}
+	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_position)
 {

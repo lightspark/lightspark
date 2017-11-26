@@ -207,6 +207,7 @@ public:
 	bool getGLError(uint32_t &errorCode) const;
 	uint8_t* getCurrentPixBuf() const;
 	uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
+	tiny_string getGLDriverInfo();
 	void exec_glUniform1f(int location,float v0);
 	void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
 	void exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void* coords, VERTEXBUFFER_FORMAT format);
@@ -247,6 +248,17 @@ public:
 	void exec_glLinkProgram(uint32_t program);
 	void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
 	void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
+	void exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer);
+	uint32_t exec_glGenFramebuffer();
+	uint32_t exec_glGenRenderbuffer();
+	void exec_glFramebufferTexture2D_GL_FRAMEBUFFER(uint32_t textureID);
+	void exec_glBindRenderbuffer(uint32_t renderBuffer);
+	void exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(uint32_t width,uint32_t height);
+	void exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(uint32_t width,uint32_t height);
+	void exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(uint32_t depthRenderBuffer);
+	void exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(uint32_t stencilRenderBuffer);
+	void exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width,uint32_t height);
+	void exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer);
 	void exec_glDeleteTextures(int32_t n,uint32_t* textures);
 	void exec_glDeleteBuffers(uint32_t size, uint32_t* buffers);
 	void exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst);

@@ -29,407 +29,507 @@
 
 namespace lightspark
 {
+void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
+{
+	switch (action.action)
+	{
+		case RENDER_CLEAR:
+			// udata1 = stencil
+			// udata2 = mask
+			// fdata[0] = red
+			// fdata[1] = green
+			// fdata[2] = blue
+			// fdata[3] = alpha
+			// fdata[4] = depth
+			
+			if ((action.udata2 & CLEARMASK::COLOR) != 0)
+				engineData->exec_glClearColor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
+			if ((action.udata2 & CLEARMASK::DEPTH) != 0)
+				engineData->exec_glClearDepthf(action.fdata[4]);
+			if ((action.udata2 & CLEARMASK::STENCIL) != 0)
+				engineData->exec_glClearStencil (action.udata1);
+			engineData->exec_glClear((CLEARMASK)action.udata2);
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
+			delete[] action.fdata;
+			break;
+		case RENDER_CONFIGUREBACKBUFFER:
+			//action.udata1 = enableDepthAndStencil
+			//LOG(LOG_INFO,"RENDER_CONFIGUREBACKBUFFER:"<<action.udata1);
+			if (action.udata1)
+			{
+				engineData->exec_glEnable_GL_STENCIL_TEST();
+				engineData->exec_glEnable_GL_DEPTH_TEST();
+			}
+			else
+			{
+				engineData->exec_glDisable_GL_STENCIL_TEST();
+				engineData->exec_glDisable_GL_DEPTH_TEST();
+			}
+			break;
+		case RENDER_SETPROGRAM:
+		{
+			bool needslink=false;
+			char str[1024];
+			int a;
+			int stat;
+			Program3D* p = action.dataobject->as<Program3D>();
+			//LOG(LOG_INFO,"setProgram:"<<p<<" "<<p->gpu_program);
+			uint32_t f= UINT32_MAX;
+			uint32_t g= UINT32_MAX;
+			if (!p->vertexprogram.empty())
+			{
+				needslink= true;
+				g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
+				const char* buf = p->vertexprogram.raw_buf();
+				engineData->exec_glShaderSource(g, 1, &buf,NULL);
+				engineData->exec_glCompileShader(g);
+				engineData->exec_glGetShaderInfoLog(g,1024,&a,str);
+				engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(g, &stat);
+				if (!stat)
+				{
+					LOG(LOG_ERROR,"Vertex shader:\n" << p->vertexprogram);
+					LOG(LOG_ERROR,"Vertex shader compilation:" << str);
+					throw RunTimeException("Could not compile vertex shader");
+				}
+			}
+			if (!p->fragmentprogram.empty())
+			{
+				needslink=true;
+				f = engineData->exec_glCreateShader_GL_FRAGMENT_SHADER();
+				const char* buf = p->fragmentprogram.raw_buf();
+				engineData->exec_glShaderSource(f, 1, &buf,NULL);
+				engineData->exec_glCompileShader(f);
+				engineData->exec_glGetShaderInfoLog(f,1024,&a,str);
+				engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(f, &stat);
+				if (!stat)
+				{
+					LOG(LOG_ERROR,"Fragment shader:\n" << p->fragmentprogram);
+					LOG(LOG_ERROR,"Fragment shader compilation:" << str);
+					throw RunTimeException("Could not compile fragment shader");
+				}
+			}
+			if (p->gpu_program == UINT32_MAX)
+			{
+				needslink=true;
+				p->gpu_program = engineData->exec_glCreateProgram();
+			}
+			if (!p->vertexprogram.empty())
+				engineData->exec_glAttachShader(p->gpu_program,g);
+			if (!p->fragmentprogram.empty())
+				engineData->exec_glAttachShader(p->gpu_program,f);
+			
+			if (needslink)
+				engineData->exec_glLinkProgram(p->gpu_program);
+			if (!p->vertexprogram.empty())
+				engineData->exec_glDeleteShader(g);
+			if (!p->fragmentprogram.empty())
+				engineData->exec_glDeleteShader(f);
+			engineData->exec_glUseProgram(p->gpu_program);
+			currentprogram = p;
+			if (needslink)
+			{
+				engineData->exec_glGetProgramInfoLog(p->gpu_program,1024,&a,str);
+				engineData->exec_glGetProgramiv_GL_LINK_STATUS(p->gpu_program,&stat);
+				if(!stat)
+				{
+					LOG(LOG_INFO,_("program link ") << str);
+					throw RunTimeException("Could not link program");
+				}
+				for (uint32_t j = 0; j < p->samplerState.size();j++)
+				{
+					char buf[100];
+					sprintf(buf,"sampler%d",p->samplerState[j]);
+					uint32_t sampid = engineData->exec_glGetUniformLocation(p->gpu_program,buf);
+					if (sampid != UINT32_MAX)
+						engineData->exec_glUniform1i(sampid, p->samplerState[j]);
+					else
+						LOG(LOG_ERROR,"sampler not found in program:"<<buf);
+				}
+			}
+			p->vertexprogram = "";
+			p->fragmentprogram = "";
+			for (auto it = delayedactions.begin(); it != delayedactions.end(); it++)
+			{
+				handleRenderAction(engineData,*it);
+			}
+			delayedactions.clear();
+			break;
+		}
+		case RENDER_RENDERTOBACKBUFFER:
+			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+			engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
+			if (enableDepthAndStencil)
+			{
+				engineData->exec_glEnable_GL_DEPTH_TEST();
+				engineData->exec_glEnable_GL_STENCIL_TEST();
+			}
+			else
+			{
+				engineData->exec_glDisable_GL_DEPTH_TEST();
+				engineData->exec_glDisable_GL_STENCIL_TEST();
+			}
+			renderingToTexture = false;
+			break;
+		case RENDER_TOTEXTURE:
+		{
+			//action.dataobject = TextureBase
+			//action.udata1 = enableDepthAndStencil
+			if (textureframebuffer == UINT32_MAX)
+				textureframebuffer = engineData->exec_glGenFramebuffer();
+			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(textureframebuffer);
+			TextureBase* tex = action.dataobject->as<TextureBase>();
+			if (tex->textureID == UINT32_MAX || tex->needrefresh)
+			{
+				engineData->exec_glEnable_GL_TEXTURE_2D();
+				loadTexture(tex);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+			}
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(tex->textureID);
+			if (action.udata1)//enableDepthAndStencil
+			{
+				if (depthRenderBuffer == UINT32_MAX)
+					depthRenderBuffer = engineData->exec_glGenRenderbuffer();
+				
+				if (engineData->supportPackedDepthStencil)
+				{
+					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(tex->width,tex->height);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(depthRenderBuffer);
+				}
+				else
+				{
+					if (stencilRenderBuffer == UINT32_MAX)
+						stencilRenderBuffer = engineData->exec_glGenRenderbuffer();
+					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(tex->width,tex->height);
+					engineData->exec_glBindRenderbuffer(stencilRenderBuffer);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(tex->width,tex->height);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(depthRenderBuffer);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(stencilRenderBuffer);
+					engineData->exec_glBindRenderbuffer(0);
+				}
+				engineData->exec_glEnable_GL_DEPTH_TEST();
+				engineData->exec_glEnable_GL_STENCIL_TEST();
+			}
+			else
+			{
+				engineData->exec_glDisable_GL_DEPTH_TEST();
+				engineData->exec_glDisable_GL_STENCIL_TEST();
+			}
+			engineData->exec_glViewport(0,0,tex->width,tex->height);
+			renderingToTexture = true;
+			break;
+		}
+		case RENDER_DELETEPROGRAM:
+		{
+			Program3D* p = action.dataobject->as<Program3D>();
+			engineData->exec_glUseProgram(0);
+			engineData->exec_glDeleteProgram(p->gpu_program);
+			p->gpu_program = UINT32_MAX;
+			break;
+		}
+		case RENDER_SETVERTEXBUFFER:
+		{
+			//action.dataobject = VertexBuffer3D
+			//action.udata1 = index
+			//action.udata2 = bufferOffset
+			//action.udata3 = format
+			uint32_t pos = action.udata1;
+			if (currentprogram)
+			{
+				char buf[100];
+				sprintf(buf,"va%d",pos);
+				pos = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,buf);
+				if (pos == UINT32_MAX)
+					break;
+			}
+			if (action.dataobject.isNull())
+			{
+				engineData->exec_glDisableVertexAttribArray(pos);
+				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
+			}
+			else
+			{
+				engineData->exec_glEnableVertexAttribArray(pos);
+
+				VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
+				assert_and_throw(buffer->numVertices*buffer->data32PerVertex <= buffer->data.size());
+				if (buffer->bufferID == UINT32_MAX)
+					engineData->exec_glGenBuffers(1,&(buffer->bufferID));
+				if (buffer->upload_needed)
+				{
+					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
+					if (buffer->bufferUsage == "dynamicDraw")
+						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
+					else
+						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
+					buffer->upload_needed=false;
+				}
+				else 
+					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
+
+				engineData->exec_glVertexAttribPointer(pos, buffer->data32PerVertex*sizeof(float), (const void*)(size_t)(action.udata2*4),(VERTEXBUFFER_FORMAT)action.udata3);
+				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
+			}
+			break;
+		}
+		case RENDER_DRAWTRIANGLES:
+		{
+			//action.dataobject = IndexBuffer3D
+			//action.udata1 = firstIndex
+			//action.udata2 = numTriangles
+			IndexBuffer3D* buffer = action.dataobject->as<IndexBuffer3D>();
+			uint32_t count = (action.udata2 == UINT32_MAX) ? buffer->data.size() : (action.udata2 * 3);
+			assert_and_throw(count+ action.udata1 <= buffer->data.size());
+			if (buffer->bufferID == UINT32_MAX)
+			{
+				engineData->exec_glGenBuffers(1,&(buffer->bufferID));
+				engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
+				if (buffer->bufferUsage == "dynamicDraw")
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
+				else
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
+			}
+			else
+				engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
+			engineData->exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(count,(void*)(action.udata1*sizeof(uint16_t)));
+			break;
+		}
+		case RENDER_DELETEBUFFER:
+			//action.udata1 = bufferID
+			engineData->exec_glDeleteBuffers(1,&action.udata1);
+			break;
+		case RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX:
+		{
+			//action.udata1 = firstRegister
+			//action.udata2 = 1, if vertex constants, 0 if fragment constants
+			//action.udata3 = 1, if transposed
+			//action.fdata = matrix (4*4)
+			if (currentprogram)
+			{
+				uint32_t regcount = 0;
+				RegisterUsage usage = RegisterUsage::UNUSED;
+				if (action.udata2 == 1)
+				{
+					auto it = currentprogram->vertexregistermap.find(action.udata1);
+					if (it != currentprogram->vertexregistermap.end())
+						usage = (RegisterUsage)it->second;
+					regcount = currentprogram->vertexregistermap.size();
+				}
+				else
+				{
+					auto it = currentprogram->fragmentregistermap.find(action.udata1);
+					if (it != currentprogram->fragmentregistermap.end())
+						usage = (RegisterUsage)it->second;
+					regcount = currentprogram->fragmentregistermap.size();
+				}
+				//LOG(LOG_INFO,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX:"<<action.udata1<<" "<<usage<<" "<<regcount<<" "<<currentprogram->gpu_program);
+				switch (usage)
+				{
+					case RegisterUsage::VECTOR_4:
+						for (uint32_t i =0; i < regcount && i < 4; i++)
+						{
+							char buf[100];
+							sprintf(buf,"vc%d",action.udata1+i);
+							uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+							float data[4];
+							if (action.udata3)
+							{
+								data[0] = action.fdata[i];
+								data[1] = action.fdata[i+4];
+								data[2] = action.fdata[i+8];
+								data[3] = action.fdata[i+12];
+							}
+							else
+							{
+								data[0] = action.fdata[i*4];
+								data[1] = action.fdata[i*4+1];
+								data[2] = action.fdata[i*4+2];
+								data[3] = action.fdata[i*4+3];
+							}
+							engineData->exec_glUniform4fv(loc,1, data);
+						}
+						break;
+					case RegisterUsage::MATRIX_4_4:
+					{
+						char buf[100];
+						sprintf(buf,"vc%d",action.udata1);
+						uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+						if (loc != UINT32_MAX)
+						{
+							engineData->exec_glUniformMatrix4fv(loc,1,action.udata3, action.fdata);
+						}
+						else
+							LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX no location:"<<buf);
+						break;
+					}
+					default:
+						LOG(LOG_NOT_IMPLEMENTED,"Context3D.setProgramConstantsFromMatrix: RegisterUsage:"<<(uint32_t)usage<<" "<<action.udata1<<" "<<action.udata2);
+						break;
+				}
+				delete[] action.fdata;
+			}
+			else
+				delayedactions.push_back(action);
+			break;
+		}
+		case RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR:
+		{
+			//action.udata1 = firstRegister
+			//action.udata2 = 1, if vertex constants, 0 if fragment constants
+			//action.udata3 = numRegisters
+			//action.fdata = vector list (4*numRegisters)
+			if (currentprogram)
+			{
+				uint32_t vecnum = 0;
+				while (vecnum < action.udata3 )
+				{
+					char buf[100];
+					sprintf(buf,"%cc%d",action.udata2?'v':'f',action.udata1+vecnum);
+					uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+					if (loc != UINT32_MAX)
+						engineData->exec_glUniform4fv(loc,1, &action.fdata[vecnum*4]);
+//						else
+//							LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR no location:"<<action.udata1<<" "<<action.udata3<<" "<<buf);
+					
+					vecnum++;
+				}
+				delete[] action.fdata;
+			}
+			else
+				delayedactions.push_back(action);
+			break;
+		}
+		case RENDER_SETTEXTUREAT:
+		{
+			//action.dataobject = TextureBase
+			//action.udata1 = sampler
+			if (action.dataobject.isNull())
+			{
+				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT remove:"<<action.udata1);
+//					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
+//					engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+			}
+			else
+			{
+				TextureBase* tex = action.dataobject->as<TextureBase>();
+				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<action.udata1<<" "<<tex->needrefresh);
+				if (tex->textureID == UINT32_MAX || tex->needrefresh)
+				{
+					engineData->exec_glEnable_GL_TEXTURE_2D();
+					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
+					loadTexture(tex);
+				}
+				else
+				{
+					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
+					engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
+					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+				}
+			}
+			break;
+		}
+		case RENDER_SETBLENDFACTORS:
+		{
+			//action.udata1 = sourcefactor
+			//action.udata2 = destinationfactor
+			engineData->exec_glBlendFunc((BLEND_FACTOR)action.udata1,(BLEND_FACTOR)action.udata2);
+			break;
+		}
+		case RENDER_SETDEPTHTEST:
+		{
+			//action.udata1 = depthMask ? 1:0
+			//action.udata2 = passCompareMode
+			engineData->exec_glDepthMask(action.udata1);
+			engineData->exec_glDepthFunc((DEPTH_FUNCTION)action.udata2);
+			break;
+		}
+		case RENDER_SETCULLING:
+		{
+			//action.udata1 = mode
+			engineData->exec_glCullFace((TRIANGLE_FACE)action.udata1);
+			break;
+		}
+		case RENDER_LOADTEXTURE:
+			loadTexture(action.dataobject->as<TextureBase>());
+			break;
+	}
+}
 bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
 	if (actions[1-currentactionvector].size() == 0)
 		return false;
 	EngineData* engineData = getSystemState()->getEngineData();
-//	engineData->exec_glDisable_GL_TEXTURE_2D();
-//	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 	for (uint32_t i = 0; i < actions[1-currentactionvector].size(); i++)
 	{
 		renderaction& action = actions[1-currentactionvector][i];
-		switch (action.action)
-		{
-			case RENDER_CLEAR:
-				// udata1 = stencil
-				// udata2 = mask
-				
-				if ((action.udata2 & CLEARMASK::COLOR) != 0)
-					engineData->exec_glClearColor(action.red,action.green,action.blue,action.alpha);
-				if ((action.udata2 & CLEARMASK::DEPTH) != 0)
-					engineData->exec_glClearDepthf(action.depth);
-				if ((action.udata2 & CLEARMASK::STENCIL) != 0)
-					engineData->exec_glClearStencil (action.udata1);
-				engineData->exec_glClear((CLEARMASK)action.udata2);
-				break;
-			case RENDER_CONFIGUREBACKBUFFER:
-				//action.udata1 = enableDepthAndStencil
-				//LOG(LOG_INFO,"RENDER_CONFIGUREBACKBUFFER:"<<action.udata1);
-				if (action.udata1)
-				{
-					engineData->exec_glEnable_GL_STENCIL_TEST();
-					engineData->exec_glEnable_GL_DEPTH_TEST();
-				}
-				else
-				{
-					engineData->exec_glDisable_GL_STENCIL_TEST();
-					engineData->exec_glDisable_GL_DEPTH_TEST();
-				}
-				break;
-			case RENDER_SETPROGRAM:
-			{
-				bool needslink=false;
-				char str[1024];
-				int a;
-				int stat;
-				Program3D* p = action.dataobject->as<Program3D>();
-				//LOG(LOG_INFO,"setProgram:"<<p<<" "<<p->gpu_program);
-				uint32_t f= UINT32_MAX;
-				uint32_t g= UINT32_MAX;
-				if (!p->vertexprogram.empty())
-				{
-					needslink= true;
-					LOG(LOG_INFO,"Vertex shader:\n" << p->vertexprogram);
-					g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
-					const char* buf = p->vertexprogram.raw_buf();
-					engineData->exec_glShaderSource(g, 1, &buf,NULL);
-					engineData->exec_glCompileShader(g);
-					engineData->exec_glGetShaderInfoLog(g,1024,&a,str);
-					engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(g, &stat);
-					if (!stat)
-					{
-						LOG(LOG_ERROR,"Vertex shader:\n" << p->vertexprogram);
-						LOG(LOG_ERROR,"Vertex shader compilation:" << str);
-						throw RunTimeException("Could not compile vertex shader");
-					}
-				}
-				if (!p->fragmentprogram.empty())
-				{
-					needslink=true;
-					LOG(LOG_INFO,"Fragment shader:\n" << p->fragmentprogram);
-					f = engineData->exec_glCreateShader_GL_FRAGMENT_SHADER();
-					const char* buf = p->fragmentprogram.raw_buf();
-					engineData->exec_glShaderSource(f, 1, &buf,NULL);
-					engineData->exec_glCompileShader(f);
-					engineData->exec_glGetShaderInfoLog(f,1024,&a,str);
-					engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(f, &stat);
-					if (!stat)
-					{
-						LOG(LOG_ERROR,"Fragment shader:\n" << p->fragmentprogram);
-						LOG(LOG_ERROR,"Fragment shader compilation:" << str);
-						throw RunTimeException("Could not compile fragment shader");
-					}
-				}
-				if (p->gpu_program == UINT32_MAX)
-				{
-					needslink=true;
-					p->gpu_program = engineData->exec_glCreateProgram();
-				}
-				if (!p->vertexprogram.empty())
-					engineData->exec_glAttachShader(p->gpu_program,g);
-				if (!p->fragmentprogram.empty())
-					engineData->exec_glAttachShader(p->gpu_program,f);
-				
-				if (needslink)
-					engineData->exec_glLinkProgram(p->gpu_program);
-				if (!p->vertexprogram.empty())
-					engineData->exec_glDeleteShader(g);
-				if (!p->fragmentprogram.empty())
-					engineData->exec_glDeleteShader(f);
-				engineData->exec_glUseProgram(p->gpu_program);
-				currentprogram = p;
-				if (needslink)
-				{
-					engineData->exec_glGetProgramInfoLog(p->gpu_program,1024,&a,str);
-					engineData->exec_glGetProgramiv_GL_LINK_STATUS(p->gpu_program,&stat);
-					if(!stat)
-					{
-						LOG(LOG_INFO,_("program link ") << str);
-						throw RunTimeException("Could not link program");
-					}
-					for (uint32_t j = 0; j < p->samplerState.size();j++)
-					{
-						char buf[100];
-						sprintf(buf,"sampler%d",p->samplerState[j]);
-						uint32_t sampid = engineData->exec_glGetUniformLocation(p->gpu_program,buf);
-						if (sampid != UINT32_MAX)
-							engineData->exec_glUniform1i(sampid, p->samplerState[j]);
-						else
-							LOG(LOG_ERROR,"sampler not found in program:"<<buf);
-					}
-				}
-				p->vertexprogram = "";
-				p->fragmentprogram = "";
-				break;
-			}
-			case RENDER_TOTEXTURE:
-			{
-				LOG(LOG_NOT_IMPLEMENTED,"rendering to texture is not tested");
-				TextureBase* t = action.dataobject->as<TextureBase>();
-				if (t->textureID == UINT32_MAX)
-				{
-					uint32_t tmp;
-					engineData->exec_glGenTextures(1,&tmp);
-					engineData->exec_glBindTexture_GL_TEXTURE_2D(tmp);
-					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0, t->width, t->height, 0, 0);
-					for (uint32_t i = 0; i < t->bitmaparray.size(); i++)
-					{
-						if (!t->bitmaparray[i].isNull())
-							engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(i, 0, 0, t->width>>i, t->height>>i, t->bitmaparray[i]->getData(),0,0,0);
-					}
-					t->textureID = tmp;
-				}
-				else
-					engineData->exec_glBindTexture_GL_TEXTURE_2D(t->textureID);
-
-				break;
-			}
-			case RENDER_DELETEPROGRAM:
-			{
-				Program3D* p = action.dataobject->as<Program3D>();
-				engineData->exec_glUseProgram(0);
-				engineData->exec_glDeleteProgram(p->gpu_program);
-				p->gpu_program = UINT32_MAX;
-				break;
-			}
-			case RENDER_SETVERTEXBUFFER:
-			{
-				//action.dataobject = VertexBuffer3D
-				//action.udata1 = index
-				//action.udata2 = bufferOffset
-				//action.udata3 = format
-				uint32_t pos = action.udata1;
-				if (currentprogram)
-				{
-					char buf[100];
-					sprintf(buf,"va%d",pos);
-					pos = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,buf);
-					if (pos == UINT32_MAX)
-						break;
-				}
-				if (action.dataobject.isNull())
-				{
-					engineData->exec_glDisableVertexAttribArray(pos);
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-				}
-				else
-				{
-
-					VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
-					assert_and_throw(buffer->numVertices*buffer->data32PerVertex <= buffer->data.size());
-					if (buffer->upload_needed)
-					{
-						if (buffer->bufferID == UINT32_MAX)
-							engineData->exec_glGenBuffers(1,&(buffer->bufferID));
-						engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
-						if (buffer->bufferUsage == "dynamicDraw")
-							engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
-						else
-							engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
-						buffer->upload_needed=false;
-					}
-					else 
-						engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
-
-					engineData->exec_glVertexAttribPointer(pos, buffer->data32PerVertex*sizeof(float), (const void*)(action.udata2*sizeof(float)),(VERTEXBUFFER_FORMAT)action.udata3);
-					engineData->exec_glEnableVertexAttribArray(pos);
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-				}
-				break;
-			}
-			case RENDER_DRAWTRIANGLES:
-			{
-				//action.dataobject = IndexBuffer3D
-				//action.udata1 = firstIndex
-				//action.udata2 = numTriangles
-				IndexBuffer3D* buffer = action.dataobject->as<IndexBuffer3D>();
-				uint32_t count = (action.udata2 == UINT32_MAX) ? buffer->data.size() : (action.udata2 * 3);
-				assert_and_throw(count+ action.udata1 <= buffer->data.size());
-				if (buffer->bufferID == UINT32_MAX)
-				{
-					engineData->exec_glGenBuffers(1,&(buffer->bufferID));
-					engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
-					if (buffer->bufferUsage == "dynamicDraw")
-						engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
-					else
-						engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
-				}
-				else
-					engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
-				engineData->exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(count,(void*)(action.udata1*sizeof(uint16_t)));
-				break;
-			}
-			case RENDER_DELETEBUFFER:
-				//action.udata1 = bufferID
-				engineData->exec_glDeleteBuffers(1,&action.udata1);
-				break;
-			case RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX:
-			{
-				//action.dataobject = Matrix3D
-				//action.udata1 = firstRegister
-				//action.udata2 = 1, if vertex constants, 0 if fragment constants
-				//action.udata3 = 1, if transposed
-				Matrix3D* matrix = action.dataobject->as<Matrix3D>();
-				if (currentprogram)
-				{
-					uint32_t regcount = 0;
-					RegisterUsage usage = RegisterUsage::UNUSED;
-					if (action.udata2 == 1)
-					{
-						auto it = currentprogram->vertexregistermap.find(action.udata1);
-						if (it != currentprogram->vertexregistermap.end())
-							usage = (RegisterUsage)it->second;
-						regcount = currentprogram->vertexregistermap.size();
-					}
-					else
-					{
-						auto it = currentprogram->fragmentregistermap.find(action.udata1);
-						if (it != currentprogram->fragmentregistermap.end())
-							usage = (RegisterUsage)it->second;
-						regcount = currentprogram->fragmentregistermap.size();
-					}
-					//LOG(LOG_INFO,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX:"<<action.udata1<<" "<<usage<<" "<<regcount<<" "<<currentprogram->gpu_program);
-					switch (usage)
-					{
-						case RegisterUsage::VECTOR_4:
-							for (uint32_t i =0; i < regcount && i < 4; i++)
-							{
-								char buf[100];
-								sprintf(buf,"vc%d",action.udata1+i);
-								uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-								float d[4];
-								if (action.udata3)
-									matrix->getRowAsFloat(i,d);
-								else
-									matrix->getColumnAsFloat(i,d);
-								engineData->exec_glUniform4fv(loc,1, d);
-							}
-							break;
-						case RegisterUsage::MATRIX_4_4:
-						{
-							char buf[100];
-							sprintf(buf,"vc%d",action.udata1);
-							uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-							if (loc != UINT32_MAX)
-							{
-								float d[4*4];
-								matrix->getRawDataAsFloat(d);
-								engineData->exec_glUniformMatrix4fv(loc,1,action.udata3, d);
-							}
-							else
-								LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX no location:"<<buf);
-							break;
-						}
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"Context3D.setProgramConstantsFromMatrix: RegisterUsage:"<<(uint32_t)usage<<" "<<action.udata1<<" "<<action.udata2);
-							break;
-					}
-				}
-				break;
-			}
-			case RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR:
-			{
-				//action.dataobject = Vector
-				//action.udata1 = firstRegister
-				//action.udata2 = 1, if vertex constants, 0 if fragment constants
-				//action.udata3 = numRegisters
-				Vector* vector = action.dataobject->as<Vector>();
-				float data[4];
-				uint32_t vecnum = 0;
-				uint32_t numregs = action.udata3 == UINT32_MAX ? vector->size()/4 : min (action.udata3,vector->size()/4);
-				while (vecnum < numregs )
-				{
-					char buf[100];
-					sprintf(buf,"%cc%d",action.udata2?'v':'f',action.udata1+vecnum);
-					uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-					if (loc != UINT32_MAX)
-					{
-						data[0] = vector->at(vecnum*4).toNumber();
-						data[1] = vector->at(vecnum*4+1).toNumber();
-						data[2] = vector->at(vecnum*4+2).toNumber();
-						data[3] = vector->at(vecnum*4+3).toNumber();
-						engineData->exec_glUniform4fv(loc,1, data);
-					}
-//					else
-//						LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR no location:"<<action.udata1<<" "<<action.udata3<<" "<<buf<<" "<<action.udata3<<" "<<vector->size()/4);
-						
-					vecnum++;
-				}
-				break;
-			}
-			case RENDER_SETTEXTUREAT:
-			{
-				//action.dataobject = TextureBase
-				//action.udata1 = sampler
-				if (action.dataobject.isNull())
-				{
-					//LOG(LOG_INFO,"RENDER_SETTEXTUREAT remove:"<<action.udata1);
-					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
-					engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-				}
-				else
-				{
-					TextureBase* tex = action.dataobject->as<TextureBase>();
-					//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<action.udata1<<" "<<tex->needrefresh);
-					if (tex->needrefresh)
-					{
-						engineData->exec_glEnable_GL_TEXTURE_2D();
-						engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
-						if (tex->textureID == UINT32_MAX)
-							engineData->exec_glGenTextures(1, &(tex->textureID));
-						engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
-						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-						for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
-						{
-							if (!tex->bitmaparray[i].isNull())
-								engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i]->getData());
-						}
-						tex->needrefresh = false;
-					}
-					else
-					{
-						engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
-						engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
-						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-					}
-				}
-				break;
-			}
-			case RENDER_SETBLENDFACTORS:
-			{
-				//action.udata1 = sourcefactor
-				//action.udata2 = destinationfactor
-				engineData->exec_glBlendFunc((BLEND_FACTOR)action.udata1,(BLEND_FACTOR)action.udata2);
-				break;
-			}
-			case RENDER_SETDEPTHTEST:
-			{
-				//action.udata1 = depthMask ? 1:0
-				//action.udata2 = passCompareMode
-				engineData->exec_glDepthMask(action.udata1);
-				engineData->exec_glDepthFunc((DEPTH_FUNCTION)action.udata2);
-				break;
-			}
-			case RENDER_SETCULLING:
-			{
-				//action.udata1 = mode
-				engineData->exec_glCullFace((TRIANGLE_FACE)action.udata1);
-				break;
-			}
-		}
+		handleRenderAction(engineData,action);
 	}
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
 	engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 	engineData->exec_glUseProgram(0);
+	currentprogram = NULL;
+	delayedactions.clear();
+	
+	if (renderingToTexture)
+	{
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+		engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
+		if (enableDepthAndStencil)
+		{
+			engineData->exec_glEnable_GL_DEPTH_TEST();
+			engineData->exec_glEnable_GL_STENCIL_TEST();
+		}
+		else
+		{
+			engineData->exec_glDisable_GL_DEPTH_TEST();
+			engineData->exec_glDisable_GL_STENCIL_TEST();
+		}
+		renderingToTexture = false;
+	}
 	((GLRenderContext&)ctxt).handleGLErrors();
 	actions[1-currentactionvector].clear();
 	return true;
 }
 
-Context3D::Context3D(Class_base *c):EventDispatcher(c),currentactionvector(0),currentprogram(NULL),depthMask(true),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
+void Context3D::loadTexture(TextureBase *tex)
+{
+	EngineData* engineData = getSystemState()->getEngineData();
+	if (tex->textureID == UINT32_MAX || tex->needrefresh)
+	{
+		if (tex->textureID == UINT32_MAX)
+			engineData->exec_glGenTextures(1, &(tex->textureID));
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+		if (tex->bitmaparray.size() == 0)
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, NULL);
+		else
+		{
+			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+			{
+				if (tex->bitmaparray[i].size() > 0)
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
+				else
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, NULL);
+			}
+		}
+		tex->needrefresh = false;
+	}
+}
+
+Context3D::Context3D(Class_base *c):EventDispatcher(c),currentactionvector(0)
+  ,textureframebuffer(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(NULL)
+  ,depthMask(true),renderingToTexture(false),enableDepthAndStencil(true),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
 	subtype = SUBTYPE_CONTEXT3D;
 	memset(vertexConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
 	memset(fragmentConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
-	driverInfo = "OpenGL";
+	driverInfo = getSystemState()->getEngineData()->driverInfoString;
 }
 
 void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
@@ -497,7 +597,7 @@ void Context3D::sinit(lightspark::Class_base *c)
 
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferHeight);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferWidth);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,driverInfo);
+ASFUNCTIONBODY_GETTER(Context3D,driverInfo);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,enableErrorChecking);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferHeight);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferWidth);
@@ -519,29 +619,30 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 {
 	Context3D* th = obj.as<Context3D>();
 	int antiAlias;
-	bool enableDepthAndStencil;
 	bool wantsBestResolution;
 	bool wantsBestResolutionOnBrowserZoom;
-	ARG_UNPACK_ATOM(th->backBufferWidth)(th->backBufferHeight)(antiAlias)(enableDepthAndStencil, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<th->backBufferWidth<<" "<<th->backBufferHeight<<" "<<antiAlias<<" "<<enableDepthAndStencil);
+	ARG_UNPACK_ATOM(th->backBufferWidth)(th->backBufferHeight)(antiAlias)(th->enableDepthAndStencil, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
+	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<antiAlias);
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CONFIGUREBACKBUFFER;
-	action.udata1 = enableDepthAndStencil ? 1:0;
+	action.udata1 = th->enableDepthAndStencil ? 1:0;
 	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 {
+	Context3D* th = obj.as<Context3D>();
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture does nothing");
 	int32_t size;
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
-	return asAtom::fromObject(Class<CubeTexture>::getInstanceS(sys));
+	return asAtom::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {
+	Context3D* th = obj.as<Context3D>();
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture does nothing");
 	int width;
 	int height;
@@ -549,22 +650,24 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(width)(height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	return asAtom::fromObject(Class<RectangleTexture>::getInstanceS(sys));
+	return asAtom::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 {
+	Context3D* th = obj.as<Context3D>();
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
-	Texture* res = Class<Texture>::getInstanceS(sys);
+	Texture* res = Class<Texture>::getInstanceS(sys,th);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
 	return asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
+	Context3D* th = obj.as<Context3D>();
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createVideoTexture does nothing");
-	return asAtom::fromObject(Class<VideoTexture>::getInstanceS(sys));
+	return asAtom::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createProgram)
 {
@@ -593,9 +696,11 @@ ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 ASFUNCTIONBODY_ATOM(Context3D,clear)
 {
 	Context3D* th = obj.as<Context3D>();
+	number_t red,green,blue,alpha,depth;
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CLEAR;
-	ARG_UNPACK_ATOM(action.red,0.0)(action.green,0.0)(action.blue,0.0)(action.alpha,1.0)(action.depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
+	ARG_UNPACK_ATOM(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
+	action.fdata =new float[5] { (float)red, (float)green, (float)blue, (float)alpha, (float)depth};
 	th->addAction(action);
 	return asAtom::invalidAtom;
 }
@@ -774,7 +879,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 	{
 		renderaction action;
 		action.action = RENDER_ACTION::RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX;
-		action.dataobject = matrix;
+		action.fdata = new float[16];
+		matrix->getRawDataAsFloat(action.fdata);
 		action.udata1= firstRegister;
 		action.udata2= programType == "vertex" ? 1 : 0;
 		action.udata3= transposedMatrix ? 1 : 0;
@@ -796,10 +902,14 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 	{
 		renderaction action;
 		action.action = RENDER_ACTION::RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR;
-		action.dataobject = data;
 		action.udata1= firstRegister;
 		action.udata2= programType == "vertex" ? 1 : 0;
-		action.udata3= numRegisters < 0 ? UINT32_MAX : numRegisters;
+		action.udata3= numRegisters < 0 ? data->size()/4 : min ((uint32_t)numRegisters,data->size()/4);
+		action.fdata= new float[action.udata3*4];
+		for (uint32_t i = 0; i < action.udata3*4; i++)
+		{
+			action.fdata[i] = data->at(i).toNumber();
+		}
 		th->addAction(action);
 	}
 	return asAtom::invalidAtom;
@@ -816,7 +926,10 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToBackBuffer does nothing");
+	Context3D* th = obj.as<Context3D>();
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_RENDERTOBACKBUFFER;
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
@@ -827,8 +940,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	int32_t surfaceSelector;
 	int32_t colorOutputIndex;
 	renderaction action;
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture:"<<th->actions[th->currentactionvector].size()<<" "<<th);
-	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
 	ARG_UNPACK_ATOM(action.dataobject)(enableDepthAndStencil,false)(antiAlias,0)(surfaceSelector, 0)(colorOutputIndex, 0);
 	if (action.dataobject.isNull())
 		throwError<ArgumentError>(kCheckTypeFailedError,
@@ -838,9 +949,11 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 		throwError<ArgumentError>(kCheckTypeFailedError,
 								  action.dataobject->getClassName(),
 								  Class<TextureBase>::getClass(sys)->getQualifiedClassName());
-	if (enableDepthAndStencil || antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores most parameters");
-	th->actions[th->currentactionvector].push_back(action);
+	if (antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores parameters antiAlias, surfaceSelector, colorOutput");
+	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
+	action.udata1 = enableDepthAndStencil ? 1 : 0;
+	th->addAction(action);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
@@ -1110,12 +1223,27 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"IndexBuffer3D.uploadFromByteArray does nothing");
+	IndexBuffer3D* th = obj.as<IndexBuffer3D>();
 	_NR<ByteArray> data;
-	int32_t byteArrayOffset;
-	int32_t startOffset;
-	int32_t count;
+	uint32_t byteArrayOffset;
+	uint32_t startOffset;
+	uint32_t count;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(startOffset)(count);
+	if (data.isNull())
+		throwError<TypeError>(kNullPointerError);
+	if (data->getLength() < byteArrayOffset+count*2)
+		throwError<RangeError>(kParamRangeError);
+	if (th->data.size() < count+startOffset)
+		th->data.resize(count+startOffset);
+	uint32_t origpos = data->getPosition();
+	data->setPosition(byteArrayOffset);
+	for (uint32_t i = 0; i< count; i++)
+	{
+		uint16_t d;
+		if (data->readShort(d))
+			th->data[startOffset+i] = d;
+	}
+	data->setPosition(origpos);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
@@ -1201,12 +1329,31 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"VertexBuffer3D.uploadFromByteArray does nothing");
+	VertexBuffer3D* th = obj.as<VertexBuffer3D>();
 	_NR<ByteArray> data;
-	int32_t byteArrayOffset;
-	int32_t startVertex;
-	int32_t numVertices;
+	uint32_t byteArrayOffset;
+	uint32_t startVertex;
+	uint32_t numVertices;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(startVertex)(numVertices);
+	if (data.isNull())
+		throwError<TypeError>(kNullPointerError);
+	if (data->getLength() < byteArrayOffset+numVertices*th->data32PerVertex*4)
+		throwError<RangeError>(kParamRangeError);
+	th->upload_needed = true;
+	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
+		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
+	uint32_t origpos = data->getPosition();
+	data->setPosition(byteArrayOffset);
+	for (uint32_t i = 0; i< numVertices* th->data32PerVertex; i++)
+	{
+		union {
+			float f;
+			uint32_t u;
+		} d;
+		if (data->readUnsignedInt(d.u))
+			th->data[startVertex*th->data32PerVertex+i] = d.f;
+	}
+	data->setPosition(origpos);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)

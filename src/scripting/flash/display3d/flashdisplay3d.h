@@ -33,23 +33,19 @@ class RenderContext;
 class VertexBuffer3D;
 class Program3D;
 
-enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_SETPROGRAM,RENDER_TOTEXTURE,RENDER_DELETEPROGRAM,
+enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_SETPROGRAM,RENDER_RENDERTOBACKBUFFER,RENDER_TOTEXTURE,RENDER_DELETEPROGRAM,
 					 RENDER_SETVERTEXBUFFER,RENDER_DRAWTRIANGLES,RENDER_DELETEBUFFER,
 					 RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX,RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR,RENDER_SETTEXTUREAT,
-					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING };
+					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING,RENDER_LOADTEXTURE };
 struct renderaction
 {
 	RENDER_ACTION action;
-	number_t red;
-	number_t green;
-	number_t blue;
-	number_t alpha;
-	number_t depth;
 	uint32_t udata1;
 	uint32_t udata2;
 	uint32_t udata3;
+	float *fdata;
 	_NR<ASObject> dataobject;
-	renderaction():red(0),green(0),blue(0),alpha(0),depth(0),udata1(0),udata2(0),udata3(0) {}
+	renderaction():udata1(0),udata2(0),udata3(0),fdata(NULL) {}
 };
 #define CONTEXT3D_REGISTER_COUNT 8
 #define CONTEXT3D_PROGRAM_REGISTERS 128
@@ -62,10 +58,18 @@ private:
 	float vertexConstants[4 * CONTEXT3D_PROGRAM_REGISTERS];
 	float fragmentConstants[4 * CONTEXT3D_PROGRAM_REGISTERS];
 	int currentactionvector;
+	uint32_t textureframebuffer;
+	uint32_t depthRenderBuffer;
+	uint32_t stencilRenderBuffer;
 	Program3D* currentprogram;
+	std::vector<renderaction> delayedactions;
 	bool depthMask;
+	bool renderingToTexture;
+	bool enableDepthAndStencil;
+	void handleRenderAction(EngineData *engineData, renderaction &action);
 protected:
 	bool renderImpl(RenderContext &ctxt);
+	void loadTexture(TextureBase* tex);
 public:
 	Mutex rendermutex;
 	Context3D(Class_base* c);

@@ -43,7 +43,7 @@ Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true)
+EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false)
 {
 }
 
@@ -219,6 +219,7 @@ void EngineData::initGLEW()
 		LOG(LOG_ERROR,"OpenGL does not support framebuffer objects!");
 		throw RunTimeException("Rendering: OpenGL driver does not support framebuffer objects");
 	}
+	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
 }
 
@@ -302,6 +303,19 @@ uint8_t *EngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
 	return currentPixelBufPtr;
 #endif
 	
+}
+
+tiny_string EngineData::getGLDriverInfo()
+{
+	tiny_string res = "OpenGL Vendor=";
+	res += (const char*)glGetString(GL_VENDOR);
+	res += " Version=";
+	res += (const char*)glGetString(GL_VERSION);
+	res += " Renderer=";
+	res += (const char*)glGetString(GL_RENDERER);
+	res += " GLSL=";
+	res += (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+	return res;
 }
 
 void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
@@ -558,6 +572,66 @@ void EngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* pa
 void EngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
+	glFrontFace(framebuffer == 0 ? GL_CCW : GL_CW);
+}
+
+void EngineData::exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer)
+{
+	glBindRenderbuffer(GL_RENDERBUFFER,renderbuffer);
+}
+
+uint32_t EngineData::exec_glGenFramebuffer()
+{
+	uint32_t framebuffer;
+	glGenFramebuffers(1,&framebuffer);
+	return framebuffer;
+}
+uint32_t EngineData::exec_glGenRenderbuffer()
+{
+	uint32_t renderbuffer;
+	glGenRenderbuffers(1,&renderbuffer);
+	return renderbuffer;
+}
+
+void EngineData::exec_glFramebufferTexture2D_GL_FRAMEBUFFER(uint32_t textureID)
+{
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+}
+
+void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
+{
+	glBindRenderbuffer(GL_RENDERBUFFER,renderBuffer);
+}
+
+void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
+{
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_STENCIL,width,height);
+}
+
+void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
+{
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+}
+
+void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(uint32_t width, uint32_t height)
+{
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT16,width,height);
+}
+
+void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(uint32_t width, uint32_t height)
+{
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_STENCIL_INDEX8,width,height);
+}
+
+void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(uint32_t depthRenderBuffer)
+{
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,depthRenderBuffer);
+}
+
+void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(uint32_t stencilRenderBuffer)
+{
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,stencilRenderBuffer);
 }
 
 void EngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
@@ -672,6 +746,9 @@ void EngineData::exec_glGenTextures(int32_t n,uint32_t* textures)
 void EngineData::exec_glViewport(int32_t x,int32_t y,int32_t width,int32_t height)
 {
 	glViewport(x,y,width,height);
+	uint32_t code = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (code != GL_FRAMEBUFFER_COMPLETE)
+		LOG(LOG_ERROR,"invalid framebuffer:"<<hex<<code);
 }
 
 void EngineData::exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size,const void* data)

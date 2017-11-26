@@ -1789,6 +1789,19 @@ uint8_t *ppPluginEngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
 	return currentPixelBufPtr;
 }
 
+tiny_string ppPluginEngineData::getGLDriverInfo()
+{
+	tiny_string res = "OpenGL Vendor=";
+	res += (const char*)g_gles2_interface->GetString(instance->m_graphics,GL_VENDOR);
+	res += " Version=";
+	res += (const char*)g_gles2_interface->GetString(instance->m_graphics,GL_VERSION);
+	res += " Renderer=";
+	res += (const char*)g_gles2_interface->GetString(instance->m_graphics,GL_RENDERER);
+	res += " GLSL=";
+	res += (const char*)g_gles2_interface->GetString(instance->m_graphics,GL_SHADING_LANGUAGE_VERSION);
+	return res;
+}
+
 void ppPluginEngineData::exec_glUniform1f(int location, float v0)
 {
 	g_gles2_interface->Uniform1f(instance->m_graphics,location,v0);
@@ -2014,6 +2027,69 @@ void ppPluginEngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int
 void ppPluginEngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
 {
 	g_gles2_interface->BindFramebuffer(instance->m_graphics,GL_FRAMEBUFFER,framebuffer);
+	g_gles2_interface->FrontFace(instance->m_graphics,framebuffer == 0 ? GL_CCW : GL_CW);
+}
+
+void ppPluginEngineData::exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer)
+{
+	g_gles2_interface->BindRenderbuffer(instance->m_graphics,GL_RENDERBUFFER,renderbuffer);
+}
+
+
+uint32_t ppPluginEngineData::exec_glGenFramebuffer()
+{
+	uint32_t framebuffer;
+	g_gles2_interface->GenFramebuffers(instance->m_graphics,1,&framebuffer);
+	return framebuffer;
+}
+
+uint32_t ppPluginEngineData::exec_glGenRenderbuffer()
+{
+	uint32_t renderbuffer;
+	g_gles2_interface->GenRenderbuffers(instance->m_graphics,1,&renderbuffer);
+	return renderbuffer;
+}
+
+void ppPluginEngineData::exec_glFramebufferTexture2D_GL_FRAMEBUFFER(uint32_t textureID)
+{
+	g_gles2_interface->FramebufferTexture2D(instance->m_graphics,GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
+}
+
+void ppPluginEngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
+{
+	g_gles2_interface->BindRenderbuffer(instance->m_graphics,GL_RENDERBUFFER,renderBuffer);
+}
+
+void ppPluginEngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(uint32_t width, uint32_t height)
+{
+	g_gles2_interface->RenderbufferStorage(instance->m_graphics,GL_RENDERBUFFER,GL_DEPTH_COMPONENT16,width,height);
+}
+
+void ppPluginEngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(uint32_t width, uint32_t height)
+{
+	g_gles2_interface->RenderbufferStorage(instance->m_graphics,GL_RENDERBUFFER,GL_STENCIL_INDEX8,width,height);
+}
+
+void ppPluginEngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(uint32_t depthRenderBuffer)
+{
+	g_gles2_interface->FramebufferRenderbuffer(instance->m_graphics,GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,depthRenderBuffer);
+}
+
+void ppPluginEngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(uint32_t stencilRenderBuffer)
+{
+	g_gles2_interface->FramebufferRenderbuffer(instance->m_graphics,GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,stencilRenderBuffer);
+}
+
+void ppPluginEngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
+{
+	// ppapi doesn't know GL_DEPTH_STENCIL
+	//g_gles2_interface->RenderbufferStorage(instance->m_graphics,GL_RENDERBUFFER,GL_DEPTH_STENCIL,width,height);
+}
+
+void ppPluginEngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
+{
+	// ppapi doesn't know GL_DEPTH_STENCIL_ATTACHMENT
+	//g_gles2_interface->FramebufferRenderbuffer(instance->m_graphics,GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
 }
 
 void ppPluginEngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)

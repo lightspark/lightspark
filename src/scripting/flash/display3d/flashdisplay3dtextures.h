@@ -33,12 +33,18 @@ class TextureBase: public EventDispatcher
 friend class Context3D;
 protected:
 	uint32_t textureID;
-	int32_t width;
-	int32_t height;
-	vector<_NR<BitmapContainer>> bitmaparray;
+	uint32_t width;
+	uint32_t height;
+	vector<vector<uint8_t>> bitmaparray;
 	bool needrefresh;
+	Context3D* context;
 public:
-	TextureBase(Class_base* c):EventDispatcher(c),textureID(UINT32_MAX),width(0),height(0),needrefresh(false){ subtype = SUBTYPE_TEXTUREBASE;}
+	TextureBase(Class_base* c):EventDispatcher(c)
+	  ,textureID(UINT32_MAX),width(0),height(0),needrefresh(false),context(NULL)
+	{ subtype = SUBTYPE_TEXTUREBASE;}
+	TextureBase(Class_base* c,Context3D* _context):EventDispatcher(c)
+	  ,textureID(UINT32_MAX),width(0),height(0),needrefresh(false),context(_context)
+	{ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 };
@@ -47,6 +53,7 @@ class Texture: public TextureBase
 {
 public:
 	Texture(Class_base* c):TextureBase(c){ subtype = SUBTYPE_TEXTURE; }
+	Texture(Class_base* c,Context3D* _context):TextureBase(c,_context){ subtype = SUBTYPE_TEXTURE; }
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(uploadCompressedTextureFromByteArray);
 	ASFUNCTION_ATOM(uploadFromBitmapData);
@@ -57,6 +64,7 @@ class CubeTexture: public TextureBase
 {
 public:
 	CubeTexture(Class_base* c):TextureBase(c){ subtype = SUBTYPE_CUBETEXTURE;}
+	CubeTexture(Class_base* c,Context3D* _context):TextureBase(c,_context){ subtype = SUBTYPE_CUBETEXTURE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(uploadCompressedTextureFromByteArray);
 	ASFUNCTION_ATOM(uploadFromBitmapData);
@@ -66,6 +74,7 @@ class RectangleTexture: public TextureBase
 {
 public:
 	RectangleTexture(Class_base* c):TextureBase(c){ subtype = SUBTYPE_RECTANGLETEXTURE;}
+	RectangleTexture(Class_base* c,Context3D* _context):TextureBase(c,_context){ subtype = SUBTYPE_RECTANGLETEXTURE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(uploadFromBitmapData);
 	ASFUNCTION_ATOM(uploadFromByteArray);
@@ -74,6 +83,7 @@ class VideoTexture: public TextureBase
 {
 public:
 	VideoTexture(Class_base* c):TextureBase(c){ subtype = SUBTYPE_VIDEOTEXTURE;}
+	VideoTexture(Class_base* c,Context3D* _context):TextureBase(c,_context){ subtype = SUBTYPE_VIDEOTEXTURE;}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER(int,videoHeight);
 	ASPROPERTY_GETTER(int,videoWidth);

@@ -42,14 +42,29 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 	if (source.isNull())
 		throwError<TypeError>(kNullArgumentError);
 	th->needrefresh = true;
-	if (miplevel > 0 && (1<<(miplevel-1) > max(th->width,th->height)))
+	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+4);
-	th->bitmaparray[miplevel] = source->getBitmapContainer();
+	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
+	th->bitmaparray[miplevel].resize(mipsize);
+
+	for (uint32_t i = 0; i < (th->height>>miplevel); i++)
+	{
+		for (uint32_t j = 0; j < (th->width>>miplevel); j++)
+		{
+			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
+			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+		}
+	}
+	th->context->addAction(RENDER_LOADTEXTURE,th);
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)

@@ -48,7 +48,10 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glClearDepthf(action.fdata[4]);
 			if ((action.udata2 & CLEARMASK::STENCIL) != 0)
 				engineData->exec_glClearStencil (action.udata1);
-			engineData->exec_glClear((CLEARMASK)action.udata2);
+			if (renderingToTexture && !enableDepthAndStencil)
+				engineData->exec_glClear(CLEARMASK::COLOR);
+			else
+				engineData->exec_glClear((CLEARMASK)action.udata2);
 			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
 			delete[] action.fdata;
 			break;
@@ -135,28 +138,14 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					LOG(LOG_INFO,_("program link ") << str);
 					throw RunTimeException("Could not link program");
 				}
-				for (uint32_t j = 0; j < p->samplerState.size();j++)
-				{
-					char buf[100];
-					sprintf(buf,"sampler%d",p->samplerState[j]);
-					uint32_t sampid = engineData->exec_glGetUniformLocation(p->gpu_program,buf);
-					if (sampid != UINT32_MAX)
-						engineData->exec_glUniform1i(sampid, p->samplerState[j]);
-					else
-						LOG(LOG_ERROR,"sampler not found in program:"<<buf);
-				}
 			}
 			p->vertexprogram = "";
 			p->fragmentprogram = "";
-			for (auto it = delayedactions.begin(); it != delayedactions.end(); it++)
-			{
-				handleRenderAction(engineData,*it);
-			}
-			delayedactions.clear();
 			break;
 		}
 		case RENDER_RENDERTOBACKBUFFER:
 			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+			engineData->exec_glDrawBuffer_GL_BACK();
 			engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 			if (enableDepthAndStencil)
 			{
@@ -182,8 +171,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			{
 				engineData->exec_glEnable_GL_TEXTURE_2D();
 				loadTexture(tex);
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 			}
+			engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(tex->textureID);
 			if (action.udata1)//enableDepthAndStencil
 			{
@@ -234,24 +223,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = index
 			//action.udata2 = bufferOffset
 			//action.udata3 = format
-			uint32_t pos = action.udata1;
-			if (currentprogram)
+			if (!action.dataobject.isNull())
 			{
-				char buf[100];
-				sprintf(buf,"va%d",pos);
-				pos = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,buf);
-				if (pos == UINT32_MAX)
-					break;
-			}
-			if (action.dataobject.isNull())
-			{
-				engineData->exec_glDisableVertexAttribArray(pos);
-				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-			}
-			else
-			{
-				engineData->exec_glEnableVertexAttribArray(pos);
-
 				VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
 				assert_and_throw(buffer->numVertices*buffer->data32PerVertex <= buffer->data.size());
 				if (buffer->bufferID == UINT32_MAX)
@@ -263,13 +236,13 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
 					else
 						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
+					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 					buffer->upload_needed=false;
 				}
-				else 
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
-
-				engineData->exec_glVertexAttribPointer(pos, buffer->data32PerVertex*sizeof(float), (const void*)(size_t)(action.udata2*4),(VERTEXBUFFER_FORMAT)action.udata3);
-				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
+				attribs[action.udata1].bufferID = buffer->bufferID;
+				attribs[action.udata1].data32PerVertex = buffer->data32PerVertex;
+				attribs[action.udata1].offset = action.udata2;
+				attribs[action.udata1].format = (VERTEXBUFFER_FORMAT)action.udata3;
 			}
 			break;
 		}
@@ -278,6 +251,14 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.dataobject = IndexBuffer3D
 			//action.udata1 = firstIndex
 			//action.udata2 = numTriangles
+			if (currentprogram)
+			{
+				setSamplers(engineData);
+				setRegisters(engineData,currentprogram->vertexregistermap,vertexConstants,true);
+				setRegisters(engineData,currentprogram->fragmentregistermap,fragmentConstants,false);
+				setAttribs(engineData);
+			}
+
 			IndexBuffer3D* buffer = action.dataobject->as<IndexBuffer3D>();
 			uint32_t count = (action.udata2 == UINT32_MAX) ? buffer->data.size() : (action.udata2 * 3);
 			assert_and_throw(count+ action.udata1 <= buffer->data.size());
@@ -305,72 +286,25 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = 1, if vertex constants, 0 if fragment constants
 			//action.udata3 = 1, if transposed
 			//action.fdata = matrix (4*4)
-			if (currentprogram)
+			for (uint32_t i = 0; i < 4 && i < CONTEXT3D_PROGRAM_REGISTERS-action.udata1; i++ )
 			{
-				uint32_t regcount = 0;
-				RegisterUsage usage = RegisterUsage::UNUSED;
-				if (action.udata2 == 1)
+				float* data = action.udata2 ? vertexConstants[i+action.udata1].data : fragmentConstants[i+action.udata1].data;
+				if (action.udata3)
 				{
-					auto it = currentprogram->vertexregistermap.find(action.udata1);
-					if (it != currentprogram->vertexregistermap.end())
-						usage = (RegisterUsage)it->second;
-					regcount = currentprogram->vertexregistermap.size();
+					data[0] = action.fdata[i];
+					data[1] = action.fdata[i+4];
+					data[2] = action.fdata[i+8];
+					data[3] = action.fdata[i+12];
 				}
 				else
 				{
-					auto it = currentprogram->fragmentregistermap.find(action.udata1);
-					if (it != currentprogram->fragmentregistermap.end())
-						usage = (RegisterUsage)it->second;
-					regcount = currentprogram->fragmentregistermap.size();
+					data[0] = action.fdata[i*4];
+					data[1] = action.fdata[i*4+1];
+					data[2] = action.fdata[i*4+2];
+					data[3] = action.fdata[i*4+3];
 				}
-				//LOG(LOG_INFO,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX:"<<action.udata1<<" "<<usage<<" "<<regcount<<" "<<currentprogram->gpu_program);
-				switch (usage)
-				{
-					case RegisterUsage::VECTOR_4:
-						for (uint32_t i =0; i < regcount && i < 4; i++)
-						{
-							char buf[100];
-							sprintf(buf,"vc%d",action.udata1+i);
-							uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-							float data[4];
-							if (action.udata3)
-							{
-								data[0] = action.fdata[i];
-								data[1] = action.fdata[i+4];
-								data[2] = action.fdata[i+8];
-								data[3] = action.fdata[i+12];
-							}
-							else
-							{
-								data[0] = action.fdata[i*4];
-								data[1] = action.fdata[i*4+1];
-								data[2] = action.fdata[i*4+2];
-								data[3] = action.fdata[i*4+3];
-							}
-							engineData->exec_glUniform4fv(loc,1, data);
-						}
-						break;
-					case RegisterUsage::MATRIX_4_4:
-					{
-						char buf[100];
-						sprintf(buf,"vc%d",action.udata1);
-						uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-						if (loc != UINT32_MAX)
-						{
-							engineData->exec_glUniformMatrix4fv(loc,1,action.udata3, action.fdata);
-						}
-						else
-							LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX no location:"<<buf);
-						break;
-					}
-					default:
-						LOG(LOG_NOT_IMPLEMENTED,"Context3D.setProgramConstantsFromMatrix: RegisterUsage:"<<(uint32_t)usage<<" "<<action.udata1<<" "<<action.udata2);
-						break;
-				}
-				delete[] action.fdata;
 			}
-			else
-				delayedactions.push_back(action);
+			delete[] action.fdata;
 			break;
 		}
 		case RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR:
@@ -379,25 +313,15 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = 1, if vertex constants, 0 if fragment constants
 			//action.udata3 = numRegisters
 			//action.fdata = vector list (4*numRegisters)
-			if (currentprogram)
+			for (uint32_t i = 0; i < action.udata3 && i < CONTEXT3D_PROGRAM_REGISTERS-action.udata1; i++ )
 			{
-				uint32_t vecnum = 0;
-				while (vecnum < action.udata3 )
-				{
-					char buf[100];
-					sprintf(buf,"%cc%d",action.udata2?'v':'f',action.udata1+vecnum);
-					uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-					if (loc != UINT32_MAX)
-						engineData->exec_glUniform4fv(loc,1, &action.fdata[vecnum*4]);
-//						else
-//							LOG(LOG_ERROR,"RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR no location:"<<action.udata1<<" "<<action.udata3<<" "<<buf);
-					
-					vecnum++;
-				}
-				delete[] action.fdata;
+				float* data = action.udata2 ? vertexConstants[i+action.udata1].data : fragmentConstants[i+action.udata1].data;
+				data[0] = action.fdata[i*4];
+				data[1] = action.fdata[i*4+1];
+				data[2] = action.fdata[i*4+2];
+				data[3] = action.fdata[i*4+3];
 			}
-			else
-				delayedactions.push_back(action);
+			delete[] action.fdata;
 			break;
 		}
 		case RENDER_SETTEXTUREAT:
@@ -420,13 +344,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
 					loadTexture(tex);
 				}
-				else
-				{
-					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
-					engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
-					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-					engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-				}
+				samplers[action.udata1] = tex->textureID;
 			}
 			break;
 		}
@@ -456,12 +374,102 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			break;
 	}
 }
+
+void Context3D::setRegisters(EngineData* engineData,std::map<uint32_t,uint32_t>& registermap,constantregister* constants, bool isVertex)
+{
+	auto it = registermap.begin();
+	while (it != registermap.end())
+	{
+		RegisterUsage usage = (RegisterUsage)it->second;
+		switch (usage)
+		{
+			case RegisterUsage::VECTOR_4:
+			{
+				float* data = constants[it->first].data;
+				char buf[100];
+				sprintf(buf,"%cc%d",isVertex?'v':'f',it->first);
+				uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+				if (loc != UINT32_MAX)
+					engineData->exec_glUniform4fv(loc,1, data);
+				else
+					LOG(LOG_ERROR,"setRegisters vector no location:"<<buf);
+				break;
+			}
+			case RegisterUsage::MATRIX_4_4:
+			{
+				char buf[100];
+				sprintf(buf,"%cc%d",isVertex?'v':'f',it->first);
+				uint32_t loc = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+				float data2[4*4];
+				for (uint32_t i =0; i < 4; i++)
+				{
+					float* data = constants[it->first+i].data;
+					data2[i*4] = data[0];
+					data2[i*4+1] = data[1];
+					data2[i*4+2] = data[2];
+					data2[i*4+3] = data[3];
+				}
+				if (loc != UINT32_MAX)
+					engineData->exec_glUniformMatrix4fv(loc,1,false, data2);
+				else
+					LOG(LOG_ERROR,"setRegisters no location:"<<buf);
+				break;
+			}
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRegisters: RegisterUsage:"<<(uint32_t)usage<<" "<<it->first<<" "<<it->second);
+				break;
+		}
+		it++;
+	}
+}
+
+void Context3D::setAttribs(EngineData *engineData)
+{
+	for (uint32_t i = 0; i < CONTEXT3D_ATTRIBUTE_COUNT; i++)
+	{
+		if (attribs[i].bufferID != UINT32_MAX)
+		{
+			char buf[100];
+			sprintf(buf,"va%d",i);
+			uint32_t pos = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,buf);
+			if (pos != UINT32_MAX)
+			{
+				engineData->exec_glEnableVertexAttribArray(pos);
+				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(attribs[i].bufferID);
+				engineData->exec_glVertexAttribPointer(pos, attribs[i].data32PerVertex*sizeof(float), (const void*)(size_t)(attribs[i].offset*4),attribs[i].format);
+			}
+		}
+	}
+}
+
+void Context3D::setSamplers(EngineData *engineData)
+{
+	for (uint32_t i = 0; i < currentprogram->samplerState.size();i++)
+	{
+		char buf[100];
+		sprintf(buf,"sampler%d",currentprogram->samplerState[i]);
+		uint32_t sampid = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+		if (sampid != UINT32_MAX && samplers[currentprogram->samplerState[i]] != UINT32_MAX)
+		{
+			engineData->exec_glActiveTexture_GL_TEXTURE0(currentprogram->samplerState[i]);
+			engineData->exec_glBindTexture_GL_TEXTURE_2D(samplers[currentprogram->samplerState[i]]);
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+			engineData->exec_glUniform1i(sampid, currentprogram->samplerState[i]);
+		}
+		else
+			LOG(LOG_ERROR,"sampler not found in program:"<<buf);
+	}
+}
 bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
 	if (actions[1-currentactionvector].size() == 0)
 		return false;
 	EngineData* engineData = getSystemState()->getEngineData();
+	if (currentprogram)
+		engineData->exec_glUseProgram(currentprogram->gpu_program);
+	
 	for (uint32_t i = 0; i < actions[1-currentactionvector].size(); i++)
 	{
 		renderaction& action = actions[1-currentactionvector][i];
@@ -471,12 +479,11 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
 	engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 	engineData->exec_glUseProgram(0);
-	currentprogram = NULL;
-	delayedactions.clear();
 	
 	if (renderingToTexture)
 	{
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+		engineData->exec_glDrawBuffer_GL_BACK();
 		engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 		if (enableDepthAndStencil)
 		{
@@ -521,7 +528,7 @@ void Context3D::loadTexture(TextureBase *tex)
 	}
 }
 
-Context3D::Context3D(Class_base *c):EventDispatcher(c),currentactionvector(0)
+Context3D::Context3D(Class_base *c):EventDispatcher(c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
   ,textureframebuffer(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(NULL)
   ,depthMask(true),renderingToTexture(false),enableDepthAndStencil(true),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
@@ -851,7 +858,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 	Context3D* th = obj.as<Context3D>();
 	_NR<Program3D> program;
 	ARG_UNPACK_ATOM(program);
-	th->addAction(RENDER_SETPROGRAM,program.getPtr());
+	if (!program.isNull())
+		th->addAction(RENDER_SETPROGRAM,program.getPtr());
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
@@ -1001,9 +1009,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 	uint32_t sampler;
 	_NR<TextureBase> texture;
 	ARG_UNPACK_ATOM(sampler)(texture);
-	if (sampler >= CONTEXT3D_REGISTER_COUNT)
+	if (sampler >= CONTEXT3D_SAMPLER_COUNT)
 		throwError<RangeError>(kParamRangeError);
-//	th->textures[sampler] = texture;
 	if (!texture.isNull())
 		texture->incRef();
 	renderaction action;

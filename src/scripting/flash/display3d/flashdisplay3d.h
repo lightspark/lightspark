@@ -47,26 +47,43 @@ struct renderaction
 	_NR<ASObject> dataobject;
 	renderaction():udata1(0),udata2(0),udata3(0),fdata(NULL) {}
 };
-#define CONTEXT3D_REGISTER_COUNT 8
+struct constantregister
+{
+	float data[4];
+};
+struct attribregister
+{
+	uint32_t bufferID;
+	uint32_t data32PerVertex;
+	uint32_t offset;
+	VERTEXBUFFER_FORMAT format;
+	attribregister():bufferID(UINT32_MAX) {}
+};
+#define CONTEXT3D_SAMPLER_COUNT 8
+#define CONTEXT3D_ATTRIBUTE_COUNT 8
 #define CONTEXT3D_PROGRAM_REGISTERS 128
+
 class Context3D: public EventDispatcher
 {
 friend class Stage3D;
 private:
 	std::vector<renderaction> actions[2];
-	_NR<TextureBase> textures[CONTEXT3D_REGISTER_COUNT];
-	float vertexConstants[4 * CONTEXT3D_PROGRAM_REGISTERS];
-	float fragmentConstants[4 * CONTEXT3D_PROGRAM_REGISTERS];
+	constantregister vertexConstants[CONTEXT3D_PROGRAM_REGISTERS];
+	constantregister fragmentConstants[CONTEXT3D_PROGRAM_REGISTERS];
+	attribregister attribs[CONTEXT3D_ATTRIBUTE_COUNT];
+	uint32_t samplers[CONTEXT3D_SAMPLER_COUNT];
 	int currentactionvector;
 	uint32_t textureframebuffer;
 	uint32_t depthRenderBuffer;
 	uint32_t stencilRenderBuffer;
 	Program3D* currentprogram;
-	std::vector<renderaction> delayedactions;
 	bool depthMask;
 	bool renderingToTexture;
 	bool enableDepthAndStencil;
 	void handleRenderAction(EngineData *engineData, renderaction &action);
+	void setRegisters(EngineData *engineData, std::map<uint32_t, uint32_t> &registermap, constantregister *constants, bool isVertex);
+	void setAttribs(EngineData* engineData);
+	void setSamplers(EngineData* engineData);
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex);

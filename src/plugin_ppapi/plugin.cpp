@@ -2238,6 +2238,29 @@ void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTE
 {
 	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
+void ppPluginEngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap)
+{
+	switch (mipmap)
+	{
+		case 0: // disable
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+			break;
+		case 1: // nearest
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_NEAREST_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_NEAREST_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
+			break;
+		case 2: // linear
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
+			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
+			break;
+	}
+	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	if (lodbias != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D: GL_TEXTURE_LOD_BIAS not available for PPAPI");
+	//g_gles2_interface->TexParameterf(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS,(float)(lodbias)/8.0);
+}
 
 void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {
@@ -2321,6 +2344,10 @@ void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_
 void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
 	g_gles2_interface->GetIntegerv(instance->m_graphics,GL_MAX_TEXTURE_SIZE,data);
+}
+void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
+{
+	g_gles2_interface->GenerateMipmap(instance->m_graphics,GL_TEXTURE_2D);
 }
 
 void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)

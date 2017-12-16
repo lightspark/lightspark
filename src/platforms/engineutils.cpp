@@ -572,7 +572,7 @@ void EngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* pa
 void EngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
-	glFrontFace(framebuffer == 0 ? GL_CCW : GL_CW);
+	glFrontFace(GL_CW);
 }
 
 void EngineData::exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer)
@@ -596,7 +596,8 @@ uint32_t EngineData::exec_glGenRenderbuffer()
 void EngineData::exec_glFramebufferTexture2D_GL_FRAMEBUFFER(uint32_t textureID)
 {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID, 0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	if (textureID)
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
@@ -787,6 +788,31 @@ void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LIN
 {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
+void EngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap)
+{
+	switch (mipmap)
+	{
+		case 0: // disable
+			glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+			break;
+		case 1: // nearest
+			glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_NEAREST_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
+			break;
+		case 2: // linear
+			glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
+			break;
+	}
+	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+#ifdef ENABLE_GLES2
+	if (lodbias != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D: GL_TEXTURE_LOD_BIAS not available for OpenGL ES");
+#else
+	glTexParameterf(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS,(float)(lodbias)/8.0);
+#endif
+}
+
 
 void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {
@@ -870,6 +896,10 @@ void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffs
 void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE,data);
+}
+void EngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
+{
+	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)

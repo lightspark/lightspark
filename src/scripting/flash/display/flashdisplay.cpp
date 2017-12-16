@@ -3468,6 +3468,7 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 	ARG_UNPACK_ATOM(context3DRenderMode,"auto")(profile,"baseline");
 	
 	th->context3D = _MR(Class<Context3D>::getInstanceS(sys));
+	th->context3D->driverInfo = sys->getEngineData()->driverInfoString;
 	th->incRef();
 	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"context3DCreate")));
 	return asAtom::invalidAtom;

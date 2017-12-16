@@ -279,6 +279,7 @@ public:
 	void exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size, const void* data);
 	void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap);
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
 	void exec_glDrawBuffer_GL_BACK();
@@ -293,6 +294,7 @@ public:
 	void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
 	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
+	void exec_glGenerateMipmap_GL_TEXTURE_2D();
 
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s);

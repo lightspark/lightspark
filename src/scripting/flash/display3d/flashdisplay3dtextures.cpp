@@ -48,7 +48,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
 	if (th->bitmaparray.size() <= miplevel)
-		th->bitmaparray.resize(miplevel+4);
+		th->bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
 	th->bitmaparray[miplevel].resize(mipsize);
 

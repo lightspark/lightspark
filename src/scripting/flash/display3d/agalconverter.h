@@ -2,6 +2,8 @@
 #define AGALCONVERTER_H
 
 #include "tiny_string.h"
+#include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
 #include <map>
 #include <vector>
 
@@ -11,33 +13,6 @@ using namespace lightspark;
 // AGAL bytecode format is documented in http://help.adobe.com/en_US/as3/dev/WSd6a006f2eb1dc31e-310b95831324724ec56-8000.html
 // conversion algorithm is taken from https://github.com/openfl/openfl/blob/develop/openfl/_internal/stage3D/AGALConverter.hx (converted to c++)
 
-enum RegisterType {
-	ATTRIBUTE = 0,
-	CONSTANT = 1,
-	TEMPORARY = 2,
-	OUTPUT = 3,
-	VARYING = 4,
-	SAMPLER = 5
-};
-enum RegisterUsage {
-	UNUSED,
-	VECTOR_4,
-	MATRIX_4_4,
-	SAMPLER_2D,
-	SAMPLER_2D_ALPHA,
-	SAMPLER_CUBE,
-	VECTOR_4_ARRAY
-};
-
-struct RegisterMapEntry
-{
-	tiny_string name;
-	uint32_t number;
-	RegisterType type;
-	RegisterUsage usage;
-	uint32_t arraycount;
-	uint32_t pos;
-};
 tiny_string prefixFromType (RegisterType regType, bool isVertexProgram)
 {
 	switch (regType)
@@ -95,42 +70,6 @@ struct DestRegister
 		return str;
 	}
 };
-struct SamplerRegister
-{
-	int32_t b; // lod bias
-	int32_t d; // dimension 0=2d 1=cube
-	int32_t f; // Filter (0=nearest,1=linear) (4 bits)
-	int32_t m; // Mipmap (0=disable,1=nearest, 2=linear)
-	int32_t n; // number
-	bool isVertexProgram;
-	int32_t s; // special flags bit
-	int32_t t; // texture format (0=none, dxt1=1, dxt5=2)
-	RegisterType type;
-	int32_t w; // wrap (0=clamp 1=repeat)
-
-	static SamplerRegister parse (int64_t v, bool isVertexProgram) {
-
-		SamplerRegister sr;
-		sr.isVertexProgram = isVertexProgram;
-		sr.f = ((v >> 60) & 0xF); // filter
-		sr.m = ((v >> 56) & 0xF); // mipmap
-		sr.w = ((v >> 52) & 0xF); // wrap
-		sr.s = ((v >> 48) & 0xF); // special
-		sr.d = ((v >> 44) & 0xF); // dimension
-		sr.t = ((v >> 40) & 0xF); // texture
-		sr.type = (RegisterType) ((v >> 32) & 0xF); // type
-		sr.b = ((v >> 16) & 0xFF); // TODO: should this be .low?
-		sr.n = (v & 0xFFFF); // number
-		return sr;
-	}
-	tiny_string toGLSL ()
-	{
-		char buf[100];
-		sprintf(buf,"%d",n);
-		tiny_string str = prefixFromType (type, isVertexProgram) + buf;
-		return str;
-	}
-};
 
 struct SourceRegister
 {
@@ -143,7 +82,7 @@ struct SourceRegister
 	int32_t s;
 	int32_t sourceMask;
 	RegisterType type;
-	static SourceRegister parse (int64_t v, bool isVertexProgram, int32_t sourceMask)
+	static SourceRegister parse (uint64_t v, bool isVertexProgram, int32_t sourceMask)
 	{
 		SourceRegister sr;
 		sr.isVertexProgram= isVertexProgram;
@@ -167,7 +106,7 @@ struct SourceRegister
 
 		if (type != RegisterType::SAMPLER && !fullxyzw)
 		{
-			for (int i =0; i <4; i++)
+			for (int i =0; i < 4; i++)
 			{
 				// only output swizzles for each source mask
 				if ((sourceMask & (1 << i)) != 0)
@@ -281,7 +220,6 @@ public:
 		std::sort(mEntries.begin(),mEntries.end(), [](const RegisterMapEntry& a, const RegisterMapEntry& b) {
 			return a.type < b.type;
 		});
-		uint32_t attrpos = 0;
 		tiny_string sb;
 		for (uint32_t i = 0; i < mEntries.size(); i++)
 		{
@@ -303,7 +241,6 @@ public:
 				case RegisterType::ATTRIBUTE:
 					// sb.AppendFormat("layout(location = {0}) ", entry.number);
 					sb += "attribute ";
-					mEntries[i].pos = attrpos++;
 					break;
 				case RegisterType::CONSTANT:
 					//sb.AppendFormat("layout(location = {0}) ", entry.number);
@@ -371,30 +308,28 @@ public:
 		}
 		return sb;
 	}
-	void getConstantUsages( std::map<uint32_t,uint32_t>& constantmap)
+	void getConstants( std::vector<RegisterMapEntry>& constantmap)
 	{
 		constantmap.clear();
 		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
 			switch (it->type)
 			{
 				case CONSTANT:
-					constantmap[it->number] = it->usage;
+					constantmap.push_back(*it);
 					break;
 				default:
 					break;
 			}
 		}
 	}
-	void getAttributeList( std::vector<uint32_t>& attributes)
+	void getAttributes( std::vector<RegisterMapEntry>& attributes)
 	{
 		attributes.clear();
 		for (auto it = mEntries.begin(); it != mEntries.end(); it++) {
 			switch (it->type)
 			{
 				case ATTRIBUTE:
-					if (it->pos >= attributes.size())
-						attributes.resize(it->pos+1,1000);
-					attributes[it->pos] = it->number;
+					attributes.push_back(*it);
 					break;
 				default:
 					break;
@@ -411,7 +346,7 @@ uint64_t readUInt64 (ByteArray* byteArray)
 	return ((uint64_t)high)<<32 | low;
 }
 
-tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t>& samplerState,std::map<uint32_t,uint32_t>& constantmap,std::vector<uint32_t>& attributes)
+tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerRegister>& samplerState,std::vector<RegisterMapEntry>& constants,std::vector<RegisterMapEntry>& attributes)
 {
 	agal->setPosition(0);
 	uint8_t by;
@@ -712,7 +647,7 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t
 				map.addSR (sr1, RegisterUsage::VECTOR_4);
 
 				// add sampler state to output list for caller
-				samplerState.push_back(sampler.n);
+				samplerState.push_back(sampler);
 				break;
 			}
 			case 0x29: // sge
@@ -785,8 +720,8 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<uint32_t
 //	}
 	glsl += "}\n";
 	
-	map.getConstantUsages(constantmap);
-	map.getAttributeList(attributes);
+	map.getConstants(constants);
+	map.getAttributes(attributes);
 	return glsl;
 }
 

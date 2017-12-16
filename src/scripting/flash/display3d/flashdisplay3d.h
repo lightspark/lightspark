@@ -27,6 +27,52 @@
 #include <map>
 #include "platforms/engineutils.h"
 
+enum RegisterType {
+	ATTRIBUTE = 0,
+	CONSTANT = 1,
+	TEMPORARY = 2,
+	OUTPUT = 3,
+	VARYING = 4,
+	SAMPLER = 5
+};
+enum RegisterUsage {
+	UNUSED,
+	VECTOR_4,
+	MATRIX_4_4,
+	SAMPLER_2D,
+	SAMPLER_2D_ALPHA,
+	SAMPLER_CUBE,
+	VECTOR_4_ARRAY
+};
+
+struct SamplerRegister
+{
+	int32_t b; // lod bias
+	int32_t d; // dimension 0=2d 1=cube
+	int32_t f; // Filter (0=nearest,1=linear) (4 bits)
+	int32_t m; // Mipmap (0=disable,1=nearest, 2=linear)
+	int32_t n; // number
+	bool isVertexProgram;
+	int32_t s; // special flags bit
+	int32_t t; // texture format (0=none, dxt1=1, dxt5=2)
+	RegisterType type;
+	int32_t w; // wrap (0=clamp 1=repeat)
+	uint32_t program_sampler_id;
+
+	static SamplerRegister parse (uint64_t v, bool isVertexProgram);
+	lightspark::tiny_string toGLSL ();
+};
+struct RegisterMapEntry
+{
+	uint32_t program_register_id;
+	lightspark::tiny_string name;
+	uint32_t number;
+	RegisterType type;
+	RegisterUsage usage;
+	uint32_t arraycount;
+	RegisterMapEntry():program_register_id(UINT32_MAX) {}
+};
+
 namespace lightspark
 {
 class RenderContext;
@@ -74,15 +120,17 @@ private:
 	uint32_t samplers[CONTEXT3D_SAMPLER_COUNT];
 	int currentactionvector;
 	uint32_t textureframebuffer;
+	uint32_t textureframebufferID;
 	uint32_t depthRenderBuffer;
 	uint32_t stencilRenderBuffer;
 	Program3D* currentprogram;
-	bool depthMask;
 	bool renderingToTexture;
-	bool enableDepthAndStencil;
+	bool enableDepthAndStencilBackbuffer;
+	bool enableDepthAndStencilTextureBuffer;
+	bool swapbuffers;
 	void handleRenderAction(EngineData *engineData, renderaction &action);
-	void setRegisters(EngineData *engineData, std::map<uint32_t, uint32_t> &registermap, constantregister *constants, bool isVertex);
-	void setAttribs(EngineData* engineData);
+	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
+	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
 	void setSamplers(EngineData* engineData);
 protected:
 	bool renderImpl(RenderContext &ctxt);
@@ -248,6 +296,7 @@ public:
 	ASFUNCTION_ATOM(uploadFromByteArray);
 	ASFUNCTION_ATOM(uploadFromVector);
 };
+
 class Program3D: public ASObject
 {
 friend class Context3D;
@@ -258,11 +307,11 @@ protected:
 	uint32_t positionLocation;
 	tiny_string vertexprogram;
 	tiny_string fragmentprogram;
-	std::vector<uint32_t> samplerState;
-	std::map<uint32_t,uint32_t> vertexregistermap;
-	std::vector<uint32_t> vertexattributes;
-	std::map<uint32_t,uint32_t> fragmentregistermap;
-	std::vector<uint32_t> fragmentattributes;
+	std::vector<SamplerRegister> samplerState;
+	std::vector<RegisterMapEntry> vertexregistermap;
+	std::vector<RegisterMapEntry> vertexattributes;
+	std::vector<RegisterMapEntry> fragmentregistermap;
+	std::vector<RegisterMapEntry> fragmentattributes;
 public:
 	Program3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX){}
 	Program3D(Class_base* c,_NR<Context3D> _ct):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),context3D(_ct),gpu_program(UINT32_MAX){}

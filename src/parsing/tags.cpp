@@ -315,7 +315,10 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		in >> FontID;
 		DefineFont3Tag* fonttag =  dynamic_cast<DefineFont3Tag*>(root->dictionaryLookup(FontID));
 		if (fonttag)
+		{
 			textData.font = fonttag->getFontname();
+			textData.fontID = fonttag->getId();
+		}
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
@@ -784,7 +787,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				}
 			}
 			if (!found)
-				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text);
+				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
 }

@@ -490,9 +490,9 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	}
 
 	//Clip the size to the screen borders
-	if((xOffset>0) && (width+xOffset) > windowWidth)
+	if((xOffset>=0) && (width+xOffset) > windowWidth)
 		width=windowWidth-xOffset;
-	if((yOffset>0) && (height+yOffset) > windowHeight)
+	if((yOffset>=0) && (height+yOffset) > windowHeight)
 		height=windowHeight-yOffset;
 	uint8_t* ret=NULL;
 	cairo_surface_t* cairoSurface=allocateSurface(ret);

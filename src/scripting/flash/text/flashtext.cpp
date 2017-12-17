@@ -473,7 +473,10 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	if(tf->color.type != T_NULL)
 		th->textColor = tf->color.toUInt();
 	if (tf->font != "")
+	{
 		th->font = tf->font;
+		th->fontID = UINT32_MAX;
+	}
 	th->fontSize = tf->size;
 
 	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");
@@ -500,7 +503,10 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 	if(tf->color.type != T_NULL)
 		th->textColor = tf->color.toUInt();
 	if (tf->font != "")
+	{
 		th->font = tf->font;
+		th->fontID = UINT32_MAX;
+	}
 	th->fontSize = tf->size;
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
 	return asAtom::invalidAtom;
@@ -1020,7 +1026,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 
 	RootMovieClip* currentRoot=getSys()->mainClip;
-	DefineFont3Tag* embeddedfont = currentRoot->getEmbeddedFont(font);
+	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
 	if (embeddedfont)
 	{
@@ -1123,11 +1129,11 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	}
 	else if (name == "font")
 	{
-		if (!textdata->text.empty())
-		{
-			LOG(LOG_NOT_IMPLEMENTED, "Font can be defined only in the beginning");
-			return false;
-		}
+//		if (!textdata->text.empty())
+//		{
+//			LOG(LOG_NOT_IMPLEMENTED, "Font can be defined only in the beginning");
+//			return false;
+//		}
 
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
@@ -1135,6 +1141,8 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			if (attrname == "face")
 			{
 				textdata->font = it->value();
+				textdata->fontID = UINT32_MAX;
+				
 			}
 			else if (attrname == "size")
 			{
@@ -1144,6 +1152,8 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			{
 				textdata->textColor = RGB(tiny_string(it->value()));
 			}
+			else
+				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <font>: unsupported attribute:"<<attrname<<" "<<it->value());
 		}
 	}
 	else if (name == "" || name == "root" || name == "body")

@@ -71,6 +71,7 @@ private:
 	std::list < DictionaryTag* > dictionary;
 	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
 	std::map < tiny_string,DefineFont3Tag* > embeddedfonts;
+	std::map < uint32_t,DefineFont3Tag* > embeddedfontsByID;
 
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
@@ -126,6 +127,7 @@ public:
 	void checkBinding(DictionaryTag* tag);
 	void registerEmbeddedFont(const tiny_string fontname,DefineFont3Tag* tag);
 	DefineFont3Tag* getEmbeddedFont(const tiny_string fontname) const;
+	DefineFont3Tag* getEmbeddedFontByID(uint32_t fontID) const;
 };
 
 class ThreadProfile

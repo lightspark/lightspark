@@ -109,7 +109,7 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 				return;
 			myJob->execute();
 		}
-	        catch(JobTerminationException& ex)
+		catch(JobTerminationException& ex)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"Job terminated");
 		}
@@ -118,6 +118,12 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
 			th->m_sys->setError(e.cause);
 		}
+		catch(std::exception& e)
+		{
+			LOG(LOG_ERROR,"std Exception in ThreadPool:"<<myJob<<" "<<e.what());
+			th->m_sys->setError(e.what());
+		}
+		
 		profile->accountTime(chronometer.checkpoint());
 
 		l.acquire();

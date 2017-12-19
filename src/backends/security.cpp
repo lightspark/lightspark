@@ -1056,6 +1056,7 @@ bool URLPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 			LOG(LOG_INFO, _("SECURITY: Policy file content-type isn't strict, marking invalid"));
 			ignore = true;
 		}
+		delete master;
 	}
 
 	if (ok)

@@ -53,9 +53,9 @@ BitmapData::BitmapData(Class_base* c, const BitmapData& other)
 BitmapData::BitmapData(Class_base* c, uint32_t width, uint32_t height)
  : ASObject(c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
 {
-	uint32_t *pixelArray=new uint32_t[width*height];
 	if (width!=0 && height!=0)
 	{
+		uint32_t *pixelArray=new uint32_t[width*height];
 		memset(pixelArray,0,width*height*sizeof(uint32_t));
 		pixels->fromRGB(reinterpret_cast<uint8_t *>(pixelArray), width, height, BitmapContainer::ARGB32);
 	}

@@ -1764,7 +1764,10 @@ void SystemState::tick()
 			_R<Event> e(Class<Event>::getInstanceS(this,"enterFrame"));
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
+			{
+				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
+			}
 		}
 	}
 
@@ -1781,7 +1784,10 @@ void SystemState::tick()
 			_R<Event> e(Class<Event>::getInstanceS(this,"frameConstructed"));
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
+			{
+				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
+			}
 		}
 	}
 	/* Step 5: run all frameScripts (bottom-up) */
@@ -1796,7 +1802,10 @@ void SystemState::tick()
 			_R<Event> e(Class<Event>::getInstanceS(this,"exitFrame"));
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
+			{
+				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
+			}
 		}
 	}
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */

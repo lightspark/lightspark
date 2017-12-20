@@ -173,7 +173,7 @@ public:
 		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
 		if (!c)
 			c = getClass(sys);
-		T* ret = c->freelist[0].getObjectFromFreeList()->as<T>();
+		T* ret = c->freelist[0].getObjectFromFreeList()->template as<T>();
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) T(c);

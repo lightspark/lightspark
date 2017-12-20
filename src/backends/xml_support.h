@@ -40,8 +40,8 @@ protected:
 
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
 	static std::string quirkEncodeNull(const std::string value);
-	static tiny_string removeWhitespace(tiny_string val);
 public:
+	static tiny_string removeWhitespace(tiny_string val);
 	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
 	static std::string parserQuirks(const std::string& str);
 };

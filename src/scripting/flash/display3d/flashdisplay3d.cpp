@@ -1059,9 +1059,16 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 {
 	Context3D* th = obj.as<Context3D>();
 	Locker l(th->rendermutex);
-	th->swapbuffers = true;
-	th->currentactionvector=1-th->currentactionvector;
-	sys->stage->requestInvalidation(sys);
+	if (th->swapbuffers)
+	{
+		LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame");
+		th->actions[th->currentactionvector].clear();
+	}
+	else
+	{
+		th->swapbuffers = true;
+		th->currentactionvector=1-th->currentactionvector;
+	}
 	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)

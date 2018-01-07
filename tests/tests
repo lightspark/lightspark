@@ -312,9 +312,9 @@ for test in $TESTS; do
 	echo > $LOGFILE
 	if [ $PROPRIETARY -eq 0 ]; then
 		if [ $DEBUG -eq 1 ]; then
-			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --exit-on-error $test >$LOGFILE 2>&1
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --disable-rendering --exit-on-error $test >$LOGFILE 2>&1
 		else
-			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --exit-on-error $test 1>$LOGFILE 2>/dev/null
+			$TIMEOUTCMD $LIGHTSPARK -u $ROOTURL -l $LOGLEVEL --avmplus --disable-rendering --exit-on-error $test 1>$LOGFILE 2>/dev/null
 		fi
 	else
 		if [ $DEBUG -eq 1 ]; then

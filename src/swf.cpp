@@ -733,11 +733,12 @@ void SystemState::delayedCreation(SystemState* sys)
 	int32_t reqWidth=sys->mainClip->getFrameSize().Xmax/20;
 	int32_t reqHeight=sys->mainClip->getFrameSize().Ymax/20;
 
-	sys->engineData->showWindow(reqWidth, reqHeight);
+	if (EngineData::enablerendering)
+		sys->engineData->showWindow(reqWidth, reqHeight);
 
 	sys->inputThread->start(sys->engineData);
 
-	if(Config::getConfig()->isRenderingEnabled())
+	if(EngineData::enablerendering && Config::getConfig()->isRenderingEnabled())
 	{
 		if (sys->engineData->needrenderthread)
 			sys->renderThread->start(sys->engineData);

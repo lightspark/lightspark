@@ -312,6 +312,11 @@ int main(int argc, char* argv[])
 		{
 			exitOnError = SystemState::ERROR_ANY;
 		}
+		else if(strcmp(argv[i],"--disable-rendering")==0)
+		{
+			EngineData::enablerendering = false;
+		}
+		
 		else if(strcmp(argv[i],"--HTTP-cookies")==0)
 		{
 			i++;
@@ -339,7 +344,7 @@ int main(int argc, char* argv[])
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
 			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi] [--enable-jit|-j]" <<
 			" [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
-			" [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus]" <<
+			" [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus] [--disable-rendering]" <<
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
 #endif

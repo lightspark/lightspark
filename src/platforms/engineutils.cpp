@@ -42,6 +42,7 @@ uint32_t EngineData::userevent = (uint32_t)-1;
 Thread* EngineData::mainLoopThread = NULL;
 bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
+bool EngineData::enablerendering = true;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false)
 {
@@ -115,10 +116,20 @@ static void mainloop_runner()
 	
 	if (EngineData::sdl_needinit)
 	{
-		if (SDL_WasInit(0)) // some part of SDL already was initialized
-			sdl_available = !SDL_InitSubSystem ( SDL_INIT_VIDEO );
+		if (!EngineData::enablerendering)
+		{
+			if (SDL_WasInit(0)) // some part of SDL already was initialized
+				sdl_available = true;
+			else
+				sdl_available = !SDL_Init ( SDL_INIT_EVENTS );
+		}
 		else
-			sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
+		{
+			if (SDL_WasInit(0)) // some part of SDL already was initialized
+				sdl_available = !SDL_InitSubSystem ( SDL_INIT_VIDEO );
+			else
+				sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
+		}
 	}
 	if (!sdl_available)
 	{

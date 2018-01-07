@@ -102,6 +102,7 @@ public:
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
 
 	static bool sdl_needinit;
+	static bool enablerendering;
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain();

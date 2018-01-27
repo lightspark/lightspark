@@ -253,8 +253,6 @@ private:
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
-	llvm::Module* module;
-
 	void registerClassesToplevel(Global* builtin);
 	void registerClasses();
 
@@ -670,6 +668,8 @@ public:
 	MemoryAccount* vmDataMemory;
 
 	llvm::ExecutionEngine* ex;
+	llvm::Module* module;
+
 #ifdef LLVM_36
 	llvm::legacy::FunctionPassManager* FPM;
 #else

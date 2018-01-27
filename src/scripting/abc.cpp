@@ -1482,7 +1482,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case EXECUTE_FRAMESCRIPT:
 			{
-				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
+				ExecuteFrameScriptEvent* ev=static_cast<ExecuteFrameScriptEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
 				assert(!ev->clip.isNull());
 				ev->clip->executeFrameScript();
@@ -1891,6 +1891,10 @@ void ABCVm::Run(ABCVm* th)
 #endif
 #endif
 		llvm::InitializeNativeTarget();
+#ifdef LLVM_34
+		llvm::InitializeNativeTargetAsmPrinter();
+		llvm::InitializeNativeTargetAsmParser();
+#endif
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context());
 #ifdef LLVM_36
 		llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(th->module));

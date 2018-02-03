@@ -337,35 +337,35 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	double width=args[2].toNumber();
 	double height=args[3].toNumber();
 
-	double xkappa = KAPPA*width/2;
-	double ykappa = KAPPA*height/2;
+	double xkappa = KAPPA*width/2.0;
+	double ykappa = KAPPA*height/2.0;
 
 	// right
-	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(left+width, top+height/2)));
+	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(left+width, top+height/2.0)));
 	
 	// bottom
 	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
-	                        Vector2(left+width , top+height/2+ykappa),
-	                        Vector2(left+width/2+xkappa, top+height),
-	                        Vector2(left+width/2, top+height)));
+	                        Vector2(left+width , top+height/2.0+ykappa),
+	                        Vector2(left+width/2.0+xkappa, top+height),
+	                        Vector2(left+width/2.0, top+height)));
 
 	// left
 	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
-	                        Vector2(left+width/2-xkappa, top+height),
-	                        Vector2(left, top+height/2+ykappa),
-	                        Vector2(left, top+height/2)));
+	                        Vector2(left+width/2.0-xkappa, top+height),
+	                        Vector2(left, top+height/2.0+ykappa),
+	                        Vector2(left, top+height/2.0)));
 
 	// top
 	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
-	                        Vector2(left, top+height/2-ykappa),
-	                        Vector2(left+width/2-xkappa, top),
-	                        Vector2(left+width/2, top)));
+	                        Vector2(left, top+height/2.0-ykappa),
+	                        Vector2(left+width/2.0-xkappa, top),
+	                        Vector2(left+width/2.0, top)));
 
 	// back to right
 	th->owner->tokens.emplace_back(GeomToken(CURVE_CUBIC,
-	                        Vector2(left+width/2+xkappa, top),
-	                        Vector2(left+width, top+height/2-ykappa),
-	                        Vector2(left+width, top+height/2)));
+	                        Vector2(left+width/2.0+xkappa, top),
+	                        Vector2(left+width, top+height/2.0-ykappa),
+	                        Vector2(left+width, top+height/2.0)));
 
 	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(sys);

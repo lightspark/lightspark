@@ -337,7 +337,7 @@ MATRIX DisplayObject::getMatrix() const
 	if (!matrix.isNull())
 		ret=matrix->matrix;
 	ret.scale(sx,sy);
-	ret.rotate(rotation*M_PI/180);
+	ret.rotate(rotation*M_PI/180.0);
 	ret.translate(tx,ty);
 	return ret;
 }

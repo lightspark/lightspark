@@ -1161,7 +1161,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(COLOR_ATTRIB);
 
-	cairo_set_source_rgb(cr, float(color.Red)/255, float(color.Green)/255, float(color.Blue)/255);
+	cairo_set_source_rgb(cr, float(color.Red)/255.0, float(color.Green)/255.0, float(color.Blue)/255.0);
 
 	//Draw tags
 	string* curTag=NULL;

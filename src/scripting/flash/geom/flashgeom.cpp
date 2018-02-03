@@ -1344,10 +1344,10 @@ ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
 	number_t angle = 0;
 	if ( argslen > 2 ) angle = args[2].toNumber();
 
-	number_t translateX = width/2;
+	number_t translateX = width/2.0;
 	if ( argslen > 3 ) translateX += args[3].toNumber();
 
-	number_t translateY = height/2;
+	number_t translateY = height/2.0;
 	if ( argslen > 4 ) translateY += args[4].toNumber();
 
 	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX, translateY);
@@ -2125,7 +2125,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 		ty = pivotPoint->y;
 		tz = pivotPoint->z;
 	}
-	number_t radian = degrees * 3.141592653589793/180;
+	number_t radian = degrees * 3.141592653589793/180.0;
 	number_t cos = std::cos(radian);
 	number_t sin = std::sin(radian);
 	number_t x = axis->x;

@@ -1475,20 +1475,20 @@ ASObject* lightspark::abstract_ui(SystemState *sys, uint32_t i)
 void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
 {
 	//Ok, let's split our string into namespace and name part
-	char* collon=tmp.strchrr(':');
+	char* collon=tmp.strchr(':');
 	if(collon)
 	{
 		/* collon is not the first character and there is
 		 * another collon before it */
-		if (collon == tmp.raw_buf() || *(collon-1) != ':')
+		if (collon == tmp.raw_buf() || *(collon+1) != ':')
 		{
 			name=tmp;
 			ns="";
 			return;
 		}
 		uint32_t collon_offset = collon-tmp.raw_buf();
-		ns = tmp.substr_bytes(0,collon_offset-1);
-		name = tmp.substr_bytes(collon_offset+1,tmp.numBytes()-collon_offset-1);
+		ns = tmp.substr_bytes(0,collon_offset);
+		name = tmp.substr_bytes(collon_offset+2,tmp.numBytes()-collon_offset-2);
 		return;
 	}
 	// No namespace, look for a package name

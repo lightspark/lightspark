@@ -878,6 +878,12 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 // TODO this is just a simple quicksort implementation, not optimized for performance
 void simplequicksortArray(std::vector<asAtom>& v, Array::sortComparatorWrapper& comp, int32_t lo, int32_t hi)
 {
+	if (v.size() == 2)
+	{
+		if (comp.compare(v[0],v[1]) > 0)
+			std::swap(v[0],v[1]);
+		return;
+	}
 	if (lo < hi)
 	{
 		asAtom pivot = v[lo];
@@ -899,10 +905,8 @@ void simplequicksortArray(std::vector<asAtom>& v, Array::sortComparatorWrapper& 
 	
 			if (i >= j)
 				break;
-	
-			asAtom tmp = v[i];
-			v[i] = v[j];
-			v[j] = tmp;
+
+			std::swap(v[i],v[j]);
 		}
 		if (j >= lo)
 		{

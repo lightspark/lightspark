@@ -26,7 +26,7 @@ if(WIN32)
     # mxe currently uses llvm 3.4
     set(LLVM_STRING_VERSION "3.4")
     set(LLVM_LIBS_CORE LLVMLinker LLVMBitWriter LLVMBitReader LLVMInstrumentation LLVMipo LLVMInstCombine LLVMVectorize LLVMObject LLVMIRReader)
-	set(LLVM_LIBS_JIT LLVMX86AsmParser LLVMX86AsmPrinter LLVMX86CodeGen LLVMX86Desc LLVMSelectionDAG LLVMAsmPrinter LLVMX86Utils LLVMX86Info LLVMJIT LLVMExecutionEngine LLVMCodeGen LLVMScalarOpts LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport)
+	set(LLVM_LIBS_JIT LLVMX86AsmParser LLVMX86AsmPrinter LLVMX86CodeGen LLVMX86Desc LLVMSelectionDAG LLVMAsmPrinter LLVMX86Utils LLVMX86Info LLVMJIT LLVMExecutionEngine LLVMCodeGen LLVMScalarOpts LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC  LLVMMCParser LLVMCore LLVMSupport)
   else()
     set(LLVM_STRING_VERSION "2.8")
     set(LLVM_LIBS_CORE LLVMLinker LLVMArchive LLVMBitWriter LLVMBitReader LLVMInstrumentation LLVMScalarOpts LLVMipo LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem LLVMInstCombine)

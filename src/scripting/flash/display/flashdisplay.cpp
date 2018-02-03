@@ -2369,6 +2369,7 @@ void Stage::renderImpl(RenderContext &ctxt) const
 	if (has3d)
 	{
 		// setup opengl state for additional 2d rendering
+		getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
 		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 		getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
 		((GLRenderContext&)ctxt).lsglLoadIdentity();

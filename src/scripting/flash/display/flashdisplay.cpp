@@ -1896,7 +1896,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==2);
-	if(args[0].type == T_CLASS)
+	if(args[0].type == T_CLASS || args[0].type == T_NULL)
 	{
 		return asAtom::nullAtom;
 	}
@@ -1924,7 +1924,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==1);
-	if(args[0].type == T_CLASS)
+	if(args[0].type == T_CLASS || args[0].type == T_NULL)
 	{
 		return asAtom::nullAtom;
 	}
@@ -2945,7 +2945,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS)
 	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  currentState(UP)
+	  currentState(UP),enabled(true),useHandCursor(true)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?

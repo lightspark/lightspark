@@ -45,7 +45,7 @@ ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
 //  Should actually be a Singleton
 ASFUNCTIONBODY_ATOM(NativeApplication, _getNativeApplication)
 {
-	return Class<NativeApplication>::getInstanceS(sys);
+	return asAtom::fromObject(Class<NativeApplication>::getInstanceS(sys));
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)

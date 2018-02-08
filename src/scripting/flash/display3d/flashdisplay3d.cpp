@@ -306,6 +306,12 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = numTriangles
 			if (currentprogram)
 			{
+				float vcposdata[4] = { 1.0,1.0,1.0,1.0 };
+				if (currentprogram->vcPositionScale == UINT32_MAX)
+					currentprogram->vcPositionScale = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,"vcPositionScale");
+				vcposdata[1] = renderingToTexture?-1.0:1.0;
+				engineData->exec_glUniform4fv(currentprogram->vcPositionScale,1, vcposdata);
+				
 				setSamplers(engineData);
 				setRegisters(engineData,currentprogram->vertexregistermap,vertexConstants,true);
 				setRegisters(engineData,currentprogram->fragmentregistermap,fragmentConstants,false);

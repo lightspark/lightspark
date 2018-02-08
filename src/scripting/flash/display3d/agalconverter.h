@@ -707,17 +707,17 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 		glsl += "#version 120\n";
 //	}
 	glsl += map.toGLSL (false);
-//	if (isVertexProgram) {
-//		// this is needed for flipping render textures upside down
-//		glsl += "uniform vec4 vcPositionScale;\n";
-//	}
+	if (isVertexProgram) {
+		// this is needed for flipping render textures upside down
+		glsl += "uniform vec4 vcPositionScale;\n";
+	}
 	glsl += "void main() {\n";
 	glsl += map.toGLSL (true);
 	glsl += sb;
-//	if (isVertexProgram) {
-//		// this is needed for flipping render textures upside down
-//		glsl += "\tgl_Position *= vcPositionScale;\n";
-//	}
+	if (isVertexProgram) {
+		// this is needed for flipping render textures upside down
+		glsl += "\tgl_Position *= vcPositionScale;\n";
+	}
 	glsl += "}\n";
 	
 	map.getConstants(constants);

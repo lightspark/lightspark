@@ -304,7 +304,7 @@ private:
 	_NR<Context3D> context3D;
 	uint32_t gpu_program;
 protected:
-	uint32_t positionLocation;
+	uint32_t vcPositionScale;
 	tiny_string vertexprogram;
 	tiny_string fragmentprogram;
 	std::vector<SamplerRegister> samplerState;
@@ -313,8 +313,8 @@ protected:
 	std::vector<RegisterMapEntry> fragmentregistermap;
 	std::vector<RegisterMapEntry> fragmentattributes;
 public:
-	Program3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX){}
-	Program3D(Class_base* c,_NR<Context3D> _ct):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),context3D(_ct),gpu_program(UINT32_MAX){}
+	Program3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX){}
+	Program3D(Class_base* c,_NR<Context3D> _ct):ASObject(c,T_OBJECT,SUBTYPE_PROGRAM3D),context3D(_ct),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(upload);

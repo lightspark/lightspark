@@ -58,6 +58,11 @@ enum CLASS_SUBTYPE { SUBTYPE_NOT_SET, SUBTYPE_PROXY, SUBTYPE_REGEXP, SUBTYPE_XML
 				   };
  
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
+
+enum AS_BLENDMODE { BLENDMODE_NORMAL=0, BLENDMODE_LAYER=2, BLENDMODE_MULTIPLY=3,BLENDMODE_SCREEN=4,BLENDMODE_LIGHTEN=5,BLENDMODE_DARKEN=6, BLENDMODE_DIFFERENCE=7,
+					BLENDMODE_ADD=8, BLENDMODE_SUBTRACT=9,BLENDMODE_INVERT=10,BLENDMODE_ALPHA=11,BLENDMODE_ERASE=12,BLENDMODE_OVERLAY=13,BLENDMODE_HARDLIGHT=14
+				  };
+
 inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
 {
 	switch(st)
@@ -1156,6 +1161,7 @@ public:
 			   number_t& blueOffset,
 			   number_t& alphaOffset) const;
 	float transformedAlpha(float alpha) const;
+	bool isfilled() const {return  HasAddTerms || HasMultTerms; }
 };
 
 class CXFORM

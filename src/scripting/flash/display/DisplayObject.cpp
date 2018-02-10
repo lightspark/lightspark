@@ -93,11 +93,27 @@ void DisplayObject::Render(RenderContext& ctxt)
 	if(!isConstructed() || skipRender())
 		return;
 
+	// TODO handle other blend modes ,maybe with shaders ? (see https://github.com/jamieowen/glsl-blend)
+	switch (blendMode)
+	{
+		case BLENDMODE_NORMAL:
+			break;
+		case BLENDMODE_MULTIPLY:
+			getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendMode);
+			break;
+	}
+
 	renderImpl(ctxt);
+	
+	if (this->blendMode != BLENDMODE_NORMAL)
+		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -297,7 +313,17 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 		requestInvalidation(getSystemState());
 	}
 }
-
+void DisplayObject::setBlendMode(UI8 blendmode)
+{
+	if (blendmode <= 1 || blendmode > 14)
+		this->blendMode = BLENDMODE_NORMAL;
+	else
+	{
+		this->blendMode = (AS_BLENDMODE)(uint8_t)blendmode;
+		if (this->blendMode != BLENDMODE_MULTIPLY)
+			LOG(LOG_NOT_IMPLEMENTED,"DisplayObject.blendmode is set, but not respected during drawing:"<<(int)blendMode<<" "<<this->toDebugString());
+	}
+}
 MATRIX DisplayObject::getConcatenatedMatrix() const
 {
 	if(parent.isNull())
@@ -814,7 +840,26 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScale9Grid)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getBlendMode)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	return asAtom::fromString(sys,th->blendMode);
+	tiny_string res;
+	switch (th->blendMode)
+	{
+		case BLENDMODE_LAYER: res = "layer"; break;
+		case BLENDMODE_MULTIPLY: res = "multiply"; break;
+		case BLENDMODE_SCREEN: res = "screen"; break;
+		case BLENDMODE_LIGHTEN: res = "lighten"; break;
+		case BLENDMODE_DARKEN: res = "darken"; break;
+		case BLENDMODE_DIFFERENCE: res = "difference"; break;
+		case BLENDMODE_ADD: res = "add"; break;
+		case BLENDMODE_SUBTRACT: res = "subtract"; break;
+		case BLENDMODE_INVERT: res = "invert"; break;
+		case BLENDMODE_ALPHA: res = "alpha"; break;
+		case BLENDMODE_ERASE: res = "erase"; break;
+		case BLENDMODE_OVERLAY: res = "overlay"; break;
+		case BLENDMODE_HARDLIGHT: res = "hardlight"; break;
+		default: res = "normal"; break;
+	}
+
+	return asAtom::fromString(sys,res);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 {
@@ -822,26 +867,22 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 	tiny_string val;
 	ARG_UNPACK_ATOM(val);
 
-	if (
-			val != "add" &&
-			val != "alpha" &&
-			val != "darken" &&
-			val != "difference" &&
-			val != "erase" &&
-			val != "hardlight" &&
-			val != "invert" &&
-			val != "invert" &&
-			val != "layer" &&
-			val != "lighten" &&
-			val != "multiply" &&
-			val != "normal" &&
-			val != "overlay" &&
-			val != "screen" &&
-			val != "subtract"
-			)
-			val = "normal";
-	LOG(LOG_NOT_IMPLEMENTED, "blendmode is set but is not respected during drawing:"<<val);
-	th->blendMode = val;
+	th->blendMode = BLENDMODE_NORMAL;
+	if (val == "add") th->blendMode = BLENDMODE_ADD;
+	else if (val == "alpha") th->blendMode = BLENDMODE_ALPHA;
+	else if (val == "darken") th->blendMode = BLENDMODE_DARKEN;
+	else if (val == "difference") th->blendMode = BLENDMODE_DIFFERENCE;
+	else if (val == "erase") th->blendMode = BLENDMODE_ERASE;
+	else if (val == "hardlight") th->blendMode = BLENDMODE_HARDLIGHT;
+	else if (val == "invert") th->blendMode = BLENDMODE_INVERT;
+	else if (val == "layer") th->blendMode = BLENDMODE_LAYER;
+	else if (val == "lighten") th->blendMode = BLENDMODE_LIGHTEN;
+	else if (val == "multiply") th->blendMode = BLENDMODE_MULTIPLY;
+	else if (val == "overlay") th->blendMode = BLENDMODE_OVERLAY;
+	else if (val == "screen") th->blendMode = BLENDMODE_SCREEN;
+	else if (val == "subtract") th->blendMode = BLENDMODE_SUBTRACT;
+	if (th->blendMode != BLENDMODE_NORMAL && th->blendMode != BLENDMODE_MULTIPLY)
+		LOG(LOG_NOT_IMPLEMENTED, "DisplayObject.blendmode is set but is not respected during drawing:"<<val);
 	return asAtom::invalidAtom;
 }
 

@@ -59,7 +59,7 @@ private:
 	number_t rotation;
 	number_t sx,sy,sz;
 	float alpha;
-	tiny_string blendMode;
+	AS_BLENDMODE blendMode;
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
 public:
@@ -121,6 +121,8 @@ protected:
 
 public:
 	void setMask(_NR<DisplayObject> m);
+	void setBlendMode(UI8 blendmode);
+	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	void constructionComplete();
 	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;

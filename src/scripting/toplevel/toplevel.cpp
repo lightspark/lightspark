@@ -342,13 +342,13 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	}
 
 	//For sufficiently hot methods, optimize them to the internal bytecode
-	if(hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL && getSystemState()->useFastInterpreter)
+	if(getSystemState()->useFastInterpreter && hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL)
 	{
 		ABCVm::optimizeFunction(this);
 	}
 
 	//Temporarily disable JITting
-	if(mi->body->exceptions.size()==0 && getSystemState()->useJit && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
+	if(getSystemState()->useJit && mi->body->exceptions.size()==0 && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method(getSystemState());
@@ -385,8 +385,8 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.mi=mi;
 	cc.locals_size=mi->body->local_count+1;
 	asAtom* locals = g_newa(asAtom, cc.locals_size);
-	for(uint32_t i=0;i<cc.locals_size;++i)
-		locals[i] = asAtom::invalidAtom;
+	for(asAtom* i=locals;i< locals+cc.locals_size;++i)
+		*i = asAtom::invalidAtom;
 	cc.locals=locals;
 	cc.max_stack = mi->body->max_stack;
 	asAtom* stack = g_newa(asAtom, cc.max_stack);
@@ -394,13 +394,6 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.stack_index=0;
 	cc.context=mi->context;
 	cc.parent_scope_stack=func_scope;
-	if (!func_scope.isNull())
-	{
-		for (auto it = cc.parent_scope_stack->scope.begin(); it != cc.parent_scope_stack->scope.end(); it++)
-		{
-			ASATOM_INCREF((it->object));
-		}
-	}
 	cc.exec_pos=0;
 	
 	cc.max_scope_stack = mi->body->max_scope_depth;
@@ -408,8 +401,8 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.scope_stack=g_newa(asAtom, cc.max_scope_stack);
 	cc.scope_stack_dynamic=g_newa(bool, cc.max_scope_stack);
 	
-	for(uint32_t i=0;i<cc.max_scope_stack;++i)
-		cc.scope_stack[i] = asAtom::invalidAtom;
+	for(asAtom* i=cc.scope_stack;i< cc.scope_stack+cc.max_scope_stack;++i)
+		*i = asAtom::invalidAtom;
 	cc.stack_index=0;
 	
 	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
@@ -427,9 +420,12 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.locals[0]=obj;
 
 	/* coerce arguments to expected types */
-	for(int i=0;i<passedToLocals;++i)
+	auto itpartype = mi->paramTypes.begin();
+	asAtom* argp = args;
+	for(asAtom* i=cc.locals+1;i< cc.locals+1+passedToLocals;++i)
 	{
-		cc.locals[i+1] = mi->paramTypes[i]->coerce(getSystemState(),args[i]);
+		*i = (*itpartype++)->coerce(getSystemState(),*argp);
+		++argp;
 	}
 
 	//Fill missing parameters until optional parameters begin
@@ -799,6 +795,8 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 			QName qname(mn->name_s_id,mn->ns[0].nsNameId);
 			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 		}
+		if (!typeObject)
+			LOG(LOG_ERROR,"not found:"<<*mn);
 	}
 	return typeObject ? typeObject->as<Type>() : NULL;
 }

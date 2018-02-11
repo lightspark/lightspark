@@ -1715,23 +1715,15 @@ call_context::~call_context()
 			ASATOM_DECREF(stack[i]);
 		}
 	}
-
-	for(uint32_t i=0;i<locals_size;i++)
+	for(asAtom* i=locals;i< locals+locals_size;++i)
 	{
-		ASATOM_DECREF(locals[i]);
+		ASATOM_DECREF_POINTER(i);
 	}
-	for(uint32_t i=0;i<max_scope_stack;i++)
+	for(asAtom* i=scope_stack;i< scope_stack+curr_scope_stack;++i)
 	{
-		ASATOM_DECREF(scope_stack[i]);
+		ASATOM_DECREF_POINTER(i);
 	}
 	curr_scope_stack=0;
-	if (!parent_scope_stack.isNull())
-	{
-		for (auto it = parent_scope_stack->scope.begin(); it != parent_scope_stack->scope.end(); it++)
-		{
-			ASATOM_DECREF((it->object));
-		}
-	}
 }
 
 void call_context::handleError(int errorcode)

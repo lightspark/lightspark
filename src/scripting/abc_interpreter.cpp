@@ -752,7 +752,7 @@ void ABCVm::abc_nextvalue(call_context* context,preloadedcodedata** codep)
 void ABCVm::abc_pushbyte(call_context* context,preloadedcodedata** codep)
 {
 	//pushbyte
-	uint32_t t = (++(*codep))->data;
+	int32_t t = (++(*codep))->idata;
 	LOG_CALL("pushbyte "<<(int)t);
 	RUNTIME_STACK_PUSH(context,asAtom(t));
 	++(*codep);
@@ -1177,7 +1177,7 @@ void ABCVm::abc_getlex(call_context* context,preloadedcodedata** codep)
 	{
 		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->obj,instrptr->closure));
 		instrptr->obj->incRef();
-		LOG_CALL( "getLex from cache: " <<  (*codep)->obj->toDebugString());
+		LOG_CALL( "getLex from cache: " <<  instrptr->obj->toDebugString());
 	}
 	else if (getLex(context,t))
 	{

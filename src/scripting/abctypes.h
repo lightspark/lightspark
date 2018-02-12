@@ -259,24 +259,32 @@ struct method_info_simple
 	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 };
-struct method_body_info_cache
+struct preloadedcodedata
 {
-	enum method_body_info_cache_type { CACHE_TYPE_NONE = 0,CACHE_TYPE_UINTEGER,CACHE_TYPE_INTEGER, CACHE_TYPE_OBJECT };
-	method_body_info_cache_type type;
-	union {
-		uint32_t uvalue;
-		int32_t ivalue;
-		ASObject* obj;
+	union
+	{
+		struct
+		{
+			// this is used to automatically extract the jump position for a branch (24 bit signed integer)
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+			signed int jump:24;
+			uint8_t opcode;
+#else
+			uint8_t opcode;
+			signed int jump:24;
+#endif
+		} jumpdata;
+		int32_t idata;
+		uint32_t data;
 	};
+	ASObject* obj;
 	ASObject* closure;
-	const char* nextcodepos;
-	struct method_body_info_cache* nextcachepos;
+	preloadedcodedata(uint32_t d):data(d),obj(NULL),closure(NULL){}
 };
 
 struct method_body_info
 {
 	method_body_info():hit_count(0),codeStatus(ORIGINAL){}
-	~method_body_info() { delete[] codecache; }
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -291,7 +299,7 @@ struct method_body_info
 	//The code status
 	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED, PRELOADED };
 	CODE_STATUS codeStatus;
-	method_body_info_cache* codecache;
+	std::vector<preloadedcodedata> preloadedcode;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

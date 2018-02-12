@@ -101,14 +101,12 @@ private:
 	const char* const code;
 	const char* lastcodepos;
 	const char* codepos;
-	lightspark::method_body_info_cache* cachepos;
 public:
-	lightspark::method_body_info_cache* codecache;
 	// Create a stream from a buffer b.
 	//
 	// The buffer is not copied, so b must continue to exists for
 	// the life-time of this memorystream instance.
-	memorystream(const char* const b, unsigned int l,lightspark::method_body_info_cache* cc): code(b), lastcodepos(code+l), codepos(code),cachepos(cc),codecache(cc) {}
+	memorystream(const char* const b, unsigned int l): code(b), lastcodepos(code+l), codepos(code) {}
 	static void handleError(const char *msg);
 	inline unsigned int size() const
 	{
@@ -131,23 +129,8 @@ public:
 			codepos = lastcodepos;
 		else
 			codepos = code+offset;
-		cachepos = codecache+ (codepos-code);
 	}
 
-	inline lightspark::method_body_info_cache* tellcachepos() const
-	{
-		return cachepos;
-	}
-	inline void seekcachepos(lightspark::method_body_info_cache* newcachepos)
-	{
-		cachepos = newcachepos;
-		codepos = code +  (cachepos-codecache);
-	}
-	inline void setNextCachePos(lightspark::method_body_info_cache* oldcachepos)
-	{
-		oldcachepos->nextcodepos = codepos;
-		oldcachepos->nextcachepos = cachepos;
-	}
 	inline void read(char *out, unsigned int nbytes)
 	{
 		if (codepos+nbytes >= lastcodepos)
@@ -160,15 +143,24 @@ public:
 			memcpy(out, codepos, nbytes);
 			codepos += nbytes;
 		}
-		cachepos = codecache+ (codepos-code);
 	}
 	
 	inline uint8_t readbyte()
 	{
 		if (codepos < lastcodepos)
 		{
-			++cachepos;
 			return *codepos++;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	inline uint8_t peekbyte()
+	{
+		if (codepos < lastcodepos)
+		{
+			return *(codepos);
 		}
 		else
 		{
@@ -177,14 +169,6 @@ public:
 	}
 	inline uint32_t readu30()
 	{
-		lightspark::method_body_info_cache* currpos = cachepos;
-		assert(currpos->type == lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER);
-		codepos = cachepos->nextcodepos;
-		cachepos = cachepos->nextcachepos;
-		return currpos->uvalue;
-	}
-	inline uint32_t fillu30()
-	{
 		uint32_t val = readu32();
 		if(val&0xc0000000)
 			memorystream::handleError("Invalid u30");
@@ -192,8 +176,6 @@ public:
 	}
 	inline uint32_t readu32()
 	{
-		lightspark::method_body_info_cache* currpos = cachepos;
-		
 		int i=0;
 		uint32_t val=0;
 		uint8_t t;
@@ -216,31 +198,13 @@ public:
 			}
 		}
 		while(t&0x80);
-		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_UINTEGER;
-		currpos->uvalue = val;
-		currpos->nextcodepos = codepos;
-		currpos->nextcachepos= cachepos;
-		
 		return val;
 	}
 	inline int32_t reads24()
 	{
-		lightspark::method_body_info_cache* currpos = cachepos;
-		assert(currpos->type == lightspark::method_body_info_cache::CACHE_TYPE_INTEGER);
-		codepos = cachepos->nextcodepos;
-		cachepos = cachepos->nextcachepos;
-		return currpos->ivalue;
-	}
-	inline int32_t fills24()
-	{
-		lightspark::method_body_info_cache* currpos = cachepos;
 		uint32_t val=0;
 		read((char*)&val,3);
 		int32_t ret = LittleEndianToSignedHost24(val);
-		currpos->type = lightspark::method_body_info_cache::CACHE_TYPE_INTEGER;
-		currpos->ivalue = ret;
-		currpos->nextcodepos = codepos;
-		currpos->nextcachepos= cachepos;
 		return ret;
 	}
 };

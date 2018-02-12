@@ -334,7 +334,7 @@ private:
 	static void newClass(call_context* th, int n);
 	static void newArray(call_context* th, int n); 
 	static ASObject* findPropStrict(call_context* th, multiname* name);
-	static asAtom findPropStrictCache(call_context* th, memorystream& code);
+	static asAtom findPropStrictCache(call_context* th, preloadedcodedata **codep);
 	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);
@@ -480,186 +480,186 @@ private:
 	// The base to assign to the next loaded context
 	ATOMIC_INT32(nextNamespaceBase);
 
-	typedef void (*abc_function)(call_context* ,memorystream&);
+	typedef void (*abc_function)(call_context* ,preloadedcodedata** codep);
 	
-	static void abc_bkpt(call_context* context,memorystream& code);// 0x01
-	static void abc_nop(call_context* context,memorystream& code);
-	static void abc_throw(call_context* context,memorystream& code);
-	static void abc_getSuper(call_context* context,memorystream& code);
-	static void abc_setSuper(call_context* context,memorystream& code);
-	static void abc_dxns(call_context* context,memorystream& code);
-	static void abc_dxnslate(call_context* context,memorystream& code);
-	static void abc_kill(call_context* context,memorystream& code);
-	static void abc_label(call_context* context,memorystream& code);
-	static void abc_ifnlt(call_context* context,memorystream& code);
-	static void abc_ifnle(call_context* context,memorystream& code);
-	static void abc_ifngt(call_context* context,memorystream& code);
-	static void abc_ifnge(call_context* context,memorystream& code);
+	static void abc_bkpt(call_context* context,preloadedcodedata** codep);// 0x01
+	static void abc_nop(call_context* context,preloadedcodedata** codep);
+	static void abc_throw(call_context* context,preloadedcodedata** codep);
+	static void abc_getSuper(call_context* context,preloadedcodedata** codep);
+	static void abc_setSuper(call_context* context,preloadedcodedata** codep);
+	static void abc_dxns(call_context* context,preloadedcodedata** codep);
+	static void abc_dxnslate(call_context* context,preloadedcodedata** codep);
+	static void abc_kill(call_context* context,preloadedcodedata** codep);
+	static void abc_label(call_context* context,preloadedcodedata** codep);
+	static void abc_ifnlt(call_context* context,preloadedcodedata** codep);
+	static void abc_ifnle(call_context* context,preloadedcodedata** codep);
+	static void abc_ifngt(call_context* context,preloadedcodedata** codep);
+	static void abc_ifnge(call_context* context,preloadedcodedata** codep);
 	
-	static void abc_jump(call_context* context,memorystream& code);// 0x10
-	static void abc_iftrue(call_context* context,memorystream& code);
-	static void abc_iffalse(call_context* context,memorystream& code);
-	static void abc_ifeq(call_context* context,memorystream& code);
-	static void abc_ifne(call_context* context,memorystream& code);
-	static void abc_iflt(call_context* context,memorystream& code);
-	static void abc_ifle(call_context* context,memorystream& code);
-	static void abc_ifgt(call_context* context,memorystream& code);
-	static void abc_ifge(call_context* context,memorystream& code);
-	static void abc_ifstricteq(call_context* context,memorystream& code);
-	static void abc_ifstrictne(call_context* context,memorystream& code);
-	static void abc_lookupswitch(call_context* context,memorystream& code);
-	static void abc_pushwith(call_context* context,memorystream& code);
-	static void abc_popscope(call_context* context,memorystream& code);
-	static void abc_nextname(call_context* context,memorystream& code);
-	static void abc_hasnext(call_context* context,memorystream& code);
+	static void abc_jump(call_context* context,preloadedcodedata** codep);// 0x10
+	static void abc_iftrue(call_context* context,preloadedcodedata** codep);
+	static void abc_iffalse(call_context* context,preloadedcodedata** codep);
+	static void abc_ifeq(call_context* context,preloadedcodedata** codep);
+	static void abc_ifne(call_context* context,preloadedcodedata** codep);
+	static void abc_iflt(call_context* context,preloadedcodedata** codep);
+	static void abc_ifle(call_context* context,preloadedcodedata** codep);
+	static void abc_ifgt(call_context* context,preloadedcodedata** codep);
+	static void abc_ifge(call_context* context,preloadedcodedata** codep);
+	static void abc_ifstricteq(call_context* context,preloadedcodedata** codep);
+	static void abc_ifstrictne(call_context* context,preloadedcodedata** codep);
+	static void abc_lookupswitch(call_context* context,preloadedcodedata** codep);
+	static void abc_pushwith(call_context* context,preloadedcodedata** codep);
+	static void abc_popscope(call_context* context,preloadedcodedata** codep);
+	static void abc_nextname(call_context* context,preloadedcodedata** codep);
+	static void abc_hasnext(call_context* context,preloadedcodedata** codep);
 
-	static void abc_pushnull(call_context* context,memorystream& code);// 0x20
-	static void abc_pushundefined(call_context* context,memorystream& code);
-	static void abc_nextvalue(call_context* context,memorystream& code);
-	static void abc_pushbyte(call_context* context, memorystream &code);
-	static void abc_pushshort(call_context* context,memorystream& code);
-	static void abc_pushtrue(call_context* context,memorystream& code);
-	static void abc_pushfalse(call_context* context,memorystream& code);
-	static void abc_pushnan(call_context* context,memorystream& code);
-	static void abc_pop(call_context* context,memorystream& code);
-	static void abc_dup(call_context* context,memorystream& code);
-	static void abc_swap(call_context* context,memorystream& code);
-	static void abc_pushstring(call_context* context,memorystream& code);
-	static void abc_pushint(call_context* context,memorystream& code);
-	static void abc_pushuint(call_context* context,memorystream& code);
-	static void abc_pushdouble(call_context* context, memorystream &code);
+	static void abc_pushnull(call_context* context,preloadedcodedata** codep);// 0x20
+	static void abc_pushundefined(call_context* context,preloadedcodedata** codep);
+	static void abc_nextvalue(call_context* context,preloadedcodedata** codep);
+	static void abc_pushbyte(call_context* context,preloadedcodedata** codep);
+	static void abc_pushshort(call_context* context,preloadedcodedata** codep);
+	static void abc_pushtrue(call_context* context,preloadedcodedata** codep);
+	static void abc_pushfalse(call_context* context,preloadedcodedata** codep);
+	static void abc_pushnan(call_context* context,preloadedcodedata** codep);
+	static void abc_pop(call_context* context,preloadedcodedata** codep);
+	static void abc_dup(call_context* context,preloadedcodedata** codep);
+	static void abc_swap(call_context* context,preloadedcodedata** codep);
+	static void abc_pushstring(call_context* context,preloadedcodedata** codep);
+	static void abc_pushint(call_context* context,preloadedcodedata** codep);
+	static void abc_pushuint(call_context* context,preloadedcodedata** codep);
+	static void abc_pushdouble(call_context* context,preloadedcodedata** codep);
 
-	static void abc_pushScope(call_context* context, memorystream &code);// 0x30
-	static void abc_pushnamespace(call_context* context,memorystream& code);
-	static void abc_hasnext2(call_context* context,memorystream& code);
-	static void abc_li8(call_context* context,memorystream& code);
-	static void abc_li16(call_context* context,memorystream& code);
-	static void abc_li32(call_context* context,memorystream& code);
-	static void abc_lf32(call_context* context,memorystream& code);
-	static void abc_lf64(call_context* context,memorystream& code);
-	static void abc_si8(call_context* context,memorystream& code);
-	static void abc_si16(call_context* context,memorystream& code);
-	static void abc_si32(call_context* context,memorystream& code);
-	static void abc_sf32(call_context* context,memorystream& code);
-	static void abc_sf64(call_context* context,memorystream& code);
+	static void abc_pushScope(call_context* context,preloadedcodedata** codep);// 0x30
+	static void abc_pushnamespace(call_context* context,preloadedcodedata** codep);
+	static void abc_hasnext2(call_context* context,preloadedcodedata** codep);
+	static void abc_li8(call_context* context,preloadedcodedata** codep);
+	static void abc_li16(call_context* context,preloadedcodedata** codep);
+	static void abc_li32(call_context* context,preloadedcodedata** codep);
+	static void abc_lf32(call_context* context,preloadedcodedata** codep);
+	static void abc_lf64(call_context* context,preloadedcodedata** codep);
+	static void abc_si8(call_context* context,preloadedcodedata** codep);
+	static void abc_si16(call_context* context,preloadedcodedata** codep);
+	static void abc_si32(call_context* context,preloadedcodedata** codep);
+	static void abc_sf32(call_context* context,preloadedcodedata** codep);
+	static void abc_sf64(call_context* context,preloadedcodedata** codep);
 
-	static void abc_newfunction(call_context* context,memorystream& code);// 0x40
-	static void abc_call(call_context* context,memorystream& code);
-	static void abc_construct(call_context* context,memorystream& code);
-	static void abc_callMethod(call_context* context, memorystream &code);
-	static void abc_callstatic(call_context* context,memorystream& code);
-	static void abc_callsuper(call_context* context,memorystream& code);
-	static void abc_callproperty(call_context* context,memorystream& code);
-	static void abc_returnvoid(call_context* context,memorystream& code);
-	static void abc_returnvalue(call_context* context,memorystream& code);
-	static void abc_constructsuper(call_context* context,memorystream& code);
-	static void abc_constructprop(call_context* context,memorystream& code);
-	static void abc_callproplex(call_context* context,memorystream& code);
-	static void abc_callsupervoid(call_context* context,memorystream& code);
-	static void abc_callpropvoid(call_context* context,memorystream& code);
+	static void abc_newfunction(call_context* context,preloadedcodedata** codep);// 0x40
+	static void abc_call(call_context* context,preloadedcodedata** codep);
+	static void abc_construct(call_context* context,preloadedcodedata** codep);
+	static void abc_callMethod(call_context* context,preloadedcodedata** codep);
+	static void abc_callstatic(call_context* context,preloadedcodedata** codep);
+	static void abc_callsuper(call_context* context,preloadedcodedata** codep);
+	static void abc_callproperty(call_context* context,preloadedcodedata** codep);
+	static void abc_returnvoid(call_context* context,preloadedcodedata** codep);
+	static void abc_returnvalue(call_context* context,preloadedcodedata** codep);
+	static void abc_constructsuper(call_context* context,preloadedcodedata** codep);
+	static void abc_constructprop(call_context* context,preloadedcodedata** codep);
+	static void abc_callproplex(call_context* context,preloadedcodedata** codep);
+	static void abc_callsupervoid(call_context* context,preloadedcodedata** codep);
+	static void abc_callpropvoid(call_context* context,preloadedcodedata** codep);
 	
-	static void abc_sxi1(call_context* context,memorystream& code); // 0x50
-	static void abc_sxi8(call_context* context,memorystream& code);
-	static void abc_sxi16(call_context* context,memorystream& code);
-	static void abc_constructgenerictype(call_context* context,memorystream& code);
-	static void abc_newobject(call_context* context,memorystream& code);
-	static void abc_newarray(call_context* context,memorystream& code);
-	static void abc_newactivation(call_context* context,memorystream& code);
-	static void abc_newclass(call_context* context,memorystream& code);
-	static void abc_getdescendants(call_context* context,memorystream& code);
-	static void abc_newcatch(call_context* context,memorystream& code);
-	static void abc_findpropstrict(call_context* context,memorystream& code);
-	static void abc_findproperty(call_context* context,memorystream& code);
-	static void abc_finddef(call_context* context,memorystream& code);
+	static void abc_sxi1(call_context* context,preloadedcodedata** codep); // 0x50
+	static void abc_sxi8(call_context* context,preloadedcodedata** codep);
+	static void abc_sxi16(call_context* context,preloadedcodedata** codep);
+	static void abc_constructgenerictype(call_context* context,preloadedcodedata** codep);
+	static void abc_newobject(call_context* context,preloadedcodedata** codep);
+	static void abc_newarray(call_context* context,preloadedcodedata** codep);
+	static void abc_newactivation(call_context* context,preloadedcodedata** codep);
+	static void abc_newclass(call_context* context,preloadedcodedata** codep);
+	static void abc_getdescendants(call_context* context,preloadedcodedata** codep);
+	static void abc_newcatch(call_context* context,preloadedcodedata** codep);
+	static void abc_findpropstrict(call_context* context,preloadedcodedata** codep);
+	static void abc_findproperty(call_context* context,preloadedcodedata** codep);
+	static void abc_finddef(call_context* context,preloadedcodedata** codep);
 	
-	static void abc_getlex(call_context* context,memorystream& code);// 0x60
-	static void abc_setproperty(call_context* context,memorystream& code);
-	static void abc_getlocal(call_context* context,memorystream& code);
-	static void abc_setlocal(call_context* context,memorystream& code);
-	static void abc_getglobalscope(call_context* context,memorystream& code);
-	static void abc_getscopeobject(call_context* context,memorystream& code);
-	static void abc_getProperty(call_context* context, memorystream &code);
-	static void abc_initproperty(call_context* context,memorystream& code);
-	static void abc_deleteproperty(call_context* context,memorystream& code);
-	static void abc_getslot(call_context* context,memorystream& code);
-	static void abc_setslot(call_context* context,memorystream& code);
-	static void abc_getglobalSlot(call_context* context,memorystream& code);
-	static void abc_setglobalSlot(call_context* context,memorystream& code);
+	static void abc_getlex(call_context* context,preloadedcodedata** codep);// 0x60
+	static void abc_setproperty(call_context* context,preloadedcodedata** codep);
+	static void abc_getlocal(call_context* context,preloadedcodedata** codep);
+	static void abc_setlocal(call_context* context,preloadedcodedata** codep);
+	static void abc_getglobalscope(call_context* context,preloadedcodedata** codep);
+	static void abc_getscopeobject(call_context* context,preloadedcodedata** codep);
+	static void abc_getProperty(call_context* context,preloadedcodedata** codep);
+	static void abc_initproperty(call_context* context,preloadedcodedata** codep);
+	static void abc_deleteproperty(call_context* context,preloadedcodedata** codep);
+	static void abc_getslot(call_context* context,preloadedcodedata** codep);
+	static void abc_setslot(call_context* context,preloadedcodedata** codep);
+	static void abc_getglobalSlot(call_context* context,preloadedcodedata** codep);
+	static void abc_setglobalSlot(call_context* context,preloadedcodedata** codep);
 
-	static void abc_convert_s(call_context* context,memorystream& code);// 0x70
-	static void abc_esc_xelem(call_context* context,memorystream& code);
-	static void abc_esc_xattr(call_context* context,memorystream& code);
-	static void abc_convert_i(call_context* context,memorystream& code);
-	static void abc_convert_u(call_context* context,memorystream& code);
-	static void abc_convert_d(call_context* context, memorystream &code);
-	static void abc_convert_b(call_context* context, memorystream &code);
-	static void abc_convert_o(call_context* context,memorystream& code);
-	static void abc_checkfilter(call_context* context,memorystream& code);
+	static void abc_convert_s(call_context* context,preloadedcodedata** codep);// 0x70
+	static void abc_esc_xelem(call_context* context,preloadedcodedata** codep);
+	static void abc_esc_xattr(call_context* context,preloadedcodedata** codep);
+	static void abc_convert_i(call_context* context,preloadedcodedata** codep);
+	static void abc_convert_u(call_context* context,preloadedcodedata** codep);
+	static void abc_convert_d(call_context* context,preloadedcodedata** codep);
+	static void abc_convert_b(call_context* context,preloadedcodedata** codep);
+	static void abc_convert_o(call_context* context,preloadedcodedata** codep);
+	static void abc_checkfilter(call_context* context,preloadedcodedata** codep);
 
-	static void abc_coerce(call_context* context,memorystream& code); // 0x80
-	static void abc_coerce_a(call_context* context,memorystream& code);
-	static void abc_coerce_s(call_context* context,memorystream& code);
-	static void abc_astype(call_context* context,memorystream& code);
-	static void abc_astypelate(call_context* context,memorystream& code);
+	static void abc_coerce(call_context* context,preloadedcodedata** codep); // 0x80
+	static void abc_coerce_a(call_context* context,preloadedcodedata** codep);
+	static void abc_coerce_s(call_context* context,preloadedcodedata** codep);
+	static void abc_astype(call_context* context,preloadedcodedata** codep);
+	static void abc_astypelate(call_context* context,preloadedcodedata** codep);
 
-	static void abc_negate(call_context* context,memorystream& code); // 0x90
-	static void abc_increment(call_context* context,memorystream& code);
-	static void abc_inclocal(call_context* context,memorystream& code);
-	static void abc_decrement(call_context* context,memorystream& code);
-	static void abc_declocal(call_context* context,memorystream& code);
-	static void abc_typeof(call_context* context,memorystream& code);
-	static void abc_not(call_context* context,memorystream& code);
-	static void abc_bitnot(call_context* context,memorystream& code);
+	static void abc_negate(call_context* context,preloadedcodedata** codep); // 0x90
+	static void abc_increment(call_context* context,preloadedcodedata** codep);
+	static void abc_inclocal(call_context* context,preloadedcodedata** codep);
+	static void abc_decrement(call_context* context,preloadedcodedata** codep);
+	static void abc_declocal(call_context* context,preloadedcodedata** codep);
+	static void abc_typeof(call_context* context,preloadedcodedata** codep);
+	static void abc_not(call_context* context,preloadedcodedata** codep);
+	static void abc_bitnot(call_context* context,preloadedcodedata** codep);
 
-	static void abc_add(call_context* context,memorystream& code); //0xa0
-	static void abc_subtract(call_context* context,memorystream& code);
-	static void abc_multiply(call_context* context, memorystream &code);
-	static void abc_divide(call_context* context,memorystream& code);
-	static void abc_modulo(call_context* context,memorystream& code);
-	static void abc_lshift(call_context* context,memorystream& code);
-	static void abc_rshift(call_context* context,memorystream& code);
-	static void abc_urshift(call_context* context,memorystream& code);
-	static void abc_bitand(call_context* context,memorystream& code);
-	static void abc_bitor(call_context* context,memorystream& code);
-	static void abc_bitxor(call_context* context,memorystream& code);
-	static void abc_equals(call_context* context,memorystream& code);
-	static void abc_strictequals(call_context* context,memorystream& code);
-	static void abc_lessthan(call_context* context,memorystream& code);
-	static void abc_lessequals(call_context* context,memorystream& code);
-	static void abc_greaterthan(call_context* context,memorystream& code);
+	static void abc_add(call_context* context,preloadedcodedata** codep); //0xa0
+	static void abc_subtract(call_context* context,preloadedcodedata** codep);
+	static void abc_multiply(call_context* context,preloadedcodedata** codep);
+	static void abc_divide(call_context* context,preloadedcodedata** codep);
+	static void abc_modulo(call_context* context,preloadedcodedata** codep);
+	static void abc_lshift(call_context* context,preloadedcodedata** codep);
+	static void abc_rshift(call_context* context,preloadedcodedata** codep);
+	static void abc_urshift(call_context* context,preloadedcodedata** codep);
+	static void abc_bitand(call_context* context,preloadedcodedata** codep);
+	static void abc_bitor(call_context* context,preloadedcodedata** codep);
+	static void abc_bitxor(call_context* context,preloadedcodedata** codep);
+	static void abc_equals(call_context* context,preloadedcodedata** codep);
+	static void abc_strictequals(call_context* context,preloadedcodedata** codep);
+	static void abc_lessthan(call_context* context,preloadedcodedata** codep);
+	static void abc_lessequals(call_context* context,preloadedcodedata** codep);
+	static void abc_greaterthan(call_context* context,preloadedcodedata** codep);
 	
-	static void abc_greaterequals(call_context* context,memorystream& code);// 0xb0
-	static void abc_instanceof(call_context* context,memorystream& code);
-	static void abc_istype(call_context* context,memorystream& code);
-	static void abc_istypelate(call_context* context,memorystream& code);
-	static void abc_in(call_context* context,memorystream& code);
+	static void abc_greaterequals(call_context* context,preloadedcodedata** codep);// 0xb0
+	static void abc_instanceof(call_context* context,preloadedcodedata** codep);
+	static void abc_istype(call_context* context,preloadedcodedata** codep);
+	static void abc_istypelate(call_context* context,preloadedcodedata** codep);
+	static void abc_in(call_context* context,preloadedcodedata** codep);
 	
-	static void abc_increment_i(call_context* context,memorystream& code); // 0xc0
-	static void abc_decrement_i(call_context* context,memorystream& code);
-	static void abc_inclocal_i(call_context* context,memorystream& code);
-	static void abc_declocal_i(call_context* context,memorystream& code);
-	static void abc_negate_i(call_context* context,memorystream& code);
-	static void abc_add_i(call_context* context,memorystream& code);
-	static void abc_subtract_i(call_context* context,memorystream& code);
-	static void abc_multiply_i(call_context* context,memorystream& code);
+	static void abc_increment_i(call_context* context,preloadedcodedata** codep); // 0xc0
+	static void abc_decrement_i(call_context* context,preloadedcodedata** codep);
+	static void abc_inclocal_i(call_context* context,preloadedcodedata** codep);
+	static void abc_declocal_i(call_context* context,preloadedcodedata** codep);
+	static void abc_negate_i(call_context* context,preloadedcodedata** codep);
+	static void abc_add_i(call_context* context,preloadedcodedata** codep);
+	static void abc_subtract_i(call_context* context,preloadedcodedata** codep);
+	static void abc_multiply_i(call_context* context,preloadedcodedata** codep);
 
-	static void abc_getlocal_0(call_context* context,memorystream& code); // 0xd0
-	static void abc_getlocal_1(call_context* context,memorystream& code);
-	static void abc_getlocal_2(call_context* context,memorystream& code);
-	static void abc_getlocal_3(call_context* context,memorystream& code);
-	static void abc_setlocal_0(call_context* context,memorystream& code);
-	static void abc_setlocal_1(call_context* context,memorystream& code);
-	static void abc_setlocal_2(call_context* context,memorystream& code);
-	static void abc_setlocal_3(call_context* context,memorystream& code);
+	static void abc_getlocal_0(call_context* context,preloadedcodedata** codep); // 0xd0
+	static void abc_getlocal_1(call_context* context,preloadedcodedata** codep);
+	static void abc_getlocal_2(call_context* context,preloadedcodedata** codep);
+	static void abc_getlocal_3(call_context* context,preloadedcodedata** codep);
+	static void abc_setlocal_0(call_context* context,preloadedcodedata** codep);
+	static void abc_setlocal_1(call_context* context,preloadedcodedata** codep);
+	static void abc_setlocal_2(call_context* context,preloadedcodedata** codep);
+	static void abc_setlocal_3(call_context* context,preloadedcodedata** codep);
 
-	static void abc_debug(call_context* context,memorystream& code); // 0xef
+	static void abc_debug(call_context* context,preloadedcodedata** codep); // 0xef
 
-	static void abc_debugline(call_context* context,memorystream& code); //0xf0
-	static void abc_debugfile(call_context* context,memorystream& code);
-	static void abc_bkptline(call_context* context,memorystream& code);
-	static void abc_timestamp(call_context* context,memorystream& code);
+	static void abc_debugline(call_context* context,preloadedcodedata** codep); //0xf0
+	static void abc_debugfile(call_context* context,preloadedcodedata** codep);
+	static void abc_bkptline(call_context* context,preloadedcodedata** codep);
+	static void abc_timestamp(call_context* context,preloadedcodedata** codep);
 
-	static void abc_invalidinstruction(call_context* context,memorystream& code);
+	static void abc_invalidinstruction(call_context* context,preloadedcodedata** codep);
 
 	static abc_function abcfunctions[];
 public:

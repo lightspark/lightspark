@@ -41,10 +41,8 @@ void ABCVm::executeFunction(const SyntheticFunction* function, call_context* con
 {
 	method_info* mi=function->mi;
 
-	const int code_len=mi->body->code.size();
-	memorystream code(mi->body->code.data(), code_len,mi->body->codecache);
-	//This may be non-zero and point to the position of an exception handler
-	code.seekg(context->exec_pos);
+	preloadedcodedata* codestart = mi->body->preloadedcode.data();
+	preloadedcodedata* codep = codestart+context->exec_pos;
 
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
@@ -63,11 +61,14 @@ void ABCVm::executeFunction(const SyntheticFunction* function, call_context* con
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		uint8_t opcode = code.readbyte();
+		uint8_t opcode = (codep->data)&0xff;
 //LOG(LOG_INFO,"opcode:"<<hex<<(int)opcode);
 		//Save ip for exception handling in SyntheticFunction::callImpl
-		context->exec_pos = code.tellg();
-		abcfunctions[opcode](context,code);
+		context->exec_pos = codep-codestart;
+		// codep points to the current instruction, every abc_function has to make sure 
+		// it points to the next valid instruction after execution
+		abcfunctions[opcode](context,&codep);
+		assert(codep != codestart + context->exec_pos);
 		
 		if (context->returning)
 		{
@@ -359,62 +360,69 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 
 };
 
-
-void ABCVm::abc_bkpt(call_context* context,memorystream& code)
+void ABCVm::abc_bkpt(call_context* context,preloadedcodedata** codep)
 {
 	//bkpt
 	LOG_CALL( _("bkpt") );
+	++(*codep);
 }
-void ABCVm::abc_nop(call_context* context,memorystream& code)
+void ABCVm::abc_nop(call_context* context,preloadedcodedata** codep)
 {
 	//nop
+	++(*codep);
 }
-void ABCVm::abc_throw(call_context* context,memorystream& code)
+void ABCVm::abc_throw(call_context* context,preloadedcodedata** codep)
 {
 	//throw
 	_throw(context);
 }
-void ABCVm::abc_getSuper(call_context* context,memorystream& code)
+void ABCVm::abc_getSuper(call_context* context,preloadedcodedata** codep)
 {
 	//getsuper
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	getSuper(context,t);
+	++(*codep);
 }
-void ABCVm::abc_setSuper(call_context* context,memorystream& code)
+void ABCVm::abc_setSuper(call_context* context,preloadedcodedata** codep)
 {
 	//setsuper
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	setSuper(context,t);
+	++(*codep);
 }
-void ABCVm::abc_dxns(call_context* context,memorystream& code)
+void ABCVm::abc_dxns(call_context* context,preloadedcodedata** codep)
 {
 	//dxns
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	dxns(context,t);
+	++(*codep);
 }
-void ABCVm::abc_dxnslate(call_context* context,memorystream& code)
+void ABCVm::abc_dxnslate(call_context* context,preloadedcodedata** codep)
 {
 	//dxnslate
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->context->root->getSystemState());
 	dxnslate(context, v);
+	++(*codep);
 }
-void ABCVm::abc_kill(call_context* context,memorystream& code)
+void ABCVm::abc_kill(call_context* context,preloadedcodedata** codep)
 {
 	//kill
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	LOG_CALL( "kill " << t);
 	ASATOM_DECREF(context->locals[t]);
 	context->locals[t]=asAtom::undefinedAtom;
+	++(*codep);
 }
-void ABCVm::abc_label(call_context* context,memorystream& code)
+void ABCVm::abc_label(call_context* context,preloadedcodedata** codep)
 {
 	//label
 	LOG_CALL("label");
+	++(*codep);
 }
-void ABCVm::abc_ifnlt(call_context* context,memorystream& code)
+void ABCVm::abc_ifnlt(call_context* context,preloadedcodedata** codep)
 {
 	//ifnlt
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(v2.isLess(context->context->root->getSystemState(),v1) == TTRUE);
@@ -423,20 +431,14 @@ void ABCVm::abc_ifnlt(call_context* context,memorystream& code)
 	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifnle(call_context* context,memorystream& code)
+void ABCVm::abc_ifnle(call_context* context,preloadedcodedata** codep)
 {
 	//ifnle
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(v1.isLess(context->context->root->getSystemState(),v2) == TFALSE);
@@ -445,20 +447,14 @@ void ABCVm::abc_ifnle(call_context* context,memorystream& code)
 	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifngt(call_context* context,memorystream& code)
+void ABCVm::abc_ifngt(call_context* context,preloadedcodedata** codep)
 {
 	//ifngt
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(v1.isLess(context->context->root->getSystemState(),v2) == TTRUE);
@@ -467,20 +463,14 @@ void ABCVm::abc_ifngt(call_context* context,memorystream& code)
 	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifnge(call_context* context,memorystream& code)
+void ABCVm::abc_ifnge(call_context* context,preloadedcodedata** codep)
 {
 	//ifnge
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(v2.isLess(context->context->root->getSystemState(),v1) == TFALSE);
@@ -489,74 +479,50 @@ void ABCVm::abc_ifnge(call_context* context,memorystream& code)
 	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_jump(call_context* context,memorystream& code)
+void ABCVm::abc_jump(call_context* context,preloadedcodedata** codep)
 {
 	//jump
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	LOG_CALL("jump:"<<t);
-	int here=code.tellg();
-	uint32_t dest=here+t;
-
-	//Now 'jump' to the destination, validate on the length
-	if(dest >= code.size())
-		throw ParseException("Jump out of bounds in interpreter");
-	code.seekg(dest);
+	*codep += t+1; 
 }
-void ABCVm::abc_iftrue(call_context* context,memorystream& code)
+void ABCVm::abc_iftrue(call_context* context,preloadedcodedata** codep)
 {
 	//iftrue
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=v1.Boolean_concrete();
 	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF(v1);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_iffalse(call_context* context,memorystream& code)
+void ABCVm::abc_iffalse(call_context* context,preloadedcodedata** codep)
 {
 	//iffalse
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=!v1.Boolean_concrete();
 	LOG_CALL(_("ifFalse (") << ((cond)?_("taken"):_("not taken")) << ')');
 	ASATOM_DECREF(v1);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifeq(call_context* context,memorystream& code)
+void ABCVm::abc_ifeq(call_context* context,preloadedcodedata** codep)
 {
 	//ifeq
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -565,20 +531,14 @@ void ABCVm::abc_ifeq(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 	ASATOM_DECREF(v1);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifne(call_context* context,memorystream& code)
+void ABCVm::abc_ifne(call_context* context,preloadedcodedata** codep)
 {
 	//ifne
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -587,21 +547,14 @@ void ABCVm::abc_ifne(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 	ASATOM_DECREF(v1);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_iflt(call_context* context,memorystream& code)
+void ABCVm::abc_iflt(call_context* context,preloadedcodedata** codep)
 {
 	//iflt
-	int32_t t = code.reads24();
-
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -611,21 +564,14 @@ void ABCVm::abc_iflt(call_context* context,memorystream& code)
 	LOG_CALL(_("ifLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifle(call_context* context,memorystream& code)
+void ABCVm::abc_ifle(call_context* context,preloadedcodedata** codep)
 {
 	//ifle
-	int32_t t = code.reads24();
-
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -635,20 +581,14 @@ void ABCVm::abc_ifle(call_context* context,memorystream& code)
 	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifgt(call_context* context,memorystream& code)
+void ABCVm::abc_ifgt(call_context* context,preloadedcodedata** codep)
 {
 	//ifgt
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -658,20 +598,14 @@ void ABCVm::abc_ifgt(call_context* context,memorystream& code)
 	LOG_CALL(_("ifGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifge(call_context* context,memorystream& code)
+void ABCVm::abc_ifge(call_context* context,preloadedcodedata** codep)
 {
 	//ifge
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -681,20 +615,14 @@ void ABCVm::abc_ifge(call_context* context,memorystream& code)
 	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifstricteq(call_context* context,memorystream& code)
+void ABCVm::abc_ifstricteq(call_context* context,preloadedcodedata** codep)
 {
 	//ifstricteq
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -704,20 +632,14 @@ void ABCVm::abc_ifstricteq(call_context* context,memorystream& code)
 	ASATOM_DECREF(v1);
 	ASATOM_DECREF(v2);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_ifstrictne(call_context* context,memorystream& code)
+void ABCVm::abc_ifstrictne(call_context* context,preloadedcodedata** codep)
 {
 	//ifstrictne
-	int32_t t = code.reads24();
+	int32_t t = (**codep).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -727,55 +649,49 @@ void ABCVm::abc_ifstrictne(call_context* context,memorystream& code)
 	ASATOM_DECREF(v1);
 	ASATOM_DECREF(v2);
 	if(cond)
-	{
-		int here=code.tellg();
-		uint32_t dest=here+t;
-
-		//Now 'jump' to the destination, validate on the length
-		if(dest >= code.size())
-			throw ParseException("Jump out of bounds in interpreter");
-		code.seekg(dest);
-	}
+		*codep += t+1; 
+	else
+		++(*codep);
 }
-void ABCVm::abc_lookupswitch(call_context* context,memorystream& code)
+void ABCVm::abc_lookupswitch(call_context* context,preloadedcodedata** codep)
 {
 	//lookupswitch
-	int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
-	int32_t t = code.reads24();
-	uint32_t defaultdest=here+t;
+	preloadedcodedata* here=*codep; //Base for the jumps is the instruction itself for the switch
+	int32_t t = (++(*codep))->idata;
+	preloadedcodedata* defaultdest=here+t;
 	LOG_CALL(_("Switch default dest ") << defaultdest);
-	uint32_t count = code.readu30();
-	int32_t* offsets=g_newa(int32_t, count+1);
+	uint32_t count = (++(*codep))->data;
+	preloadedcodedata* offsets=g_newa(preloadedcodedata, count+1);
 	for(unsigned int i=0;i<count+1;i++)
 	{
-		offsets[i] = code.reads24();
-		LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i]);
+		offsets[i] = *(++(*codep));
+		LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i].idata);
 	}
 
 	RUNTIME_STACK_POP_CREATE(context,index_obj);
-	assert_and_throw(index_obj.type==T_INTEGER);
+	assert_and_throw(index_obj.isNumeric());
 	unsigned int index=index_obj.toUInt();
 	ASATOM_DECREF(index_obj);
 
-	uint32_t dest=defaultdest;
+	preloadedcodedata* dest=defaultdest;
 	if(index<=count)
-		dest=here+offsets[index];
+		dest=here+offsets[index].idata;
 
-	if(dest >= code.size())
-		throw ParseException("Jump out of bounds in interpreter");
-	code.seekg(dest);
+	*codep = dest;
 }
-void ABCVm::abc_pushwith(call_context* context,memorystream& code)
+void ABCVm::abc_pushwith(call_context* context,preloadedcodedata** codep)
 {
 	//pushwith
 	pushWith(context);
+	++(*codep);
 }
-void ABCVm::abc_popscope(call_context* context,memorystream& code)
+void ABCVm::abc_popscope(call_context* context,preloadedcodedata** codep)
 {
 	//popscope
 	popScope(context);
+	++(*codep);
 }
-void ABCVm::abc_nextname(call_context* context,memorystream& code)
+void ABCVm::abc_nextname(call_context* context,preloadedcodedata** codep)
 {
 	//nextname
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -788,8 +704,9 @@ void ABCVm::abc_nextname(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v1);
 	*pval = ret;
+	++(*codep);
 }
-void ABCVm::abc_hasnext(call_context* context,memorystream& code)
+void ABCVm::abc_hasnext(call_context* context,preloadedcodedata** codep)
 {
 	//hasnext
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -802,19 +719,22 @@ void ABCVm::abc_hasnext(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v1);
 	pval->setInt(newIndex);
+	++(*codep);
 }
-void ABCVm::abc_pushnull(call_context* context,memorystream& code)
+void ABCVm::abc_pushnull(call_context* context,preloadedcodedata** codep)
 {
 	//pushnull
 	LOG_CALL("pushnull");
 	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
+	++(*codep);
 }
-void ABCVm::abc_pushundefined(call_context* context,memorystream& code)
+void ABCVm::abc_pushundefined(call_context* context,preloadedcodedata** codep)
 {
 	LOG_CALL("pushundefined");
 	RUNTIME_STACK_PUSH(context,asAtom::undefinedAtom);
+	++(*codep);
 }
-void ABCVm::abc_nextvalue(call_context* context,memorystream& code)
+void ABCVm::abc_nextvalue(call_context* context,preloadedcodedata** codep)
 {
 	//nextvalue
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -827,58 +747,66 @@ void ABCVm::abc_nextvalue(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v1);
 	*pval=ret;
+	++(*codep);
 }
-void ABCVm::abc_pushbyte(call_context* context,memorystream& code)
+void ABCVm::abc_pushbyte(call_context* context,preloadedcodedata** codep)
 {
 	//pushbyte
-	int8_t t = code.readbyte();
+	uint32_t t = (++(*codep))->data;
 	LOG_CALL("pushbyte "<<(int)t);
-	RUNTIME_STACK_PUSH(context,asAtom((int32_t)t));
+	RUNTIME_STACK_PUSH(context,asAtom(t));
+	++(*codep);
 }
-void ABCVm::abc_pushshort(call_context* context,memorystream& code)
+void ABCVm::abc_pushshort(call_context* context,preloadedcodedata** codep)
 {
 	//pushshort
 	// specs say pushshort is a u30, but it's really a u32
 	// see https://bugs.adobe.com/jira/browse/ASC-4181
-	uint32_t t = code.readu32();
+	int32_t t = (++(*codep))->idata;
 	LOG_CALL("pushshort "<<t);
 
-	RUNTIME_STACK_PUSH(context,asAtom((int32_t)t));
+	RUNTIME_STACK_PUSH(context,asAtom(t));
+	++(*codep);
 }
-void ABCVm::abc_pushtrue(call_context* context,memorystream& code)
+void ABCVm::abc_pushtrue(call_context* context,preloadedcodedata** codep)
 {
 	//pushtrue
 	LOG_CALL("pushtrue");
 	RUNTIME_STACK_PUSH(context,asAtom::trueAtom);
+	++(*codep);
 }
-void ABCVm::abc_pushfalse(call_context* context,memorystream& code)
+void ABCVm::abc_pushfalse(call_context* context,preloadedcodedata** codep)
 {
 	//pushfalse
 	LOG_CALL("pushfalse");
 	RUNTIME_STACK_PUSH(context,asAtom::falseAtom);
+	++(*codep);
 }
-void ABCVm::abc_pushnan(call_context* context,memorystream& code)
+void ABCVm::abc_pushnan(call_context* context,preloadedcodedata** codep)
 {
 	//pushnan
 	LOG_CALL("pushNaN");
 	RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
+	++(*codep);
 }
-void ABCVm::abc_pop(call_context* context,memorystream& code)
+void ABCVm::abc_pop(call_context* context,preloadedcodedata** codep)
 {
 	//pop
 	RUNTIME_STACK_POP_CREATE(context,o);
 	LOG_CALL("pop "<<o.toDebugString());
 	ASATOM_DECREF(o);
+	++(*codep);
 }
-void ABCVm::abc_dup(call_context* context,memorystream& code)
+void ABCVm::abc_dup(call_context* context,preloadedcodedata** codep)
 {
 	//dup
 	dup();
 	RUNTIME_STACK_PEEK_CREATE(context,o);
 	ASATOM_INCREF(o);
 	RUNTIME_STACK_PUSH(context,o);
+	++(*codep);
 }
-void ABCVm::abc_swap(call_context* context,memorystream& code)
+void ABCVm::abc_swap(call_context* context,preloadedcodedata** codep)
 {
 	//swap
 	swap();
@@ -887,219 +815,251 @@ void ABCVm::abc_swap(call_context* context,memorystream& code)
 
 	RUNTIME_STACK_PUSH(context,v1);
 	RUNTIME_STACK_PUSH(context,v2);
+	++(*codep);
 }
-void ABCVm::abc_pushstring(call_context* context,memorystream& code)
+void ABCVm::abc_pushstring(call_context* context,preloadedcodedata** codep)
 {
 	//pushstring
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	LOG_CALL( _("pushString ") << context->context->root->getSystemState()->getStringFromUniqueId(context->context->getString(t)) );
 	RUNTIME_STACK_PUSH(context,asAtom::fromStringID(context->context->getString(t)));
+	++(*codep);
 }
-void ABCVm::abc_pushint(call_context* context,memorystream& code)
+void ABCVm::abc_pushint(call_context* context,preloadedcodedata** codep)
 {
 	//pushint
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	s32 val=context->context->constant_pool.integer[t];
 	pushInt(context, val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
+	++(*codep);
 }
-void ABCVm::abc_pushuint(call_context* context,memorystream& code)
+void ABCVm::abc_pushuint(call_context* context,preloadedcodedata** codep)
 {
 	//pushuint
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	u32 val=context->context->constant_pool.uinteger[t];
 	pushUInt(context, val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
+	++(*codep);
 }
-void ABCVm::abc_pushdouble(call_context* context,memorystream& code)
+void ABCVm::abc_pushdouble(call_context* context,preloadedcodedata** codep)
 {
 	//pushdouble
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	d64 val=context->context->constant_pool.doubles[t];
 	pushDouble(context, val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
+	++(*codep);
 }
-void ABCVm::abc_pushScope(call_context* context,memorystream& code)
+void ABCVm::abc_pushScope(call_context* context,preloadedcodedata** codep)
 {
 	//pushscope
 	pushScope(context);
+	++(*codep);
 }
-void ABCVm::abc_pushnamespace(call_context* context,memorystream& code)
+void ABCVm::abc_pushnamespace(call_context* context,preloadedcodedata** codep)
 {
 	//pushnamespace
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushNamespace(context, t) ));
+	++(*codep);
 }
-void ABCVm::abc_hasnext2(call_context* context,memorystream& code)
+void ABCVm::abc_hasnext2(call_context* context,preloadedcodedata** codep)
 {
 	//hasnext2
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 
 	bool ret=hasNext2(context,t,t2);
 	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(*codep);
 }
 //Alchemy opcodes
-void ABCVm::abc_li8(call_context* context,memorystream& code)
+void ABCVm::abc_li8(call_context* context,preloadedcodedata** codep)
 {
 	//li8
 	LOG_CALL( "li8");
 	loadIntN<uint8_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_li16(call_context* context,memorystream& code)
+void ABCVm::abc_li16(call_context* context,preloadedcodedata** codep)
 {
 	//li16
 	LOG_CALL( "li16");
 	loadIntN<uint16_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_li32(call_context* context,memorystream& code)
+void ABCVm::abc_li32(call_context* context,preloadedcodedata** codep)
 {
 	//li32
 	LOG_CALL( "li32");
 	loadIntN<int32_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_lf32(call_context* context,memorystream& code)
+void ABCVm::abc_lf32(call_context* context,preloadedcodedata** codep)
 {
 	//lf32
 	LOG_CALL( "lf32");
 	loadFloat(context);
+	++(*codep);
 }
-void ABCVm::abc_lf64(call_context* context,memorystream& code)
+void ABCVm::abc_lf64(call_context* context,preloadedcodedata** codep)
 {
 	//lf64
 	LOG_CALL( "lf64");
 	loadDouble(context);
+	++(*codep);
 }
-void ABCVm::abc_si8(call_context* context,memorystream& code)
+void ABCVm::abc_si8(call_context* context,preloadedcodedata** codep)
 {
 	//si8
 	LOG_CALL( "si8");
 	storeIntN<uint8_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_si16(call_context* context,memorystream& code)
+void ABCVm::abc_si16(call_context* context,preloadedcodedata** codep)
 {
 	//si16
 	LOG_CALL( "si16");
 	storeIntN<uint16_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_si32(call_context* context,memorystream& code)
+void ABCVm::abc_si32(call_context* context,preloadedcodedata** codep)
 {
 	//si32
 	LOG_CALL( "si32");
 	storeIntN<uint32_t>(context);
+	++(*codep);
 }
-void ABCVm::abc_sf32(call_context* context,memorystream& code)
+void ABCVm::abc_sf32(call_context* context,preloadedcodedata** codep)
 {
 	//sf32
 	LOG_CALL( "sf32");
 	storeFloat(context);
+	++(*codep);
 }
-void ABCVm::abc_sf64(call_context* context,memorystream& code)
+void ABCVm::abc_sf64(call_context* context,preloadedcodedata** codep)
 {
 	//sf64
 	LOG_CALL( "sf64");
 	storeDouble(context);
+	++(*codep);
 }
-void ABCVm::abc_newfunction(call_context* context,memorystream& code)
+void ABCVm::abc_newfunction(call_context* context,preloadedcodedata** codep)
 {
 	//newfunction
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newFunction(context,t)));
+	++(*codep);
 }
-void ABCVm::abc_call(call_context* context,memorystream& code)
+void ABCVm::abc_call(call_context* context,preloadedcodedata** codep)
 {
 	//call
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	method_info* called_mi=NULL;
 	call(context,t,&called_mi);
+	++(*codep);
 }
-void ABCVm::abc_construct(call_context* context,memorystream& code)
+void ABCVm::abc_construct(call_context* context,preloadedcodedata** codep)
 {
 	//construct
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	construct(context,t);
+	++(*codep);
 }
-void ABCVm::abc_callMethod(call_context* context,memorystream& code)
+void ABCVm::abc_callMethod(call_context* context,preloadedcodedata** codep)
 {
 	// callmethod
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callMethod(context,t,t2);
+	++(*codep);
 }
-void ABCVm::abc_callstatic(call_context* context,memorystream& code)
+void ABCVm::abc_callstatic(call_context* context,preloadedcodedata** codep)
 {
 	//callstatic
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callStatic(context,t,t2,NULL,true);
+	++(*codep);
 }
-void ABCVm::abc_callsuper(call_context* context,memorystream& code)
+void ABCVm::abc_callsuper(call_context* context,preloadedcodedata** codep)
 {
 	//callsuper
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callSuper(context,t,t2,NULL,true);
+	++(*codep);
 }
-void ABCVm::abc_callproperty(call_context* context,memorystream& code)
+void ABCVm::abc_callproperty(call_context* context,preloadedcodedata** codep)
 {
 	//callproperty
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callProperty(context,t,t2,NULL,true);
+	++(*codep);
 }
-void ABCVm::abc_returnvoid(call_context* context,memorystream& code)
+void ABCVm::abc_returnvoid(call_context* context,preloadedcodedata** codep)
 {
 	//returnvoid
 	LOG_CALL(_("returnVoid"));
 	context->returnvalue = asAtom::invalidAtom;
 	context->returning = true;
+	++(*codep);
 }
-void ABCVm::abc_returnvalue(call_context* context,memorystream& code)
+void ABCVm::abc_returnvalue(call_context* context,preloadedcodedata** codep)
 {
 	//returnvalue
 	RUNTIME_STACK_POP(context,context->returnvalue);
 	LOG_CALL(_("returnValue ") << context->returnvalue.toDebugString());
 	context->returning = true;
+	++(*codep);
 }
-void ABCVm::abc_constructsuper(call_context* context,memorystream& code)
+void ABCVm::abc_constructsuper(call_context* context,preloadedcodedata** codep)
 {
 	//constructsuper
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	constructSuper(context,t);
+	++(*codep);
 }
-void ABCVm::abc_constructprop(call_context* context,memorystream& code)
+void ABCVm::abc_constructprop(call_context* context,preloadedcodedata** codep)
 {
 	//constructprop
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	constructProp(context,t,t2);
+	++(*codep);
 }
-void ABCVm::abc_callproplex(call_context* context,memorystream& code)
+void ABCVm::abc_callproplex(call_context* context,preloadedcodedata** codep)
 {
 	//callproplex
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callPropLex(context,t,t2,NULL,true);
+	++(*codep);
 }
-void ABCVm::abc_callsupervoid(call_context* context,memorystream& code)
+void ABCVm::abc_callsupervoid(call_context* context,preloadedcodedata** codep)
 {
 	//callsupervoid
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	method_info* called_mi=NULL;
 	callSuper(context,t,t2,&called_mi,false);
+	++(*codep);
 }
-void ABCVm::abc_callpropvoid(call_context* context,memorystream& code)
+void ABCVm::abc_callpropvoid(call_context* context,preloadedcodedata** codep)
 {
 	//callpropvoid
-	uint32_t t = code.readu30();
-	uint32_t t2 = code.readu30();
+	uint32_t t = (++(*codep))->data;
+	uint32_t t2 = (++(*codep))->data;
 	callProperty(context,t,t2,NULL,false);
+	++(*codep);
 }
-void ABCVm::abc_sxi1(call_context* context,memorystream& code)
+void ABCVm::abc_sxi1(call_context* context,preloadedcodedata** codep)
 {
 	//sxi1
 	LOG_CALL( "sxi1");
@@ -1107,8 +1067,9 @@ void ABCVm::abc_sxi1(call_context* context,memorystream& code)
 	int32_t ret=arg1->toUInt()&0x1 ? -1 : 0;
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
+	++(*codep);
 }
-void ABCVm::abc_sxi8(call_context* context,memorystream& code)
+void ABCVm::abc_sxi8(call_context* context,preloadedcodedata** codep)
 {
 	//sxi8
 	LOG_CALL( "sxi8");
@@ -1116,8 +1077,9 @@ void ABCVm::abc_sxi8(call_context* context,memorystream& code)
 	int32_t ret=(int8_t)arg1->toUInt();
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
+	++(*codep);
 }
-void ABCVm::abc_sxi16(call_context* context,memorystream& code)
+void ABCVm::abc_sxi16(call_context* context,preloadedcodedata** codep)
 {
 	//sxi16
 	LOG_CALL( "sxi16");
@@ -1125,103 +1087,113 @@ void ABCVm::abc_sxi16(call_context* context,memorystream& code)
 	int32_t ret=(int16_t)arg1->toUInt();
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
+	++(*codep);
 }
-void ABCVm::abc_constructgenerictype(call_context* context,memorystream& code)
+void ABCVm::abc_constructgenerictype(call_context* context,preloadedcodedata** codep)
 {
 	//constructgenerictype
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	constructGenericType(context, t);
+	++(*codep);
 }
-void ABCVm::abc_newobject(call_context* context,memorystream& code)
+void ABCVm::abc_newobject(call_context* context,preloadedcodedata** codep)
 {
 	//newobject
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	newObject(context,t);
+	++(*codep);
 }
-void ABCVm::abc_newarray(call_context* context,memorystream& code)
+void ABCVm::abc_newarray(call_context* context,preloadedcodedata** codep)
 {
 	//newarray
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	newArray(context,t);
+	++(*codep);
 }
-void ABCVm::abc_newactivation(call_context* context,memorystream& code)
+void ABCVm::abc_newactivation(call_context* context,preloadedcodedata** codep)
 {
 	//newactivation
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newActivation(context, context->mi)));
+	++(*codep);
 }
-void ABCVm::abc_newclass(call_context* context,memorystream& code)
+void ABCVm::abc_newclass(call_context* context,preloadedcodedata** codep)
 {
 	//newclass
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	newClass(context,t);
+	++(*codep);
 }
-void ABCVm::abc_getdescendants(call_context* context,memorystream& code)
+void ABCVm::abc_getdescendants(call_context* context,preloadedcodedata** codep)
 {
 	//getdescendants
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	getDescendants(context, t);
+	++(*codep);
 }
-void ABCVm::abc_newcatch(call_context* context,memorystream& code)
+void ABCVm::abc_newcatch(call_context* context,preloadedcodedata** codep)
 {
 	//newcatch
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newCatch(context,t)));
+	++(*codep);
 }
-void ABCVm::abc_findpropstrict(call_context* context,memorystream& code)
+void ABCVm::abc_findpropstrict(call_context* context,preloadedcodedata** codep)
 {
 	//findpropstrict
-//		uint32_t t = code.readu30();
+//		uint32_t t = (++(*codep))->data;
 //		multiname* name=context->context->getMultiname(t,context);
 //		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
-	asAtom o = findPropStrictCache(context,code);
+	asAtom o = findPropStrictCache(context,codep);
 	RUNTIME_STACK_PUSH(context,o);
+	++(*codep);
 }
-void ABCVm::abc_findproperty(call_context* context,memorystream& code)
+void ABCVm::abc_findproperty(call_context* context,preloadedcodedata** codep)
 {
 	//findproperty
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name=context->context->getMultiname(t,context);
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(findProperty(context,name)));
 	name->resetNameIfObject();
+	++(*codep);
 }
-void ABCVm::abc_finddef(call_context* context,memorystream& code)
+void ABCVm::abc_finddef(call_context* context,preloadedcodedata** codep)
 {
 	//finddef
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name=context->context->getMultiname(t,context);
 	LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
 	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
 	name->resetNameIfObject();
+	++(*codep);
 }
-void ABCVm::abc_getlex(call_context* context,memorystream& code)
+void ABCVm::abc_getlex(call_context* context,preloadedcodedata** codep)
 {
 	//getlex
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
+	preloadedcodedata* instrptr = *codep;
+	uint32_t t = (++(*codep))->data;
+	if ((instrptr->data&0x00000100) == 0x00000100)
 	{
-		code.seekcachepos(cachepos->nextcachepos);
-		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(cachepos->obj,cachepos->closure));
-		cachepos->obj->incRef();
-		LOG_CALL( "getLex from cache: " <<  cachepos->obj->toDebugString());
-		return;
+		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->obj,instrptr->closure));
+		instrptr->obj->incRef();
+		LOG_CALL( "getLex from cache: " <<  (*codep)->obj->toDebugString());
 	}
-	uint32_t t = code.readu30();
-	if (getLex(context,t))
+	else if (getLex(context,t))
 	{
 		// put object in cache
-		cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
+		instrptr->data |= 0x00000100;
 		RUNTIME_STACK_PEEK_CREATE(context,v);
 		
-		cachepos->obj = v.getObject();
-		cachepos->closure = v.getClosure();
+		instrptr->obj = v.getObject();
+		instrptr->closure = v.getClosure();
 	}
+	++(*codep);
 }
-void ABCVm::abc_setproperty(call_context* context,memorystream& code)
+void ABCVm::abc_setproperty(call_context* context,preloadedcodedata** codep)
 {
 	//setproperty
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_POP_CREATE(context,value);
 
 	multiname* name=context->context->getMultiname(t,context);
@@ -1249,19 +1221,22 @@ void ABCVm::abc_setproperty(call_context* context,memorystream& code)
 	o->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED);
 	o->decRef();
 	name->resetNameIfObject();
+	++(*codep);
 }
-void ABCVm::abc_getlocal(call_context* context,memorystream& code)
+void ABCVm::abc_getlocal(call_context* context,preloadedcodedata** codep)
 {
 	//getlocal
-	uint32_t i = code.readu30();
+	uint32_t i = (++(*codep))->data;
 	LOG_CALL( _("getLocal n ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
+	++(*codep);
 }
-void ABCVm::abc_setlocal(call_context* context,memorystream& code)
+void ABCVm::abc_setlocal(call_context* context,preloadedcodedata** codep)
 {
 	//setlocal
-	uint32_t i = code.readu30();
+	uint32_t i = (++(*codep))->data;
+	++(*codep);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << obj.toDebugString() );
@@ -1276,27 +1251,29 @@ void ABCVm::abc_setlocal(call_context* context,memorystream& code)
 		context->locals[i]=obj;
 	}
 }
-void ABCVm::abc_getglobalscope(call_context* context,memorystream& code)
+void ABCVm::abc_getglobalscope(call_context* context,preloadedcodedata** codep)
 {
 	//getglobalscope
 	asAtom ret = asAtom::fromObject(getGlobalScope(context));
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
+	++(*codep);
 }
-void ABCVm::abc_getscopeobject(call_context* context,memorystream& code)
+void ABCVm::abc_getscopeobject(call_context* context,preloadedcodedata** codep)
 {
 	//getscopeobject
-	uint32_t t = code.readu30();
-	assert_and_throw(context->curr_scope_stack > t);
+	uint32_t t = (++(*codep))->data;
+	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	asAtom ret=context->scope_stack[t];
 	ASATOM_INCREF(ret);
 	LOG_CALL( _("getScopeObject: ") << ret.toDebugString());
 	
 	RUNTIME_STACK_PUSH(context,ret);
+	++(*codep);
 }
-void ABCVm::abc_getProperty(call_context* context,memorystream& code)
+void ABCVm::abc_getProperty(call_context* context,preloadedcodedata** codep)
 {
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name=context->context->getMultiname(t,context);
 
 
@@ -1325,11 +1302,12 @@ void ABCVm::abc_getProperty(call_context* context,memorystream& code)
 	name->resetNameIfObject();
 
 	RUNTIME_STACK_PUSH(context,prop);
+	++(*codep);
 }
-void ABCVm::abc_initproperty(call_context* context,memorystream& code)
+void ABCVm::abc_initproperty(call_context* context,preloadedcodedata** codep)
 {
 	//initproperty
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_POP_CREATE(context,value);
 	multiname* name=context->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
@@ -1338,21 +1316,23 @@ void ABCVm::abc_initproperty(call_context* context,memorystream& code)
 	obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 	ASATOM_DECREF(obj);
 	name->resetNameIfObject();
+	++(*codep);
 }
-void ABCVm::abc_deleteproperty(call_context* context,memorystream& code)
+void ABCVm::abc_deleteproperty(call_context* context,preloadedcodedata** codep)
 {
 	//deleteproperty
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name = context->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
 	bool ret = deleteProperty(obj,name);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(*codep);
 }
-void ABCVm::abc_getslot(call_context* context,memorystream& code)
+void ABCVm::abc_getslot(call_context* context,preloadedcodedata** codep)
 {
 	//getslot
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	
 	asAtom ret=pval->toObject(context->context->root->getSystemState())->getSlot(t);
@@ -1363,38 +1343,42 @@ void ABCVm::abc_getslot(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 
 	*pval=ret;
+	++(*codep);
 }
-void ABCVm::abc_setslot(call_context* context,memorystream& code)
+void ABCVm::abc_setslot(call_context* context,preloadedcodedata** codep)
 {
 	//setslot
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->context->root->getSystemState());
 
 	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< v1.toDebugString());
 	v2->setSlot(t,v1);
 	v2->decRef();
+	++(*codep);
 }
-void ABCVm::abc_getglobalSlot(call_context* context,memorystream& code)
+void ABCVm::abc_getglobalSlot(call_context* context,preloadedcodedata** codep)
 {
 	//getglobalSlot
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 
 	Global* globalscope = getGlobalScope(context);
 	asAtom ret=globalscope->getSlot(t);
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
+	++(*codep);
 }
-void ABCVm::abc_setglobalSlot(call_context* context,memorystream& code)
+void ABCVm::abc_setglobalSlot(call_context* context,preloadedcodedata** codep)
 {
 	//setglobalSlot
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 
 	Global* globalscope = getGlobalScope(context);
 	RUNTIME_STACK_POP_CREATE(context,o);
 	globalscope->setSlot(t,o);
+	++(*codep);
 }
-void ABCVm::abc_convert_s(call_context* context,memorystream& code)
+void ABCVm::abc_convert_s(call_context* context,preloadedcodedata** codep)
 {
 	//convert_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
@@ -1405,46 +1389,53 @@ void ABCVm::abc_convert_s(call_context* context,memorystream& code)
 		ASATOM_DECREF_POINTER(pval);
 		pval->replace((ASObject*)abstract_s(context->context->root->getSystemState(),s));
 	}
+	++(*codep);
 }
-void ABCVm::abc_esc_xelem(call_context* context,memorystream& code)
+void ABCVm::abc_esc_xelem(call_context* context,preloadedcodedata** codep)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->replace(esc_xelem(pval->toObject(context->context->root->getSystemState())));
+	++(*codep);
 }
-void ABCVm::abc_esc_xattr(call_context* context,memorystream& code)
+void ABCVm::abc_esc_xattr(call_context* context,preloadedcodedata** codep)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->replace(esc_xattr(pval->toObject(context->context->root->getSystemState())));
+	++(*codep);
 }
-void ABCVm::abc_convert_i(call_context* context,memorystream& code)
+void ABCVm::abc_convert_i(call_context* context,preloadedcodedata** codep)
 {
 	//convert_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_i");
 	pval->convert_i();
+	++(*codep);
 }
-void ABCVm::abc_convert_u(call_context* context,memorystream& code)
+void ABCVm::abc_convert_u(call_context* context,preloadedcodedata** codep)
 {
 	//convert_u
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_u");
 	pval->convert_u();
+	++(*codep);
 }
-void ABCVm::abc_convert_d(call_context* context,memorystream& code)
+void ABCVm::abc_convert_d(call_context* context,preloadedcodedata** codep)
 {
 	//convert_d
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_d");
 	pval->convert_d();
+	++(*codep);
 }
-void ABCVm::abc_convert_b(call_context* context,memorystream& code)
+void ABCVm::abc_convert_b(call_context* context,preloadedcodedata** codep)
 {
 	//convert_b
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_b");
 	pval->convert_b();
+	++(*codep);
 }
-void ABCVm::abc_convert_o(call_context* context,memorystream& code)
+void ABCVm::abc_convert_o(call_context* context,preloadedcodedata** codep)
 {
 	//convert_o
 	LOG_CALL("convert_o");
@@ -1459,81 +1450,93 @@ void ABCVm::abc_convert_o(call_context* context,memorystream& code)
 		LOG(LOG_ERROR,"trying to call convert_o on undefined");
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
+	++(*codep);
 }
-void ABCVm::abc_checkfilter(call_context* context,memorystream& code)
+void ABCVm::abc_checkfilter(call_context* context,preloadedcodedata** codep)
 {
 	//checkfilter
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	checkfilter(pval->toObject(context->context->root->getSystemState()));
+	++(*codep);
 }
-void ABCVm::abc_coerce(call_context* context,memorystream& code)
+void ABCVm::abc_coerce(call_context* context,preloadedcodedata** codep)
 {
 	//coerce
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	coerce(context, t);
+	++(*codep);
 }
-void ABCVm::abc_coerce_a(call_context* context,memorystream& code)
+void ABCVm::abc_coerce_a(call_context* context,preloadedcodedata** codep)
 {
 	//coerce_a
 	coerce_a();
+	++(*codep);
 }
-void ABCVm::abc_coerce_s(call_context* context,memorystream& code)
+void ABCVm::abc_coerce_s(call_context* context,preloadedcodedata** codep)
 {
 	//coerce_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<pval->toDebugString());
 	if (pval->type != T_STRING)
 		pval->replace(coerce_s(pval->toObject(context->context->root->getSystemState())));
+	++(*codep);
 }
-void ABCVm::abc_astype(call_context* context,memorystream& code)
+void ABCVm::abc_astype(call_context* context,preloadedcodedata** codep)
 {
 	//astype
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name=context->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->replace(asType(context->context, pval->toObject(context->context->root->getSystemState()), name));
+	++(*codep);
 }
-void ABCVm::abc_astypelate(call_context* context,memorystream& code)
+void ABCVm::abc_astypelate(call_context* context,preloadedcodedata** codep)
 {
 	//astypelate
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	*pval = pval->asTypelate(v1);
+	++(*codep);
 }
-void ABCVm::abc_negate(call_context* context,memorystream& code)
+void ABCVm::abc_negate(call_context* context,preloadedcodedata** codep)
 {
 	//negate
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	number_t ret=-(pval->toNumber());
 	ASATOM_DECREF_POINTER(pval);
 	pval->setNumber(ret);
+	++(*codep);
 }
-void ABCVm::abc_increment(call_context* context,memorystream& code)
+void ABCVm::abc_increment(call_context* context,preloadedcodedata** codep)
 {
 	//increment
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->increment();
+	++(*codep);
 }
-void ABCVm::abc_inclocal(call_context* context,memorystream& code)
+void ABCVm::abc_inclocal(call_context* context,preloadedcodedata** codep)
 {
 	//inclocal
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	incLocal(context, t);
+	++(*codep);
 }
-void ABCVm::abc_decrement(call_context* context,memorystream& code)
+void ABCVm::abc_decrement(call_context* context,preloadedcodedata** codep)
 {
 	//decrement
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->decrement();
+	++(*codep);
 }
-void ABCVm::abc_declocal(call_context* context,memorystream& code)
+void ABCVm::abc_declocal(call_context* context,preloadedcodedata** codep)
 {
 	//declocal
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	decLocal(context, t);
+	++(*codep);
 }
-void ABCVm::abc_typeof(call_context* context,memorystream& code)
+void ABCVm::abc_typeof(call_context* context,preloadedcodedata** codep)
 {
 	//typeof
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
@@ -1541,99 +1544,113 @@ void ABCVm::abc_typeof(call_context* context,memorystream& code)
 	asAtom ret = pval->typeOf(context->context->root->getSystemState());
 	ASATOM_DECREF_POINTER(pval);
 	*pval = ret;
+	++(*codep);
 }
-void ABCVm::abc_not(call_context* context,memorystream& code)
+void ABCVm::abc_not(call_context* context,preloadedcodedata** codep)
 {
 	//not
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->_not();
+	++(*codep);
 }
-void ABCVm::abc_bitnot(call_context* context,memorystream& code)
+void ABCVm::abc_bitnot(call_context* context,preloadedcodedata** codep)
 {
 	//bitnot
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bitnot();
+	++(*codep);
 }
-void ABCVm::abc_add(call_context* context,memorystream& code)
+void ABCVm::abc_add(call_context* context,preloadedcodedata** codep)
 {
 	//add
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->add(v2,context->context->root->getSystemState());
+	++(*codep);
 }
-void ABCVm::abc_subtract(call_context* context,memorystream& code)
+void ABCVm::abc_subtract(call_context* context,preloadedcodedata** codep)
 {
 	//subtract
 	//Be careful, operands in subtract implementation are swapped
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->subtract(v2);
+	++(*codep);
 }
-void ABCVm::abc_multiply(call_context* context,memorystream& code)
+void ABCVm::abc_multiply(call_context* context,preloadedcodedata** codep)
 {
 	//multiply
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->multiply(v2);
+	++(*codep);
 }
-void ABCVm::abc_divide(call_context* context,memorystream& code)
+void ABCVm::abc_divide(call_context* context,preloadedcodedata** codep)
 {
 	//divide
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->divide(v2);
+	++(*codep);
 }
-void ABCVm::abc_modulo(call_context* context,memorystream& code)
+void ABCVm::abc_modulo(call_context* context,preloadedcodedata** codep)
 {
 	//modulo
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	pval->modulo(v2);
+	++(*codep);
 }
-void ABCVm::abc_lshift(call_context* context,memorystream& code)
+void ABCVm::abc_lshift(call_context* context,preloadedcodedata** codep)
 {
 	//lshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->lshift(v1);
+	++(*codep);
 }
-void ABCVm::abc_rshift(call_context* context,memorystream& code)
+void ABCVm::abc_rshift(call_context* context,preloadedcodedata** codep)
 {
 	//rshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->rshift(v1);
+	++(*codep);
 }
-void ABCVm::abc_urshift(call_context* context,memorystream& code)
+void ABCVm::abc_urshift(call_context* context,preloadedcodedata** codep)
 {
 	//urshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->urshift(v1);
+	++(*codep);
 }
-void ABCVm::abc_bitand(call_context* context,memorystream& code)
+void ABCVm::abc_bitand(call_context* context,preloadedcodedata** codep)
 {
 	//bitand
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_and(v1);
+	++(*codep);
 }
-void ABCVm::abc_bitor(call_context* context,memorystream& code)
+void ABCVm::abc_bitor(call_context* context,preloadedcodedata** codep)
 {
 	//bitor
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_or(v1);
+	++(*codep);
 }
-void ABCVm::abc_bitxor(call_context* context,memorystream& code)
+void ABCVm::abc_bitxor(call_context* context,preloadedcodedata** codep)
 {
 	//bitxor
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_xor(v1);
+	++(*codep);
 }
-void ABCVm::abc_equals(call_context* context,memorystream& code)
+void ABCVm::abc_equals(call_context* context,preloadedcodedata** codep)
 {
 	//equals
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1644,8 +1661,9 @@ void ABCVm::abc_equals(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v2);
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_strictequals(call_context* context,memorystream& code)
+void ABCVm::abc_strictequals(call_context* context,preloadedcodedata** codep)
 {
 	//strictequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1655,8 +1673,9 @@ void ABCVm::abc_strictequals(call_context* context,memorystream& code)
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v2);
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_lessthan(call_context* context,memorystream& code)
+void ABCVm::abc_lessthan(call_context* context,preloadedcodedata** codep)
 {
 	//lessthan
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1668,8 +1687,9 @@ void ABCVm::abc_lessthan(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_lessequals(call_context* context,memorystream& code)
+void ABCVm::abc_lessequals(call_context* context,preloadedcodedata** codep)
 {
 	//lessequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1681,8 +1701,9 @@ void ABCVm::abc_lessequals(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_greaterthan(call_context* context,memorystream& code)
+void ABCVm::abc_greaterthan(call_context* context,preloadedcodedata** codep)
 {
 	//greaterthan
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1694,8 +1715,9 @@ void ABCVm::abc_greaterthan(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_greaterequals(call_context* context,memorystream& code)
+void ABCVm::abc_greaterequals(call_context* context,preloadedcodedata** codep)
 {
 	//greaterequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1707,8 +1729,9 @@ void ABCVm::abc_greaterequals(call_context* context,memorystream& code)
 	ASATOM_DECREF(v2);
 
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_instanceof(call_context* context,memorystream& code)
+void ABCVm::abc_instanceof(call_context* context,preloadedcodedata** codep)
 {
 	//instanceof
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->context->root->getSystemState());
@@ -1716,119 +1739,135 @@ void ABCVm::abc_instanceof(call_context* context,memorystream& code)
 	bool ret = instanceOf(pval->toObject(context->context->root->getSystemState()),type);
 	ASATOM_DECREF_POINTER(pval);
 	pval->setBool(ret);
+	++(*codep);
 }
-void ABCVm::abc_istype(call_context* context,memorystream& code)
+void ABCVm::abc_istype(call_context* context,preloadedcodedata** codep)
 {
 	//istype
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	multiname* name=context->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	pval->setBool(isType(context->context,pval->toObject(context->context->root->getSystemState()),name));
+	++(*codep);
 }
-void ABCVm::abc_istypelate(call_context* context,memorystream& code)
+void ABCVm::abc_istypelate(call_context* context,preloadedcodedata** codep)
 {
 	//istypelate
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	pval->setBool(isTypelate(v1, pval->toObject(context->context->root->getSystemState())));
+	++(*codep);
 }
-void ABCVm::abc_in(call_context* context,memorystream& code)
+void ABCVm::abc_in(call_context* context,preloadedcodedata** codep)
 {
 	//in
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	pval->setBool(in(v1,pval->toObject(context->context->root->getSystemState())));
+	++(*codep);
 }
-void ABCVm::abc_increment_i(call_context* context,memorystream& code)
+void ABCVm::abc_increment_i(call_context* context,preloadedcodedata** codep)
 {
 	//increment_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment_i:"<<pval->toDebugString());
 	pval->increment_i();
+	++(*codep);
 }
-void ABCVm::abc_decrement_i(call_context* context,memorystream& code)
+void ABCVm::abc_decrement_i(call_context* context,preloadedcodedata** codep)
 {
 	//decrement_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("decrement_i:"<<pval->toDebugString());
 	pval->decrement_i();
+	++(*codep);
 }
-void ABCVm::abc_inclocal_i(call_context* context,memorystream& code)
+void ABCVm::abc_inclocal_i(call_context* context,preloadedcodedata** codep)
 {
 	//inclocal_i
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	incLocal_i(context, t);
+	++(*codep);
 }
-void ABCVm::abc_declocal_i(call_context* context,memorystream& code)
+void ABCVm::abc_declocal_i(call_context* context,preloadedcodedata** codep)
 {
 	//declocal_i
-	uint32_t t = code.readu30();
+	uint32_t t = (++(*codep))->data;
 	decLocal_i(context, t);
+	++(*codep);
 }
-void ABCVm::abc_negate_i(call_context* context,memorystream& code)
+void ABCVm::abc_negate_i(call_context* context,preloadedcodedata** codep)
 {
 	//negate_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->negate_i();
+	++(*codep);
 }
-void ABCVm::abc_add_i(call_context* context,memorystream& code)
+void ABCVm::abc_add_i(call_context* context,preloadedcodedata** codep)
 {
 	//add_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->add_i(v2);
+	++(*codep);
 }
-void ABCVm::abc_subtract_i(call_context* context,memorystream& code)
+void ABCVm::abc_subtract_i(call_context* context,preloadedcodedata** codep)
 {
 	//subtract_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->subtract_i(v2);
+	++(*codep);
 }
-void ABCVm::abc_multiply_i(call_context* context,memorystream& code)
+void ABCVm::abc_multiply_i(call_context* context,preloadedcodedata** codep)
 {
 	//multiply_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->multiply_i(v2);
+	++(*codep);
 }
-void ABCVm::abc_getlocal_0(call_context* context,memorystream& code)
+void ABCVm::abc_getlocal_0(call_context* context,preloadedcodedata** codep)
 {
 	//getlocal_0
 	int i=0;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
+	++(*codep);
 }
-void ABCVm::abc_getlocal_1(call_context* context,memorystream& code)
+void ABCVm::abc_getlocal_1(call_context* context,preloadedcodedata** codep)
 {
 	//getlocal_1
 	int i=1;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
+	++(*codep);
 }
-void ABCVm::abc_getlocal_2(call_context* context,memorystream& code)
+void ABCVm::abc_getlocal_2(call_context* context,preloadedcodedata** codep)
 {
 	//getlocal_2
 	int i=2;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
+	++(*codep);
 }
-void ABCVm::abc_getlocal_3(call_context* context,memorystream& code)
+void ABCVm::abc_getlocal_3(call_context* context,preloadedcodedata** codep)
 {
 	//getlocal_3
 	int i=3;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
+	++(*codep);
 }
-void ABCVm::abc_setlocal_0(call_context* context,memorystream& code)
+void ABCVm::abc_setlocal_0(call_context* context,preloadedcodedata** codep)
 {
 	//setlocal_0
 	unsigned int i=0;
@@ -1844,12 +1883,14 @@ void ABCVm::abc_setlocal_0(call_context* context,memorystream& code)
 		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=obj;
 	}
+	++(*codep);
 }
-void ABCVm::abc_setlocal_1(call_context* context,memorystream& code)
+void ABCVm::abc_setlocal_1(call_context* context,preloadedcodedata** codep)
 {
 	//setlocal_1
 	unsigned int i=1;
 	LOG_CALL( _("setLocal ") << i);
+	++(*codep);
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1863,10 +1904,11 @@ void ABCVm::abc_setlocal_1(call_context* context,memorystream& code)
 		context->locals[i]=obj;
 	}
 }
-void ABCVm::abc_setlocal_2(call_context* context,memorystream& code)
+void ABCVm::abc_setlocal_2(call_context* context,preloadedcodedata** codep)
 {
 	//setlocal_2
 	unsigned int i=2;
+	++(*codep);
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1880,10 +1922,11 @@ void ABCVm::abc_setlocal_2(call_context* context,memorystream& code)
 		context->locals[i]=obj;
 	}
 }
-void ABCVm::abc_setlocal_3(call_context* context,memorystream& code)
+void ABCVm::abc_setlocal_3(call_context* context,preloadedcodedata** codep)
 {
 	//setlocal_3
 	unsigned int i=3;
+	++(*codep);
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1897,46 +1940,49 @@ void ABCVm::abc_setlocal_3(call_context* context,memorystream& code)
 		context->locals[i]=obj;
 	}
 }
-void ABCVm::abc_debug(call_context* context,memorystream& code)
+void ABCVm::abc_debug(call_context* context,preloadedcodedata** codep)
 {
 	//debug
 	LOG_CALL( _("debug") );
-	code.readbyte();
-	code.readu30();
-	code.readbyte();
-	code.readu30();
+	++(*codep);
+	++(*codep);
+	++(*codep);
+	++(*codep);
+	++(*codep);
 }
-void ABCVm::abc_debugline(call_context* context,memorystream& code)
+void ABCVm::abc_debugline(call_context* context,preloadedcodedata** codep)
 {
 	//debugline
 	LOG_CALL( _("debugline") );
-	code.readu30();
+	++(*codep);
+	++(*codep);
 }
-void ABCVm::abc_debugfile(call_context* context,memorystream& code)
+void ABCVm::abc_debugfile(call_context* context,preloadedcodedata** codep)
 {
 	//debugfile
 	LOG_CALL( _("debugfile") );
-	code.readu30();
+	++(*codep);
+	++(*codep);
 }
-void ABCVm::abc_bkptline(call_context* context,memorystream& code)
+void ABCVm::abc_bkptline(call_context* context,preloadedcodedata** codep)
 {
 	//bkptline
 	LOG_CALL( _("bkptline") );
-	code.readu30();
+	++(*codep);
+	++(*codep);
 }
-void ABCVm::abc_timestamp(call_context* context,memorystream& code)
+void ABCVm::abc_timestamp(call_context* context,preloadedcodedata** codep)
 {
 	//timestamp
 	LOG_CALL( _("timestamp") );
+	++(*codep);
 }
-void ABCVm::abc_invalidinstruction(call_context* context,memorystream& code)
+void ABCVm::abc_invalidinstruction(call_context* context,preloadedcodedata** codep)
 {
-	LOG(LOG_ERROR,_("Not interpreted instruction @") << code.tellg());
-	code.seekg(code.tellg()-1);
-	uint8_t opcode =code.readbyte();
-	LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
+	LOG(LOG_ERROR,"invalid instruction " << hex << (*codep)->data << dec);
 	throw ParseException("Not implemented instruction in interpreter");
 }
+
 
 
 void ABCVm::preloadFunction(const SyntheticFunction* function)
@@ -1944,10 +1990,18 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	method_info* mi=function->mi;
 
 	const int code_len=mi->body->code.size();
-	memorystream code(mi->body->code.data(), code_len,mi->body->codecache);
+	memorystream code(mi->body->code.data(), code_len);
+	std::map<int32_t,int32_t> oldnewpositions;
+	std::map<int32_t,int32_t> jumppositions;
+	std::map<int32_t,int32_t> jumpstartpositions;
+	std::map<int32_t,int32_t> switchpositions;
+	std::map<int32_t,int32_t> switchstartpositions;
 	while(!code.atend())
 	{
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		uint8_t opcode = code.readbyte();
+//		LOG(LOG_INFO,"preload opcode:"<<hex<<(int)opcode);
+		
 
 		switch(opcode)
 		{
@@ -1992,12 +2046,27 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0xb2://istype
 			case 0xc2://inclocal_i
 			case 0xc3://declocal_i
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back(code.readu30());
+				break;
+			}
+			case 0x01://bkpt
+			case 0x02://nop
+			case 0x82://coerce_a
+			{
+				//skip
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				break;
+			}
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
 			{
-				
-				code.fillu30();
+				//skip
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				code.readu30();
 				break;
 			}
 			case 0x0c://ifnlt
@@ -2016,27 +2085,44 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
 			{
-				code.fills24();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				break;
 			}
 			case 0x1b://lookupswitch
 			{
-				code.fills24();
-				uint32_t count = code.fillu30();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				int32_t p = code.tellg();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				switchpositions[mi->body->preloadedcode.size()] = code.reads24();
+				switchstartpositions[mi->body->preloadedcode.size()] = p;
+				mi->body->preloadedcode.push_back(0);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				uint32_t count = code.readu30();
+				mi->body->preloadedcode.push_back(count);
 				for(unsigned int i=0;i<count+1;i++)
 				{
-					code.fills24();
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					switchpositions[mi->body->preloadedcode.size()] = code.reads24();
+					switchstartpositions[mi->body->preloadedcode.size()] = p;
+					mi->body->preloadedcode.push_back(0);
 				}
 				break;
 			}
 			case 0x24://pushbyte
 			{
-				code.readbyte();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back((int32_t)(int8_t)code.readbyte());
 				break;
 			}
 			case 0x25://pushshort
 			{
-				code.readu32();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back(code.readu32());
 				break;
 			}
 			case 0x32://hasnext2
@@ -2049,17 +2135,41 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x4e://callsupervoid
 			case 0x4f://callpropvoid
 			{
-				code.fillu30();
-				code.fillu30();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back(code.readu30());
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back(code.readu30());
 				break;
 			}
 			case 0xef://debug
 			{
-				
+				// skip all debug messages
 				code.readbyte();
-				code.fillu30();
+				code.readu30();
 				code.readbyte();
-				code.fillu30();
+				code.readu30();
+				break;
+			}
+			case 0x91://increment
+			case 0x93://decrement
+			case 0xa1://subtract
+			case 0xa2://multiply
+			case 0xa3://divide
+			case 0xa4://modulo
+			case 0xa5://lshift
+			case 0xa6://rshift
+			case 0xa7://urshift
+			case 0xa8://bitand
+			case 0xa9://bitor
+			case 0xaa://bitxor
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				if (code.peekbyte() == 0x75) //convert_d 
+				{
+					// skip unneccessary convert_d
+					code.readbyte();
+				}
 				break;
 			}
 			default:
@@ -2072,8 +2182,43 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					sprintf(strcodepos,"%d",code.tellg());
 					throwError<VerifyError>(kIllegalOpcodeError,function->getSystemState()->getStringFromUniqueId(function->functionname),stropcode,strcodepos);
 				}
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				break;
 			}
 		}
 	}
+
+	// adjust jump positions to new code vector;
+	auto itj = jumppositions.begin();
+	while (itj != jumppositions.end())
+	{
+		uint32_t p = jumpstartpositions[itj->first];
+		assert (oldnewpositions.find(p) != oldnewpositions.end());
+		assert (oldnewpositions.find(p+itj->second) != oldnewpositions.end());
+		mi->body->preloadedcode[itj->first].jumpdata.jump = (oldnewpositions[p+itj->second]-(oldnewpositions[p]));
+		itj++;
+	}
+	// adjust switch positions to new code vector;
+	auto its = switchpositions.begin();
+	while (its != switchpositions.end())
+	{
+		uint32_t p = switchstartpositions[its->first];
+		assert (oldnewpositions.find(p) != oldnewpositions.end());
+		assert (oldnewpositions.find(p+its->second) != oldnewpositions.end());
+		mi->body->preloadedcode[its->first] = oldnewpositions[p+its->second]-(oldnewpositions[p]);
+		its++;
+	}
+	auto itexc = mi->body->exceptions.begin();
+	while (itexc != mi->body->exceptions.end())
+	{
+		assert (oldnewpositions.find(itexc->from) != oldnewpositions.end());
+		itexc->from = oldnewpositions[itexc->from];
+		assert (oldnewpositions.find(itexc->to) != oldnewpositions.end());
+		itexc->to = oldnewpositions[itexc->to];
+		assert (oldnewpositions.find(itexc->target) != oldnewpositions.end());
+		itexc->target = oldnewpositions[itexc->target];
+		itexc++;
+	}
 }
+

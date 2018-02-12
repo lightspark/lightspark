@@ -1775,21 +1775,20 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	ret->incRef();
 	return ret;
 }
-
-asAtom ABCVm::findPropStrictCache(call_context* th, memorystream& code)
+asAtom ABCVm::findPropStrictCache(call_context* th, preloadedcodedata** codep)
 {
+	preloadedcodedata* instrptr = *codep;
+	uint32_t t = (*(++(*codep))).data;
 
-	lightspark::method_body_info_cache* cachepos = code.tellcachepos();
-	if (cachepos->type == method_body_info_cache::CACHE_TYPE_OBJECT)
+	if ((instrptr->data&0x00000100) == 0x00000100)
 	{
-		code.seekcachepos(cachepos->nextcachepos);
-		cachepos->obj->incRef();
-		if (cachepos->obj->is<IFunction>())
-			return asAtom::fromFunction(cachepos->obj,cachepos->closure);
+		instrptr->obj->incRef();
+		if (instrptr->obj->is<IFunction>())
+			return asAtom::fromFunction(instrptr->obj,instrptr->closure);
 		else
-			return asAtom::fromObject(cachepos->obj);
+			return asAtom::fromObject(instrptr->obj);
+
 	}
-	uint32_t t = code.readu30();
 	multiname* name=th->context->getMultiname(t,th);
 	LOG_CALL( "findPropStrict " << *name );
 
@@ -1812,9 +1811,9 @@ asAtom ABCVm::findPropStrictCache(call_context* th, memorystream& code)
 			if (ret.is<Class_base>() && !hasdynamic)
 			{
 				// put object in cache
-				cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-				cachepos->obj = ret.toObject(th->context->root->getSystemState());
-				cachepos->closure =ret.getClosure();
+				instrptr->data |= 0x00000100;
+				instrptr->obj = ret.toObject(th->context->root->getSystemState());
+				instrptr->closure = ret.getClosure();
 			}
 			break;
 		}
@@ -1867,9 +1866,9 @@ asAtom ABCVm::findPropStrictCache(call_context* th, memorystream& code)
 		if (!hasdynamic)
 		{
 			// put object in cache
-			cachepos->type =method_body_info_cache::CACHE_TYPE_OBJECT;
-			cachepos->obj = ret.toObject(th->context->root->getSystemState());
-			cachepos->closure =ret.getClosure();
+			instrptr->data |= 0x00000100;
+			instrptr->obj = ret.toObject(th->context->root->getSystemState());
+			instrptr->closure = ret.getClosure();
 		}
 	}
 	name->resetNameIfObject();

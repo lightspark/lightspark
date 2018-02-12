@@ -166,8 +166,6 @@ istream& lightspark::operator>>(istream& in, method_body_info& v)
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> code_length;
 	v.code.resize(code_length);
 	in.read(&v.code[0],code_length);
-	v.codecache = new method_body_info_cache[code_length];
-	memset(v.codecache,0,code_length*sizeof(method_body_info_cache));
 	u30 exception_count;
 	in >> exception_count;
 	v.exceptions.resize(exception_count);

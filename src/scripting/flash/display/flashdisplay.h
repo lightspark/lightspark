@@ -114,6 +114,7 @@ public:
 	bool destruct();
 	bool hasLegacyChildAt(uint32_t depth);
 	void checkRatioForLegacyChildAt(uint32_t depth, uint32_t ratio);
+	void checkColorTransformForLegacyChildAt(uint32_t depth,const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(uint32_t depth);
 	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);

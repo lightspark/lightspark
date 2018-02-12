@@ -1304,7 +1304,7 @@ asAtom MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	{
 		uint32_t inFrameNo = args[0].toInt();
 		if(inFrameNo == 0)
-			return asAtom::invalidAtom; /*this behavior was observed by testing */
+			inFrameNo = 1;
 
 		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
 		if(next_FP > getFramesLoaded())
@@ -1549,6 +1549,22 @@ void DisplayObjectContainer::checkRatioForLegacyChildAt(uint32_t depth,uint32_t 
 		return;
 	}
 	depthToLegacyChild.left.at(depth)->checkRatio(ratio);
+	this->hasChanged=true;
+}
+void DisplayObjectContainer::checkColorTransformForLegacyChildAt(uint32_t depth,const CXFORMWITHALPHA& colortransform)
+{
+	if(!hasLegacyChildAt(depth))
+	{
+		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth");
+		return;
+	}
+	DisplayObject* o = depthToLegacyChild.left.at(depth);
+	if (o->colorTransform.isNull())
+		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getSystemState(),colortransform));
+	else
+		o->colorTransform->setProperties(colortransform);
+	o->hasChanged=true;
+	this->hasChanged=true;
 }
 
 void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
@@ -2266,6 +2282,7 @@ void MorphShape::buildTraits(ASObject* o)
 void MorphShape::checkRatio(uint32_t ratio)
 {
 	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
+	this->hasChanged = true;
 }
 
 

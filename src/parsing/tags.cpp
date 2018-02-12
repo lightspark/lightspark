@@ -1347,7 +1347,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	{
 		parent->transformLegacyChildAt(Depth,Matrix);
 	}
-	parent->checkRatioForLegacyChildAt(Depth,Ratio);
+	if (PlaceFlagHasRatio)
+		parent->checkRatioForLegacyChildAt(Depth,Ratio);
+	if(PlaceFlagHasColorTransform)
+		parent->checkColorTransformForLegacyChildAt(Depth,ColorTransformWithAlpha);
+	
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),placedTag(NULL)
@@ -1549,9 +1553,12 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			//The matrix must be set before invoking the constructor
 			state->setLegacyMatrix(i->PlaceMatrix);
 			state->name = "";
-			/*
-			 * TODO: BlendMode, filerList, PlaceDepth, ColorTransfrom
-			 */
+			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
+				state->setBlendMode(i->BlendMode);
+			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
+				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList"<<this->getId());
+			if (i->ColorTransform.isfilled())
+				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: ColorTransform "<<this->getId());
 			if(states[j] == NULL)
 			{
 				states[j] = state;

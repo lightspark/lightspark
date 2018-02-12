@@ -510,7 +510,13 @@ ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
   : ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-			 redOffset, greenOffset, blueOffset, alphaOffset);
+					 redOffset, greenOffset, blueOffset, alphaOffset);
+}
+
+void ColorTransform::setProperties(const CXFORMWITHALPHA &cx)
+{
+	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+					 redOffset, greenOffset, blueOffset, alphaOffset);
 }
 
 void ColorTransform::sinit(Class_base* c)

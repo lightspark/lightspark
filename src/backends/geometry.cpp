@@ -345,16 +345,38 @@ void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, c
 							break;
 						default:
 						{
-							gr.Color.Red = stylesIt->StartColors[i1].Red + ((stylesIt->EndColors[i1].Red-stylesIt->StartColors[i1].Red)/compratio);
-							gr.Color.Green = stylesIt->StartColors[i1].Green + ((stylesIt->EndColors[i1].Green-stylesIt->StartColors[i1].Green)/compratio);
-							gr.Color.Blue = stylesIt->StartColors[i1].Blue + ((stylesIt->EndColors[i1].Blue-stylesIt->StartColors[i1].Blue)/compratio);
-							gr.Color.Alpha = stylesIt->StartColors[i1].Alpha + ((stylesIt->EndColors[i1].Alpha-stylesIt->StartColors[i1].Alpha)/compratio);
+							gr.Color.Red = stylesIt->StartColors[i1].Red + ((int32_t)ratio * ((int32_t)stylesIt->EndColors[i1].Red-(int32_t)stylesIt->StartColors[i1].Red)/(int32_t)UINT16_MAX);
+							gr.Color.Green = stylesIt->StartColors[i1].Green + ((int32_t)ratio * ((int32_t)stylesIt->EndColors[i1].Green-(int32_t)stylesIt->StartColors[i1].Green)/(int32_t)UINT16_MAX);
+							gr.Color.Blue = stylesIt->StartColors[i1].Blue + ((int32_t)ratio * ((int32_t)stylesIt->EndColors[i1].Blue-(int32_t)stylesIt->StartColors[i1].Blue)/(int32_t)UINT16_MAX);
+							gr.Color.Alpha = stylesIt->StartColors[i1].Alpha + ((int32_t)ratio * ((int32_t)stylesIt->EndColors[i1].Alpha-(int32_t)stylesIt->StartColors[i1].Alpha)/(int32_t)UINT16_MAX);
 							uint8_t diff = stylesIt->EndRatios[i1]-stylesIt->StartRatios[i1];
 							gr.Ratio = stylesIt->StartRatios[i1] + (diff/compratio);
 							break;
 						}
 					}
 					f.Gradient.GradientRecords.push_back(gr);
+				}
+				break;
+			}
+			case SOLID_FILL:
+			{
+				uint8_t compratio = ratio>>8;
+				switch (compratio)
+				{
+					case 0:
+						f.Color = stylesIt->StartColor;
+						break;
+					case 0xff:
+						f.Color = stylesIt->EndColor;
+						break;
+					default:
+					{
+						f.Color.Red = stylesIt->StartColor.Red + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Red-(int32_t)stylesIt->StartColor.Red)/(int32_t)UINT16_MAX);
+						f.Color.Green = stylesIt->StartColor.Green + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Green-(int32_t)stylesIt->StartColor.Green)/(int32_t)UINT16_MAX);
+						f.Color.Blue = stylesIt->StartColor.Blue + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Blue-(int32_t)stylesIt->StartColor.Blue)/(int32_t)UINT16_MAX);
+						f.Color.Alpha = stylesIt->EndColor.Alpha + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Alpha-(int32_t)stylesIt->StartColor.Alpha)/(int32_t)UINT16_MAX);
+						break;
+					}
 				}
 				break;
 			}

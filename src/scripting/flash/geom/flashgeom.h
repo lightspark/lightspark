@@ -117,6 +117,7 @@ protected:
 public:
 	ColorTransform(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM){}
 	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
+	void setProperties(const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

@@ -257,6 +257,9 @@ public:
 	 * Return the asAtom the function returned.
 	 */
 	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args, bool args_refcounted);
+	// returns invalidAtom for not-primitive values
+	asAtom getVariableByMultiname(SystemState *sys, const multiname& name);
+	void fillMultiname(SystemState *sys, multiname& name);
 	void replace(ASObject* obj);
 	std::string toDebugString();
 	inline void applyProxyProperty(SystemState *sys, multiname& name);
@@ -273,7 +276,7 @@ public:
 	inline int32_t toInt();
 	inline int64_t toInt64();
 	inline uint32_t toUInt();
-	tiny_string toString();
+	tiny_string toString(SystemState *sys);
 	tiny_string toLocaleString();
 	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
@@ -284,6 +287,7 @@ public:
 	void convert_b();
 	inline int32_t getInt() const { assert(type == T_INTEGER); return intval; }
 	inline uint32_t getUInt() const{ assert(type == T_UINTEGER); return uintval; }
+	inline uint32_t getStringId() const{ assert(type == T_STRING); return stringID; }
 	inline void setInt(int32_t val);
 	inline void setUInt(uint32_t val);
 	inline void setNumber(number_t val);
@@ -746,7 +750,7 @@ public:
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	virtual number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-	_R<ASObject> toPrimitive(TP_HINT hint = NO_HINT);
+	asAtom toPrimitive(TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
 
 	bool isInitialized() const {return traitsInitialized;}
@@ -756,9 +760,9 @@ public:
 	 * "toString" AS-functions which may be members of this
 	 *  object */
 	bool has_valueOf();
-	_R<ASObject> call_valueOf();
+	asAtom call_valueOf();
 	bool has_toString();
-	_R<ASObject> call_toString();
+	asAtom call_toString();
 	tiny_string call_toJSON(bool &ok, std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces, const tiny_string &filter);
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */

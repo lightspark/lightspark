@@ -890,8 +890,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 	else if (val == "overlay") th->blendMode = BLENDMODE_OVERLAY;
 	else if (val == "screen") th->blendMode = BLENDMODE_SCREEN;
 	else if (val == "subtract") th->blendMode = BLENDMODE_SUBTRACT;
-	if (th->blendMode != BLENDMODE_NORMAL && th->blendMode != BLENDMODE_MULTIPLY)
-		LOG(LOG_NOT_IMPLEMENTED, "DisplayObject.blendmode is set but is not respected during drawing:"<<val);
 	return asAtom::invalidAtom;
 }
 
@@ -946,7 +944,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setName)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
 	assert_and_throw(argslen==1);
-	th->name=args[0].toString();
+	th->name=args[0].toString(sys);
 	return asAtom::invalidAtom;
 }
 

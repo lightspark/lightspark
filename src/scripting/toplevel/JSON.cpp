@@ -94,7 +94,7 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 			Array* ar = args[1].as<Array>();
 			for (uint64_t i = 0; i < ar->size(); i++)
 			{
-				filter += ar->at(i).toString();
+				filter += ar->at(i).toString(sys);
 				filter += " ";
 			}
 		}
@@ -122,11 +122,11 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 		{
 			if(space.getObject() && space.getObject()->has_toString())
 			{
-				_R<ASObject> ret = space.getObject()->call_toString();
-				spaces = ret->toString();
+				asAtom ret = space.getObject()->call_toString();
+				spaces = ret.toString(sys);
 			}
 			else
-				spaces = space.toString();
+				spaces = space.toString(sys);
 			if (spaces.numBytes() > 10)
 				spaces = spaces.substr_bytes(0,10);
 		}

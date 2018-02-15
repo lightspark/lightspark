@@ -269,9 +269,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,_getEndian)
 ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	if(args[0].toString() == Endian::littleEndian)
+	if(args[0].toString(sys) == Endian::littleEndian)
 		th->littleEndian = true;
-	else if(args[0].toString() == Endian::bigEndian)
+	else if(args[0].toString(sys) == Endian::bigEndian)
 		th->littleEndian = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
@@ -507,7 +507,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTF)
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0].type==T_STRING);
 	th->lock();
-	th->writeUTF(args[0].toString());
+	th->writeUTF(args[0].toString(sys));
 	th->unlock();
 	return asAtom::invalidAtom;
 }
@@ -518,7 +518,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	assert_and_throw(args[0].type==T_STRING);
-	tiny_string str=args[0].toString();
+	tiny_string str=args[0].toString(sys);
 	th->lock();
 	th->getBuffer(th->position+str.numBytes(),true);
 	memcpy(th->bytes+th->position,str.raw_buf(),str.numBytes());

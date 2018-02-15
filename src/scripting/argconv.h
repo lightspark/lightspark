@@ -182,7 +182,7 @@ inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(SystemSta
 template<>
 inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(SystemState* sys,asAtom obj,const tiny_string& v)
 {
-	return obj.toString();
+	return obj.toString(sys);
 }
 
 template<>

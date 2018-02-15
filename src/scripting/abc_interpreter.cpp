@@ -22,6 +22,7 @@
 #include "exceptions.h"
 #include "scripting/abcutils.h"
 #include "scripting/class.h"
+#include "scripting/toplevel/ASString.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>
@@ -659,7 +660,7 @@ void ABCVm::abc_lookupswitch(call_context* context,preloadedcodedata** codep)
 	preloadedcodedata* here=*codep; //Base for the jumps is the instruction itself for the switch
 	int32_t t = (++(*codep))->idata;
 	preloadedcodedata* defaultdest=here+t;
-	LOG_CALL(_("Switch default dest ") << defaultdest);
+	LOG_CALL(_("Switch default dest ") << t);
 	uint32_t count = (++(*codep))->data;
 	preloadedcodedata* offsets=g_newa(preloadedcodedata, count+1);
 	for(unsigned int i=0;i<count+1;i++)
@@ -1385,7 +1386,7 @@ void ABCVm::abc_convert_s(call_context* context,preloadedcodedata** codep)
 	LOG_CALL( _("convert_s") );
 	if(pval->type != T_STRING)
 	{
-		tiny_string s = pval->toString();
+		tiny_string s = pval->toString(context->context->root->getSystemState());
 		ASATOM_DECREF_POINTER(pval);
 		pval->replace((ASObject*)abstract_s(context->context->root->getSystemState(),s));
 	}
@@ -1478,7 +1479,7 @@ void ABCVm::abc_coerce_s(call_context* context,preloadedcodedata** codep)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<pval->toDebugString());
 	if (pval->type != T_STRING)
-		pval->replace(coerce_s(pval->toObject(context->context->root->getSystemState())));
+		*pval = Class<ASString>::getClass(context->context->root->getSystemState())->coerce(context->context->root->getSystemState(),*pval);
 	++(*codep);
 }
 void ABCVm::abc_astype(call_context* context,preloadedcodedata** codep)
@@ -1767,7 +1768,18 @@ void ABCVm::abc_in(call_context* context,preloadedcodedata** codep)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	pval->setBool(in(v1,pval->toObject(context->context->root->getSystemState())));
+	LOG_CALL( _("in") );
+	if(v1->is<Null>())
+		throwError<TypeError>(kConvertNullToObjectError);
+
+	multiname name(NULL);
+	pval->fillMultiname(context->context->root->getSystemState(),name);
+	name.ns.emplace_back(context->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	bool ret=v1->hasPropertyByMultiname(name, true, true);
+	ASATOM_DECREF_POINTER(pval);
+	v1->decRef();
+	pval->setBool(ret);
+
 	++(*codep);
 }
 void ABCVm::abc_increment_i(call_context* context,preloadedcodedata** codep)
@@ -2000,7 +2012,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	{
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		uint8_t opcode = code.readbyte();
-//		LOG(LOG_INFO,"preload opcode:"<<hex<<(int)opcode);
+		//LOG(LOG_INFO,"preload opcode:"<<code.tellg()-1<<" "<<hex<<(int)opcode);
 		
 
 		switch(opcode)
@@ -2094,7 +2106,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x1b://lookupswitch
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
-				int32_t p = code.tellg();
+				int32_t p = code.tellg()-1;
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				switchpositions[mi->body->preloadedcode.size()] = code.reads24();
 				switchstartpositions[mi->body->preloadedcode.size()] = p;
@@ -2167,6 +2179,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				if (code.peekbyte() == 0x75) //convert_d 
 				{
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					// skip unneccessary convert_d
 					code.readbyte();
 				}
@@ -2188,6 +2201,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			}
 		}
 	}
+	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 
 	// adjust jump positions to new code vector;
 	auto itj = jumppositions.begin();
@@ -2195,8 +2209,13 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	{
 		uint32_t p = jumpstartpositions[itj->first];
 		assert (oldnewpositions.find(p) != oldnewpositions.end());
-		assert (oldnewpositions.find(p+itj->second) != oldnewpositions.end());
-		mi->body->preloadedcode[itj->first].jumpdata.jump = (oldnewpositions[p+itj->second]-(oldnewpositions[p]));
+		if (oldnewpositions.find(p+itj->second) == oldnewpositions.end())
+		{
+			LOG(LOG_ERROR,"preloadfunction: jump position not found:"<<p<<" "<<itj->second);
+			mi->body->preloadedcode[itj->first].jumpdata.jump = 0;
+		}
+		else
+			mi->body->preloadedcode[itj->first].jumpdata.jump = (oldnewpositions[p+itj->second]-(oldnewpositions[p]));
 		itj++;
 	}
 	// adjust switch positions to new code vector;

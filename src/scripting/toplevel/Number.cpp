@@ -48,7 +48,7 @@ number_t ASObject::toNumber()
 		return as<ASString>()->toNumber();
 	default:
 		//everything else is an Object regarding to the spec
-		return toPrimitive(NUMBER_HINT)->toNumber();
+		return toPrimitive(NUMBER_HINT).toNumber();
 	}
 }
 
@@ -114,7 +114,7 @@ TRISTATE Number::isLess(ASObject* o)
 			return (ival<0)?TTRUE:TFALSE;
 		default:
 		{
-			double val2=o->toPrimitive()->toNumber();
+			double val2=o->toPrimitive().toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (toNumber()<val2)?TTRUE:TFALSE;
 		}
@@ -186,12 +186,12 @@ ASFUNCTIONBODY_ATOM(Number,_toString)
 	int radix=10;
 	ARG_UNPACK_ATOM (radix,10);
 
-	if((radix==10) || (obj.is<Number>() && 
-					   ((obj.as<Number>()->isfloat && std::isnan(obj.as<Number>()->dval)) || 
-					   (obj.as<Number>()->isfloat && std::isinf(obj.as<Number>()->dval)))))
+	if((radix==10) || (obj.is<Number>() &&
+					   (std::isnan(obj.toNumber()) ||
+					   (std::isinf(obj.toNumber())))))
 	{
 		//see e 15.7.4.2
-		return asAtom::fromObject(abstract_s(sys,obj.toString()));
+		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	}
 	else
 	{
@@ -206,12 +206,12 @@ ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 		return asAtom::fromString(sys,"0");
 	int radix=10;
 
-	if((radix==10) || (obj.is<Number>() && 
-					   ((obj.as<Number>()->isfloat && std::isnan(obj.as<Number>()->dval)) || 
-					   (obj.as<Number>()->isfloat && std::isinf(obj.as<Number>()->dval)))))
+	if((radix==10) || (obj.is<Number>() &&
+					   (std::isnan(obj.toNumber()) ||
+					   (std::isinf(obj.toNumber())))))
 	{
 		//see e 15.7.4.2
-		return asAtom::fromObject(abstract_s(sys,obj.toString()));
+		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	}
 	else
 	{
@@ -410,8 +410,7 @@ tiny_string Number::toFixedString(double v, int32_t fractiondigits)
 
 ASFUNCTIONBODY_ATOM(Number,toExponential)
 {
-	Number* th=obj.as<Number>();
-	double v = th->toNumber();
+	double v = obj.toNumber();
 	int32_t fractionDigits;
 	ARG_UNPACK_ATOM(fractionDigits, 0);
 	if (argslen == 0 || args[0].is<Undefined>())
@@ -517,8 +516,7 @@ int32_t Number::countSignificantDigits(double v) {
 
 ASFUNCTIONBODY_ATOM(Number,toPrecision)
 {
-	Number* th=obj.as<Number>();
-	double v = th->toNumber();
+	double v = obj.toNumber();
 	if (argslen == 0 || args[0].is<Undefined>())
 		return asAtom::fromObject(abstract_s(sys,toString(v)));
 

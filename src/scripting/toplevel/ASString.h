@@ -137,7 +137,7 @@ inline asAtom Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 	}
 	if(!o.isConstructed())
 		return o;
-	res = asAtom::fromObject(lightspark::abstract_s(sys,o.toString()));
+	res = asAtom::fromStringID(o.toStringId(sys));
 	ASATOM_DECREF(o);
 	return res;
 }

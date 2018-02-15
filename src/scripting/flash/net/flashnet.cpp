@@ -241,7 +241,7 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setMethod)
 {
 	URLRequest* th=obj.as<URLRequest>();
 	assert_and_throw(argslen==1);
-	const tiny_string& tmp=args[0].toString();
+	const tiny_string& tmp=args[0].toString(sys);
 	if(tmp=="GET")
 		th->method=GET;
 	else if(tmp=="POST")
@@ -592,7 +592,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,_setDataFormat)
 {
 	URLLoader* th=obj.as<URLLoader>();
 	assert_and_throw(argslen);
-	th->setDataFormat(args[0].toString());
+	th->setDataFormat(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -946,7 +946,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 	else
 	{
 		th->_connected = false;
-		th->uri = URLInfo(args[0].toString());
+		th->uri = URLInfo(args[0].toString(sys));
 
 		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
@@ -1357,7 +1357,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 		assert_and_throw(argslen>=1 && argslen<=4);
 		//Args: name, start, len, reset
 		th->url=th->connection->uri;
-		th->url.setStream(args[0].toString());
+		th->url.setStream(args[0].toString(sys));
 	}
 	else
 	{
@@ -1365,7 +1365,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 		assert_and_throw(argslen>=1);
 		//args[0] is the url
 		//what is the meaning of the other arguments
-		th->url = sys->mainClip->getOrigin().goToURL(args[0].toString());
+		th->url = sys->mainClip->getOrigin().goToURL(args[0].toString(sys));
 
 		SecurityManager::EVALUATIONRESULT evaluationResult =
 			sys->securityManager->evaluateURLStatic(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
@@ -2215,7 +2215,7 @@ ASFUNCTIONBODY_ATOM(URLVariables,decode)
 {
 	URLVariables* th=obj.as<URLVariables>();
 	assert_and_throw(argslen==1);
-	th->decode(args[0].toString());
+	th->decode(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -2231,7 +2231,7 @@ ASFUNCTIONBODY_ATOM(URLVariables,_constructor)
 	URLVariables* th=obj.as<URLVariables>();
 	assert_and_throw(argslen<=1);
 	if(argslen==1)
-		th->decode(args[0].toString());
+		th->decode(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -2259,7 +2259,7 @@ tiny_string URLVariables::toString_priv()
 				tmp+="=";
 
 				//Escape the value
-				const tiny_string& value=arr->at(j).toString();
+				const tiny_string& value=arr->at(j).toString(getSystemState());
 				char* escapedValue=g_uri_escape_string(value.raw_buf(),NULL, false);
 				tmp+=escapedValue;
 				g_free(escapedValue);
@@ -2277,7 +2277,7 @@ tiny_string URLVariables::toString_priv()
 			tmp+="=";
 
 			//Escape the value
-			const tiny_string& value=val.toString();
+			const tiny_string& value=val.toString(getSystemState());
 			char* escapedValue=g_uri_escape_string(value.raw_buf(),NULL, false);
 			tmp+=escapedValue;
 			g_free(escapedValue);
@@ -2567,7 +2567,7 @@ ASFUNCTIONBODY_GETTER(DRMManager, isSupported);
 ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 {
 	assert_and_throw(argslen==2 && args[0].type==T_STRING && args[1].type==T_CLASS);
-	const tiny_string& arg0 = args[0].toString();
+	const tiny_string& arg0 = args[0].toString(sys);
 	ASATOM_INCREF(args[1]);
 	_R<Class_base> c=_MR(args[1].as<Class_base>());
 	sys->aliasMap.insert(make_pair(arg0, c));
@@ -2577,7 +2577,7 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 {
 	assert_and_throw(argslen==1 && args[0].type==T_STRING);
-	const tiny_string& arg0 = args[0].toString();
+	const tiny_string& arg0 = args[0].toString(sys);
 	auto it=sys->aliasMap.find(arg0);
 	if(it==sys->aliasMap.end())
 		throwError<ReferenceError>(kClassNotFoundError, arg0);

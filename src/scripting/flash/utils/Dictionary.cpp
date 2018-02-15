@@ -371,7 +371,7 @@ tiny_string Dictionary::toString()
 	{
 		if(it != data.begin())
 			retstr << ", ";
-		retstr << "{" << it->first->toString() << ", " << it->second.toString() << "}";
+		retstr << "{" << it->first->toString() << ", " << it->second.toString(getSystemState()) << "}";
 		++it;
 	}
 	retstr << "}";

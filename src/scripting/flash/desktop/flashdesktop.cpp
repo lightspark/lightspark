@@ -52,7 +52,7 @@ ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)
 {
 	EventDispatcher* th = obj.as<EventDispatcher>();
 	EventDispatcher::addEventListener(sys,obj, args, argslen);
-	if (args[0].toString() == "invoke")
+	if (args[0].toString(sys) == "invoke")
 	{
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(sys)));

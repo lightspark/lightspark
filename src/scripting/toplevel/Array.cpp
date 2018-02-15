@@ -719,7 +719,7 @@ ASFUNCTIONBODY_ATOM(Array,join)
 	{
 		asAtom o = th->at(i);
 		if (!o.is<Undefined>() && !o.is<Null>())
-			ret+= o.toString().raw_buf();
+			ret+= o.toString(sys).raw_buf();
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
@@ -852,8 +852,8 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 		//Comparison is always in lexicographic order
 		tiny_string s1;
 		tiny_string s2;
-		s1=o1.toString();
-		s2=o2.toString();
+		s1=o1.toString(getSys());
+		s2=o2.toString(getSys());
 
 		if(isDescending)
 		{
@@ -1021,8 +1021,8 @@ bool Array::sortOnComparator::operator()(const asAtom& d1, const asAtom& d2)
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1.toString();
-			s2=obj2.toString();
+			s1=obj1.toString(getSys());
+			s2=obj2.toString(getSys());
 			if (s1 != s2)
 			{
 				if(it->isDescending)
@@ -1694,7 +1694,7 @@ tiny_string Array::toString_priv(bool localized)
 			if (localized)
 				ret += sl.toLocaleString().raw_buf();
 			else
-				ret += sl.toString().raw_buf();
+				ret += sl.toString(getSystemState()).raw_buf();
 		}
 		if(i!=size()-1)
 			ret+=',';

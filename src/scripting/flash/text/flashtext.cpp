@@ -432,7 +432,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setText)
 {
 	TextField* th=obj.as<TextField>();
 	assert_and_throw(argslen==1);
-	th->updateText(args[0].toString());
+	th->updateText(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -440,7 +440,7 @@ ASFUNCTIONBODY_ATOM(TextField, appendText)
 {
 	TextField* th=obj.as<TextField>();
 	assert_and_throw(argslen==1);
-	th->updateText(th->text + args[0].toString());
+	th->updateText(th->text + args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -1350,7 +1350,7 @@ ASFUNCTIONBODY_ATOM(StyleSheet,setStyle)
 {
 	StyleSheet* th=obj.as<StyleSheet>();
 	assert_and_throw(argslen==2);
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 	ASATOM_INCREF(args[1]); //TODO: should make a copy, see reference
 	map<tiny_string, asAtom>::iterator it=th->styles.find(arg0);
 	//NOTE: we cannot use the [] operator as References cannot be non initialized
@@ -1365,7 +1365,7 @@ ASFUNCTIONBODY_ATOM(StyleSheet,getStyle)
 {
 	StyleSheet* th=obj.as<StyleSheet>();
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 	map<tiny_string, asAtom>::iterator it=th->styles.find(arg0);
 	if(it!=th->styles.end()) //Style already exists
 	{

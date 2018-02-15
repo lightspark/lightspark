@@ -139,7 +139,7 @@ ASFUNCTIONBODY_ATOM(ASError,_constructor)
 	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	if(argslen == 2)
 	{
@@ -160,7 +160,7 @@ void ASError::errorGenerator(ASError* obj, asAtom* args, const unsigned int args
 	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
-		obj->message = args[0].toString();
+		obj->message = args[0].toString(obj->getSystemState());
 	}
 	if(argslen == 2)
 	{
@@ -193,7 +193,7 @@ ASFUNCTIONBODY_ATOM(SecurityError,_constructor)
 	SecurityError* th=obj.as<SecurityError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -220,7 +220,7 @@ ASFUNCTIONBODY_ATOM(ArgumentError,_constructor)
 	ArgumentError* th=obj.as<ArgumentError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -247,7 +247,7 @@ ASFUNCTIONBODY_ATOM(DefinitionError,_constructor)
 	DefinitionError* th=obj.as<DefinitionError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -274,7 +274,7 @@ ASFUNCTIONBODY_ATOM(EvalError,_constructor)
 	EvalError* th=obj.as<EvalError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -301,7 +301,7 @@ ASFUNCTIONBODY_ATOM(RangeError,_constructor)
 	RangeError* th=obj.as<RangeError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -328,7 +328,7 @@ ASFUNCTIONBODY_ATOM(ReferenceError,_constructor)
 	ReferenceError* th=obj.as<ReferenceError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -355,7 +355,7 @@ ASFUNCTIONBODY_ATOM(SyntaxError,_constructor)
 	SyntaxError* th=obj.as<SyntaxError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -382,7 +382,7 @@ ASFUNCTIONBODY_ATOM(TypeError,_constructor)
 	TypeError* th=obj.as<TypeError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -409,7 +409,7 @@ ASFUNCTIONBODY_ATOM(URIError,_constructor)
 	URIError* th=obj.as<URIError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -436,7 +436,7 @@ ASFUNCTIONBODY_ATOM(VerifyError,_constructor)
 	VerifyError* th=obj.as<VerifyError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }
@@ -463,7 +463,7 @@ ASFUNCTIONBODY_ATOM(UninitializedError,_constructor)
 	UninitializedError* th=obj.as<UninitializedError>();
 	if(argslen == 1)
 	{
-		th->message = args[0].toString();
+		th->message = args[0].toString(sys);
 	}
 	return asAtom::invalidAtom;
 }

@@ -107,7 +107,7 @@ ASFUNCTIONBODY_ATOM(Boolean,_toString)
 	if(!obj.is<Boolean>())
 		throw Class<TypeError>::getInstanceS(sys,"");
 
-	return asAtom::fromString(sys,obj.toString());
+	return asAtom::fromString(sys,obj.toString(sys));
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
@@ -194,7 +194,7 @@ TRISTATE Boolean::isLess(ASObject* r)
 			return TUNDEFINED;
 		default:
 		{
-			double val2=r->toPrimitive()->toNumber();
+			double val2=r->toPrimitive().toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}

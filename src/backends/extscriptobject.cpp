@@ -225,7 +225,7 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 				else
 				{
 					allNumericProperties = false;
-					objectValue->setProperty(nextName.toString().raw_buf(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
+					objectValue->setProperty(nextName.toString(other->getSystemState()).raw_buf(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
 				}
 			}
 

@@ -144,7 +144,7 @@ tiny_string ASObject::toString()
 		return as<ASString>()->getData();
 	default:
 		//everything else is an Object regarding to the spec
-		return toPrimitive(STRING_HINT)->toString();
+		return toPrimitive(STRING_HINT).toString(getSystemState());
 	}
 }
 
@@ -153,13 +153,14 @@ tiny_string ASObject::toLocaleString()
 	asAtom str = executeASMethod("toLocaleString", {""}, NULL, 0);
 	if (str.type == T_INVALID)
 		return "";
-	return str.toString();
+	return str.toString(getSystemState());
 }
 
 TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();
-	return toPrimitive()->isLess(r);
+	asAtom o = asAtom::fromObject(r);
+	return toPrimitive().isLess(getSystemState(),o);
 }
 
 int variables_map::getNextEnumerable(unsigned int start) const
@@ -251,13 +252,14 @@ bool ASObject::isEqual(ASObject* r)
 		case T_UINTEGER:
 		case T_STRING:
 		{
-			_R<ASObject> primitive(toPrimitive());
-			return primitive->isEqual(r);
+			asAtom primitive = toPrimitive();
+			asAtom o = asAtom::fromObject(r);
+			return primitive.isEqual(getSystemState(),o);
 		}
 		case T_BOOLEAN:
 		{
-			_R<ASObject> primitive(toPrimitive());
-			return primitive->toNumber()==r->toNumber();
+			asAtom primitive = toPrimitive();
+			return primitive.toNumber()==r->toNumber();
 		}
 		default:
 		{
@@ -292,16 +294,16 @@ uint16_t ASObject::toUInt16()
 
 int32_t ASObject::toInt()
 {
-	return toPrimitive()->toInt();
+	return toPrimitive().toInt();
 }
 
 int64_t ASObject::toInt64()
 {
-	return toPrimitive()->toInt64();
+	return toPrimitive().toInt64();
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-_R<ASObject> ASObject::toPrimitive(TP_HINT hint)
+asAtom ASObject::toPrimitive(TP_HINT hint)
 {
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
@@ -315,32 +317,32 @@ _R<ASObject> ASObject::toPrimitive(TP_HINT hint)
 	if(isPrimitive())
 	{
 		this->incRef();
-		return _MR(this);
+		return asAtom::fromObject(this);
 	}
 
 	/* for HINT_STRING evaluate first toString, then valueOf
 	 * for HINT_NUMBER do it the other way around */
 	if(hint == STRING_HINT && has_toString())
 	{
-		_R<ASObject> ret = call_toString();
-		if(ret->isPrimitive())
+		asAtom ret = call_toString();
+		if(ret.isPrimitive())
 			return ret;
 	}
 	if(has_valueOf())
 	{
-		_R<ASObject> ret = call_valueOf();
-		if(ret->isPrimitive())
+		asAtom ret = call_valueOf();
+		if(ret.isPrimitive())
 			return ret;
 	}
 	if(hint != STRING_HINT && has_toString())
 	{
-		_R<ASObject> ret = call_toString();
-		if(ret->isPrimitive())
+		asAtom ret = call_toString();
+		if(ret.isPrimitive())
 			return ret;
 	}
 
 	throwError<TypeError>(kConvertToPrimitiveError,this->getClassName());
-	return _MR((ASObject*)NULL);
+	return asAtom::invalidAtom;
 }
 
 bool ASObject::has_valueOf()
@@ -357,7 +359,7 @@ bool ASObject::has_valueOf()
 /* calls the valueOf function on this object
  * we cannot just call the c-function, because it can be overriden from AS3 code
  */
-_R<ASObject> ASObject::call_valueOf()
+asAtom ASObject::call_valueOf()
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
@@ -372,8 +374,7 @@ _R<ASObject> ASObject::call_valueOf()
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0,false);
-	return _MR(ret.toObject(getSystemState()));
+	return o.callFunction(v,NULL,0,false);
 }
 
 bool ASObject::has_toString()
@@ -390,7 +391,7 @@ bool ASObject::has_toString()
 /* calls the toString function on this object
  * we cannot just call the c-function, because it can be overriden from AS3 code
  */
-_R<ASObject> ASObject::call_toString()
+asAtom ASObject::call_toString()
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
@@ -405,8 +406,7 @@ _R<ASObject> ASObject::call_toString()
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0,false);
-	return _MR(ret.toObject(getSystemState()));
+	return o.callFunction(v,NULL,0,false);
 }
 
 tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
@@ -430,7 +430,7 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	if (ret.type == T_STRING)
 	{
 		res += "\"";
-		res += ret.toString();
+		res += ret.toString(getSystemState());
 		res += "\"";
 	}
 	else 
@@ -2002,7 +2002,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						ASATOM_INCREF(params[1]);
 						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,true);
 						if (funcret.type != T_INVALID)
-							res += funcret.toString();
+							res += funcret.toString(getSystemState());
 						else
 							res += v->toJSON(path,replacer,spaces+spaces,filter);
 						bfirst = false;
@@ -2188,6 +2188,62 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 	return ret;
 }
 
+asAtom asAtom::getVariableByMultiname(SystemState* sys, const multiname &name)
+{
+	// classes for primitives are final and sealed, so we only have to check the class for the variable
+	// no need to create ASObjects for the primitives
+	switch(type)
+	{
+		case T_INTEGER:
+			return Class<Integer>::getClass(sys)->getClassVariableByMultiname(name);
+		case T_UINTEGER:
+			return Class<UInteger>::getClass(sys)->getClassVariableByMultiname(name);
+		case T_NUMBER:
+			return Class<Number>::getClass(sys)->getClassVariableByMultiname(name);
+		case T_BOOLEAN:
+			return Class<Boolean>::getClass(sys)->getClassVariableByMultiname(name);
+		case T_STRING:
+			return Class<ASString>::getClass(sys)->getClassVariableByMultiname(name);
+		default:
+			return asAtom::invalidAtom;
+	}
+}
+
+void asAtom::fillMultiname(SystemState* sys, multiname &name)
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			name.name_type = multiname::NAME_INT;
+			name.name_i = intval;
+			break;
+		case T_UINTEGER:
+			name.name_type = multiname::NAME_UINT;
+			name.name_ui = uintval;
+			break;
+		case T_NUMBER:
+			name.name_type = multiname::NAME_NUMBER;
+			name.name_d = numberval;
+			break;
+		case T_BOOLEAN:
+			name.name_type = multiname::NAME_INT;
+			name.name_i = boolval ? 1 : 0;
+			break;
+		case T_STRING:
+			if (stringID != UINT32_MAX)
+			{
+				name.name_type = multiname::NAME_STRING;
+				name.name_s_id = stringID;
+				break;
+			}
+			// falls through
+		default:
+			name.name_type=multiname::NAME_OBJECT;
+			name.name_o=toObject(sys);
+			break;
+	}
+}
+
 void asAtom::replace(ASObject *obj)
 {
 	assert(obj);
@@ -2316,7 +2372,7 @@ asAtom asAtom::asTypelate(asAtom& atomtype)
 }
 
 
-tiny_string asAtom::toString()
+tiny_string asAtom::toString(SystemState* sys)
 {
 	switch(type)
 	{
@@ -2334,7 +2390,7 @@ tiny_string asAtom::toString()
 			return UInteger::toString(uintval);
 		case T_STRING:
 			if (!objval && stringID != UINT32_MAX)
-				return getSys()->getStringFromUniqueId(stringID);
+				return sys->getStringFromUniqueId(stringID);
 			assert(objval);
 			return objval->toString();
 		case T_INVALID:
@@ -2520,8 +2576,8 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 	}
 	else if(type== T_STRING || v2.type == T_STRING)
 	{
-		tiny_string a = toString();
-		tiny_string b = v2.toString();
+		tiny_string a = toString(sys);
+		tiny_string b = v2.toString(sys);
 		LOG_CALL("add " << a << '+' << b);
 		decRef();
 		ASATOM_DECREF(v2);
@@ -2556,12 +2612,12 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		}
 		else
 		{//If none of the above apply, convert both to primitives with no hint
-			_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
-			_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
-			if(val1p->is<ASString>() || val2p->is<ASString>())
+			asAtom val1p = val1->toPrimitive(NO_HINT);
+			asAtom val2p = val2->toPrimitive(NO_HINT);
+			if(val1p.is<ASString>() || val2p.is<ASString>())
 			{//If one is String, convert both to strings and concat
-				string a(val1p->toString().raw_buf());
-				string b(val2p->toString().raw_buf());
+				string a(val1p.toString(sys).raw_buf());
+				string b(val2p.toString(sys).raw_buf());
 				LOG_CALL("add " << a << '+' << b);
 				val1->decRef();
 				val2->decRef();
@@ -2571,8 +2627,8 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=val1p->toNumber();
-				number_t num2=val2p->toNumber();
+				number_t num1=val1p.toNumber();
+				number_t num2=val2p.toNumber();
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				val1->decRef();

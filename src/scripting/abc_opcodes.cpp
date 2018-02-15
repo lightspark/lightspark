@@ -349,10 +349,20 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		LOG(LOG_ERROR,"trying to call property on undefined:"<<*name);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	ASObject* pobj = obj.toObject(th->context->root->getSystemState());
-	checkDeclaredTraits(pobj);
-	//We should skip the special implementation of get
-	asAtom o=pobj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+	ASObject* pobj = obj.getObject();
+	asAtom o;
+	if (!pobj)
+	{
+		// fast path for primitives to avoid creation of ASObjects
+		o = obj.getVariableByMultiname(th->context->root->getSystemState(),*name);
+	}
+	if(o.type == T_INVALID)
+	{
+		pobj = obj.toObject(th->context->root->getSystemState());
+		checkDeclaredTraits(pobj);
+		//We should skip the special implementation of get
+		o=pobj->getVariableByMultiname(*name, ASObject::SKIP_IMPL);
+	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
 	{
@@ -1169,12 +1179,12 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	}
 	else
 	{//If none of the above apply, convert both to primitives with no hint
-		_R<ASObject> val1p = val1->toPrimitive(NO_HINT);
-		_R<ASObject> val2p = val2->toPrimitive(NO_HINT);
-		if(val1p->is<ASString>() || val2p->is<ASString>())
+		asAtom val1p = val1->toPrimitive(NO_HINT);
+		asAtom val2p = val2->toPrimitive(NO_HINT);
+		if(val1p.is<ASString>() || val2p.is<ASString>())
 		{//If one is String, convert both to strings and concat
-			string a(val1p->toString().raw_buf());
-			string b(val2p->toString().raw_buf());
+			string a(val1p.toString(val1->getSystemState()).raw_buf());
+			string b(val2p.toString(val1->getSystemState()).raw_buf());
 			LOG_CALL("add " << a << '+' << b);
 			res = abstract_s(val1->getSystemState(),a+b);
 			val1->decRef();
@@ -1183,8 +1193,8 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		}
 		else
 		{//Convert both to numbers and add
-			number_t num1=val1p->toNumber();
-			number_t num2=val2p->toNumber();
+			number_t num1=val1p.toNumber();
+			number_t num2=val2p.toNumber();
 			LOG_CALL("addN " << num1 << '+' << num2);
 			number_t result = num1 + num2;
 			res = abstract_d(val1->getSystemState(),result);

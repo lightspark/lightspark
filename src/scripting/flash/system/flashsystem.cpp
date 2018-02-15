@@ -266,7 +266,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 {
 	ApplicationDomain* th = obj.as<ApplicationDomain>();
 	assert(argslen==1);
-	const tiny_string& tmp=args[0].toString();
+	const tiny_string& tmp=args[0].toString(sys);
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
@@ -297,7 +297,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 {
 	ApplicationDomain* th = obj.as<ApplicationDomain>();
 	assert(argslen==1);
-	const tiny_string& tmp=args[0].toString();
+	const tiny_string& tmp=args[0].toString(sys);
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
@@ -560,7 +560,7 @@ ASFUNCTIONBODY_ATOM(Security, allowInsecureDomain)
 
 ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
 {
-	tiny_string url = args[0].toString();
+	tiny_string url = args[0].toString(sys);
 	LOG(LOG_INFO, "Loading policy file: " << sys->mainClip->getOrigin().goToURL(url));
 	sys->securityManager->addPolicyFile(sys->mainClip->getOrigin().goToURL(url));
 	assert_and_throw(argslen == 1);
@@ -583,7 +583,7 @@ ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 {
 	assert_and_throw(argslen >= 1 && argslen <= 2);
 	assert_and_throw(args[0].type == T_STRING);
-	tiny_string command = args[0].toString();
+	tiny_string command = args[0].toString(sys);
 	if(command == "quit")
 	{
 		sys->setShutdownFlag();

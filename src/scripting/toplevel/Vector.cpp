@@ -336,7 +336,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 		if(funcRet.type != T_INVALID)
 		{
 			if (funcRet.type == T_UNDEFINED || funcRet.type == T_NULL)
-				throwError<TypeError>(kCallOfNonFunctionError, funcRet.toString());
+				throwError<TypeError>(kCallOfNonFunctionError, funcRet.toString(sys));
 			if(!funcRet.Boolean_concrete())
 			{
 				return funcRet;
@@ -688,12 +688,12 @@ ASFUNCTIONBODY_ATOM(Vector,join)
 	
 	tiny_string del = ",";
 	if (argslen == 1)
-	      del=args[0].toString();
+		  del=args[0].toString(sys);
 	string ret;
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		if (th->vec[i].type != T_INVALID)
-			ret+=th->vec[i].toString().raw_buf();
+			ret+=th->vec[i].toString(sys).raw_buf();
 		if(i!=th->size()-1)
 			ret+=del.raw_buf();
 	}
@@ -745,8 +745,8 @@ bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d
 	else
 	{
 		//Comparison is always in lexicographic order
-		tiny_string s1 = o1.toString();
-		tiny_string s2 = o2.toString();
+		tiny_string s1 = o1.toString(getSys());
+		tiny_string s2 = o2.toString(getSys());
 
 		if(isDescending)
 		{
@@ -936,10 +936,10 @@ ASFUNCTIONBODY_ATOM(Vector,_toString)
 	for(size_t i=0; i < th->vec.size(); ++i)
 	{
 		if (th->vec[i].type != T_INVALID)
-			ret += th->vec[i].toString();
+			ret += th->vec[i].toString(sys);
 		else
 			// use the type's default value
-			ret += th->vec_type->coerce(th->getSystemState(), natom).toString();
+			ret += th->vec_type->coerce(th->getSystemState(), natom).toString(sys);
 
 		if(i!=th->vec.size()-1)
 			ret += ',';
@@ -1155,9 +1155,9 @@ tiny_string Vector::toString()
 		if( i )
 			t += ",";
 		if (vec[i].type != T_INVALID) 
-			t += vec[i].toString();
+			t += vec[i].toString(getSystemState());
 		else
-			t += vec_type->coerce(getSystemState(), natom ).toString();
+			t += vec_type->coerce(getSystemState(), natom ).toString(getSystemState());
 	}
 	return t;
 }

@@ -271,6 +271,7 @@ public:
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
 	bool checkExistingFunction(const multiname& name);
+	asAtom getClassVariableByMultiname(const multiname& name);
 };
 
 class Template_base : public ASObject

@@ -395,16 +395,16 @@ asAtom SyntheticFunction::call(asAtom& obj, asAtom *args, uint32_t numArgs)
 	cc.context=mi->context;
 	cc.parent_scope_stack=func_scope;
 	cc.exec_pos=0;
-	
+
 	cc.max_scope_stack = mi->body->max_scope_depth;
 	cc.curr_scope_stack= 0;
 	cc.scope_stack=g_newa(asAtom, cc.max_scope_stack);
 	cc.scope_stack_dynamic=g_newa(bool, cc.max_scope_stack);
-	
+
 	for(asAtom* i=cc.scope_stack;i< cc.scope_stack+cc.max_scope_stack;++i)
 		*i = asAtom::invalidAtom;
 	cc.stack_index=0;
-	
+
 	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
 	cc.defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 
@@ -673,7 +673,7 @@ TRISTATE Null::isLess(ASObject* r)
 	}
 	else
 	{
-		double val2=r->toPrimitive()->toNumber();
+		double val2=r->toPrimitive().toNumber();
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (0<val2)?TTRUE:TFALSE;
 	}
@@ -851,7 +851,7 @@ void Class_base::initStandardProps()
 {
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
 	addConstructorGetter();
-	
+
 	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
 
@@ -1099,7 +1099,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) cons
 				//Probe the interface for its interfaces
 				bool bAllDefinedSub;
 				inter->getInterfaces(&bAllDefinedSub);
-				
+
 				if (bAllDefinedSub)
 				{
 					interfaces_added.push_back(inter);
@@ -1183,9 +1183,9 @@ tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
 
 tiny_string Class_base::getName() const
 {
-	return (class_name.nsStringId == BUILTIN_STRINGS::EMPTY ? 
+	return (class_name.nsStringId == BUILTIN_STRINGS::EMPTY ?
 				this->getSystemState()->getStringFromUniqueId(class_name.nameId)
-			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +"$"+ this->getSystemState()->getStringFromUniqueId(class_name.nameId)); 
+			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +"$"+ this->getSystemState()->getStringFromUniqueId(class_name.nameId));
 }
 
 ASObject *Class_base::describeType() const
@@ -1211,7 +1211,7 @@ ASObject *Class_base::describeType() const
 	prototypenode.append_attribute("access").set_value("readonly");
 	prototypenode.append_attribute("type").set_value("*");
 	prototypenode.append_attribute("declaredBy").set_value("Class");
-	
+
 	std::map<varName,pugi::xml_node> propnames;
 	// variable
 	if(class_index>=0)
@@ -1392,8 +1392,8 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 		int kind=t.kind&0xf;
 		multiname* mname=context->getMultiname(t.name,NULL);
 		if (mname->name_type!=multiname::NAME_STRING ||
-		    (mname->ns.size()==1 && (mname->ns[0].kind != NAMESPACE)) ||
-		    mname->ns.size() > 1)
+			(mname->ns.size()==1 && (mname->ns[0].kind != NAMESPACE)) ||
+			mname->ns.size() > 1)
 			continue;
 		pugi::xml_node node;
 		varName vn(mname->name_s_id,mname->ns.size()==1 && first && !(kind==traits_info::Getter || kind==traits_info::Setter) ? mname->ns[0] : nsNameAndKind());
@@ -1468,7 +1468,7 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 				access="readonly";
 			else if(kind==traits_info::Setter && oldAccess=="")
 				access="writeonly";
-			else if((kind==traits_info::Getter && oldAccess=="writeonly") || 
+			else if((kind==traits_info::Getter && oldAccess=="writeonly") ||
 				(kind==traits_info::Setter && oldAccess=="readonly"))
 				access="readwrite";
 
@@ -1496,7 +1496,7 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 
 			node.remove_attribute("declaredBy");
 			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
-			
+
 			describeMetadata(node, t);
 			accessorNodes[t.name]=node;
 		}
@@ -1583,6 +1583,73 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	return false;
 }
 
+asAtom Class_base::getClassVariableByMultiname(const multiname &name)
+{
+	uint32_t nsRealId;
+	variable* obj = ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,&nsRealId);
+	if(!obj && name.hasEmptyNS)
+	{
+		//Check prototype chain
+		Prototype* proto = prototype.getPtr();
+		while(proto)
+		{
+			obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+			if(obj)
+			{
+				//It seems valid for a class to redefine only the setter, so if we can't find
+				//something to get, it's ok
+				if(!(obj->getter.type != T_INVALID || obj->var.type != T_INVALID))
+					obj=NULL;
+			}
+			if(obj)
+				break;
+			proto = proto->prevPrototype.getPtr();
+		}
+	}
+	if(!obj)
+		return asAtom::invalidAtom;
+
+
+	if (obj->kind == INSTANCE_TRAIT)
+	{
+		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
+			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
+	}
+
+	if(obj->getter.type != T_INVALID)
+	{
+		//Call the getter
+		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
+		ASObject* target=NULL;
+		if (!obj->getter.isBound())
+			target=this;
+
+		asAtom v =asAtom::fromObject(target);
+		asAtom ret=obj->getter.callFunction(v,NULL,0,false);
+		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
+		return ret;
+	}
+	else
+	{
+		assert_and_throw(obj->setter.type == T_INVALID);
+		ASATOM_INCREF(obj->var);
+		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
+		{
+			if (obj->var.isBound())
+			{
+				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
+				return obj->var;
+			}
+			else
+			{
+				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
+				return asAtom::fromFunction(obj->var.getObject(),NULL);
+			}
+		}
+		return obj->var;
+	}
+}
+
 ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
 {
 }
@@ -1664,7 +1731,7 @@ ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 	}
 	else
 	{
-		if(namespaceval.type==T_QNAME && 
+		if(namespaceval.type==T_QNAME &&
 		   !(namespaceval.as<ASQName>()->uri_is_null))
 		{
 			ASQName* q=namespaceval.as<ASQName>();
@@ -1740,7 +1807,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 	}
 	else
 	{
-		if(namespaceval.type==T_QNAME && 
+		if(namespaceval.type==T_QNAME &&
 		   !(namespaceval.as<ASQName>()->uri_is_null))
 		{
 			ASQName* q=namespaceval.as<ASQName>();
@@ -1845,7 +1912,7 @@ asAtom ASQName::nextValue(uint32_t index)
 	}
 }
 
-Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false)
+Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(BUILTIN_STRINGS::EMPTY),prefix(BUILTIN_STRINGS::EMPTY)
 {
 }
 
@@ -1906,7 +1973,7 @@ ASFUNCTIONBODY_ATOM(Namespace,_constructor)
 			th->prefix=n->prefix;
 			th->prefix_is_undefined=n->prefix_is_undefined;
 		}
-		else if(urival.type==T_QNAME && 
+		else if(urival.type==T_QNAME &&
 		   !(urival.as<ASQName>()->uri_is_null))
 		{
 			ASQName* q=urival.as<ASQName>();
@@ -1938,7 +2005,7 @@ ASFUNCTIONBODY_ATOM(Namespace,_constructor)
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(prefixval.type==T_UNDEFINED ||
-			   prefixval.toString()=="")
+			   prefixval.toString(sys)=="")
 				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
 				throw Class<TypeError>::getInstanceS(th->getSystemState(),"Namespace prefix for empty uri not allowed");
@@ -1994,7 +2061,7 @@ ASFUNCTIONBODY_ATOM(Namespace,generator)
 			th->prefix=n->prefix;
 			th->prefix_is_undefined=n->prefix_is_undefined;
 		}
-		else if(urival.type==T_QNAME && 
+		else if(urival.type==T_QNAME &&
 		   !(urival.as<ASQName>()->uri_is_null))
 		{
 			ASQName* q=urival.as<ASQName>();
@@ -2026,7 +2093,7 @@ ASFUNCTIONBODY_ATOM(Namespace,generator)
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(prefixval.type==T_UNDEFINED ||
-			   prefixval.toString()=="")
+			   prefixval.toString(sys)=="")
 				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
 				throw Class<TypeError>::getInstanceS(getSys(),"Namespace prefix for empty uri not allowed");
@@ -2270,7 +2337,7 @@ void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 
 ASFUNCTIONBODY_ATOM(lightspark,eval)
 {
-    // eval is not allowed in AS3, but an exception should be thrown
+	// eval is not allowed in AS3, but an exception should be thrown
 	throw Class<EvalError>::getInstanceS(sys,"EvalError");
 }
 
@@ -2343,7 +2410,7 @@ number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 		}
 		p= s2.raw_buf();
 		double d=strtod(p, &end);
-	
+
 		if (end==p)
 			return numeric_limits<double>::quiet_NaN();
 		return d;
@@ -2428,7 +2495,7 @@ ASFUNCTIONBODY_ATOM(lightspark,unescape)
 
 ASFUNCTIONBODY_ATOM(lightspark,print)
 {
-	Log::print(args[0].toString());
+	Log::print(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 
@@ -2440,7 +2507,7 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 		if(i > 0)
 			s << " ";
 
-		s << args[i].toString();
+		s << args[i].toString(sys);
 	}
 	Log::print(s.str());
 	return asAtom::invalidAtom;
@@ -2459,7 +2526,7 @@ bool lightspark::isXMLName(SystemState* sys, asAtom& obj)
 		obj.type==lightspark::T_NULL)
 		name="";
 	else
-		name=obj.toString();
+		name=obj.toString(sys);
 
 	if(name.empty())
 		return false;

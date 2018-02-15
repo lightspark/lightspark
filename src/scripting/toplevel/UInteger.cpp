@@ -80,7 +80,7 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 	else
 	{
-		double val2=o->toPrimitive()->toNumber();
+		double val2=o->toPrimitive().toNumber();
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
@@ -113,7 +113,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 	if(!obj.is<UInteger>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
-	return asAtom(obj.as<UInteger>()->val);
+	return asAtom(obj.toUInt());
 }
 
 void UInteger::sinit(Class_base* c)
@@ -139,19 +139,18 @@ ASFUNCTIONBODY_ATOM(UInteger,_toString)
 	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
 		return asAtom::fromString(sys,"0");
 
-	UInteger* th=obj.as<UInteger>();
 	uint32_t radix;
 	ARG_UNPACK_ATOM (radix,10);
 
 	if (radix == 10)
 	{
 		char buf[20];
-		snprintf(buf,20,"%u",th->val);
+		snprintf(buf,20,"%u",obj.toUInt());
 		return asAtom::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
-		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
+		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
 		return asAtom::fromObject(abstract_s(sys,s));
 	}
 }
@@ -176,8 +175,7 @@ bool UInteger::isEqual(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 {
-	UInteger *th=obj.as<UInteger>();
-	double v = (double)th->val;
+	double v = obj.toNumber();
 	int32_t fractionDigits;
 	ARG_UNPACK_ATOM(fractionDigits, 0);
 	if (argslen == 0 || args[0].is<Undefined>())
@@ -192,20 +190,18 @@ ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 
 ASFUNCTIONBODY_ATOM(UInteger,_toFixed)
 {
-	UInteger *th=obj.as<UInteger>();
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(th->val, fractiondigits)));
+	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toPrecision)
 {
-	UInteger *th=obj.as<UInteger>();
 	if (argslen == 0 || args[0].is<Undefined>())
-		return asAtom::fromObject(abstract_s(sys,th->toString()));
+		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(th->val, precision)));
+	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

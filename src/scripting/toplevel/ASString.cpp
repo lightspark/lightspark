@@ -62,7 +62,7 @@ ASFUNCTIONBODY_ATOM(ASString,_constructor)
 	ASString* th=obj.as<ASString>();
 	if(args && argslen==1)
 	{
-		th->data=args[0].toString();
+		th->data=args[0].toString(sys);
 		th->hasId = false;
 		th->stringId = UINT32_MAX;
 		th->datafilled = true;
@@ -73,12 +73,12 @@ ASFUNCTIONBODY_ATOM(ASString,_constructor)
 ASFUNCTIONBODY_ATOM(ASString,_getLength)
 {
 	// fast path if obj is ASString
-	if (obj.type == T_STRING)
+	if (obj.type == T_STRING && obj.getObject())
 	{
 		ASString* th = obj.getObject()->as<ASString>();
 		return asAtom((int32_t)th->getData().numChars());
 	}
-	return asAtom((int32_t)obj.toString().numChars());
+	return asAtom((int32_t)obj.toString(sys).numChars());
 }
 
 void ASString::sinit(Class_base* c)
@@ -138,7 +138,7 @@ void ASString::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(ASString,search)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	int ret = -1;
 	if(argslen == 0 || args[0].type == T_UNDEFINED)
 		return asAtom(ret);
@@ -160,7 +160,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	}
 	else
 	{
-		restr = args[0].toString();
+		restr = args[0].toString(sys);
 	}
 
 	const char* error;
@@ -198,7 +198,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 
 ASFUNCTIONBODY_ATOM(ASString,match)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	if(argslen == 0 || args[0].type==T_NULL || args[0].type==T_UNDEFINED)
 		return asAtom::nullAtom;
 	ASObject* ret=NULL;
@@ -211,7 +211,7 @@ ASFUNCTIONBODY_ATOM(ASString,match)
 	}
 	else
 	{
-		re = Class<RegExp>::getInstanceS(sys,args[0].toString());
+		re = Class<RegExp>::getInstanceS(sys,args[0].toString(sys));
 	}
 
 	if (re->global)
@@ -274,7 +274,7 @@ ASFUNCTIONBODY_ATOM(ASString,_toString)
 
 ASFUNCTIONBODY_ATOM(ASString,split)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	Array* ret=Class<Array>::getInstanceSNoArgs(sys);
 	uint32_t limit = 0x7fffffff;
 	if(argslen == 0 )
@@ -358,7 +358,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 	}
 	else
 	{
-		const tiny_string& del=args[0].toString();
+		const tiny_string& del=args[0].toString(sys);
 		if(del.empty())
 		{
 			//the string is empty, so split every character
@@ -402,7 +402,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 
 ASFUNCTIONBODY_ATOM(ASString,substr)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	int start=0;
 	if(argslen>=1)
 	{
@@ -435,7 +435,7 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 
 ASFUNCTIONBODY_ATOM(ASString,substring)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 
 	number_t start, end;
 	ARG_UNPACK_ATOM (start,0) (end,0x7fffffff);
@@ -576,14 +576,14 @@ TRISTATE ASString::isLess(ASObject* r)
 {
 	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
-	_R<ASObject> rprim=r->toPrimitive();
-	if(getObjectType()==T_STRING && rprim->getObjectType()==T_STRING)
+	asAtom rprim=r->toPrimitive();
+	if(getObjectType()==T_STRING && rprim.type==T_STRING)
 	{
-		ASString* rstr=static_cast<ASString*>(rprim.getPtr());
+		ASString* rstr=static_cast<ASString*>(rprim.toObject(getSystemState()));
 		return (getData()<rstr->getData())?TTRUE:TFALSE;
 	}
 	number_t a=toNumber();
-	number_t b=rprim->toNumber();
+	number_t b=rprim.toNumber();
 	if(std::isnan(a) || std::isnan(b))
 		return TUNDEFINED;
 	return (a<b)?TTRUE:TFALSE;
@@ -607,7 +607,7 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 
 ASFUNCTIONBODY_ATOM(ASString,slice)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0].toInt();
@@ -639,8 +639,9 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 {
 	number_t index;
 	ARG_UNPACK_ATOM (index, 0);
+
 	// fast path if obj is ASString
-	if (obj.is<ASString>())
+	if (obj.is<ASString>() && obj.getObject())
 	{
 		int maxIndex=obj.as<ASString>()->getData().numChars();
 		
@@ -648,8 +649,7 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 			return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(obj.as<ASString>()->getData().charAt(index)) ));
 	}
-
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex || std::isinf(index))
 		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
@@ -663,13 +663,13 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	ARG_UNPACK_ATOM (index, 0);
 
 	// fast path if obj is ASString
-	if (obj.type == T_STRING)
+	if (obj.type == T_STRING && obj.getObject())
 	{
 		if(index<0 || index>=(int64_t)obj.getObject()->as<ASString>()->getData().numChars())
 			return asAtom(Number::NaN);
 		return asAtom((int32_t)obj.getObject()->as<ASString>()->getData().charAt(index));
 	}
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	if(index<0 || index>=(int64_t)data.numChars())
 		return asAtom(Number::NaN);
 	else
@@ -683,8 +683,8 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 {
 	if (argslen == 0)
 		return asAtom(-1);
-	tiny_string data = obj.toString();
-	tiny_string arg0=args[0].toString();
+	tiny_string data = obj.toString(sys);
+	tiny_string arg0=args[0].toString(sys);
 	int startIndex=0;
 	if(argslen>1)
 		startIndex=args[1].toInt();
@@ -700,8 +700,8 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 {
 	assert_and_throw(argslen==1 || argslen==2);
-	tiny_string data = obj.toString();
-	tiny_string val=args[0].toString();
+	tiny_string data = obj.toString(sys);
+	tiny_string val=args[0].toString(sys);
 	size_t startIndex=data.npos;
 	if(argslen > 1 && args[1].type != T_UNDEFINED && !std::isnan(args[1].toNumber()) && !(args[1].toNumber() > 0 && std::isinf(args[1].toNumber())))
 	{
@@ -722,18 +722,22 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 
 ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
+	if (obj.is<ASString>() && obj.getStringId() != UINT32_MAX)
+		return asAtom::fromStringID(sys->getUniqueStringId(data.lowercase()));
 	return asAtom::fromObject(abstract_s(sys,data.lowercase()));
 }
 
 ASFUNCTIONBODY_ATOM(ASString,toUpperCase)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
+	if (obj.is<ASString>() && obj.getStringId() != UINT32_MAX)
+		return asAtom::fromStringID(sys->getUniqueStringId(data.uppercase()));
 	return asAtom::fromObject(abstract_s(sys,data.uppercase()));
 }
 ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	tiny_string other;
 	ARG_UNPACK_ATOM_MORE_ALLOWED(other);
 	if (argslen > 1)
@@ -748,7 +752,7 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 }
 ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	tiny_string other;
 	ARG_UNPACK_ATOM_MORE_ALLOWED(other);
 	if (argslen > 1)
@@ -776,7 +780,7 @@ ASFUNCTIONBODY_ATOM(ASString,fromCharCode)
 
 ASFUNCTIONBODY_ATOM(ASString,replace)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
 	ASString* ret=abstract_s(sys,data);
@@ -790,11 +794,11 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 	else if(args[1].type!=T_FUNCTION)
 	{
 		type = STRING;
-		replaceWith=args[1].toString();
+		replaceWith=args[1].toString(sys);
 	}
 	else
 	{
-		replaceWith=args[1].toString();
+		replaceWith=args[1].toString(sys);
 		type = FUNC;
 	}
 	if(args[0].is<RegExp>())
@@ -842,7 +846,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 				
 				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(sys,data));
 				asAtom ret=args[1].callFunction(asAtom::nullAtom, subargs, 3+capturingGroups,true);
-				replaceWithTmp=ret.toString().raw_buf();
+				replaceWithTmp=ret.toString(sys).raw_buf();
 				ASATOM_DECREF(ret);
 			} else {
 					size_t pos, ipos = 0;
@@ -900,7 +904,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 	}
 	else
 	{
-		const tiny_string& s=args[0].toString();
+		const tiny_string& s=args[0].toString(sys);
 		int index=ret->getData().find(s,0);
 		if(index==-1) //No result
 			return asAtom::fromObject(ret);
@@ -913,12 +917,12 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 
 ASFUNCTIONBODY_ATOM(ASString,concat)
 {
-	tiny_string data = obj.toString();
+	tiny_string data = obj.toString(sys);
 	ASString* ret=abstract_s(sys,data);
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		ret->hasId = false;
-		ret->getData()+=args[i].toString().raw_buf();
+		ret->getData()+=args[i].toString(sys).raw_buf();
 	}
 
 	return asAtom::fromObject(ret);
@@ -930,7 +934,7 @@ ASFUNCTIONBODY_ATOM(ASString,generator)
 	if (argslen == 0)
 		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 	else
-		return asAtom::fromObject(abstract_s(sys,args[0].toString()));
+		return asAtom::fromObject(abstract_s(sys,args[0].toString(sys)));
 }
 
 bool ASString::isEcmaSpace(uint32_t c)

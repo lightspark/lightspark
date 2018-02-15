@@ -1286,15 +1286,15 @@ asAtom MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	assert_and_throw(argslen==1 || argslen==2);
 	if(argslen==2)
 	{
-		sceneName = args[1].toString();
+		sceneName = args[1].toString(getSystemState());
 	}
 	if(args[0].type==T_STRING)
 	{
-		uint32_t dest=getFrameIdByLabel(args[0].toString(), sceneName);
+		uint32_t dest=getFrameIdByLabel(args[0].toString(getSystemState()), sceneName);
 		if(dest==FRAME_NOT_FOUND)
 		{
 			dest= 0;
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<args[0].toString()<<" in scene "<<sceneName);
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<args[0].toString(getSystemState())<<" in scene "<<sceneName);
 //			throwError<ArgumentError>(kInvalidArgumentError,args[0].toString());
 		}
 
@@ -2121,7 +2121,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==1);
-	const tiny_string& wantedName=args[0].toString();
+	const tiny_string& wantedName=args[0].toString(sys);
 	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	ASObject* ret=NULL;
 	for(;it!=th->dynamicDisplayList.end();++it)
@@ -2529,7 +2529,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 {
 	//Stage* th=obj.as<Stage>();
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 	if(arg0=="exactFit")
 		sys->scaleMode=SystemState::EXACT_FIT;
 	else if(arg0=="showAll")

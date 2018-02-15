@@ -207,7 +207,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_constructor)
 		args[0].is<UInteger>() ||
 		args[0].is<Boolean>())
 	{
-		th->buildFromString(args[0].toString());
+		th->buildFromString(args[0].toString(sys));
 	}
 	else
 	{
@@ -343,7 +343,7 @@ ASFUNCTIONBODY_ATOM(XMLList,generator)
 		args[0].is<UInteger>() ||
 		args[0].is<Boolean>())
 	{
-		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),args[0].toString()));
+		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),args[0].toString(sys)));
 	}
 	else if(args[0].is<XMLList>())
 	{
@@ -438,7 +438,7 @@ ASFUNCTIONBODY_ATOM(XMLList,child)
 	}
 	else
 	{
-		const tiny_string& arg0=args[0].toString();
+		const tiny_string& arg0=args[0].toString(sys);
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{

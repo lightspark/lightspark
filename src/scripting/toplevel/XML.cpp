@@ -171,7 +171,7 @@ ASFUNCTIONBODY_ATOM(XML,generator)
 		args[0].is<UInteger>() ||
 		args[0].is<Boolean>())
 	{
-		return asAtom::fromObject(createFromString(getSys(),args[0].toString()));
+		return asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
 	}
 	else if(args[0].is<XML>())
 	{
@@ -190,7 +190,7 @@ ASFUNCTIONBODY_ATOM(XML,generator)
 	}
 	else
 	{
-		return asAtom::fromObject(createFromString(getSys(),args[0].toString()));
+		return asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
 	}
 }
 
@@ -225,7 +225,7 @@ ASFUNCTIONBODY_ATOM(XML,_constructor)
 	{
 		//By specs, XML constructor will only convert to string Numbers or Booleans
 		//ints are not explicitly mentioned, but they seem to work
-		th->createTree(th->buildFromString(args[0].toString(), getParseMode(),
+		th->createTree(th->buildFromString(args[0].toString(sys), getParseMode(),
 					     getVm(sys)->getDefaultXMLNamespace()),false);
 	}
 	else if(args[0].is<XML>())
@@ -241,7 +241,7 @@ ASFUNCTIONBODY_ATOM(XML,_constructor)
 	}
 	else
 	{
-		th->createTree(th->buildFromString(args[0].toString(), getParseMode(),
+		th->createTree(th->buildFromString(args[0].toString(sys), getParseMode(),
 					     getVm(sys)->getDefaultXMLNamespace()),false);
 	}
 
@@ -343,7 +343,7 @@ ASFUNCTIONBODY_ATOM(XML,_appendChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		tiny_string s = args[0].toString();
+		tiny_string s = args[0].toString(sys);
 		if (sys->getSwfVersion() > 9)
 		{
 			arg=createFromString(sys,"dummy");
@@ -758,7 +758,7 @@ ASFUNCTIONBODY_ATOM(XML,child)
 {
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 	XMLVector ret;
 	uint32_t index=0;
 	multiname mname(NULL);
@@ -1584,7 +1584,7 @@ void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED
 		}
 		else
 		{
-			nodeval = o.toString();
+			nodeval = o.toString(getSystemState());
 		}
 		_NR<XML> a;
 		XMLList::XMLListVector::iterator it = attributelist->nodes.begin();
@@ -1649,7 +1649,7 @@ void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED
 						tmp->nodename = "text";
 						tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 						tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
-						tmp->nodevalue = o.toString();
+						tmp->nodevalue = o.toString(getSystemState());
 						tmp->constructed = true;
 						tmpnode->childrenlist->clear();
 						tmpnode->childrenlist->append(tmp);
@@ -1672,10 +1672,10 @@ void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED
 						tmpnode->childrenlist = _MR(Class<XMLList>::getInstanceSNoArgs(getSystemState()));
 					
 					if (tmpnode->childrenlist->nodes.size() == 1 && tmpnode->childrenlist->nodes[0]->nodetype == pugi::node_pcdata)
-						tmpnode->childrenlist->nodes[0]->nodevalue = o.toString();
+						tmpnode->childrenlist->nodes[0]->nodevalue = o.toString(getSystemState());
 					else
 					{
-						XML* newnode = createFromString(this->getSystemState(),o.toString());
+						XML* newnode = createFromString(this->getSystemState(),o.toString(getSystemState()));
 						tmpnode->childrenlist->clear();
 						asAtom v = asAtom::fromObject(newnode);
 						tmpnode->setVariableByMultiname(name,v,allowConst);
@@ -1726,7 +1726,7 @@ void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED
 					tmpstr += "\"";
 				}
 				tmpstr +=">";
-				tmpstr += encodeToXML(o.toString(),false);
+				tmpstr += encodeToXML(o.toString(getSystemState()),false);
 				tmpstr +="</";
 				if (ns_prefix != BUILTIN_STRINGS::EMPTY)
 				{
@@ -2396,7 +2396,7 @@ void XML::getprocessingInstructions(XMLVector& ret, tiny_string name)
 }
 ASFUNCTIONBODY_ATOM(XML,_propertyIsEnumerable)
 {
-	return asAtom(argslen == 1 && args[0].toString() == "0" );
+	return asAtom(argslen == 1 && args[0].toString(sys) == "0" );
 }
 ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 {
@@ -2877,7 +2877,7 @@ ASFUNCTIONBODY_ATOM(XML,_prependChild)
 		//The appendChild specs says that any other type is converted to string
 		//NOTE: this is explicitly different from XML constructor, that will only convert to
 		//string Numbers and Booleans
-		tiny_string s = args[0].toString();
+		tiny_string s = args[0].toString(sys);
 		if (sys->getSwfVersion() > 9)
 		{
 			arg=createFromString(sys,"dummy");

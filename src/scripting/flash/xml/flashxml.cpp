@@ -347,7 +347,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,parseXML)
 {
 	XMLDocument* th=obj.as<XMLDocument>();
 	assert_and_throw(argslen==1 && args[0].type==T_STRING);
-	th->parseXMLImpl(args[0].toString());
+	th->parseXMLImpl(args[0].toString(sys));
 	return asAtom::invalidAtom;
 }
 

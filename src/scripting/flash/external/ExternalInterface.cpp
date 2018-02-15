@@ -79,10 +79,10 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 	assert_and_throw(argslen == 2);
 
 	if(args[1].type == T_NULL)
-		sys->extScriptObject->removeMethod(args[0].toString().raw_buf());
+		sys->extScriptObject->removeMethod(args[0].toString(sys).raw_buf());
 	else
 	{
-		sys->extScriptObject->setMethod(args[0].toString().raw_buf(), new ExtASCallback(args[1]));
+		sys->extScriptObject->setMethod(args[0].toString(sys).raw_buf(), new ExtASCallback(args[1]));
 	}
 	return asAtom::trueAtom;
 }
@@ -94,7 +94,7 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 
 	// TODO: Check security constraints & throw SecurityException
 

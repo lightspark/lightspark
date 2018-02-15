@@ -76,10 +76,10 @@ ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 		return asAtom::invalidAtom;
 	}
 	else if(argslen > 0)
-		th->source=args[0].toString().raw_buf();
+		th->source=args[0].toString(sys).raw_buf();
 	if(argslen>1 && !args[1].is<Undefined>())
 	{
-		const tiny_string& flags=args[1].toString();
+		const tiny_string& flags=args[1].toString(sys);
 		for(auto i=flags.begin();i!=flags.end();++i)
 		{
 			switch(*i)
@@ -125,7 +125,7 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 	{
 		if (argslen > 1)
 			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		return asAtom::fromObject(Class<RegExp>::getInstanceS(getSys(),args[0].toString()));
+		return asAtom::fromObject(Class<RegExp>::getInstanceS(sys,args[0].toString(sys)));
 	}
 }
 
@@ -141,7 +141,7 @@ ASFUNCTIONBODY_ATOM(RegExp,exec)
 {
 	RegExp* th=static_cast<RegExp*>(obj.getObject());
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0].toString();
+	const tiny_string& arg0=args[0].toString(sys);
 	return asAtom::fromObject(th->match(arg0));
 }
 
@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 		return asAtom::trueAtom;
 	RegExp* th=obj.as<RegExp>();
 
-	const tiny_string& arg0 = args[0].toString();
+	const tiny_string& arg0 = args[0].toString(sys);
 	pcre* pcreRE = th->compile();
 	if (!pcreRE)
 		return asAtom::nullAtom;

@@ -153,11 +153,11 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 	assert_and_throw(argslen>=1);
 	Event* th=obj.as<Event>();
 	tiny_string msg = "[";
-	msg += args[0].toString();
+	msg += args[0].toString(sys);
 
 	for(unsigned int i=1; i<argslen; i++)
 	{
-		tiny_string prop(args[i].toString());
+		tiny_string prop(args[i].toString(sys));
 		msg += " ";
 		msg += prop;
 		msg += "=";
@@ -168,7 +168,7 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		propName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		asAtom value=th->getVariableByMultiname(propName);
 		if (value.type != T_INVALID)
-			msg += value.toString();
+			msg += value.toString(sys);
 	}
 	msg += "]";
 
@@ -597,7 +597,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 	if(argslen>=4)
 		priority=args[3].toInt();
 
-	const tiny_string& eventName=args[0].toString();
+	const tiny_string& eventName=args[0].toString(sys);
 
 	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
@@ -624,7 +624,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 {
 	EventDispatcher* th=obj.as<EventDispatcher>();
-	const tiny_string& eventName=args[0].toString();
+	const tiny_string& eventName=args[0].toString(sys);
 	bool ret=th->hasEventListener(eventName);
 	return asAtom(ret);
 }
@@ -638,7 +638,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
-	const tiny_string& eventName=args[0].toString();
+	const tiny_string& eventName=args[0].toString(sys);
 
 	bool useCapture=false;
 	if(argslen>=3)
@@ -1011,7 +1011,7 @@ ASFUNCTIONBODY_ATOM(TextEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(sys,obj,args,baseClassArgs);
 	if(argslen>=4)
-		th->text=args[3].toString();
+		th->text=args[3].toString(sys);
 	return asAtom::invalidAtom;
 }
 
@@ -1187,7 +1187,7 @@ ASFUNCTIONBODY_ATOM(DataEvent,_constructor)
 	DataEvent* th=obj.as<DataEvent>();
 	if (argslen >= 4)
 	{
-		th->data = args[3].toString();
+		th->data = args[3].toString(sys);
 	}
 
 	return asAtom::invalidAtom;
@@ -1281,7 +1281,7 @@ ASFUNCTIONBODY_ATOM(VideoEvent,_constructor)
 	VideoEvent* th=obj.as<VideoEvent>();
 	if(argslen>=4)
 	{
-		th->status=args[3].toString();
+		th->status=args[3].toString(sys);
 	}
 
 	return asAtom::invalidAtom;
@@ -1323,11 +1323,11 @@ ASFUNCTIONBODY_ATOM(StageVideoEvent,_constructor)
 	StageVideoEvent* th=obj.as<StageVideoEvent>();
 	if(argslen>=4)
 	{
-		th->status=args[3].toString();
+		th->status=args[3].toString(sys);
 	}
 	if(argslen>=5)
 	{
-		th->colorSpace=args[4].toString();
+		th->colorSpace=args[4].toString(sys);
 	}
 
 	return asAtom::invalidAtom;
@@ -1369,7 +1369,7 @@ ASFUNCTIONBODY_ATOM(StageVideoAvailabilityEvent, _constructor)
 	StageVideoAvailabilityEvent* th=obj.as<StageVideoAvailabilityEvent>();
 	if(argslen>=4)
 	{
-		th->availability = args[3].toString();
+		th->availability = args[3].toString(sys);
 	}
 	
 	return asAtom::invalidAtom;

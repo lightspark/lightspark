@@ -149,7 +149,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
-	const tiny_string& tmp=args[0].toString();
+	const tiny_string& tmp=args[0].toString(sys);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 

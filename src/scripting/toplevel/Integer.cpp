@@ -31,7 +31,6 @@ ASFUNCTIONBODY_ATOM(Integer,_toString)
 	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
 		return asAtom::fromString(sys,"0");
 
-	Integer* th=obj.as<Integer>();
 	int radix=10;
 	if(argslen==1)
 		radix=args[0].toUInt();
@@ -39,12 +38,12 @@ ASFUNCTIONBODY_ATOM(Integer,_toString)
 	if(radix==10)
 	{
 		char buf[20];
-		snprintf(buf,20,"%i",th->val);
+		snprintf(buf,20,"%i",obj.toInt());
 		return asAtom::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
-		tiny_string s=Number::toStringRadix((number_t)th->val, radix);
+		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
 		return asAtom::fromObject(abstract_s(sys,s));
 	}
 }
@@ -137,7 +136,7 @@ TRISTATE Integer::isLess(ASObject* o)
 			break;
 	}
 	
-	double val2=o->toPrimitive()->toNumber();
+	double val2=o->toPrimitive().toNumber();
 	if(std::isnan(val2)) return TUNDEFINED;
 	return (val<val2)?TTRUE:TFALSE;
 }
@@ -295,8 +294,7 @@ int32_t Integer::stringToASInteger(const char* cur, int radix)
 
 ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 {
-	Integer *th=obj.as<Integer>();
-	double v = (double)th->val;
+	double v = obj.toNumber();
 	int32_t fractionDigits;
 	ARG_UNPACK_ATOM(fractionDigits, 0);
 	if (argslen == 0 || args[0].is<Undefined>())
@@ -311,18 +309,16 @@ ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 
 ASFUNCTIONBODY_ATOM(Integer,_toFixed)
 {
-	Integer *th=obj.as<Integer>();
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(th->val, fractiondigits)));
+	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toPrecision)
 {
-	Integer *th=obj.as<Integer>();
 	if (argslen == 0 || args[0].is<Undefined>())
-		return asAtom::fromObject(abstract_s(sys,th->toString()));
+		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(th->val, precision)));
+	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
 }

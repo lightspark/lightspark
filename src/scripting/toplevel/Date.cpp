@@ -185,7 +185,7 @@ ASFUNCTIONBODY_ATOM(Date,_constructor)
 	{
 		number_t nm = Number::NaN;
 		if (args[0].is<ASString>())
-			nm = parse(args[0].toString());
+			nm = parse(args[0].toString(sys));
 		else
 			nm = args[0].toNumber();
 		if (std::isnan(nm))
@@ -888,7 +888,7 @@ ASFUNCTIONBODY_ATOM(Date,toLocaleTimeString)
 
 ASFUNCTIONBODY_ATOM(Date,_parse)
 {
-	return asAtom(parse(args[0].toString()));
+	return asAtom(parse(args[0].toString(sys)));
 }
 
 static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};

@@ -900,6 +900,37 @@ asAtom Class_base::coerce(SystemState* sys, asAtom& o) const
 	return o;
 }
 
+asAtom Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
+{
+	switch (o.type)
+	{
+		case T_UNDEFINED:
+			return asAtom::nullAtom;
+		case T_NULL:
+			return o;
+		case T_INTEGER:
+			if(this == Class<Integer>::getRef(sys).getPtr())
+				return o;
+			break;
+		case T_UINTEGER:
+			if(this == Class<UInteger>::getRef(sys).getPtr())
+				return o;
+			break;
+		case T_NUMBER:
+			if(this == Class<Number>::getRef(sys).getPtr())
+				return o;
+			break;
+		default:
+			break;
+	}
+	if (o.getObject() && o.getObject()->is<ObjectConstructor>())
+		return o;
+
+	if(!o.getObject() || !o.getObject()->getClass() || !o.getObject()->getClass()->isSubClass(this))
+		throwError<TypeError>(kCheckTypeFailedError, o.toObject(sys)->getClassName(), getQualifiedClassName());
+	return o;
+}
+
 void Class_base::setSuper(Ref<Class_base> super_)
 {
 	assert(!super);

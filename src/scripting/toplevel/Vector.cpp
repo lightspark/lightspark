@@ -205,9 +205,7 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 			{
 				if (it->type != T_INVALID)
 				{
-					// force Class_base to ensure that a TypeError is thrown 
-					// if the object type does not match the base vector type
-					ret->vec[index]=((Class_base*)th->vec_type)->coerce(sys,*it);
+					ret->vec[index]=((Class_base*)th->vec_type)->coerceForTemplate(sys,*it);
 					ASATOM_INCREF(ret->vec[index]);
 				}
 				index++;

@@ -90,6 +90,8 @@ public:
 	 */
 	virtual asAtom coerce(SystemState* sys, asAtom& o) const=0;
 
+	virtual asAtom coerceForTemplate(SystemState* sys, asAtom& o) const=0;
+	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
 
@@ -106,6 +108,7 @@ class Any: public Type
 {
 public:
 	asAtom coerce(SystemState* sys,asAtom& o) const { return o; }
+	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const { return o; }
 	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
@@ -116,6 +119,7 @@ class Void: public Type
 {
 public:
 	asAtom coerce(SystemState* sys,asAtom& o) const;
+	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const { return coerce(sys,o); }
 	virtual ~Void() {}
 	tiny_string getName() const { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
@@ -132,6 +136,7 @@ private:
 public:
 	ActivationType(const method_info* m):mi(m){}
 	asAtom coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	asAtom coerceForTemplate(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
@@ -259,6 +264,8 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 */
 	virtual asAtom coerce(SystemState* sys, asAtom& o) const;
+	
+	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const;
 
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL

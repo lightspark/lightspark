@@ -403,21 +403,49 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	ARG_UNPACK_ATOM (firstPoint) (firstAlphaThreshold) (secondObject) (secondBitmapDataPoint, NullRef)
 					(secondAlphaThreshold,1);
 
-	if(!secondObject->is<Point>())
-		throwError<TypeError>(kCheckTypeFailedError, 
-				      secondObject->getClassName(),
-				      "Point");
-
 	if(!secondBitmapDataPoint.isNull() || secondAlphaThreshold!=1)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest does not expect some parameters");
 
-	Point* secondPoint = secondObject->as<Point>();
-
-	uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPoint->getX(), secondPoint->getY()-firstPoint->getY());
-	if((pix>>24)>=firstAlphaThreshold)
-		return asAtom::trueAtom;
+	
+	if(secondObject->is<Point>())
+	{
+		Point* secondPoint = secondObject->as<Point>();
+	
+		uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPoint->getX(), secondPoint->getY()-firstPoint->getY());
+		if((pix>>24)>=firstAlphaThreshold)
+			return asAtom::trueAtom;
+		else
+			return asAtom::falseAtom;
+	}
+	else if (secondObject->is<Rectangle>())
+	{
+		Rectangle* r = secondObject->as<Rectangle>();
+		
+		for (uint32_t x=0; x<r->width; x++)
+		{
+			for (uint32_t y=0; y<r->height; y++)
+			{
+				uint32_t pix=th->pixels->getPixel(r->x+x-firstPoint->getX(), r->y+y-firstPoint->getY());
+				if((pix>>24)>=firstAlphaThreshold)
+					return asAtom::trueAtom;
+				else
+					return asAtom::falseAtom;
+			}
+		}
+	}
+	else if (secondObject->is<Bitmap>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with Bitmap as secondObject");
+	}
+	else if (secondObject->is<BitmapData>())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with BitmapData as secondObject");
+	}
 	else
-		return asAtom::falseAtom;
+		throwError<TypeError>(kCheckTypeFailedError, 
+				      secondObject->getClassName(),
+				      " Point, Rectangle, Bitmap, or BitmapData");
+	return asAtom::falseAtom;
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,scroll)

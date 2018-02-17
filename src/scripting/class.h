@@ -80,7 +80,7 @@ public:
 	//Closure stack
 	std::vector<scope_entry> class_scope;
 	virtual void describeClassMetadata(pugi::xml_node &root) const;
-
+	bool isBuiltin() const { return false; }
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */
@@ -503,7 +503,7 @@ public:
 		_NR<ApplicationDomain> appdomain = applicationDomain;
 		
 		// if type is a builtin class, it is handled in the systemDomain
-		if (appdomain.isNull() || (types.size() > 0 && !dynamic_cast<const Class_inherit*>(types[0])))
+		if (appdomain.isNull() || (types.size() > 0 && types[0]->isBuiltin()))
 			appdomain = getSys()->systemDomain;
 		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
 

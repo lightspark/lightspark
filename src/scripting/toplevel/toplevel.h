@@ -100,6 +100,9 @@ public:
 
 	/* Returns the type multiname for the given slot id */
 	virtual const multiname* resolveSlotTypeName(uint32_t slotId) const = 0;
+
+	/* returns true if this type is a builtin type, false for classes defined in the swf file */
+	virtual bool isBuiltin() const = 0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
@@ -113,6 +116,7 @@ public:
 	tiny_string getName() const { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
+	bool isBuiltin() const { return true; }
 };
 
 class Void: public Type
@@ -124,6 +128,7 @@ public:
 	tiny_string getName() const { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
+	bool isBuiltin() const { return true; }
 };
 
 /*
@@ -141,6 +146,7 @@ public:
 	tiny_string getName() const { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const;
+	bool isBuiltin() const { return true; }
 };
 
 class Prototype;
@@ -279,6 +285,7 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
 	bool checkExistingFunction(const multiname& name);
 	asAtom getClassVariableByMultiname(const multiname& name);
+	bool isBuiltin() const { return true; }
 };
 
 class Template_base : public ASObject

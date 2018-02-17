@@ -25,6 +25,7 @@
 #include "backends/security.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/toplevel/Vector.h"
 
 #include <istream>
 
@@ -280,7 +281,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
 	if(o==NULL)
 		return asAtom::falseAtom;
 	else
@@ -311,7 +312,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=th->getVariableAndTargetByMultiname(name,target);
+	ASObject* o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
 	if(o == NULL)
 		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
 
@@ -390,7 +391,46 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& na
 	}
 	return NULL;
 }
+ASObject* ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target)
+{
+	ASObject* ret = getVariableAndTargetByMultiname(name, target);
+	if (ret)
+		return ret;
+	if (name.ns.size() >= 1 && name.ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
+	{
+		tiny_string s = getSystemState()->getStringFromUniqueId(name.name_s_id);
+		if (s.startsWith("Vector.<"))
+		{
+			tiny_string vtype = s.substr_bytes(8,s.numBytes()-9);
 
+			multiname tn(NULL);
+			tn.name_type=multiname::NAME_STRING;
+
+			uint32_t lastpos = vtype.rfind("::");
+			if (lastpos == tiny_string::npos)
+			{
+				tn.name_s_id=getSystemState()->getUniqueStringId(vtype);
+				tn.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
+			}
+			else
+			{
+				tn.name_s_id=getSystemState()->getUniqueStringId(vtype.substr_bytes(lastpos+2,vtype.numBytes()-(lastpos+2)));
+				tn.ns.push_back(nsNameAndKind(getSystemState(),vtype.substr_bytes(0,lastpos),NAMESPACE));
+			}
+			ASObject* tntarget;
+			ASObject* typeobj = getVariableAndTargetByMultiname(tn, tntarget);
+			if (typeobj)
+			{
+				const Type* t = typeobj->as<Type>();
+				this->incRef();
+				ret = Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr();
+				return ret;
+			}
+		}
+
+	}
+	return NULL;
+}
 ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
 {
 	//Check in the parent first

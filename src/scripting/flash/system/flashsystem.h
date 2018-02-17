@@ -74,6 +74,8 @@ public:
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	bool findTargetByMultiname(const multiname& name, ASObject*& target);
 	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
+	ASObject* getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target);
+
 	/*
 	 * This method is an opportunistic resolution operator used by the optimizer:
 	 * Only returns the value if the variable has been already defined.

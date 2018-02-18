@@ -175,7 +175,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"", "any", "void", "prototype", "Function", "__AS3__.vec","Class","*", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor" };
+static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "__AS3__.vec","Class", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor" };
 
 extern uint32_t asClassCount;
 
@@ -190,11 +190,14 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
 {
 	//Forge the builtin strings
-	for(uint32_t i=0;i<LAST_BUILTIN_STRING;i++)
+	getUniqueStringId("");
+	for(uint32_t i=1;i<BUILTIN_STRINGS_CHAR_MAX;i++)
 	{
-		uint32_t tmp=getUniqueStringId(builtinStrings[i]);
-		assert(tmp==i);
-		(void)tmp; // silence warning about unused variable
+		getUniqueStringId(tiny_string::fromChar(i));
+	}
+	for(uint32_t i=BUILTIN_STRINGS_CHAR_MAX;i<LAST_BUILTIN_STRING;i++)
+	{
+		getUniqueStringId(builtinStrings[i-BUILTIN_STRINGS_CHAR_MAX]);
 	}
 	//Forge the empty namespace and make sure it gets id 0
 	nsNameAndKindImpl emptyNs(BUILTIN_STRINGS::EMPTY, NAMESPACE);
@@ -2016,6 +2019,20 @@ void SystemState::waitMainSignal()
 void SystemState::sendMainSignal()
 {
 	mainsignalCond.broadcast();
+}
+
+void SystemState::dumpStacktrace()
+{
+	tiny_string stacktrace;
+	for (auto it = getVm(this)->stacktrace.rbegin(); it != getVm(this)->stacktrace.rend(); it++)
+	{
+		stacktrace += "    at ";
+		stacktrace += (*it).second.toObject(this)->getClassName();
+		stacktrace += "/";
+		stacktrace += this->getStringFromUniqueId((*it).first);
+		stacktrace += "()\n";
+	}
+	LOG(LOG_INFO,"current stacktrace:\n" << stacktrace);
 }
 
 /* This is run in vm's thread context */

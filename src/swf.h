@@ -477,6 +477,8 @@ public:
 	void checkExternalCallEvent() DLL_PUBLIC;
 	void waitMainSignal() DLL_PUBLIC;
 	void sendMainSignal() DLL_PUBLIC;
+
+	void dumpStacktrace();
 };
 
 class ParseThread: public IThreadJob

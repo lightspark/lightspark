@@ -1564,6 +1564,11 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 			}
 			break;
 		case multiname::NAME_STRING:
+			if (name.name_s_id >= '0' && name.name_s_id <= '9')
+			{
+				index = name.name_s_id - '0';
+				return true;
+			}
 			if (name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
 					 !isIntegerWithoutLeadingZeros(name.normalizedName(sys)))
 				return false;

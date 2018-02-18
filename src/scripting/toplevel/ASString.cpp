@@ -647,13 +647,15 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 		
 		if(index<0 || index>=maxIndex || std::isinf(index))
 			return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
-		return asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(obj.as<ASString>()->getData().charAt(index)) ));
+		uint32_t c = obj.as<ASString>()->getData().charAt(index);
+		return c < BUILTIN_STRINGS_CHAR_MAX ? asAtom::fromStringID(c) : asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(c) ));
 	}
 	tiny_string data = obj.toString(sys);
 	int maxIndex=data.numChars();
 	if(index<0 || index>=maxIndex || std::isinf(index))
 		return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
-	return asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(data.charAt(index)) ));
+	uint32_t c = data.charAt(index);
+	return c < BUILTIN_STRINGS_CHAR_MAX ? asAtom::fromStringID(c) : asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(c) ));
 }
 
 ASFUNCTIONBODY_ATOM(ASString,charCodeAt)

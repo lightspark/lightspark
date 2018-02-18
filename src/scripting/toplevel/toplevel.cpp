@@ -920,6 +920,10 @@ asAtom Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
 			if(this == Class<Number>::getRef(sys).getPtr())
 				return o;
 			break;
+		case T_STRING:
+			if(this == Class<ASString>::getRef(sys).getPtr())
+				return o;
+			break;
 		default:
 			break;
 	}

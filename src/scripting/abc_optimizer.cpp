@@ -239,13 +239,13 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	ASObject* target;
 	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
 	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
-	ASObject* o=f->getSystemState()->systemDomain->getVariableAndTargetByMultiname(*name, target);
-	if(o)
+	asAtom o=f->getSystemState()->systemDomain->getVariableAndTargetByMultiname(*name, target);
+	if(o.type != T_INVALID)
 	{
 		//Output a special opcode
 		out << (uint8_t)PUSH_EARLY;
-		writePtr(out, o);
-		ret.obj=o;
+		writePtr(out, o.toObject(f->getSystemState()));
+		ret.obj=o.getObject();
 		return ret;
 	}
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will

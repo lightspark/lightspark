@@ -162,18 +162,18 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
+	asAtom o=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
 
-	if(o==NULL)
+	if(o.type == T_INVALID)
 	{
 		throwError<ReferenceError>(kClassNotFoundError, tmp);
 	}
 
-	assert_and_throw(o->getObjectType()==T_CLASS);
+	assert_and_throw(o.type==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
-	o->incRef();
-	return asAtom::fromObject(o);
+	ASATOM_INCREF(o);
+	return o;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,describeType)

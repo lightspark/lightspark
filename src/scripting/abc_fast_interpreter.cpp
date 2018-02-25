@@ -1681,17 +1681,17 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				const multiname* name=data->names[0];
 				LOG_CALL( "getLexOnce " << *name);
 				ASObject* target;
-				ASObject* obj=ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(*name,target);
+				asAtom obj=ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(*name,target);
 				//The object must exists, since it was found during optimization
-				assert_and_throw(obj);
+				assert_and_throw(obj.type != T_INVALID);
 				char* rewriteableCode = &(mi->body->code[0]);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
 				//Rewrite this to a pushearly
 				rewriteableCode[instructionPointer-1]=0xff;
-				rewritableData->objs[0]=obj;
+				rewritableData->objs[0]=obj.toObject(function->getSystemState());
 				//Also push the object right away
-				obj->incRef();
-				RUNTIME_STACK_PUSH(context,asAtom::fromObject(obj));
+				ASATOM_INCREF(obj);
+				RUNTIME_STACK_PUSH(context,obj);
 				//Move to the next instruction
 				instructionPointer+=8;
 				break;

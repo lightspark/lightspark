@@ -1626,7 +1626,7 @@ bool ABCVm::getLex(call_context* th, int n)
 	if(o.type == T_INVALID)
 	{
 		ASObject* target;
-		o=asAtom::fromObject(getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target));
+		o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 		if(o.type == T_INVALID)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
@@ -1703,8 +1703,8 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	{
 		//try to find a global object where this is defined
 		ASObject* target;
-		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
-		if(o)
+		asAtom o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
+		if(o.type != T_INVALID)
 			ret=target;
 		else //else push the current global object
 		{
@@ -1758,8 +1758,8 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	if(!found)
 	{
 		ASObject* target;
-		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
-		if(o)
+		asAtom o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
+		if(o.type != T_INVALID)
 			ret=target;
 		else
 		{
@@ -1846,8 +1846,8 @@ asAtom ABCVm::findPropStrictCache(call_context* th, preloadedcodedata** codep)
 	if(!found)
 	{
 		ASObject* target;
-		ASObject* o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
-		if(o)
+		asAtom o=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
+		if(o.type != T_INVALID)
 		{
 			ret=asAtom::fromObject(target);
 		}
@@ -2545,13 +2545,13 @@ void ABCVm::newClass(call_context* th, int n)
 		//Check if this class has been already defined
 		_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
 		ASObject* target;
-		ASObject* oldDefinition=domain->getVariableAndTargetByMultiname(*mname, target);
-		if(oldDefinition && oldDefinition->getObjectType()==T_CLASS)
+		asAtom oldDefinition=domain->getVariableAndTargetByMultiname(*mname, target);
+		if(oldDefinition.type==T_CLASS)
 		{
 			LOG_CALL(_("Class ") << className << _(" already defined. Pushing previous definition"));
 			baseClass->decRef();
-			oldDefinition->incRef();
-			RUNTIME_STACK_PUSH(th,asAtom::fromObject(oldDefinition));
+			ASATOM_INCREF(oldDefinition);
+			RUNTIME_STACK_PUSH(th,oldDefinition);
 			// ensure that this interface is linked to all previously defined classes implementing this interface
 			if (th->context->instances[n].isInterface())
 				ABCVm::SetAllClassLinks();
@@ -2672,10 +2672,10 @@ void ABCVm::newClass(call_context* th, int n)
 
 		//Make the class valid if needed
 		ASObject* target;
-		ASObject* obj=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
+		asAtom obj=getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(*name, target);
 
 		//Named only interfaces seems to be allowed 
-		if(obj==NULL)
+		if(obj.type == T_INVALID)
 			continue;
 
 	}

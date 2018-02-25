@@ -281,12 +281,12 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
-	if(o==NULL)
+	asAtom o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
+	if(o.type == T_INVALID)
 		return asAtom::falseAtom;
 	else
 	{
-		if(o->getObjectType()!=T_CLASS)
+		if(o.type!=T_CLASS)
 			return asAtom::falseAtom;
 
 		LOG(LOG_CALLS,_("Found definition for ") << name);
@@ -312,16 +312,16 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ASObject* o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
-	if(o == NULL)
+	asAtom o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
+	if(o.type == T_INVALID)
 		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
 
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
-	o->incRef();
-	return asAtom::fromObject(o);
+	ASATOM_INCREF(o);
+	return o;
 }
 
 void ApplicationDomain::registerGlobalScope(Global* scope)
@@ -344,7 +344,7 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 		name.name_s_id=getSystemState()->getUniqueStringId(str.substr(index+1));
 		name.ns.push_back(nsNameAndKind(getSystemState(),str.substr(0,index),NAMESPACE));
 	}
-	return getVariableAndTargetByMultiname(name, target);
+	return getVariableAndTargetByMultiname(name, target).toObject(getSystemState());
 }
 
 bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target)
@@ -369,13 +369,13 @@ bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& 
 	return false;
 }
 
-ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+asAtom ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
 {
 	//Check in the parent first
 	if(!parentDomain.isNull())
 	{
-		ASObject* ret=parentDomain->getVariableAndTargetByMultiname(name, target);
-		if(ret)
+		asAtom ret=parentDomain->getVariableAndTargetByMultiname(name, target);
+		if(ret.type != T_INVALID)
 			return ret;
 	}
 
@@ -386,15 +386,15 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultiname(const multiname& na
 		{
 			target=globalScopes[i];
 			// No incRef, return a reference borrowed from globalScopes
-			return o.toObject(getSystemState());
+			return o;
 		}
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
-ASObject* ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target)
+asAtom ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target)
 {
-	ASObject* ret = getVariableAndTargetByMultiname(name, target);
-	if (ret)
+	asAtom ret = getVariableAndTargetByMultiname(name, target);
+	if (ret.type != T_INVALID)
 		return ret;
 	if (name.ns.size() >= 1 && name.ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 	{
@@ -418,18 +418,17 @@ ASObject* ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClas
 				tn.ns.push_back(nsNameAndKind(getSystemState(),vtype.substr_bytes(0,lastpos),NAMESPACE));
 			}
 			ASObject* tntarget;
-			ASObject* typeobj = getVariableAndTargetByMultiname(tn, tntarget);
-			if (typeobj)
+			asAtom typeobj = getVariableAndTargetByMultiname(tn, tntarget);
+			if (typeobj.type != T_INVALID)
 			{
-				const Type* t = typeobj->as<Type>();
+				const Type* t = typeobj.getObject()->as<Type>();
 				this->incRef();
-				ret = Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr();
-				return ret;
+				return asAtom::fromObject(Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr());
 			}
 		}
 
 	}
-	return NULL;
+	return asAtom::invalidAtom;
 }
 ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
 {

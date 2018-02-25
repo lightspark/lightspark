@@ -73,8 +73,8 @@ public:
 	void registerGlobalScope(Global* scope);
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	bool findTargetByMultiname(const multiname& name, ASObject*& target);
-	ASObject* getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
-	ASObject* getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target);
+	asAtom getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
+	asAtom getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target);
 
 	/*
 	 * This method is an opportunistic resolution operator used by the optimizer:

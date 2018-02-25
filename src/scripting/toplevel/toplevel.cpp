@@ -743,9 +743,9 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 
 	//Check if the class has already been defined
 	ASObject* target;
-	ASObject* tmp=sys->systemDomain->getVariableAndTargetByMultiname(*mn, target);
-	if(tmp && tmp->getObjectType()==T_CLASS)
-		return static_cast<const Class_base*>(tmp);
+	asAtom tmp=sys->systemDomain->getVariableAndTargetByMultiname(*mn, target);
+	if(tmp.type==T_CLASS)
+		return static_cast<const Class_base*>(tmp.toObject(sys));
 	else
 		return NULL;
 }
@@ -786,7 +786,9 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 	else
 	{
 		ASObject* target;
-		typeObject=context->root->applicationDomain->getVariableAndTargetByMultiname(*mn,target);
+		asAtom o = context->root->applicationDomain->getVariableAndTargetByMultiname(*mn,target);
+		if (o.type != T_INVALID)
+			typeObject=o.toObject(context->root->getSystemState());
 	}
 	if(!typeObject)
 	{
@@ -1125,12 +1127,12 @@ const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) cons
 		while (it !=interfaces.end())
 		{
 			ASObject* target;
-			ASObject* interface_obj=this->context->root->applicationDomain->
+			asAtom interface_obj=this->context->root->applicationDomain->
 					getVariableAndTargetByMultiname(*it, target);
-			if (interface_obj)
+			if (interface_obj.type != T_INVALID)
 			{
-				assert_and_throw(interface_obj->getObjectType()==T_CLASS);
-				Class_base* inter=static_cast<Class_base*>(interface_obj);
+				assert_and_throw(interface_obj.type==T_CLASS);
+				Class_base* inter=static_cast<Class_base*>(interface_obj.getObject());
 				//Probe the interface for its interfaces
 				bool bAllDefinedSub;
 				inter->getInterfaces(&bAllDefinedSub);

@@ -1740,14 +1740,14 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		return true;
 	
 	ASObject* target;
-	ASObject* ret=root->applicationDomain->getVariableAndTargetByMultiname(*name, target);
-	if(!ret) //Could not retrieve type
+	asAtom ret=root->applicationDomain->getVariableAndTargetByMultiname(*name, target);
+	if(ret.type == T_INVALID) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"isInstance: Cannot retrieve type:"<<*name);
 		return false;
 	}
 
-	ASObject* type=ret;
+	ASObject* type=ret.toObject(obj->getSystemState());
 	bool real_ret=false;
 	Class_base* objc=obj->classdef;
 	Class_base* c=static_cast<Class_base*>(type);
@@ -2320,8 +2320,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			//Check if this already defined in parent applicationdomains
 			ASObject* target;
-			ASObject* oldDefinition=root->applicationDomain->getVariableAndTargetByMultiname(*mname, target);
-			if(oldDefinition && oldDefinition->getObjectType()==T_CLASS)
+			asAtom oldDefinition=root->applicationDomain->getVariableAndTargetByMultiname(*mname, target);
+			if(oldDefinition.type==T_CLASS)
 			{
 				return;
 			}

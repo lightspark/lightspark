@@ -82,6 +82,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
 	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
+	th->inFilling = false;
 	th->owner->tokens.clear();
 	th->owner->owner->hasChanged=true;
 	th->owner->owner->requestInvalidation(sys);
@@ -96,7 +97,8 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 
 	int32_t x=args[0].toInt();
 	int32_t y=args[1].toInt();
-
+	th->movex = x;
+	th->movey = y;
 	th->owner->tokens.emplace_back(GeomToken(MOVE, Vector2(x, y)));
 	return asAtom::invalidAtom;
 }
@@ -111,8 +113,11 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 	int y=args[1].toInt();
 
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x, y)));
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -132,8 +137,11 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 	th->owner->tokens.emplace_back(GeomToken(CURVE_QUADRATIC,
 	                        Vector2(controlX, controlY),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -157,8 +165,11 @@ ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 	                        Vector2(control1X, control1Y),
 	                        Vector2(control2X, control2Y),
 	                        Vector2(anchorX, anchorY)));
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -247,9 +258,12 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight)));
 
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
-	
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
+
 	return asAtom::invalidAtom;
 }
 
@@ -275,9 +289,12 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
-	
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
+
 	return asAtom::invalidAtom;
 }
 
@@ -320,9 +337,12 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 	                        Vector2(x+radius, y-kappa ),
 	                        Vector2(x+radius, y       )));
 
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
-	
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
+
 	return asAtom::invalidAtom;
 }
 
@@ -367,8 +387,11 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	                        Vector2(left+width, top+height/2.0-ykappa),
 	                        Vector2(left+width, top+height/2.0)));
 
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -394,9 +417,12 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, c));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, d));
 	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, a));
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
-	
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
+
 	return asAtom::invalidAtom;
 }
 
@@ -415,8 +441,11 @@ ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 
 	pathToTokens(commands, data, winding, th->owner->tokens);
 
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -556,8 +585,11 @@ ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 	ARG_UNPACK_ATOM (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
 	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens);
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(sys);
+	if (!th->inFilling)
+	{
+		th->owner->owner->hasChanged=true;
+		th->owner->owner->requestInvalidation(sys);
+	}
 
 	return asAtom::invalidAtom;
 }
@@ -919,6 +951,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 		return asAtom::invalidAtom;
 
 	th->checkAndSetScaling();
+	th->inFilling=true;
 
 	FILLSTYLE style = createBitmapFill(bitmap, matrix, repeat, smooth);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
@@ -935,6 +968,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 		color=args[0].toUInt();
 	if(argslen>=2)
 		alpha=(uint8_t(args[1].toNumber()*0xff));
+	th->inFilling=true;
 	FILLSTYLE style = Graphics::createSolidFill(color, alpha);
 	th->owner->tokens.emplace_back(GeomToken(SET_FILL, style));
 	return asAtom::invalidAtom;
@@ -944,7 +978,15 @@ ASFUNCTIONBODY_ATOM(Graphics,endFill)
 {
 	Graphics* th=obj.as<Graphics>();
 	th->checkAndSetScaling();
+	th->owner->tokens.emplace_back(GeomToken(STRAIGHT, Vector2(th->movex, th->movey)));
 	th->owner->tokens.emplace_back(CLEAR_FILL);
+
+	th->inFilling=false;
+	th->movex = 0;
+	th->movey = 0;
+	th->owner->owner->hasChanged=true;
+	th->owner->owner->requestInvalidation(sys);
+
 	return asAtom::invalidAtom;
 }
 

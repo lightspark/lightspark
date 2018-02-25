@@ -3413,10 +3413,10 @@ ASFUNCTIONBODY_ATOM(Shader,_constructor)
 void BitmapDataChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("ALPHA",nsNameAndKind(),asAtom((uint32_t)8),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BLUE",nsNameAndKind(),asAtom((uint32_t)4),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("GREEN",nsNameAndKind(),asAtom((uint32_t)2),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RED",nsNameAndKind(),asAtom((uint32_t)1),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ALPHA",nsNameAndKind(),asAtom((uint32_t)BitmapDataChannel::ALPHA),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BLUE",nsNameAndKind(),asAtom((uint32_t)BitmapDataChannel::BLUE),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("GREEN",nsNameAndKind(),asAtom((uint32_t)BitmapDataChannel::GREEN),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RED",nsNameAndKind(),asAtom((uint32_t)BitmapDataChannel::RED),CONSTANT_TRAIT);
 }
 
 unsigned int BitmapDataChannel::channelShift(uint32_t channelConstant)

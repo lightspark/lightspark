@@ -336,6 +336,29 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if(HasLayout)
 	{
 		in >> Align >> LeftMargin >> RightMargin >> Indent >> Leading;
+		switch(Align)
+		{
+			case 0:
+				textData.autoSize = TextData::AS_LEFT;
+				break;
+			case 1:
+				textData.autoSize = TextData::AS_CENTER;
+				break;
+			case 2:
+				textData.autoSize = TextData::AS_RIGHT;
+				break;
+			case 3:
+				LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Align justify on ID "<<CharacterID);
+				break;
+		}
+		if (LeftMargin != 0)
+			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:LeftMargin on ID "<<CharacterID);
+		if (RightMargin != 0)
+			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:RightMargin on ID "<<CharacterID);
+		if (Indent != 0)
+			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
+		if (Leading != 0)
+			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Leading on ID "<<CharacterID);
 	}
 	in >> VariableName;
 	LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
@@ -899,7 +922,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 		else
 			format = BitmapContainer::ARGB32;
 
-		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);
+		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);//,version != 1);
 	}
 	else if (BitmapFormat == LOSSLESS_BITMAP_PALETTE)
 	{

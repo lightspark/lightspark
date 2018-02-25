@@ -211,7 +211,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -232,7 +232,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		return NULL;
 	return new CairoTokenRenderer(tokens,
 				totalMatrix, x, y, width, height, scaling,
-				owner->getConcatenatedAlpha(), masks);
+				owner->getConcatenatedAlpha(), masks,smoothing);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

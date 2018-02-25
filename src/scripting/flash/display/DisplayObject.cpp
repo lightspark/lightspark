@@ -448,7 +448,7 @@ void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax
 	outHeight=ceil(maxy-miny);
 }
 
-IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
 {
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");
@@ -1213,7 +1213,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 		{
 			DisplayObject* target=(*it).getPtr();
 			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(NULL, MATRIX());
+			IDrawable* drawable=target->invalidate(NULL, MATRIX(),false);
 			if(drawable==NULL)
 				continue;
 			masks.emplace_back(drawable, maskMode);
@@ -1235,16 +1235,16 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
-			data->drawDisplayObject(mask.getPtr(), m);
+			data->drawDisplayObject(mask.getPtr(), m,false);
 			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getSystemState(),data));
 
 			//The created bitmap is already correctly scaled and rotated
 			//Just apply the needed offset
 			MATRIX m2(1,1,0,0,xmin,ymin);
-			drawable=bmp->invalidate(NULL, m2);
+			drawable=bmp->invalidate(NULL, m2,false);
 		}
 		else
-			drawable=mask->invalidate(NULL, MATRIX());
+			drawable=mask->invalidate(NULL, MATRIX(),false);
 
 		if(drawable==NULL)
 			return;

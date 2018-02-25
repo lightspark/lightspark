@@ -153,7 +153,7 @@ public:
 	 * _must_ be on the parent chain of this
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
-	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix);
+	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
 	virtual void requestInvalidation(InvalidateQueue* q);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;

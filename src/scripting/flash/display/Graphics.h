@@ -44,13 +44,16 @@ private:
 				       double x3, double y3,
 				       double u1, double u2, double u3,
 				       double c[3]);
+	int movex;
+	int movey;
+	bool inFilling;
 public:
 	Graphics(Class_base* c):ASObject(c),owner(NULL)
 	{
 //		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
 	Graphics(Class_base* c, TokenContainer* _o)
-		: ASObject(c),owner(_o) {}
+		: ASObject(c),owner(_o),movex(0),movey(0),inFilling(false) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	static FILLSTYLE createGradientFill(const tiny_string& type,

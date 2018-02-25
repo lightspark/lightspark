@@ -113,8 +113,8 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 }
 
 CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-		float _s, float _a, const std::vector<MaskData>& _ms)
-	: IDrawable(_w, _h, _x, _y, _a, _ms), scaleFactor(_s), matrix(_m)
+		float _s, float _a, const std::vector<MaskData>& _ms, bool _smoothing)
+	: IDrawable(_w, _h, _x, _y, _a, _ms), scaleFactor(_s),smoothing(_smoothing), matrix(_m)
 {
 }
 
@@ -205,6 +205,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		{
 			_NR<BitmapContainer> bm(style.bitmap);
 			if(bm.isNull())
+				return NULL;
+			if (!style.Matrix.isInvertible())
 				return NULL;
 
 			//Do an explicit cast, the data will not be modified
@@ -304,6 +306,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 				const FILLSTYLE& style = tokens[i].fillStyle;
+				if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+					style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+					cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
 				cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection);
 				if(pattern)
 				{
@@ -327,6 +332,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
 				if (style.HasFillFlag)
 				{
+					if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+						style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
 					cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection);
 					if (pattern)
 					{
@@ -449,6 +457,7 @@ cairo_surface_t* CairoRenderer::allocateSurface(uint8_t*& buf)
 
 void CairoTokenRenderer::executeDraw(cairo_t* cr)
 {
+	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
@@ -500,6 +509,7 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	cairo_t* cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairoClean(cr);
+	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 
 	//Make sure the rendering starts at 0,0 in surface coordinates
 	//This also guarantees that all the shape fills in width/height pixels
@@ -645,7 +655,7 @@ inline void CairoRenderer::copyRGB24To24(uint8_t* dest, uint8_t* src)
 }
 
 void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-					 uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp)
+					 uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp,bool convertendianess)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
@@ -673,7 +683,8 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 					break;
 			}
 			/* cairo needs this in host endianess */
-			*outDataPos = GUINT32_FROM_BE(pdata);
+			*outDataPos = convertendianess ? GUINT32_FROM_BE(pdata) : pdata;
+			//*outDataPos = GUINT32_FROM_BE(pdata);
 		}
 	}
 }

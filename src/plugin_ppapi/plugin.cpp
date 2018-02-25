@@ -2428,7 +2428,7 @@ int ppPluginEngineData::audio_getSampleRate()
 	return PP_AUDIOSAMPLERATE_44100;
 }
 
-IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms)
+IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms,bool smoothing)
 {
 	PP_BrowserFont_Trusted_Description desc;
 	desc.face = g_var_interface->VarFromUtf8(_textData.font.raw_buf(),_textData.font.numBytes());
@@ -2455,7 +2455,7 @@ IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, 
 	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
 	if (font == 0)
 		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
-	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,NULL,PP_FALSE);
+	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,NULL,smoothing ? PP_TRUE : PP_FALSE);
 	
 	return new ppFontRenderer(_w,_h,_x,_y,_a,_ms,image_data);
 }

@@ -904,9 +904,9 @@ void TextField::updateSizes()
 	h = height;
 	//Compute (text)width, (text)height
 	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-//	width = w; //TODO: check the case when w,h == 0
+	width = w; //TODO: check the case when w,h == 0
 	textWidth=tw;
-//	height = h;
+	height = h;
 	textHeight=th;
 }
 
@@ -994,12 +994,11 @@ void TextField::textUpdated()
 	scrollV = 1;
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
+	updateSizes();
 	hasChanged=true;
 
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
-	else
-		updateSizes();
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q)
@@ -1014,7 +1013,7 @@ void TextField::requestInvalidation(InvalidateQueue* q)
 	}
 }
 
-IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -1034,7 +1033,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor);
 	}
 	if (!tokensEmpty())
-		return TokenContainer::invalidate(target, initialMatrix);
+		return TokenContainer::invalidate(target, initialMatrix,smoothing);
 	
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
@@ -1046,7 +1045,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks);
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks,smoothing);
 	if (res != NULL)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1056,7 +1055,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	*/
 	return new CairoPangoRenderer(*this,
 				totalMatrix, x, y, width, height, 1.0f,
-				getConcatenatedAlpha(), masks);
+				getConcatenatedAlpha(), masks,smoothing);
 }
 
 void TextField::renderImpl(RenderContext& ctxt) const

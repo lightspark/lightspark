@@ -1071,7 +1071,7 @@ void SystemState::flushInvalidationQueue()
 	{
 		if(cur->isOnStage() && cur->hasChanged)
 		{
-			IDrawable* d=cur->invalidate(stage, MATRIX());
+			IDrawable* d=cur->invalidate(stage, MATRIX(),true);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)

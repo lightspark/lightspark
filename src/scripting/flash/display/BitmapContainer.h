@@ -62,8 +62,8 @@ public:
 		      int32_t destX, int32_t destY, RECT& outputSourceRect,
 		      int32_t& outputX, int32_t& outputY) const;
 	void setAlpha(int32_t x, int32_t y, uint8_t alpha);
-	void setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha);
-	uint32_t getPixel(int32_t x, int32_t y) const;
+	void setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha, bool ispremultiplied=true);
+	uint32_t getPixel(int32_t x, int32_t y, bool premultiplied=true) const;
 	std::vector<uint32_t> getPixelVector(const RECT& rect) const;
 	void copyRectangle(_R<BitmapContainer> source, 
 			   const RECT& sourceRect,

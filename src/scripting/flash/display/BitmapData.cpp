@@ -148,6 +148,20 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
 		*alpha=0xFF;
 	}
+	else
+	{
+		//premultiply alpha
+		uint32_t res = 0;
+		uint32_t alpha = ((fillColor >> 24)&0xff);
+		if (alpha != 0xff)
+		{
+			res |= ((((fillColor >> 0) &0xff) * alpha)&0xff) << 0;
+			res |= ((((fillColor >> 8) &0xff) * alpha)&0xff) << 8;
+			res |= ((((fillColor >> 16) &0xff) * alpha)&0xff) << 16;
+			res |= alpha<<24;
+			c= GUINT32_TO_BE(res);
+		}
+	}
 	for(uint32_t i=0; i<(uint32_t)(width*height); i++)
 		pixelArray[i]=c;
 	th->pixels->fromRGB(reinterpret_cast<uint8_t *>(pixelArray), width, height, BitmapContainer::ARGB32);
@@ -166,18 +180,18 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	return asAtom::invalidAtom;
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing)
 {
 	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
 	SoftwareInvalidateQueue queue;
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
-	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight());
+	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
 		//Get the drawable from each of the added objects
-		IDrawable* drawable=target->invalidate(d, initialMatrix);
+		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
 		if(drawable==NULL)
 			continue;
 
@@ -214,7 +228,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 				      drawable->getClassName(),
 				      "IBitmapDrawable");
 
-	if(!ctransform.isNull() || !(blendMode.empty() || blendMode == "null") || !clipRect.isNull() || smoothing)
+	if(!ctransform.isNull() || !(blendMode.empty() || blendMode == "null") || !clipRect.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters:"<<ctransform.isNull()<<" "<<clipRect.isNull()<<" "<<blendMode);
 
 	if(drawable->is<BitmapData>())
@@ -224,7 +238,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight());
+		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),smoothing);
 		//Blit the data while transforming it
 		ctxt.transformedBlit(initialMatrix, data->pixels->getData(),
 				data->pixels->getWidth(), data->pixels->getHeight(),
@@ -237,7 +251,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		th->drawDisplayObject(d, initialMatrix);
+		th->drawDisplayObject(d, initialMatrix,smoothing);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
@@ -255,7 +269,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	int32_t y;
 	ARG_UNPACK_ATOM(x)(y);
 
-	uint32_t pix=th->pixels->getPixel(x, y);
+	uint32_t pix=th->pixels->getPixel(x, y,false);
 	return asAtom(pix & 0xffffff);
 }
 
@@ -268,7 +282,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	int32_t y;
 	ARG_UNPACK_ATOM(x)(y);
 
-	uint32_t pix=th->pixels->getPixel(x, y);
+	uint32_t pix=th->pixels->getPixel(x, y,false);
 	return asAtom(pix);
 }
 
@@ -282,7 +296,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 	uint32_t color;
 	ARG_UNPACK_ATOM(x)(y)(color);
 
-	th->pixels->setPixel(x, y, color, false);
+	th->pixels->setPixel(x, y, color, false,false);
 	th->notifyUsers();
 	return asAtom::invalidAtom;
 }
@@ -297,7 +311,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 	uint32_t color;
 	ARG_UNPACK_ATOM(x)(y)(color);
 
-	th->pixels->setPixel(x, y, color, th->transparent);
+	th->pixels->setPixel(x, y, color, th->transparent,false);
 	th->notifyUsers();
 	return asAtom::invalidAtom;
 }
@@ -341,6 +355,20 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 	if (rect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 
+	if (th->transparent)
+	{
+		//premultiply alpha
+		uint32_t res = 0;
+		uint32_t alpha = ((color >> 24)&0xff);
+		if (alpha != 0xff)
+		{
+			res |= ((((color >> 0) &0xff) * alpha)&0xff) << 0;
+			res |= ((((color >> 8) &0xff) * alpha)&0xff) << 8;
+			res |= ((((color >> 16) &0xff) * alpha)&0xff) << 16;
+			res |= alpha<<24;
+			color = res;
+		}
+	}
 	th->pixels->fillRectangle(rect->getRect(), color, th->transparent);
 	th->notifyUsers();
 	return asAtom::invalidAtom;
@@ -500,8 +528,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 	int32_t clippedDestX;
 	int32_t clippedDestY;
 	th->pixels->clipRect(source->pixels, sourceRect->getRect(),
-			     destPoint->getX(), destPoint->getY(),
-			     clippedSourceRect, clippedDestX, clippedDestY);
+				 destPoint->getX(), destPoint->getY(),
+				 clippedSourceRect, clippedDestX, clippedDestY);
 	int regionWidth = clippedSourceRect.Xmax - clippedSourceRect.Xmin;
 	int regionHeight = clippedSourceRect.Ymax - clippedSourceRect.Ymin;
 
@@ -515,15 +543,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 		{
 			int32_t sx = clippedSourceRect.Xmin+x;
 			int32_t sy = clippedSourceRect.Ymin+y;
-			uint32_t sourcePixel = source->pixels->getPixel(sx, sy);
+			uint32_t sourcePixel = source->pixels->getPixel(sx, sy,false);
 			uint32_t channel = (sourcePixel >> sourceShift) & 0xFF;
-			uint32_t destChannelValue = channel << destShift;
-
 			int32_t dx = clippedDestX + x;
 			int32_t dy = clippedDestY + y;
-			uint32_t oldPixel = th->pixels->getPixel(dx, dy);
-			uint32_t newColor = (oldPixel & constantChannelsMask) | destChannelValue;
-			th->pixels->setPixel(dx, dy, newColor, true);
+			uint32_t oldPixel = th->pixels->getPixel(dx, dy,sourceChannel == BitmapDataChannel::ALPHA);
+			uint32_t destChannelValue = channel << destShift;
+
+			uint32_t newColor = ((oldPixel & constantChannelsMask) | destChannelValue);
+			th->pixels->setPixel(dx, dy, newColor, true,sourceChannel == BitmapDataChannel::ALPHA);
 		}
 	}
 

@@ -184,6 +184,7 @@ protected:
 	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
 	*/
 	const float scaleFactor;
+	bool smoothing;
 	/**
 	  The whole transformation matrix that is applied to the rendered object
 	*/
@@ -202,14 +203,14 @@ protected:
 	static void copyRGB15To24(uint8_t* dest, uint8_t* src);
 	static void copyRGB24To24(uint8_t* dest, uint8_t* src);
 public:
-	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m);
+	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m,bool _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer();
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
 	static void convertBitmapToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-					 uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp);
+					 uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp, bool convertendianess);
 	/*
 	 * Converts data (which is in ARGB format) to the format internally used by cairo.
 	 */
@@ -243,11 +244,12 @@ public:
 	   @param _s The scale factor to be applied in both the x and y axis
 	   @param _a The alpha factor to be applied
 	   @param _ms The masks that must be applied
+	   @param _smoothing indicates if the tokens should be rendered with antialiasing
 	*/
 	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-		    float _s, float _a, const std::vector<MaskData>& _ms)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms),tokens(_g){}
+		    float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing)
+		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing),tokens(_g){}
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -322,8 +324,8 @@ class CairoPangoRenderer : public CairoRenderer
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms), textData(_textData) {}
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing)
+		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing), textData(_textData) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

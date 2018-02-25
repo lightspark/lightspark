@@ -232,7 +232,7 @@ public:
 	virtual int audio_getSampleRate();
 	
 	// Text rendering
-	virtual IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms);
+	virtual IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,bool smoothing);
 };
 
 }

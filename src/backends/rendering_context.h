@@ -128,7 +128,7 @@ private:
 	 */
 	static const CachedSurface invalidSurface;
 public:
-	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height);
+	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing);
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode);

@@ -711,7 +711,7 @@ void TextLine::requestInvalidation(InvalidateQueue* q)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix)
+IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
 	int32_t x,y;
 	uint32_t width,height;
@@ -733,7 +733,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 
 	return new CairoPangoRenderer(*this,
 				      totalMatrix, x, y, width, height, 1.0f,
-				      getConcatenatedAlpha(),masks);
+				      getConcatenatedAlpha(),masks,smoothing);
 }
 
 void TextLine::renderImpl(RenderContext& ctxt) const

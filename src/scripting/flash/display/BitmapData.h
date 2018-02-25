@@ -53,7 +53,7 @@ public:
 	/*
 	 * Utility method to draw a DisplayObject on the surface
 	 */
-	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix);
+	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix,bool smoothing);
 	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(dispose);

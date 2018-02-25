@@ -41,7 +41,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	if(format==ARGB32)
 		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride,convertendianess);
 	else
-		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : (format==RGB24 ? 3 : 4) );
+		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : 4,convertendianess);
 	delete[] rgb;
 	if(data.empty())
 	{
@@ -128,24 +128,55 @@ void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
 	*p = ((uint32_t)alpha << 24) + (*p & 0xFFFFFF);
 }
 
-void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha)
+void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha, bool ispremultiplied)
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
 
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
 	if(setAlpha)
-		*p=color;
+	{
+		if (ispremultiplied || (((*p)&0xff000000) == (color&0xff000000)))
+			*p=color;
+		else
+		{
+			uint32_t res = 0;
+			uint32_t alpha = ((color >> 24)&0xff);
+			res |= ((((color >> 0) &0xff) * alpha)&0xff) << 0;
+			res |= ((((color >> 8) &0xff) * alpha)&0xff) << 8;
+			res |= ((((color >> 16) &0xff) * alpha)&0xff) << 16;
+			res |= alpha<<24;
+			*p=res;
+		}
+	}
 	else
 		*p=(*p & 0xff000000) | (color & 0x00ffffff);
 }
 
-uint32_t BitmapContainer::getPixel(int32_t x, int32_t y) const
+uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied) const
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
 
 	const uint32_t *p=reinterpret_cast<const uint32_t *>(&data[y*stride + 4*x]);
+	if (!premultiplied)
+	{
+		uint32_t res = 0;
+		uint32_t alpha = ((*p >> 24)&0xff);
+		if (alpha && alpha != 0xff)
+		{
+			// return value with "un-multiplied" alpha: ceiling(value*255/alpha)
+			uint32_t b = ((*p) >> 0) &0xff;
+			uint32_t g = ((*p) >> 8) &0xff;
+			uint32_t r = ((*p) >> 16) &0xff;
+			//x/y + (x % y != 0);
+			res |= (((b*0xff)/alpha+((b*0xff)%alpha ? 1:0))&0xff) << 0;
+			res |= (((g*0xff)/alpha+((g*0xff)%alpha ? 1:0))&0xff) << 8;
+			res |= (((r*0xff)/alpha+((r*0xff)%alpha ? 1:0))&0xff) << 16;
+			res |= alpha<<24;
+			return res;
+		}
+	}
 	return *p;
 }
 
@@ -179,11 +210,22 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 	}
 	else
 	{
+		uint8_t* sourcedata = &source->data[0];
+		bool needsdeletion = false;
+		if (sourcedata == &data[0])
+		{
+			// cairo doesn't work if source and destination buffers are the same 
+			sourcedata = new uint8_t[data.size()];
+			memcpy (sourcedata,&data[0],data.size());
+			needsdeletion = true;
+		}
 		//Slow path using Cairo
-		CairoRenderContext ctxt(&data[0], width, height);
-		ctxt.simpleBlit(clippedX, clippedY, &source->data[0],
+		CairoRenderContext ctxt(&data[0], width, height,false);
+		ctxt.simpleBlit(clippedX, clippedY, sourcedata,
 				source->getWidth(), source->getHeight(),
 				sx, sy, copyWidth, copyHeight);
+		if (needsdeletion)
+			delete[] sourcedata;
 	}
 }
 

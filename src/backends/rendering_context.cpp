@@ -250,11 +250,12 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
-CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height):RenderContext(CAIRO)
+CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height, bool smoothing):RenderContext(CAIRO)
 {
 	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height);
 	cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
+	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 }
 
 CairoRenderContext::~CairoRenderContext()
@@ -310,7 +311,10 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode)
 {
-	//TODO: support alpha, and colorMode
+	if (alpha != 1.0)
+		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
+	if (colorMode != RGB_MODE)
+		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);

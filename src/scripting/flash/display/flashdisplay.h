@@ -211,8 +211,8 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
-	{ return TokenContainer::invalidate(target, initialMatrix); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
 
 class DefineMorphShapeTag;
@@ -233,8 +233,8 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
-	{ return TokenContainer::invalidate(target, initialMatrix); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void checkRatio(uint32_t ratio);
 };
 
@@ -395,8 +395,8 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
-	{ return TokenContainer::invalidate(target, initialMatrix); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void requestInvalidation(InvalidateQueue* q);
 };
 
@@ -744,8 +744,8 @@ public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix)
-	{ return TokenContainer::invalidate(target, initialMatrix); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
 
 class AVM1Movie: public DisplayObject

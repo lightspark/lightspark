@@ -2616,6 +2616,9 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->class_scope.push_back(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}
 
+	// set constructor property first, as it seems to be allowed to override the constructor property by a class trait
+	ret->addConstructorGetter();
+
 	LOG_CALL(_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
@@ -2661,8 +2664,6 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->constructor->length));
 	else
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,0));
-	
-	ret->addConstructorGetter();
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)

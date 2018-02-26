@@ -41,7 +41,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	if(format==ARGB32)
 		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride,convertendianess);
 	else
-		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : 4,convertendianess);
+		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : (format==RGB24 ? 3 : 4),convertendianess);
 	delete[] rgb;
 	if(data.empty())
 	{
@@ -136,7 +136,7 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
 	if(setAlpha)
 	{
-		if (ispremultiplied || (((*p)&0xff000000) == (color&0xff000000)))
+		if (ispremultiplied || (((*p)&0xff000000) == 0xff000000))
 			*p=color;
 		else
 		{

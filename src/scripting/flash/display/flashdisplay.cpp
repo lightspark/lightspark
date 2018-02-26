@@ -907,8 +907,13 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	/* When mouseChildren is false, we should get all events of our children */
 	if(ret && !mouseChildren)
 	{
-		this->incRef();
-		ret = _MNR(this);
+		if (!isHittable(type))
+			ret.reset();
+		else
+		{
+			this->incRef();
+			ret = _MNR(this);
+		}
 	}
 	return ret;
 }

@@ -146,12 +146,22 @@ asAtom Vector::generator(SystemState *sys, asAtom &o_class, asAtom* args, const 
 	{
 		Vector* arg = args[0].as<Vector>();
 
-		//create object without calling _constructor
-		Vector* ret = o_class.as<TemplatedClass<Vector>>()->getInstance(false,NULL,0).as<Vector>();
-		for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
+		Vector* ret = NULL;
+		if (arg->vec_type == type)
 		{
-			ASATOM_INCREF((*i));
-			ret->vec.push_back( type->coerce(sys,*i) );
+			// according to specs, the argument is returned if it is a vector of the same type as the provided class
+			ret = arg;
+			ret->incRef();
+		}
+		else
+		{
+			//create object without calling _constructor
+			ret = o_class.as<TemplatedClass<Vector>>()->getInstance(false,NULL,0).as<Vector>();
+			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
+			{
+				ASATOM_INCREF((*i));
+				ret->vec.push_back( type->coerce(sys,*i) );
+			}
 		}
 		return asAtom::fromObject(ret);
 	}
@@ -205,7 +215,7 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 			{
 				if (it->type != T_INVALID)
 				{
-					ret->vec[index]=((Class_base*)th->vec_type)->coerceForTemplate(sys,*it);
+					ret->vec[index]=th->vec_type->coerceForTemplate(sys,*it);
 					ASATOM_INCREF(ret->vec[index]);
 				}
 				index++;

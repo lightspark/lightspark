@@ -2133,6 +2133,11 @@ ASObject *asAtom::toObject(SystemState *sys)
 	return objval;
 }
 
+bool asAtom::stringcompare(SystemState* sys,uint32_t stringID)
+{
+	return this->toObject(sys)->toString() == sys->getStringFromUniqueId(stringID);
+}
+
 asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
 {
 	asAtom a;

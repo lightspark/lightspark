@@ -261,6 +261,7 @@ public:
 	asAtom getVariableByMultiname(SystemState *sys, const multiname& name);
 	void fillMultiname(SystemState *sys, multiname& name);
 	void replace(ASObject* obj);
+	bool stringcompare(SystemState* sys, uint32_t stringID);
 	std::string toDebugString();
 	inline void applyProxyProperty(SystemState *sys, multiname& name);
 	inline TRISTATE isLess(SystemState *sys, asAtom& v2);
@@ -1461,6 +1462,18 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 					case T_STRING:
 						if (v2.stringID != UINT32_MAX)
 							return v2.stringID == stringID;
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				switch (v2.type)
+				{
+					case T_STRING:
+						if (v2.stringID != UINT32_MAX)
+							return stringcompare(sys,v2.stringID);
 						break;
 					default:
 						break;

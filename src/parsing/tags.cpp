@@ -357,11 +357,10 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:RightMargin on ID "<<CharacterID);
 		if (Indent != 0)
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
-		if (Leading != 0)
-			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Leading on ID "<<CharacterID);
 	}
 	in >> VariableName;
-	LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
+	if (!VariableName.isNull())
+		LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
 	if(HasText)
 	{
 		in >> InitialText;
@@ -386,6 +385,13 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 	if (HTML)
 		ret->setHtmlText((const char*)InitialText);
 	return ret;
+}
+
+MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
+{
+	MATRIX m = mat;
+	m.translate(Bounds.Xmin/20 + Leading/20,Bounds.Ymin/20);
+	return m;
 }
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
@@ -777,7 +783,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	fs.Color = RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 	fillStyles.push_back(fs);
 
-	number_t tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = 20*1024 * this->scaling;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -922,7 +928,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 		else
 			format = BitmapContainer::ARGB32;
 
-		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);//,version != 1);
+		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);
 	}
 	else if (BitmapFormat == LOSSLESS_BITMAP_PALETTE)
 	{
@@ -1345,7 +1351,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor
-		toAdd->setLegacyMatrix(Matrix);
+		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 
 		setProperties(toAdd, parent);
 

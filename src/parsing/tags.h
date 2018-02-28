@@ -84,6 +84,7 @@ public:
 	virtual TAGTYPE getType()const{ return DICT_TAG; }
 	virtual int getId() const=0;
 	virtual ASObject* instance(Class_base* c=NULL) { return NULL; }
+	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
 };
 
 /*
@@ -221,6 +222,7 @@ public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s, RootMovieClip* root);
 	int getId() const { return CharacterID; }
 	ASObject* instance(Class_base* c=NULL);
+	MATRIX MapToBounds(const MATRIX& mat);
 };
 
 class MemoryStreamCache;

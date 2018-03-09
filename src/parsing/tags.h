@@ -313,7 +313,7 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
-	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
+	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 	DictionaryTag* placedTag;
 public:
 	STRING Name;
@@ -336,6 +336,7 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 };
 
 class FrameLabelTag: public Tag

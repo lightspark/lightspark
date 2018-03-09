@@ -44,6 +44,7 @@ friend class AsyncDrawJob;
 friend class Transform;
 friend class ParseThread;
 friend class Loader;
+friend class TextField;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, // point is over the object

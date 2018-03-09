@@ -872,8 +872,7 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 void Sprite::renderImpl(RenderContext& ctxt) const
 {
 	//Draw the dynamically added graphics, if any
-	if(!tokensEmpty())
-		defaultRender(ctxt);
+	defaultRender(ctxt);
 
 	DisplayObjectContainer::renderImpl(ctxt);
 }

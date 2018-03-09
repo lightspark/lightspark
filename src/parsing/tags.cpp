@@ -357,6 +357,8 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:RightMargin on ID "<<CharacterID);
 		if (Indent != 0)
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
+		if (Multiline && Leading != 0)
+			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Leading on ID "<<CharacterID);
 	}
 	in >> VariableName;
 	if (!VariableName.isNull())
@@ -369,6 +371,8 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.wordWrap = WordWrap;
 	textData.multiline = Multiline;
 	textData.border = Border;
+	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
+	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
 	if (AutoSize)
 		textData.autoSize = TextData::AS_LEFT;
 
@@ -390,7 +394,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
 {
 	MATRIX m = mat;
-	m.translate(Bounds.Xmin/20 + Leading/20,Bounds.Ymin/20);
+	m.translate(Bounds.Xmin/20,Bounds.Ymin/20);
 	return m;
 }
 
@@ -1487,6 +1491,13 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		placedTag=root->dictionaryLookup(CharacterId);
 }
 
+void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *parent) const
+{
+	PlaceObject2Tag::setProperties(obj,parent);
+	if (PlaceFlagHasBlendMode)
+		obj->setBlendMode(BlendMode);
+}
+
 void SetBackgroundColorTag::execute(RootMovieClip* root) const
 {
 	root->setBackground(BackgroundColor);
@@ -1575,6 +1586,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			if(j==3 && !i->ButtonStateUp)
 				continue;
 			DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
+			loadedFrom->checkBinding(dict);
 
 			//We can create the object right away
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());

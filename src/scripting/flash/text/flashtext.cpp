@@ -329,21 +329,14 @@ void TextField::setSizeAndPositionFromAutoSize()
 	if (autoSize == AS_NONE)
 		return;
 
-	//height = textHeight;
 	if (!wordWrap)
 	{
 		if (autoSize == AS_RIGHT)
-		{
-			//number_t oldX = getXY().x;
-			setX(width-textWidth);
-		}
+			tx += width-textWidth;
 		else if (autoSize == AS_CENTER)
-		{
-			//number_t oldX = getXY().x;
-			setX(width/2.0 - textWidth/2.0);
-		}
-		if (width < textWidth)
-			width = textWidth;
+			tx += (width - textWidth)/2.0;
+		width = textWidth;
+		height = textHeight;
 	}
 }
 
@@ -903,10 +896,26 @@ void TextField::updateSizes()
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
-	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-	width = w; //TODO: check the case when w,h == 0
+	
+	RootMovieClip* currentRoot=getSystemState()->mainClip;
+	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
+	if (embeddedfont)
+	{
+		tokens.clear();
+		scaling = 1.0f/1024.0f/20.0f;
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor);
+		number_t x1,x2,y1,y2;
+		if (TokenContainer::boundsRect(x1,x2,y1,y2))
+		{
+			tw = x2-x1;
+			th = y2-y1;
+		}
+	}
+	else
+		CairoPangoRenderer::getBounds(*this, w, h, tw, th);
+	//width = w; //TODO: check the case when w,h == 0
 	textWidth=tw;
-	height = h;
+	//height = h;
 	textHeight=th;
 }
 
@@ -953,7 +962,6 @@ void TextField::setHtmlText(const tiny_string& html)
 		parser.parseTextAndFormating(html, this);
 	}
 	updateSizes();
-	setSizeAndPositionFromAutoSize();
 	hasChanged=true;
 	textUpdated();
 }
@@ -995,6 +1003,7 @@ void TextField::textUpdated()
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
 	updateSizes();
+	setSizeAndPositionFromAutoSize();
 	hasChanged=true;
 
 	if(onStage && isVisible())
@@ -1024,7 +1033,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return NULL;
 	}
 
-	RootMovieClip* currentRoot=getSys()->mainClip;
+	RootMovieClip* currentRoot=getSystemState()->mainClip;
 	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
 	if (embeddedfont)

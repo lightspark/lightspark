@@ -124,6 +124,29 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 	return d->cachedSurface;
 }
 
+void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
+{
+	// TODO handle other blend modes ,maybe with shaders ? (see https://github.com/jamieowen/glsl-blend)
+	switch (blendmode)
+	{
+		case BLENDMODE_NORMAL:
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+			break;
+		case BLENDMODE_MULTIPLY:
+			engineData->exec_glBlendFunc(BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA);
+			break;
+		case BLENDMODE_ADD:
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE);
+			break;
+		case BLENDMODE_SCREEN:
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_COLOR);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
+			break;
+	}
+}
+
 void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
 			float alpha, COLOR_MODE colorMode)
 {
@@ -340,6 +363,27 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 		return invalidSurface;
 	}
 	return ret->second;
+}
+
+void CairoRenderContext::setProperties(AS_BLENDMODE blendmode)
+{
+	switch (blendmode)
+	{
+		case BLENDMODE_NORMAL:
+			break;
+		case BLENDMODE_MULTIPLY:
+			cairo_set_operator(cr,CAIRO_OPERATOR_MULTIPLY);
+			break;
+		case BLENDMODE_ADD:
+			cairo_set_operator(cr,CAIRO_OPERATOR_ADD);
+			break;
+		case BLENDMODE_SCREEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_SCREEN);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
+			break;
+	}
 }
 
 CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf)

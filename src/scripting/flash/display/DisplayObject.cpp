@@ -92,33 +92,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 {
 	if(!isConstructed() || skipRender())
 		return;
-
-	if (ctxt.contextType == RenderContext::GL)
-	{
-		// TODO handle other blend modes ,maybe with shaders ? (see https://github.com/jamieowen/glsl-blend)
-		switch (blendMode)
-		{
-			case BLENDMODE_NORMAL:
-				break;
-			case BLENDMODE_MULTIPLY:
-				getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA);
-				break;
-			case BLENDMODE_ADD:
-				getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE);
-				break;
-			case BLENDMODE_SCREEN:
-				getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_COLOR);
-				break;
-			default:
-				LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendMode);
-				break;
-		}
-	}
-
 	renderImpl(ctxt);
-	
-	if (ctxt.contextType == RenderContext::GL && this->blendMode != BLENDMODE_NORMAL)
-		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
@@ -329,8 +303,6 @@ void DisplayObject::setBlendMode(UI8 blendmode)
 	else
 	{
 		this->blendMode = (AS_BLENDMODE)(uint8_t)blendmode;
-		if (this->blendMode != BLENDMODE_MULTIPLY)
-			LOG(LOG_NOT_IMPLEMENTED,"DisplayObject.blendmode is set, but not respected during drawing:"<<(int)blendMode<<" "<<this->toDebugString());
 	}
 }
 MATRIX DisplayObject::getConcatenatedMatrix() const
@@ -403,6 +375,8 @@ bool DisplayObject::skipRender() const
 void DisplayObject::defaultRender(RenderContext& ctxt) const
 {
 	// TODO: use scrollRect
+
+	ctxt.setProperties(blendMode);
 
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread

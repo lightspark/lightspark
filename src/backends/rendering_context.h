@@ -64,6 +64,7 @@ public:
 	 * Get the right CachedSurface from an object
 	 */
 	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
+	virtual void setProperties(AS_BLENDMODE blendmode) = 0;
 };
 
 class GLRenderContext: public RenderContext
@@ -112,6 +113,7 @@ public:
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
+	void setProperties(AS_BLENDMODE blendmode);
 
 	/* Utility */
 	bool handleGLErrors() const;
@@ -137,6 +139,7 @@ public:
 	 * In the Cairo case we get the right CachedSurface out of the map
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
+	void setProperties(AS_BLENDMODE blendmode);
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

@@ -207,8 +207,8 @@ private:
 	inline void decRef();
 public:
 	SWFOBJECT_TYPE type;
-	asAtom():objval(NULL),type(T_INVALID) {}
-	asAtom(SWFOBJECT_TYPE _t):objval(NULL),type(_t) {}
+	asAtom():intval(0),objval(NULL),type(T_INVALID) {}
+	asAtom(SWFOBJECT_TYPE _t):intval(0),objval(NULL),type(_t) {}
 	asAtom(int32_t val):intval(val),objval(NULL),type(T_INTEGER) {}
 	asAtom(uint32_t val):uintval(val),objval(NULL),type(T_UINTEGER) {}
 	asAtom(number_t val):numberval(val),objval(NULL),type(T_NUMBER) {}
@@ -393,7 +393,7 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	inline const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
+	FORCE_INLINE const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
 	{
 		if (mname.isEmpty())
 			return NULL;
@@ -433,7 +433,7 @@ public:
 	}
 
 	//
-	inline variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL)
+	FORCE_INLINE variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL)
 	{
 		if (mname.isEmpty())
 			return NULL;
@@ -565,7 +565,7 @@ protected:
 				std::map<const Class_base*, uint32_t> traitsMap);
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
-	inline static const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
 	{
 		const variable* ret=map.findObjVarConst(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
@@ -577,7 +577,7 @@ protected:
 		}
 		return ret;
 	}
-	inline static variable* findGettableImpl(SystemState* sys, variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
+	static FORCE_INLINE variable* findGettableImpl(SystemState* sys, variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)
 	{
 		variable* ret=map.findObjVar(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
@@ -1060,7 +1060,7 @@ ASObject* asAtom::checkObject()
 	return objval;
 }
 
-int32_t asAtom::toInt()
+FORCE_INLINE int32_t asAtom::toInt()
 {
 	switch(type)
 	{
@@ -1080,7 +1080,7 @@ int32_t asAtom::toInt()
 			return checkObject()->toInt();
 	}
 }
-number_t asAtom::toNumber()
+FORCE_INLINE number_t asAtom::toNumber()
 {
 	switch(type)
 	{
@@ -1102,7 +1102,7 @@ number_t asAtom::toNumber()
 			return checkObject()->toNumber();
 	}
 }
-int64_t asAtom::toInt64()
+FORCE_INLINE int64_t asAtom::toInt64()
 {
 	switch(type)
 	{
@@ -1124,7 +1124,7 @@ int64_t asAtom::toInt64()
 			return checkObject()->toInt64();
 	}
 }
-uint32_t asAtom::toUInt()
+FORCE_INLINE uint32_t asAtom::toUInt()
 {
 	switch(type)
 	{
@@ -1147,7 +1147,7 @@ uint32_t asAtom::toUInt()
 	}
 }
 
-void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
+FORCE_INLINE void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
 {
 	switch(type)
 	{
@@ -1171,7 +1171,7 @@ void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
 			break;
 	}
 }
-TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
+FORCE_INLINE TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
 {
 	switch (type)
 	{
@@ -1301,7 +1301,7 @@ TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
 	}
 	return toObject(sys)->isLess(v2.toObject(sys));
 }
-bool asAtom::isEqual(SystemState *sys, asAtom &v2)
+FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 {
 	switch (type)
 	{
@@ -1487,7 +1487,7 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 	return toObject(sys)->isEqual(v2.toObject(sys));
 }
 
-bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
+FORCE_INLINE bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
 {
 	if(type!=v2.type)
 	{
@@ -1523,7 +1523,7 @@ bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
 	
 }
 
-bool asAtom::isConstructed() const
+FORCE_INLINE bool asAtom::isConstructed() const
 {
 	switch(type)
 	{
@@ -1544,7 +1544,7 @@ bool asAtom::isConstructed() const
 	}
 }
 
-bool asAtom::isPrimitive() const
+FORCE_INLINE bool asAtom::isPrimitive() const
 {
 	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
 	// because they are special cases of Number
@@ -1552,7 +1552,7 @@ bool asAtom::isPrimitive() const
 		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
 			type==T_UINTEGER;
 }
-bool asAtom::checkArgumentConversion(const asAtom& obj) const
+FORCE_INLINE bool asAtom::checkArgumentConversion(const asAtom& obj) const
 {
 	if (type == obj.type)
 		return true;
@@ -1562,46 +1562,46 @@ bool asAtom::checkArgumentConversion(const asAtom& obj) const
 	return false;
 }
 
-void asAtom::setInt(int32_t val)
+FORCE_INLINE void asAtom::setInt(int32_t val)
 {
 	type = T_INTEGER;
 	intval = val;
 	objval = NULL;
 }
 
-void asAtom::setUInt(uint32_t val)
+FORCE_INLINE void asAtom::setUInt(uint32_t val)
 {
 	type = T_UINTEGER;
 	uintval = val;
 	objval = NULL;
 }
 
-void asAtom::setNumber(number_t val)
+FORCE_INLINE void asAtom::setNumber(number_t val)
 {
 	type = T_NUMBER;
 	numberval = val;
 	objval = NULL;
 }
 
-void asAtom::setBool(bool val)
+FORCE_INLINE void asAtom::setBool(bool val)
 {
 	type = T_BOOLEAN;
 	boolval = val;
 	objval = NULL;
 }
 
-void asAtom::setNull()
+FORCE_INLINE void asAtom::setNull()
 {
 	type = T_NULL;
 	objval = NULL;
 }
-void asAtom::setUndefined()
+FORCE_INLINE void asAtom::setUndefined()
 {
 	type = T_UNDEFINED;
 	objval = NULL;
 }
 
-void asAtom::increment()
+FORCE_INLINE void asAtom::increment()
 {
 	switch(type)
 	{
@@ -1633,7 +1633,7 @@ void asAtom::increment()
 	}
 }
 
-void asAtom::decrement()
+FORCE_INLINE void asAtom::decrement()
 {
 	switch(type)
 	{
@@ -1674,16 +1674,16 @@ void asAtom::decrement()
 
 }
 
-void asAtom::increment_i()
+FORCE_INLINE void asAtom::increment_i()
 {
 	setInt(toInt()+1);
 }
-void asAtom::decrement_i()
+FORCE_INLINE void asAtom::decrement_i()
 {
 	setInt(toInt()-1);
 }
 
-void asAtom::convert_i()
+FORCE_INLINE void asAtom::convert_i()
 {
 	if (type == T_INTEGER)
 		return;
@@ -1692,7 +1692,7 @@ void asAtom::convert_i()
 	setInt(v);
 }
 
-void asAtom::convert_u()
+FORCE_INLINE void asAtom::convert_u()
 {
 	if (type == T_UINTEGER)
 		return;
@@ -1701,7 +1701,7 @@ void asAtom::convert_u()
 	setUInt(v);
 }
 
-void asAtom::convert_d()
+FORCE_INLINE void asAtom::convert_d()
 {
 	if (type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER)
 		return;
@@ -1710,7 +1710,7 @@ void asAtom::convert_d()
 	setNumber(v);
 }
 
-void asAtom::bit_xor(asAtom &v1)
+FORCE_INLINE void asAtom::bit_xor(asAtom &v1)
 {
 	int32_t i1=v1.toInt();
 	int32_t i2=toInt();
@@ -1720,7 +1720,7 @@ void asAtom::bit_xor(asAtom &v1)
 	setInt(i1^i2);
 }
 
-void asAtom::bitnot()
+FORCE_INLINE void asAtom::bitnot()
 {
 	int32_t i1=toInt();
 	decRef();
@@ -1728,7 +1728,7 @@ void asAtom::bitnot()
 	setInt(~i1);
 }
 
-void asAtom::subtract(asAtom &v2)
+FORCE_INLINE void asAtom::subtract(asAtom &v2)
 {
 	if( (type == T_INTEGER || type == T_UINTEGER) &&
 		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
@@ -1759,7 +1759,7 @@ void asAtom::subtract(asAtom &v2)
 	}
 }
 
-void asAtom::multiply(asAtom &v2)
+FORCE_INLINE void asAtom::multiply(asAtom &v2)
 {
 	if( (type == T_INTEGER || type == T_UINTEGER) &&
 		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
@@ -1788,7 +1788,7 @@ void asAtom::multiply(asAtom &v2)
 	}
 }
 
-void asAtom::divide(asAtom &v2)
+FORCE_INLINE void asAtom::divide(asAtom &v2)
 {
 	double num1=toNumber();
 	double num2=v2.toNumber();
@@ -1811,7 +1811,7 @@ void asAtom::divide(asAtom &v2)
 		setNumber(num1/num2);
 }
 
-void asAtom::modulo(asAtom &v2)
+FORCE_INLINE void asAtom::modulo(asAtom &v2)
 {
 	// if both values are Integers the result is also an int
 	if( ((type == T_INTEGER) || (type == T_UINTEGER)) &&
@@ -1838,7 +1838,7 @@ void asAtom::modulo(asAtom &v2)
 	}
 }
 
-void asAtom::lshift(asAtom &v1)
+FORCE_INLINE void asAtom::lshift(asAtom &v1)
 {
 	int32_t i2=toInt();
 	uint32_t i1=v1.toUInt()&0x1f;
@@ -1849,7 +1849,7 @@ void asAtom::lshift(asAtom &v1)
 	setInt(i2<<i1);
 }
 
-void asAtom::rshift(asAtom &v1)
+FORCE_INLINE void asAtom::rshift(asAtom &v1)
 {
 	int32_t i2=toInt();
 	uint32_t i1=v1.toUInt()&0x1f;
@@ -1859,7 +1859,7 @@ void asAtom::rshift(asAtom &v1)
 	setInt(i2>>i1);
 }
 
-void asAtom::urshift(asAtom &v1)
+FORCE_INLINE void asAtom::urshift(asAtom &v1)
 {
 	uint32_t i2=toUInt();
 	uint32_t i1=v1.toUInt()&0x1f;
@@ -1868,7 +1868,7 @@ void asAtom::urshift(asAtom &v1)
 	LOG_CALL(_("urShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	setUInt(i2>>i1);
 }
-void asAtom::bit_and(asAtom &v1)
+FORCE_INLINE void asAtom::bit_and(asAtom &v1)
 {
 	int32_t i1=v1.toInt();
 	int32_t i2=toInt();
@@ -1877,14 +1877,14 @@ void asAtom::bit_and(asAtom &v1)
 	LOG_CALL(_("bitAnd_oo ") << std::hex << i1 << '&' << i2 << std::dec);
 	setInt(i1&i2);
 }
-void asAtom::bit_or(asAtom &v1)
+FORCE_INLINE void asAtom::bit_or(asAtom &v1)
 {
 	int32_t i1=v1.toInt();
 	int32_t i2=toInt();
 	LOG_CALL(_("bitOr ") << std::hex << i1 << '|' << i2 << std::dec);
 	setInt(i1|i2);
 }
-void asAtom::_not()
+FORCE_INLINE void asAtom::_not()
 {
 	LOG_CALL( _("not:") <<this->toDebugString()<<" "<<!Boolean_concrete());
 	
@@ -1893,7 +1893,7 @@ void asAtom::_not()
 	setBool(ret);
 }
 
-void asAtom::negate_i()
+FORCE_INLINE void asAtom::negate_i()
 {
 	LOG_CALL(_("negate_i"));
 	int n=toInt();
@@ -1901,7 +1901,7 @@ void asAtom::negate_i()
 	setInt(-n);
 }
 
-void asAtom::add_i(asAtom &v2)
+FORCE_INLINE void asAtom::add_i(asAtom &v2)
 {
 	int32_t num2=v2.toInt();
 	int32_t num1=toInt();
@@ -1912,7 +1912,7 @@ void asAtom::add_i(asAtom &v2)
 	setInt(num1+num2);
 }
 
-void asAtom::subtract_i(asAtom &v2)
+FORCE_INLINE void asAtom::subtract_i(asAtom &v2)
 {
 	int num2=v2.toInt();
 	int num1=toInt();
@@ -1923,7 +1923,7 @@ void asAtom::subtract_i(asAtom &v2)
 	setInt(num1-num2);
 }
 
-void asAtom::multiply_i(asAtom &v2)
+FORCE_INLINE void asAtom::multiply_i(asAtom &v2)
 {
 	int num1=toInt();
 	int num2=v2.toInt();
@@ -1931,6 +1931,41 @@ void asAtom::multiply_i(asAtom &v2)
 	ASATOM_DECREF(v2);
 	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
 	setInt(num1*num2);
+}
+FORCE_INLINE ASObject *asAtom::toObject(SystemState *sys)
+{
+	if (objval)
+		return objval;
+	switch(type)
+	{
+		case T_INTEGER:
+			// ints are internally treated as numbers, so create a Number instance
+			objval = abstract_di(sys,intval);
+			break;
+		case T_UINTEGER:
+			// uints are internally treated as numbers, so create a Number instance
+			objval = abstract_di(sys,uintval);
+			break;
+		case T_NUMBER:
+			objval = abstract_d(sys,numberval);
+			break;
+		case T_BOOLEAN:
+			return abstract_b(sys,boolval);
+		case T_NULL:
+			return abstract_null(sys);
+		case T_UNDEFINED:
+			return abstract_undefined(sys);
+		case T_STRING:
+			if (stringID != UINT32_MAX)
+				objval = abstract_s(sys,stringID);
+			break;
+		case T_INVALID:
+			LOG(LOG_ERROR,"calling toObject on invalid asAtom, should not happen");
+			return objval;
+		default:
+			break;
+	}
+	return objval;
 }
 
 }

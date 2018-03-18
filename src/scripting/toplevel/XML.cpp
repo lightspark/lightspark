@@ -1473,7 +1473,7 @@ void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABL
 		//object is a leaf node, delegate to ASString
 		if(ret.type == T_INVALID && hasSimpleContent())
 		{
-			ASString *contentstr=abstract_s(getSystemState(),toString_priv());
+			ASObject *contentstr=abstract_s(getSystemState(),toString_priv());
 			contentstr->getVariableByMultiname(ret,name, opt);
 			contentstr->decRef();
 		}

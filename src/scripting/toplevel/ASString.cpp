@@ -356,7 +356,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 			if (res->size() >= limit)
 				break;
 			//Extract string from last match until the beginning of the current match
-			ASString* s=abstract_s(sys,data.substr_bytes(lastMatch,end-lastMatch));
+			ASObject* s=abstract_s(sys,data.substr_bytes(lastMatch,end-lastMatch));
 			res->push(asAtom::fromObject(s));
 			lastMatch=offset=ovector[1];
 
@@ -366,14 +366,14 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 				if (res->size() >= limit)
 					break;
 				//use string interface through raw(), because we index on bytes, not on UTF-8 characters
-				ASString* s=abstract_s(sys,data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ASObject* s=abstract_s(sys,data.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
 				res->push(asAtom::fromObject(s));
 			}
 		}
 		while(end<data.numBytes() && res->size() < limit);
 		if(res->size() < limit && lastMatch != data.numBytes()+1)
 		{
-			ASString* s=abstract_s(sys,data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
+			ASObject* s=abstract_s(sys,data.substr_bytes(lastMatch,data.numBytes()-lastMatch));
 			res->push(asAtom::fromObject(s));
 		}
 		pcre_free(pcreRE);
@@ -409,7 +409,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 				match++;
 			if(match==-1)
 				match= len;
-			ASString* s=abstract_s(sys,data.substr(start,(match-start)));
+			ASObject* s=abstract_s(sys,data.substr(start,(match-start)));
 			if (res->size() >= limit)
 				break;
 			res->push(asAtom::fromObject(s));
@@ -823,7 +823,7 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 
 ASFUNCTIONBODY_ATOM(ASString,fromCharCode)
 {
-	ASString* res=abstract_s(sys);
+	ASString* res=abstract_s(sys)->as<ASString>();
 	for(uint32_t i=0;i<argslen;i++)
 	{
 		res->hasId = false;
@@ -837,7 +837,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 	tiny_string data = obj.toString(sys);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* res=abstract_s(sys,data);
+	ASString* res=abstract_s(sys,data)->as<ASString>();
 
 	tiny_string replaceWith;
 	if(argslen < 2)
@@ -981,7 +981,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 ASFUNCTIONBODY_ATOM(ASString,concat)
 {
 	tiny_string data = obj.toString(sys);
-	ASString* res=abstract_s(sys,data);
+	ASString* res=abstract_s(sys,data)->as<ASString>();
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		res->hasId = false;

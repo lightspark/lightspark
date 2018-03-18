@@ -345,7 +345,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	return s;
 }
 
-lightspark::RECT::RECT()
+lightspark::RECT::RECT():Xmin(0),Xmax(0),Ymin(0),Ymax(0)
 {
 }
 
@@ -1400,7 +1400,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	}
 	return s;
 }
-ASString* lightspark::abstract_s(SystemState *sys)
+ASObject* lightspark::abstract_s(SystemState *sys)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->stringId = BUILTIN_STRINGS::EMPTY;
@@ -1408,7 +1408,7 @@ ASString* lightspark::abstract_s(SystemState *sys)
 	ret->datafilled=true;
 	return ret;
 }
-ASString* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
+ASObject* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = std::string(s,len);
@@ -1417,7 +1417,7 @@ ASString* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
 	ret->datafilled=true;
 	return ret;
 }
-ASString* lightspark::abstract_s(SystemState *sys, const char* s)
+ASObject* lightspark::abstract_s(SystemState *sys, const char* s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
@@ -1426,7 +1426,7 @@ ASString* lightspark::abstract_s(SystemState *sys, const char* s)
 	ret->datafilled=true;
 	return ret;
 }
-ASString* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
+ASObject* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->data = s;
@@ -1435,7 +1435,7 @@ ASString* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
 	ret->datafilled=true;
 	return ret;
 }
-ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
+ASObject* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
 	ret->stringId = stringId;
@@ -1443,7 +1443,6 @@ ASString* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
 	ret->datafilled=false;
 	return ret;
 }
-
 ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 {
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
@@ -1470,6 +1469,21 @@ ASObject* lightspark::abstract_ui(SystemState *sys, uint32_t i)
 	UInteger* ret=Class<UInteger>::getInstanceSNoArgs(sys);
 	ret->val = i;
 	return ret;
+}
+ASObject* lightspark::abstract_null(SystemState *sys)
+{
+	return sys->getNullRef();
+}
+ASObject* lightspark::abstract_undefined(SystemState *sys)
+{
+	return sys->getUndefinedRef();
+}
+ASObject *lightspark::abstract_b(SystemState *sys, bool v)
+{
+	if(v==true)
+		return sys->getTrueRef();
+	else
+		return sys->getFalseRef();
 }
 
 void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)

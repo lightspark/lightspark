@@ -1378,11 +1378,14 @@ ASObject* abstract_i(SystemState *sys, int32_t i);
 ASObject* abstract_ui(SystemState *sys, uint32_t i);
 ASObject* abstract_d(SystemState *sys, number_t i);
 ASObject* abstract_di(SystemState *sys, int64_t i);
-ASString* abstract_s(SystemState *sys);
-ASString* abstract_s(SystemState *sys, const char* s, uint32_t len);
-ASString* abstract_s(SystemState *sys, const char* s);
-ASString* abstract_s(SystemState *sys, const tiny_string& s);
-ASString* abstract_s(SystemState *sys, uint32_t stringId);
+ASObject* abstract_s(SystemState *sys);
+ASObject* abstract_s(SystemState *sys, const char* s, uint32_t len);
+ASObject* abstract_s(SystemState *sys, const char* s);
+ASObject* abstract_s(SystemState *sys, const tiny_string& s);
+ASObject* abstract_s(SystemState *sys, uint32_t stringId);
+ASObject* abstract_null(SystemState *sys);
+ASObject* abstract_undefined(SystemState *sys);
+ASObject* abstract_b(SystemState *sys, bool b);
 
 void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 

@@ -734,7 +734,7 @@ void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VAR
 		//delegate to ASString
 		if(ret.type == T_INVALID && nodes.size()==1 && nodes[0]->hasSimpleContent())
 		{
-			ASString *contentstr=abstract_s(getSystemState(),nodes[0]->toString_priv());
+			ASObject *contentstr=abstract_s(getSystemState(),nodes[0]->toString_priv());
 			contentstr->getVariableByMultiname(ret,name, opt);
 			contentstr->decRef();
 		}
@@ -1221,7 +1221,7 @@ ASFUNCTIONBODY_ATOM(XMLList,toXMLString)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	ASString* res=abstract_s(sys,th->toXMLString_internal());
+	ASObject* res=abstract_s(sys,th->toXMLString_internal());
 	ret = asAtom::fromObject(res);
 }
 

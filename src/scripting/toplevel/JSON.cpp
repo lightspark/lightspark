@@ -475,7 +475,7 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 				break;
 		}
 	}
-	ASString* numstr = abstract_s(getSys(),res);
+	ASObject* numstr = abstract_s(getSys(),res);
 	number_t num = numstr->toNumber();
 
 	if (std::isnan(num))

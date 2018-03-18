@@ -27,14 +27,6 @@
 using namespace lightspark;
 using namespace std;
 
-Boolean* lightspark::abstract_b(SystemState *sys, bool v)
-{
-	if(v==true)
-		return sys->getTrueRef();
-	else
-		return sys->getFalseRef();
-}
-
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
 bool lightspark::Boolean_concrete(const ASObject* o)
 {

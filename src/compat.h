@@ -33,6 +33,14 @@
 #include <iostream>
 #include <cmath>
 
+#if _MSC_VER
+	#define FORCE_INLINE __forceinline
+#elif __GNUC__
+	#define FORCE_INLINE inline __attribute__((always_inline))
+#else
+	#define FORCE_INLINE inline
+#endif
+
 #ifndef M_PI
 #	define M_PI 3.14159265358979323846
 #endif

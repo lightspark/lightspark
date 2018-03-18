@@ -32,11 +32,11 @@ namespace lightspark
  */
 class ASString: public ASObject
 {
-	friend ASString* abstract_s(SystemState* sys);
-	friend ASString* abstract_s(SystemState* sys, const char* s, uint32_t len);
-	friend ASString* abstract_s(SystemState* sys, const char* s);
-	friend ASString* abstract_s(SystemState* sys, const tiny_string& s);
-	friend ASString* abstract_s(SystemState* sys, uint32_t stringId);
+	friend ASObject* abstract_s(SystemState* sys);
+	friend ASObject* abstract_s(SystemState* sys, const char* s, uint32_t len);
+	friend ASObject* abstract_s(SystemState* sys, const char* s);
+	friend ASObject* abstract_s(SystemState* sys, const tiny_string& s);
+	friend ASObject* abstract_s(SystemState* sys, uint32_t stringId);
 private:
 	number_t parseStringInfinite(const char *s, char **end) const;
 	tiny_string data;

@@ -145,7 +145,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 	for(;it!=th->node.attributes_end();++it)
 	{
 		tiny_string attrName = it->name();
-		ASString* attrValue=abstract_s(sys,it->value());
+		ASObject* attrValue=abstract_s(sys,it->value());
 		res->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
 	ret = asAtom::fromObject(res);

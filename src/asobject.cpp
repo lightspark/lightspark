@@ -2127,42 +2127,6 @@ asAtom asAtom::invalidAtom(T_INVALID);
 asAtom asAtom::trueAtom(true);
 asAtom asAtom::falseAtom(false);
 
-ASObject *asAtom::toObject(SystemState *sys)
-{
-	if (objval)
-		return objval;
-	switch(type)
-	{
-		case T_INTEGER:
-			// ints are internally treated as numbers, so create a Number instance
-			objval = abstract_di(sys,intval);
-			break;
-		case T_UINTEGER:
-			// uints are internally treated as numbers, so create a Number instance
-			objval = abstract_di(sys,uintval);
-			break;
-		case T_NUMBER:
-			objval = abstract_d(sys,numberval);
-			break;
-		case T_BOOLEAN:
-			return (boolval ? sys->getTrueRef(): sys->getFalseRef());
-		case T_NULL:
-			return sys->getNullRef();
-		case T_UNDEFINED:
-			return sys->getUndefinedRef();
-		case T_STRING:
-			if (stringID != UINT32_MAX)
-				objval = abstract_s(sys,stringID);
-			break;
-		case T_INVALID:
-			LOG(LOG_ERROR,"calling toObject on invalid asAtom, should not happen");
-			return objval;
-		default:
-			break;
-	}
-	return objval;
-}
-
 bool asAtom::stringcompare(SystemState* sys,uint32_t stringID)
 {
 	return this->toObject(sys)->toString() == sys->getStringFromUniqueId(stringID);

@@ -41,12 +41,11 @@ void JSON::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(JSON,_constructor)
 {
 	throwError<ArgumentError>(kCantInstantiateError);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(JSON,generator)
 {
 	throwError<ArgumentError>(kCoerceArgumentCountError);
-	return asAtom::invalidAtom;
+	ret = asAtom::invalidAtom;
 }
 
 ASObject *JSON::doParse(const tiny_string &jsonstring, asAtom reviver)
@@ -72,7 +71,7 @@ ASFUNCTIONBODY_ATOM(JSON,_parse)
 			throwError<TypeError>(kCheckTypeFailedError);
 		reviver = args[1];
 	}
-	return asAtom::fromObject(doParse(text,reviver));
+	ret = asAtom::fromObject(doParse(text,reviver));
 }
 
 ASFUNCTIONBODY_ATOM(JSON,_stringify)
@@ -122,7 +121,8 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 		{
 			if(space.getObject() && space.getObject()->has_toString())
 			{
-				asAtom ret = space.getObject()->call_toString();
+				asAtom ret;
+				space.getObject()->call_toString(ret);
 				spaces = ret.toString(sys);
 			}
 			else
@@ -133,7 +133,7 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 	}
 	tiny_string res = value->toJSON(path,replacer,spaces,filter);
 
-	return asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtom::fromObject(abstract_s(sys,res));
 }
 void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, asAtom reviver)
 {
@@ -211,7 +211,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 			params[0] = asAtom::fromObject(abstract_s(getSys(),key.normalizedName(getSys())));
 			if ((*parent)->hasPropertyByMultiname(key,true,false))
 			{
-				params[1] = (*parent)->getVariableByMultiname(key);
+				(*parent)->getVariableByMultiname(params[1],key);
 				ASATOM_INCREF(params[1]);
 			}
 			else
@@ -224,7 +224,8 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 			ASATOM_INCREF(params[1]);
 		}
 
-		asAtom funcret=reviver.callFunction(asAtom::nullAtom, params, 2,true);
+		asAtom funcret;
+		reviver.callFunction(funcret,asAtom::nullAtom, params, 2,true);
 		if(funcret.type != T_INVALID)
 		{
 			if (haskey)

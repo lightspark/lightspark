@@ -40,7 +40,7 @@ BitmapFilter* BitmapFilter::cloneImpl() const
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
 {
 	BitmapFilter* th=obj.as<BitmapFilter>();
-	return asAtom::fromObject(th->cloneImpl());
+	ret = asAtom::fromObject(th->cloneImpl());
 }
 
 GlowFilter::GlowFilter(Class_base* c):
@@ -71,7 +71,7 @@ ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, knockout);
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, quality);
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, strength);
 
-ASFUNCTIONBODY_ATOM(GlowFilter, _constructor)
+ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 {
 	GlowFilter *th = obj.as<GlowFilter>();
 	ARG_UNPACK_ATOM (th->color, 0xFF0000)
@@ -82,7 +82,6 @@ ASFUNCTIONBODY_ATOM(GlowFilter, _constructor)
 		(th->quality, 1)
 		(th->inner, false)
 		(th->knockout, false);
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* GlowFilter::cloneImpl() const
@@ -134,7 +133,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, knockout);
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, quality);
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, strength);
 
-ASFUNCTIONBODY_ATOM(DropShadowFilter, _constructor)
+ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 {
 	DropShadowFilter *th = obj.as<DropShadowFilter>();
 	ARG_UNPACK_ATOM (th->distance, 4.0)
@@ -148,7 +147,6 @@ ASFUNCTIONBODY_ATOM(DropShadowFilter, _constructor)
 		(th->inner, false)
 		(th->knockout, false)
 		(th->hideObject, false);
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* DropShadowFilter::cloneImpl() const
@@ -178,11 +176,10 @@ void GradientGlowFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-ASFUNCTIONBODY_ATOM(GradientGlowFilter, _constructor)
+ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 {
 	//GradientGlowFilter *th = obj.as<GradientGlowFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
@@ -224,11 +221,10 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type);
  
-ASFUNCTIONBODY_ATOM(BevelFilter, _constructor)
+ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 {
 	//BevelFilter *th = obj.as<BevelFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* BevelFilter::cloneImpl() const
@@ -248,11 +244,10 @@ void ColorMatrixFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix);
 
-ASFUNCTIONBODY_ATOM(ColorMatrixFilter, _constructor)
+ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 {
 	ColorMatrixFilter *th = obj.as<ColorMatrixFilter>();
 	ARG_UNPACK_ATOM(th->matrix,NullRef);
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
@@ -281,12 +276,11 @@ ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurX);
 ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurY);
 ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality);
 
-ASFUNCTIONBODY_ATOM(BlurFilter, _constructor)
+ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 {
 	BlurFilter *th = obj.as<BlurFilter>();
 	ARG_UNPACK_ATOM(th->blurX,4.0)(th->blurY,4.0)(th->quality,1);
 	LOG(LOG_NOT_IMPLEMENTED,"BlurFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* BlurFilter::cloneImpl() const
@@ -308,11 +302,10 @@ void ConvolutionFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-ASFUNCTIONBODY_ATOM(ConvolutionFilter, _constructor)
+ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 {
 	//ConvolutionFilter *th = obj.as<ConvolutionFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
@@ -348,11 +341,10 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY);
 
-ASFUNCTIONBODY_ATOM(DisplacementMapFilter, _constructor)
+ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
 	//DisplacementMapFilter *th = obj.as<DisplacementMapFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"DisplacementMapFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
@@ -370,11 +362,10 @@ void GradientBevelFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-ASFUNCTIONBODY_ATOM(GradientBevelFilter, _constructor)
+ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 {
 	//GradientBevelFilter *th = obj.as<GradientBevelFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const
@@ -392,11 +383,10 @@ void ShaderFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-ASFUNCTIONBODY_ATOM(ShaderFilter, _constructor)
+ASFUNCTIONBODY_ATOM(ShaderFilter,_constructor)
 {
 	//ShaderFilter *th = obj.as<ShaderFilter>();
 	LOG(LOG_NOT_IMPLEMENTED,"ShaderFilter is not implemented");
-	return asAtom::invalidAtom;
 }
 
 BitmapFilter* ShaderFilter::cloneImpl() const

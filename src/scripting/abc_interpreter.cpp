@@ -701,7 +701,8 @@ void ABCVm::abc_nextname(call_context* context,preloadedcodedata** codep)
 	if(v1.type!=T_UINTEGER)
 		throw UnsupportedException("Type mismatch in nextName");
 
-	asAtom ret=pval->toObject(context->context->root->getSystemState())->nextName(v1.toUInt());
+	asAtom ret;
+	pval->toObject(context->context->root->getSystemState())->nextName(ret,v1.toUInt());
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v1);
 	*pval = ret;
@@ -744,7 +745,8 @@ void ABCVm::abc_nextvalue(call_context* context,preloadedcodedata** codep)
 	if(v1.type!=T_UINTEGER)
 		throw UnsupportedException("Type mismatch in nextValue");
 
-	asAtom ret=pval->toObject(context->context->root->getSystemState())->nextValue(v1.toUInt());
+	asAtom ret;
+	pval->toObject(context->context->root->getSystemState())->nextValue(ret,v1.toUInt());
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF(v1);
 	*pval=ret;
@@ -1146,7 +1148,8 @@ void ABCVm::abc_findpropstrict(call_context* context,preloadedcodedata** codep)
 //		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
-	asAtom o = findPropStrictCache(context,codep);
+	asAtom o;
+	findPropStrictCache(o,context,codep);
 	RUNTIME_STACK_PUSH(context,o);
 	++(*codep);
 }
@@ -1281,10 +1284,10 @@ void ABCVm::abc_getProperty(call_context* context,preloadedcodedata** codep)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
 
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-	checkDeclaredTraits(obj);
 
-
-	asAtom prop=obj->getVariableByMultiname(*name);
+	
+	asAtom prop;
+	obj->getVariableByMultiname(prop,*name);
 	if(prop.type == T_INVALID)
 	{
 		if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
@@ -1313,7 +1316,6 @@ void ABCVm::abc_initproperty(call_context* context,preloadedcodedata** codep)
 	multiname* name=context->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< obj.toDebugString());
-	checkDeclaredTraits(obj.toObject(context->context->root->getSystemState()));
 	obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 	ASATOM_DECREF(obj);
 	name->resetNameIfObject();
@@ -1479,7 +1481,7 @@ void ABCVm::abc_coerce_s(call_context* context,preloadedcodedata** codep)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<pval->toDebugString());
 	if (pval->type != T_STRING)
-		*pval = Class<ASString>::getClass(context->context->root->getSystemState())->coerce(context->context->root->getSystemState(),*pval);
+		Class<ASString>::getClass(context->context->root->getSystemState())->coerce(context->context->root->getSystemState(),*pval);
 	++(*codep);
 }
 void ABCVm::abc_astype(call_context* context,preloadedcodedata** codep)

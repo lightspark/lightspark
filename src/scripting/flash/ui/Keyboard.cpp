@@ -315,28 +315,28 @@ void Keyboard::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Keyboard, capsLock)
 {
 	SDL_Keymod mod = SDL_GetModState();
-	return asAtom((mod & KMOD_CAPS) == KMOD_CAPS);
+	ret.setBool((mod & KMOD_CAPS) == KMOD_CAPS);
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, hasVirtualKeyboard)
 {
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, numLock)
 {
 	SDL_Keymod mod = SDL_GetModState();
-	return asAtom((mod & KMOD_NUM) == KMOD_NUM);
+	ret.setBool((mod & KMOD_NUM) == KMOD_NUM);
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, physicalKeyboardType)
 {
-	return asAtom::fromString(sys,"alphanumeric");
+	ret = asAtom::fromString(sys,"alphanumeric");
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, isAccessible)
 {
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 void KeyboardType::sinit(Class_base* c)

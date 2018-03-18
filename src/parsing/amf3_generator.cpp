@@ -217,7 +217,9 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			throw ParseException("invalid marker in AMF3 vector");
 			
 	}
-	Vector* ret= Template<Vector>::getInstanceS(input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext)).as<Vector>();
+	asAtom v;
+	Template<Vector>::getInstanceS(v,input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext));
+	Vector* ret= v.as<Vector>();
 	//Add object to the map
 	objMap.push_back(asAtom::fromObject(ret));
 
@@ -375,7 +377,8 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
 
-		asAtom ret= type->getInstance(true, NULL, 0);
+		asAtom ret;
+		type->getInstance(ret,true, NULL, 0);
 		//Invoke readExternal
 		multiname readExternalName(NULL);
 		readExternalName.name_type=multiname::NAME_STRING;
@@ -383,10 +386,12 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		readExternalName.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		readExternalName.isAttribute = false;
 
-		asAtom o=ret.getObject()->getVariableByMultiname(readExternalName,ASObject::SKIP_IMPL);
+		asAtom o;
+		ret.getObject()->getVariableByMultiname(o,readExternalName,ASObject::SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
 		asAtom tmpArg[1] = { asAtom::fromObject(input) };
-		o.callFunction(ret, tmpArg, 1,false);
+		asAtom r;
+		o.callFunction(r,ret, tmpArg, 1,false);
 		return ret;
 	}
 
@@ -413,8 +418,11 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		traitsMap.emplace_back(traits);
 	}
 
-	asAtom ret=(traits.type)?traits.type->getInstance(true, NULL, 0):
-		asAtom::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret;
+	if (traits.type)
+		traits.type->getInstance(ret,true, NULL, 0);
+	else
+		ret =asAtom::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
 	//Add object to the map
 	objMap.push_back(ret);
 

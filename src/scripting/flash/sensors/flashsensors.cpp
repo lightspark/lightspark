@@ -44,5 +44,5 @@ void Accelerometer::buildTraits(ASObject *o)
 
 ASFUNCTIONBODY_ATOM(Accelerometer,_isSupported)
 {
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }

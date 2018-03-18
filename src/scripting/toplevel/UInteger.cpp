@@ -80,7 +80,9 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 	else
 	{
-		double val2=o->toPrimitive().toNumber();
+		asAtom val2p;
+		o->toPrimitive(val2p,NUMBER_HINT);
+		double val2=val2p.toNumber();
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
@@ -92,28 +94,31 @@ ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 	if(argslen==0)
 	{
 		//The uint is already initialized to 0
-		return asAtom::invalidAtom;
+		return;
 	}
 	th->val=args[0].toUInt();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		return asAtom((uint32_t)0);
-	return asAtom(args[0].toUInt());
+		ret.setUInt((uint32_t)0);
+	else
+		ret.setUInt(args[0].toUInt());
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 {
 	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom((uint32_t)0);
+	{
+		ret.setUInt((uint32_t)0);
+		return;
+	}
 
 	if(!obj.is<UInteger>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
-	return asAtom(obj.toUInt());
+	ret.setUInt(obj.toUInt());
 }
 
 void UInteger::sinit(Class_base* c)
@@ -137,7 +142,10 @@ void UInteger::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(UInteger,_toString)
 {
 	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromString(sys,"0");
+	{
+		ret = asAtom::fromString(sys,"0");
+		return;
+	}
 
 	uint32_t radix;
 	ARG_UNPACK_ATOM (radix,10);
@@ -146,12 +154,12 @@ ASFUNCTIONBODY_ATOM(UInteger,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%u",obj.toUInt());
-		return asAtom::fromObject(abstract_s(sys,buf));
+		ret = asAtom::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
-		return asAtom::fromObject(abstract_s(sys,s));
+		ret = asAtom::fromObject(abstract_s(sys,s));
 	}
 }
 
@@ -185,23 +193,26 @@ ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
 	}
-	return asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toPrecision)
 {
 	if (argslen == 0 || args[0].is<Undefined>())
-		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+	{
+		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		return;
+	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

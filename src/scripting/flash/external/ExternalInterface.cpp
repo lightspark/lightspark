@@ -37,43 +37,51 @@ void ExternalInterface::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,_getAvailable)
 {
-	return asAtom(sys->extScriptObject != NULL);
+	ret.setBool(sys->extScriptObject != NULL);
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,_getObjectID)
 {
 	if(sys->extScriptObject == NULL)
-		return abstract_s(sys,"");
+	{
+		ret = asAtom::fromString(sys,"");
+		return;
+	}
 
 	ExtScriptObject* so=sys->extScriptObject;
 	if(so->hasProperty("name")==false)
-		return abstract_s(sys,"");
+	{
+		ret = asAtom::fromString(sys,"");
+		return;
+	}
 
 	const ExtVariant& object = so->getProperty("name");
 	std::string result = object.getString();
-	return asAtom::fromObject(abstract_s(sys,result));
+	ret = asAtom::fromObject(abstract_s(sys,result));
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface, _getMarshallExceptions)
 {
 	if(sys->extScriptObject == NULL)
-		return asAtom::falseAtom;
+		ret.setBool(false);
 	else
-		return asAtom(sys->extScriptObject->getMarshallExceptions());
+		ret.setBool(sys->extScriptObject->getMarshallExceptions());
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface, _setMarshallExceptions)
 {
 	if(sys->extScriptObject != NULL)
 		sys->extScriptObject->setMarshallExceptions(args[0].Boolean_concrete());
-	return asAtom::invalidAtom;
 }
 
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 {
 	if(sys->extScriptObject == NULL)
-		return asAtom::falseAtom;
+	{
+		ret.setBool(false);
+		return;
+	}
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
@@ -84,13 +92,16 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 	{
 		sys->extScriptObject->setMethod(args[0].toString(sys).raw_buf(), new ExtASCallback(args[1]));
 	}
-	return asAtom::trueAtom;
+	ret.setBool(true);
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 {
 	if(sys->extScriptObject == NULL)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
@@ -120,8 +131,8 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 		assert(asobjResult==NULL);
 		LOG(LOG_INFO, "External function failed, returning null: " << arg0);
 		// If the call fails, return null
-		return asAtom::nullAtom;
+		ret.setNull();
+		return;
 	}
-
-	return asAtom::fromObject(asobjResult);
+	ret = asAtom::fromObject(asobjResult);
 }

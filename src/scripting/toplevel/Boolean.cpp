@@ -72,9 +72,9 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 ASFUNCTIONBODY_ATOM(Boolean,generator)
 {
 	if(argslen==1)
-		return asAtom(args[0].Boolean_concrete());
+		ret = asAtom(args[0].Boolean_concrete());
 	else
-		return asAtom::falseAtom;
+		ret = asAtom::falseAtom;
 }
 
 void Boolean::sinit(Class_base* c)
@@ -92,36 +92,39 @@ ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 	if(argslen==0)
 	{
 		//No need to handle default argument. The object is initialized to false anyway
-		return asAtom::invalidAtom;
+		return;
 	}
 	th->val=args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_toString)
 {
-	LOG(LOG_ERROR,"bool to string:"<<obj.toDebugString());
 	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject()) //See ECMA 15.6.4
-		return asAtom::fromString(sys,"false");
+	{
+		ret = asAtom::fromString(sys,"false");
+		return;
+	}
 
 	if(!obj.is<Boolean>())
 		throw Class<TypeError>::getInstanceS(sys,"");
 
-	return asAtom::fromString(sys,obj.toString(sys));
+	ret = asAtom::fromString(sys,obj.toString(sys));
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 {
-	LOG(LOG_ERROR,"bool value of:"<<obj.toDebugString());
 	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::falseAtom;
+	{
+		ret.setBool(false);
+		return;
+	}
 
 	if(!obj.is<Boolean>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object
-	return asAtom(obj.Boolean_concrete());
+	ret.setBool(obj.Boolean_concrete());
 }
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -194,7 +197,9 @@ TRISTATE Boolean::isLess(ASObject* r)
 			return TUNDEFINED;
 		default:
 		{
-			double val2=r->toPrimitive().toNumber();
+			asAtom val2p;
+			r->toPrimitive(val2p);
+			double val2=val2p.toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}

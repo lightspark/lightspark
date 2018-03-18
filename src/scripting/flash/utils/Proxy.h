@@ -37,7 +37,7 @@ public:
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_isAttribute);
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
@@ -57,8 +57,8 @@ public:
 		throw UnsupportedException("Proxy is missing some stuff");
 	}
 	uint32_t nextNameIndex(uint32_t cur_index);
-	asAtom nextName(uint32_t index);
-	asAtom nextValue(uint32_t index);
+	void nextName(asAtom &ret, uint32_t index);
+	void nextValue(asAtom &ret, uint32_t index);
 	bool isConstructed() const;
 };
 }

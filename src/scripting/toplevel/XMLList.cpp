@@ -36,17 +36,16 @@ using namespace lightspark;
 	c->setDeclaredMethodByQName(#asname,AS3,Class<IFunction>::getFunction(c->getSystemState(),cppname),NORMAL_METHOD,true)
 
 #define ASFUNCTIONBODY_XML_DELEGATE(name) \
-	asAtom XMLList::name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void XMLList::name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<XMLList>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		XMLList* th=obj.as<XMLList>(); \
 		if(th->nodes.size()==1) {\
 			asAtom a = asAtom::fromObject(th->nodes[0].getPtr()); \
-			return XML::name(sys,a, args, argslen); \
+			XML::name(ret,sys,a, args, argslen); \
 		} else \
 			throwError<TypeError>(kXMLOnlyWorksWithOneItemLists, #name); \
-		return asAtom::invalidAtom; \
 	}
 
 XMLList::XMLList(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_XMLLIST),nodes(c->memoryAccount),constructed(false),targetobject(NULL),targetproperty(c->memoryAccount)
@@ -182,14 +181,14 @@ ASFUNCTIONBODY_ATOM(XMLList,_constructor)
 	if(argslen==0 && th->constructed)
 	{
 		//Called from internal code
-		return asAtom::invalidAtom;
+		return;
 	}
 	if(argslen==0 ||
 	   args[0].is<Null>() || 
 	   args[0].is<Undefined>())
 	{
 		th->constructed=true;
-		return asAtom::invalidAtom;
+		return;
 	}
 	else if(args[0].is<XML>())
 	{
@@ -213,8 +212,6 @@ ASFUNCTIONBODY_ATOM(XMLList,_constructor)
 	{
 		throw RunTimeException("Type not supported in XMLList()");
 	}
-
-	return asAtom::invalidAtom;
 }
 
 void XMLList::buildFromString(const tiny_string &str)
@@ -314,28 +311,28 @@ ASFUNCTIONBODY_ATOM(XMLList,_getLength)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	return asAtom((int32_t)th->nodes.size());
+	ret.setInt((int32_t)th->nodes.size());
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,_hasSimpleContent)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	return asAtom(th->hasSimpleContent());
+	ret.setBool(th->hasSimpleContent());
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,_hasComplexContent)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	return asAtom(th->hasComplexContent());
+	ret.setBool(th->hasComplexContent());
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,generator)
 {
 	if(argslen==0)
 	{
-		return asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
+		ret = asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
 	}
 	else if(args[0].is<ASString>() ||
 		args[0].is<Number>() ||
@@ -343,24 +340,24 @@ ASFUNCTIONBODY_ATOM(XMLList,generator)
 		args[0].is<UInteger>() ||
 		args[0].is<Boolean>())
 	{
-		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),args[0].toString(sys)));
+		ret = asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),args[0].toString(sys)));
 	}
 	else if(args[0].is<XMLList>())
 	{
 		ASATOM_INCREF(args[0]);
-		return args[0];
+		ret = args[0];
 	}
 	else if(args[0].is<XML>())
 	{
 		XML::XMLVector nodes;
 		ASATOM_INCREF(args[0]);
 		nodes.push_back(_MR(args[0].as<XML>()));
-		return asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),nodes));
+		ret = asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),nodes));
 	}
 	else if(args[0].type ==T_NULL ||
 		args[0].type ==T_UNDEFINED)
 	{
-		return asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
+		ret = asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
 	}
 	else
 		throw RunTimeException("Type not supported in XMLList()");
@@ -371,11 +368,11 @@ ASFUNCTIONBODY_ATOM(XMLList,descendants)
 	XMLList* th=obj.as<XMLList>();
 	_NR<ASObject> name;
 	ARG_UNPACK_ATOM(name,_NR<ASObject>(abstract_s(sys,"*")));
-	XML::XMLVector ret;
+	XML::XMLVector res;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),BUILTIN_STRINGS::EMPTY,mname.isAttribute,ret);
-	return asAtom::fromObject(create(sys,ret,th->targetobject,multiname(NULL)));
+	th->getDescendantsByQName(name->toString(),BUILTIN_STRINGS::EMPTY,mname.isAttribute,res);
+	ret = asAtom::fromObject(create(sys,res,th->targetobject,multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,elements)
@@ -390,7 +387,7 @@ ASFUNCTIONBODY_ATOM(XMLList,elements)
 	{
 		(*it)->getElementNodes(name, elems);
 	}
-	return asAtom::fromObject(create(sys,elems,th->targetobject,multiname(NULL)));
+	ret = asAtom::fromObject(create(sys,elems,th->targetobject,multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,parent)
@@ -398,7 +395,10 @@ ASFUNCTIONBODY_ATOM(XMLList,parent)
 	XMLList* th=obj.as<XMLList>();
 
 	if(th->nodes.size()==0)
-		return asAtom::undefinedAtom;
+	{
+		ret.setUndefined();
+		return;
+	}
 
 	auto it=th->nodes.begin();
 	ASObject *parent=(*it)->getParentNode();
@@ -408,23 +408,26 @@ ASFUNCTIONBODY_ATOM(XMLList,parent)
 	{
 		ASObject *otherParent=(*it)->getParentNode();
 		if(!parent->isEqual(otherParent))
-			return asAtom::undefinedAtom;
+		{
+			ret.setUndefined();
+			return;
+		}
 	}
 
-	return asAtom::fromObject(parent);
+	ret = asAtom::fromObject(parent);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,valueOf)
 {
 	ASATOM_INCREF(obj);
-	return obj;
+	ret = obj;
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,child)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==1);
-	XML::XMLVector ret;
+	XML::XMLVector res;
 	if(args[0].is<Number>() ||
 		args[0].is<Integer>() ||
 		args[0].is<UInteger>())
@@ -433,7 +436,7 @@ ASFUNCTIONBODY_ATOM(XMLList,child)
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
-			(*it)->childrenImpl(ret, index);
+			(*it)->childrenImpl(res, index);
 		}
 	}
 	else
@@ -442,36 +445,36 @@ ASFUNCTIONBODY_ATOM(XMLList,child)
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
-			(*it)->childrenImpl(ret, arg0);
+			(*it)->childrenImpl(res, arg0);
 		}
 	}
-	return asAtom::fromObject(create(sys,ret,th->targetobject,multiname(NULL)));
+	ret = asAtom::fromObject(create(sys,res,th->targetobject,multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,children)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	XML::XMLVector ret;
+	XML::XMLVector res;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		(*it)->childrenImpl(ret, "*");
+		(*it)->childrenImpl(res, "*");
 	}
-	return asAtom::fromObject(create(sys,ret,th->targetobject,multiname(NULL)));
+	ret = asAtom::fromObject(create(sys,res,th->targetobject,multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,text)
 {
 	XMLList* th=obj.as<XMLList>();
 	ARG_UNPACK_ATOM;
-	XML::XMLVector ret;
+	XML::XMLVector res;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		(*it)->getText(ret);
+		(*it)->getText(res);
 	}
-	return asAtom::fromObject(create(sys,ret,th->targetobject,multiname(NULL)));
+	ret = asAtom::fromObject(create(sys,res,th->targetobject,multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,contains)
@@ -480,16 +483,22 @@ ASFUNCTIONBODY_ATOM(XMLList,contains)
 	_NR<ASObject> value;
 	ARG_UNPACK_ATOM (value);
 	if(!value->is<XML>())
-		return asAtom::falseAtom;
+	{
+		ret.setBool(false);
+		return;
+	}
 
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
 		if((*it)->isEqual(value.getPtr()))
-			return asAtom::trueAtom;
+		{
+			ret.setBool(true);
+			return;
+		}
 	}
 
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,copy)
@@ -502,7 +511,7 @@ ASFUNCTIONBODY_ATOM(XMLList,copy)
 	{
 		dest->nodes.push_back(_MR((*it)->copy()));
 	}
-	return asAtom::fromObject(dest);
+	ret = asAtom::fromObject(dest);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,attribute)
@@ -520,10 +529,9 @@ ASFUNCTIONBODY_ATOM(XMLList,attribute)
 	mname.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mname.isAttribute = true;
 
-	asAtom attr=th->getVariableByMultiname(mname, NONE);
-	assert(attr.type != T_INVALID);
-	ASATOM_INCREF(attr);
-	return attr;
+	th->getVariableByMultiname(ret,mname, NONE);
+	assert(ret.type != T_INVALID);
+	ASATOM_INCREF(ret);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,attributes)
@@ -536,7 +544,7 @@ ASFUNCTIONBODY_ATOM(XMLList,attributes)
 		XML::XMLVector nodeAttributes = (*it)->getAttributes();
 		res->nodes.insert(res->nodes.end(), nodeAttributes.begin(), nodeAttributes.end());
 	}
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,comments)
@@ -551,7 +559,7 @@ ASFUNCTIONBODY_ATOM(XMLList,comments)
 		(*it)->getComments(nodecomments);
 	}
 	res->nodes.insert(res->nodes.end(), nodecomments.begin(), nodecomments.end());
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(XMLList,processingInstructions)
 {
@@ -567,7 +575,7 @@ ASFUNCTIONBODY_ATOM(XMLList,processingInstructions)
 		(*it)->getprocessingInstructions(nodeprocessingInstructions,name);
 	}
 	res->nodes.insert(res->nodes.end(), nodeprocessingInstructions.begin(), nodeprocessingInstructions.end());
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(XMLList,_propertyIsEnumerable)
 {
@@ -575,9 +583,10 @@ ASFUNCTIONBODY_ATOM(XMLList,_propertyIsEnumerable)
 	if (argslen == 1)
 	{
 		int32_t n = args[0].toInt();
-		return asAtom(n < (int32_t)th->nodes.size());
+		ret.setBool(n < (int32_t)th->nodes.size());
 	}
-	return asAtom::falseAtom;
+	else
+		ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 {
@@ -594,15 +603,21 @@ ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 
 	unsigned int index=0;
 	if(XML::isValidMultiname(sys,name,index))
-		return asAtom(index<th->nodes.size());
+	{
+		ret.setBool(index<th->nodes.size());
+		return;
+	}
 
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
 		if ((*it)->hasProperty(name,true, true, true))
-			return asAtom::trueAtom;
+		{
+			ret.setBool(true);
+			return;
+		}
 	}
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,_normalize)
@@ -610,7 +625,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_normalize)
 	XMLList* th=obj.as<XMLList>();
 	th->normalize();
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 void XMLList::normalize()
 {
@@ -708,23 +723,22 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 	}
 }
 
-asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 	{
-		asAtom res=ASObject::getVariableByMultiname(name,opt);
+		ASObject::getVariableByMultiname(ret,name,opt);
 
 		//If a method is not found on XMLList object and this
 		//is a single element list with simple content,
 		//delegate to ASString
-		if(res.type == T_INVALID && nodes.size()==1 && nodes[0]->hasSimpleContent())
+		if(ret.type == T_INVALID && nodes.size()==1 && nodes[0]->hasSimpleContent())
 		{
 			ASString *contentstr=abstract_s(getSystemState(),nodes[0]->toString_priv());
-			res=contentstr->getVariableByMultiname(name, opt);
+			contentstr->getVariableByMultiname(ret,name, opt);
 			contentstr->decRef();
 		}
-
-		return res;
+		return;
 	}
 	
 	if (name.isAttribute)
@@ -733,7 +747,8 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			asAtom o=(*it)->getVariableByMultiname(name,opt);
+			asAtom o;
+			(*it)->getVariableByMultiname(o,name,opt);
 			if(o.getObject() ==NULL || !o.getObject()->is<XMLList>())
 				continue;
 
@@ -741,9 +756,10 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return asAtom::invalidAtom;
+			return;
 
-		return asAtom::fromObject(create(getSystemState(),retnodes,this,name));
+		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));
+		return;
 	}
 	unsigned int index=0;
 	if(XML::isValidMultiname(getSystemState(),name,index))
@@ -751,10 +767,10 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		if(index<nodes.size())
 		{
 			nodes[index]->incRef();
-			return asAtom::fromObject(nodes[index].getPtr());
+			ret = asAtom::fromObject(nodes[index].getPtr());
 		}
 		else
-			return asAtom::undefinedAtom;
+			ret.setUndefined();
 	}
 	else
 	{
@@ -762,7 +778,8 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		auto it=nodes.begin();
 		for(; it!=nodes.end(); ++it)
 		{
-			asAtom o=(*it)->getVariableByMultiname(name,opt);
+			asAtom o;
+			(*it)->getVariableByMultiname(o,name,opt);
 			if(o.getObject() == NULL || !o.getObject()->is<XMLList>())
 				continue;
 
@@ -770,9 +787,9 @@ asAtom XMLList::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTIO
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return asAtom::invalidAtom;
+			return;
 
-		return asAtom::fromObject(create(getSystemState(),retnodes,this,name));
+		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));
 	}
 }
 
@@ -1180,7 +1197,7 @@ number_t XMLList::toNumber()
 ASFUNCTIONBODY_ATOM(XMLList,_toString)
 {
 	XMLList* th=obj.as<XMLList>();
-	return asAtom::fromObject(abstract_s(sys,th->toString_priv()));
+	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
 tiny_string XMLList::toXMLString_internal(bool pretty)
@@ -1204,8 +1221,8 @@ ASFUNCTIONBODY_ATOM(XMLList,toXMLString)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	ASString* ret=abstract_s(sys,th->toXMLString_internal());
-	return asAtom::fromObject(ret);
+	ASString* res=abstract_s(sys,th->toXMLString_internal());
+	ret = asAtom::fromObject(res);
 }
 
 bool XMLList::isEqual(ASObject* r)
@@ -1243,20 +1260,20 @@ uint32_t XMLList::nextNameIndex(uint32_t cur_index)
 		return 0;
 }
 
-asAtom XMLList::nextName(uint32_t index)
+void XMLList::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=nodes.size())
-		return asAtom(index-1);
+		ret.setUInt(index-1);
 	else
 		throw RunTimeException("XMLList::nextName out of bounds");
 }
 
-asAtom XMLList::nextValue(uint32_t index)
+void XMLList::nextValue(asAtom& ret,uint32_t index)
 {
 	if(index<=nodes.size())
 	{
 		nodes[index-1]->incRef();
-		return asAtom::fromObject(nodes[index-1].getPtr());
+		ret = asAtom::fromObject(nodes[index-1].getPtr());
 	}
 	else
 		throw RunTimeException("XMLList::nextValue out of bounds");
@@ -1269,7 +1286,8 @@ void XMLList::appendNodesTo(XML *dest) const
 	{
 		asAtom arg0=asAtom::fromObject(it->getPtr());
 		asAtom obj = asAtom::fromObject(dest);
-		asAtom ret=XML::_appendChild(this->getSystemState(),obj, &arg0, 1);
+		asAtom ret;
+		XML::_appendChild(ret,this->getSystemState(),obj, &arg0, 1);
 		ASATOM_DECREF(ret);
 	}
 }
@@ -1281,7 +1299,8 @@ void XMLList::prependNodesTo(XML *dest) const
 	{
 		asAtom arg0=asAtom::fromObject(it->getPtr());
 		asAtom obj = asAtom::fromObject(dest);
-		asAtom ret=XML::_prependChild(this->getSystemState(),obj, &arg0, 1);
+		asAtom ret;
+		XML::_prependChild(ret,this->getSystemState(),obj, &arg0, 1);
 		ASATOM_DECREF(ret);
 	}
 }

@@ -71,26 +71,24 @@ void Timer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 	Timer* th=obj.as<Timer>();
 
 	th->delay=args[0].toInt();
 	if(argslen>=2)
 		th->repeatCount=args[1].toInt();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
 	Timer* th=obj.as<Timer>();
-	return asAtom(th->currentCount);
+	ret.setUInt(th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
 	Timer* th=obj.as<Timer>();
-	return asAtom(th->repeatCount);
+	ret.setUInt(th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
@@ -105,19 +103,18 @@ ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 		th->running=false;
 		th->tickJobInstance = NullRef;
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 {
 	Timer* th=obj.as<Timer>();
-	return asAtom(th->running);
+	ret.setBool(th->running);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=obj.as<Timer>();
-	return asAtom(th->delay);
+	ret.setUInt(th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)
@@ -129,15 +126,13 @@ ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 
 	Timer* th=obj.as<Timer>();
 	th->delay=newdelay;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,start)
 {
 	Timer* th=obj.as<Timer>();
 	if(th->running)
-		return asAtom::invalidAtom;
+		return;
 	th->running=true;
 	th->stopMe=false;
 	th->incRef();
@@ -147,7 +142,6 @@ ASFUNCTIONBODY_ATOM(Timer,start)
 		sys->addWait(th->delay < 17 ? 17 : th->delay,th);
 	else
 		sys->addTick(th->delay < 17 ? 17 : th->delay,th);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,reset)
@@ -164,7 +158,6 @@ ASFUNCTIONBODY_ATOM(Timer,reset)
 		th->running=false;
 	}
 	th->currentCount=0;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,stop)
@@ -181,6 +174,5 @@ ASFUNCTIONBODY_ATOM(Timer,stop)
 		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
-	return asAtom::invalidAtom;
 }
 

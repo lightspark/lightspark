@@ -694,7 +694,7 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,profile);
 ASFUNCTIONBODY_ATOM(Context3D,supportsVideoTexture)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.supportsVideoTexture");
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(Context3D,dispose)
 {
@@ -703,8 +703,6 @@ ASFUNCTIONBODY_ATOM(Context3D,dispose)
 	bool recreate;
 	ARG_UNPACK_ATOM(recreate,true);
 	th->driverInfo = "Disposed";
-		
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 {
@@ -719,7 +717,6 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 	action.action = RENDER_ACTION::RENDER_CONFIGUREBACKBUFFER;
 	action.udata1 = th->enableDepthAndStencilBackbuffer ? 1:0;
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 {
@@ -730,7 +727,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
-	return asAtom::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
+	ret = asAtom::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {
@@ -742,7 +739,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(width)(height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	return asAtom::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
+	ret = asAtom::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 {
@@ -754,19 +751,19 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	if (format != "bgra" || optimizeForRenderToTexture || streamingLevels != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
 	Context3D* th = obj.as<Context3D>();
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createVideoTexture does nothing");
-	return asAtom::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
+	ret = asAtom::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createProgram)
 {
 	Context3D* th = obj.as<Context3D>();
 	th->incRef();
-	return asAtom::fromObject(Class<Program3D>::getInstanceS(sys,_MR(th)));
+	ret = asAtom::fromObject(Class<Program3D>::getInstanceS(sys,_MR(th)));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 {
@@ -775,7 +772,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 	int32_t data32PerVertex;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(data32PerVertex)(bufferUsage,"staticDraw");
-	return asAtom::fromObject(Class<VertexBuffer3D>::getInstanceS(sys,th, numVertices,data32PerVertex,bufferUsage));
+	ret = asAtom::fromObject(Class<VertexBuffer3D>::getInstanceS(sys,th, numVertices,data32PerVertex,bufferUsage));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 {
@@ -783,7 +780,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 	int32_t numVertices;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(bufferUsage,"staticDraw");
-	return asAtom::fromObject(Class<IndexBuffer3D>::getInstanceS(sys,th,numVertices,bufferUsage));
+	ret = asAtom::fromObject(Class<IndexBuffer3D>::getInstanceS(sys,th,numVertices,bufferUsage));
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,clear)
@@ -795,7 +792,6 @@ ASFUNCTIONBODY_ATOM(Context3D,clear)
 	ARG_UNPACK_ATOM(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
 	action.fdata =new float[5] { (float)red, (float)green, (float)blue, (float)alpha, (float)depth};
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,drawToBitmapData)
@@ -803,7 +799,6 @@ ASFUNCTIONBODY_ATOM(Context3D,drawToBitmapData)
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawToBitmapData does nothing");
 	_NR<BitmapData> destination;
 	ARG_UNPACK_ATOM(destination);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
@@ -819,7 +814,6 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	action.udata1 = firstIndex;
 	action.udata2 = (numTriangles == -1 ? UINT32_MAX : numTriangles);
 	th->actions[th->currentactionvector].push_back(action);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
@@ -878,7 +872,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 	action.udata1 = src;
 	action.udata2 = dst;
 	th->actions[th->currentactionvector].push_back(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 {
@@ -888,7 +881,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 	bool blue;
 	bool alpha;
 	ARG_UNPACK_ATOM(red)(green)(blue)(alpha);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 {
@@ -908,7 +900,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 	else if (triangleFaceToCull == "frontAndBack")
 		action.udata1 = FACE_FRONT_AND_BACK;
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 {
@@ -938,7 +929,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 	else
 		throwError<ArgumentError>(kInvalidArgumentError,"passCompareMode");
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 {
@@ -947,7 +937,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 	ARG_UNPACK_ATOM(program);
 	if (!program.isNull())
 		th->addAction(RENDER_SETPROGRAM,program.getPtr());
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
 {
@@ -958,7 +947,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
 	ARG_UNPACK_ATOM(programType)(firstRegister)(numRegisters)(data)(byteArrayOffset);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 {
@@ -981,7 +969,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 		action.udata3= transposedMatrix ? 1 : 0;
 		th->addAction(action);
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 {
@@ -1007,7 +994,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 		}
 		th->addAction(action);
 	}
-	return asAtom::invalidAtom;
 }
 
 
@@ -1017,7 +1003,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 	ARG_UNPACK_ATOM(rectangle);
 	if (!rectangle.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setScissorRectangle does nothing:"<<rectangle->toDebugString());
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)
 {
@@ -1025,7 +1010,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_RENDERTOBACKBUFFER;
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 {
@@ -1049,7 +1033,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
 	action.udata1 = enableDepthAndStencil ? 1 : 0;
 	th->addAction(action);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 {
@@ -1059,7 +1042,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 	tiny_string filter;
 	tiny_string mipfilter;
 	ARG_UNPACK_ATOM(sampler)(wrap)(filter)(mipfilter);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,present)
 {
@@ -1075,7 +1057,6 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 		th->swapbuffers = true;
 		th->currentactionvector=1-th->currentactionvector;
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)
 {
@@ -1086,7 +1067,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)
 	tiny_string actionOnDepthFail;
 	tiny_string actionOnDepthPassStencilFail;
 	ARG_UNPACK_ATOM(triangleFace,"frontAndBack")(compareMode,"always")(actionOnBothPass,"keep")(actionOnDepthFail,"keep")(actionOnDepthPassStencilFail,"keep");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 {
@@ -1095,7 +1075,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 	uint32_t readMask;
 	uint32_t writeMask;
 	ARG_UNPACK_ATOM(referenceValue)(readMask,255)(writeMask,255);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
@@ -1113,7 +1092,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 	action.dataobject = texture;
 	action.udata1 = sampler;
 	th->actions[th->currentactionvector].push_back(action);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
@@ -1142,7 +1120,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 	else if (format == "float4")
 		action.udata3 = VERTEXBUFFER_FORMAT::FLOAT_4;
 	th->actions[th->currentactionvector].push_back(action);
-	return asAtom::invalidAtom;
 }
 
 
@@ -1321,7 +1298,6 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 		th->context->addAction(action);
 		th->bufferID = UINT32_MAX;
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 {
@@ -1346,7 +1322,6 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 			th->data[startOffset+i] = d;
 	}
 	data->setPosition(origpos);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 {
@@ -1361,7 +1336,6 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 	{
 		th->data[startOffset+i] = data->at(i).toUInt();
 	}
-	return asAtom::invalidAtom;
 }
 
 void Program3D::sinit(Class_base *c)
@@ -1375,7 +1349,6 @@ ASFUNCTIONBODY_ATOM(Program3D,dispose)
 {
 	Program3D* th = obj.as<Program3D>();
 	th->context3D->addAction(RENDER_DELETEPROGRAM,th);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Program3D,upload)
 {
@@ -1388,7 +1361,6 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 		th->vertexprogram = AGALtoGLSL(vertexProgram.getPtr(),true,th->samplerState,th->vertexregistermap,th->vertexattributes);
 	if (!fragmentProgram.isNull())
 		th->fragmentprogram = AGALtoGLSL(fragmentProgram.getPtr(),false,th->samplerState,th->fragmentregistermap,th->fragmentattributes);
-	return asAtom::invalidAtom;
 }
 
 VertexBuffer3D::VertexBuffer3D(Class_base *c, Context3D *ctx, int _numVertices, int32_t _data32PerVertex, tiny_string _bufferUsage)
@@ -1427,7 +1399,6 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 		th->context->addAction(action);
 		th->bufferID = UINT32_MAX;
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 {
@@ -1456,7 +1427,6 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 			th->data[startVertex*th->data32PerVertex+i] = d.f;
 	}
 	data->setPosition(origpos);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 {
@@ -1472,7 +1442,6 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 	{
 		th->data[startVertex*th->data32PerVertex+i] = data->at(i).toNumber();
 	}
-	return asAtom::invalidAtom;
 }
 
 }

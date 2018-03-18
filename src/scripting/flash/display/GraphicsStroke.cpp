@@ -56,7 +56,7 @@ void GraphicsStroke::finalize()
 	fill.reset();
 }
 
-ASFUNCTIONBODY_ATOM(GraphicsStroke, _constructor)
+ASFUNCTIONBODY_ATOM(GraphicsStroke,_constructor)
 {
 	GraphicsStroke* th = obj.as<GraphicsStroke>();
 	_NR<ASObject> fill;
@@ -68,7 +68,6 @@ ASFUNCTIONBODY_ATOM(GraphicsStroke, _constructor)
 		(th->miterLimit, 3.0)
 		(th->fill, NullRef);
 	th->validateFill(NullRef);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, caps);

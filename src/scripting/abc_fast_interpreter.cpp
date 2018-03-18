@@ -987,7 +987,6 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				multiname* name=context->context->getMultiname(t,context);
 				LOG_CALL("initProperty "<<*name);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				checkDeclaredTraits(obj.toObject(context->context->root->getSystemState()));
 				obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
 				ASATOM_DECREF(obj);
 				name->resetNameIfObject();
@@ -1133,7 +1132,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceOnce " << *name);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				o=type->coerce(function->getSystemState(),o);
+				type->coerce(function->getSystemState(),o);
 				RUNTIME_STACK_PUSH(context,o);
 
 				instructionPointer+=8;
@@ -1646,7 +1645,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceEarly " << type);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				o=type->coerce(function->getSystemState(),o);
+				type->coerce(function->getSystemState(),o);
 				RUNTIME_STACK_PUSH(context,o);
 
 				instructionPointer+=8;
@@ -1681,7 +1680,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				const multiname* name=data->names[0];
 				LOG_CALL( "getLexOnce " << *name);
 				ASObject* target;
-				asAtom obj=ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(*name,target);
+				asAtom obj;
+				ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(obj,*name,target);
 				//The object must exists, since it was found during optimization
 				assert_and_throw(obj.type != T_INVALID);
 				char* rewriteableCode = &(mi->body->code[0]);

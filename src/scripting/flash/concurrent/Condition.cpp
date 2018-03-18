@@ -51,16 +51,14 @@ ASFUNCTIONBODY_ATOM(ASCondition,_constructor)
 		throwError<ArgumentError>(kInvalidArgumentError) ;
 	arg->incRef();
 	th->mutex = _NR<ASMutex>(arg->as<ASMutex>());
-
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ASCondition,_notify)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"condition notify not implemented");
 	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
-		throwError<ASError>(kConditionCannotNotify) ;
-	return asAtom::invalidAtom;
+		throwError<ASError>(kConditionCannotNotify);
+	ret.setNull();
 }
 ASFUNCTIONBODY_ATOM(ASCondition,_notifyAll)
 {
@@ -68,7 +66,7 @@ ASFUNCTIONBODY_ATOM(ASCondition,_notifyAll)
 	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotNotifyAll) ;
-	return asAtom::invalidAtom;
+	ret.setNull();
 }
 ASFUNCTIONBODY_ATOM(ASCondition,_wait)
 {
@@ -76,6 +74,6 @@ ASFUNCTIONBODY_ATOM(ASCondition,_wait)
 	ASCondition* th=obj.as<ASCondition>();
 	if (!th->mutex->getLockCount())
 		throwError<ASError>(kConditionCannotWait) ;
-	return asAtom::trueAtom;
+	ret.setBool(true);
 }
 

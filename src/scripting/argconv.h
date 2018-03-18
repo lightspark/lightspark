@@ -24,7 +24,7 @@
 #include "scripting/toplevel/Boolean.h"
 
 /* Usage of ARG_UNPACK:
- * You have to use it within a ASFUNCTIONBODY() { }, because it uses the implicit arguments 'args' and 'argslen'.
+ * You have to use it within a ASFUNCTIONBODY_ATOM() { }, because it uses the implicit arguments 'args' and 'argslen'.
  * Standard usage is:
  * int32_t i;
  * bool b;
@@ -53,7 +53,7 @@ class ArgumentConversionAtom
 {
 public:
 	static T toConcrete(SystemState* sys,asAtom obj,const T& v);
-	static asAtom toAbstract(SystemState* sys,const T& val);
+	static void toAbstract(asAtom& ret, SystemState* sys,const T& val);
 };
 
 template<>
@@ -72,12 +72,15 @@ public:
                                                   "?"); // TODO
 		return obj;
 	}
-	static asAtom toAbstract(SystemState* sys,asAtom val)
+	static void toAbstract(asAtom& ret, SystemState* sys,asAtom val)
 	{
 		if(val.type == T_INVALID)
-			return asAtom::nullAtom;
-		ASATOM_INCREF(val);
-		return val;
+			ret.setNull();
+		else
+		{
+			ASATOM_INCREF(val);
+			ret = val;
+		}
 	}
 };
 
@@ -95,10 +98,10 @@ public:
 		o->incRef();
 		return _MR(o);
 	}
-	static asAtom toAbstract(SystemState* /*sys*/,const Ref<T>& val)
+	static void toAbstract(asAtom& ret, SystemState* /*sys*/,const Ref<T>& val)
 	{
 		val->incRef();
-		return asAtom::fromObject(val.getPtr());
+		ret = asAtom::fromObject(val.getPtr());
 	}
 };
 
@@ -121,12 +124,15 @@ public:
 		T* o = obj.as<T>();
 		return _MNR(o);
 	}
-	static asAtom toAbstract(SystemState* sys,const NullableRef<T>& val)
+	static void toAbstract(asAtom& ret, SystemState* sys,const NullableRef<T>& val)
 	{
 		if(val.isNull())
-			return asAtom::nullAtom;
-		val->incRef();
-		return asAtom::fromObject(val.getPtr());
+			ret.setNull();
+		else
+		{
+			val->incRef();
+			ret = asAtom::fromObject(val.getPtr());
+		}
 	}
 };
 
@@ -140,12 +146,15 @@ public:
 		o->incRef();
 		return _MNR(o);
 	}
-	static asAtom toAbstract(SystemState* sys,const NullableRef<ASObject>& val)
+	static void toAbstract(asAtom& ret, SystemState* sys,const NullableRef<ASObject>& val)
 	{
 		if(val.isNull())
-			return asAtom::nullAtom;
-		val->incRef();
-		return asAtom::fromObject(val.getPtr());
+			ret.setNull();
+		else
+		{
+			val->incRef();
+			ret = asAtom::fromObject(val.getPtr());
+		}
 	}
 };
 
@@ -192,39 +201,39 @@ inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(SystemState* sys,
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<int32_t>::toAbstract(SystemState* sys,const int32_t& val)
+inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, SystemState* sys,const int32_t& val)
 {
-	return asAtom(val);
+	ret.setInt(val);
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(SystemState* sys,const uint32_t& val)
+inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret, SystemState* sys,const uint32_t& val)
 {
-	return asAtom(val);
+	ret.setUInt(val);
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<number_t>::toAbstract(SystemState* sys,const number_t& val)
+inline void lightspark::ArgumentConversionAtom<number_t>::toAbstract(asAtom& ret, SystemState* sys,const number_t& val)
 {
-	return asAtom(val);
+	ret.setNumber(val);
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<bool>::toAbstract(SystemState* sys,const bool& val)
+inline void lightspark::ArgumentConversionAtom<bool>::toAbstract(asAtom& ret, SystemState* sys,const bool& val)
 {
-	return asAtom(val);
+	ret.setBool(val);
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<tiny_string>::toAbstract(SystemState* sys,const tiny_string& val)
+inline void lightspark::ArgumentConversionAtom<tiny_string>::toAbstract(asAtom& ret, SystemState* sys,const tiny_string& val)
 {
-	return asAtom::fromObject(abstract_s(sys,val));
+	ret = asAtom::fromObject(abstract_s(sys,val));
 }
 
 template<>
-inline asAtom lightspark::ArgumentConversionAtom<RGB>::toAbstract(SystemState* sys,const RGB& val)
+inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, SystemState* sys,const RGB& val)
 {
-	return asAtom(val.toUInt());
+	ret.setUInt(val.toUInt());
 }
 
 #define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen,false)
@@ -264,11 +273,13 @@ public:
 		}
 		return *this;
 	}
+#ifndef NDEBUG
 	~ArgUnpackAtom()
 	{
 		if(argslen > 0 && !moreAllowed)
 			LOG(LOG_NOT_IMPLEMENTED,"Not all arguments were unpacked");
 	}
+#endif
 };
 
 }

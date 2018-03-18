@@ -66,7 +66,7 @@ public:
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	static asAtom generator(SystemState* sys, asAtom& o_class, asAtom* args, const unsigned int argslen);
+	static void generator(asAtom& ret, SystemState* sys, asAtom& o_class, asAtom* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
 	bool sameType(const Class_base* cls) const;
@@ -75,14 +75,14 @@ public:
 	tiny_string toString();
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = NULL);
 
 	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	asAtom nextName(uint32_t index);
-	asAtom nextValue(uint32_t index);
+	void nextName(asAtom &ret, uint32_t index);
+	void nextValue(asAtom &ret, uint32_t index);
 
 	uint32_t size() const
 	{

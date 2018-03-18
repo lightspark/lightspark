@@ -23,7 +23,6 @@ ASFUNCTIONBODY_ATOM(URLRequestHeader,_constructor)
 {
 	URLRequestHeader* th=obj.as<URLRequestHeader>();
 	ARG_UNPACK_ATOM (th->name, "") (th->value, "");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(URLRequestHeader,name);

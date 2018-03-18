@@ -48,12 +48,11 @@ ASFUNCTIONBODY_ATOM(Dictionary,_constructor)
 {
 	Dictionary* th=obj.as<Dictionary>();
 	ARG_UNPACK_ATOM(th->weakkeys, false);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)
 {
-	return asAtom::fromString(sys,"Dictionary");
+	ret = asAtom::fromString(sys,"Dictionary");
 }
 
 Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
@@ -186,7 +185,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+void Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & ASObject::SKIP_IMPL)==0 && implEnable)
 	{
@@ -200,19 +199,23 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 				case T_INTEGER:
 					tmpname.name_type=multiname::NAME_INT;
 					tmpname.name_i = name.name_o->toInt();
-					return ASObject::getVariableByMultiname(tmpname, opt);
+					ASObject::getVariableByMultiname(ret, tmpname, opt);
+					return;
 				case T_UINTEGER:
 					tmpname.name_type=multiname::NAME_UINT;
 					tmpname.name_ui = name.name_o->toUInt();
-					return ASObject::getVariableByMultiname(tmpname, opt);
+					ASObject::getVariableByMultiname(ret,tmpname, opt);
+					return;
 				case T_NUMBER:
 					tmpname.name_type=multiname::NAME_NUMBER;
 					tmpname.name_d = name.name_o->toNumber();
-					return ASObject::getVariableByMultiname(tmpname, opt);
+					ASObject::getVariableByMultiname(ret,tmpname, opt);
+					return;
 				case T_STRING:
 					tmpname.name_type=multiname::NAME_STRING;
 					tmpname.name_s_id = name.name_o->toStringId();
-					return ASObject::getVariableByMultiname(tmpname, opt);
+					ASObject::getVariableByMultiname(ret,tmpname, opt);
+					return;
 				default:
 					break;
 			}
@@ -223,7 +226,7 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 			if(it != data.end())
 			{
-				asAtom res = it->second;
+				ret = it->second;
 				if (islastref)
 				{
 					LOG(LOG_INFO,"erasing weak key from dictionary:"<< name.name_o->toDebugString());
@@ -231,11 +234,11 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 					data.erase(it);
 				}
 				else
-					ASATOM_INCREF(res);
-				return res;
+					ASATOM_INCREF(ret);
+				return;
 			}
 			else
-				return asAtom::invalidAtom;
+				return;
 		}
 		else
 		{
@@ -245,11 +248,12 @@ asAtom Dictionary::getVariableByMultiname(const multiname& name, GET_VARIABLE_OP
 				name.name_type==multiname::NAME_INT ||
 				name.name_type==multiname::NAME_UINT ||
 				name.name_type==multiname::NAME_NUMBER);
-			return ASObject::getVariableByMultiname(name, opt);
+			ASObject::getVariableByMultiname(ret,name, opt);
+			return;
 		}
 	}
 	//Try with the base implementation
-	return ASObject::getVariableByMultiname(name, opt);
+	ASObject::getVariableByMultiname(ret,name, opt);
 }
 
 bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
@@ -325,7 +329,7 @@ uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 	}
 }
 
-asAtom Dictionary::nextName(uint32_t index)
+void Dictionary::nextName(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=data.size())
@@ -334,16 +338,16 @@ asAtom Dictionary::nextName(uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 		it->first->incRef();
-		return asAtom::fromObject(it->first.getPtr());
+		ret = asAtom::fromObject(it->first.getPtr());
 	}
 	else
 	{
 		//Fall back on object properties
-		return ASObject::nextName(index-data.size());
+		ASObject::nextName(ret,index-data.size());
 	}
 }
 
-asAtom Dictionary::nextValue(uint32_t index)
+void Dictionary::nextValue(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=data.size())
@@ -353,12 +357,12 @@ asAtom Dictionary::nextValue(uint32_t index)
 			++it;
 
 		ASATOM_INCREF(it->second);
-		return it->second;
+		ret = it->second;
 	}
 	else
 	{
 		//Fall back on object properties
-		return ASObject::nextValue(index-data.size());
+		ASObject::nextValue(ret,index-data.size());
 	}
 }
 
@@ -417,8 +421,11 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 		tmp = 0;
 		while ((tmp = nextNameIndex(tmp)) != 0)
 		{
-			nextName(tmp).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
-			nextValue(tmp).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+			asAtom v;
+			nextName(v,tmp);
+			v.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+			nextValue(v,tmp);
+			v.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 		}
 	}
 }

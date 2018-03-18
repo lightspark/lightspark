@@ -143,14 +143,19 @@ tiny_string ASObject::toString()
 	case T_STRING:
 		return as<ASString>()->getData();
 	default:
-		//everything else is an Object regarding to the spec
-		return toPrimitive(STRING_HINT).toString(getSystemState());
+		{
+			//everything else is an Object regarding to the spec
+				asAtom ret = asAtom::fromObject(this);
+				toPrimitive(ret,STRING_HINT);
+				return ret.toString(getSystemState());
+		}
 	}
 }
 
 tiny_string ASObject::toLocaleString()
 {
-	asAtom str = executeASMethod("toLocaleString", {""}, NULL, 0);
+	asAtom str;
+	executeASMethod(str,"toLocaleString", {""}, NULL, 0);
 	if (str.type == T_INVALID)
 		return "";
 	return str.toString(getSystemState());
@@ -160,7 +165,9 @@ TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();
 	asAtom o = asAtom::fromObject(r);
-	return toPrimitive().isLess(getSystemState(),o);
+	asAtom ret = asAtom::fromObject(this);
+	toPrimitive(ret);
+	return ret.isLess(getSystemState(),o);
 }
 
 int variables_map::getNextEnumerable(unsigned int start) const
@@ -196,22 +203,23 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 	return Variables.getNextEnumerable(cur_index-1+1)+1;
 }
 
-asAtom ASObject::nextName(uint32_t index)
+void ASObject::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
 
 	const tiny_string& name = getNameAt(index-1);
 	// not mentioned in the specs, but Adobe seems to convert string names to Integers, if possible
 	if (Array::isIntegerWithoutLeadingZeros(name))
-		return asAtom(Integer::stringToASInteger(name.raw_buf(), 0));
-	return asAtom::fromObject(abstract_s(getSystemState(),name));
+		ret.setInt(Integer::stringToASInteger(name.raw_buf(), 0));
+	else
+		ret = asAtom::fromObject(abstract_s(getSystemState(),name));
 }
 
-asAtom ASObject::nextValue(uint32_t index)
+void ASObject::nextValue(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	return getValueAt(index-1);
+	getValueAt(ret,index-1);
 }
 
 void ASObject::sinit(Class_base* c)
@@ -252,13 +260,15 @@ bool ASObject::isEqual(ASObject* r)
 		case T_UINTEGER:
 		case T_STRING:
 		{
-			asAtom primitive = toPrimitive();
+			asAtom primitive;
+			toPrimitive(primitive);
 			asAtom o = asAtom::fromObject(r);
 			return primitive.isEqual(getSystemState(),o);
 		}
 		case T_BOOLEAN:
 		{
-			asAtom primitive = toPrimitive();
+			asAtom primitive;
+			toPrimitive(primitive);
 			return primitive.toNumber()==r->toNumber();
 		}
 		default:
@@ -272,7 +282,7 @@ bool ASObject::isEqual(ASObject* r)
 	if (r->is<ObjectConstructor>())
 		return this == r->getClass();
 
-	LOG_CALL(_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
+//	LOG_CALL(_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	return false;
 }
 
@@ -294,16 +304,20 @@ uint16_t ASObject::toUInt16()
 
 int32_t ASObject::toInt()
 {
-	return toPrimitive().toInt();
+	asAtom ret = asAtom::fromObject(this);
+	toPrimitive(ret);
+	return ret.toInt();
 }
 
 int64_t ASObject::toInt64()
 {
-	return toPrimitive().toInt64();
+	asAtom ret = asAtom::fromObject(this);
+	toPrimitive(ret);
+	return ret.toInt64();
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-asAtom ASObject::toPrimitive(TP_HINT hint)
+void ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 {
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
@@ -317,32 +331,32 @@ asAtom ASObject::toPrimitive(TP_HINT hint)
 	if(isPrimitive())
 	{
 		this->incRef();
-		return asAtom::fromObject(this);
+		ret = asAtom::fromObject(this);
+		return;
 	}
 
 	/* for HINT_STRING evaluate first toString, then valueOf
 	 * for HINT_NUMBER do it the other way around */
 	if(hint == STRING_HINT && has_toString())
 	{
-		asAtom ret = call_toString();
+		call_toString(ret);
 		if(ret.isPrimitive())
-			return ret;
+			return;
 	}
 	if(has_valueOf())
 	{
-		asAtom ret = call_valueOf();
+		call_valueOf(ret);
 		if(ret.isPrimitive())
-			return ret;
+			return;
 	}
 	if(hint != STRING_HINT && has_toString())
 	{
-		asAtom ret = call_toString();
+		call_toString(ret);
 		if(ret.isPrimitive())
-			return ret;
+			return;
 	}
 
 	throwError<TypeError>(kConvertToPrimitiveError,this->getClassName());
-	return asAtom::invalidAtom;
 }
 
 bool ASObject::has_valueOf()
@@ -359,7 +373,7 @@ bool ASObject::has_valueOf()
 /* calls the valueOf function on this object
  * we cannot just call the c-function, because it can be overriden from AS3 code
  */
-asAtom ASObject::call_valueOf()
+void ASObject::call_valueOf(asAtom& ret)
 {
 	multiname valueOfName(NULL);
 	valueOfName.name_type=multiname::NAME_STRING;
@@ -369,12 +383,13 @@ asAtom ASObject::call_valueOf()
 	valueOfName.isAttribute = false;
 	assert_and_throw(hasPropertyByMultiname(valueOfName, true, true));
 
-	asAtom o=getVariableByMultiname(valueOfName,SKIP_IMPL);
+	asAtom o;
+	getVariableByMultiname(o,valueOfName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	return o.callFunction(v,NULL,0,false);
+	o.callFunction(ret,v,NULL,0,false);
 }
 
 bool ASObject::has_toString()
@@ -391,7 +406,7 @@ bool ASObject::has_toString()
 /* calls the toString function on this object
  * we cannot just call the c-function, because it can be overriden from AS3 code
  */
-asAtom ASObject::call_toString()
+void ASObject::call_toString(asAtom &ret)
 {
 	multiname toStringName(NULL);
 	toStringName.name_type=multiname::NAME_STRING;
@@ -401,12 +416,13 @@ asAtom ASObject::call_toString()
 	toStringName.isAttribute = false;
 	assert(ASObject::hasPropertyByMultiname(toStringName, true, true));
 
-	asAtom o=getVariableByMultiname(toStringName,SKIP_IMPL);
+	asAtom o;
+	getVariableByMultiname(o,toStringName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	return o.callFunction(v,NULL,0,false);
+	o.callFunction(ret,v,NULL,0,false);
 }
 
 tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
@@ -422,11 +438,13 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	if (!ASObject::hasPropertyByMultiname(toJSONName, true, true))
 		return res;
 
-	asAtom o=getVariableByMultiname(toJSONName,SKIP_IMPL);
+	asAtom o;
+	getVariableByMultiname(o,toJSONName,SKIP_IMPL);
 	if (o.type != T_FUNCTION)
 		return res;
 	asAtom v=asAtom::fromObject(this);
-	asAtom ret=o.callFunction(v,NULL,0,false);
+	asAtom ret;
+	o.callFunction(ret,v,NULL,0,false);
 	if (ret.type == T_STRING)
 	{
 		res += "\"";
@@ -557,7 +575,8 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		case NORMAL_METHOD:
 		{
-			obj->setVar(asAtom::fromObject(o),getSystemState());
+			asAtom v = asAtom::fromObject(o);
+			obj->setVar(v,getSystemState());
 			break;
 		}
 		case GETTER_METHOD:
@@ -788,7 +807,8 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		asAtom* arg1 = &o;
 
 		asAtom v =asAtom::fromObject(target);
-		asAtom ret= obj->setter.callFunction(v,arg1,1,false);
+		asAtom ret;
+		obj->setter.callFunction(ret,v,arg1,1,false);
 		ASATOM_DECREF(ret);
 		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
@@ -854,7 +874,7 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 	}
 }
 
-void variable::setVar(asAtom v, SystemState* sys, bool _isrefcounted)
+void variable::setVar(asAtom& v, SystemState* sys, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
@@ -866,7 +886,7 @@ void variable::setVar(asAtom v, SystemState* sys, bool _isrefcounted)
 		traitState=TYPE_RESOLVED;
 	}
 	if((traitState&TYPE_RESOLVED) && type)
-		v = type->coerce(sys,v);
+		type->coerce(sys,v);
 	if(isrefcounted)
 		ASATOM_DECREF(var);
 	var=v;
@@ -1006,7 +1026,10 @@ void variables_map::initializeVar(const multiname& mname, asAtom& obj, multiname
 				value = asAtom::undefinedAtom;
 			}
 			else
-				value = type->coerce(mainObj->getSystemState(),asAtom::undefinedAtom);
+			{
+				value = asAtom::undefinedAtom;
+				type->coerce(mainObj->getSystemState(),value);
+			}
 		}
 		else
 			value = obj;
@@ -1029,44 +1052,44 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 	{
 		LOG_CALL(_("Passthrough of ") << args[0].toDebugString());
 		ASATOM_INCREF(args[0]);
-		return args[0];
+		ret = args[0];
 	}
 	else
-		return asAtom::fromObject(Class<ASObject>::getInstanceS(getSys()));
+		ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_toString)
 {
-	tiny_string ret;
+	tiny_string res;
 	if (obj.is<Class_base>())
 	{
-		ret="[object ";
-		ret+=sys->getStringFromUniqueId(obj.as<Class_base>()->class_name.nameId);
-		ret+="]";
+		res="[object ";
+		res+=sys->getStringFromUniqueId(obj.as<Class_base>()->class_name.nameId);
+		res+="]";
 	}
 	else if(obj.is<IFunction>())
 	{
 		// ECMA spec 15.3.4.2 says that toString on a function object is implementation dependent
 		// adobe player returns "[object Function-46]", so we do the same
-		ret="[object ";
-		ret+="Function-46";
-		ret+="]";
+		res="[object ";
+		res+="Function-46";
+		res+="]";
 	}
 	else if(obj.toObject(sys)->getClass())
 	{
-		ret="[object ";
-		ret+=sys->getStringFromUniqueId(obj.getObject()->getClass()->class_name.nameId);
-		ret+="]";
+		res="[object ";
+		res+=sys->getStringFromUniqueId(obj.getObject()->getClass()->class_name.nameId);
+		res+="]";
 	}
 	else
-		ret="[object Object]";
+		res="[object Object]";
 
-	return asAtom::fromString(sys,ret);
+	ret = asAtom::fromString(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_toLocaleString)
 {
-	return _toString(sys,obj,args,argslen);
+	_toString(ret,sys,obj,args,argslen);
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
@@ -1077,27 +1100,26 @@ ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 	name.name_s_id=args[0].toStringId(sys);
 	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
-	bool ret=obj.toObject(sys)->hasPropertyByMultiname(name, true, false);
-	return asAtom(ret);
+	ret.setBool(obj.toObject(sys)->hasPropertyByMultiname(name, true, false));
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,valueOf)
 {
 	ASATOM_INCREF(obj);
-	return obj;
+	ret = obj;
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,isPrototypeOf)
 {
 	assert_and_throw(argslen==1);
-	bool ret =false;
+	bool res =false;
 	Class_base* cls = args[0].toObject(sys)->getClass();
 	
 	while (cls != NULL)
 	{
 		if (cls->prototype->getObj() == obj.getObject())
 		{
-			ret = true;
+			res = true;
 			break;
 		}
 		Class_base* clsparent = cls->prototype->getObj()->getClass();
@@ -1105,13 +1127,16 @@ ASFUNCTIONBODY_ATOM(ASObject,isPrototypeOf)
 			break;
 		cls = clsparent;
 	}
-	return asAtom(ret);
+	ret.setBool(res);
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,propertyIsEnumerable)
 {
 	if (argslen == 0)
-		return asAtom::falseAtom;
+	{
+		ret.setBool(false);
+		return;
+	}
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=args[0].toStringId(sys);
@@ -1123,15 +1148,15 @@ ASFUNCTIONBODY_ATOM(ASObject,propertyIsEnumerable)
 		unsigned int index = 0;
 		if (a->isValidMultiname(sys,name,index))
 		{
-			return asAtom(index < (unsigned int)a->size());
+			ret.setBool(index < (unsigned int)a->size());
+			return;
 		}
 	}
 	variable* v = obj.toObject(sys)->Variables.findObjVar(sys,name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	if (v)
-		return asAtom(v->isenumerable);
-	if (obj.getObject()->hasPropertyByMultiname(name,true,false))
-		return asAtom::trueAtom;
-	return asAtom::falseAtom;
+		ret.setBool(v->isenumerable);
+	else
+		ret.setBool(obj.getObject()->hasPropertyByMultiname(name,true,false));
 }
 ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 {
@@ -1144,7 +1169,6 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	obj.toObject(sys)->setIsEnumerable(name, isEnum);
-	return asAtom::invalidAtom;
 }
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
@@ -1155,13 +1179,11 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructor)
 {
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 {
 	throwError<ArgumentError>(kCantInstantiateError, obj.toObject(sys)->getClassName());
-	return asAtom::invalidAtom;
 }
 
 void ASObject::initSlot(unsigned int n, const multiname& name)
@@ -1172,7 +1194,8 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
 
-	asAtom ret=getVariableByMultiname(name);
+	asAtom ret;
+	getVariableByMultiname(ret,name);
 	assert_and_throw(ret.type != T_INVALID);
 	return ret.toInt();
 }
@@ -1219,7 +1242,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 	return obj;
 }
 
-asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+void ASObject::getVariableByMultiname(asAtom &ret, const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -1261,7 +1284,7 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			}
 		}
 		if(!obj)
-			return asAtom::invalidAtom;
+			return;
 	}
 
 
@@ -1280,9 +1303,8 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			target=this;
 		
 		asAtom v =asAtom::fromObject(target);
-		asAtom ret=obj->getter.callFunction(v,NULL,0,false);
+		obj->getter.callFunction(ret,v,NULL,0,false);
 		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
-		return ret;
 	}
 	else
 	{
@@ -1293,19 +1315,20 @@ asAtom ASObject::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTI
 			if (obj->var.isBound())
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
-				return obj->var;
+				ret = obj->var;
 			}
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				return asAtom::fromFunction(obj->var.getObject(),this);
+				ret = asAtom::fromFunction(obj->var.getObject(),this);
 			}
 		}
-		return obj->var;
+		else
+			ret = obj->var;
 	}
 }
 
-asAtom ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces)
+void ASObject::getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces)
 {
 	multiname varName(NULL);
 	varName.name_type=multiname::NAME_STRING;
@@ -1326,26 +1349,27 @@ asAtom ASObject::getVariableByMultiname(const tiny_string& name, std::list<tiny_
 	}
 	varName.isAttribute = false;
 
-	return getVariableByMultiname(varName,SKIP_IMPL);
+	getVariableByMultiname(ret,varName,SKIP_IMPL);
 }
 
-asAtom ASObject::executeASMethod(const tiny_string& methodName,
+void ASObject::executeASMethod(asAtom& ret,const tiny_string& methodName,
 					std::list<tiny_string> namespaces,
 					asAtom* args,
 					uint32_t num_args)
 {
-	asAtom o = getVariableByMultiname(methodName, namespaces);
+	asAtom o;
+	getVariableByMultiname(o,methodName, namespaces);
 	if (o.type != T_FUNCTION)
 		throwError<TypeError>(kCallOfNonFunctionError, methodName);
 	asAtom v =asAtom::fromObject(this);
-	return o.callFunction(v,args,num_args,false);
+	o.callFunction(ret,v,args,num_args,false);
 }
 
 void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object
 #ifndef NDEBUG
-	assert(getRefCount()>0);
+	assert(getConstant() || (getRefCount()>0));
 #endif
 	Variables.check();
 }
@@ -1579,7 +1603,7 @@ variable* variables_map::getValueAt(unsigned int index)
 		throw RunTimeException("getValueAt out of bounds");
 }
 
-asAtom ASObject::getValueAt(int index)
+void ASObject::getValueAt(asAtom &ret,int index)
 {
 	variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
@@ -1588,14 +1612,13 @@ asAtom ASObject::getValueAt(int index)
 		//Call the getter
 		LOG_CALL(_("Calling the getter"));
 		asAtom v=asAtom::fromObject(this);
-		asAtom ret = obj->getter.callFunction(v,NULL,0,false);
+		obj->getter.callFunction(ret, v,NULL,0,false);
 		LOG_CALL("End of getter at index "<<index<<":"<< obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
-		return ret;
 	}
 	else
 	{
 		ASATOM_INCREF(obj->var);
-		return obj->var;
+		ret = obj->var;
 	}
 }
 
@@ -1719,11 +1742,13 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		writeExternalName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		writeExternalName.isAttribute = false;
 
-		asAtom o=getVariableByMultiname(writeExternalName,SKIP_IMPL);
+		asAtom o;
+		getVariableByMultiname(o,writeExternalName,SKIP_IMPL);
 		assert_and_throw(o.type==T_FUNCTION);
 		asAtom tmpArg[1] = { asAtom::fromObject(out) };
 		asAtom v=asAtom::fromObject(this);
-		o.callFunction(v, tmpArg, 1,false);
+		asAtom r;
+		o.callFunction(r,v, tmpArg, 1,false);
 		return;
 	}
 
@@ -1973,7 +1998,9 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				if (varIt->second.getter.type != T_INVALID)
 				{
 					asAtom t=asAtom::fromObject(this);
-					v=varIt->second.getter.callFunction(t,NULL,0,false).toObject(getSystemState());
+					asAtom res;
+					varIt->second.getter.callFunction(res,t,NULL,0,false);
+					v=res.toObject(getSystemState());
 				}
 				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
@@ -2000,7 +2027,8 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						params[0] = asAtom::fromStringID(varIt->first);
 						params[1] = asAtom::fromObject(v);
 						ASATOM_INCREF(params[1]);
-						asAtom funcret=replacer.callFunction(asAtom::nullAtom, params, 2,true);
+						asAtom funcret;
+						replacer.callFunction(funcret,asAtom::nullAtom, params, 2,true);
 						if (funcret.type != T_INVALID)
 							res += funcret.toString(getSystemState());
 						else
@@ -2074,12 +2102,14 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	{
 		asAtom arg1= asAtom::fromObject(obj);
 		asAtom v=asAtom::fromObject(this);
-		ret->setter.callFunction(v,&arg1,1,false);
+		asAtom res;
+		ret->setter.callFunction(res,v,&arg1,1,false);
 	}
 	else
 	{
 		obj->incRef();
-		ret->setVar(asAtom::fromObject(obj),getSystemState());
+		asAtom v = asAtom::fromObject(obj);
+		ret->setVar(v,getSystemState());
 	}
 }
 
@@ -2147,7 +2177,7 @@ asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
 	return a;
 }
 
-asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted)
+void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted)
 {
 	assert_and_throw(type == T_FUNCTION);
 		
@@ -2174,14 +2204,14 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 			for (uint32_t i = 0; i < num_args; i++)
 				ASATOM_INCREF(args[i]);
 		}
-		asAtom ret = objval->as<SyntheticFunction>()->call(c, args, num_args);
+		objval->as<SyntheticFunction>()->call(ret,c, args, num_args);
 		if (args_refcounted)
 			ASATOM_DECREF(c);
-		return ret;
+		return;
 	}
 	// when calling builtin functions, normally no refcounting is needed
 	// if it is, it has to be done inside the called function
-	asAtom ret = objval->as<Function>()->call(c, args, num_args);
+	objval->as<Function>()->call(ret, c, args, num_args);
 	if (args_refcounted)
 	{
 		for (uint32_t i = 0; i < num_args; i++)
@@ -2190,27 +2220,31 @@ asAtom asAtom::callFunction(asAtom &obj, asAtom *args, uint32_t num_args, bool a
 			closure_this = NULL;
 		ASATOM_DECREF(c);
 	}
-	return ret;
 }
 
-asAtom asAtom::getVariableByMultiname(SystemState* sys, const multiname &name)
+void asAtom::getVariableByMultiname(asAtom& ret,SystemState* sys, const multiname &name)
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
 	switch(type)
 	{
 		case T_INTEGER:
-			return Class<Integer>::getClass(sys)->getClassVariableByMultiname(name);
+			Class<Integer>::getClass(sys)->getClassVariableByMultiname(ret,name);
+			return;
 		case T_UINTEGER:
-			return Class<UInteger>::getClass(sys)->getClassVariableByMultiname(name);
+			Class<UInteger>::getClass(sys)->getClassVariableByMultiname(ret,name);
+			return;
 		case T_NUMBER:
-			return Class<Number>::getClass(sys)->getClassVariableByMultiname(name);
+			Class<Number>::getClass(sys)->getClassVariableByMultiname(ret,name);
+			return;
 		case T_BOOLEAN:
-			return Class<Boolean>::getClass(sys)->getClassVariableByMultiname(name);
+			Class<Boolean>::getClass(sys)->getClassVariableByMultiname(ret,name);
+			return;
 		case T_STRING:
-			return Class<ASString>::getClass(sys)->getClassVariableByMultiname(name);
+			Class<ASString>::getClass(sys)->getClassVariableByMultiname(ret,name);
+			return;
 		default:
-			return asAtom::invalidAtom;
+			return;
 	}
 }
 
@@ -2617,8 +2651,10 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		}
 		else
 		{//If none of the above apply, convert both to primitives with no hint
-			asAtom val1p = val1->toPrimitive(NO_HINT);
-			asAtom val2p = val2->toPrimitive(NO_HINT);
+			asAtom val1p;
+			val1->toPrimitive(val1p,NO_HINT);
+			asAtom val2p;
+			val2->toPrimitive(val2p,NO_HINT);
 			if(val1p.is<ASString>() || val2p.is<ASString>())
 			{//If one is String, convert both to strings and concat
 				string a(val1p.toString(sys).raw_buf());

@@ -506,7 +506,7 @@ public:
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
 	bool destruct();
-	asAtom gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
+	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	/*

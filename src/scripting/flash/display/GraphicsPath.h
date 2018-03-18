@@ -50,6 +50,6 @@ public:
 	void appendToTokens(tokensVector& tokens);
 };
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_GRAPHICSPATH_H */

@@ -88,9 +88,9 @@ public:
 	 * The returned object must be decRef'ed by caller.
 	 * If the argument cannot be converted, it throws a TypeError
 	 */
-	virtual asAtom coerce(SystemState* sys, asAtom& o) const=0;
+	virtual void coerce(SystemState* sys, asAtom& o) const=0;
 
-	virtual asAtom coerceForTemplate(SystemState* sys, asAtom& o) const=0;
+	virtual void coerceForTemplate(SystemState* sys, asAtom& o) const=0;
 	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
@@ -110,8 +110,8 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	asAtom coerce(SystemState* sys,asAtom& o) const { return o; }
-	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const { return o; }
+	void coerce(SystemState* sys,asAtom& o) const {}
+	void coerceForTemplate(SystemState* sys, asAtom& o) const {}
 	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
@@ -122,8 +122,8 @@ public:
 class Void: public Type
 {
 public:
-	asAtom coerce(SystemState* sys,asAtom& o) const;
-	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const { return coerce(sys,o); }
+	void coerce(SystemState* sys,asAtom& o) const;
+	void coerceForTemplate(SystemState* sys, asAtom& o) const { coerce(sys,o); }
 	virtual ~Void() {}
 	tiny_string getName() const { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
@@ -140,8 +140,8 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	asAtom coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
-	asAtom coerceForTemplate(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	void coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	void coerceForTemplate(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
@@ -245,7 +245,7 @@ public:
 	Class_base(const Class_object*);
 	~Class_base();
 	void finalize();
-	virtual asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
+	virtual void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -260,7 +260,7 @@ public:
 	tiny_string getQualifiedClassName(bool forDescribeType = false) const;
 	tiny_string getName() const;
 	tiny_string toString();
-	virtual asAtom generator(asAtom* args, const unsigned int argslen);
+	virtual void generator(asAtom &ret, asAtom* args, const unsigned int argslen);
 	ASObject *describeType() const;
 	void describeInstance(pugi::xml_node &root, bool istemplate) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
@@ -269,9 +269,9 @@ public:
 	 * It consumes one reference of 'o'.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	virtual asAtom coerce(SystemState* sys, asAtom& o) const;
+	virtual void coerce(SystemState* sys, asAtom& o) const;
 	
-	asAtom coerceForTemplate(SystemState* sys, asAtom& o) const;
+	void coerceForTemplate(SystemState* sys, asAtom& o) const;
 
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
@@ -284,7 +284,7 @@ public:
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
 	bool checkExistingFunction(const multiname& name);
-	asAtom getClassVariableByMultiname(const multiname& name);
+	void getClassVariableByMultiname(asAtom& ret,const multiname& name);
 	bool isBuiltin() const { return true; }
 };
 
@@ -303,10 +303,9 @@ class Class_object: public Class_base
 private:
 	//Invoke the special constructor that will set the super to Object
 	Class_object():Class_base(this){}
-	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 	{
 		throw RunTimeException("Class_object::getInstance");
-		return asAtom::invalidAtom;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
@@ -360,7 +359,7 @@ class ObjectPrototype: public ASObject, public Prototype
 public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
 };
@@ -376,7 +375,7 @@ public:
 	ObjectConstructor(Class_base* c,uint32_t length);
 	void incRef() { getClass()->incRef(); }
 	void decRef() { getClass()->decRef(); }
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool isEqual(ASObject* r);
 };
 
@@ -397,7 +396,7 @@ public:
 	_NR<ASObject> functionPrototype;
 	void finalize() { functionPrototype.reset(); }
 
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -448,17 +447,17 @@ class Function : public IFunction
 friend class Class<IFunction>;
 friend class Class_base;
 public:
-	typedef asAtom (*as_atom_function)(SystemState*, asAtom&, asAtom*, const unsigned int);
+typedef void (*as_atom_function)(asAtom&, SystemState*, asAtom&, asAtom*, const unsigned int);
 protected:
-	/* Function pointer to the C-function implementation */
 	/* Function pointer to the C-function implementation with atom arguments */
 	as_atom_function val_atom;
+	
 	// type of the return value;
 	Class_base* returnType;
 	Function(Class_base* c,as_atom_function v = NULL):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const { return NULL; }
 public:
-	asAtom call(asAtom& obj, asAtom* args, uint32_t num_args);
+	void call(asAtom& ret, asAtom& obj, asAtom* args, uint32_t num_args);
 	bool isEqual(ASObject* r);
 };
 
@@ -475,7 +474,7 @@ public:
 		return Function::destruct();
 	}
 	
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -498,7 +497,7 @@ private:
 	method_info* getMethodInfo() const { return mi; }
 public:
 	~SyntheticFunction() {}
-	asAtom call(asAtom& obj, asAtom *args, uint32_t num_args);
+	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args);
 	bool destruct();
 	
 	_NR<scope_entry_list> func_scope;
@@ -529,7 +528,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>(MemoryAccount* m):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),m){}
-	asAtom getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
 	IFunction* getNopFunction();
 public:
 	static Class<IFunction>* getClass(SystemState* sys);
@@ -578,7 +577,7 @@ public:
 	void buildInstanceTraits(ASObject* o) const
 	{
 	}
-	virtual asAtom generator(asAtom* args, const unsigned int argslen);
+	virtual void generator(asAtom& ret, asAtom* args, const unsigned int argslen);
 };
 
 class Undefined : public ASObject
@@ -606,7 +605,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
 	int64_t toInt64();
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 
@@ -640,8 +639,8 @@ public:
 	tiny_string toString();
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	asAtom nextName(uint32_t index);
-	asAtom nextValue(uint32_t index);
+	void nextName(asAtom &ret, uint32_t index);
+	void nextValue(asAtom &ret, uint32_t index);
 };
 
 class Namespace: public ASObject
@@ -673,8 +672,8 @@ public:
 	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 
 	uint32_t nextNameIndex(uint32_t cur_index);
-	asAtom nextName(uint32_t index);
-	asAtom nextValue(uint32_t index);
+	void nextName(asAtom &ret, uint32_t index);
+	void nextValue(asAtom &ret, uint32_t index);
 };
 
 
@@ -687,29 +686,29 @@ public:
 	Global(Class_base* cb, ABCContext* c, int s);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	asAtom getVariableByMultinameOpportunistic(const multiname& name);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	void getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name);
 	/*
 	 * Utility method to register builtin methods and classes
 	 */
 	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o);
 };
 
-asAtom eval(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom parseInt(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom parseFloat(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom isNaN(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom isFinite(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom encodeURI(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom decodeURI(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom encodeURIComponent(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom decodeURIComponent(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom escape(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom unescape(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom print(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom trace(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void eval(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void parseInt(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void parseFloat(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void isNaN(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void isFinite(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void encodeURI(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void decodeURI(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void encodeURIComponent(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void decodeURIComponent(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void escape(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void unescape(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void print(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void trace(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 bool isXMLName(SystemState *sys, asAtom &obj);
-asAtom _isXMLName(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void _isXMLName(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 number_t parseNumber(const tiny_string str, bool useoldversion=false);
 };
 

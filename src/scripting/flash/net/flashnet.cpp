@@ -221,20 +221,18 @@ ASFUNCTIONBODY_ATOM(URLRequest,_constructor)
 {
 	URLRequest* th=obj.as<URLRequest>();
 	ARG_UNPACK_ATOM(th->url, "");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setURL)
 {
 	URLRequest* th=obj.as<URLRequest>();
 	ARG_UNPACK_ATOM(th->url);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getURL)
 {
 	URLRequest* th=obj.as<URLRequest>();
-	return asAtom::fromObject(abstract_s(sys,th->url));
+	ret = asAtom::fromObject(abstract_s(sys,th->url));
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setMethod)
@@ -248,7 +246,6 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setMethod)
 		th->method=POST;
 	else
 		throw UnsupportedException("Unsupported method in URLLoader");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getMethod)
@@ -257,21 +254,24 @@ ASFUNCTIONBODY_ATOM(URLRequest,_getMethod)
 	switch(th->method)
 	{
 		case GET:
-			return asAtom::fromString(sys,"GET");
+			ret = asAtom::fromString(sys,"GET");
+			break;
 		case POST:
-			return asAtom::fromString(sys,"POST");
+			ret = asAtom::fromString(sys,"POST");
+			break;
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getData)
 {
 	URLRequest* th=obj.as<URLRequest>();
 	if(th->data.isNull())
-		return asAtom::undefinedAtom;
-
-	th->data->incRef();
-	return asAtom::fromObject(th->data.getPtr());
+		ret.setUndefined();
+	else
+	{
+		th->data->incRef();
+		ret = asAtom::fromObject(th->data.getPtr());
+	}
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setData)
@@ -281,17 +281,15 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setData)
 
 	ASATOM_INCREF(args[0]);
 	th->data=_MR(args[0].toObject(sys));
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getDigest)
 {
 	URLRequest* th=obj.as<URLRequest>();
 	if (th->digest.empty())
-		return asAtom::nullAtom;
+		ret.setNull();
 	else
-		return asAtom::fromObject(abstract_s(sys,th->digest));
+		ret = asAtom::fromObject(abstract_s(sys,th->digest));
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setDigest)
@@ -321,7 +319,6 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setDigest)
 		throw Class<ArgumentError>::getInstanceS(sys,"An invalid digest was supplied", 2034);
 
 	th->digest = value;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(URLRequest,contentType);
@@ -490,13 +487,12 @@ void URLLoader::setBytesLoaded(uint32_t b)
 
 ASFUNCTIONBODY_ATOM(URLLoader,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 	if(argslen==1 && args[0].is<URLRequest>())
 	{
 		//URLRequest* urlRequest=Class<URLRequest>::dyncast(args[0]);
-		load(sys, obj, args, argslen);
+		load(ret,sys, obj, args, argslen);
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,load)
@@ -518,7 +514,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 		//Notify an error during loading
 		th->incRef();
 		th->getSystemState()->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
-		return asAtom::invalidAtom;
+		return;	
 	}
 
 	//TODO: support the right events (like SecurityErrorEvent)
@@ -534,7 +530,6 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th));
 	getSys()->addJob(job);
 	th->job=job;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,close)
@@ -543,8 +538,6 @@ ASFUNCTIONBODY_ATOM(URLLoader,close)
 	SpinlockLocker l(th->spinlock);
 	if(th->job)
 		th->job->threadAbort();
-
-	return asAtom::invalidAtom;
 }
 
 tiny_string URLLoader::getDataFormat()
@@ -562,7 +555,7 @@ void URLLoader::setDataFormat(const tiny_string& newFormat)
 ASFUNCTIONBODY_ATOM(URLLoader,_getDataFormat)
 {
 	URLLoader* th=obj.as<URLLoader>();
-	return asAtom::fromObject(abstract_s(sys,th->getDataFormat()));
+	ret = asAtom::fromObject(abstract_s(sys,th->getDataFormat()));
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,_getData)
@@ -570,10 +563,13 @@ ASFUNCTIONBODY_ATOM(URLLoader,_getData)
 	URLLoader* th=obj.as<URLLoader>();
 	SpinlockLocker l(th->spinlock);
 	if(th->data.isNull())
-		return asAtom::undefinedAtom;
+	{
+		ret.setUndefined();
+		return;
+	}
 	
 	th->data->incRef();
-	return asAtom::fromObject(th->data.getPtr());
+	ret = asAtom::fromObject(th->data.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,_setData)
@@ -585,7 +581,6 @@ ASFUNCTIONBODY_ATOM(URLLoader,_setData)
 		throw Class<ArgumentError>::getInstanceS(sys,"Wrong number of arguments in setter");
 	ASATOM_INCREF(args[0]);
 	th->setData(_MR(args[0].toObject(sys)));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,_setDataFormat)
@@ -593,7 +588,6 @@ ASFUNCTIONBODY_ATOM(URLLoader,_setDataFormat)
 	URLLoader* th=obj.as<URLLoader>();
 	assert_and_throw(argslen);
 	th->setDataFormat(args[0].toString(sys));
-	return asAtom::invalidAtom;
 }
 
 void URLLoaderDataFormat::sinit(Class_base* c)
@@ -649,7 +643,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding);
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getDefaultObjectEncoding)
 {
-	return asAtom(sys->staticSharedObjectDefaultObjectEncoding);
+	ret = asAtom(sys->staticSharedObjectDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,_setDefaultObjectEncoding)
@@ -662,7 +656,6 @@ ASFUNCTIONBODY_ATOM(SharedObject,_setDefaultObjectEncoding)
 	    sys->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 	    throw RunTimeException("Invalid shared object encoding");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
@@ -690,48 +683,42 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	it->second->incRef();
 	res->data = _NR<ASObject>(it->second);
 	res->incRef();
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,getRemote)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getRemote not implemented");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,flush)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,clear)
 {
 	SharedObject* th=obj.as<SharedObject>();
 	th->data->destroyContents();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,close)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.close not implemented");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,connect)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.connect not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(SharedObject,setProperty)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.setProperty not implemented");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getPreventBackup)
 {
-	return asAtom(sys->staticSharedObjectPreventBackup);
+	ret = asAtom(sys->staticSharedObjectPreventBackup);
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,_setPreventBackup)
@@ -740,14 +727,13 @@ ASFUNCTIONBODY_ATOM(SharedObject,_setPreventBackup)
 	assert_and_throw(args[0].type==T_BOOLEAN);
 	bool value = args[0].Boolean_concrete();
 	sys->staticSharedObjectPreventBackup = value;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 {
 	/* Get the size of the objects in the sharedobjectmap */
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.size not implemented");
-	return asAtom(0);
+	ret.setInt(0);
 }
 
 void ObjectEncoding::sinit(Class_base* c)
@@ -794,12 +780,11 @@ void NetConnection::finalize()
 	client.reset();
 }
 
-ASFUNCTIONBODY_ATOM(NetConnection, _constructor)
+ASFUNCTIONBODY_ATOM(NetConnection,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	NetConnection* th=obj.as<NetConnection>();
 	th->objectEncoding = getSys()->staticNetConnectionDefaultObjectEncoding;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,call)
@@ -815,12 +800,12 @@ ASFUNCTIONBODY_ATOM(NetConnection,call)
 	th->messageCount++;
 
 	if(!th->uri.isValid())
-		return asAtom::invalidAtom;
+		return;
 
 	if(th->uri.isRTMP())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "RTMP not yet supported in NetConnection.call()");
-		return asAtom::invalidAtom;
+		return;
 	}
 
 	//This function is supposed to be passed a array for the rest
@@ -864,7 +849,6 @@ ASFUNCTIONBODY_ATOM(NetConnection,call)
 	//To be decreffed in jobFence
 	th->incRef();
 	sys->addJob(th);
-	return asAtom::invalidAtom;
 }
 
 void NetConnection::execute()
@@ -982,13 +966,12 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 		th->incRef();
 		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetConnection.Connect.Success")));
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getConnected)
 {
 	NetConnection* th=obj.as<NetConnection>();
-	return asAtom(th->_connected);
+	ret = asAtom(th->_connected);
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getConnectedProxyType)
@@ -996,12 +979,12 @@ ASFUNCTIONBODY_ATOM(NetConnection,_getConnectedProxyType)
 	NetConnection* th=obj.as<NetConnection>();
 	if (!th->_connected)
 		throw Class<ArgumentError>::getInstanceS(sys,"NetConnection object must be connected.", 2126);
-	return asAtom::fromString(sys,"none");
+	ret = asAtom::fromString(sys,"none");
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getDefaultObjectEncoding)
 {
-	return asAtom(sys->staticNetConnectionDefaultObjectEncoding);
+	ret = asAtom(sys->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_setDefaultObjectEncoding)
@@ -1014,13 +997,12 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setDefaultObjectEncoding)
 		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getObjectEncoding)
 {
 	NetConnection* th=obj.as<NetConnection>();
-	return asAtom(th->objectEncoding);
+	ret = asAtom(th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_setObjectEncoding)
@@ -1036,14 +1018,13 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setObjectEncoding)
 		th->objectEncoding = ObjectEncoding::AMF0; 
 	else
 		th->objectEncoding = ObjectEncoding::AMF3; 
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getProtocol)
 {
 	NetConnection* th=obj.as<NetConnection>();
 	if(th->_connected)
-		return asAtom::fromString(sys,th->protocol);
+		ret = asAtom::fromString(sys,th->protocol);
 	else
 		throw Class<ArgumentError>::getInstanceS(sys,"get NetConnection.protocol before connect");
 }
@@ -1074,7 +1055,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,_getProxyType)
 			name = "";
 			break;
 	}
-	return asAtom::fromString(sys,name);
+	ret = asAtom::fromString(sys,name);
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_setProxyType)
@@ -1098,18 +1079,17 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setProxyType)
 	if (th->proxyType != PT_NONE)
 		LOG(LOG_NOT_IMPLEMENTED, "Unimplemented proxy type " << value);
 
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getURI)
 {
 	NetConnection* th=obj.as<NetConnection>();
 	if(th->_connected && th->uri.isValid())
-		return asAtom::fromObject(abstract_s(sys,th->uri.getURL()));
+		ret = asAtom::fromObject(abstract_s(sys,th->uri.getURL()));
 	else
 	{
 		//Reference says the return should be undefined. The right thing is "null" as a string
-		return asAtom::fromString(sys,"null");
+		ret = asAtom::fromString(sys,"null");
 	}
 }
 
@@ -1121,7 +1101,6 @@ ASFUNCTIONBODY_ATOM(NetConnection,close)
 		th->threadAbort();
 		th->_connected = false;
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
@@ -1253,17 +1232,19 @@ ASFUNCTIONBODY_ATOM(NetStream,_getInfo)
 	res->playbackBytesPerSecond = th->playbackBytesPerSecond;
 	res->audioBufferLength = th->bufferLength;
 	res->videoBufferLength = th->bufferLength;
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getClient)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->client.isNull())
-		return asAtom::undefinedAtom;
-
-	th->client->incRef();
-	return asAtom::fromObject(th->client.getPtr());
+		ret.setUndefined();
+	else
+	{
+		th->client->incRef();
+		ret = asAtom::fromObject(th->client.getPtr());
+	}
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_setClient)
@@ -1276,14 +1257,13 @@ ASFUNCTIONBODY_ATOM(NetStream,_setClient)
 
 	ASATOM_INCREF(args[0]);
 	th->client = _MR(args[0].toObject(sys));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getCheckPolicyFile)
 {
 	NetStream* th=obj.as<NetStream>();
 
-	return asAtom(th->checkPolicyFile);
+	ret.setBool(th->checkPolicyFile);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_setCheckPolicyFile)
@@ -1293,12 +1273,11 @@ ASFUNCTIONBODY_ATOM(NetStream,_setCheckPolicyFile)
 	NetStream* th=obj.as<NetStream>();
 
 	th->checkPolicyFile = args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	NetStream* th=obj.as<NetStream>();
 
 	LOG(LOG_CALLS,_("NetStream constructor"));
@@ -1316,8 +1295,6 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	netConnection->incRef();
 	th->connection=netConnection;
 	th->client = _NR<ASObject>(th);
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,play)
@@ -1328,7 +1305,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 	if(th->closed)
 		th->closed = false;
 	else
-		return asAtom::invalidAtom;
+		return;
 
 	//Reset the paused states
 	th->paused = false;
@@ -1340,7 +1317,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 		th->datagenerationfile = sys->getEngineData()->createFileStreamCache(th->getSystemState());
 		th->datagenerationfile->openForWriting();
 		th->streamTime=0;
-		return asAtom::invalidAtom;
+		return;
 	}
 	if (th->connection.isNull())
 		throwError<ASError>(0,"not connected");
@@ -1407,7 +1384,6 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 		th->incRef();
 		sys->addJob(th);
 	}
-	return asAtom::invalidAtom;
 }
 
 void NetStream::jobFence()
@@ -1429,7 +1405,6 @@ ASFUNCTIONBODY_ATOM(NetStream,resume)
 		th->incRef();
 		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetStream.Unpause.Notify")));
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,pause)
@@ -1446,17 +1421,15 @@ ASFUNCTIONBODY_ATOM(NetStream,pause)
 		th->incRef();
 		getVm(sys)->addEvent(_MR(th),_MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetStream.Pause.Notify")));
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,togglePause)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->paused)
-		th->resume(sys,obj, NULL, 0);
+		th->resume(ret,sys,obj, NULL, 0);
 	else
-		th->pause(sys,obj, NULL, 0);
-	return asAtom::invalidAtom;
+		th->pause(ret,sys,obj, NULL, 0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,close)
@@ -1472,13 +1445,11 @@ ASFUNCTIONBODY_ATOM(NetStream,close)
 		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetStream.Play.Stop")));
 	}
 	LOG(LOG_CALLS, _("NetStream::close called"));
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(NetStream,play2)
 {
 	//NetStream* th=obj.as<NetStream>();
 	LOG(LOG_NOT_IMPLEMENTED,"Netstream.play2 not implemented:"<< args[0].toDebugString());
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(NetStream,seek)
 {
@@ -1486,7 +1457,6 @@ ASFUNCTIONBODY_ATOM(NetStream,seek)
 	int pos;
 	ARG_UNPACK_ATOM(pos);
 	LOG(LOG_NOT_IMPLEMENTED,"NetStream.seek is not implemented yet:"<<pos);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,attach)
@@ -1497,7 +1467,6 @@ ASFUNCTIONBODY_ATOM(NetStream,attach)
 
 	netConnection->incRef();
 	th->connection=netConnection;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(NetStream,appendBytes)
 {
@@ -1651,7 +1620,6 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytes)
 		}
 
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(NetStream,appendBytesAction)
 {
@@ -1678,7 +1646,6 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytesAction)
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"NetStream.appendBytesAction is not implemented yet:"<<val);
-	return asAtom::invalidAtom;
 }
 
 //Tick is called from the timer thread, this happens only if a decoder is available
@@ -2004,7 +1971,8 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 	callbackName.name_type=multiname::NAME_STRING;
 	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-	asAtom callback = client->getVariableByMultiname(callbackName);
+	asAtom callback;
+	client->getVariableByMultiname(callback,callbackName);
 	if(callback.type == T_FUNCTION)
 	{
 		asAtom callbackArgs[arglist.size()];
@@ -2028,27 +1996,27 @@ ASFUNCTIONBODY_ATOM(NetStream,_getBytesLoaded)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		return asAtom(th->getReceivedLength());
+		ret.setUInt(th->getReceivedLength());
 	else
-		return asAtom(0);
+		ret.setUInt(0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getBytesTotal)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		return asAtom(th->getTotalLength());
+		ret.setUInt(th->getTotalLength());
 	else
-		return asAtom(0);
+		ret.setUInt(0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getTime)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		return asAtom(th->getStreamTime()/1000.);
+		ret.setNumber(th->getStreamTime()/1000.);
 	else
-		return asAtom(0);
+		ret.setUInt(0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
@@ -2056,9 +2024,9 @@ ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
 	//TODO: provide real FPS (what really is displayed)
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady() && !th->paused)
-		return asAtom(th->getFrameRate());
+		ret.setNumber(th->getFrameRate());
 	else
-		return asAtom(0);
+		ret.setUInt(0);
 }
 
 uint32_t NetStream::getVideoWidth() const
@@ -2163,7 +2131,8 @@ void URLVariables::decode(const tiny_string& s)
 			propName.name_type=multiname::NAME_STRING;
 			propName.name_s_id=getSys()->getUniqueStringId(tiny_string(name,true));
 			propName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-			asAtom curValue=getVariableByMultiname(propName);
+			asAtom curValue;
+			getVariableByMultiname(curValue,propName);
 			if(curValue.type != T_INVALID)
 			{
 				//If the variable already exists we have to create an Array of values
@@ -2216,14 +2185,13 @@ ASFUNCTIONBODY_ATOM(URLVariables,decode)
 	URLVariables* th=obj.as<URLVariables>();
 	assert_and_throw(argslen==1);
 	th->decode(args[0].toString(sys));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(URLVariables,_toString)
 {
 	URLVariables* th=obj.as<URLVariables>();
 	assert_and_throw(argslen==0);
-	return asAtom::fromObject(abstract_s(sys,th->toString_priv()));
+	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
 ASFUNCTIONBODY_ATOM(URLVariables,_constructor)
@@ -2232,7 +2200,6 @@ ASFUNCTIONBODY_ATOM(URLVariables,_constructor)
 	assert_and_throw(argslen<=1);
 	if(argslen==1)
 		th->decode(args[0].toString(sys));
-	return asAtom::invalidAtom;
 }
 
 tiny_string URLVariables::toString_priv()
@@ -2244,7 +2211,8 @@ tiny_string URLVariables::toString_priv()
 		const tiny_string& name=getNameAt(i);
 		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
 
-		asAtom val=getValueAt(i);
+		asAtom val;
+		getValueAt(val,i);
 		if(val.type==T_ARRAY)
 		{
 			//Print using multiple properties
@@ -2304,7 +2272,7 @@ ASFUNCTIONBODY_ATOM(lightspark,sendToURL)
 	URLInfo url=urlRequest->getRequestURL();
 
 	if(!url.isValid())
-		return asAtom::invalidAtom;
+		return;
 
 	sys->securityManager->checkURLStaticAndThrow(
 		url, 
@@ -2329,7 +2297,6 @@ ASFUNCTIONBODY_ATOM(lightspark,sendToURL)
 	//TODO: make the download asynchronous instead of waiting for an unused response
 	downloader->waitForTermination();
 	sys->downloadManager->destroy(downloader);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
@@ -2339,11 +2306,11 @@ ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
 	ARG_UNPACK_ATOM (request) (window,"");
 
 	if (request.isNull())
-		return asAtom::invalidAtom;
+		return;
 
 	URLInfo url=request->getRequestURL();
 	if(!url.isValid())
-		return asAtom::invalidAtom;
+		return;
 
 	sys->securityManager->checkURLStaticAndThrow(
 		url, 
@@ -2359,12 +2326,10 @@ ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
 	if (!postData.empty())
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "POST requests not supported in navigateToURL");
-		return asAtom::invalidAtom;
+		return;
 	}
 
 	sys->openPageInBrowser(url.getURL(), window);
-
-	return asAtom::invalidAtom;
 }
 
 void Responder::sinit(Class_base* c)
@@ -2380,7 +2345,7 @@ void Responder::finalize()
 	ASATOM_DECREF(status);
 }
 
-ASFUNCTIONBODY_ATOM(Responder, _constructor)
+ASFUNCTIONBODY_ATOM(Responder,_constructor)
 {
 	Responder* th=Class<Responder>::cast(obj.getObject());
 	assert_and_throw(argslen==1 || argslen==2);
@@ -2392,7 +2357,6 @@ ASFUNCTIONBODY_ATOM(Responder, _constructor)
 		ASATOM_INCREF(args[1]);
 		th->status = args[1];
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Responder, onResult)
@@ -2400,9 +2364,8 @@ ASFUNCTIONBODY_ATOM(Responder, onResult)
 	Responder* th=Class<Responder>::cast(obj.getObject());
 	assert_and_throw(argslen==1);
 	asAtom arg0 = args[0];
-	asAtom ret=th->result.callFunction(asAtom::nullAtom, &arg0, argslen,false);
+	th->result.callFunction(ret,asAtom::nullAtom, &arg0, argslen,false);
 	ASATOM_DECREF(ret);
-	return asAtom::invalidAtom;
 }
 
 LocalConnection::LocalConnection(Class_base* c):
@@ -2425,14 +2388,13 @@ void LocalConnection::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER(LocalConnection, isSupported);
 ASFUNCTIONBODY_GETTER_SETTER(LocalConnection, client);
 
-ASFUNCTIONBODY_ATOM(LocalConnection, _constructor)
+ASFUNCTIONBODY_ATOM(LocalConnection,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	LocalConnection* th=Class<LocalConnection>::cast(obj.getObject());
 	th->incRef();
 	th->client = _NR<LocalConnection>(th);
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, domain)
 {
@@ -2442,37 +2404,32 @@ ASFUNCTIONBODY_ATOM(LocalConnection, domain)
 	
 	if (res.empty())
 		res = "localhost";
-	return asAtom::fromString(sys,res);
+	ret = asAtom::fromString(sys,res);
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, allowDomain)
 {
 	//LocalConnection* th=obj.as<LocalConnection>();
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowDomain is not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, allowInsecureDomain)
 {
 	//LocalConnection* th=obj.as<LocalConnection>();
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowInsecureDomain is not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, send)
 {
 	//LocalConnection* th=obj.as<LocalConnection>();
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::send is not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, connect)
 {
 	//LocalConnection* th=obj.as<LocalConnection>();
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::connect is not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, close)
 {
 	//LocalConnection* th=obj.as<LocalConnection>();
 	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::close is not implemented");
-	return asAtom::invalidAtom;
 }
 
 NetGroup::NetGroup(Class_base* c):
@@ -2485,12 +2442,11 @@ void NetGroup::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(NetGroup, _constructor)
+ASFUNCTIONBODY_ATOM(NetGroup,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	//NetGroup* th=Class<NetGroup>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
-	return asAtom::invalidAtom;
 }
 
 FileReference::FileReference(Class_base* c):
@@ -2503,12 +2459,11 @@ void FileReference::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(FileReference, _constructor)
+ASFUNCTIONBODY_ATOM(FileReference,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	//FileReference* th=Class<FileReference>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"FileReference is not implemented");
-	return asAtom::invalidAtom;
 }
 
 FileFilter::FileFilter(Class_base* c):
@@ -2527,11 +2482,10 @@ ASFUNCTIONBODY_GETTER_SETTER(FileFilter, description);
 ASFUNCTIONBODY_GETTER_SETTER(FileFilter, extension);
 ASFUNCTIONBODY_GETTER_SETTER(FileFilter, macType);
 
-ASFUNCTIONBODY_ATOM(FileFilter, _constructor)
+ASFUNCTIONBODY_ATOM(FileFilter,_constructor)
 {
 	FileFilter* th = obj.as<FileFilter>();
 	ARG_UNPACK_ATOM(th->description)(th->extension)(th->macType,"");
-	return asAtom::invalidAtom;
 }
 
 ASSocket::ASSocket(Class_base* c):
@@ -2544,12 +2498,11 @@ void ASSocket::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(ASSocket, _constructor)
+ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	//ASSocket* th=Class<ASSocket>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
-	return asAtom::invalidAtom;
 }
 
 DRMManager::DRMManager(Class_base* c):
@@ -2571,7 +2524,6 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 	ASATOM_INCREF(args[1]);
 	_R<Class_base> c=_MR(args[1].as<Class_base>());
 	sys->aliasMap.insert(make_pair(arg0, c));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
@@ -2582,5 +2534,5 @@ ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 	if(it==sys->aliasMap.end())
 		throwError<ReferenceError>(kClassNotFoundError, arg0);
 	it->second->incRef();
-	return asAtom::fromObject(it->second.getPtr());
+	ret = asAtom::fromObject(it->second.getPtr());
 }

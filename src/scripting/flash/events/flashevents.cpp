@@ -121,11 +121,10 @@ ASFUNCTIONBODY_ATOM(Event,_constructor)
 {
 	// Event constructor is called with zero arguments internally
 	if(argslen==0)
-		return asAtom::invalidAtom;
+		return;
 
 	Event* th=obj.as<Event>();
 	ARG_UNPACK_ATOM(th->type)(th->bubbles, false)(th->cancelable, false);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER(Event,currentTarget);
@@ -138,14 +137,13 @@ ASFUNCTIONBODY_GETTER(Event,cancelable);
 ASFUNCTIONBODY_ATOM(Event,_isDefaultPrevented)
 {
 	Event* th=obj.as<Event>();
-	return asAtom(th->defaultPrevented);
+	ret.setBool(th->defaultPrevented);
 }
 
 ASFUNCTIONBODY_ATOM(Event,_preventDefault)
 {
 	Event* th=obj.as<Event>();
 	th->defaultPrevented = true;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Event,formatToString)
@@ -166,13 +164,14 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s_id=sys->getUniqueStringId(prop);
 		propName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
-		asAtom value=th->getVariableByMultiname(propName);
+		asAtom value;
+		th->getVariableByMultiname(value,propName);
 		if (value.type != T_INVALID)
 			msg += value.toString(sys);
 	}
 	msg += "]";
 
-	return asAtom::fromObject(abstract_s(sys,msg));
+	ret = asAtom::fromObject(abstract_s(sys,msg));
 }
 
 Event* Event::cloneImpl() const
@@ -183,20 +182,18 @@ Event* Event::cloneImpl() const
 ASFUNCTIONBODY_ATOM(Event,clone)
 {
 	Event* th=obj.as<Event>();
-	return asAtom::fromObject(th->cloneImpl());
+	ret = asAtom::fromObject(th->cloneImpl());
 }
 
 ASFUNCTIONBODY_ATOM(Event,stopPropagation)
 {
 	//Event* th=obj.as<Event>();
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 {
 	//Event* th=obj.as<Event>();
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented");
-	return asAtom::invalidAtom;
 }
 
 void WaitableEvent::wait()
@@ -241,8 +238,7 @@ void FocusEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(FocusEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 MouseEvent::MouseEvent(Class_base* c)
@@ -293,13 +289,11 @@ ASFUNCTIONBODY_ATOM(ProgressEvent,_constructor)
 {
 	ProgressEvent* th=obj.as<ProgressEvent>();
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
 		th->bytesLoaded=args[3].toInt();
 	if(argslen>=5)
 		th->bytesTotal=args[4].toInt();
-
-	return asAtom::invalidAtom;
 }
 
 void TimerEvent::sinit(Class_base* c)
@@ -312,7 +306,6 @@ void TimerEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(TimerEvent,updateAfterEvent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TimerEvent::updateAfterEvent not implemented");
-	return asAtom::invalidAtom;
 }
 
 void MouseEvent::sinit(Class_base* c)
@@ -347,7 +340,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
 		th->localX=args[3].toNumber();
 	if(argslen>=5)
@@ -377,8 +370,6 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 	// TODO: args[13] = clickCount
 	if(argslen>=14)
 		LOG(LOG_NOT_IMPLEMENTED,"MouseEvent: clickcount");
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,relatedObject);
@@ -403,7 +394,6 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return asAtom::invalidAtom; 
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
@@ -420,64 +410,58 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
-	return asAtom::invalidAtom; 
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_altKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
-	return asAtom((bool)(th->modifiers & KMOD_ALT));
+	ret.setBool((bool)(th->modifiers & KMOD_ALT));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_altKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
 	th->modifiers |= KMOD_ALT;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_controlKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
-	return asAtom((bool)(th->modifiers & KMOD_CTRL));
+	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_controlKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
 	th->modifiers |= KMOD_CTRL;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_ctrlKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
-	return asAtom((bool)(th->modifiers & KMOD_CTRL));
+	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_ctrlKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
 	th->modifiers |= KMOD_CTRL;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_shiftKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
-	return asAtom((bool)(th->modifiers & KMOD_SHIFT));
+	ret.setBool((bool)(th->modifiers & KMOD_SHIFT));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_shiftKey)
 {
 	MouseEvent* th=obj.as<MouseEvent>();
 	th->modifiers |= KMOD_SHIFT;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(MouseEvent,updateAfterEvent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"MouseEvent::updateAfterEvent not implemented");
-	return asAtom::invalidAtom;
 }
 
 void MouseEvent::buildTraits(ASObject* o)
@@ -521,9 +505,8 @@ ASFUNCTIONBODY_ATOM(NativeDragEvent,_constructor)
 {
 	//NativeDragEvent* th=obj.as<NativeDragEvent>();
 	uint32_t baseClassArgs=imin(argslen,6);
-	MouseEvent::_constructor(sys,obj,args,baseClassArgs);
+	MouseEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 	LOG(LOG_NOT_IMPLEMENTED,"NativeDragEvent: constructor");
-	return asAtom::invalidAtom;
 }
 
 IOErrorEvent::IOErrorEvent(Class_base* c,const tiny_string& t, const std::string& e, int id) : ErrorEvent(c, t,e,id)
@@ -587,7 +570,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
-		return asAtom::invalidAtom;
+		return;
 
 	bool useCapture=false;
 	int32_t priority=0;
@@ -618,15 +601,13 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 {
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	const tiny_string& eventName=args[0].toString(sys);
-	bool ret=th->hasEventListener(eventName);
-	return asAtom(ret);
+	ret.setBool(th->hasEventListener(eventName));
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
@@ -634,7 +615,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	
 	if (args[1].type == T_NULL) // it seems that null is allowed as function
-		return asAtom::invalidAtom;
+		return;
 	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
@@ -650,7 +631,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		if(h==th->handlers.end())
 		{
 			LOG(LOG_CALLS,_("Event not found"));
-			return asAtom::invalidAtom;
+			return;
 		}
 
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
@@ -672,29 +653,35 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		th->incRef();
 		th->getSystemState()->unregisterFrameListener(_MR(th->as<DisplayObject>()));
 	}
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	if(!args[0].is<Event>())
-		return asAtom::falseAtom;
+	{
+		ret.setBool(false);
+		return;
+	}
 
 	ASATOM_INCREF(args[0]);
 	_R<Event> e=_MR(Class<Event>::cast(args[0].getObject()));
 
 	// Must call the AS getter, because the getter may have been
 	// overridden
-	asAtom target = e->getVariableByMultiname("target", {""});
+	asAtom target;
+	e->getVariableByMultiname(target,"target", {""});
 	if(target.type != T_INVALID && target.type != T_NULL && target.type != T_UNDEFINED)
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
-		asAtom cloned = e->executeASMethod("clone", {""}, NULL, 0);
+		asAtom cloned;
+		e->executeASMethod(cloned,"clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
 		if(!cloned.getObject() || !cloned.getObject()->is<Event>())
-			return asAtom::falseAtom;
+		{
+			ret.setBool(false);
+			return;
+		}
 
 		ASATOM_INCREF(cloned);
 		e = _MR(cloned.getObject()->as<Event>());
@@ -703,7 +690,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 		e->setTarget(th->forcedTarget);
 	th->incRef();
 	ABCVm::publicHandleEvent(_MR(th), e);
-	return asAtom::trueAtom;
+	ret.setBool(true);
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
@@ -719,7 +706,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 			throw Class<ArgumentError>::getInstanceS(sys,"Wrong argument for EventDispatcher");
 	}
 	th->forcedTarget=forcedTarget;
-	return asAtom::invalidAtom;
 }
 
 void EventDispatcher::handleEvent(_R<Event> e)
@@ -749,7 +735,8 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		//If the f is a class method, the 'this' is ignored
 		asAtom arg0= asAtom::fromObject(e.getPtr());
 		asAtom v = asAtom::fromObject(this);
-		asAtom ret=tmpListener[i].f.callFunction(v,&arg0,1,false);
+		asAtom ret;
+		tmpListener[i].f.callFunction(ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
@@ -785,13 +772,13 @@ ASFUNCTIONBODY_ATOM(NetStatusEvent,_constructor)
 {
 	//Also call the base class constructor, using only the first arguments
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	asAtom info;
 	if(argslen==0)
 	{
 		//Called from C++ code, info was set in the C++
 		//constructor
-		return asAtom::invalidAtom;
+		return;
 	}
 	else if(argslen==4)
 	{
@@ -810,7 +797,6 @@ ASFUNCTIONBODY_ATOM(NetStatusEvent,_constructor)
 	infoName.ns.push_back(nsNameAndKind());
 	infoName.isAttribute = false;
 	obj.getObject()->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
-	return asAtom::invalidAtom;
 }
 
 Event* NetStatusEvent::cloneImpl() const
@@ -826,7 +812,8 @@ Event* NetStatusEvent::cloneImpl() const
 	infoName.ns.push_back(nsNameAndKind());
 	infoName.isAttribute = false;
 
-	asAtom info = const_cast<NetStatusEvent*>(this)->getVariableByMultiname(infoName);
+	asAtom info;
+	const_cast<NetStatusEvent*>(this)->getVariableByMultiname(info,infoName);
 	assert(info.type != T_INVALID);
 	ASATOM_INCREF(info);
 	clone->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
@@ -847,8 +834,7 @@ void FullScreenEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 KeyboardEvent::KeyboardEvent(Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers)
@@ -876,7 +862,7 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
 	KeyboardEvent* th=obj.as<KeyboardEvent>();
 
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	if(argslen > 3) {
 		th->charCode = args[3].toUInt();
@@ -908,7 +894,6 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
 		if (ArgumentConversionAtom<bool>::toConcrete(sys,args[10],false))
 			LOG(LOG_NOT_IMPLEMENTED,"KeyboardEvent:commandKeyValue");
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, charCode);
@@ -918,65 +903,60 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	return asAtom((bool)(th->modifiers & KMOD_ALT));
+	ret.setBool((bool)(th->modifiers & KMOD_ALT));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_ALT;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_commandKey)
 {
 	// Supported only on OSX
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
 {
 	// Supported only on OSX
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	return asAtom((bool)(th->modifiers & KMOD_CTRL));
+	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	return asAtom((bool)(th->modifiers & KMOD_CTRL));
+	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_CTRL;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	return asAtom((bool)(th->modifiers & KMOD_SHIFT));
+	ret.setBool((bool)(th->modifiers & KMOD_SHIFT));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
 	th->modifiers |= KMOD_SHIFT;
-	return asAtom::invalidAtom;
 }
 
 Event* KeyboardEvent::cloneImpl() const
@@ -1009,10 +989,9 @@ ASFUNCTIONBODY_ATOM(TextEvent,_constructor)
 {
 	TextEvent* th=obj.as<TextEvent>();
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
 		th->text=args[3].toString(sys);
-	return asAtom::invalidAtom;
 }
 
 ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e, int id): TextEvent(c,t), errorMsg(e),errorID(id)
@@ -1036,10 +1015,9 @@ ASFUNCTIONBODY_ATOM(ErrorEvent,_constructor)
 {
 	ErrorEvent* th=obj.as<ErrorEvent>();
 	uint32_t baseClassArgs=imin(argslen,4);
-	TextEvent::_constructor(sys,obj,args,baseClassArgs);
+	TextEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=5)
 		th->errorID=args[4].toInt();
-	return asAtom::invalidAtom;
 }
 
 SecurityErrorEvent::SecurityErrorEvent(Class_base* c, const std::string& e):ErrorEvent(c, "securityError",e)
@@ -1065,8 +1043,7 @@ void AsyncErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AsyncErrorEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,4);
-	ErrorEvent::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	ErrorEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 
@@ -1083,8 +1060,7 @@ void UncaughtErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(UncaughtErrorEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,4);
-	ErrorEvent::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	ErrorEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(NULL, "ABCContextInitEvent"),context(c),lazy(l)
@@ -1104,8 +1080,7 @@ void HTTPStatusEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):
@@ -1182,15 +1157,13 @@ ASFUNCTIONBODY_GETTER_SETTER(DataEvent, data);
 ASFUNCTIONBODY_ATOM(DataEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	TextEvent::_constructor(sys,obj,args,baseClassArgs);
+	TextEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	DataEvent* th=obj.as<DataEvent>();
 	if (argslen >= 4)
 	{
 		th->data = args[3].toString(sys);
 	}
-
-	return asAtom::invalidAtom;
 }
 
 Event* DataEvent::cloneImpl() const
@@ -1215,8 +1188,7 @@ void InvokeEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(InvokeEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
-	return asAtom::invalidAtom;
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
 DRMErrorEvent::DRMErrorEvent(Class_base* c) : ErrorEvent(c, "drmAuthenticate")
@@ -1233,10 +1205,9 @@ void DRMErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(DRMErrorEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	ErrorEvent::_constructor(sys,obj,args,baseClassArgs);
+	ErrorEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen > 3)
 		LOG(LOG_NOT_IMPLEMENTED, "DRMErrorEvent constructor doesn't support all parameters");
-	return asAtom::invalidAtom;
 }
 
 DRMStatusEvent::DRMStatusEvent(Class_base* c) : Event(c, "drmAuthenticate")
@@ -1252,10 +1223,9 @@ void DRMStatusEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(DRMStatusEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen > 3)
 		LOG(LOG_NOT_IMPLEMENTED, "DRMStatusEvent constructor doesn't support all parameters");
-	return asAtom::invalidAtom;
 }
 
 VideoEvent::VideoEvent(Class_base* c)
@@ -1276,15 +1246,13 @@ void VideoEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(VideoEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	VideoEvent* th=obj.as<VideoEvent>();
 	if(argslen>=4)
 	{
 		th->status=args[3].toString(sys);
 	}
-
-	return asAtom::invalidAtom;
 }
 
 Event* VideoEvent::cloneImpl() const
@@ -1318,7 +1286,7 @@ void StageVideoEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(StageVideoEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	StageVideoEvent* th=obj.as<StageVideoEvent>();
 	if(argslen>=4)
@@ -1329,8 +1297,6 @@ ASFUNCTIONBODY_ATOM(StageVideoEvent,_constructor)
 	{
 		th->colorSpace=args[4].toString(sys);
 	}
-
-	return asAtom::invalidAtom;
 }
 
 Event* StageVideoEvent::cloneImpl() const
@@ -1361,18 +1327,16 @@ void StageVideoAvailabilityEvent::sinit(Class_base* c)
 	REGISTER_GETTER(c, availability);
 }
 
-ASFUNCTIONBODY_ATOM(StageVideoAvailabilityEvent, _constructor)
+ASFUNCTIONBODY_ATOM(StageVideoAvailabilityEvent,_constructor)
 {
 	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(sys,obj,args,baseClassArgs);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	StageVideoAvailabilityEvent* th=obj.as<StageVideoAvailabilityEvent>();
 	if(argslen>=4)
 	{
 		th->availability = args[3].toString(sys);
 	}
-	
-	return asAtom::invalidAtom;
 }
 
 Event* StageVideoAvailabilityEvent::cloneImpl() const
@@ -1441,10 +1405,9 @@ void UncaughtErrorEvents::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(UncaughtErrorEvents, _constructor)
+ASFUNCTIONBODY_ATOM(UncaughtErrorEvents,_constructor)
 {
 	//EventDispatcher::_constructor(obj, NULL, 0);
 	//UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"UncaughtErrorEvents is not implemented");
-	return asAtom::invalidAtom;
 }

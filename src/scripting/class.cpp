@@ -73,13 +73,12 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 	subtype = SUBTYPE_INHERIT;
 }
 
-asAtom Class_inherit::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	//We override the classdef
 	if(realClass==NULL)
 		realClass=this;
 
-	asAtom ret;
 	if(tag)
 	{
 		ret=asAtom::fromObject(tag->instance(realClass));
@@ -88,11 +87,10 @@ asAtom Class_inherit::getInstance(bool construct, asAtom* args, const unsigned i
 	{
 		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
-		ret=super->getInstance(false,NULL,0,realClass);
+		super->getInstance(ret,false,NULL,0,realClass);
 	}
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
-	return ret;
 }
 void Class_inherit::recursiveBuild(ASObject* target) const
 {
@@ -146,10 +144,9 @@ void Class_inherit::describeClassMetadata(pugi::xml_node &root) const
 
 
 template<>
-asAtom Class<Global>::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	throwError<TypeError>(kConstructOfNonFunctionError);
-	return asAtom::invalidAtom;
 }
 
 void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
@@ -185,7 +182,7 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 	}
 }
 
-asAtom Class<ASObject>::getInstance(bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
@@ -199,17 +196,17 @@ asAtom Class<ASObject>::getInstance(bool construct, asAtom* args, const unsigned
 			case T_STRING:
 			case T_FUNCTION:
 			case T_OBJECT:
-				return args[0];
+				ret = args[0];
+				return;
 			default:
 				break;
 		}
 	}
 	if(realClass==NULL)
 		realClass=this;
-	asAtom ret=asAtom::fromObject(new (realClass->memoryAccount) ASObject(realClass));
+	ret=asAtom::fromObject(new (realClass->memoryAccount) ASObject(realClass));
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
-	return ret;
 }
 Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {

@@ -65,57 +65,60 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getPlayerType)
 	switch (sys->flashMode)
 	{
 		case SystemState::AVMPLUS:
-			return asAtom::fromString(sys,"AVMPlus");
+			ret = asAtom::fromString(sys,"AVMPlus");
+			break;
 		case SystemState::AIR:
-			return asAtom::fromString(sys,"Desktop");
+			ret = asAtom::fromString(sys,"Desktop");
+			break;
 		default:
-			return asAtom::fromString(sys,"PlugIn");
+			ret = asAtom::fromString(sys,"PlugIn");
+			break;
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getLanguage)
 {
-	return asAtom::fromString(sys,"en");
+	ret = asAtom::fromString(sys,"en");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getCPUArchitecture)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.cpuArchitecture is not implemented");
-	return asAtom::fromString(sys,"x86");
+	ret = asAtom::fromString(sys,"x86");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getIsDebugger)
 {
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getIsEmbeddedInAcrobat)
 {
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getLocalFileReadDisable)
 {
-	return asAtom::trueAtom;
+	ret.setBool(true);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getManufacturer)
 {
-	return asAtom::fromString(sys,MANUFACTURER);
+	ret = asAtom::fromString(sys,MANUFACTURER);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getOS)
 {
 #ifdef _WIN32
-	return asAtom::fromString(sys,"Windows");
+	ret = asAtom::fromString(sys,"Windows");
 #else
-	return asAtom::fromString(sys,"Linux");
+	ret = asAtom::fromString(sys,"Linux");
 #endif
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
 {
-	return asAtom::fromString(sys,EMULATED_VERSION);
+	ret = asAtom::fromString(sys,EMULATED_VERSION);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
@@ -171,31 +174,33 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 	supports DTS-HD High Resolution Audio	DTH
 	supports DTS-HD Master Audio	DTM
 	*/
-	return asAtom::fromString(sys,res);
+	ret = asAtom::fromString(sys,res);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
 	if (!sys->getEngineData()->getScreenData(&screen))
-		return asAtom(0);
-	return asAtom(screen.w);
+		ret.setInt(0);
+	else
+		ret.setInt(screen.w);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionY)
 {
 	SDL_DisplayMode screen;
 	if (!sys->getEngineData()->getScreenData(&screen))
-		return asAtom(0);
-	return asAtom(screen.h);
+		ret.setInt(0);
+	else
+		ret.setInt(screen.h);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
 	number_t dpi = sys->getEngineData()->getScreenDPI();
-	return asAtom(dpi);
+	ret.setNumber(dpi);
 }
 
 ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)
@@ -243,24 +248,23 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 	if(!th->parentDomain.isNull())
 		// Don't override parentDomain if it was set in the
 		// C++ constructor
-		return asAtom::invalidAtom;
+		return;
 	else if(parentDomain.isNull())
 		th->parentDomain =  sys->systemDomain;
 	else
 		th->parentDomain = parentDomain;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	return asAtom((uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
+	ret.setUInt((uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> ret=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
-	ret->incRef();
-	return asAtom::fromObject(ret.getPtr());
+	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+	res->incRef();
+	ret = asAtom::fromObject(res.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
@@ -281,16 +285,19 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	asAtom o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
+	asAtom o;
+	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(o,name,target);
 	if(o.type == T_INVALID)
-		return asAtom::falseAtom;
+		ret.setBool(false);
 	else
 	{
 		if(o.type!=T_CLASS)
-			return asAtom::falseAtom;
-
-		LOG(LOG_CALLS,_("Found definition for ") << name);
-		return asAtom::trueAtom;
+			ret.setBool(false);
+		else
+		{
+			LOG(LOG_CALLS,_("Found definition for ") << name);
+			ret.setBool(true);
+		}
 	}
 }
 
@@ -312,16 +319,15 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	asAtom o=th->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
-	if(o.type == T_INVALID)
+	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
+	if(ret.type == T_INVALID)
 		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
 
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
-	ASATOM_INCREF(o);
-	return o;
+	ASATOM_INCREF(ret);
 }
 
 void ApplicationDomain::registerGlobalScope(Global* scope)
@@ -344,7 +350,9 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 		name.name_s_id=getSystemState()->getUniqueStringId(str.substr(index+1));
 		name.ns.push_back(nsNameAndKind(getSystemState(),str.substr(0,index),NAMESPACE));
 	}
-	return getVariableAndTargetByMultiname(name, target).toObject(getSystemState());
+	asAtom ret;
+	getVariableAndTargetByMultiname(ret,name, target);
+	return ret.toObject(getSystemState());
 }
 
 bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target)
@@ -369,33 +377,32 @@ bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& 
 	return false;
 }
 
-asAtom ApplicationDomain::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target)
 {
 	//Check in the parent first
 	if(!parentDomain.isNull())
 	{
-		asAtom ret=parentDomain->getVariableAndTargetByMultiname(name, target);
+		parentDomain->getVariableAndTargetByMultiname(ret,name, target);
 		if(ret.type != T_INVALID)
-			return ret;
+			return;
 	}
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		asAtom o=globalScopes[i]->getVariableByMultiname(name);
-		if(o.type != T_INVALID)
+		globalScopes[i]->getVariableByMultiname(ret,name);
+		if(ret.type != T_INVALID)
 		{
 			target=globalScopes[i];
 			// No incRef, return a reference borrowed from globalScopes
-			return o;
+			return;
 		}
 	}
-	return asAtom::invalidAtom;
 }
-asAtom ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target)
+void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target)
 {
-	asAtom ret = getVariableAndTargetByMultiname(name, target);
+	getVariableAndTargetByMultiname(ret,name, target);
 	if (ret.type != T_INVALID)
-		return ret;
+		return;
 	if (name.ns.size() >= 1 && name.ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 	{
 		tiny_string s = getSystemState()->getStringFromUniqueId(name.name_s_id);
@@ -418,17 +425,16 @@ asAtom ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses
 				tn.ns.push_back(nsNameAndKind(getSystemState(),vtype.substr_bytes(0,lastpos),NAMESPACE));
 			}
 			ASObject* tntarget;
-			asAtom typeobj = getVariableAndTargetByMultiname(tn, tntarget);
+			asAtom typeobj;
+			getVariableAndTargetByMultiname(typeobj,tn, tntarget);
 			if (typeobj.type != T_INVALID)
 			{
 				const Type* t = typeobj.getObject()->as<Type>();
 				this->incRef();
-				return asAtom::fromObject(Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr());
+				ret = asAtom::fromObject(Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr());
 			}
 		}
-
 	}
-	return asAtom::invalidAtom;
 }
 ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
 {
@@ -442,7 +448,8 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		asAtom o=globalScopes[i]->getVariableByMultinameOpportunistic(name);
+		asAtom o;
+		globalScopes[i]->getVariableByMultinameOpportunistic(o,name);
 		if(o.type != T_INVALID)
 		{
 			// No incRef, return a reference borrowed from globalScopes
@@ -492,7 +499,6 @@ ASFUNCTIONBODY_ATOM(LoaderContext,_constructor)
 	ARG_UNPACK_ATOM (th->checkPolicyFile, false)
 		(th->applicationDomain, NullRef)
 		(th->securityDomain, NullRef);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport);
@@ -525,14 +531,13 @@ void SecurityDomain::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(SecurityDomain,_constructor)
 {
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> ret=ABCVm::getCurrentSecurityDomain(getVm(sys)->currentCallContext);
-	ret->incRef();
-	return asAtom::fromObject(ret.getPtr());
+	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(getVm(sys)->currentCallContext);
+	res->incRef();
+	ret = asAtom::fromObject(res.getPtr());
 }
 
 void Security::sinit(Class_base* c)
@@ -557,7 +562,7 @@ void Security::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Security,_getExactSettings)
 {
-	return asAtom(sys->securityManager->getExactSettings());
+	ret.setBool(sys->securityManager->getExactSettings());
 }
 
 ASFUNCTIONBODY_ATOM(Security,_setExactSettings)
@@ -568,33 +573,30 @@ ASFUNCTIONBODY_ATOM(Security,_setExactSettings)
 		throw Class<SecurityError>::getInstanceS(sys,"SecurityError: Security.exactSettings already set");
 	}
 	sys->securityManager->setExactSettings(args[0].Boolean_concrete());
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Security,_getSandboxType)
 {
 	if(sys->securityManager->getSandboxType() == SecurityManager::REMOTE)
-		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::REMOTE));
+		ret = asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::REMOTE));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
-		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
+		ret = asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
+		ret = asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
-		return asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
-	assert(false);
-	return asAtom::invalidAtom;
+		ret = asAtom::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
+	else
+		assert_and_throw(false);
 }
 
 ASFUNCTIONBODY_ATOM(Security, allowDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowDomain"));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Security, allowInsecureDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowInsecureDomain"));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
@@ -603,19 +605,17 @@ ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
 	LOG(LOG_INFO, "Loading policy file: " << sys->mainClip->getOrigin().goToURL(url));
 	sys->securityManager->addPolicyFile(sys->mainClip->getOrigin().goToURL(url));
 	assert_and_throw(argslen == 1);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Security, showSettings)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::showSettings"));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Security, pageDomain)
 {
 	tiny_string s = sys->mainClip->getBaseURL().getProtocol()+"://"+sys->mainClip->getBaseURL().getHostname();
-	return asAtom::fromString(sys,s);
+	ret = asAtom::fromString(sys,s);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark, fscommand)
@@ -627,7 +627,6 @@ ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 	{
 		sys->setShutdownFlag();
 	}
-	return asAtom::invalidAtom;
 }
 
 
@@ -643,7 +642,7 @@ void System::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	return asAtom(1024);
+	ret.setUInt(1024);
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {
@@ -658,19 +657,17 @@ ASFUNCTIONBODY_ATOM(System,disposeXML)
 			l->removeNode(xmlobj.getPtr());
 		parent->decRef();
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(System,pauseForGCIfCollectionImminent)
 {
 	number_t imminence;
 	ARG_UNPACK_ATOM (imminence,0.75);
 	LOG(LOG_NOT_IMPLEMENTED, "System.pauseForGCIfCollectionImminent not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(System,gc)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.gc not implemented");
-	return asAtom::invalidAtom;
+	ret.setUndefined();
 }
 
 ASWorker::ASWorker(Class_base* c):
@@ -688,12 +685,12 @@ void ASWorker::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
-	return asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
+	ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }
 ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Worker.getSharedProperty not implemented");
-	return asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
+	ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }
 
 void ImageDecodingPolicy::sinit(Class_base* c)

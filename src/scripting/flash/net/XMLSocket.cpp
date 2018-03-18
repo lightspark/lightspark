@@ -202,14 +202,14 @@ void XMLSocket::finalize()
 
 ASFUNCTIONBODY_GETTER_SETTER(XMLSocket, timeout);
 
-ASFUNCTIONBODY_ATOM(XMLSocket, _constructor)
+ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 {
 	tiny_string host;
 	bool host_is_null;
 	int port;
 	ARG_UNPACK_ATOM (host, "") (port, 0);
 
-	EventDispatcher::_constructor(sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 
 	XMLSocket* th=obj.as<XMLSocket>();
 	host_is_null = argslen > 0 && args[0].is<Null>();
@@ -220,8 +220,6 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _constructor)
 		else if (!host.empty())
 			th->connect(host, port);
 	}
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _close)
@@ -233,8 +231,6 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 	{
 		th->job->requestClose();
 	}
-
-	return asAtom::invalidAtom;
 }
 
 void XMLSocket::connect(tiny_string host, int port)
@@ -291,8 +287,6 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
 		th->connect("", port);
 	else
 		th->connect(host, port);
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _send)
@@ -310,8 +304,6 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 	{
 		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
 	}
-
-	return asAtom::invalidAtom;
 }
 
 bool XMLSocket::isConnected()
@@ -323,7 +315,7 @@ bool XMLSocket::isConnected()
 ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
 {
 	XMLSocket* th=obj.as<XMLSocket>();
-	return asAtom(th->isConnected());
+	ret.setBool(th->isConnected());
 }
 
 void XMLSocket::threadFinished()

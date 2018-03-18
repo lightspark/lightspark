@@ -95,7 +95,7 @@ public:
 	ASFUNCTION_ATOM(_propertyIsEnumerable);
 	ASFUNCTION_ATOM(_prependChild);
 	ASFUNCTION_ATOM(_hasOwnProperty);
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt);
+	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	bool deleteVariableByMultiname(const multiname& name);
@@ -114,8 +114,8 @@ public:
 	number_t toNumber();
 	bool isEqual(ASObject* r);
 	uint32_t nextNameIndex(uint32_t cur_index);
-	asAtom nextName(uint32_t index);
-	asAtom nextValue(uint32_t index);
+	void nextName(asAtom &ret, uint32_t index);
+	void nextValue(asAtom &ret, uint32_t index);
 	_R<XML> reduceToXML() const;
 	void appendNodesTo(XML *dest) const;
 	void prependNodesTo(XML *dest) const;

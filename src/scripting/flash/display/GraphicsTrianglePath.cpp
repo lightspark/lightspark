@@ -52,14 +52,13 @@ void GraphicsTrianglePath::finalize()
 	vertices.reset();
 }
 
-ASFUNCTIONBODY_ATOM(GraphicsTrianglePath, _constructor)
+ASFUNCTIONBODY_ATOM(GraphicsTrianglePath,_constructor)
 {
 	GraphicsTrianglePath* th = obj.as<GraphicsTrianglePath>();
 	ARG_UNPACK_ATOM (th->vertices, NullRef)
 		(th->indices, NullRef)
 		(th->uvtData, NullRef)
 		(th->culling, "none");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, culling);

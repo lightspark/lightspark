@@ -111,7 +111,7 @@ public:
 	bool hasOptional() { return info.hasOptional(); }
 	bool hasDXNS() { return info.hasDXNS(); }
 	bool hasParamNames() { return info.hasParamNames(); }
-	asAtom getOptional(unsigned int i);
+	void getOptional(asAtom &ret, unsigned int i);
 	uint32_t numOptions() { return info.option_count; }
 	uint32_t numArgs() { return info.param_count; }
 	const multiname* paramTypeName(uint32_t i) const;
@@ -162,7 +162,7 @@ public:
 	static multiname* s_getMultiname(ABCContext*, asAtom& rt1, ASObject* rt2, int m);
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
-	asAtom getConstant(int kind, int index);
+	void getConstant(asAtom& ret, int kind, int index);
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -334,7 +334,7 @@ private:
 	static void newClass(call_context* th, int n);
 	static void newArray(call_context* th, int n); 
 	static ASObject* findPropStrict(call_context* th, multiname* name);
-	static asAtom findPropStrictCache(call_context* th, preloadedcodedata **codep);
+	static void findPropStrictCache(asAtom & ret, call_context* th, preloadedcodedata **codep);
 	static ASObject* findProperty(call_context* th, multiname* name);
 	static int32_t pushByte(intptr_t n);
 	static int32_t pushShort(intptr_t n);
@@ -346,7 +346,6 @@ private:
 	static void decLocal_i(call_context* th, int n);
 	static void decLocal(call_context* th, int n);
 	static void coerce(call_context* th, int n);
-	static void checkDeclaredTraits(ASObject* obj);
 	static ASObject* getProperty(ASObject* obj, multiname* name);
 	static int32_t getProperty_i(ASObject* obj, multiname* name);
 	static void setProperty(ASObject* value,ASObject* obj, multiname* name);
@@ -446,7 +445,7 @@ private:
 	static void SetAllClassLinks();
 	static void AddClassLinks(Class_base* target);
 	static bool newClassRecursiveLink(Class_base* target, Class_base* c);
-	static asAtom constructFunction(call_context* th, asAtom& f, asAtom* args, int argslen);
+	static void constructFunction(asAtom & ret, call_context* th, asAtom& f, asAtom* args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 
 	//Opcode tables

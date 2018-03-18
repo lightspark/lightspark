@@ -29,7 +29,10 @@ using namespace lightspark;
 ASFUNCTIONBODY_ATOM(Integer,_toString)
 {
 	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromString(sys,"0");
+	{
+		ret = asAtom::fromString(sys,"0");
+		return;
+	}
 
 	int radix=10;
 	if(argslen==1)
@@ -39,25 +42,28 @@ ASFUNCTIONBODY_ATOM(Integer,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%i",obj.toInt());
-		return asAtom::fromObject(abstract_s(sys,buf));
+		ret = asAtom::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
-		return asAtom::fromObject(abstract_s(sys,s));
+		ret = asAtom::fromObject(abstract_s(sys,s));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
 	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom(0);
+	{
+		ret.setInt(0);
+		return;
+	}
 
 	if(!obj.is<Integer>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
 	ASATOM_INCREF(obj);
-	return obj;
+	ret = obj;
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_constructor)
@@ -66,17 +72,17 @@ ASFUNCTIONBODY_ATOM(Integer,_constructor)
 	if(argslen==0)
 	{
 		//The int is already initialized to 0
-		return asAtom::invalidAtom;
+		return;
 	}
 	th->val=args[0].toInt();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		return asAtom((int32_t)0);
-	return asAtom(args[0].toInt());
+		ret = asAtom((int32_t)0);
+	else
+		ret = asAtom(args[0].toInt());
 }
 
 TRISTATE Integer::isLess(ASObject* o)
@@ -136,7 +142,9 @@ TRISTATE Integer::isLess(ASObject* o)
 			break;
 	}
 	
-	double val2=o->toPrimitive().toNumber();
+	asAtom val2p;
+	o->toPrimitive(val2p);
+	double val2=val2p.toNumber();
 	if(std::isnan(val2)) return TUNDEFINED;
 	return (val<val2)?TTRUE:TFALSE;
 }
@@ -304,21 +312,24 @@ ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
 	}
-	return asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	return asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toPrecision)
 {
 	if (argslen == 0 || args[0].is<Undefined>())
-		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+	{
+		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		return;
+	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	return asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
+	ret = asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
 }

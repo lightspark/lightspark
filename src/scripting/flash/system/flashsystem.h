@@ -73,8 +73,8 @@ public:
 	void registerGlobalScope(Global* scope);
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	bool findTargetByMultiname(const multiname& name, ASObject*& target);
-	asAtom getVariableAndTargetByMultiname(const multiname& name, ASObject*& target);
-	asAtom getVariableAndTargetByMultinameIncludeTemplatedClasses(const multiname& name, ASObject*& target);
+	void getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target);
+	void getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target);
 
 	/*
 	 * This method is an opportunistic resolution operator used by the optimizer:
@@ -153,7 +153,7 @@ public:
 	ASFUNCTION_ATOM(pageDomain);
 };
 
-asAtom fscommand(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
+void fscommand(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
 
 class System: public ASObject
 {

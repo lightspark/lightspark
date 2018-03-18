@@ -99,10 +99,12 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 	switch(target->getObjectType())
 	{
 		case T_NULL:
-			return asAtom::fromString(sys,"null");
+			ret = asAtom::fromString(sys,"null");
+			return;
 		case T_UNDEFINED:
 			// Testing shows that this really returns "void"!
-			return asAtom::fromString(sys,"void");
+			ret = asAtom::fromString(sys,"void");
+			return;
 		case T_CLASS:
 			c=static_cast<Class_base*>(target);
 			break;
@@ -117,14 +119,15 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 				c=target->getClass();
 			break;
 		case T_TEMPLATE:
-			return asAtom::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
+			ret = asAtom::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
+			return;
 		default:
 			assert_and_throw(target->getClass());
 			c=target->getClass();
 			break;
 	}
 
-	return asAtom::fromString(sys,c->getQualifiedClassName());
+	ret = asAtom::fromString(sys,c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
@@ -141,9 +144,9 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 		c=static_cast<Class_base*>(target)->super.getPtr();
 
 	if (!c)
-		return asAtom::nullAtom;
-
-	return asAtom::fromString(sys,c->getQualifiedClassName());
+		ret.setNull();
+	else
+		ret = asAtom::fromString(sys,c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
@@ -162,30 +165,29 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	asAtom o=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(name,target);
+	ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 
-	if(o.type == T_INVALID)
+	if(ret.type == T_INVALID)
 	{
 		throwError<ReferenceError>(kClassNotFoundError, tmp);
 	}
 
-	assert_and_throw(o.type==T_CLASS);
+	assert_and_throw(ret.type==T_CLASS);
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
-	ASATOM_INCREF(o);
-	return o;
+	ASATOM_INCREF(ret);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	return asAtom::fromObject(args[0].toObject(sys)->describeType());
+	ret = asAtom::fromObject(args[0].toObject(sys)->describeType());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
-	uint64_t ret=compat_msectiming() - sys->startTime;
-	return asAtom((int32_t)ret);
+	uint64_t res=compat_msectiming() - sys->startTime;
+	ret.setInt((int32_t)res);
 }
 
 
@@ -208,7 +210,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	//Add interval through manager
 	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
 			asAtom::nullAtom, args[1].toInt());
-	return asAtom((int32_t)id);
+	ret.setInt((int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
@@ -230,32 +232,30 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	//Add timeout through manager
 	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
 			asAtom::nullAtom, args[1].toInt());
-	return asAtom((int32_t)id);
+	ret.setInt((int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
 	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::INTERVAL, true);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
 	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::TIMEOUT, true);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	return asAtom::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtom::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 ASFUNCTIONBODY_ATOM(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	return asAtom::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtom::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }

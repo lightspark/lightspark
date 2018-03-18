@@ -159,11 +159,11 @@ ASFUNCTIONBODY_ATOM(XML,generator)
 	assert_and_throw(argslen<=1);
 	if (argslen == 0)
 	{
-		return asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
+		ret = asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
 	}
 	else if (args[0].is<Null>() || args[0].is<Undefined>())
 	{
-		return asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
+		ret = asAtom::fromObject(Class<XML>::getInstanceSNoArgs(getSys()));
 	}
 	else if(args[0].is<ASString>() ||
 		args[0].is<Number>() ||
@@ -171,26 +171,26 @@ ASFUNCTIONBODY_ATOM(XML,generator)
 		args[0].is<UInteger>() ||
 		args[0].is<Boolean>())
 	{
-		return asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
+		ret = asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
 	}
 	else if(args[0].is<XML>())
 	{
 		ASATOM_INCREF(args[0]);
-		return args[0];
+		ret = args[0];
 	}
 	else if(args[0].is<XMLList>())
 	{
-		_R<XML> ret=args[0].as<XMLList>()->reduceToXML();
-		ret->incRef();
-		return asAtom::fromObject(ret.getPtr());
+		_R<XML> res=args[0].as<XMLList>()->reduceToXML();
+		res->incRef();
+		ret = asAtom::fromObject(res.getPtr());
 	}
 	else if(args[0].is<XMLNode>())
 	{
-		return asAtom::fromObject(createFromNode(args[0].as<XMLNode>()->node));
+		ret = asAtom::fromObject(createFromNode(args[0].as<XMLNode>()->node));
 	}
 	else
 	{
-		return asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
+		ret = asAtom::fromObject(createFromString(getSys(),args[0].toString(sys)));
 	}
 }
 
@@ -199,7 +199,7 @@ ASFUNCTIONBODY_ATOM(XML,_constructor)
 	assert_and_throw(argslen<=1);
 	XML* th=obj.as<XML>();
 	if(argslen==0 && th->constructed) //If root is already set we have been constructed outside AS code
-		return asAtom::invalidAtom;
+		return;
 
 	if(argslen==0 ||
 	   args[0].is<Null>() || 
@@ -244,8 +244,6 @@ ASFUNCTIONBODY_ATOM(XML,_constructor)
 		th->createTree(th->buildFromString(args[0].toString(sys), getParseMode(),
 					     getVm(sys)->getDefaultXMLNamespace()),false);
 	}
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XML,nodeKind)
@@ -253,7 +251,7 @@ ASFUNCTIONBODY_ATOM(XML,nodeKind)
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==0);
 	tiny_string s=th->nodekindString();
-	return asAtom::fromString(sys,s);
+	ret = asAtom::fromString(sys,s);
 }
 const char *XML::nodekindString()
 {
@@ -281,7 +279,7 @@ const char *XML::nodekindString()
 
 ASFUNCTIONBODY_ATOM(XML,length)
 {
-	return asAtom(1);
+	ret.setInt(1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,localName)
@@ -289,9 +287,9 @@ ASFUNCTIONBODY_ATOM(XML,localName)
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==0);
 	if(!th->isAttribute && (th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment || th->nodetype==pugi::node_null))
-		return asAtom::nullAtom;
+		ret.setNull();
 	else
-		return asAtom::fromObject(abstract_s(sys,th->nodename));
+		ret = asAtom::fromObject(abstract_s(sys,th->nodename));
 }
 
 ASFUNCTIONBODY_ATOM(XML,name)
@@ -300,12 +298,12 @@ ASFUNCTIONBODY_ATOM(XML,name)
 	assert_and_throw(argslen==0);
 	//TODO: add namespace
 	if(!th->isAttribute && (th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment || th->nodetype==pugi::node_null))
-		return asAtom::nullAtom;
+		ret.setNull();
 	else
 	{
-		ASQName* ret = Class<ASQName>::getInstanceSNoArgs(sys);
-		ret->setByXML(th);
-		return asAtom::fromObject(ret);
+		ASQName* res = Class<ASQName>::getInstanceSNoArgs(sys);
+		res->setByXML(th);
+		ret = asAtom::fromObject(res);
 	}
 }
 
@@ -314,11 +312,11 @@ ASFUNCTIONBODY_ATOM(XML,descendants)
 	XML* th=obj.as<XML>();
 	_NR<ASObject> name;
 	ARG_UNPACK_ATOM(name,_NR<ASObject>(abstract_s(sys,"*")));
-	XMLVector ret;
+	XMLVector res;
 	multiname mname(NULL);
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].nsNameId : (uint32_t)BUILTIN_STRINGS::EMPTY,mname.isAttribute,ret);
-	return asAtom::fromObject(XMLList::create(sys,ret,th->getChildrenlist(),multiname(NULL)));
+	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].nsNameId : (uint32_t)BUILTIN_STRINGS::EMPTY,mname.isAttribute,res);
+	ret = asAtom::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XML,_appendChild)
@@ -336,7 +334,8 @@ ASFUNCTIONBODY_ATOM(XML,_appendChild)
 		XMLList* list=args[0].as<XMLList>();
 		list->appendNodesTo(th);
 		th->incRef();
-		return asAtom::fromObject(th);
+		ret = asAtom::fromObject(th);
+		return;
 	}
 	else
 	{
@@ -367,7 +366,7 @@ ASFUNCTIONBODY_ATOM(XML,_appendChild)
 
 	th->appendChild(_MR(arg));
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 
 void XML::appendChild(_R<XML> newChild)
@@ -418,13 +417,13 @@ ASFUNCTIONBODY_ATOM(XML,attribute)
 			}
 		}
 	}
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(XML,attributes)
 {
 	assert_and_throw(argslen==0);
-	return asAtom::fromObject(obj.as<XML>()->getAllAttributes());
+	ret = asAtom::fromObject(obj.as<XML>()->getAllAttributes());
 }
 
 XMLList* XML::getAllAttributes()
@@ -726,7 +725,7 @@ ASFUNCTIONBODY_ATOM(XML,toXMLString)
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==0);
 	tiny_string res = th->toXMLString_internal();
-	return asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtom::fromObject(abstract_s(sys,res));
 }
 
 void XML::childrenImpl(XMLVector& ret, const tiny_string& name)
@@ -759,7 +758,7 @@ ASFUNCTIONBODY_ATOM(XML,child)
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0].toString(sys);
-	XMLVector ret;
+	XMLVector res;
 	uint32_t index=0;
 	multiname mname(NULL);
 	mname.name_s_id=sys->getUniqueStringId(arg0);
@@ -767,25 +766,25 @@ ASFUNCTIONBODY_ATOM(XML,child)
 	mname.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mname.isAttribute=false;
 	if(XML::isValidMultiname(sys,mname, index))
-		th->childrenImpl(ret, index);
+		th->childrenImpl(res, index);
 	else
-		th->childrenImpl(ret, arg0);
-	XMLList* retObj=XMLList::create(sys,ret,th->getChildrenlist(),mname);
-	return asAtom::fromObject(retObj);
+		th->childrenImpl(res, arg0);
+	XMLList* retObj=XMLList::create(sys,res,th->getChildrenlist(),mname);
+	ret = asAtom::fromObject(retObj);
 }
 
 ASFUNCTIONBODY_ATOM(XML,children)
 {
 	XML* th=obj.as<XML>();
 	assert_and_throw(argslen==0);
-	XMLVector ret;
-	th->childrenImpl(ret, "*");
+	XMLVector res;
+	th->childrenImpl(res, "*");
 	multiname mname(NULL);
 	mname.name_s_id=BUILTIN_STRINGS::STRING_WILDCARD;
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
-	XMLList* retObj=XMLList::create(sys,ret,th->getChildrenlist(),mname);
-	return asAtom::fromObject(retObj);
+	XMLList* retObj=XMLList::create(sys,res,th->getChildrenlist(),mname);
+	ret = asAtom::fromObject(retObj);
 }
 
 ASFUNCTIONBODY_ATOM(XML,childIndex)
@@ -798,28 +797,31 @@ ASFUNCTIONBODY_ATOM(XML,childIndex)
 		{
 			ASObject* o= parent->childrenlist->nodes[i].getPtr();
 			if (o == th)
-				return asAtom(i);
+			{
+				ret.setUInt(i);
+				return;
+			}
 		}
 	}
-	return asAtom(-1);
+	ret.setInt(-1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_hasSimpleContent)
 {
 	XML *th=obj.as<XML>();
-	return asAtom(th->hasSimpleContent());
+	ret.setBool(th->hasSimpleContent());
 }
 
 ASFUNCTIONBODY_ATOM(XML,_hasComplexContent)
 {
 	XML* th=obj.as<XML>();
-	return asAtom(th->hasComplexContent());
+	ret.setBool(th->hasComplexContent());
 }
 
 ASFUNCTIONBODY_ATOM(XML,valueOf)
 {
 	ASATOM_INCREF(obj);
-	return obj;
+	ret = obj;
 }
 
 void XML::getText(XMLVector& ret)
@@ -842,22 +844,22 @@ ASFUNCTIONBODY_ATOM(XML,text)
 {
 	XML* th=obj.as<XML>();
 	ARG_UNPACK_ATOM;
-	XMLVector ret;
-	th->getText(ret);
-	return asAtom::fromObject(XMLList::create(sys,ret,th->getChildrenlist(),multiname(NULL)));
+	XMLVector res;
+	th->getText(res);
+	ret = asAtom::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
 }
 
 ASFUNCTIONBODY_ATOM(XML,elements)
 {
-	XMLVector ret;
+	XMLVector res;
 	XML* th=obj.as<XML>();
 	tiny_string name;
 	ARG_UNPACK_ATOM (name, "");
 	if (name=="*")
 		name="";
 
-	th->getElementNodes(name, ret);
-	return asAtom::fromObject(XMLList::create(sys,ret,th->getChildrenlist(),multiname(NULL)));
+	th->getElementNodes(name, res);
+	ret = asAtom::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
 }
 
 void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
@@ -900,7 +902,7 @@ ASFUNCTIONBODY_ATOM(XML,inScopeNamespaces)
 		else
 			break;
 	}
-	return asAtom::fromObject(namespaces);
+	ret = asAtom::fromObject(namespaces);
 }
 
 ASFUNCTIONBODY_ATOM(XML,addNamespace)
@@ -934,11 +936,10 @@ ASFUNCTIONBODY_ATOM(XML,addNamespace)
 		if (tmpns->getPrefix(b) == ns_prefix)
 		{
 			th->namespacedefs[i] = _R<Namespace>(Class<Namespace>::getInstanceS(sys,ns_uri,ns_prefix));
-			return asAtom::invalidAtom;
+			return;
 		}
 	}
 	th->namespacedefs.push_back(_R<Namespace>(Class<Namespace>::getInstanceS(sys,ns_uri,ns_prefix)));
-	return asAtom::invalidAtom;
 }
 
 ASObject *XML::getParentNode()
@@ -955,7 +956,7 @@ ASObject *XML::getParentNode()
 ASFUNCTIONBODY_ATOM(XML,parent)
 {
 	XML* th=obj.as<XML>();
-	return asAtom::fromObject(th->getParentNode());
+	ret = asAtom::fromObject(th->getParentNode());
 }
 
 ASFUNCTIONBODY_ATOM(XML,contains)
@@ -964,9 +965,9 @@ ASFUNCTIONBODY_ATOM(XML,contains)
 	_NR<ASObject> value;
 	ARG_UNPACK_ATOM(value);
 	if(!value->is<XML>())
-		return asAtom(false);
-
-	return asAtom(th->isEqual(value.getPtr()));
+		ret.setBool(false);
+	else
+		ret.setBool(th->isEqual(value.getPtr()));
 }
 
 ASFUNCTIONBODY_ATOM(XML,_namespace)
@@ -980,10 +981,14 @@ ASFUNCTIONBODY_ATOM(XML,_namespace)
 	   nodetype!=pugi::node_element && 
 	   !th->isAttribute)
 	{
-		return asAtom::nullAtom;
+		ret.setNull();
+		return;
 	}
 	if (prefix.empty())
-		return asAtom::fromObject(Class<Namespace>::getInstanceS(sys,th->nodenamespace_uri, th->nodenamespace_prefix));
+	{
+		ret = asAtom::fromObject(Class<Namespace>::getInstanceS(sys,th->nodenamespace_uri, th->nodenamespace_prefix));
+		return;
+	}
 		
 	for (uint32_t i = 0; i < th->namespacedefs.size(); i++)
 	{
@@ -991,10 +996,11 @@ ASFUNCTIONBODY_ATOM(XML,_namespace)
 		_R<Namespace> tmpns = th->namespacedefs[i];
 		if (tmpns->getPrefix(b) == sys->getUniqueStringId(prefix))
 		{
-			return asAtom::fromObject(Class<Namespace>::getInstanceS(sys,tmpns->getURI(), sys->getUniqueStringId(prefix)));
+			ret = asAtom::fromObject(Class<Namespace>::getInstanceS(sys,tmpns->getURI(), sys->getUniqueStringId(prefix)));
+			return;
 		}
 	}
-	return asAtom::undefinedAtom;
+	ret.setUndefined();
 }
 
 ASFUNCTIONBODY_ATOM(XML,_setLocalName)
@@ -1004,7 +1010,7 @@ ASFUNCTIONBODY_ATOM(XML,_setLocalName)
 	ARG_UNPACK_ATOM(newName);
 
 	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
-		return asAtom::invalidAtom;
+		return;
 
 	tiny_string new_name;
 	if(newName->is<ASQName>())
@@ -1017,8 +1023,6 @@ ASFUNCTIONBODY_ATOM(XML,_setLocalName)
 	}
 
 	th->setLocalName(new_name);
-
-	return asAtom::invalidAtom;
 }
 
 void XML::setLocalName(const tiny_string& new_name)
@@ -1038,7 +1042,7 @@ ASFUNCTIONBODY_ATOM(XML,_setName)
 	ARG_UNPACK_ATOM(newName);
 
 	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
-		return asAtom::invalidAtom;
+		return;
 
 	tiny_string localname;
 	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
@@ -1057,8 +1061,6 @@ ASFUNCTIONBODY_ATOM(XML,_setName)
 
 	th->setLocalName(localname);
 	th->setNamespace(ns_uri,ns_prefix);
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XML,_setNamespace)
@@ -1070,7 +1072,7 @@ ASFUNCTIONBODY_ATOM(XML,_setNamespace)
 	if(th->nodetype==pugi::node_pcdata ||
 	   th->nodetype==pugi::node_comment ||
 	   th->nodetype==pugi::node_pi)
-		return asAtom::invalidAtom;
+		return;
 	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
 	uint32_t ns_prefix = BUILTIN_STRINGS::EMPTY;
 	if(newNamespace->is<Namespace>())
@@ -1120,13 +1122,11 @@ ASFUNCTIONBODY_ATOM(XML,_setNamespace)
 			if (tmpns->getPrefix(b) == ns_prefix)
 			{
 				tmp->namespacedefs[i] = _R<Namespace>(Class<Namespace>::getInstanceS(sys,ns_uri,ns_prefix));
-				return asAtom::invalidAtom;
+				return;
 			}
 		}
 		tmp->namespacedefs.push_back(_R<Namespace>(Class<Namespace>::getInstanceS(sys,ns_uri,ns_prefix)));
 	}
-	
-	return asAtom::invalidAtom;
 }
 
 void XML::setNamespace(uint32_t ns_uri, uint32_t ns_prefix)
@@ -1138,7 +1138,7 @@ void XML::setNamespace(uint32_t ns_uri, uint32_t ns_prefix)
 ASFUNCTIONBODY_ATOM(XML,_copy)
 {
 	XML* th=obj.as<XML>();
-	return asAtom::fromObject(th->copy());
+	ret = asAtom::fromObject(th->copy());
 }
 
 XML *XML::copy()
@@ -1172,7 +1172,7 @@ ASFUNCTIONBODY_ATOM(XML,_setChildren)
 	}
 
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_normalize)
@@ -1181,7 +1181,7 @@ ASFUNCTIONBODY_ATOM(XML,_normalize)
 	th->normalize();
 
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 
 void XML::normalize()
@@ -1463,22 +1463,22 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 	return ret;
 }
 
-asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0)
 	{
-		asAtom res=ASObject::getVariableByMultiname(name,opt);
+		ASObject::getVariableByMultiname(ret,name,opt);
 
 		//If a method is not found on XML object and the
 		//object is a leaf node, delegate to ASString
-		if(res.type == T_INVALID && hasSimpleContent())
+		if(ret.type == T_INVALID && hasSimpleContent())
 		{
 			ASString *contentstr=abstract_s(getSystemState(),toString_priv());
-			res=contentstr->getVariableByMultiname(name, opt);
+			contentstr->getVariableByMultiname(ret,name, opt);
 			contentstr->decRef();
 		}
 
-		return res;
+		return;
 	}
 
 	bool isAttr=name.isAttribute;
@@ -1494,7 +1494,8 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 	{
 		//Lookup attribute
 		const XMLVector& attributes=getAttributesByMultiname(name,normalizedName);
-		return asAtom::fromObject(XMLList::create(getSystemState(),attributes,attributelist.getPtr(),name));
+		ret = asAtom::fromObject(XMLList::create(getSystemState(),attributes,attributelist.getPtr(),name));
+		return;
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
@@ -1503,36 +1504,33 @@ asAtom XML::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION op
 		if(index==0)
 		{
 			incRef();
-			return asAtom::fromObject(this);
+			ret = asAtom::fromObject(this);
 		}
 		else
-			return asAtom::fromObject(getSystemState()->getUndefinedRef());
+			ret = asAtom::fromObject(getSystemState()->getUndefinedRef());
 	}
 	else if (!childrenlist.isNull())
 	{
 		if (normalizedName == "*")
 		{
-			XMLVector ret;
-			childrenImpl(ret, "*");
+			XMLVector res;
+			childrenImpl(res, "*");
 			multiname mname(NULL);
 			mname.name_s_id=getSystemState()->getUniqueStringId("*");
 			mname.name_type=multiname::NAME_STRING;
 			mname.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			XMLList* retObj=XMLList::create(getSystemState(),ret,this->getChildrenlist(),mname);
-			return asAtom::fromObject(retObj);
+			XMLList* retObj=XMLList::create(getSystemState(),res,this->getChildrenlist(),mname);
+			ret = asAtom::fromObject(retObj);
 		}
 		else
 		{
-			const XMLVector& ret=getValuesByMultiname(childrenlist,name);
+			const XMLVector& res=getValuesByMultiname(childrenlist,name);
 			
-			if(ret.empty() && (opt & XML_STRICT)!=0)
-				return asAtom::invalidAtom;
-			asAtom ch =asAtom::fromObject(XMLList::create(getSystemState(),ret,this->getChildrenlist(),name));
-			return ch;
+			if(res.empty() && (opt & XML_STRICT)!=0)
+				return;
+			ret =asAtom::fromObject(XMLList::create(getSystemState(),res,this->getChildrenlist(),name));
 		}
 	}
-	else
-		return asAtom::invalidAtom;
 }
 
 void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
@@ -1936,58 +1934,53 @@ uint32_t XML::getNamespacePrefixByURI(uint32_t uri, bool create)
 ASFUNCTIONBODY_ATOM(XML,_toString)
 {
 	XML* th=obj.as<XML>();
-	return asAtom::fromObject(abstract_s(sys,th->toString_priv()));
+	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
 ASFUNCTIONBODY_ATOM(XML,_getIgnoreComments)
 {
-	return asAtom(ignoreComments);
+	ret.setBool(ignoreComments);
 }
 ASFUNCTIONBODY_ATOM(XML,_setIgnoreComments)
 {
 	assert(args && argslen==1);
 	ignoreComments = args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(XML,_getIgnoreProcessingInstructions)
 {
-	return asAtom(ignoreProcessingInstructions);
+	ret.setBool(ignoreProcessingInstructions);
 }
 ASFUNCTIONBODY_ATOM(XML,_setIgnoreProcessingInstructions)
 {
 	assert(args && argslen==1);
 	ignoreProcessingInstructions = args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(XML,_getIgnoreWhitespace)
 {
-	return asAtom(ignoreWhitespace);
+	ret.setBool(ignoreWhitespace);
 }
 ASFUNCTIONBODY_ATOM(XML,_setIgnoreWhitespace)
 {
 	assert(args && argslen==1);
 	ignoreWhitespace = args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(XML,_getPrettyIndent)
 {
-	return asAtom(prettyIndent);
+	ret.setInt(prettyIndent);
 }
 ASFUNCTIONBODY_ATOM(XML,_setPrettyIndent)
 {
 	assert(args && argslen==1);
 	prettyIndent = args[0].toInt();
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(XML,_getPrettyPrinting)
 {
-	return asAtom(prettyPrinting);
+	ret.setBool(prettyPrinting);
 }
 ASFUNCTIONBODY_ATOM(XML,_setPrettyPrinting)
 {
 	assert(args && argslen==1);
 	prettyPrinting = args[0].Boolean_concrete();
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(XML,_getSettings)
 {
@@ -2014,21 +2007,23 @@ ASFUNCTIONBODY_ATOM(XML,_getSettings)
 	mn.name_s_id=sys->getUniqueStringId("prettyPrinting");
 	v = asAtom(prettyPrinting);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(XML,_setSettings)
 {
 	if (argslen == 0)
 	{
 		setDefaultXMLSettings();
-		return asAtom::nullAtom;
+		ret.setNull();
+		return;
 	}
 	_NR<ASObject> arg0;
 	ARG_UNPACK_ATOM(arg0);
 	if (arg0->is<Null>() || arg0->is<Undefined>())
 	{
 		setDefaultXMLSettings();
-		return asAtom::nullAtom;
+		ret.setNull();
+		return;
 	}
 	multiname mn(NULL);
 	mn.name_type=multiname::NAME_STRING;
@@ -2040,38 +2035,38 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 	mn.name_s_id=sys->getUniqueStringId("ignoreComments");
 	if (arg0->hasPropertyByMultiname(mn,true,true))
 	{
-		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		arg0->getVariableByMultiname(o,mn,SKIP_IMPL);
 		ignoreComments = o.toInt();
 	}
 
 	mn.name_s_id=sys->getUniqueStringId("ignoreProcessingInstructions");
 	if (arg0->hasPropertyByMultiname(mn,true,true))
 	{
-		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		arg0->getVariableByMultiname(o,mn,SKIP_IMPL);
 		ignoreProcessingInstructions = o.toInt();
 	}
 
 	mn.name_s_id=sys->getUniqueStringId("ignoreWhitespace");
 	if (arg0->hasPropertyByMultiname(mn,true,true))
 	{
-		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		arg0->getVariableByMultiname(o,mn,SKIP_IMPL);
 		ignoreWhitespace = o.toInt();
 	}
 
 	mn.name_s_id=sys->getUniqueStringId("prettyIndent");
 	if (arg0->hasPropertyByMultiname(mn,true,true))
 	{
-		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		arg0->getVariableByMultiname(o,mn,SKIP_IMPL);
 		prettyIndent = o.toInt();
 	}
 
 	mn.name_s_id=sys->getUniqueStringId("prettyPrinting");
 	if (arg0->hasPropertyByMultiname(mn,true,true))
 	{
-		o=arg0->getVariableByMultiname(mn,SKIP_IMPL);
+		arg0->getVariableByMultiname(o,mn,SKIP_IMPL);
 		prettyPrinting = o.toInt();
 	}
-	return asAtom::nullAtom;
+	ret.setNull();
 }
 ASFUNCTIONBODY_ATOM(XML,_getDefaultSettings)
 {
@@ -2093,11 +2088,11 @@ ASFUNCTIONBODY_ATOM(XML,_getDefaultSettings)
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED);
 	mn.name_s_id=sys->getUniqueStringId("prettyPrinting");
 	res->setVariableByMultiname(mn,asAtom::trueAtom,CONST_NOT_ALLOWED);
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(XML,_toJSON)
 {
-	return asAtom::fromString(sys,"XML");
+	ret = asAtom::fromString(sys,"XML");
 }
 
 void XML::CheckCyclicReference(XML* node)
@@ -2143,7 +2138,10 @@ ASFUNCTIONBODY_ATOM(XML,insertChildAfter)
 	_NR<ASObject> child2;
 	ARG_UNPACK_ATOM(child1)(child2);
 	if (th->nodetype != pugi::node_element)
-		return asAtom::undefinedAtom;
+	{
+		ret.setUndefined();
+		return;
+	}
 	
 	if (child2->is<XML>())
 		th->CheckCyclicReference(child2->as<XML>());
@@ -2179,12 +2177,16 @@ ASFUNCTIONBODY_ATOM(XML,insertChildAfter)
 			th->childrenlist->nodes.insert(th->childrenlist->nodes.begin(),child2->as<XMLList>()->nodes.begin(), child2->as<XMLList>()->nodes.end());
 		}
 		th->incRef();
-		return asAtom::fromObject(th);
+		ret = asAtom::fromObject(th);
+		return;
 	}
 	if (child1->is<XMLList>())
 	{
 		if (child1->as<XMLList>()->nodes.size()==0)
-			return asAtom::undefinedAtom;
+		{
+			ret.setUndefined();
+			return;
+		}
 		child1 = child1->as<XMLList>()->nodes[0];
 	}
 	for (auto it = th->childrenlist->nodes.begin(); it != th->childrenlist->nodes.end(); it++)
@@ -2209,10 +2211,11 @@ ASFUNCTIONBODY_ATOM(XML,insertChildAfter)
 				}
 				th->childrenlist->nodes.insert(it+1,child2->as<XMLList>()->nodes.begin(), child2->as<XMLList>()->nodes.end());
 			}
-			return asAtom::fromObject(th);
+			ret = asAtom::fromObject(th);
+			return;
 		}
 	}
-	return asAtom::undefinedAtom;
+	ret.setUndefined();
 }
 ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 {
@@ -2221,8 +2224,10 @@ ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 	_NR<ASObject> child2;
 	ARG_UNPACK_ATOM(child1)(child2);
 	if (th->nodetype != pugi::node_element)
-		return asAtom::undefinedAtom;
-	
+	{
+		ret.setUndefined();
+		return;
+	}
 	if (child2->is<XML>())
 		th->CheckCyclicReference(child2->as<XML>());
 	else if (child2->is<XMLList>())
@@ -2254,12 +2259,16 @@ ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 			}
 		}
 		th->incRef();
-		return asAtom::fromObject(th);
+		ret = asAtom::fromObject(th);
+		return;
 	}
 	if (child1->is<XMLList>())
 	{
 		if (child1->as<XMLList>()->nodes.size()==0)
-			return asAtom::undefinedAtom;
+		{
+			ret.setUndefined();
+			return;
+		}
 		child1 = child1->as<XMLList>()->nodes[0];
 	}
 	for (auto it = th->childrenlist->nodes.begin(); it != th->childrenlist->nodes.end(); it++)
@@ -2284,10 +2293,11 @@ ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 				}
 				th->childrenlist->nodes.insert(it,child2->as<XMLList>()->nodes.begin(), child2->as<XMLList>()->nodes.end());
 			}
-			return asAtom::fromObject(th);
+			ret = asAtom::fromObject(th);
+			return;
 		}
 	}
-	return asAtom::undefinedAtom;
+	ret.setUndefined();
 }
 
 ASFUNCTIONBODY_ATOM(XML,namespaceDeclarations)
@@ -2304,7 +2314,7 @@ ASFUNCTIONBODY_ATOM(XML,namespaceDeclarations)
 			namespaces->push(asAtom::fromObject(tmpns.getPtr()));
 		}
 	}
-	return asAtom::fromObject(namespaces);
+	ret = asAtom::fromObject(namespaces);
 }
 
 ASFUNCTIONBODY_ATOM(XML,removeNamespace)
@@ -2320,7 +2330,7 @@ ASFUNCTIONBODY_ATOM(XML,removeNamespace)
 
 	th->RemoveNamespace(ns);
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 void XML::RemoveNamespace(Namespace *ns)
 {
@@ -2352,9 +2362,9 @@ ASFUNCTIONBODY_ATOM(XML,comments)
 	XML* th=obj.as<XML>();
 	tiny_string name;
 	ARG_UNPACK_ATOM(name,"*");
-	XMLVector ret;
-	th->getComments(ret);
-	return asAtom::fromObject(XMLList::create(sys,ret,th->getChildrenlist(),multiname(NULL)));
+	XMLVector res;
+	th->getComments(res);
+	ret = asAtom::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
 }
 void XML::getComments(XMLVector& ret)
 {
@@ -2376,9 +2386,9 @@ ASFUNCTIONBODY_ATOM(XML,processingInstructions)
 	XML* th=obj.as<XML>();
 	tiny_string name;
 	ARG_UNPACK_ATOM(name,"*");
-	XMLVector ret;
-	th->getprocessingInstructions(ret,name);
-	return asAtom::fromObject(XMLList::create(sys,ret,th->getChildrenlist(),multiname(NULL)));
+	XMLVector res;
+	th->getprocessingInstructions(res,name);
+	ret = asAtom::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
 }
 void XML::getprocessingInstructions(XMLVector& ret, tiny_string name)
 {
@@ -2396,7 +2406,7 @@ void XML::getprocessingInstructions(XMLVector& ret, tiny_string name)
 }
 ASFUNCTIONBODY_ATOM(XML,_propertyIsEnumerable)
 {
-	return asAtom(argslen == 1 && args[0].toString(sys) == "0" );
+	ret.setBool(argslen == 1 && args[0].toString(sys) == "0" );
 }
 ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 {
@@ -2404,9 +2414,9 @@ ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 	tiny_string prop;
 	ARG_UNPACK_ATOM(prop);
 
-	bool ret = false;
+	bool res = false;
 	if (prop == "0")
-		ret = true;
+		res = true;
 	else
 	{
 		multiname name(NULL);
@@ -2415,9 +2425,9 @@ ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute=false;
-		ret=th->hasProperty(name,th == obj.getObject()->getprop_prototype(), true, true);
+		res=th->hasProperty(name,th == obj.getObject()->getprop_prototype(), true, true);
 	}
-	return asAtom(ret);
+	ret.setBool(res);
 }
 
 tiny_string XML::toString_priv()
@@ -2583,20 +2593,20 @@ uint32_t XML::nextNameIndex(uint32_t cur_index)
 		return 0;
 }
 
-asAtom XML::nextName(uint32_t index)
+void XML::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=1)
-		return asAtom(index-1);
+		ret.setUInt(index-1);
 	else
 		throw RunTimeException("XML::nextName out of bounds");
 }
 
-asAtom XML::nextValue(uint32_t index)
+void XML::nextValue(asAtom& ret,uint32_t index)
 {
 	if(index<=1)
 	{
 		incRef();
-		return asAtom::fromObject(this);
+		ret = asAtom::fromObject(this);
 	}
 	else
 		throw RunTimeException("XML::nextValue out of bounds");
@@ -2870,7 +2880,8 @@ ASFUNCTIONBODY_ATOM(XML,_prependChild)
 		XMLList* list=args[0].as<XMLList>();
 		list->prependNodesTo(th);
 		th->incRef();
-		return asAtom::fromObject(th);
+		ret = asAtom::fromObject(th);
+		return;
 	}
 	else
 	{
@@ -2901,7 +2912,7 @@ ASFUNCTIONBODY_ATOM(XML,_prependChild)
 
 	th->prependChild(_MR(arg));
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 void XML::prependChild(_R<XML> newChild)
 {
@@ -2958,7 +2969,8 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 			th->childrenlist->append(_R<XML>(x));
 		}
 		th->incRef();
-		return asAtom::fromObject(th);
+		ret = asAtom::fromObject(th);
+		return;
 	}
 	else
 	{
@@ -2992,10 +3004,9 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 		}
 	}
 	th->incRef();
-	return asAtom::fromObject(th);
+	ret = asAtom::fromObject(th);
 }
 ASFUNCTIONBODY_ATOM(XML,setNotification)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"XML.setNotification does nothing");
-	return asAtom::invalidAtom;
 }

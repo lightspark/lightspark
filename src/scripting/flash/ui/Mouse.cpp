@@ -44,18 +44,16 @@ void Mouse::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Mouse, hide)
 {
 	sys->showMouseCursor(false);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, show)
 {
 	sys->showMouseCursor(true);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getCursor)
 {
-	return asAtom::fromString(sys,"auto");
+	ret = asAtom::fromString(sys,"auto");
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, setCursor)
@@ -64,17 +62,16 @@ ASFUNCTIONBODY_ATOM(Mouse, setCursor)
 	ARG_UNPACK_ATOM(cursorName);
 	if (cursorName != "auto")
 		LOG(LOG_NOT_IMPLEMENTED,"setting mouse cursor is not implemented");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getSupportsCursor)
 {
-	return asAtom::trueAtom;
+	ret.setBool(true);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getSupportsNativeCursor)
 {
-	return asAtom::falseAtom; // until registerCursor() is implemented
+	ret.setBool(false); // until registerCursor() is implemented
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
@@ -83,7 +80,6 @@ ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
 	_NR<MouseCursorData> mousecursordata;
 	ARG_UNPACK_ATOM(cursorName) (mousecursordata);
 	LOG(LOG_NOT_IMPLEMENTED,"Mouse.registerCursor is not implemented");
-	return asAtom::invalidAtom;
 }
 void MouseCursor::sinit(Class_base* c)
 {
@@ -113,5 +109,4 @@ ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, hotSpot);
 ASFUNCTIONBODY_ATOM(MouseCursorData,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"MouseCursorData is not implemented");
-	return asAtom::invalidAtom;
 }

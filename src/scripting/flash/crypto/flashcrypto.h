@@ -7,7 +7,7 @@
 namespace lightspark
 {
 
-asAtom generateRandomBytes(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
+void generateRandomBytes(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
 }
 
 #endif // FLASHCRYPTO_H

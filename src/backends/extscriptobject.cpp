@@ -217,8 +217,10 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)
 			{
-				asAtom nextName=other->nextName(index);
-				asAtom nextValue=other->nextValue(index);
+				asAtom nextName;
+				other->nextName(nextName,index);
+				asAtom nextValue;
+				other->nextValue(nextValue,index);
 
 				if(nextName.type == T_INTEGER)
 					objectValue->setProperty(nextName.toInt(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
@@ -402,7 +404,9 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			}
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			result = func.callFunction(asAtom::nullAtom, newArgs, argc,false).toObject(func.getObject()->getSystemState());
+			asAtom res;
+			func.callFunction(res,asAtom::nullAtom, newArgs, argc,false);
+			result = res.toObject(func.getObject()->getSystemState());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

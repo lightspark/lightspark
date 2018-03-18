@@ -114,14 +114,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
 		th->width=args[2].toNumber();
 	if(argslen>=4)
 		th->height=args[3].toNumber();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getLeft)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->x);
+	ret.setNumber(th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
@@ -129,13 +127,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->x=args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->x + th->width);
+	ret.setNumber(th->x + th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
@@ -143,13 +140,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->width=(args[0].toNumber()-th->x);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->width);
+	ret.setNumber(th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
@@ -157,13 +153,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->width=args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->y);
+	ret.setNumber(th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
@@ -171,13 +166,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->y=args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->y + th->height);
+	ret.setNumber(th->y + th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
@@ -185,15 +179,14 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->height=(args[0].toNumber()-th->y);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottomRight)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th=obj.as<Rectangle>();
-	Point* ret = Class<Point>::getInstanceS(sys,th->x + th->width, th->y + th->height);
-	return asAtom::fromObject(ret);
+	Point* res = Class<Point>::getInstanceS(sys,th->x + th->width, th->y + th->height);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottomRight)
@@ -203,15 +196,14 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setBottomRight)
 	Point* br = args[0].as<Point>();
 	th->width = br->getX() - th->x;
 	th->height = br->getY() - th->y;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getTopLeft)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th=obj.as<Rectangle>();
-	Point* ret = Class<Point>::getInstanceS(sys,th->x, th->y);
-	return asAtom::fromObject(ret);
+	Point* res = Class<Point>::getInstanceS(sys,th->x, th->y);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
@@ -221,15 +213,14 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
 	Point* br = args[0].as<Point>();
 	th->width = br->getX();
 	th->height = br->getY();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getSize)
 {
 	assert_and_throw(argslen==0);
 	Rectangle* th=obj.as<Rectangle>();
-	Point* ret = Class<Point>::getInstanceS(sys,th->width, th->height);
-	return asAtom::fromObject(ret);
+	Point* res = Class<Point>::getInstanceS(sys,th->width, th->height);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
@@ -239,13 +230,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 	Point* br = args[0].as<Point>();
 	th->width = br->getX();
 	th->height = br->getY();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	return asAtom(th->height);
+	ret.setNumber(th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)
@@ -253,18 +243,17 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)
 	Rectangle* th=obj.as<Rectangle>();
 	assert_and_throw(argslen==1);
 	th->height=args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,clone)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	Rectangle* ret=Class<Rectangle>::getInstanceS(sys);
-	ret->x=th->x;
-	ret->y=th->y;
-	ret->width=th->width;
-	ret->height=th->height;
-	return asAtom::fromObject(ret);
+	Rectangle* res=Class<Rectangle>::getInstanceS(sys);
+	res->x=th->x;
+	res->y=th->y;
+	res->width=th->width;
+	res->height=th->height;
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,contains)
@@ -274,7 +263,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,contains)
 	number_t x = args[0].toNumber();
 	number_t y = args[1].toNumber();
 
-	return asAtom(th->x <= x && x <= th->x + th->width
+	ret.setBool(th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
@@ -286,7 +275,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,containsPoint)
 	number_t x = br->getX();
 	number_t y = br->getY();
 
-	return asAtom(th->x <= x && x <= th->x + th->width
+	ret.setBool(th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );
 }
 
@@ -296,7 +285,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,containsRect)
 	Rectangle* th=obj.as<Rectangle>();
 	Rectangle* cr = args[0].as<Rectangle>();
 
-	return asAtom(th->x <= cr->x && cr->x + cr->width <= th->x + th->width
+	ret.setBool(th->x <= cr->x && cr->x + cr->width <= th->x + th->width
 						&& th->y <= cr->y && cr->y + cr->height <= th->y + th->height );
 }
 
@@ -306,7 +295,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,equals)
 	Rectangle* th=obj.as<Rectangle>();
 	Rectangle* co = args[0].as<Rectangle>();
 
-	return asAtom(th->x == co->x && th->width == co->width
+	ret.setBool(th->x == co->x && th->width == co->width
 						&& th->y == co->y && th->height == co->height );
 }
 
@@ -321,8 +310,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflate)
 	th->width += 2 * dx;
 	th->y -= dy;
 	th->height += 2 * dy;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
@@ -337,8 +324,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
 	th->width += 2 * dx;
 	th->y -= dy;
 	th->height += 2 * dy;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,intersection)
@@ -346,7 +331,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 	assert_and_throw(argslen == 1);
 	Rectangle* th=obj.as<Rectangle>();
 	Rectangle* ti = args[0].as<Rectangle>();
-	Rectangle* ret = Class<Rectangle>::getInstanceS(sys);
+	Rectangle* res = Class<Rectangle>::getInstanceS(sys);
 
 	number_t thtop = th->y;
 	number_t thleft = th->x;
@@ -362,11 +347,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 						thbottom < titop || thleft > tiright )
 	{
 		// rectangles don't intersect
-		ret->x = 0;
-		ret->y = 0;
-		ret->width = 0;
-		ret->height = 0;
-		return asAtom::fromObject(ret);
+		res->x = 0;
+		res->y = 0;
+		res->width = 0;
+		res->height = 0;
+		ret = asAtom::fromObject(res);
+		return;
 	}
 
 	Rectangle* leftmost = ti;
@@ -389,12 +375,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 		bottommost = ti;
 	}
 
-	ret->x = rightmost->x;
-	ret->width = min(leftmost->x + leftmost->width, rightmost->x + rightmost->width) - rightmost->x;
-	ret->y = bottommost->y;
-	ret->height = min(topmost->y + topmost->height, bottommost->y + bottommost->height) - bottommost->y;
+	res->x = rightmost->x;
+	res->width = min(leftmost->x + leftmost->width, rightmost->x + rightmost->width) - rightmost->x;
+	res->y = bottommost->y;
+	res->height = min(topmost->y + topmost->height, bottommost->y + bottommost->height) - bottommost->y;
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,intersects)
@@ -413,7 +399,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 	number_t tiright = ti->x + ti->width;
 	number_t tibottom = ti->y + ti->height;
 
-	return asAtom(!(thtop > tibottom || thright < tileft ||
+	ret.setBool(!(thtop > tibottom || thright < tileft ||
 						thbottom < titop || thleft > tiright) );
 }
 
@@ -422,7 +408,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,isEmpty)
 	assert_and_throw(argslen == 0);
 	Rectangle* th=obj.as<Rectangle>();
 
-	return asAtom(th->width <= 0 || th->height <= 0 );
+	ret.setBool(th->width <= 0 || th->height <= 0 );
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,offset)
@@ -432,8 +418,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,offset)
 
 	th->x += args[0].toNumber();
 	th->y += args[1].toNumber();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
@@ -444,8 +428,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
 
 	th->x += po->getX();
 	th->y += po->getY();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
@@ -457,8 +439,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
 	th->y = 0;
 	th->width = 0;
 	th->height = 0;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_union)
@@ -466,24 +446,25 @@ ASFUNCTIONBODY_ATOM(Rectangle,_union)
 	assert_and_throw(argslen == 1);
 	Rectangle* th=obj.as<Rectangle>();
 	Rectangle* ti = args[0].as<Rectangle>();
-	Rectangle* ret = Class<Rectangle>::getInstanceS(sys);
+	Rectangle* res = Class<Rectangle>::getInstanceS(sys);
 
-	ret->x = th->x;
-	ret->y = th->y;
-	ret->width = th->width;
-	ret->height = th->height;
+	res->x = th->x;
+	res->y = th->y;
+	res->width = th->width;
+	res->height = th->height;
 
 	if ( ti->width == 0 || ti->height == 0 )
 	{
-		return asAtom::fromObject(ret);
+		ret = asAtom::fromObject(res);
+		return;
 	}
 
-	ret->x = min(th->x, ti->x);
-	ret->y = min(th->y, ti->y);
-	ret->width = max(th->x + th->width, ti->x + ti->width);
-	ret->height = max(th->y + th->height, ti->y + ti->height);
+	res->x = min(th->x, ti->x);
+	res->y = min(th->y, ti->y);
+	res->width = max(th->x + th->width, ti->x + ti->width);
+	res->height = max(th->y + th->height, ti->y + ti->height);
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_toString)
@@ -491,7 +472,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_toString)
 	Rectangle* th=obj.as<Rectangle>();
 	char buf[512];
 	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",th->x,th->y,th->width,th->height);
-	return asAtom::fromObject(abstract_s(sys,buf));
+	ret = asAtom::fromObject(abstract_s(sys,buf));
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,setTo)
@@ -503,7 +484,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,setTo)
 	th->y = y;
 	th->width = w;
 	th->height = h;
-	return asAtom::invalidAtom;
 }
 
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
@@ -591,7 +571,6 @@ ASFUNCTIONBODY_ATOM(ColorTransform,_constructor)
 		th->alphaOffset=args[7].toNumber();
 	else
 		th->alphaOffset=0.0;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setColor)
@@ -609,7 +588,6 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setColor)
 	th->redOffset=(tmp>>16)&0xff;
 	th->greenOffset=(tmp>>8)&0xff;
 	th->blueOffset=tmp&0xff;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
@@ -624,13 +602,13 @@ ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 
 	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
 
-	return asAtom(color);
+	ret.setNumber(color);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->redMultiplier);
+	ret.setNumber(th->redMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
@@ -638,13 +616,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->redMultiplier = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->greenMultiplier);
+	ret.setNumber(th->greenMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
@@ -652,13 +629,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->greenMultiplier = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->blueMultiplier);
+	ret.setNumber(th->blueMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
@@ -666,13 +642,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->blueMultiplier = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->alphaMultiplier);
+	ret.setNumber(th->alphaMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
@@ -680,13 +655,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->alphaMultiplier = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->redOffset);
+	ret.setNumber(th->redOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
@@ -694,13 +668,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->redOffset = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->greenOffset);
+	ret.setNumber(th->greenOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
@@ -708,13 +681,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->greenOffset = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->blueOffset);
+	ret.setNumber(th->blueOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
@@ -722,13 +694,12 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->blueOffset = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	return asAtom(th->alphaOffset);
+	ret.setNumber(th->alphaOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
@@ -736,7 +707,6 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=obj.as<ColorTransform>();
 	th->alphaOffset = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,concat)
@@ -753,8 +723,6 @@ ASFUNCTIONBODY_ATOM(ColorTransform,concat)
 	th->blueOffset = th->blueOffset * ct->blueMultiplier + ct->blueOffset;
 	th->alphaMultiplier *= ct->alphaMultiplier;
 	th->alphaOffset = th->alphaOffset * ct->alphaMultiplier + ct->alphaOffset;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
@@ -764,7 +732,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)",
 			th->redOffset, th->redMultiplier, th->greenOffset, th->greenMultiplier, th->blueOffset, th->blueMultiplier, th->alphaOffset, th->alphaMultiplier);
 	
-	return asAtom::fromObject(abstract_s(sys,buf));
+	ret = asAtom::fromObject(abstract_s(sys,buf));
 }
 
 void Point::sinit(Class_base* c)
@@ -798,7 +766,7 @@ ASFUNCTIONBODY_ATOM(Point,_toString)
 	Point* th=obj.as<Point>();
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f)",th->x,th->y);
-	return asAtom::fromObject(abstract_s(sys,buf));
+	ret = asAtom::fromObject(abstract_s(sys,buf));
 }
 
 number_t Point::lenImpl(number_t x, number_t y)
@@ -818,20 +786,18 @@ ASFUNCTIONBODY_ATOM(Point,_constructor)
 		th->x=args[0].toNumber();
 	if(argslen>=2)
 		th->y=args[1].toNumber();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Point,_getX)
 {
 	Point* th=obj.as<Point>();
-	return asAtom(th->x);
+	ret.setNumber(th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_getY)
 {
 	Point* th=obj.as<Point>();
-	return asAtom(th->y);
+	ret.setNumber(th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_setX)
@@ -839,7 +805,6 @@ ASFUNCTIONBODY_ATOM(Point,_setX)
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
 	th->x = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Point,_setY)
@@ -847,14 +812,13 @@ ASFUNCTIONBODY_ATOM(Point,_setY)
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
 	th->y = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Point,_getlength)
 {
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==0);
-	return asAtom(th->len());
+	ret.setNumber(th->len());
 }
 
 ASFUNCTIONBODY_ATOM(Point,interpolate)
@@ -863,10 +827,10 @@ ASFUNCTIONBODY_ATOM(Point,interpolate)
 	Point* pt1=args[0].as<Point>();
 	Point* pt2=args[1].as<Point>();
 	number_t f=args[2].toNumber();
-	Point* ret=Class<Point>::getInstanceS(sys);
-	ret->x = pt1->x + pt2->x * f;
-	ret->y = pt1->y + pt2->y * f;
-	return asAtom::fromObject(ret);
+	Point* res=Class<Point>::getInstanceS(sys);
+	res->x = pt1->x + pt2->x * f;
+	res->y = pt1->y + pt2->y * f;
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,distance)
@@ -874,8 +838,8 @@ ASFUNCTIONBODY_ATOM(Point,distance)
 	assert_and_throw(argslen==2);
 	Point* pt1=args[0].as<Point>();
 	Point* pt2=args[1].as<Point>();
-	number_t ret=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
-	return asAtom(ret);
+	number_t res=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
+	ret.setNumber(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,add)
@@ -883,10 +847,10 @@ ASFUNCTIONBODY_ATOM(Point,add)
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
 	Point* v=args[0].as<Point>();
-	Point* ret=Class<Point>::getInstanceS(sys);
-	ret->x = th->x + v->x;
-	ret->y = th->y + v->y;
-	return asAtom::fromObject(ret);
+	Point* res=Class<Point>::getInstanceS(sys);
+	res->x = th->x + v->x;
+	res->y = th->y + v->y;
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,subtract)
@@ -894,20 +858,20 @@ ASFUNCTIONBODY_ATOM(Point,subtract)
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
 	Point* v=args[0].as<Point>();
-	Point* ret=Class<Point>::getInstanceS(sys);
-	ret->x = th->x - v->x;
-	ret->y = th->y - v->y;
-	return asAtom::fromObject(ret);
+	Point* res=Class<Point>::getInstanceS(sys);
+	res->x = th->x - v->x;
+	res->y = th->y - v->y;
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,clone)
 {
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==0);
-	Point* ret=Class<Point>::getInstanceS(sys);
-	ret->x = th->x;
-	ret->y = th->y;
-	return asAtom::fromObject(ret);
+	Point* res=Class<Point>::getInstanceS(sys);
+	res->x = th->x;
+	res->y = th->y;
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,equals)
@@ -915,7 +879,7 @@ ASFUNCTIONBODY_ATOM(Point,equals)
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==1);
 	Point* toCompare=args[0].as<Point>();
-	return asAtom((th->x == toCompare->x) & (th->y == toCompare->y));
+	ret.setBool((th->x == toCompare->x) & (th->y == toCompare->y));
 }
 
 ASFUNCTIONBODY_ATOM(Point,normalize)
@@ -926,7 +890,6 @@ ASFUNCTIONBODY_ATOM(Point,normalize)
 	number_t len = th->len();
 	th->x = len == 0 ? 0 : th->x * thickness / len;
 	th->y = len == 0 ? 0 : th->y * thickness / len;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Point,offset)
@@ -937,7 +900,6 @@ ASFUNCTIONBODY_ATOM(Point,offset)
 	number_t dy = args[1].toNumber();
 	th->x += dx;
 	th->y += dy;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Point,polar)
@@ -945,10 +907,10 @@ ASFUNCTIONBODY_ATOM(Point,polar)
 	assert_and_throw(argslen==2);
 	number_t len = args[0].toNumber();
 	number_t angle = args[1].toNumber();
-	Point* ret=Class<Point>::getInstanceS(sys);
-	ret->x = len * cos(angle);
-	ret->y = len * sin(angle);
-	return asAtom::fromObject(ret);
+	Point* res=Class<Point>::getInstanceS(sys);
+	res->x = len * cos(angle);
+	res->y = len * sin(angle);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Point,setTo)
 {
@@ -958,7 +920,6 @@ ASFUNCTIONBODY_ATOM(Point,setTo)
 	ARG_UNPACK_ATOM(x)(y);
 	th->x = x;
 	th->y = y;
-	return asAtom::invalidAtom;
 }
 Transform::Transform(Class_base* c):ASObject(c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
 {
@@ -996,7 +957,6 @@ ASFUNCTIONBODY_ATOM(Transform,_constructor)
 	Transform* th=obj.as<Transform>();
 	// it's not in the specs but it seems to be possible to construct a Transform object with an owner as argment
 	ARG_UNPACK_ATOM(th->owner,NullRef);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
@@ -1004,9 +964,12 @@ ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
 	Transform* th=obj.as<Transform>();
 	assert_and_throw(argslen==0);
 	if (th->owner->matrix.isNull())
-		return asAtom::nullAtom;
-	const MATRIX& ret=th->owner->getMatrix();
-	return asAtom::fromObject(Class<Matrix>::getInstanceS(sys,ret));
+	{
+		ret.setNull();
+		return;
+	}
+	const MATRIX& res=th->owner->getMatrix();
+	ret = asAtom::fromObject(Class<Matrix>::getInstanceS(sys,res));
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_setMatrix)
@@ -1015,7 +978,6 @@ ASFUNCTIONBODY_ATOM(Transform,_setMatrix)
 	_NR<Matrix> m;
 	ARG_UNPACK_ATOM(m);
 	th->owner->setMatrix(m);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getColorTransform)
@@ -1024,7 +986,7 @@ ASFUNCTIONBODY_ATOM(Transform,_getColorTransform)
 	if (th->owner->colorTransform.isNull())
 		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(sys));
 	th->owner->colorTransform->incRef();
-	return asAtom::fromObject(th->owner->colorTransform.getPtr());
+	ret = asAtom::fromObject(th->owner->colorTransform.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
@@ -1037,14 +999,12 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 
 	ct->incRef();
 	th->owner->colorTransform = ct;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
 {
 	Transform* th=obj.as<Transform>();
-	return asAtom::fromObject(Class<Matrix>::getInstanceS(sys,th->owner->getConcatenatedMatrix()));
+	ret = asAtom::fromObject(Class<Matrix>::getInstanceS(sys,th->owner->getConcatenatedMatrix()));
 }
 
 void Transform::buildTraits(ASObject* o)
@@ -1121,8 +1081,6 @@ ASFUNCTIONBODY_ATOM(Matrix,_constructor)
 		th->matrix.x0 = args[4].toNumber();
 	if (argslen == 6)
 		th->matrix.y0 = args[5].toNumber();
-
-	return asAtom::invalidAtom;
 }
 
 void Matrix::buildTraits(ASObject* o)
@@ -1135,7 +1093,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_toString)
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
 			th->matrix.xx, th->matrix.yx, th->matrix.xy, th->matrix.yy, th->matrix.x0, th->matrix.y0);
-	return asAtom::fromObject(abstract_s(sys,buf));
+	ret = asAtom::fromObject(abstract_s(sys,buf));
 }
 
 MATRIX Matrix::getMATRIX() const
@@ -1152,7 +1110,7 @@ bool Matrix::destruct()
 ASFUNCTIONBODY_ATOM(Matrix,_get_a)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.xx);
+	ret.setNumber(th->matrix.xx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_a)
@@ -1160,13 +1118,12 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_a)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.xx = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_b)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.yx);
+	ret.setNumber(th->matrix.yx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_b)
@@ -1174,13 +1131,12 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_b)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.yx = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_c)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.xy);
+	ret.setNumber(th->matrix.xy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_c)
@@ -1188,13 +1144,12 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_c)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.xy = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_d)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.yy);
+	ret.setNumber(th->matrix.yy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_d)
@@ -1202,13 +1157,12 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_d)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.yy = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_tx)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.x0);
+	ret.setNumber(th->matrix.x0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
@@ -1216,13 +1170,12 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.x0 = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_ty)
 {
 	Matrix* th=obj.as<Matrix>();
-	return asAtom(th->matrix.y0);
+	ret.setNumber(th->matrix.y0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_ty)
@@ -1230,7 +1183,6 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_ty)
 	Matrix* th=obj.as<Matrix>();
 	assert_and_throw(argslen==1);
 	th->matrix.y0 = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,clone)
@@ -1238,8 +1190,8 @@ ASFUNCTIONBODY_ATOM(Matrix,clone)
 	assert_and_throw(argslen==0);
 
 	Matrix* th=obj.as<Matrix>();
-	Matrix* ret=Class<Matrix>::getInstanceS(sys,th->matrix);
-	return asAtom::fromObject(ret);
+	Matrix* res=Class<Matrix>::getInstanceS(sys,th->matrix);
+	ret =asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,concat)
@@ -1251,7 +1203,6 @@ ASFUNCTIONBODY_ATOM(Matrix,concat)
 
 	//Premultiply, which is flash convention
 	cairo_matrix_multiply(&th->matrix,&th->matrix,&m->matrix);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,identity)
@@ -1260,7 +1211,6 @@ ASFUNCTIONBODY_ATOM(Matrix,identity)
 	assert_and_throw(argslen==0);
 	
 	cairo_matrix_init_identity(&th->matrix);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,invert)
@@ -1268,7 +1218,6 @@ ASFUNCTIONBODY_ATOM(Matrix,invert)
 	assert_and_throw(argslen==0);
 	Matrix* th=obj.as<Matrix>();
 	th->matrix=th->matrix.getInverted();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,translate)
@@ -1279,7 +1228,6 @@ ASFUNCTIONBODY_ATOM(Matrix,translate)
 	number_t dy = args[1].toNumber();
 
 	th->matrix.translate(dx,dy);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,rotate)
@@ -1289,7 +1237,6 @@ ASFUNCTIONBODY_ATOM(Matrix,rotate)
 	number_t angle = args[0].toNumber();
 
 	th->matrix.rotate(angle);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,scale)
@@ -1300,7 +1247,6 @@ ASFUNCTIONBODY_ATOM(Matrix,scale)
 	number_t sy = args[1].toNumber();
 
 	th->matrix.scale(sx, sy);
-	return asAtom::invalidAtom;
 }
 
 void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y) {
@@ -1336,8 +1282,6 @@ ASFUNCTIONBODY_ATOM(Matrix,createBox)
 	if ( argslen > 4 ) translateY = args[4].toNumber();
 
 	th->_createBox(scaleX, scaleY, angle, translateX, translateY);
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
@@ -1357,8 +1301,6 @@ ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
 	if ( argslen > 4 ) translateY += args[4].toNumber();
 
 	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX, translateY);
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
@@ -1370,7 +1312,7 @@ ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
-	return asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
+	ret = asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
@@ -1382,7 +1324,7 @@ ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 	number_t ttx = pt->getX();
 	number_t tty = pt->getY();
 	cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
-	return asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
+	ret = asAtom::fromObject(Class<Point>::getInstanceS(sys,ttx, tty));
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,setTo)
@@ -1398,8 +1340,6 @@ ASFUNCTIONBODY_ATOM(Matrix,setTo)
 	//ty -> y0
 	
 	ARG_UNPACK_ATOM(th->matrix.xx)(th->matrix.yx)(th->matrix.xy)(th->matrix.yy)(th->matrix.x0)(th->matrix.y0);
-
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
 {
@@ -1413,8 +1353,6 @@ ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
 	th->matrix.yy = sourceMatrix->matrix.yy;
 	th->matrix.x0 = sourceMatrix->matrix.x0;
 	th->matrix.y0 = sourceMatrix->matrix.y0;
-
-	return asAtom::invalidAtom;
 }
 
 void Vector3D::sinit(Class_base* c)
@@ -1487,8 +1425,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_constructor)
 		th->z = args[2].toNumber();
 	if (argslen == 4)
 		th->w = args[3].toNumber();
-
-	return asAtom::invalidAtom;
 }
 
 void Vector3D::buildTraits(ASObject* o)
@@ -1509,7 +1445,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_toString)
 	Vector3D* th=obj.as<Vector3D>();
 	char buf[512];
 	snprintf(buf,512,"(x=%f, y=%f, z=%f)", th->x, th->y, th->z);
-	return asAtom::fromObject(abstract_s(sys,buf));
+	ret = asAtom::fromObject(abstract_s(sys,buf));
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_w)
@@ -1517,7 +1453,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_w)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(th->w);
+	ret.setNumber(th->w);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_w)
@@ -1525,7 +1461,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_set_w)
 	assert_and_throw(argslen==1);
 	Vector3D* th=obj.as<Vector3D>();
 	th->w = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_x)
@@ -1533,7 +1468,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_x)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(th->x);
+	ret.setNumber(th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_x)
@@ -1541,7 +1476,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_set_x)
 	assert_and_throw(argslen==1);
 	Vector3D* th=obj.as<Vector3D>();
 	th->x = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_y)
@@ -1549,7 +1483,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_y)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(th->y);
+	ret.setNumber(th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_y)
@@ -1557,7 +1491,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_set_y)
 	assert_and_throw(argslen==1);
 	Vector3D* th=obj.as<Vector3D>();
 	th->y = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_z)
@@ -1565,7 +1498,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_z)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(th->z);
+	ret.setNumber(th->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_z)
@@ -1573,7 +1506,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_set_z)
 	assert_and_throw(argslen==1);
 	Vector3D* th=obj.as<Vector3D>();
 	th->z = args[0].toNumber();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_length)
@@ -1581,7 +1513,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_length)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+	ret.setNumber(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
@@ -1589,7 +1521,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	return asAtom(th->x * th->x + th->y * th->y + th->z * th->z);
+	ret.setNumber(th->x * th->x + th->y * th->y + th->z * th->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,clone)
@@ -1597,14 +1529,14 @@ ASFUNCTIONBODY_ATOM(Vector3D,clone)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
+	Vector3D* res=Class<Vector3D>::getInstanceS(sys);
 
-	ret->w = th->w;
-	ret->x = th->x;
-	ret->y = th->y;
-	ret->z = th->z;
+	res->w = th->w;
+	res->x = th->x;
+	res->y = th->y;
+	res->z = th->z;
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,add)
@@ -1613,13 +1545,13 @@ ASFUNCTIONBODY_ATOM(Vector3D,add)
 
 	Vector3D* th=obj.as<Vector3D>();
 	Vector3D* vc=args[0].as<Vector3D>();
-	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
+	Vector3D* res=Class<Vector3D>::getInstanceS(sys);
 
-	ret->x = th->x + vc->x;
-	ret->y = th->y + vc->y;
-	ret->z = th->z + vc->z;
+	res->x = th->x + vc->x;
+	res->y = th->y + vc->y;
+	res->z = th->z + vc->z;
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
@@ -1634,7 +1566,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
 	angle = acos(angle);
 
-	return asAtom(angle);
+	ret.setNumber(angle);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
@@ -1643,13 +1575,13 @@ ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
 
 	Vector3D* th=obj.as<Vector3D>();
 	Vector3D* vc=args[0].as<Vector3D>();
-	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
+	Vector3D* res=Class<Vector3D>::getInstanceS(sys);
 
-	ret->x = th->y * vc->z - th->z * vc->y;
-	ret->y = th->z * vc->x - th->x * vc->z;
-	ret->z = th->x * vc->y - th->y * vc->x;
+	res->x = th->y * vc->z - th->z * vc->y;
+	res->y = th->z * vc->x - th->x * vc->z;
+	res->z = th->x * vc->y - th->y * vc->x;
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,decrementBy)
@@ -1662,8 +1594,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,decrementBy)
 	th->x -= vc->x;
 	th->y -= vc->y;
 	th->z -= vc->z;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,distance)
@@ -1679,7 +1609,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,distance)
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-	return asAtom(dist);
+	ret.setNumber(dist);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
@@ -1689,7 +1619,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
 	Vector3D* th=obj.as<Vector3D>();
 	Vector3D* vc=args[0].as<Vector3D>();
 
-	return asAtom(th->x * vc->x + th->y * vc->y + th->z * vc->z);
+	ret.setNumber(th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,equals)
@@ -1705,7 +1635,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,equals)
 		allfour = args[1].toInt();
 	}
 
-	return asAtom(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
+	ret.setBool(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,incrementBy)
@@ -1718,8 +1648,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,incrementBy)
 	th->x += vc->x;
 	th->y += vc->y;
 	th->z += vc->z;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,nearEquals)
@@ -1742,7 +1670,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,nearEquals)
 	dz = (th->z - vc->z) < tolerance;
 	dw = allfour ? (th->w - vc->w) < tolerance : true;
 
-	return asAtom(dx && dy && dz && dw);
+	ret.setBool(dx && dy && dz && dw);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,negate)
@@ -1754,8 +1682,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,negate)
 	th->x = -th->x;
 	th->y = -th->y;
 	th->z = -th->z;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,normalize)
@@ -1769,8 +1695,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,normalize)
 	th->x /= len;
 	th->y /= len;
 	th->z /= len;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,project)
@@ -1782,8 +1706,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,project)
 	th->x /= th->w;
 	th->y /= th->w;
 	th->z /= th->w;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,scaleBy)
@@ -1796,8 +1718,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,scaleBy)
 	th->x *= scale;
 	th->y *= scale;
 	th->z *= scale;
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,subtract)
@@ -1806,13 +1726,13 @@ ASFUNCTIONBODY_ATOM(Vector3D,subtract)
 
 	Vector3D* th=obj.as<Vector3D>();
 	Vector3D* vc=args[0].as<Vector3D>();
-	Vector3D* ret=Class<Vector3D>::getInstanceS(sys);
+	Vector3D* res=Class<Vector3D>::getInstanceS(sys);
 
-	ret->x = th->x - vc->x;
-	ret->y = th->y - vc->y;
-	ret->z = th->z - vc->z;
+	res->x = th->x - vc->x;
+	res->y = th->y - vc->y;
+	res->z = th->z - vc->z;
 
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Vector3D,setTo)
 {
@@ -1822,7 +1742,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,setTo)
 	th->x = xa;
 	th->y = ya;
 	th->z = za;
-	return asAtom::invalidAtom;
 }
 
 
@@ -2047,14 +1966,13 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_constructor)
 		for (uint32_t i = 0; i < v->size() && i < 4*4; i++)
 			th->data[i] = v->at(i).toNumber();
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,clone)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
 	Matrix3D * res = Class<Matrix3D>::getInstanceS(sys);
 	memcpy(res->data,th->data,4*4*sizeof(number_t));
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 {
@@ -2063,7 +1981,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 	ARG_UNPACK_ATOM(components)(orientationStyle, "eulerAngles");
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.recompose does nothing");
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
 {
@@ -2073,7 +1991,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
 	if (rhs.isNull())
 		throwError<ArgumentError>(kInvalidArgumentError,"rhs");
 	th->prepend(rhs->data);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
 {
@@ -2081,7 +1998,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
 	ARG_UNPACK_ATOM(xScale) (yScale) (zScale);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependScale does nothing");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 {
@@ -2089,7 +2005,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 	ARG_UNPACK_ATOM(x) (y) (z);
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependTranslation does nothing");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,append)
 {
@@ -2099,7 +2014,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,append)
 	if (lhs.isNull())
 		throwError<ArgumentError>(kInvalidArgumentError,"lhs");
 	th->append(lhs->data);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 {
@@ -2109,7 +2023,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 	th->data[12] += x;
 	th->data[13] += y;
 	th->data[14] += z;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 {
@@ -2169,7 +2082,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 	d[14] = (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin;
 	d[15] = 1.0;
 	th->append(d);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,appendScale)
 {
@@ -2201,7 +2113,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendScale)
 	d[14] = 0.0;
 	d[15] = 1.0;
 	th->append(d);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,copyColumnTo)
 {
@@ -2218,7 +2129,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyColumnTo)
 		vector3D->z = th->data[column*4+2];
 		vector3D->w = th->data[column*4+3];
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
@@ -2234,7 +2144,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
 	{
 		th->data[i] = vector->at(index+i).toNumber();
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
@@ -2250,7 +2159,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
 	{
 		vector->set(index+i,asAtom(th->data[i]));
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix3D,copyFrom)
@@ -2264,7 +2172,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyFrom)
 	{
 		th->data[i] = sourceMatrix3D->data[i];
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,copyToMatrix3D)
 {
@@ -2277,7 +2184,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyToMatrix3D)
 	{
 		dest->data[i] = th->data[i];
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix3D,identity)
@@ -2304,7 +2210,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,identity)
 	th->data[i++] = 0.0;
 	th->data[i++] = 0.0;
 	th->data[i++] = 1.0;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 {
@@ -2338,23 +2243,25 @@ ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 		th->data[14] = -d * (m11 * (m22 * m43 - m42 * m23) - m21 * (m12 * m43 - m42 * m13) + m41 * (m12 * m23 - m22 * m13));
 		th->data[15] = d * (m11 * (m22 * m33 - m32 * m23) - m21 * (m12 * m33 - m32 * m13) + m31 * (m12 * m23 - m22 * m13));
 	}
-	return asAtom(invertable);
+	ret.setBool(invertable);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
-	return asAtom(th->getDeterminant());
+	ret.setNumber(th->getDeterminant());
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
-	Vector *result = Template<Vector>::getInstanceS(sys,Class<Number>::getClass(sys),NullRef).as<Vector>();
+	asAtom v;
+	Template<Vector>::getInstanceS(v,sys,Class<Number>::getClass(sys),NullRef);
+	Vector *result = v.as<Vector>();
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
 		asAtom o = asAtom(th->data[i]);
 		result->append(o);
 	}
-	return asAtom::fromObject(result);
+	ret =asAtom::fromObject(result);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_set_rawData)
 {
@@ -2366,17 +2273,16 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_set_rawData)
 	{
 		th->data[i] = data->at(i).toNumber();
 	}
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_position)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
-	Vector3D* ret = Class<Vector3D>::getInstanceS(sys);
-	ret->w = 0;
-	ret->x = th->data[12];
-	ret->y = th->data[13];
-	ret->z = th->data[14];
-	return asAtom::fromObject(ret);
+	Vector3D* res = Class<Vector3D>::getInstanceS(sys);
+	res->w = 0;
+	res->x = th->data[12];
+	res->y = th->data[13];
+	res->z = th->data[14];
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_set_position)
 {
@@ -2388,7 +2294,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_set_position)
 	th->data[12] = value->x;
 	th->data[13] = value->y;
 	th->data[14] = value->z;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,transformVector)
 {
@@ -2400,12 +2305,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,transformVector)
 	number_t x = v->x;
 	number_t y = v->y;
 	number_t z = v->z;
-	Vector3D* ret = Class<Vector3D>::getInstanceS(sys);
-	ret->x = (x * th->data[0] + y * th->data[4] + z * th->data[8] + th->data[12]);
-	ret->y = (x * th->data[1] + y * th->data[5] + z * th->data[9] + th->data[13]);
-	ret->z = (x * th->data[2] + y * th->data[6] + z * th->data[10] + th->data[14]);
-	ret->w = (x * th->data[3] + y * th->data[7] + z * th->data[11] + th->data[15]);
-	return asAtom::fromObject(ret);
+	Vector3D* res = Class<Vector3D>::getInstanceS(sys);
+	res->x = (x * th->data[0] + y * th->data[4] + z * th->data[8] + th->data[12]);
+	res->y = (x * th->data[1] + y * th->data[5] + z * th->data[9] + th->data[13]);
+	res->z = (x * th->data[2] + y * th->data[6] + z * th->data[10] + th->data[14]);
+	res->w = (x * th->data[3] + y * th->data[7] + z * th->data[11] + th->data[15]);
+	ret = asAtom::fromObject(res);
 }
 
 
@@ -2434,5 +2339,4 @@ ASFUNCTIONBODY_ATOM(PerspectiveProjection,_constructor)
 {
 	//PerspectiveProjection * th=static_cast<PerspectiveProjection*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PerspectiveProjection is not implemented");
-	return asAtom::invalidAtom;
 }

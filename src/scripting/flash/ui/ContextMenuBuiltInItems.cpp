@@ -51,7 +51,6 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,zoom);
 
 ASFUNCTIONBODY_ATOM(ContextMenuBuiltInItems,_constructor)
 {
-	return asAtom::invalidAtom;
 }
 
 

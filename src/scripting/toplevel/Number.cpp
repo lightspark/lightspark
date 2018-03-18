@@ -47,8 +47,12 @@ number_t ASObject::toNumber()
 	case T_STRING:
 		return as<ASString>()->toNumber();
 	default:
-		//everything else is an Object regarding to the spec
-		return toPrimitive(NUMBER_HINT).toNumber();
+		{
+			//everything else is an Object regarding to the spec
+			asAtom val2p;
+			toPrimitive(val2p,NUMBER_HINT);
+			return val2p.toNumber();
+		}
 	}
 }
 
@@ -114,7 +118,9 @@ TRISTATE Number::isLess(ASObject* o)
 			return (ival<0)?TTRUE:TFALSE;
 		default:
 		{
-			double val2=o->toPrimitive().toNumber();
+			asAtom val2p;
+			o->toPrimitive(val2p,NUMBER_HINT);
+			double val2=val2p.toNumber();
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (toNumber()<val2)?TTRUE:TFALSE;
 		}
@@ -180,7 +186,10 @@ void Number::purgeTrailingZeroes(char* buf)
 ASFUNCTIONBODY_ATOM(Number,_toString)
 {
 	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromString(sys,"0");
+	{
+		ret = asAtom::fromString(sys,"0");
+		return;
+	}
 	if(!obj.isNumeric())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
 	int radix=10;
@@ -191,19 +200,25 @@ ASFUNCTIONBODY_ATOM(Number,_toString)
 					   (std::isinf(obj.toNumber())))))
 	{
 		//see e 15.7.4.2
-		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	}
 	else
 	{
-		return asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
+		ret = asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
 	}
 }
 ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 {
 	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom::fromString(sys,"0");
+	{
+		ret = asAtom::fromString(sys,"0");
+		return;
+	}
 	if(!obj.isNumeric())
-		return asAtom::fromString(sys,"0");
+	{
+		ret = asAtom::fromString(sys,"0");
+		return;
+	}
 	int radix=10;
 
 	if((radix==10) || (obj.is<Number>() &&
@@ -211,20 +226,20 @@ ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 					   (std::isinf(obj.toNumber())))))
 	{
 		//see e 15.7.4.2
-		return asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
 	}
 	else
 	{
-		return asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
+		ret = asAtom::fromObject(abstract_s(sys,Number::toStringRadix(obj.toNumber(), radix)));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Number,generator)
 {
 	if(argslen==0)
-		return asAtom(0.);
-
-	return asAtom(args[0].toNumber());
+		ret.setNumber(0.);
+	else
+		ret.setNumber(args[0].toNumber());
 }
 
 tiny_string Number::toString()
@@ -348,7 +363,7 @@ ASFUNCTIONBODY_ATOM(Number,_constructor)
 			th->ival = 0;
 			th->isfloat =false;
 		}
-		return asAtom::invalidAtom;
+		return;
 	}
 	switch (args[0].type)
 	{
@@ -363,7 +378,6 @@ ASFUNCTIONBODY_ATOM(Number,_constructor)
 			th->isfloat = true;
 			break;
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Number,toFixed)
@@ -371,7 +385,7 @@ ASFUNCTIONBODY_ATOM(Number,toFixed)
 	number_t val = obj.toNumber();
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits,0);
-	return asAtom::fromObject(abstract_s(sys,toFixedString(val, fractiondigits)));
+	ret = asAtom::fromObject(abstract_s(sys,toFixedString(val, fractiondigits)));
 }
 
 tiny_string Number::toFixedString(double v, int32_t fractiondigits)
@@ -415,7 +429,7 @@ ASFUNCTIONBODY_ATOM(Number,toExponential)
 	ARG_UNPACK_ATOM(fractionDigits, 0);
 	if (argslen == 0 || args[0].is<Undefined>())
 		fractionDigits = imin(imax(Number::countSignificantDigits(v)-1, 1), 20);
-	return asAtom::fromObject(abstract_s(sys,toExponentialString(v, fractionDigits)));
+	ret =asAtom::fromObject(abstract_s(sys,toExponentialString(v, fractionDigits)));
 }
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
@@ -518,11 +532,14 @@ ASFUNCTIONBODY_ATOM(Number,toPrecision)
 {
 	double v = obj.toNumber();
 	if (argslen == 0 || args[0].is<Undefined>())
-		return asAtom::fromObject(abstract_s(sys,toString(v)));
+	{
+		ret = asAtom::fromObject(abstract_s(sys,toString(v)));
+		return;
+	}
 
 	int32_t precision;
 	ARG_UNPACK_ATOM(precision);
-	return asAtom::fromObject(abstract_s(sys,toPrecisionString(v, precision)));
+	ret = asAtom::fromObject(abstract_s(sys,toPrecisionString(v, precision)));
 }
 
 tiny_string Number::toPrecisionString(double v, int32_t precision)
@@ -556,13 +573,16 @@ tiny_string Number::toPrecisionString(double v, int32_t precision)
 ASFUNCTIONBODY_ATOM(Number,_valueOf)
 {
 	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
-		return asAtom(0);
+	{
+		ret.setInt(0);
+		return;
+	}
 
 	if(!obj.isNumeric())
 		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
 
 	ASATOM_INCREF(obj);
-	return obj;
+	ret = obj;
 }
 
 void Number::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -57,7 +57,7 @@ void XMLNode::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 {
 	if(argslen==0)
-		return asAtom::invalidAtom;
+		return;
 	XMLNode* th=obj.as<XMLNode>();
 	uint32_t type;
 	tiny_string value;
@@ -69,7 +69,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 		th->root->parseXMLImpl(value);
 		th->node=th->root->rootNode;
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
@@ -77,12 +76,18 @@ ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
 	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 	pugi::xml_node newNode =th->node.first_child();
 	if(newNode.type() == pugi::node_null)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 	assert_and_throw(!th->root.isNull());
-	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
+	ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
@@ -90,30 +95,39 @@ ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
 	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 	pugi::xml_node newNode =th->node.last_child();
 	if(newNode.type() == pugi::node_null)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 	assert_and_throw(!th->root.isNull());
-	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
+	ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root,newNode));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 {
 	XMLNode* th=obj.as<XMLNode>();
-	Array* ret = Class<Array>::getInstanceSNoArgs(sys);
+	Array* res = Class<Array>::getInstanceSNoArgs(sys);
 	assert_and_throw(argslen==0);
 	if(th->node.type()==pugi::node_null)
-		return asAtom::fromObject(ret);
+	{
+		ret = asAtom::fromObject(res);
+		return;
+	}
 	assert_and_throw(!th->root.isNull());
 	auto it = th->node.begin();
 	for(;it!=th->node.end();++it)
 	{
 		if(it->type()!=pugi::node_pcdata) {
-			ret->push(asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, *it)));
+			res->push(asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, *it)));
 		}
 	}
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 
@@ -121,17 +135,20 @@ ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 {
 	XMLNode* th=obj.as<XMLNode>();
 	assert_and_throw(argslen==0);
-	ASObject* ret=Class<ASObject>::getInstanceS(sys);
+	ASObject* res=Class<ASObject>::getInstanceS(sys);
 	if(th->node.type()==pugi::node_null)
-		return ret;
+	{
+		ret = asAtom::fromObject(res);
+		return;
+	}
 	auto it=th->node.attributes_begin();
 	for(;it!=th->node.attributes_end();++it)
 	{
 		tiny_string attrName = it->name();
 		ASString* attrValue=abstract_s(sys,it->value());
-		ret->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
+		res->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
 	}
-	return asAtom::fromObject(ret);
+	ret = asAtom::fromObject(res);
 }
 
 pugi::xml_node XMLNode::getParentNode()
@@ -144,35 +161,41 @@ ASFUNCTIONBODY_ATOM(XMLNode,parentNode)
 	XMLNode* th=obj.as<XMLNode>();
 	pugi::xml_node parent = th->getParentNode();
 	if (parent.type()!=pugi::node_null)
-		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, parent));
+		ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, parent));
 	else
-		return asAtom::nullAtom;
+		ret.setNull();
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,nextSibling)
 {
 	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type()==pugi::node_null)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 
 	pugi::xml_node sibling = th->node.next_sibling();
 	if (sibling.type()!=pugi::node_null)
-		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
+		ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
 	else
-		return asAtom::nullAtom;
+		ret.setNull();
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 {
 	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type()==pugi::node_null)
-		return asAtom::nullAtom;
+	{
+		ret.setNull();
+		return;
+	}
 
 	pugi::xml_node sibling = th->node.previous_sibling();
 	if (sibling.type()!=pugi::node_null)
-		return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
+		ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, sibling));
 	else
-		return asAtom::nullAtom;
+		ret.setNull();
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
@@ -200,28 +223,28 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
 			break;
 	}
-	return asAtom(t);
+	ret.setInt(t);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)
 {
 	XMLNode* th=obj.as<XMLNode>();
-	return asAtom::fromObject(abstract_s(sys,th->node.name()));
+	ret = asAtom::fromObject(abstract_s(sys,th->node.name()));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeValue)
 {
 	XMLNode* th=obj.as<XMLNode>();
 	if(th->node.type() == pugi::node_pcdata)
-		return asAtom::fromObject(abstract_s(sys,th->node.value()));
+		ret = asAtom::fromObject(abstract_s(sys,th->node.value()));
 	else
-		return asAtom::nullAtom;
+		ret.setNull();
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_toString)
 {
 	XMLNode* th=obj.as<XMLNode>();
-	return asAtom::fromObject(abstract_s(sys,th->toString_priv(th->node)));
+	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv(th->node)));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getLocalName)
@@ -233,7 +256,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getLocalName)
 	{
 		localname = localname.substr(pos,localname.numChars()-pos);
 	}
-	return asAtom::fromString(sys,localname);
+	ret = asAtom::fromString(sys,localname);
 }
 ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 {
@@ -254,7 +277,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 		c->root = th->root;
 		th->root->incRef();
 	}
-	return asAtom::invalidAtom;
 }
 tiny_string XMLNode::toString()
 {
@@ -305,8 +327,6 @@ ASFUNCTIONBODY_ATOM(XMLDocument,_constructor)
 	ARG_UNPACK_ATOM(source, "");
 	if(!source.empty())
 		th->parseXMLImpl(source);
-
-	return asAtom::invalidAtom;
 }
 
 void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -335,7 +355,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,_toString)
 	//TODO: should output xmlDecl and docTypeDecl, see the
 	//documentation on XMLNode.tostring()
 	XMLDocument* th=obj.as<XMLDocument>();
-	return asAtom::fromObject(abstract_s(sys,th->toString_priv(th->rootNode)));
+	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv(th->rootNode)));
 }
 
 tiny_string XMLDocument::toString()
@@ -348,7 +368,6 @@ ASFUNCTIONBODY_ATOM(XMLDocument,parseXML)
 	XMLDocument* th=obj.as<XMLDocument>();
 	assert_and_throw(argslen==1 && args[0].type==T_STRING);
 	th->parseXMLImpl(args[0].toString(sys));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
@@ -358,7 +377,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 	assert(th->node==NULL);
 	pugi::xml_node newNode=th->rootNode;
 	th->incRef();
-	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
+	ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
 }
 ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 {
@@ -369,5 +388,5 @@ ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 	pugi::xml_node newNode;
 	newNode.set_name(name.raw_buf());
 	th->incRef();
-	return asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
+	ret = asAtom::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
 }

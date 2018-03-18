@@ -105,14 +105,13 @@ ASFUNCTIONBODY_GETTER_SETTER(ElementFormat,trackingLeft)
 ASFUNCTIONBODY_GETTER_SETTER(ElementFormat,trackingRight)
 ASFUNCTIONBODY_GETTER_SETTER(ElementFormat,typographicCase)
 
-ASFUNCTIONBODY_ATOM(ElementFormat, _constructor)
+ASFUNCTIONBODY_ATOM(ElementFormat,_constructor)
 {
 	ElementFormat* th=obj.as<ElementFormat>();
 	ARG_UNPACK_ATOM(th->fontDescription, NullRef)(th->fontSize, 12.0)(th->color, 0x000000) (th->alpha, 1.0)(th->textRotation, "auto")
 			(th->dominantBaseline, "roman") (th->alignmentBaseline, "useDominantBaseline") (th->baselineShift, 0.0)(th->kerning, "on")
 			(th->trackingRight, 0.0)(th->trackingLeft, 0.0)(th->locale, "en")(th->breakOpportunity, "auto")(th->digitCase, "default")
 			(th->digitWidth, "default")(th->ligatureLevel, "common")(th->typographicCase, "default");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ElementFormat, _clone)
 {
@@ -137,7 +136,7 @@ ASFUNCTIONBODY_ATOM(ElementFormat, _clone)
 	newformat->ligatureLevel = th->ligatureLevel;
 	newformat->typographicCase = th->typographicCase;
 	newformat->locked = false;
-	return asAtom::fromObject(newformat);
+	ret = asAtom::fromObject(newformat);
 }
 
 void FontLookup::sinit(Class_base* c)
@@ -174,10 +173,9 @@ bool FontDescription::destruct()
 	return ASObject::destruct();
 }
 
-ASFUNCTIONBODY_ATOM(FontDescription, _constructor)
+ASFUNCTIONBODY_ATOM(FontDescription,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "FontDescription class not implemented");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_GETTER_SETTER(FontDescription,cffHinting)
 ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontLookup)
@@ -199,7 +197,7 @@ ASFUNCTIONBODY_ATOM(FontDescription, _clone)
 	newfontdescription->fontWeight = th->fontWeight;
 	newfontdescription->renderingMode = th->renderingMode;
 	newfontdescription->locked = false;
-	return asAtom::fromObject(newfontdescription);
+	ret = asAtom::fromObject(newfontdescription);
 }
 ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 {
@@ -226,10 +224,13 @@ ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 		if (f->fontName == fontName &&
 			f->fontType == "embeddedCFF" &&
 			f->fontStyle == fontStyle)
-			return asAtom::trueAtom;
+		{
+			ret.setBool(true);
+			return;
+		}
 		it++;
 	}
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 
 void FontPosture::sinit(Class_base* c)
@@ -249,11 +250,10 @@ void FontMetrics::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject,_constructor, CLASS_FINAL);
 }
-ASFUNCTIONBODY_ATOM(FontMetrics, _constructor)
+ASFUNCTIONBODY_ATOM(FontMetrics,_constructor)
 {
 	//FontMetrics* th=static_cast<FontMetrics*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "FontMetrics is a stub");
-	return asAtom::invalidAtom;
 }
 
 void Kerning::sinit(Class_base* c)
@@ -288,30 +288,27 @@ void TextJustifier::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, 0);
 }
-ASFUNCTIONBODY_ATOM(TextJustifier, _constructor)
+ASFUNCTIONBODY_ATOM(TextJustifier,_constructor)
 {
 	throwError<ArgumentError>(kCantInstantiateError, "TextJustifier cannot be instantiated");
-	return asAtom::invalidAtom;
 }
 void SpaceJustifier::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextJustifier, _constructor, CLASS_FINAL);
 }
-ASFUNCTIONBODY_ATOM(SpaceJustifier, _constructor)
+ASFUNCTIONBODY_ATOM(SpaceJustifier,_constructor)
 {
 	//SpaceJustifier* th=static_cast<SpaceJustifier*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "SpaceJustifier is a stub");
-	return asAtom::invalidAtom;
 }
 void EastAsianJustifier::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextJustifier, _constructor, CLASS_FINAL);
 }
-ASFUNCTIONBODY_ATOM(EastAsianJustifier, _constructor)
+ASFUNCTIONBODY_ATOM(EastAsianJustifier,_constructor)
 {
 	//EastAsianJustifier* th=static_cast<EastAsianJustifier*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "EastAsianJustifier is a stub");
-	return asAtom::invalidAtom;
 }
 
 
@@ -357,14 +354,12 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, tabStops);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, textLineCreationResult);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, userData);
 
-ASFUNCTIONBODY_ATOM(TextBlock, _constructor)
+ASFUNCTIONBODY_ATOM(TextBlock,_constructor)
 {
 	TextBlock* th=obj.as<TextBlock>();
 	ARG_UNPACK_ATOM (th->content, NullRef);
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock constructor ignores some parameters");
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
@@ -386,7 +381,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
-		return asAtom::invalidAtom;
+		return;
 	tiny_string linetext = th->content->as<TextElement>()->text;
 	if (fitSomething && linetext == "")
 		linetext = " ";
@@ -402,7 +397,8 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	{
 		textLine->decRef();
 		th->decRef();
-		return asAtom::invalidAtom;
+		ret.setNull();
+		return;
 	}
 	if (previousLine.isNull())
 	{
@@ -426,7 +422,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 		previousLine->nextLine = textLine;
 	}
 	
-	return asAtom::fromObject(textLine.getPtr());
+	ret = asAtom::fromObject(textLine.getPtr());
 }
 ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 {
@@ -444,7 +440,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
-		return asAtom::invalidAtom;
+		return;
 
 	if (!fitSomething && (width < 0 || width > MAX_LINE_WIDTH))
 	{
@@ -467,12 +463,13 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	textLine->updateSizes();
 	if (textLine->width > textLine->textWidth)
 	{
-		return asAtom::invalidAtom;
+		ret.setNull();
+		return;
 	}
 	if (!previousLine.isNull())
 		previousLine->nextLine == textLine;
 	textLine->incRef();
-	return asAtom::fromObject(textLine.getPtr());
+	ret = asAtom::fromObject(textLine.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
@@ -484,7 +481,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>())
-		return asAtom::invalidAtom;
+		return;
 
 	if (firstLine.isNull() || firstLine->textBlock != th)
 	{
@@ -521,8 +518,6 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 			afterlast = true;
 		firstLine = tmpLine2;
 	}
-	
-	return asAtom::invalidAtom;
 }
 
 void TextElement::settext_cb(tiny_string /*oldValue*/)
@@ -539,14 +534,13 @@ void TextElement::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextElement, text,settext_cb);
 
-ASFUNCTIONBODY_ATOM(TextElement, _constructor)
+ASFUNCTIONBODY_ATOM(TextElement,_constructor)
 {
 	TextElement* th=obj.as<TextElement>();
 	ARG_UNPACK_ATOM (th->text, "");
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextElement constructor ignores some parameters");
 
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 {
@@ -570,8 +564,6 @@ ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 	if (endIndex < (int32_t)th->text.numChars())
 		s += th->text.substr(endIndex,th->text.numChars()-endIndex);
 	th->text = s;
-
-	return asAtom::invalidAtom;
 }
 
 void GroupElement::sinit(Class_base* c)
@@ -579,11 +571,10 @@ void GroupElement::sinit(Class_base* c)
 	CLASS_SETUP(c, ContentElement, _constructor, CLASS_FINAL | CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(GroupElement, _constructor)
+ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 {
 	//GroupElement* th=static_cast<GroupElement*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "GroupElement constructor not implemented");
-	return asAtom::invalidAtom;
 }
 
 TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
@@ -632,49 +623,47 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, rawTextLength);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, specifiedWidth);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, textBlockBeginIndex);
 
-ASFUNCTIONBODY_ATOM(TextLine, _constructor)
+ASFUNCTIONBODY_ATOM(TextLine,_constructor)
 {
 	// Should throw ArgumentError when called from AS code
 	//throw Class<ArgumentError>::getInstanceS("Error #2012: TextLine class cannot be instantiated.");
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
-	return asAtom(0);
+	ret.setInt(0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getDescent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent");
-	return asAtom(0);
+	ret.setInt(0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getAscent)
 {
 	TextLine* th=obj.as<TextLine>();
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent");
-	return asAtom(th->textHeight);
+	ret.setInt(th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextWidth)
 {
 	TextLine* th=obj.as<TextLine>();
-	return asAtom(th->textWidth);
+	ret.setInt(th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 {
 	TextLine* th=obj.as<TextLine>();
-	return asAtom(th->textHeight);
+	ret.setInt(th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 {
 	TextLine* th=obj.as<TextLine>();
-	return asAtom(th->width);
+	ret.setInt(th->width);
 }
 
 void TextLine::updateSizes()
@@ -759,10 +748,9 @@ void TabStop::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 }
 
-ASFUNCTIONBODY_ATOM(TabStop, _constructor)
+ASFUNCTIONBODY_ATOM(TabStop,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "TabStop constructor not implemented");
-	return asAtom::invalidAtom;
 }
 void BreakOpportunity::sinit(Class_base* c)
 {

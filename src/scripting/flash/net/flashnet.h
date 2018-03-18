@@ -457,10 +457,10 @@ public:
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 
-asAtom navigateToURL(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom sendToURL(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom registerClassAlias(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getClassByAlias(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void navigateToURL(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void sendToURL(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void registerClassAlias(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getClassByAlias(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 
 }
 

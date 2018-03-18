@@ -79,7 +79,7 @@ private:
 		uint32_t parseFontSize(const Glib::ustring& s, uint32_t currentFontSize);
 		bool for_each(pugi::xml_node& node);
 	public:
-		HtmlTextParser() : textdata(NULL) {};
+		HtmlTextParser() : textdata(NULL) {}
 		//Stores the text and formating into a TextData object
 		void parseTextAndFormating(const tiny_string& html, TextData *dest);
 	};

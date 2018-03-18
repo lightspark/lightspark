@@ -55,19 +55,19 @@ public:
 };
 
 
-asAtom clearSamples(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getInvocationCount(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getLexicalScopes(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getMasterString(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getMemberNames(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getSampleCount(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getSamples(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getSize(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom isGetterSetter(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom pauseSampling(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom sampleInternalAllocs(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom startSampling(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom stopSampling(SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getLexicalScopes(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getMasterString(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getMemberNames(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSampleCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSize(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void isGetterSetter(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void pauseSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void sampleInternalAllocs(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void startSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void stopSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 
 
 

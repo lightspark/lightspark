@@ -41,15 +41,13 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
 ASFUNCTIONBODY_ATOM(ContextMenu,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu constructor is a stub");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ContextMenu hideBuiltInItems is a stub");
-	return asAtom::invalidAtom;
 }
 
 

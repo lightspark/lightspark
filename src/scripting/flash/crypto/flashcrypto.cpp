@@ -28,9 +28,9 @@ ASFUNCTIONBODY_ATOM(lightspark,generateRandomBytes)
 	uint32_t numbytes;
 	ARG_UNPACK_ATOM (numbytes);
 	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> engine;
-	ByteArray *ret = Class<ByteArray>::getInstanceS(sys);
+	ByteArray *res = Class<ByteArray>::getInstanceS(sys);
 
     for (uint32_t i = 0; i < numbytes; i++)
-        ret->writeByte((uint8_t)engine());
-    return asAtom::fromObject(ret);
+        res->writeByte((uint8_t)engine());
+    ret = asAtom::fromObject(res);
 }

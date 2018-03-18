@@ -58,7 +58,6 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_constructor)
 {
 	SoundTransform* th=obj.as<SoundTransform>();
 	ARG_UNPACK_ATOM(th->volume, 1.0)(th->pan, 0.0);
-	return asAtom::invalidAtom;
 }
 
 void Video::sinit(Class_base* c)
@@ -120,6 +119,7 @@ void Video::renderImpl(RenderContext& ctxt) const
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
+		ctxt.setProperties(this->getBlendMode());
 		const MATRIX totalMatrix=getConcatenatedMatrix();
 		float m[16];
 		totalMatrix.get4DMatrix(m);
@@ -151,25 +151,24 @@ ASFUNCTIONBODY_ATOM(Video,_constructor)
 		th->width=args[0].toInt();
 	if(1 < argslen)
 		th->height=args[1].toInt();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoWidth)
 {
 	Video* th=obj.as<Video>();
-	return asAtom(th->videoWidth);
+	ret.setUInt(th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
 {
 	Video* th=obj.as<Video>();
-	return asAtom(th->videoHeight);
+	ret.setUInt(th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getWidth)
 {
 	Video* th=obj.as<Video>();
-	return asAtom(th->width);
+	ret.setUInt(th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setWidth)
@@ -178,13 +177,12 @@ ASFUNCTIONBODY_ATOM(Video,_setWidth)
 	Mutex::Lock l(th->mutex);
 	assert_and_throw(argslen==1);
 	th->width=args[0].toInt();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getHeight)
 {
 	Video* th=obj.as<Video>();
-	return asAtom(th->height);
+	ret.setUInt(th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setHeight)
@@ -193,7 +191,6 @@ ASFUNCTIONBODY_ATOM(Video,_setHeight)
 	assert_and_throw(argslen==1);
 	Mutex::Lock l(th->mutex);
 	th->height=args[0].toInt();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Video,attachNetStream)
@@ -204,7 +201,7 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 	{
 		Mutex::Lock l(th->mutex);
 		th->netStream=NullRef;
-		return asAtom::invalidAtom;
+		return;
 	}
 
 	//Validate the parameter
@@ -216,12 +213,10 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 
 	Mutex::Lock l(th->mutex);
 	th->netStream=_MR(args[0].as<NetStream>());
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Video,clear)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"clear is not implemented");
-	return asAtom::invalidAtom;
 }
 
 _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
@@ -272,12 +267,10 @@ void Sound::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 
 	if (argslen>0)
-		Sound::load(sys,obj, args, argslen);
-
-	return asAtom::invalidAtom;
+		Sound::load(ret,sys,obj, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(Sound,load)
@@ -300,7 +293,7 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 		//Notify an error during loading
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
-		return asAtom::invalidAtom;
+		return;
 	}
 
 	//The URL is valid so we can start the download
@@ -324,7 +317,6 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
 	}
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Sound,play)
@@ -338,9 +330,9 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 
 	th->incRef();
 	if (th->container)
-		return asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData));
+		ret = asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData));
 	else
-		return asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
+		ret = asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
 }
 
 ASFUNCTIONBODY_ATOM(Sound,close)
@@ -348,8 +340,6 @@ ASFUNCTIONBODY_ATOM(Sound,close)
 	Sound* th=obj.as<Sound>();
 	if(th->downloader)
 		th->downloader->stop();
-
-	return asAtom::invalidAtom;
 }
 
 void Sound::setBytesTotal(uint32_t b)
@@ -390,7 +380,6 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundMixer,soundTransform);
 ASFUNCTIONBODY_ATOM(SoundMixer,stopAll)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SoundMixer.stopAll does nothing");
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 {
@@ -404,7 +393,6 @@ ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 		output->writeByte(0);
 	output->setPosition(0);
 	LOG(LOG_NOT_IMPLEMENTED,"SoundMixer.computeSpectrum not implemented");
-	return asAtom::invalidAtom;
 }
 
 void SoundLoaderContext::sinit(Class_base* c)
@@ -422,7 +410,6 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 	th->bufferTime = 1000;
 	th->checkPolicyFile = false;
 	ARG_UNPACK_ATOM(th->bufferTime,1000)(th->checkPolicyFile,false);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
@@ -482,18 +469,15 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 	}
 }
 
-ASFUNCTIONBODY_ATOM(SoundChannel, _constructor)
+ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 {
-	EventDispatcher::_constructor(sys,obj, NULL, 0);
-
-	return asAtom::invalidAtom;
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 }
 
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 {
 	SoundChannel* th=obj.as<SoundChannel>();
 	th->threadAbort();
-	return asAtom::invalidAtom;
 }
 
 void SoundChannel::execute()
@@ -624,13 +608,13 @@ void StageVideo::finalize()
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoWidth)
 {
 	StageVideo* th=obj.as<StageVideo>();
-	return asAtom(th->videoWidth);
+	ret.setUInt(th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoHeight)
 {
 	StageVideo* th=obj.as<StageVideo>();
-	return asAtom(th->videoHeight);
+	ret.setUInt(th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
@@ -641,7 +625,7 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 	{
 		Mutex::Lock l(th->mutex);
 		th->netStream=NullRef;
-		return asAtom::invalidAtom;
+		return;
 	}
 
 	//Validate the parameter
@@ -653,7 +637,6 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 
 	Mutex::Lock l(th->mutex);
 	th->netStream=_MR(args[0].as<NetStream>());
-	return asAtom::invalidAtom;
 }
 
 void StageVideoAvailability::sinit(Class_base* c)
@@ -682,5 +665,4 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Microphone,isSupported)
 ASFUNCTIONBODY_ATOM(Microphone,getMicrophone)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Microphone.getMicrophone always returns null");
-	return asAtom::invalidAtom;
 }

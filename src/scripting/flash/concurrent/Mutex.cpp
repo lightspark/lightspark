@@ -36,25 +36,22 @@ void ASMutex::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ASMutex,_constructor)
 {
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ASMutex,_lock)
 {
 	ASMutex* th=obj.as<ASMutex>();
 	th->mutex.lock();
 	th->lockcount++;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ASMutex,_unlock)
 {
 	ASMutex* th=obj.as<ASMutex>();
 	th->mutex.unlock();
 	th->lockcount--;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(ASMutex,_trylock)
 {
 	ASMutex* th=obj.as<ASMutex>();
-	return asAtom(th->mutex.trylock());
+	ret.setBool(th->mutex.trylock());
 }
 

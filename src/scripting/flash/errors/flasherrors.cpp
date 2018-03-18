@@ -27,7 +27,6 @@ ASFUNCTIONBODY_ATOM(IOError,_constructor)
 {
 	IOError* th=obj.as<IOError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void IOError::sinit(Class_base* c)
@@ -43,7 +42,6 @@ ASFUNCTIONBODY_ATOM(EOFError,_constructor)
 {
 	EOFError* th=obj.as<EOFError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void EOFError::sinit(Class_base* c)
@@ -59,7 +57,6 @@ ASFUNCTIONBODY_ATOM(IllegalOperationError,_constructor)
 {
 	IllegalOperationError* th=obj.as<IllegalOperationError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void IllegalOperationError::sinit(Class_base* c)
@@ -77,7 +74,6 @@ ASFUNCTIONBODY_ATOM(InvalidSWFError,_constructor)
 	int32_t errorID;
 	ARG_UNPACK_ATOM(th->message, "") (errorID, 0);
 	th->setErrorID(errorID);
-	return asAtom::invalidAtom;
 }
 
 void InvalidSWFError::sinit(Class_base* c)
@@ -93,7 +89,6 @@ ASFUNCTIONBODY_ATOM(MemoryError,_constructor)
 {
 	MemoryError* th=obj.as<MemoryError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void MemoryError::sinit(Class_base* c)
@@ -109,7 +104,6 @@ ASFUNCTIONBODY_ATOM(ScriptTimeoutError,_constructor)
 {
 	ScriptTimeoutError* th=obj.as<ScriptTimeoutError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void ScriptTimeoutError::sinit(Class_base* c)
@@ -125,7 +119,6 @@ ASFUNCTIONBODY_ATOM(StackOverflowError,_constructor)
 {
 	StackOverflowError* th=obj.as<StackOverflowError>();
 	ARG_UNPACK_ATOM(th->message, "");
-	return asAtom::invalidAtom;
 }
 
 void StackOverflowError::sinit(Class_base* c)

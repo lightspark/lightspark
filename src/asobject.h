@@ -31,7 +31,7 @@
 #include <limits>
 
 #define ASFUNCTION_ATOM(name) \
-	static asAtom name(SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
+	static void name(asAtom& ret,SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
 
 /* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
@@ -60,22 +60,22 @@
 
 /* general purpose body for an AS function */
 #define ASFUNCTIONBODY_ATOM(c,name) \
-	asAtom c::name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
+	void c::name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
 
 /* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
-	asAtom c::_getter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
 		c* th = obj.as<c>(); \
 		if(argslen != 0) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(sys,th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,sys,th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_getter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
@@ -83,12 +83,12 @@
 		if(argslen != 0) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " getter is not implemented"); \
-		return ArgumentConversionAtom<decltype(th->name)>::toAbstract(sys,th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,sys,th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
-	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret,SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
@@ -96,11 +96,10 @@
 		if(argslen != 1) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
-		return asAtom::invalidAtom; \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
-	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
@@ -109,14 +108,13 @@
 			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,obj.getObject()->getClassName() <<"."<< #name << " setter is not implemented"); \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
-		return asAtom::invalidAtom; \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
  * After the property has been updated, the callback member function is called with the old value
  * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
-	asAtom c::_setter_##name(SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!obj.is<c>()) \
 			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
@@ -126,7 +124,6 @@
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
 		th->callback(oldValue); \
-		return asAtom::invalidAtom; \
 	}
 
 /* full body for a getter declared by ASPROPERTY_GETTER_SETTER or ASFUNCTION_GETTER_SETTER */
@@ -219,6 +216,7 @@ public:
 	ASObject* toObject(SystemState* sys);
 	// returns NULL if this atom is a primitive;
 	inline ASObject* getObject() const { return objval; }
+	inline number_t getNumber() const { return numberval; }
 	static asAtom fromObject(ASObject* obj)
 	{
 		asAtom a;
@@ -256,9 +254,9 @@ public:
 	 * if args_refcounted is true, one reference of obj and of each arg is consumed by this method.
 	 * Return the asAtom the function returned.
 	 */
-	asAtom callFunction(asAtom& obj, asAtom* args, uint32_t num_args, bool args_refcounted);
+	void callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted);
 	// returns invalidAtom for not-primitive values
-	asAtom getVariableByMultiname(SystemState *sys, const multiname& name);
+	void getVariableByMultiname(asAtom &ret, SystemState *sys, const multiname& name);
 	void fillMultiname(SystemState *sys, multiname& name);
 	void replace(ASObject* obj);
 	bool stringcompare(SystemState* sys, uint32_t stringID);
@@ -293,6 +291,8 @@ public:
 	inline void setUInt(uint32_t val);
 	inline void setNumber(number_t val);
 	inline void setBool(bool val);
+	inline void setNull();
+	inline void setUndefined();
 	inline void increment();
 	inline void decrement();
 	inline void increment_i();
@@ -341,7 +341,7 @@ struct variable
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(asAtom v, SystemState* sys, bool _isrefcounted = true);
+	void setVar(asAtom& v, SystemState* sys, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
@@ -649,9 +649,9 @@ public:
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
 
-	virtual asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		return getVariableByMultiname(name,opt,classdef);
+		getVariableByMultiname(ret,name,opt,classdef);
 	}
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
@@ -663,17 +663,17 @@ public:
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	asAtom getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	void getVariableByMultiname(asAtom& ret,const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
-	asAtom getVariableByMultiname(const tiny_string& name, std::list<tiny_string> namespaces);
+	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);
 	/*
 	 * Execute a AS method on this object. Returns the value
 	 * returned by the function. One reference of each args[i] is
 	 * consumed. The method must exist, otherwise a TypeError is
 	 * thrown.
 	 */
-	asAtom executeASMethod(const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
+	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	virtual void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
@@ -725,7 +725,7 @@ public:
 	{
 		return Variables.getNameAt(sys,i);
 	}
-	asAtom getValueAt(int i);
+	void getValueAt(asAtom &ret, int i);
 	inline SWFOBJECT_TYPE getObjectType() const
 	{
 		return type;
@@ -751,7 +751,7 @@ public:
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	virtual number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-	asAtom toPrimitive(TP_HINT hint = NO_HINT);
+	void toPrimitive(asAtom& ret,TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
 
 	bool isInitialized() const {return traitsInitialized;}
@@ -761,9 +761,9 @@ public:
 	 * "toString" AS-functions which may be members of this
 	 *  object */
 	bool has_valueOf();
-	asAtom call_valueOf();
+	void call_valueOf(asAtom &ret);
 	bool has_toString();
-	asAtom call_toString();
+	void call_toString(asAtom &ret);
 	tiny_string call_toJSON(bool &ok, std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces, const tiny_string &filter);
 
 	/* Helper function for calling getClass()->getQualifiedClassName() */
@@ -786,8 +786,8 @@ public:
 
 	//Enumeration handling
 	virtual uint32_t nextNameIndex(uint32_t cur_index);
-	virtual asAtom nextName(uint32_t index);
-	virtual asAtom nextValue(uint32_t index);
+	virtual void nextName(asAtom &ret, uint32_t index);
+	virtual void nextValue(asAtom &ret, uint32_t index);
 
 	//Called when the object construction is completed. Used by MovieClip implementation
 	inline virtual void constructionComplete()
@@ -1587,6 +1587,17 @@ void asAtom::setBool(bool val)
 {
 	type = T_BOOLEAN;
 	boolval = val;
+	objval = NULL;
+}
+
+void asAtom::setNull()
+{
+	type = T_NULL;
+	objval = NULL;
+}
+void asAtom::setUndefined()
+{
+	type = T_UNDEFINED;
 	objval = NULL;
 }
 

@@ -61,20 +61,18 @@ void Math::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Math,_constructor)
 {
 	throwError<TypeError>(kMathNotConstructorError);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Math,generator)
 {
 	throwError<TypeError>(kMathNotFunctionError);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Math,atan2)
 {
 	number_t n1, n2;
 	ARG_UNPACK_ATOM (n1) (n2);
-	return asAtom(::atan2(n1,n2));
+	ret.setNumber(::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY_ATOM(Math,_max)
@@ -94,7 +92,7 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 		else
 			largest = (arg>largest) ? arg : largest;
 	}
-	return asAtom(largest);
+	ret.setNumber(largest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,_min)
@@ -115,14 +113,14 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 			smallest = (arg<smallest)? arg : smallest;
 	}
 
-	return asAtom(smallest);
+	ret.setNumber(smallest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,exp)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::exp(n));
+	ret.setNumber(::exp(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,acos)
@@ -130,7 +128,7 @@ ASFUNCTIONBODY_ATOM(Math,acos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::acos(n));
+	ret.setNumber(::acos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,asin)
@@ -138,7 +136,7 @@ ASFUNCTIONBODY_ATOM(Math,asin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::asin(n));
+	ret.setNumber(::asin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,atan)
@@ -146,7 +144,7 @@ ASFUNCTIONBODY_ATOM(Math,atan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::atan(n));
+	ret.setNumber(::atan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,cos)
@@ -154,7 +152,7 @@ ASFUNCTIONBODY_ATOM(Math,cos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::cos(n));
+	ret.setNumber(::cos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sin)
@@ -162,7 +160,7 @@ ASFUNCTIONBODY_ATOM(Math,sin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::sin(n));
+	ret.setNumber(::sin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,tan)
@@ -170,34 +168,42 @@ ASFUNCTIONBODY_ATOM(Math,tan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::tan(n));
+	ret.setNumber(::tan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,abs)
 {
-	asAtom a;
-	ARG_UNPACK_ATOM (a);
+	if(argslen == 0)
+		throwError<ArgumentError>(kWrongArgumentCountError, "Math", "1", "0");
+	asAtom& a = args[0];
 	switch (a.type)
 	{
 		case T_INTEGER:
 		{
 			int32_t n = a.toInt();
 			if (n == INT32_MIN)
-				return asAtom((uint32_t)n);
-			return asAtom(n < 0 ? -n : n);
+				ret = asAtom((uint32_t)n);
+			else
+				ret = asAtom(n < 0 ? -n : n);
+			break;
 		}
 		case T_UINTEGER:
-			return a;
+			ret = a;
+			break;
 		case T_UNDEFINED:
-			return asAtom(Number::NaN);
+			ret = asAtom(Number::NaN);
+			break;
 		case T_NULL:
-			return asAtom((int32_t)0);
+			ret = asAtom((int32_t)0);
+			break;
 		default:
 		{
 			number_t n = a.toNumber();
 			if (n  == 0.)
-				return asAtom((int32_t)0);
-			return asAtom((number_t)::fabs(n));
+				ret = asAtom((int32_t)0);
+			else
+				ret = asAtom((number_t)::fabs(n));
+			break;
 		}
 	}
 }
@@ -207,25 +213,26 @@ ASFUNCTIONBODY_ATOM(Math,ceil)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (std::isnan(n))
-		return asAtom(Number::NaN);
+		ret.setNumber(Number::NaN);
 	else if (n == 0.)
-		return asAtom(std::signbit(n) ? -0. : 0.);
+		ret.setNumber(std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::ceil(n);
 		if (n2 == 0.)
-				return asAtom(std::signbit(n2) ? -0. : 0.);
-		return asAtom((int32_t)n2);
+			ret.setNumber(std::signbit(n2) ? -0. : 0.);
+		else
+			ret.setInt((int32_t)n2);
 	}
 	else
-		return asAtom(::ceil(n));
+		ret.setNumber(::ceil(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,log)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::log(n));
+	ret.setNumber(::log(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,floor)
@@ -233,16 +240,17 @@ ASFUNCTIONBODY_ATOM(Math,floor)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (n == 0.)
-		return asAtom(std::signbit(n) ? -0. : 0.);
+		ret.setNumber(std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::floor(n);
 		if (n2 == 0.)
-				return asAtom(std::signbit(n2) ? -0. : 0.);
-		return asAtom((int32_t)n2);
+			ret.setNumber(std::signbit(n2) ? -0. : 0.);
+		else
+			ret.setInt((int32_t)n2);
 	}
 	else
-		return asAtom((number_t)::floor(n));
+		ret.setNumber((number_t)::floor(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,round)
@@ -250,24 +258,24 @@ ASFUNCTIONBODY_ATOM(Math,round)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (std::isnan(n))
-		return asAtom(Number::NaN);
+		ret.setNumber(Number::NaN);
 	else if (n < 0 && n >= -0.5)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		return asAtom(obj.getObject() == Class<Number>::getClass(sys) ? -0. : 0.);
+		ret.setNumber(obj.getObject() == Class<Number>::getClass(sys) ? -0. : 0.);
 	else if (n == 0.)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		return asAtom(obj.getObject() == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
+		ret.setNumber(obj.getObject() == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
-		return asAtom((int32_t)::floor(n+0.5));
+		ret.setInt((int32_t)::floor(n+0.5));
 	else
-		return asAtom((number_t)::floor(n+0.5));
+		ret.setNumber((number_t)::floor(n+0.5));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sqrt)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	return asAtom(::sqrt(n));
+	ret.setNumber(::sqrt(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,pow)
@@ -275,8 +283,9 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 	number_t x, y;
 	ARG_UNPACK_ATOM (x) (y);
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
-		return asAtom(Number::NaN);
-	return asAtom(::pow(x,y));
+		ret.setNumber(Number::NaN);
+	else
+		ret.setNumber(::pow(x,y));
 }
 
 ASFUNCTIONBODY_ATOM(Math,random)
@@ -284,9 +293,9 @@ ASFUNCTIONBODY_ATOM(Math,random)
 	if(argslen > 0)
 		throwError<ArgumentError>(kWrongArgumentCountError, "object", "", "");
 
-	number_t ret=rand();
-	ret/=(number_t(1.)+RAND_MAX);
-	return asAtom(ret);
+	number_t res=rand();
+	res/=(number_t(1.)+RAND_MAX);
+	ret.setNumber(res);
 }
 
 

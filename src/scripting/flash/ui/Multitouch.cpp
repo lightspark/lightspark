@@ -43,23 +43,23 @@ ASFUNCTIONBODY_GETTER_SETTER(Multitouch, inputMode);
 ASFUNCTIONBODY_ATOM(Multitouch, getMaxTouchPoints)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return asAtom(1);
+	ret.setInt(1);
 }
 
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportedGestures)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return asAtom::fromObject(Class<Vector>::getInstanceS(sys)); 
+	ret = asAtom::fromObject(Class<Vector>::getInstanceS(sys)); 
 }
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportsGestureEvents)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return asAtom::falseAtom; 
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportsTouchEvents)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	return asAtom::falseAtom; 
+	ret.setBool(false);
 }
 
 void MultitouchInputMode::sinit(Class_base* c)

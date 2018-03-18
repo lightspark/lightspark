@@ -44,7 +44,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	return asAtom(sys->getEngineData()->FileExists(filename));
+	ret.setBool(sys->getEngineData()->FileExists(filename));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
@@ -52,7 +52,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,read)
 	ARG_UNPACK_ATOM(filename);
 	if (!sys->getEngineData()->FileExists(filename))
 		throwError<ASError>(kFileOpenError,filename);
-	return asAtom::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(filename)));
+	ret = asAtom::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(filename)));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
@@ -60,7 +60,6 @@ ASFUNCTIONBODY_ATOM(avmplusFile,write)
 	tiny_string data;
 	ARG_UNPACK_ATOM(filename)(data);
 	sys->getEngineData()->FileWrite(filename,data);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
@@ -70,7 +69,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 		throwError<ASError>(kFileOpenError,filename);
 	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
 	sys->getEngineData()->FileReadByteArray(filename,res);
-	return asAtom::fromObject(res);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 {
@@ -78,7 +77,6 @@ ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 	_NR<ByteArray> data;
 	ARG_UNPACK_ATOM(filename)(data);
 	sys->getEngineData()->FileWriteByteArray(filename,data.getPtr());
-	return asAtom::invalidAtom;
 }
 
 avmplusSystem::avmplusSystem(Class_base* c):
@@ -101,7 +99,7 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(c->getSystemState(),_totalMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("privateMemory","",Class<IFunction>::getFunction(c->getSystemState(),_privateMemory),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("swfVersion","",Class<IFunction>::getFunction(c->getSystemState(),_swfVersion),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("argv","",Class<IFunction>::getFunction(c->getSystemState(),argv),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("argv","",Class<IFunction>::getFunction(c->getSystemState(),argv),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(c->getSystemState(),write),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("exit","",Class<IFunction>::getFunction(c->getSystemState(),exit),NORMAL_METHOD,false);
@@ -112,85 +110,82 @@ void avmplusSystem::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(avmplusSystem,getFeatures)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getFeatures is unimplemented."));
-	return asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+	ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,getRunmode)
 {
-	return asAtom::fromString(sys,sys->useJit ? "jit":"interpreted");
+	ret = asAtom::fromString(sys,sys->useJit ? "jit":"interpreted");
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,queueCollection)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.queueCollection is unimplemented."));
-	return asAtom::invalidAtom;
+	ret.setUndefined();
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,forceFullCollection)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.forceFullCollection is unimplemented."));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,getAvmplusVersion)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getAvmplusVersion is unimplemented."));
-	return asAtom::fromString(sys,"0");
+	ret = asAtom::fromString(sys,"0");
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,pauseForGCIfCollectionImminent)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.pauseForGCIfCollectionImminent is unimplemented."));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,isDebugger)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
-	return asAtom::falseAtom;
+	ret.setBool(false);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.freeMemory is unimplemented."));
-	return asAtom(1024);
+	ret.setUInt(1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.totalMemory is unimplemented."));
-	return asAtom(1024);
+	ret.setUInt(1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));
-	return asAtom(1024);
+	ret.setUInt(1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_swfVersion)
 {
-	return asAtom(sys->getSwfVersion());
+	ret.setUInt(sys->getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.argv is unimplemented."));
-	return asAtom::fromObject(Class<Array>::getInstanceS(sys));
+	ret = asAtom::fromObject(Class<Array>::getInstanceS(sys));
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exec)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exec is unimplemented."));
-	return asAtom::invalidAtom;
+	if (argslen == 0)
+		throwError<ArgumentError>(kWrongArgumentCountError,"exec",">0",Integer::toString(argslen));
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.write is unimplemented."));
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exit is unimplemented."));
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 {
@@ -204,13 +199,16 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			return asAtom(o->toNumber());
+			ret.setNumber(o->toNumber());
+			break;
 		case T_QNAME:
 		case T_NAMESPACE:
-			return asAtom(Number::NaN);
+			ret.setNumber(Number::NaN);
+			break;
 		default:
 			o->incRef();
-			return asAtom::fromObject(o.getPtr());
+			ret = asAtom::fromObject(o.getPtr());
+			break;
 	}
 }
 
@@ -239,18 +237,17 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 		th->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
 	else
 		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(sys,parentDomain->appdomain));
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 {
-	avmplusDomain* ret = Class<avmplusDomain>::getInstanceSNoArgs(sys);
-	ret->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
-	return asAtom::fromObject(ret);
+	avmplusDomain* res = Class<avmplusDomain>::getInstanceSNoArgs(sys);
+	res->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+	ret = asAtom::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 {
-	return asAtom(MIN_DOMAIN_MEMORY_LIMIT);
+	ret.setUInt(MIN_DOMAIN_MEMORY_LIMIT);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
@@ -278,7 +275,6 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 {
@@ -303,19 +299,21 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,getClass)
 {
-	return getDefinitionByName(sys,obj,args,argslen);
+	getDefinitionByName(ret,sys,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getDomainMemory)
 {
 	avmplusDomain* th = obj.as<avmplusDomain>();
 	if (th->appdomain->domainMemory.isNull())
-		return asAtom::invalidAtom;
+	{
+		ret.setNull();
+		return;
+	}
 	th->appdomain->domainMemory->incRef();
-	return asAtom::fromObject(th->appdomain->domainMemory.getPtr());
+	ret = asAtom::fromObject(th->appdomain->domainMemory.getPtr());
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 {
@@ -325,11 +323,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 	if (b.isNull())
 	{
 		th->appdomain->domainMemory = b;
-		return asAtom::invalidAtom;
+		return;
 	}
 		
 	if (b->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
 		throwError<RangeError>(kEndOfFileError);
 	th->appdomain->domainMemory = b;
-	return asAtom::invalidAtom;
 }

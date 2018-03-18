@@ -58,17 +58,17 @@ public:
 
 
 
-asAtom getQualifiedClassName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getQualifiedSuperclassName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getDefinitionByName(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom getTimer(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom setInterval(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom setTimeout(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom clearInterval(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom clearTimeout(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom describeType(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom escapeMultiByte(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-asAtom unescapeMultiByte(SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getQualifiedClassName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getQualifiedSuperclassName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getDefinitionByName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getTimer(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void setInterval(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void setTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearInterval(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void describeType(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void escapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void unescapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 }
 
 #endif /* SCRIPTING_FLASH_UTILS_FLASHUTILS_H */

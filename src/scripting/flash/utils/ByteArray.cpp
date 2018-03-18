@@ -233,13 +233,12 @@ uint32_t ByteArray::getPosition() const
 
 ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 {
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	return asAtom(th->getPosition());
+	ret.setUInt(th->getPosition());
 }
 
 void ByteArray::setPosition(uint32_t p)
@@ -254,16 +253,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setPosition)
 	ByteArray* th=obj.as<ByteArray>();
 	uint32_t pos=args[0].toUInt();
 	th->setPosition(pos);
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getEndian)
 {
 	ByteArray* th=obj.as<ByteArray>();
 	if(th->littleEndian)
-		return asAtom::fromString(sys,Endian::littleEndian);
+		ret = asAtom::fromString(sys,Endian::littleEndian);
 	else
-		return asAtom::fromString(sys,Endian::bigEndian);
+		ret = asAtom::fromString(sys,Endian::bigEndian);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
@@ -275,13 +273,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 		th->littleEndian = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getObjectEncoding)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	return asAtom(th->objectEncoding);
+	ret.setUInt(th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
@@ -294,12 +291,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 
 	th->objectEncoding=value;
 	th->currentObjectEncoding=value;
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getDefaultObjectEncoding)
 {
-	return asAtom(sys->staticNetConnectionDefaultObjectEncoding);
+	ret.setUInt(sys->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
@@ -312,7 +308,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
 		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setLength)
@@ -323,10 +318,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setLength)
 	uint32_t newLen=args[0].toInt();
 	th->lock();
 	if(newLen==th->len) //Nothing to do
-		return asAtom::invalidAtom;
+		return;
 	th->setLength(newLen);
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 void ByteArray::setLength(uint32_t newLen)
 {
@@ -353,13 +347,13 @@ void ByteArray::setLength(uint32_t newLen)
 ASFUNCTIONBODY_ATOM(ByteArray,_getLength)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	return asAtom(th->len);
+	ret.setUInt(th->len);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getBytesAvailable)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	return asAtom(th->len-th->position);
+	ret.setUInt(th->len-th->position);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
@@ -367,15 +361,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
 	ByteArray* th=obj.as<ByteArray>();
 
 	th->lock();
-	uint8_t ret;
-	if(!th->readByte(ret))
+	uint8_t res;
+	if(!th->readByte(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
 	th->unlock();
-	return asAtom(ret!=0);
+	ret.setBool(res!=0);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
@@ -409,8 +403,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
 	memcpy(buf+offset,th->bytes+th->position,length);
 	th->position+=length;
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 bool ByteArray::readUTF(tiny_string& ret)
@@ -451,7 +443,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTF)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtom::fromObject(abstract_s(sys,res));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
@@ -484,7 +476,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 	strncpy(buf,(char*)bufStart,(size_t)length);
 	th->position+=length;
 	th->unlock();
-	return asAtom::fromObject(abstract_s(sys,(char *)buf,strlen(buf)));
+	ret = asAtom::fromObject(abstract_s(sys,(char *)buf,strlen(buf)));
 }
 
 void ByteArray::writeUTF(const tiny_string& str)
@@ -509,7 +501,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTF)
 	th->lock();
 	th->writeUTF(args[0].toString(sys));
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
@@ -524,8 +515,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 	memcpy(th->bytes+th->position,str.raw_buf(),str.numBytes());
 	th->position+=str.numBytes();
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
@@ -543,8 +532,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 	memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
 	th->position+=value.numBytes();
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 uint32_t ByteArray::writeObject(ASObject* obj)
@@ -568,8 +555,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeObject)
 	th->lock();
 	th->writeObject(args[0].toObject(sys));
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 void ByteArray::writeShort(uint16_t val)
@@ -589,7 +574,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeShort)
 	th->lock();
 	th->writeShort((static_cast<uint16_t>(value & 0xffff)));
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeBytes)
@@ -622,8 +606,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeBytes)
 	memcpy(th->bytes+th->position,buf+offset,length);
 	th->position+=length;
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 void ByteArray::writeByte(uint8_t b)
@@ -649,8 +631,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeByte)
 	th->lock();
 	th->writeByte(value&0xff);
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeBoolean)
@@ -665,8 +645,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeBoolean)
 	else
 		th->writeByte(0);
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeDouble)
@@ -683,8 +661,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeDouble)
 	memcpy(th->bytes+th->position,&value2,8);
 	th->position+=8;
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeFloat)
@@ -701,8 +677,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeFloat)
 	memcpy(th->bytes+th->position,&value2,4);
 	th->position+=4;
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeInt)
@@ -717,8 +691,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeInt)
 	memcpy(th->bytes+th->position,&value,4);
 	th->position+=4;
 	th->unlock();
-
-	return asAtom::invalidAtom;
 }
 
 void ByteArray::writeUnsignedInt(uint32_t val)
@@ -737,7 +709,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUnsignedInt)
 	uint32_t value=th->endianIn(args[0].toUInt());
 	th->writeUnsignedInt(value);
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 bool ByteArray::peekByte(uint8_t& b)
@@ -792,14 +763,14 @@ ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 	assert_and_throw(argslen==0);
 
 	th->lock();
-	uint8_t ret;
-	if(!th->readByte(ret))
+	uint8_t res;
+	if(!th->readByte(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return asAtom((int8_t)ret);
+	ret.setInt((int8_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
@@ -814,14 +785,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 		throwError<EOFError>(kEOFError);
 	}
 
-	uint64_t ret;
-	memcpy(&ret,th->bytes+th->position,8);
+	uint64_t res;
+	memcpy(&res,th->bytes+th->position,8);
 	th->position+=8;
-	ret = th->endianOut(ret);
+	res = th->endianOut(res);
 
-	double *doubleptr=reinterpret_cast<double*>(&ret);
+	double *doubleptr=reinterpret_cast<double*>(&res);
 	th->unlock();
-	return asAtom(*doubleptr);
+	ret.setNumber(*doubleptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
@@ -836,14 +807,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 		throwError<EOFError>(kEOFError);
 	}
 
-	uint32_t ret;
-	memcpy(&ret,th->bytes+th->position,4);
+	uint32_t res;
+	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
-	ret = th->endianOut(ret);
+	res = th->endianOut(res);
 
-	float *floatptr=reinterpret_cast<float*>(&ret);
+	float *floatptr=reinterpret_cast<float*>(&res);
 	th->unlock();
-	return asAtom(*floatptr);
+	ret.setNumber(*floatptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)
@@ -858,11 +829,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 		throwError<EOFError>(kEOFError);
 	}
 
-	uint32_t ret;
-	memcpy(&ret,th->bytes+th->position,4);
+	uint32_t res;
+	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
 	th->unlock();
-	return asAtom((int32_t)th->endianOut(ret));
+	ret.setInt((int32_t)th->endianOut(res));
 }
 
 bool ByteArray::readShort(uint16_t& ret)
@@ -882,16 +853,16 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	ByteArray* th=obj.as<ByteArray>();
 	assert_and_throw(argslen==0);
 
-	uint16_t ret;
+	uint16_t res;
 	th->lock();
-	if(!th->readShort(ret))
+	if(!th->readShort(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
 	th->unlock();
-	return asAtom((int16_t)ret);
+	ret.setInt((int16_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
@@ -899,14 +870,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 	ByteArray* th=obj.as<ByteArray>();
 	assert_and_throw(argslen==0);
 
-	uint8_t ret;
+	uint8_t res;
 	th->lock();
-	if (!th->readByte(ret))
+	if (!th->readByte(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-	return asAtom((uint32_t)ret);
+	ret.setUInt((uint32_t)res);
 }
 
 bool ByteArray::readUnsignedInt(uint32_t& ret)
@@ -926,15 +897,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 	ByteArray* th=obj.as<ByteArray>();
 	assert_and_throw(argslen==0);
 
-	uint32_t ret;
+	uint32_t res;
 	th->lock();
-	if(!th->readUnsignedInt(ret))
+	if(!th->readUnsignedInt(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	return asAtom(ret);
+	ret.setUInt(res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
@@ -942,15 +913,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 	ByteArray* th=obj.as<ByteArray>();
 	assert_and_throw(argslen==0);
 
-	uint16_t ret;
+	uint16_t res;
 	th->lock();
-	if(!th->readShort(ret))
+	if(!th->readShort(res))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
 
-	return asAtom((uint32_t)ret);
+	ret.setUInt((uint32_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
@@ -969,7 +940,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 
 	// TODO: should convert from charset to UTF-8
 	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset");
-	return asAtom::fromObject(abstract_s(sys,(char*)th->bytes+th->position,strlen));
+	ret = asAtom::fromObject(abstract_s(sys,(char*)th->bytes+th->position,strlen));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readObject)
@@ -981,12 +952,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 	{
 		th->unlock();
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
-		return asAtom::undefinedAtom;
+		ret.setUndefined();
+		return;
 		//throwError<EOFError>(kEOFError);
 	}
 	//assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
 	Amf3Deserializer d(th);
-	asAtom ret;
 	try
 	{
 		ret=d.readObject();
@@ -1002,10 +973,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 	if(ret.type == T_INVALID)
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
-		return asAtom::undefinedAtom;
+		ret.setUndefined();
+		return;
 	}
 	ASATOM_INCREF(ret);
-	return ret;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toString)
@@ -1020,7 +991,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	return asAtom::fromObject(abstract_s(sys,(char*)th->bytes+start,th->len-start));
+	ret = asAtom::fromObject(abstract_s(sys,(char*)th->bytes+start,th->len-start));
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
@@ -1037,19 +1008,22 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 	return index<len;
 }
 
-asAtom ByteArray::getVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt)
+void ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
 	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
-		return ASObject::getVariableByMultiname(name,opt);
+	{
+		ASObject::getVariableByMultiname(ret,name,opt);
+		return;
+	}
 
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
-		return asAtom(static_cast<uint32_t>(value));
+		ret.setUInt(static_cast<uint32_t>(value));
+		return;
 	}
-	else
-		return asAtom::undefinedAtom;
+	ret.setUndefined();
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -1321,7 +1295,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 	th->lock();
 	th->compress_zlib();
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
@@ -1333,7 +1306,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
 	th->lock();
 	th->uncompress_zlib();
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_deflate)
@@ -1342,7 +1314,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_deflate)
 	th->lock();
 	th->compress_zlib();
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_inflate)
@@ -1351,7 +1322,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_inflate)
 	th->lock();
 	th->uncompress_zlib();
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,clear)
@@ -1370,7 +1340,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,clear)
 	th->real_len=0;
 	th->position=0;
 	th->unlock();
-	return asAtom::invalidAtom;
 }
 
 // this seems to be how AS3 handles generic pop calls in Array class
@@ -1385,7 +1354,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	return asAtom((uint32_t)res);
+	ret.setUInt((uint32_t)res);
 	
 }
 
@@ -1401,7 +1370,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,push)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return asAtom(res);
+	ret.setUInt(res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
@@ -1416,7 +1385,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	return asAtom((uint32_t)res);
+	ret.setUInt((uint32_t)res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
@@ -1432,7 +1401,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	return asAtom(res);
+	ret.setUInt(res);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ByteArray,shareable);
 
@@ -1453,15 +1422,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 		th->unlock();
 		throwError<RangeError>(kInvalidRangeError, th->getClassName());
 	}
-	int32_t ret;
-	memcpy(&ret,th->bytes+byteindex,4);
+	int32_t res;
+	memcpy(&res,th->bytes+byteindex,4);
 
-	if (ret == expectedValue)
+	if (res == expectedValue)
 	{
 		memcpy(th->bytes+byteindex,&newvalue,4);
 	}
 	th->unlock();
-	return asAtom(ret);
+	ret.setInt(res);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 {
@@ -1470,18 +1439,18 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 	ARG_UNPACK_ATOM(expectedLength)(newLength);
 
 	th->lock();
-	int32_t ret = th->len;
-	if (ret == expectedLength)
+	int32_t res = th->len;
+	if (res == expectedLength)
 	{
 		th->setLength(newLength);
 	}
 	th->unlock();
-	return asAtom(ret);
+	ret.setInt(res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toJSON)
 {
-	return asAtom::fromString(sys,"ByteArray");
+	ret = asAtom::fromString(sys,"ByteArray");
 }
 
 void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

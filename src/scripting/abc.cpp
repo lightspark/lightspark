@@ -1418,7 +1418,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second.getPtr());
 				try
 				{
-					asAtom result = ev->f.callFunction(ev->obj,ev->args,ev->numArgs,true);
+					asAtom result;
+					ev->f.callFunction(result,ev->obj,ev->args,ev->numArgs,true);
 					ASATOM_DECREF(result);
 				}
 				catch(ASObject* exception)
@@ -1449,7 +1450,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 							newArgs[i] = asAtom::fromObject(ev->args[i]);
 						}
 					}
-					*(ev->result) = ev->f.callFunction(asAtom::nullAtom,newArgs,ev->numArgs,true).toObject(m_sys);
+					asAtom res;
+					ev->f.callFunction(res,asAtom::nullAtom,newArgs,ev->numArgs,true);
+					*(ev->result)=res.toObject(m_sys);
 				}
 				catch(ASObject* exception)
 				{
@@ -1704,26 +1707,12 @@ void ABCVm::not_impl(int n)
 	throw UnsupportedException("Not implemented opcode");
 }
 
-call_context::~call_context()
+call_context::call_context(method_info* _mi, Class_base* _inClass, asAtom& ret):
+	stack_index(0),exec_pos(0),
+	context(_mi->context),locals_size(_mi->body->local_count+1),max_stack(_mi->body->max_stack),argarrayposition(-1),
+	max_scope_stack(_mi->body->max_scope_depth),curr_scope_stack(0),mi(_mi),
+	inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
 {
-	//The stack may be not clean, is this a programmer/compiler error?
-	if(stack_index)
-	{
-		LOG(LOG_ERROR,_("Stack not clean at the end of function"));
-		for(uint32_t i=0;i<stack_index;i++)
-		{
-			ASATOM_DECREF(stack[i]);
-		}
-	}
-	for(asAtom* i=locals;i< locals+locals_size;++i)
-	{
-		ASATOM_DECREF_POINTER(i);
-	}
-	for(asAtom* i=scope_stack;i< scope_stack+curr_scope_stack;++i)
-	{
-		ASATOM_DECREF_POINTER(i);
-	}
-	curr_scope_stack=0;
 }
 
 void call_context::handleError(int errorcode)
@@ -1740,7 +1729,8 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		return true;
 	
 	ASObject* target;
-	asAtom ret=root->applicationDomain->getVariableAndTargetByMultiname(*name, target);
+	asAtom ret;
+	root->applicationDomain->getVariableAndTargetByMultiname(ret,*name, target);
 	if(ret.type == T_INVALID) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"isInstance: Cannot retrieve type:"<<*name);
@@ -1846,7 +1836,8 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	
 	entry->addToScope(scope_entry(g,false));
 
-	asAtom ret=asAtom::fromObject(entry).callFunction(g,NULL,0,false);
+	asAtom ret;
+	asAtom::fromObject(entry).callFunction(ret,g,NULL,0,false);
 
 	ASATOM_DECREF(ret);
 
@@ -2042,11 +2033,12 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->readByte(marker);
 		}
 		asAtom v = asAtom::fromObject(message.getPtr());
-		asAtom obj= ByteArray::readObject(m_sys, v, NULL, 0);
+		asAtom obj;
+		ByteArray::readObject(obj,m_sys, v, NULL, 0);
 
 		asAtom callback;
 		if(!client.isNull())
-			callback = client->getVariableByMultiname(headerName);
+			client->getVariableByMultiname(callback,headerName);
 
 		//If mustUnderstand is set there must be a suitable callback on the client
 		if(mustUnderstand && (client.isNull() || callback.type!=T_FUNCTION))
@@ -2060,7 +2052,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			ASATOM_INCREF(obj);
 			asAtom callbackArgs[1] { obj };
 			asAtom v = asAtom::fromObject(client.getPtr());
-			callback.callFunction(v, callbackArgs, 1,true);
+			asAtom r;
+			callback.callFunction(r,v, callbackArgs, 1,true);
 		}
 	}
 	uint16_t numMessage;
@@ -2089,7 +2082,8 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			message->readByte(marker);
 		}
 		asAtom v = asAtom::fromObject(message.getPtr());
-		asAtom ret=ByteArray::readObject(m_sys,v, NULL, 0);
+		asAtom ret;
+		ByteArray::readObject(ret,m_sys,v, NULL, 0);
 	
 		if(!responder.isNull())
 		{
@@ -2097,13 +2091,15 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			onResultName.name_type=multiname::NAME_STRING;
 			onResultName.name_s_id=m_sys->getUniqueStringId("onResult");
 			onResultName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			asAtom callback = responder->getVariableByMultiname(onResultName);
+			asAtom callback;
+			responder->getVariableByMultiname(callback,onResultName);
 			if(callback.type == T_FUNCTION)
 			{
 				ASATOM_INCREF(ret);
 				asAtom callbackArgs[1] { ret };
 				asAtom v = asAtom::fromObject(responder.getPtr());
-				callback.callFunction(v, callbackArgs, 1,true);
+				asAtom r;
+				callback.callFunction(r,v, callbackArgs, 1,true);
 			}
 		}
 	}
@@ -2244,34 +2240,43 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	}
 }
 
-asAtom ABCContext::getConstant(int kind, int index)
+void ABCContext::getConstant(asAtom &ret, int kind, int index)
 {
 	switch(kind)
 	{
 		case 0x00: //Undefined
-			return asAtom::undefinedAtom;
+			ret.setUndefined();
+			break;
 		case 0x01: //String
-			return asAtom::fromStringID(constant_pool.strings[index]);
+			ret = asAtom::fromStringID(constant_pool.strings[index]);
+			break;
 		case 0x03: //Int
-			return asAtom(constant_pool.integer[index]);
+			ret.setInt(constant_pool.integer[index]);
+			break;
 		case 0x04: //UInt
-			return asAtom(constant_pool.uinteger[index]);
+			ret.setUInt(constant_pool.uinteger[index]);
+			break;
 		case 0x06: //Double
-			return asAtom(constant_pool.doubles[index]);
+			ret.setNumber(constant_pool.doubles[index]);
+			break;
 		case 0x08: //Namespace
 		{
 			assert_and_throw(constant_pool.namespaces[index].name);
-			Namespace* ret = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[index].kind);
+			Namespace* res = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[index].kind);
 			if (constant_pool.namespaces[index].kind != 0)
-				ret->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
-			return asAtom::fromObject(ret);
+				res->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
+			ret = asAtom::fromObject(res);
+			break;
 		}
 		case 0x0a: //False
-			return asAtom::falseAtom;
+			ret.setBool(false);
+			break;
 		case 0x0b: //True
-			return asAtom::trueAtom;
+			ret.setBool(true);
+			break;
 		case 0x0c: //Null
-			return asAtom::nullAtom;
+			ret.setNull();
+			break;
 		default:
 		{
 			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
@@ -2320,7 +2325,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 
 			//Check if this already defined in parent applicationdomains
 			ASObject* target;
-			asAtom oldDefinition=root->applicationDomain->getVariableAndTargetByMultiname(*mname, target);
+			asAtom oldDefinition;
+			root->applicationDomain->getVariableAndTargetByMultiname(oldDefinition,*mname, target);
 			if(oldDefinition.type==T_CLASS)
 			{
 				return;
@@ -2470,9 +2476,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			asAtom ret;
 			//If the index is valid we set the constant
 			if(t->vindex)
-				ret=getConstant(t->vkind,t->vindex);
+				getConstant(ret,t->vkind,t->vindex);
 			else
-				ret=asAtom::undefinedAtom;
+				ret.setUndefined();
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret.toDebugString());
 
@@ -2489,7 +2495,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			asAtom ret;
 			if(t->vindex)
 			{
-				ret=getConstant(t->vkind,t->vindex);
+				getConstant(ret,t->vkind,t->vindex);
 				LOG_CALL(_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << ret.toDebugString() <<" "<<isBorrowed);
 			}
 			else
@@ -2499,7 +2505,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id,isenumerable);
-;
 			break;
 		}
 		default:
@@ -2510,10 +2515,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 }
 
 
-asAtom method_info::getOptional(unsigned int i)
+void method_info::getOptional(asAtom& ret, unsigned int i)
 {
 	assert_and_throw(i<info.options.size());
-	return context->getConstant(info.options[i].kind,info.options[i].val);
+	context->getConstant(ret,info.options[i].kind,info.options[i].val);
 }
 
 const multiname* method_info::paramTypeName(unsigned int i) const

@@ -14,7 +14,6 @@ void TextureBase::sinit(Class_base *c)
 ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextureBase.dispose does nothing");
-	return asAtom::invalidAtom;
 }
 
 void Texture::sinit(Class_base *c)
@@ -31,7 +30,6 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	int32_t byteArrayOffset;
 	bool async;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 {
@@ -65,7 +63,6 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		}
 	}
 	th->context->addAction(RENDER_LOADTEXTURE,th);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 {
@@ -74,7 +71,6 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	int32_t byteArrayOffset;
 	uint32_t miplevel;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(miplevel,0);
-	return asAtom::invalidAtom;
 }
 
 
@@ -92,7 +88,6 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 	int32_t byteArrayOffset;
 	bool async;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 {
@@ -101,7 +96,6 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 	uint32_t side;
 	uint32_t miplevel;
 	ARG_UNPACK_ATOM(source)(side)(miplevel,0);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 {
@@ -111,7 +105,6 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 	uint32_t side;
 	uint32_t miplevel;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(side)(miplevel,0);
-	return asAtom::invalidAtom;
 }
 
 void RectangleTexture::sinit(Class_base *c)
@@ -125,7 +118,6 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 	LOG(LOG_NOT_IMPLEMENTED,"RectangleTexture.uploadFromBitmapData does nothing");
 	_NR<BitmapData> source;
 	ARG_UNPACK_ATOM(source);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 {
@@ -133,7 +125,6 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	_NR<ByteArray> data;
 	int32_t byteArrayOffset;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset);
-	return asAtom::invalidAtom;
 }
 
 void VideoTexture::sinit(Class_base *c)
@@ -152,14 +143,12 @@ ASFUNCTIONBODY_ATOM(VideoTexture,attachCamera)
 	LOG(LOG_NOT_IMPLEMENTED,"VideoTexture.attachCamera does nothing");
 //	_NR<Camera> theCamera;
 //	ARG_UNPACK_ATOM(theCamera);
-	return asAtom::invalidAtom;
 }
 ASFUNCTIONBODY_ATOM(VideoTexture,attachNetStream)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"VideoTexture.attachNetStream does nothing");
 	_NR<NetStream> netStream;
 	ARG_UNPACK_ATOM(netStream);
-	return asAtom::invalidAtom;
 }
 
 }

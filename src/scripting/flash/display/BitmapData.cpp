@@ -28,6 +28,8 @@
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/rendering_context.h"
 
+#include <cstdlib> 
+
 using namespace lightspark;
 using namespace std;
 
@@ -917,13 +919,46 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 
 ASFUNCTIONBODY_ATOM(BitmapData,noise)
 {
+	BitmapData* th = obj.as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS(sys,"Disposed BitmapData", 2015);
+
 	int randomSeed;
 	unsigned int low;
 	unsigned int high;
 	unsigned int channelOptions;
 	bool grayScale;
 	ARG_UNPACK_ATOM(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false);
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.noise not implemented");
+	
+	srand(randomSeed);
+
+	uint32_t range = high-low;
+
+	for (int32_t x=0; x<th->getWidth(); x++)
+	{
+		for (int32_t y=0; y<th->getHeight(); y++)
+		{
+			uint32_t pixel = 0x000000ff;
+			
+			if (grayScale)
+			{
+				uint8_t v = (rand() % range + low) & 0xff;
+				pixel |= v<<24 | v<<16 | v<<8;
+			}
+			else
+			{
+				if((channelOptions & 0x1) == 0x1) // R
+					pixel |= ((rand() % range + low) & 0xff)<<24;
+				if((channelOptions & 0x2) == 0x2) // G
+					pixel |= ((rand() % range + low) & 0xff)<<16;
+				if((channelOptions & 0x4) == 0x4) // B
+					pixel |= ((rand() % range + low) & 0xff)<<8;
+				if((channelOptions & 0x8) == 0x8) // A
+					pixel |= ((rand() % range + low) & 0xff);
+			}
+			th->pixels->setPixel(x, y,pixel,true,true);
+		}
+	}
 }
 ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 {

@@ -819,6 +819,10 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 
 void XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
+	setVariableByMultinameIntern(name, o, allowConst, false);
+}
+void XMLList::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
+{
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	XML::XMLVector retnodes;
@@ -846,7 +850,7 @@ void XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALL
 		}
 		else
 		{
-			replace(index, o.toObject(getSystemState()),retnodes,allowConst);
+			replace(index, o.toObject(getSystemState()),retnodes,allowConst,replacetext);
 		}
 	}
 	else if (nodes.size() == 0)
@@ -881,7 +885,7 @@ void XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALL
 				else
 				{
 					asAtom v = asAtom::fromObject(tmp);
-					tmplist->setVariableByMultiname(tmpprop,v,allowConst);
+					tmplist->setVariableByMultinameIntern(tmpprop,v,allowConst, replacetext);
 				}
 			}
 			else
@@ -895,7 +899,7 @@ void XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALL
 	}
 	else if (nodes.size() == 1)
 	{
-		nodes[0]->setVariableByMultiname(name, o, allowConst);
+		nodes[0]->setVariableByMultinameIntern(name, o, allowConst,replacetext);
 	}
 	else
 	{
@@ -1030,7 +1034,7 @@ void XMLList::prepend(_R<XMLList> x)
 	nodes.insert(nodes.begin(),x->nodes.begin(),x->nodes.end());
 }
 
-void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retnodes,CONST_ALLOWED_FLAG allowConst)
+void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retnodes,CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {
 	if (idx >= nodes.size())
 		return;
@@ -1040,7 +1044,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 		if (targetobject)
 		{
 			asAtom v = asAtom::fromObject(o);
-			targetobject->setVariableByMultiname(targetproperty,v,allowConst);
+			targetobject->setVariableByMultinameIntern(targetproperty,v,allowConst,replacetext);
 		}
 		nodes[idx]->setTextContent(o->toString());
 	}
@@ -1048,7 +1052,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	{
 		if (o->as<XMLList>()->nodes.size() == 1)
 		{
-			replace(idx,o->as<XMLList>()->nodes[0].getPtr(),retnodes,allowConst);
+			replace(idx,o->as<XMLList>()->nodes[0].getPtr(),retnodes,allowConst,replacetext);
 			return;
 		}
 		if (targetobject)
@@ -1063,7 +1067,7 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 					m.name_ui = i;
 					m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 					asAtom v = asAtom::fromObject(o);
-					targetobject->setVariableByMultiname(m,v,allowConst);
+					targetobject->setVariableByMultinameIntern(m,v,allowConst,replacetext);
 					break;
 				}
 			}
@@ -1090,21 +1094,33 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 			m.name_ui = idx;
 			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			asAtom v = asAtom::fromObject(o);
-			targetobject->setVariableByMultiname(m,v,allowConst);
+			targetobject->setVariableByMultinameIntern(m,v,allowConst,replacetext);
 		}
 		if (o->as<XML>()->getNodeKind() == pugi::node_pcdata)
 		{
-			nodes[idx]->childrenlist->clear();
-			_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceSNoArgs(getSystemState()));
-			nodes[idx]->incRef();
-			tmp->parentNode = nodes[idx];
-			tmp->nodetype = pugi::node_pcdata;
-			tmp->nodename = "text";
-			tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
-			tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
-			tmp->nodevalue = o->toString();
-			tmp->constructed = true;
-			nodes[idx]->childrenlist->append(tmp);
+			if (replacetext)
+			{
+				nodes[idx]->childrenlist->clear();
+				nodes[idx]->nodetype = pugi::node_pcdata;
+				nodes[idx]->nodename = "text";
+				nodes[idx]->nodevalue = o->toString();
+				nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+				nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
+			}
+			else
+			{
+				nodes[idx]->childrenlist->clear();
+				_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceSNoArgs(getSystemState()));
+				nodes[idx]->incRef();
+				tmp->parentNode = nodes[idx];
+				tmp->nodetype = pugi::node_pcdata;
+				tmp->nodename = "text";
+				tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+				tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
+				tmp->nodevalue = o->toString();
+				tmp->constructed = true;
+				nodes[idx]->childrenlist->append(tmp);
+			}
 		}
 		else
 		{
@@ -1114,21 +1130,33 @@ void XMLList::replace(unsigned int idx, ASObject *o, const XML::XMLVector &retno
 	}
 	else
 	{
-		if (nodes[idx]->nodetype == pugi::node_pcdata)
-			nodes[idx]->nodevalue = o->toString();
-		else 
+		if (replacetext)
 		{
 			nodes[idx]->childrenlist->clear();
-			_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceSNoArgs(getSystemState()));
-			nodes[idx]->incRef();
-			tmp->parentNode = nodes[idx];
-			tmp->nodetype = pugi::node_pcdata;
-			tmp->nodename = "text";
-			tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
-			tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
-			tmp->nodevalue = o->toString();
-			tmp->constructed = true;
-			nodes[idx]->childrenlist->append(tmp);
+			nodes[idx]->nodetype = pugi::node_pcdata;
+			nodes[idx]->nodename = "text";
+			nodes[idx]->nodevalue = o->toString();
+			nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+			nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
+		}
+		else
+		{
+			if (nodes[idx]->nodetype == pugi::node_pcdata)
+				nodes[idx]->nodevalue = o->toString();
+			else 
+			{
+				nodes[idx]->childrenlist->clear();
+				_R<XML> tmp = _MR<XML>(Class<XML>::getInstanceSNoArgs(getSystemState()));
+				nodes[idx]->incRef();
+				tmp->parentNode = nodes[idx];
+				tmp->nodetype = pugi::node_pcdata;
+				tmp->nodename = "text";
+				tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
+				tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
+				tmp->nodevalue = o->toString();
+				tmp->constructed = true;
+				nodes[idx]->childrenlist->append(tmp);
+			}
 		}
 	}
 }

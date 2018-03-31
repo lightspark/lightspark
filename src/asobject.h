@@ -253,8 +253,9 @@ public:
 	 * Calls this function with the given object and args.
 	 * if args_refcounted is true, one reference of obj and of each arg is consumed by this method.
 	 * Return the asAtom the function returned.
+	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
-	void callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted);
+	void callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true);
 	// returns invalidAtom for not-primitive values
 	void getVariableByMultiname(asAtom &ret, SystemState *sys, const multiname& name);
 	void fillMultiname(SystemState *sys, multiname& name);
@@ -499,7 +500,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	void dumpVariables() const;
+	void dumpVariables();
 	void destroyContents();
 };
 
@@ -829,7 +830,7 @@ public:
 	/* applies proxy namespace settings to name for internal usage */
 	void applyProxyProperty(multiname &name); 
 	
-	void dumpVariables() const;
+	void dumpVariables();
 	
 	inline void setConstructIndicator() { constructIndicator = true; }
 	inline void setConstructorCallComplete() { constructorCallComplete = true; }

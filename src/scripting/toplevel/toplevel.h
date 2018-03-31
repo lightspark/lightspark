@@ -497,7 +497,7 @@ private:
 	method_info* getMethodInfo() const { return mi; }
 public:
 	~SyntheticFunction() {}
-	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args);
+	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult);
 	bool destruct();
 	
 	_NR<scope_entry_list> func_scope;

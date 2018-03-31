@@ -544,7 +544,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 	if(ret.type == T_INVALID)
 		ret=asAtom::undefinedAtom;
-	mi->returnType->coerce(getSystemState(),ret);
+
+	if (coerceresult)
+		mi->returnType->coerce(getSystemState(),ret);
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc.stack_index)
 	{

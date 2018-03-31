@@ -107,7 +107,7 @@ void ASObject::applyProxyProperty(multiname &name)
 	}
 }
 
-void ASObject::dumpVariables() const
+void ASObject::dumpVariables()
 {
 	LOG(LOG_INFO,"variables:");
 	Variables.dumpVariables();
@@ -1410,10 +1410,10 @@ void variables_map::check() const
 #endif
 }
 
-void variables_map::dumpVariables() const
+void variables_map::dumpVariables()
 {
-	const_var_iterator it=Variables.cbegin();
-	for(;it!=Variables.cend();++it)
+	var_iterator it=Variables.begin();
+	for(;it!=Variables.end();++it)
 	{
 		const char* kind;
 		switch(it->second.kind)
@@ -1435,7 +1435,7 @@ void variables_map::dumpVariables() const
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			it->second.var.type << ' ' << it->second.setter.type << ' ' << it->second.getter.type);
+			it->second.var.toDebugString() << ' ' << it->second.setter.toDebugString() << ' ' << it->second.getter.toDebugString());
 	}
 }
 
@@ -2141,7 +2141,7 @@ asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
 	return a;
 }
 
-void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted)
+void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult)
 {
 	assert_and_throw(type == T_FUNCTION);
 		
@@ -2168,7 +2168,7 @@ void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_ar
 			for (uint32_t i = 0; i < num_args; i++)
 				ASATOM_INCREF(args[i]);
 		}
-		objval->as<SyntheticFunction>()->call(ret,c, args, num_args);
+		objval->as<SyntheticFunction>()->call(ret,c, args, num_args,coerceresult);
 		if (args_refcounted)
 			ASATOM_DECREF(c);
 		return;

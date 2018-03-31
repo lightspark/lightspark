@@ -337,8 +337,10 @@ void TextField::setSizeAndPositionFromAutoSize()
 			tx += width-textWidth;
 		else if (autoSize == AS_CENTER)
 			tx += (width - textWidth)/2.0;
-		width = textWidth;
-		height = textHeight;
+		if (width < textWidth)
+			width = textWidth;
+		if (height < textHeight)
+			height = textHeight;
 	}
 }
 

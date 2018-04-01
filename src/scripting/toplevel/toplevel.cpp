@@ -288,7 +288,7 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs)
+void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult)
 {
 	const uint32_t opt_hit_threshold=1;
 	const uint32_t jit_hit_threshold=20;

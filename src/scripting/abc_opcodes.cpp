@@ -338,7 +338,8 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	
 	LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << *name << ' ' << m);
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 
 	if(obj.is<Null>())
 	{
@@ -488,7 +489,8 @@ void ABCVm::callMethod(call_context* th, int n, int m)
 
 	LOG_CALL( "callMethod " << n << ' ' << m);
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 
 	if(obj.is<Null>())
 	{
@@ -574,9 +576,9 @@ number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 void ABCVm::pushWith(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
-	LOG_CALL( _("pushWith ") << t.toDebugString() );
+	LOG_CALL( _("pushWith ") << t->toDebugString() );
 	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
-	th->scope_stack[th->curr_scope_stack] = t;
+	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = true;
 	th->curr_scope_stack++;
 }
@@ -584,9 +586,9 @@ void ABCVm::pushWith(call_context* th)
 void ABCVm::pushScope(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
-	LOG_CALL( _("pushScope ") << t.toDebugString() );
+	LOG_CALL( _("pushScope ") << t->toDebugString() );
 	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
-	th->scope_stack[th->curr_scope_stack] = t;
+	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = false;
 	th->curr_scope_stack++;
 }
@@ -845,7 +847,8 @@ void ABCVm::construct(call_context* th, int m)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 	}
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 
 	LOG_CALL(_("Constructing"));
 
@@ -1510,7 +1513,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	obj->setVariableByMultiname(*name,value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr());
+	obj->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr());
 	name->resetNameIfObject();
 	obj->decRef();
 }
@@ -1643,7 +1646,8 @@ void ABCVm::constructSuper(call_context* th, int m)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 	}
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 
 	assert_and_throw(th->inClass);
 	assert_and_throw(th->inClass->super);
@@ -1926,7 +1930,8 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 	}
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 	if(obj.type == T_NULL)
 	{
 		LOG(LOG_ERROR,"trying to callStatic on null");
@@ -2228,7 +2233,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	LOG_CALL(_("constructProp ")<< *name << ' ' << m);
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
 
 	asAtom o;
 	obj.toObject(th->context->root->getSystemState())->getVariableByMultiname(o,*name);
@@ -2320,9 +2326,9 @@ void ABCVm::newObject(call_context* th, int n)
 	{
 		RUNTIME_STACK_POP_CREATE(th,value);
 		RUNTIME_STACK_POP_CREATE(th,name);
-		propertyName.name_s_id=name.toStringId(th->context->root->getSystemState());
-		ASATOM_DECREF(name);
-		ret->setVariableByMultiname(propertyName, value, ASObject::CONST_NOT_ALLOWED);
+		propertyName.name_s_id=name->toStringId(th->context->root->getSystemState());
+		ASATOM_DECREF_POINTER(name);
+		ret->setVariableByMultiname(propertyName, *value, ASObject::CONST_NOT_ALLOWED);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtom::fromObject(ret));
@@ -2790,8 +2796,10 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 	}
 
-	RUNTIME_STACK_POP_CREATE(th,obj);
-	RUNTIME_STACK_POP_CREATE(th,f);
+	asAtom obj;
+	RUNTIME_STACK_POP(th,obj);
+	asAtom f;
+	RUNTIME_STACK_POP(th,f);
 	LOG_CALL(_("call ") << m << ' ' << f.type);
 	callImpl(th, f, obj, args, m, true);
 }
@@ -2921,7 +2929,7 @@ void ABCVm::newArray(call_context* th, int n)
 	for(int i=0;i<n;i++)
 	{
 		RUNTIME_STACK_POP_CREATE(th,obj);
-		ret->set(n-i-1,obj,false,false);
+		ret->set(n-i-1,*obj,false,false);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtom::fromObject(ret));

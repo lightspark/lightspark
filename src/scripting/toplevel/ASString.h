@@ -50,7 +50,7 @@ public:
 	ASString(Class_base* c, const char* s, uint32_t len);
 	bool hasId:1;
 	bool datafilled:1;
-	inline tiny_string& getData()
+	FORCE_INLINE tiny_string& getData()
 	{
 		if (!datafilled)
 		{
@@ -59,7 +59,7 @@ public:
 		}
 		return data;
 	}
-	inline bool isEmpty() const
+	FORCE_INLINE bool isEmpty() const
 	{
 		if (hasId)
 			return stringId == BUILTIN_STRINGS::EMPTY || stringId == UINT32_MAX;
@@ -128,7 +128,6 @@ inline void Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 	//Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
 	if(o.type == T_NULL)
 		return;
-	asAtom res;
 	if(o.type == T_UNDEFINED)
 	{
 		ASATOM_DECREF(o);

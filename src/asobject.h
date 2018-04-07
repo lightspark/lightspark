@@ -186,7 +186,6 @@ struct asfreelist;
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
-enum TRAIT_STATE { NO_STATE=0, HAS_GETTER_SETTER=1, TYPE_RESOLVED=2 };
 
 class asAtom
 {
@@ -205,6 +204,8 @@ private:
 	};
 	ASObject* objval;
 	inline void decRef();
+	void replaceNumber(ASObject* obj);
+	void replaceBool(ASObject* obj);
 public:
 	SWFOBJECT_TYPE type;
 	asAtom():intval(0),objval(NULL),type(T_INVALID) {}
@@ -215,9 +216,9 @@ public:
 	asAtom(bool val):boolval(val),objval(NULL),type(T_BOOLEAN) {}
 	ASObject* toObject(SystemState* sys);
 	// returns NULL if this atom is a primitive;
-	inline ASObject* getObject() const { return objval; }
-	inline number_t getNumber() const { return numberval; }
-	static asAtom fromObject(ASObject* obj)
+	FORCE_INLINE ASObject* getObject() const { return objval; }
+	FORCE_INLINE number_t getNumber() const { return numberval; }
+	static FORCE_INLINE asAtom fromObject(ASObject* obj)
 	{
 		asAtom a;
 		if (obj)
@@ -225,14 +226,8 @@ public:
 		return a;
 	}
 	
-	static asAtom fromFunction(ASObject *f, ASObject *closure)
-	{
-		asAtom a;
-		a.replace(f);
-		a.closure_this = closure;
-		return a;
-	}
-	static asAtom fromStringID(uint32_t sID)
+	static FORCE_INLINE asAtom fromFunction(ASObject *f, ASObject *closure);
+	static FORCE_INLINE asAtom fromStringID(uint32_t sID)
 	{
 		asAtom a;
 		a.type = T_STRING;
@@ -242,8 +237,8 @@ public:
 	}
 	// only use this for strings that should get an internal stringID
 	static asAtom fromString(SystemState *sys, const tiny_string& s);
-	inline bool isBound() const { return type == T_FUNCTION && closure_this; }
-	inline ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
+	FORCE_INLINE  bool isBound() const { return type == T_FUNCTION && closure_this; }
+	FORCE_INLINE  ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
 	static asAtom undefinedAtom;
 	static asAtom nullAtom;
 	static asAtom invalidAtom;
@@ -260,66 +255,73 @@ public:
 	void getVariableByMultiname(asAtom &ret, SystemState *sys, const multiname& name);
 	void fillMultiname(SystemState *sys, multiname& name);
 	void replace(ASObject* obj);
+	FORCE_INLINE void set(const asAtom& a)
+	{
+		type = a.type;
+		numberval = a.numberval;
+		objval = a.objval;
+	}
 	bool stringcompare(SystemState* sys, uint32_t stringID);
 	std::string toDebugString();
-	inline void applyProxyProperty(SystemState *sys, multiname& name);
-	inline TRISTATE isLess(SystemState *sys, asAtom& v2);
-	inline bool isEqual(SystemState *sys, asAtom& v2);
-	inline bool isEqualStrict(SystemState *sys, asAtom& v2);
-	inline bool isConstructed() const;
-	inline bool isPrimitive() const;
-	inline bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
-	inline bool checkArgumentConversion(const asAtom& obj) const;
-	inline ASObject* checkObject();
+	FORCE_INLINE void applyProxyProperty(SystemState *sys, multiname& name);
+	FORCE_INLINE TRISTATE isLess(SystemState *sys, asAtom& v2);
+	FORCE_INLINE bool isEqual(SystemState *sys, asAtom& v2);
+	FORCE_INLINE bool isEqualStrict(SystemState *sys, asAtom& v2);
+	FORCE_INLINE bool isConstructed() const;
+	FORCE_INLINE bool isPrimitive() const;
+	FORCE_INLINE bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
+	FORCE_INLINE bool checkArgumentConversion(const asAtom& obj) const;
+	FORCE_INLINE ASObject* checkObject();
 	asAtom asTypelate(asAtom& atomtype);
-	inline number_t toNumber();
-	inline int32_t toInt();
-	inline int64_t toInt64();
-	inline uint32_t toUInt();
+	FORCE_INLINE number_t toNumber();
+	FORCE_INLINE int32_t toInt();
+	FORCE_INLINE int64_t toInt64();
+	FORCE_INLINE uint32_t toUInt();
 	tiny_string toString(SystemState *sys);
 	tiny_string toLocaleString();
 	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
 	bool Boolean_concrete();
-	inline void convert_i();
-	inline void convert_u();
-	inline void convert_d();
+	FORCE_INLINE void convert_i();
+	FORCE_INLINE void convert_u();
+	FORCE_INLINE void convert_d();
 	void convert_b();
-	inline int32_t getInt() const { assert(type == T_INTEGER); return intval; }
-	inline uint32_t getUInt() const{ assert(type == T_UINTEGER); return uintval; }
-	inline uint32_t getStringId() const{ assert(type == T_STRING); return stringID; }
-	inline void setInt(int32_t val);
-	inline void setUInt(uint32_t val);
-	inline void setNumber(number_t val);
-	inline void setBool(bool val);
-	inline void setNull();
-	inline void setUndefined();
-	inline void increment();
-	inline void decrement();
-	inline void increment_i();
-	inline void decrement_i();
+	FORCE_INLINE int32_t getInt() const { assert(type == T_INTEGER); return intval; }
+	FORCE_INLINE uint32_t getUInt() const{ assert(type == T_UINTEGER); return uintval; }
+	FORCE_INLINE uint32_t getStringId() const{ assert(type == T_STRING); return stringID; }
+	FORCE_INLINE void setInt(int32_t val);
+	FORCE_INLINE void setUInt(uint32_t val);
+	FORCE_INLINE void setNumber(number_t val);
+	FORCE_INLINE void setBool(bool val);
+	FORCE_INLINE void setNull();
+	FORCE_INLINE void setUndefined();
+	FORCE_INLINE void increment();
+	FORCE_INLINE void decrement();
+	FORCE_INLINE void increment_i();
+	FORCE_INLINE void decrement_i();
 	void add(asAtom& v2, SystemState *sys);
-	inline void bitnot();
-	inline void subtract(asAtom& v2);
-	inline void multiply(asAtom& v2);
-	inline void divide(asAtom& v2);
-	inline void modulo(asAtom& v2);
-	inline void lshift(asAtom& v1);
-	inline void rshift(asAtom& v1);
-	inline void urshift(asAtom& v1);
-	inline void bit_and(asAtom& v1);
-	inline void bit_or(asAtom& v1);
-	inline void bit_xor(asAtom& v1);
-	inline void _not();
-	inline void negate_i();
-	inline void add_i(asAtom& v2);
-	inline void subtract_i(asAtom& v2);
-	inline void multiply_i(asAtom& v2);
+	FORCE_INLINE void bitnot();
+	FORCE_INLINE void subtract(asAtom& v2);
+	FORCE_INLINE void multiply(asAtom& v2);
+	FORCE_INLINE void divide(asAtom& v2);
+	FORCE_INLINE void modulo(asAtom& v2);
+	FORCE_INLINE void lshift(asAtom& v1);
+	FORCE_INLINE void rshift(asAtom& v1);
+	FORCE_INLINE void urshift(asAtom& v1);
+	FORCE_INLINE void bit_and(asAtom& v1);
+	FORCE_INLINE void bit_or(asAtom& v1);
+	FORCE_INLINE void bit_xor(asAtom& v1);
+	FORCE_INLINE void _not();
+	FORCE_INLINE void negate_i();
+	FORCE_INLINE void add_i(asAtom& v2);
+	FORCE_INLINE void subtract_i(asAtom& v2);
+	FORCE_INLINE void multiply_i(asAtom& v2);
 	template<class T> bool is() const;
 	template<class T> const T* as() const { return static_cast<const T*>(this->objval); }
 	template<class T> T* as() { return static_cast<T*>(this->objval); }
 };
 #define ASATOM_INCREF(a) if (a.getObject()) a.getObject()->incRef()
+#define ASATOM_INCREF_POINTER(a) if (a->getObject()) a->getObject()->incRef()
 #define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
 #define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
 struct variable
@@ -335,12 +337,12 @@ struct variable
 	asAtom getter;
 	nsNameAndKind ns;
 	TRAIT_KIND kind:4;
-	TRAIT_STATE traitState:2;
+	bool isResolved:1;
 	bool isenumerable:1;
 	bool issealed:1;
 	bool isrefcounted:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(true),issealed(false),isrefcounted(true) {}
+		: typeUnion(NULL),ns(_ns),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
 	void setVar(asAtom& v, SystemState* sys, bool _isrefcounted = true);
 	/*
@@ -1968,6 +1970,42 @@ FORCE_INLINE ASObject *asAtom::toObject(SystemState *sys)
 	}
 	return objval;
 }
-
+FORCE_INLINE void asAtom::replace(ASObject *obj)
+{
+	assert(obj);
+	type = obj->getObjectType();
+	switch(type)
+	{
+		case T_INTEGER:
+			intval = obj->toInt();
+			break;
+		case T_UINTEGER:
+			uintval = obj->toUInt();
+			break;
+		case T_NUMBER:
+			replaceNumber(obj);
+			break;
+		case T_BOOLEAN:
+			replaceBool(obj);
+			break;
+		case T_FUNCTION:
+			closure_this = NULL;
+			break;
+		case T_STRING:
+			stringID = UINT32_MAX;
+			break;
+		default:
+			break;
+	}
+	objval = obj;
+}
+FORCE_INLINE asAtom asAtom::fromFunction(ASObject *f, ASObject *closure)
+{
+	asAtom a;
+	a.type = f->getObjectType();
+	a.objval = f;
+	a.closure_this = closure;
+	return a;
+}
 }
 #endif /* ASOBJECT_H */

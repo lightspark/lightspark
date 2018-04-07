@@ -384,8 +384,10 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	for(asAtom* i=locals;i< locals+cc.locals_size;++i)
 		*i = asAtom::invalidAtom;
 	cc.locals=locals;
-	asAtom* stack = g_newa(asAtom, cc.max_stack);
+	asAtom* stack = g_newa(asAtom, cc.mi->body->max_stack+1);
 	cc.stack=stack;
+	cc.stackp=stack;
+	cc.max_stackp=stack+cc.mi->body->max_stack;
 	cc.parent_scope_stack=func_scope;
 
 	cc.scope_stack=g_newa(asAtom, cc.max_scope_stack);
@@ -509,7 +511,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					no_handler = false;
 					cc.exec_pos = exc.target;
 					cc.runtime_stack_clear();
-					cc.stack[cc.stack_index++]=asAtom::fromObject(excobj);
+					*(cc.stackp++)=asAtom::fromObject(excobj);
 					excobj->incRef();
 					while (cc.curr_scope_stack)
 					{
@@ -548,12 +550,12 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (coerceresult)
 		mi->returnType->coerce(getSystemState(),ret);
 	//The stack may be not clean, is this a programmer/compiler error?
-	if(cc.stack_index)
+	if(cc.stackp != cc.stack)
 	{
 		LOG(LOG_ERROR,_("Stack not clean at the end of function"));
-		for(uint32_t i=0;i<cc.stack_index;i++)
+		while(cc.stackp != cc.stack)
 		{
-			ASATOM_DECREF(cc.stack[i]);
+			ASATOM_DECREF_POINTER((--cc.stackp));
 		}
 	}
 	for(asAtom* i=cc.locals;i< cc.locals+cc.locals_size;++i)
@@ -587,22 +589,6 @@ bool SyntheticFunction::destruct()
 	return IFunction::destruct();
 }
 
-/**
- * This executes a C++ function.
- * It consumes _no_ references of obj and args
- */
-void Function::call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args)
-{
-	/*
-	 * We do not enforce ABCVm::limits.max_recursion here.
-	 * This should be okey, because there is no infinite recursion
-	 * using only builtin functions.
-	 * Additionally, we still need to run builtin code (such as the ASError constructor) when
-	 * ABCVm::limits.max_recursion is reached in SyntheticFunction::call.
-	 */
-	assert_and_throw(obj.type != T_INVALID);
-	val_atom(ret,getSystemState(),obj,args,num_args);
-}
 bool Function::isEqual(ASObject* r)
 {
 	if (!r->is<Function>())
@@ -1658,12 +1644,8 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 	{
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
-		ASObject* target=NULL;
-		if (!obj->getter.isBound())
-			target=this;
-
-		asAtom v =asAtom::fromObject(target);
-		obj->getter.callFunction(ret,v,NULL,0,false);
+		assert(obj->getter.type == T_FUNCTION);
+		obj->getter.as<IFunction>()->callGetter(ret,obj->getter.getClosure() ? obj->getter.getClosure() : this);
 		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
 		return;
 	}

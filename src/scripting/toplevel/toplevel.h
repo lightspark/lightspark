@@ -434,6 +434,7 @@ public:
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
 	uint32_t functionname;
+	virtual void callGetter(asAtom& ret, ASObject* target) =0;
 };
 
 /*
@@ -457,8 +458,27 @@ protected:
 	Function(Class_base* c,as_atom_function v = NULL):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const { return NULL; }
 public:
-	void call(asAtom& ret, asAtom& obj, asAtom* args, uint32_t num_args);
+	/**
+	 * This executes a C++ function.
+	 * It consumes _no_ references of obj and args
+	 */
+	FORCE_INLINE void call(asAtom& ret, asAtom& obj, asAtom* args, uint32_t num_args)
+	{
+		/*
+		 * We do not enforce ABCVm::limits.max_recursion here.
+		 * This should be okey, because there is no infinite recursion
+		 * using only builtin functions.
+		 * Additionally, we still need to run builtin code (such as the ASError constructor) when
+		 * ABCVm::limits.max_recursion is reached in SyntheticFunction::call.
+		 */
+		val_atom(ret,getSystemState(),obj,args,num_args);
+	}
 	bool isEqual(ASObject* r);
+	FORCE_INLINE void callGetter(asAtom& ret, ASObject* target)
+	{
+		asAtom c = asAtom::fromObject(target);
+		val_atom(ret,getSystemState(),c,NULL,0);
+	}
 };
 
 /* Special object used as prototype for the Function class
@@ -517,6 +537,11 @@ public:
 		if (func_scope.isNull())
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
 		func_scope->scope.emplace_back(s);
+	}
+	FORCE_INLINE void callGetter(asAtom& ret, ASObject* target)
+	{
+		asAtom c = asAtom::fromObject(target);
+		call(ret,c,NULL,0,true);
 	}
 };
 

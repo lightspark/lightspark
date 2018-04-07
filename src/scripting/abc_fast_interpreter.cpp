@@ -470,7 +470,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//pop
 				pop();
 				RUNTIME_STACK_POP_CREATE(context,o);
-				ASATOM_DECREF(o);
+				ASATOM_DECREF_POINTER(o);
 				break;
 			}
 			case 0x2a:
@@ -478,16 +478,18 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//dup
 				dup();
 				RUNTIME_STACK_PEEK_CREATE(context,o);
-				ASATOM_INCREF(o);
-				RUNTIME_STACK_PUSH(context,o);
+				ASATOM_INCREF_POINTER(o);
+				RUNTIME_STACK_PUSH(context,*o);
 				break;
 			}
 			case 0x2b:
 			{
 				//swap
 				swap();
-				RUNTIME_STACK_POP_CREATE(context,v1);
-				RUNTIME_STACK_POP_CREATE(context,v2);
+				asAtom v1;
+				RUNTIME_STACK_POP(context,v1);
+				asAtom v2;
+				RUNTIME_STACK_POP(context,v2);
 
 				RUNTIME_STACK_PUSH(context,v1);
 				RUNTIME_STACK_PUSH(context,v2);
@@ -937,10 +939,10 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				LOG_CALL( _("setLocal ") << i );
 				RUNTIME_STACK_POP_CREATE(context,obj)
-				if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+				if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
 				{
 					ASATOM_DECREF(context->locals[i]);
-					context->locals[i]=obj;
+					context->locals[i]=*obj;
 				}
 				break;
 			}
@@ -987,8 +989,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				multiname* name=context->context->getMultiname(t,context);
 				LOG_CALL("initProperty "<<*name);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				obj.toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,value,ASObject::CONST_ALLOWED);
-				ASATOM_DECREF(obj);
+				obj->toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+				ASATOM_DECREF_POINTER(obj);
 				name->resetNameIfObject();
 				break;
 			}
@@ -1069,43 +1071,45 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//convert_i
 				RUNTIME_STACK_POP_CREATE(context,val);
-				val.convert_i();
+				val->convert_i();
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
 				RUNTIME_STACK_POP_CREATE(context,val);
-				val.convert_u();
+				val->convert_u();
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
 				RUNTIME_STACK_POP_CREATE(context,val);
-				val.convert_d();
+				val->convert_d();
 				break;
 			}
 			case 0x76:
 			{
 				//convert_b
 				RUNTIME_STACK_POP_CREATE(context,val);
-				val.convert_b();
+				val->convert_b();
 				break;
 			}
 			case 0x77:
 			{
 				//convert_o
 				RUNTIME_STACK_PEEK_CREATE(context,val);
-				if (val.type == T_NULL)
+				if (val->type == T_NULL)
 				{
 					RUNTIME_STACK_POP_CREATE(context,ret);
+					(void)ret;
 					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
 				}
-				if (val.type == T_UNDEFINED)
+				if (val->type == T_UNDEFINED)
 				{
 					RUNTIME_STACK_POP_CREATE(context,ret);
+					(void)ret;
 					LOG(LOG_ERROR,"trying to call convert_o on undefined");
 					throwError<TypeError>(kConvertUndefinedToObjectError);
 				}
@@ -1132,8 +1136,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceOnce " << *name);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				type->coerce(function->getSystemState(),o);
-				RUNTIME_STACK_PUSH(context,o);
+				type->coerce(function->getSystemState(),*o);
+				RUNTIME_STACK_PUSH(context,*o);
 
 				instructionPointer+=8;
 				break;
@@ -1602,10 +1606,10 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				int i=opcode&3;
 				LOG_CALL( "setLocal " << i );
 				RUNTIME_STACK_POP_CREATE(context,obj)
-				if ((int)i != context->argarrayposition || obj.type == T_ARRAY)
+				if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
 				{
 					ASATOM_DECREF(context->locals[i]);
-					context->locals[i]=obj;
+					context->locals[i]=*obj;
 				}
 				break;
 			}
@@ -1645,8 +1649,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceEarly " << type);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				type->coerce(function->getSystemState(),o);
-				RUNTIME_STACK_PUSH(context,o);
+				type->coerce(function->getSystemState(),*o);
+				RUNTIME_STACK_PUSH(context,*o);
 
 				instructionPointer+=8;
 				break;

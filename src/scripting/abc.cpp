@@ -655,31 +655,31 @@ void ABCVm::registerClasses()
 void ABCVm::loadFloat(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
-	float addr=arg1.toNumber();
+	float addr=arg1->toNumber();
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<float>(addr);
+	ASATOM_DECREF_POINTER(arg1);
 	RUNTIME_STACK_PUSH(th,asAtom(ret));
-	ASATOM_DECREF(arg1);
 }
 
 void ABCVm::loadDouble(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
-	double addr=arg1.toNumber();
+	double addr=arg1->toNumber();
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<double>(addr);
+	ASATOM_DECREF_POINTER(arg1);
 	RUNTIME_STACK_PUSH(th,asAtom(ret));
-	ASATOM_DECREF(arg1);
 }
 
 void ABCVm::storeFloat(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
 	RUNTIME_STACK_POP_CREATE(th,arg2);
-	number_t addr=arg1.toNumber();
-	ASATOM_DECREF(arg1);
-	float val=(float)arg2.toNumber();
-	ASATOM_DECREF(arg2);
+	number_t addr=arg1->toNumber();
+	ASATOM_DECREF_POINTER(arg1);
+	float val=(float)arg2->toNumber();
+	ASATOM_DECREF_POINTER(arg2);
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	appDomain->writeToDomainMemory<float>(addr, val);
 }
@@ -688,10 +688,10 @@ void ABCVm::storeDouble(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
 	RUNTIME_STACK_POP_CREATE(th,arg2);
-	number_t addr=arg1.toNumber();
-	ASATOM_DECREF(arg1);
-	double val=arg2.toNumber();
-	ASATOM_DECREF(arg2);
+	number_t addr=arg1->toNumber();
+	ASATOM_DECREF_POINTER(arg1);
+	double val=arg2->toNumber();
+	ASATOM_DECREF_POINTER(arg2);
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	appDomain->writeToDomainMemory<double>(addr, val);
 }
@@ -1708,8 +1708,8 @@ void ABCVm::not_impl(int n)
 }
 
 call_context::call_context(method_info* _mi, Class_base* _inClass, asAtom& ret):
-	stack_index(0),exec_pos(0),
-	context(_mi->context),locals_size(_mi->body->local_count+1),max_stack(_mi->body->max_stack),argarrayposition(-1),
+	stackp(NULL),exec_pos(0),
+	context(_mi->context),locals_size(_mi->body->local_count+1),max_stackp(NULL),argarrayposition(-1),
 	max_scope_stack(_mi->body->max_scope_depth),curr_scope_stack(0),mi(_mi),
 	inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
 {

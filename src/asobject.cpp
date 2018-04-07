@@ -860,13 +860,13 @@ void ASObject::initializeVariableByMultiname(const multiname& name, asAtom &o, m
 }
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
-		: var(_v),typeUnion(NULL),ns(_ns),kind(_k),traitState(NO_STATE),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
+		: var(_v),typeUnion(NULL),ns(_ns),kind(_k),isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
 {
 	if(_type)
 	{
 		//The type is known, use it instead of the typemname
 		type=_type;
-		traitState=TYPE_RESOLVED;
+		isResolved=true;
 	}
 	else
 	{
@@ -879,13 +879,13 @@ void variable::setVar(asAtom& v, SystemState* sys, bool _isrefcounted)
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
 	//children, which is done outisde any ABC context
-	if(!(traitState&TYPE_RESOLVED) && traitTypemname && getVm(sys)->currentCallContext)
+	if(!isResolved && traitTypemname && getVm(sys)->currentCallContext)
 	{
 		type = Type::getTypeFromMultiname(traitTypemname, getVm(sys)->currentCallContext->context);
 		assert(type);
-		traitState=TYPE_RESOLVED;
+		isResolved=true;
 	}
-	if((traitState&TYPE_RESOLVED) && type)
+	if(isResolved && type)
 		type->coerce(sys,v);
 	if(isrefcounted)
 		ASATOM_DECREF(var);
@@ -1298,12 +1298,8 @@ void ASObject::getVariableByMultiname(asAtom &ret, const multiname& name, GET_VA
 	{
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
-		ASObject* target=NULL;
-		if (!obj->getter.isBound())
-			target=this;
-		
-		asAtom v =asAtom::fromObject(target);
-		obj->getter.callFunction(ret,v,NULL,0,false);
+		assert(obj->getter.type == T_FUNCTION);
+		obj->getter.as<IFunction>()->callGetter(ret,obj->getter.getClosure() ? obj->getter.getClosure() : this);
 		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
 	}
 	else
@@ -1324,7 +1320,7 @@ void ASObject::getVariableByMultiname(asAtom &ret, const multiname& name, GET_VA
 			}
 		}
 		else
-			ret = obj->var;
+			ret.set(obj->var);
 	}
 }
 
@@ -2148,7 +2144,7 @@ void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_ar
 	ASObject* closure = closure_this;
 	if ((obj.type == T_FUNCTION && obj.closure_this) || obj.is<XML>() || obj.is<XMLList>())
 		closure = NULL; // force use of function closure in call
-	asAtom c;
+	asAtom c = obj;
 	if(closure && closure != obj.getObject())
 	{ /* closure_this can never been overriden */
 		LOG_CALL(_("Calling with closure ") << toDebugString());
@@ -2159,8 +2155,6 @@ void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_ar
 			ASATOM_DECREF(obj);
 		}
 	}
-	else
-		c = obj;
 	if (objval->is<SyntheticFunction>())
 	{
 		if (!args_refcounted)
@@ -2247,49 +2241,31 @@ void asAtom::fillMultiname(SystemState* sys, multiname &name)
 	}
 }
 
-void asAtom::replace(ASObject *obj)
+void asAtom::replaceNumber(ASObject *obj)
 {
 	assert(obj);
-	type = obj->getObjectType();
-	switch(type)
-	{
-		case T_INTEGER:
-			intval = obj->as<Integer>()->val;
-			break;
-		case T_UINTEGER:
-			uintval = obj->as<UInteger>()->val;
-			break;
-		case T_NUMBER:
-			if (!obj->as<Number>()->isfloat)
-			{ 
-				if (obj->toInt64() > INT32_MIN && obj->toInt64()< INT32_MAX)
-				{
-					intval = obj->as<Number>()->toInt();
-					type = T_INTEGER;
-				}
-				else if (obj->toInt64() > 0 && obj->toInt64()< UINT32_MAX)
-				{
-					uintval = obj->as<Number>()->toUInt();
-					type = T_UINTEGER;
-				}
-				else
-					numberval = obj->as<Number>()->toNumber();
-			}
-			else
-				numberval = obj->as<Number>()->toNumber();
-			break;
-		case T_BOOLEAN:
-			boolval = obj->as<Boolean>()->val;
-			break;
-		case T_FUNCTION:
-			closure_this = NULL;
-			break;
-		case T_STRING:
-			stringID = UINT32_MAX;
-			break;
-		default:
-			break;
+	if (!obj->as<Number>()->isfloat)
+	{ 
+		if (obj->toInt64() > INT32_MIN && obj->toInt64()< INT32_MAX)
+		{
+			intval = obj->as<Number>()->toInt();
+			type = T_INTEGER;
+		}
+		else if (obj->toInt64() > 0 && obj->toInt64()< UINT32_MAX)
+		{
+			uintval = obj->as<Number>()->toUInt();
+			type = T_UINTEGER;
+		}
+		else
+			numberval = obj->as<Number>()->toNumber();
 	}
+	else
+		numberval = obj->as<Number>()->toNumber();
+	objval = obj;
+}
+void asAtom::replaceBool(ASObject *obj)
+{
+	boolval = obj->as<Boolean>()->val;
 	objval = obj;
 }
 

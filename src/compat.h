@@ -35,10 +35,16 @@
 
 #if _MSC_VER
 	#define FORCE_INLINE __forceinline
+	#define USUALLY_TRUE(x) (x)
+	#define USUALLY_FALSE(x) (x)
 #elif __GNUC__
 	#define FORCE_INLINE inline __attribute__((always_inline))
+	#define USUALLY_TRUE(x) __builtin_expect(!!(x), true)
+	#define USUALLY_FALSE(x) __builtin_expect(!!(x), false)
 #else
 	#define FORCE_INLINE inline
+	#define USUALLY_TRUE(x) (x)
+	#define USUALLY_FALSE(x) (x)
 #endif
 
 #ifndef M_PI

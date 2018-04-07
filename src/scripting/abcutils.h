@@ -52,13 +52,13 @@ struct call_context
 	{
 		asAtom* locals;
 		asAtom* stack;
-		uint32_t stack_index;
+		asAtom* stackp;
 		uint32_t exec_pos;
 	} PACKED;
 #include "packed_end.h"
 	ABCContext* context;
 	uint32_t locals_size;
-	uint32_t max_stack;
+	asAtom* max_stackp;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	_NR<scope_entry_list> parent_scope_stack;
 	uint32_t max_scope_stack;
@@ -80,48 +80,51 @@ struct call_context
 	static void handleError(int errorcode);
 	inline void runtime_stack_clear()
 	{
-		while(stack_index > 0)
+		while(stackp != stack)
 		{
-			--stack_index;
-			ASATOM_DECREF(stack[stack_index]);
+			ASATOM_DECREF_POINTER((--stackp));
 		}
 	}
 };
 #define RUNTIME_STACK_PUSH(context,val) \
-if(context->stack_index<context->max_stack) \
-	context->stack[context->stack_index++]=val; \
-else context->handleError(kStackOverflowError)
+if(USUALLY_FALSE(context->stackp==context->max_stackp)) \
+	context->handleError(kStackOverflowError); \
+else (context->stackp++)->set(val)
 
 #define RUNTIME_STACK_POP(context,ret) \
-	if(context->stack_index) ret=context->stack[--context->stack_index]; \
+	if(USUALLY_TRUE(context->stackp!=context->stack)) ret.set(*(--context->stackp)); \
 	else context->handleError(kStackUnderflowError);
 
+
+// this creates a pointer to the element on top of the stack
+// don't use the pointer after something was pushed on the stack
 #define RUNTIME_STACK_POP_CREATE(context,ret) \
-	asAtom ret; \
-	RUNTIME_STACK_POP(context,ret)
+	if(USUALLY_FALSE(context->stackp==context->stack)) \
+	  context->handleError(kStackUnderflowError); \
+	asAtom* ret= --context->stackp; 
 
 #define RUNTIME_STACK_POP_ASOBJECT(context,ret, sys) \
-	if(context->stack_index) ret=context->stack[--context->stack_index].toObject(sys); \
+	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=(--context->stackp)->toObject(sys); \
 	else context->handleError(kStackUnderflowError);
 
 #define RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret, sys) \
-	ASObject* ret = NULL; \
-	RUNTIME_STACK_POP_ASOBJECT(context,ret, sys)
+	if(USUALLY_FALSE(context->stackp==context->stack)) \
+		context->handleError(kStackUnderflowError); \
+	ASObject* ret = (--context->stackp)->toObject(sys);
 
 #define RUNTIME_STACK_PEEK(context,ret) \
-	ret= context->stack_index ? context->stack[context->stack_index-1] : asAtom::invalidAtom; 
+	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 
 
 #define RUNTIME_STACK_PEEK_ASOBJECT(context,ret, sys) \
-	ret= context->stack_index ? context->stack[context->stack_index-1].toObject(sys) : NULL; 
+	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1)->toObject(sys) : NULL; 
 
 #define RUNTIME_STACK_PEEK_CREATE(context,ret) \
-	asAtom ret; \
-	RUNTIME_STACK_PEEK(context,ret)
+	asAtom* ret = USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 
 
 #define RUNTIME_STACK_POINTER_CREATE(context,ret) \
-	asAtom* ret = NULL; \
-	if(context->stack_index) ret=&context->stack[context->stack_index-1]; \
-	else context->handleError(kStackUnderflowError);
+	if(USUALLY_FALSE(context->stackp==context->stack)) \
+		context->handleError(kStackUnderflowError); \
+	asAtom* ret = context->stackp-1;
 
 }
 #endif /* SCRIPTING_ABCUTILS_H */

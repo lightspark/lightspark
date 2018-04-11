@@ -380,6 +380,24 @@ void CairoRenderContext::setProperties(AS_BLENDMODE blendmode)
 		case BLENDMODE_SCREEN:
 			cairo_set_operator(cr,CAIRO_OPERATOR_SCREEN);
 			break;
+		case BLENDMODE_LAYER:
+			cairo_set_operator(cr,CAIRO_OPERATOR_OVER);
+			break;
+		case BLENDMODE_DARKEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_DARKEN);
+			break;
+		case BLENDMODE_DIFFERENCE:
+			cairo_set_operator(cr,CAIRO_OPERATOR_DIFFERENCE);
+			break;
+		case BLENDMODE_HARDLIGHT:
+			cairo_set_operator(cr,CAIRO_OPERATOR_HARD_LIGHT);
+			break;
+		case BLENDMODE_LIGHTEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_LIGHTEN);
+			break;
+		case BLENDMODE_OVERLAY:
+			cairo_set_operator(cr,CAIRO_OPERATOR_OVERLAY);
+			break;
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
 			break;

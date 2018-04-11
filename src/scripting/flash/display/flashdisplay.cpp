@@ -1755,13 +1755,12 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		Vector2f pos = (*it)->getXY();
-		LOG(LOG_INFO, indent << (*it)->getClass()->class_name <<
+		LOG(LOG_INFO, indent << (*it)->toDebugString() <<
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 		    ((*it)->isMask() ? "m" : "") << " " <<
-		    "a=" << (*it)->clippedAlpha() << " " <<
-		    it->getPtr());
+			"a=" << (*it)->clippedAlpha());
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -3198,6 +3197,22 @@ void PixelSnapping::sinit(Class_base* c)
 	c->setVariableAtomByQName("AUTO",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"auto"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("NEVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"never"),CONSTANT_TRAIT);
 
+}
+
+void CapsStyle::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("NONE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"none"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ROUND",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"round"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQUARE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"square"),CONSTANT_TRAIT);
+}
+
+void JointStyle::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("BEVEL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"bevel"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MITER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"miter"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ROUND",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"round"),CONSTANT_TRAIT);
 }
 
 /* Go through the hierarchy and add all

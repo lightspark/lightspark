@@ -716,19 +716,58 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 		th->owner->tokens.emplace_back(CLEAR_STROKE);
 		return;
 	}
-	uint32_t color = 0;
-	uint8_t alpha = 255;
-	UI16_SWF thickness = UI16_SWF(imax(args[0].toNumber() * 20, 0));
-	if (argslen >= 2)
-		color = args[1].toUInt();
-	if (argslen >= 3)
-		alpha = uint8_t(args[1].toNumber() * 255);
-
-	// TODO: pixel hinting, scaling, caps, miter, joints
+	number_t thickness;
+	uint32_t color;
+	number_t alpha;
+	bool pixelHinting;
+	tiny_string scaleMode;
+	tiny_string caps;
+	tiny_string joints;
+	number_t miterLimit;
+	ARG_UNPACK_ATOM(thickness,Number::NaN)(color, 0)(alpha, 1.0)(pixelHinting,false)(scaleMode,"normal")(caps,"")(joints,"")(miterLimit,3);
+	UI16_SWF _thickness = UI16_SWF(imax(thickness * 20, 0));
 	
 	LINESTYLE2 style(0xff);
-	style.Color = RGBA(color, alpha);
-	style.Width = thickness;
+	style.Color = RGBA(color, ((int)(alpha*255.0))&0xff);
+	style.Width = _thickness;
+	style.PixelHintingFlag = pixelHinting? 1: 0;
+
+	if (scaleMode == "normal")
+	{
+		style.NoHScaleFlag = false;
+		style.NoVScaleFlag = false;
+	}
+	else if (scaleMode == "none")
+	{
+		style.NoHScaleFlag = true;
+		style.NoVScaleFlag = true;
+	}
+	else if (scaleMode == "horizontal")
+	{
+		style.NoHScaleFlag = false;
+		style.NoVScaleFlag = true;
+	}
+	else if (scaleMode == "vertical")
+	{
+		style.NoHScaleFlag = true;
+		style.NoVScaleFlag = false;
+	}
+	
+	if (caps == "none")
+		style.StartCapStyle = 1;
+	else if (caps == "round")
+		style.StartCapStyle = 0;
+	else if (caps == "square")
+		style.StartCapStyle = 2;
+
+	if (joints == "round")
+		style.JointStyle = 0;
+	else if (joints == "bevel")
+		style.JointStyle = 1;
+	else if (joints == "miter")
+		style.JointStyle = 2;
+	style.MiterLimitFactor = miterLimit;
+
 	th->owner->tokens.emplace_back(GeomToken(SET_STROKE, style));
 }
 

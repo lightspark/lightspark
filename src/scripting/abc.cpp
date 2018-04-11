@@ -351,6 +351,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Shader","flash.display",Class<Shader>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapDataChannel","flash.display",Class<BitmapDataChannel>::getRef(m_sys));
 	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef(m_sys));
+	builtin->registerBuiltin("CapsStyle","flash.display",Class<CapsStyle>::getRef(m_sys));
+	builtin->registerBuiltin("JointStyle","flash.display",Class<JointStyle>::getRef(m_sys));
 
 	builtin->registerBuiltin("Context3D","flash.display3D",Class<Context3D>::getRef(m_sys));
 	builtin->registerBuiltin("Context3DBlendFactor","flash.display3D",Class<Context3DBlendFactor>::getRef(m_sys));

@@ -718,6 +718,19 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class CapsStyle: public ASObject
+{
+public:
+	CapsStyle(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+class JointStyle: public ASObject
+{
+public:
+	JointStyle(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;

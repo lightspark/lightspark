@@ -334,9 +334,9 @@ void TextField::setSizeAndPositionFromAutoSize()
 	if (!wordWrap)
 	{
 		if (autoSize == AS_RIGHT)
-			tx += width-textWidth;
+			tx += (int)width-(int)textWidth;
 		else if (autoSize == AS_CENTER)
-			tx += (width - textWidth)/2.0;
+			tx += ((int)width - (int)textWidth)/2.0;
 		if (width < textWidth)
 			width = textWidth;
 		if (height < textHeight)

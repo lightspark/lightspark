@@ -968,12 +968,12 @@ class LINESTYLE2
 {
 public:
 	LINESTYLE2(uint8_t v):HasFillFlag(false),FillType(v),version(v){}
-	UB StartCapStyle;
-	UB JointStyle;
+	int StartCapStyle;
+	int JointStyle;
 	bool HasFillFlag;
-	UB NoHScaleFlag;
-	UB NoVScaleFlag;
-	UB PixelHintingFlag;
+	bool NoHScaleFlag;
+	bool NoVScaleFlag;
+	int PixelHintingFlag;
 	UB NoClose;
 	UB EndCapStyle;
 	UI16_SWF Width;

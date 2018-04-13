@@ -511,7 +511,7 @@ ASFUNCTIONBODY_ATOM(Loader,load)
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	_R<RootMovieClip> currentRoot=getVm(th->getSystemState())->currentCallContext->context->root;
+	_R<RootMovieClip> currentRoot=getVm(th->getSystemState())->currentCallContext->mi->context->root;
 	// empty origin is possible if swf is loaded by loadBytes()
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
 	{

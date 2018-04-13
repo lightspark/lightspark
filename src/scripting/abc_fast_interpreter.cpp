@@ -51,7 +51,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 #if defined (PROFILING_SUPPORT) || !defined(NDEBUG)
 	const uint32_t code_len=mi->body->code.size();
 #endif
-	uint32_t instructionPointer=context->exec_pos;
+	uint32_t instructionPointer=context->exec_pos-context->mi->body->preloadedcode.data();
 
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
@@ -70,7 +70,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 		assert(instructionPointer<code_len);
 		uint8_t opcode=code[instructionPointer];
 		//Save ip for exception handling in SyntheticFunction::callImpl
-		context->exec_pos = instructionPointer;
+		context->exec_pos = mi->body->preloadedcode.data()+instructionPointer;
 		instructionPointer++;
 		const OpcodeData* data=reinterpret_cast<const OpcodeData*>(code+instructionPointer);
 
@@ -867,7 +867,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//findpropstrict
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 				RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 				name->resetNameIfObject();
 				break;
@@ -877,7 +877,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//findproperty
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 				RUNTIME_STACK_PUSH(context,asAtom::fromObject(findProperty(context,name)));
 				name->resetNameIfObject();
 				break;
@@ -887,7 +887,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//finddef
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 				LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<< *name);
 				RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushNull()));
 				name->resetNameIfObject();
@@ -908,7 +908,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value,function->getSystemState());
 
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
 
@@ -970,7 +970,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getproperty
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
 
@@ -986,10 +986,10 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
 				RUNTIME_STACK_POP_CREATE(context,value);
-				multiname* name=context->context->getMultiname(t,context);
+				multiname* name=context->mi->context->getMultiname(t,context);
 				LOG_CALL("initProperty "<<*name);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				obj->toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+				obj->toObject(context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
 				ASATOM_DECREF_POINTER(obj);
 				name->resetNameIfObject();
 				break;
@@ -999,7 +999,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//deleteproperty
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name = context->context->getMultiname(t,context);
+				multiname* name = context->mi->context->getMultiname(t,context);
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
 				bool ret = deleteProperty(obj,name);
 				name->resetNameIfObject();
@@ -1127,7 +1127,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//coerce
 				const multiname* name=data->names[0];
 				char* rewriteableCode = &(mi->body->code[0]);
-				const Type* type = Type::getTypeFromMultiname(name, context->context);
+				const Type* type = Type::getTypeFromMultiname(name, context->mi->context);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
 				//Rewrite this to a coerceEarly
 				rewriteableCode[instructionPointer-1]=0xfc;
@@ -1160,11 +1160,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//astype
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,NULL);
+				multiname* name=context->mi->context->getMultiname(t,NULL);
 
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
 
-				ASObject* ret=asType(context->context, v1, name);
+				ASObject* ret=asType(context->mi->context, v1, name);
 				RUNTIME_STACK_PUSH(context,asAtom::fromObject(ret));
 				break;
 			}
@@ -1481,11 +1481,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//istype
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				multiname* name=context->context->getMultiname(t,NULL);
+				multiname* name=context->mi->context->getMultiname(t,NULL);
 
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
 
-				ASObject* ret=abstract_b(function->getSystemState(),isType(context->context, v1, name));
+				ASObject* ret=abstract_b(function->getSystemState(),isType(context->mi->context, v1, name));
 				RUNTIME_STACK_PUSH(context,asAtom::fromObject(ret));
 				break;
 			}

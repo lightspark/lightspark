@@ -773,7 +773,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed && getVm(getSystemState())->currentCallContext)
 		{
-			const Type* type = Type::getTypeFromMultiname(&name,getVm(getSystemState())->currentCallContext->context);
+			const Type* type = Type::getTypeFromMultiname(&name,getVm(getSystemState())->currentCallContext->mi->context);
 			if (type)
 				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
@@ -881,7 +881,7 @@ void variable::setVar(asAtom& v, SystemState* sys, bool _isrefcounted)
 	//children, which is done outisde any ABC context
 	if(!isResolved && traitTypemname && getVm(sys)->currentCallContext)
 	{
-		type = Type::getTypeFromMultiname(traitTypemname, getVm(sys)->currentCallContext->context);
+		type = Type::getTypeFromMultiname(traitTypemname, getVm(sys)->currentCallContext->mi->context);
 		assert(type);
 		isResolved=true;
 	}
@@ -1242,7 +1242,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 	return obj;
 }
 
-void ASObject::getVariableByMultiname(asAtom &ret, const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls)
+void ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -1311,12 +1311,12 @@ void ASObject::getVariableByMultiname(asAtom &ret, const multiname& name, GET_VA
 			if (obj->var.isBound())
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
-				ret = obj->var;
+				ret.set(obj->var);
 			}
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				ret = asAtom::fromFunction(obj->var.getObject(),this);
+				ret.setFunction(obj->var.getObject(),this);
 			}
 		}
 		else

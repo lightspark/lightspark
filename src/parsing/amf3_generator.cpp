@@ -204,7 +204,7 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			m.name_s_id=input->getSystemState()->getUniqueStringId(vectypename);
 			m.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 			m.isAttribute = false;
-			type = Type::getTypeFromMultiname(&m,getVm(input->getSystemState())->currentCallContext->context);
+			type = Type::getTypeFromMultiname(&m,getVm(input->getSystemState())->currentCallContext->mi->context);
 			if (type == NULL)
 			{
 				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);

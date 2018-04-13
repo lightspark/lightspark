@@ -380,6 +380,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 	/* setup call_context */
 	call_context cc(mi,inClass,ret);
+	cc.exec_pos = mi->body->preloadedcode.data();
 	asAtom* locals = g_newa(asAtom, cc.locals_size);
 	for(asAtom* i=locals;i< locals+cc.locals_size;++i)
 		*i = asAtom::invalidAtom;
@@ -480,12 +481,13 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					{
 						ABCVm::preloadFunction(this);
 						mi->body->codeStatus = method_body_info::PRELOADED;
+						cc.exec_pos = mi->body->preloadedcode.data();
 					}
 					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;
 					//This is not a hot function, execute it using the interpreter
-					ABCVm::executeFunction(this,&cc);
+					ABCVm::executeFunction(&cc);
 					//Restore the previous codeStatus
 					mi->body->codeStatus = oldCodeStatus;
 				}
@@ -495,7 +497,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		}
 		catch (ASObject* excobj) // Doesn't have to be an ASError at all.
 		{
-			unsigned int pos = cc.exec_pos;
+			unsigned int pos = cc.exec_pos-cc.mi->body->preloadedcode.data();
 			bool no_handler = true;
 
 			LOG(LOG_TRACE, "got an " << excobj->toDebugString());
@@ -509,7 +511,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 				{
 					LOG(LOG_INFO,"Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< obj.toDebugString());
 					no_handler = false;
-					cc.exec_pos = exc.target;
+					cc.exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc.runtime_stack_clear();
 					*(cc.stackp++)=asAtom::fromObject(excobj);
 					excobj->incRef();
@@ -1663,7 +1665,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				ret = asAtom::fromFunction(obj->var.getObject(),NULL);
+				ret.setFunction(obj->var.getObject(),NULL);
 			}
 		}
 		else
@@ -2338,13 +2340,13 @@ void Global::sinit(Class_base* c)
 
 void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name)
 {
-	ASObject::getVariableByMultiname(ret,name, NONE);
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
 	//Do not attempt to define the variable now in any case
 }
 
 void Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	ASObject::getVariableByMultiname(ret,name, opt);
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
 	/*
 	 * All properties are registered by now, even if the script init has
 	 * not been run. Thus if ret == NULL, we don't have to run the script init.
@@ -2354,7 +2356,7 @@ void Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARI
 	LOG_CALL("Access to " << name << ", running script init");
 	asAtom v = asAtom::fromObject(this);
 	context->runScriptInit(scriptId,v);
-	ASObject::getVariableByMultiname(ret,name, opt);
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
 }
 
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)

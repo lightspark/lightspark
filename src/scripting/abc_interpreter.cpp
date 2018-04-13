@@ -38,13 +38,8 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	return ret;
 }
 
-void ABCVm::executeFunction(const SyntheticFunction* function, call_context* context)
+void ABCVm::executeFunction(call_context* context)
 {
-	method_info* mi=function->mi;
-
-	preloadedcodedata* codestart = mi->body->preloadedcode.data();
-	preloadedcodedata* codep = codestart+context->exec_pos;
-
 #ifdef PROFILING_SUPPORT
 	if(mi->profTime.empty())
 		mi->profTime.resize(code_len,0);
@@ -57,33 +52,22 @@ void ABCVm::executeFunction(const SyntheticFunction* function, call_context* con
 #endif
 
 	//Each case block builds the correct parameters for the interpreter function and call it
-	while(1)
+	while(!context->returning)
 	{
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		uint8_t opcode = (codep->data)&0xff;
-//LOG(LOG_INFO,"opcode:"<<hex<<(int)opcode);
-		//Save ip for exception handling in SyntheticFunction::callImpl
-		context->exec_pos = codep-codestart;
-		// codep points to the current instruction, every abc_function has to make sure 
+//LOG(LOG_INFO,"opcode:"<<hex<<(int)((codep->data)&0xff));
+		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
-		abcfunctions[opcode](context,&codep);
-		assert(codep != codestart + context->exec_pos);
-		
-		if (context->returning)
-		{
-			PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
-			return;
-		}
+		abcfunctions[(context->exec_pos->data)&0xff](context);
+
 		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
+	return;
 
-#undef PROF_ACCOUNT_TIME 
+#undef PROF_ACCOUNT_TIME
 #undef PROF_IGNORE_TIME
-	//We managed to execute all the function
-	context->returning = true;
-	RUNTIME_STACK_POP(context,context->returnvalue);
 }
 
 ABCVm::abc_function ABCVm::abcfunctions[]={
@@ -361,311 +345,311 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 
 };
 
-void ABCVm::abc_bkpt(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bkpt(call_context* context)
 {
 	//bkpt
 	LOG_CALL( _("bkpt") );
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_nop(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_nop(call_context* context)
 {
 	//nop
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_throw(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_throw(call_context* context)
 {
 	//throw
 	_throw(context);
 }
-void ABCVm::abc_getSuper(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getSuper(call_context* context)
 {
 	//getsuper
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	getSuper(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setSuper(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setSuper(call_context* context)
 {
 	//setsuper
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	setSuper(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_dxns(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_dxns(call_context* context)
 {
 	//dxns
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	dxns(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_dxnslate(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_dxnslate(call_context* context)
 {
 	//dxnslate
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->mi->context->root->getSystemState());
 	dxnslate(context, v);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_kill(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_kill(call_context* context)
 {
 	//kill
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	LOG_CALL( "kill " << t);
 	ASATOM_DECREF(context->locals[t]);
 	context->locals[t]=asAtom::undefinedAtom;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_label(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_label(call_context* context)
 {
 	//label
 	LOG_CALL("label");
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_ifnlt(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifnlt(call_context* context)
 {
 	//ifnlt
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v2->isLess(context->context->root->getSystemState(),*v1) == TTRUE);
+	bool cond=!(v2->isLess(context->mi->context->root->getSystemState(),*v1) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifnle(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifnle(call_context* context)
 {
 	//ifnle
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v1->isLess(context->context->root->getSystemState(),*v2) == TFALSE);
+	bool cond=!(v1->isLess(context->mi->context->root->getSystemState(),*v2) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifngt(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifngt(call_context* context)
 {
 	//ifngt
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v1->isLess(context->context->root->getSystemState(),*v2) == TTRUE);
+	bool cond=!(v1->isLess(context->mi->context->root->getSystemState(),*v2) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifnge(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifnge(call_context* context)
 {
 	//ifnge
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v2->isLess(context->context->root->getSystemState(),*v1) == TFALSE);
+	bool cond=!(v2->isLess(context->mi->context->root->getSystemState(),*v1) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_jump(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_jump(call_context* context)
 {
 	//jump
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	LOG_CALL("jump:"<<t);
-	*codep += t+1; 
+	context->exec_pos += t+1;
 }
-void ABCVm::abc_iftrue(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_iftrue(call_context* context)
 {
 	//iftrue
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=v1->Boolean_concrete();
 	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_iffalse(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_iffalse(call_context* context)
 {
 	//iffalse
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=!v1->Boolean_concrete();
 	LOG_CALL(_("ifFalse (") << ((cond)?_("taken"):_("not taken")) << ')');
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifeq(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifeq(call_context* context)
 {
 	//ifeq
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=(v1->isEqual(context->context->root->getSystemState(),*v2));
+	bool cond=(v1->isEqual(context->mi->context->root->getSystemState(),*v2));
 	LOG_CALL(_("ifEq (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifne(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifne(call_context* context)
 {
 	//ifne
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v1->isEqual(context->context->root->getSystemState(),*v2));
+	bool cond=!(v1->isEqual(context->mi->context->root->getSystemState(),*v2));
 	LOG_CALL(_("ifNE (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_iflt(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_iflt(call_context* context)
 {
 	//iflt
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=v2->isLess(context->context->root->getSystemState(),*v1) == TTRUE;
+	bool cond=v2->isLess(context->mi->context->root->getSystemState(),*v1) == TTRUE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifle(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifle(call_context* context)
 {
 	//ifle
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=v1->isLess(context->context->root->getSystemState(),*v2) == TFALSE;
+	bool cond=v1->isLess(context->mi->context->root->getSystemState(),*v2) == TFALSE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifgt(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifgt(call_context* context)
 {
 	//ifgt
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=v1->isLess(context->context->root->getSystemState(),*v2) == TTRUE;
+	bool cond=v1->isLess(context->mi->context->root->getSystemState(),*v2) == TTRUE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifge(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifge(call_context* context)
 {
 	//ifge
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=v2->isLess(context->context->root->getSystemState(),*v1) == TFALSE;
+	bool cond=v2->isLess(context->mi->context->root->getSystemState(),*v1) == TFALSE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifstricteq(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifstricteq(call_context* context)
 {
 	//ifstricteq
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
-	bool cond=v1->isEqualStrict(context->context->root->getSystemState(),*v2);
+	bool cond=v1->isEqualStrict(context->mi->context->root->getSystemState(),*v2);
 	LOG_CALL(_("ifStrictEq ")<<cond);
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_ifstrictne(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_ifstrictne(call_context* context)
 {
 	//ifstrictne
-	int32_t t = (**codep).jumpdata.jump;
+	int32_t t = (*context->exec_pos).jumpdata.jump;
 
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
-	bool cond=!v1->isEqualStrict(context->context->root->getSystemState(),*v2);
+	bool cond=!v1->isEqualStrict(context->mi->context->root->getSystemState(),*v2);
 	LOG_CALL(_("ifStrictNE ")<<cond <<" "<<v1->toDebugString()<<" "<<v2->toDebugString());
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
 	if(cond)
-		*codep += t+1; 
+		context->exec_pos += t+1;
 	else
-		++(*codep);
+		++(context->exec_pos);
 }
-void ABCVm::abc_lookupswitch(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lookupswitch(call_context* context)
 {
 	//lookupswitch
-	preloadedcodedata* here=*codep; //Base for the jumps is the instruction itself for the switch
-	int32_t t = (++(*codep))->idata;
+	preloadedcodedata* here=context->exec_pos; //Base for the jumps is the instruction itself for the switch
+	int32_t t = (++(context->exec_pos))->idata;
 	preloadedcodedata* defaultdest=here+t;
 	LOG_CALL(_("Switch default dest ") << t);
-	uint32_t count = (++(*codep))->data;
+	uint32_t count = (++(context->exec_pos))->data;
 	preloadedcodedata* offsets=g_newa(preloadedcodedata, count+1);
 	for(unsigned int i=0;i<count+1;i++)
 	{
-		offsets[i] = *(++(*codep));
+		offsets[i] = *(++(context->exec_pos));
 		LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i].idata);
 	}
 
@@ -678,21 +662,21 @@ void ABCVm::abc_lookupswitch(call_context* context,preloadedcodedata** codep)
 	if(index<=count)
 		dest=here+offsets[index].idata;
 
-	*codep = dest;
+	context->exec_pos = dest;
 }
-void ABCVm::abc_pushwith(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushwith(call_context* context)
 {
 	//pushwith
 	pushWith(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_popscope(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_popscope(call_context* context)
 {
 	//popscope
 	popScope(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_nextname(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_nextname(call_context* context)
 {
 	//nextname
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -702,13 +686,13 @@ void ABCVm::abc_nextname(call_context* context,preloadedcodedata** codep)
 		throw UnsupportedException("Type mismatch in nextName");
 
 	asAtom ret;
-	pval->toObject(context->context->root->getSystemState())->nextName(ret,v1->toUInt());
+	pval->toObject(context->mi->context->root->getSystemState())->nextName(ret,v1->toUInt());
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
 	*pval = ret;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_hasnext(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_hasnext(call_context* context)
 {
 	//hasnext
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -717,26 +701,26 @@ void ABCVm::abc_hasnext(call_context* context,preloadedcodedata** codep)
 
 	uint32_t curIndex=pval->toUInt();
 
-	uint32_t newIndex=v1->toObject(context->context->root->getSystemState())->nextNameIndex(curIndex);
+	uint32_t newIndex=v1->toObject(context->mi->context->root->getSystemState())->nextNameIndex(curIndex);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
 	pval->setInt(newIndex);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushnull(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushnull(call_context* context)
 {
 	//pushnull
 	LOG_CALL("pushnull");
 	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushundefined(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushundefined(call_context* context)
 {
 	LOG_CALL("pushundefined");
 	RUNTIME_STACK_PUSH(context,asAtom::undefinedAtom);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_nextvalue(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_nextvalue(call_context* context)
 {
 	//nextvalue
 	RUNTIME_STACK_POP_CREATE(context,v1);
@@ -746,70 +730,70 @@ void ABCVm::abc_nextvalue(call_context* context,preloadedcodedata** codep)
 		throw UnsupportedException("Type mismatch in nextValue");
 
 	asAtom ret;
-	pval->toObject(context->context->root->getSystemState())->nextValue(ret,v1->toUInt());
+	pval->toObject(context->mi->context->root->getSystemState())->nextValue(ret,v1->toUInt());
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
 	*pval=ret;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushbyte(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushbyte(call_context* context)
 {
 	//pushbyte
-	int32_t t = (++(*codep))->idata;
+	int32_t t = (++(context->exec_pos))->idata;
 	LOG_CALL("pushbyte "<<(int)t);
 	RUNTIME_STACK_PUSH(context,asAtom(t));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushshort(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushshort(call_context* context)
 {
 	//pushshort
 	// specs say pushshort is a u30, but it's really a u32
 	// see https://bugs.adobe.com/jira/browse/ASC-4181
-	int32_t t = (++(*codep))->idata;
+	int32_t t = (++(context->exec_pos))->idata;
 	LOG_CALL("pushshort "<<t);
 
 	RUNTIME_STACK_PUSH(context,asAtom(t));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushtrue(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushtrue(call_context* context)
 {
 	//pushtrue
 	LOG_CALL("pushtrue");
 	RUNTIME_STACK_PUSH(context,asAtom::trueAtom);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushfalse(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushfalse(call_context* context)
 {
 	//pushfalse
 	LOG_CALL("pushfalse");
 	RUNTIME_STACK_PUSH(context,asAtom::falseAtom);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushnan(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushnan(call_context* context)
 {
 	//pushnan
 	LOG_CALL("pushNaN");
 	RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pop(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pop(call_context* context)
 {
 	//pop
 	RUNTIME_STACK_POP_CREATE(context,o);
 	LOG_CALL("pop "<<o->toDebugString());
 	ASATOM_DECREF_POINTER(o);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_dup(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_dup(call_context* context)
 {
 	//dup
 	dup();
 	RUNTIME_STACK_PEEK_CREATE(context,o);
 	ASATOM_INCREF_POINTER(o);
 	RUNTIME_STACK_PUSH(context,*o);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_swap(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_swap(call_context* context)
 {
 	//swap
 	swap();
@@ -820,251 +804,251 @@ void ABCVm::abc_swap(call_context* context,preloadedcodedata** codep)
 
 	RUNTIME_STACK_PUSH(context,v1);
 	RUNTIME_STACK_PUSH(context,v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushstring(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushstring(call_context* context)
 {
 	//pushstring
-	uint32_t t = (++(*codep))->data;
-	LOG_CALL( _("pushString ") << context->context->root->getSystemState()->getStringFromUniqueId(context->context->getString(t)) );
-	RUNTIME_STACK_PUSH(context,asAtom::fromStringID(context->context->getString(t)));
-	++(*codep);
+	uint32_t t = (++(context->exec_pos))->data;
+	LOG_CALL( _("pushString ") << context->mi->context->root->getSystemState()->getStringFromUniqueId(context->mi->context->getString(t)) );
+	RUNTIME_STACK_PUSH(context,asAtom::fromStringID(context->mi->context->getString(t)));
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushint(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushint(call_context* context)
 {
 	//pushint
-	uint32_t t = (++(*codep))->data;
-	s32 val=context->context->constant_pool.integer[t];
+	uint32_t t = (++(context->exec_pos))->data;
+	s32 val=context->mi->context->constant_pool.integer[t];
 	LOG_CALL( "pushInt " << val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushuint(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushuint(call_context* context)
 {
 	//pushuint
-	uint32_t t = (++(*codep))->data;
-	u32 val=context->context->constant_pool.uinteger[t];
+	uint32_t t = (++(context->exec_pos))->data;
+	u32 val=context->mi->context->constant_pool.uinteger[t];
 	LOG_CALL( "pushUInt " << val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushdouble(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushdouble(call_context* context)
 {
 	//pushdouble
-	uint32_t t = (++(*codep))->data;
-	d64 val=context->context->constant_pool.doubles[t];
+	uint32_t t = (++(context->exec_pos))->data;
+	d64 val=context->mi->context->constant_pool.doubles[t];
 	LOG_CALL( "pushDouble " << val);
 
 	RUNTIME_STACK_PUSH(context,asAtom(val));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushScope(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushScope(call_context* context)
 {
 	//pushscope
 	pushScope(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_pushnamespace(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_pushnamespace(call_context* context)
 {
 	//pushnamespace
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(pushNamespace(context, t) ));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_hasnext2(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_hasnext2(call_context* context)
 {
 	//hasnext2
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 
 	bool ret=hasNext2(context,t,t2);
 	RUNTIME_STACK_PUSH(context,asAtom(ret));
-	++(*codep);
+	++(context->exec_pos);
 }
 //Alchemy opcodes
-void ABCVm::abc_li8(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_li8(call_context* context)
 {
 	//li8
 	LOG_CALL( "li8");
 	loadIntN<uint8_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_li16(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_li16(call_context* context)
 {
 	//li16
 	LOG_CALL( "li16");
 	loadIntN<uint16_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_li32(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_li32(call_context* context)
 {
 	//li32
 	LOG_CALL( "li32");
 	loadIntN<int32_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_lf32(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lf32(call_context* context)
 {
 	//lf32
 	LOG_CALL( "lf32");
 	loadFloat(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_lf64(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lf64(call_context* context)
 {
 	//lf64
 	LOG_CALL( "lf64");
 	loadDouble(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_si8(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_si8(call_context* context)
 {
 	//si8
 	LOG_CALL( "si8");
 	storeIntN<uint8_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_si16(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_si16(call_context* context)
 {
 	//si16
 	LOG_CALL( "si16");
 	storeIntN<uint16_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_si32(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_si32(call_context* context)
 {
 	//si32
 	LOG_CALL( "si32");
 	storeIntN<uint32_t>(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_sf32(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_sf32(call_context* context)
 {
 	//sf32
 	LOG_CALL( "sf32");
 	storeFloat(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_sf64(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_sf64(call_context* context)
 {
 	//sf64
 	LOG_CALL( "sf64");
 	storeDouble(context);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newfunction(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newfunction(call_context* context)
 {
 	//newfunction
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newFunction(context,t)));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_call(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_call(call_context* context)
 {
 	//call
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	method_info* called_mi=NULL;
 	call(context,t,&called_mi);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_construct(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_construct(call_context* context)
 {
 	//construct
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	construct(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callMethod(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callMethod(call_context* context)
 {
 	// callmethod
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	callMethod(context,t,t2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callstatic(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callstatic(call_context* context)
 {
 	//callstatic
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	callStatic(context,t,t2,NULL,true);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callsuper(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callsuper(call_context* context)
 {
 	//callsuper
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	callSuper(context,t,t2,NULL,true);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callproperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callproperty(call_context* context)
 {
 	//callproperty
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
-	callProperty(context,t,t2,NULL,true);
-	++(*codep);
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
+	callPropIntern(context,t,t2,true,false);
+	++(context->exec_pos);
 }
-void ABCVm::abc_returnvoid(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_returnvoid(call_context* context)
 {
 	//returnvoid
 	LOG_CALL(_("returnVoid"));
 	context->returnvalue = asAtom::invalidAtom;
 	context->returning = true;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_returnvalue(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_returnvalue(call_context* context)
 {
 	//returnvalue
 	RUNTIME_STACK_POP(context,context->returnvalue);
 	LOG_CALL(_("returnValue ") << context->returnvalue.toDebugString());
 	context->returning = true;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_constructsuper(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_constructsuper(call_context* context)
 {
 	//constructsuper
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	constructSuper(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_constructprop(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_constructprop(call_context* context)
 {
 	//constructprop
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	constructProp(context,t,t2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callproplex(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callproplex(call_context* context)
 {
 	//callproplex
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	callPropLex(context,t,t2,NULL,true);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callsupervoid(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callsupervoid(call_context* context)
 {
 	//callsupervoid
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	method_info* called_mi=NULL;
 	callSuper(context,t,t2,&called_mi,false);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_callpropvoid(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_callpropvoid(call_context* context)
 {
 	//callpropvoid
-	uint32_t t = (++(*codep))->data;
-	uint32_t t2 = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t2 = (++(context->exec_pos))->data;
 	callProperty(context,t,t2,NULL,false);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_sxi1(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_sxi1(call_context* context)
 {
 	//sxi1
 	LOG_CALL( "sxi1");
@@ -1072,9 +1056,9 @@ void ABCVm::abc_sxi1(call_context* context,preloadedcodedata** codep)
 	int32_t ret=arg1->toUInt()&0x1 ? -1 : 0;
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_sxi8(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_sxi8(call_context* context)
 {
 	//sxi8
 	LOG_CALL( "sxi8");
@@ -1082,9 +1066,9 @@ void ABCVm::abc_sxi8(call_context* context,preloadedcodedata** codep)
 	int32_t ret=(int8_t)arg1->toUInt();
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_sxi16(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_sxi16(call_context* context)
 {
 	//sxi16
 	LOG_CALL( "sxi16");
@@ -1092,93 +1076,93 @@ void ABCVm::abc_sxi16(call_context* context,preloadedcodedata** codep)
 	int32_t ret=(int16_t)arg1->toUInt();
 	ASATOM_DECREF_POINTER(arg1);
 	arg1->setInt(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_constructgenerictype(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_constructgenerictype(call_context* context)
 {
 	//constructgenerictype
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	constructGenericType(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newobject(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newobject(call_context* context)
 {
 	//newobject
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	newObject(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newarray(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newarray(call_context* context)
 {
 	//newarray
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	newArray(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newactivation(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newactivation(call_context* context)
 {
 	//newactivation
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newActivation(context, context->mi)));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newclass(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newclass(call_context* context)
 {
 	//newclass
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	newClass(context,t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getdescendants(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getdescendants(call_context* context)
 {
 	//getdescendants
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	getDescendants(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_newcatch(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_newcatch(call_context* context)
 {
 	//newcatch
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(newCatch(context,t)));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_findpropstrict(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_findpropstrict(call_context* context)
 {
 	//findpropstrict
-//		uint32_t t = (++(*codep))->data;
-//		multiname* name=context->context->getMultiname(t,context);
+//		uint32_t t = (++(context->exec_pos))->data;
+//		multiname* name=context->mi->context->getMultiname(t,context);
 //		RUNTIME_STACK_PUSH(context,asAtom::fromObject(findPropStrict(context,name)));
 //		name->resetNameIfObject();
 
 	asAtom o;
-	findPropStrictCache(o,context,codep);
+	findPropStrictCache(o,context);
 	RUNTIME_STACK_PUSH(context,o);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_findproperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_findproperty(call_context* context)
 {
 	//findproperty
-	uint32_t t = (++(*codep))->data;
-	multiname* name=context->context->getMultiname(t,context);
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_PUSH(context,asAtom::fromObject(findProperty(context,name)));
 	name->resetNameIfObject();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_finddef(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_finddef(call_context* context)
 {
 	//finddef
-	uint32_t t = (++(*codep))->data;
-	multiname* name=context->context->getMultiname(t,context);
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name=context->mi->context->getMultiname(t,context);
 	LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
 	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
 	name->resetNameIfObject();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlex(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlex(call_context* context)
 {
 	//getlex
-	preloadedcodedata* instrptr = *codep;
-	uint32_t t = (++(*codep))->data;
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t t = (++(context->exec_pos))->data;
 	if ((instrptr->data&0x00000100) == 0x00000100)
 	{
 		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->obj,instrptr->closure));
@@ -1194,15 +1178,15 @@ void ABCVm::abc_getlex(call_context* context,preloadedcodedata** codep)
 		instrptr->obj = v->getObject();
 		instrptr->closure = v->getClosure();
 	}
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setproperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setproperty(call_context* context)
 {
 	//setproperty
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_POP_CREATE(context,value);
 
-	multiname* name=context->context->getMultiname(t,context);
+	multiname* name=context->mi->context->getMultiname(t,context);
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
@@ -1223,24 +1207,24 @@ void ABCVm::abc_setproperty(call_context* context,preloadedcodedata** codep)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	//Do not allow to set contant traits
-	ASObject* o = obj->toObject(context->context->root->getSystemState());
+	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
 	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
 	o->decRef();
 	name->resetNameIfObject();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlocal(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlocal(call_context* context)
 {
 	//getlocal
-	uint32_t i = ((*codep)++)->data>>8;
+	uint32_t i = ((context->exec_pos)++)->data>>8;
 	LOG_CALL( _("getLocal n ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
-void ABCVm::abc_setlocal(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setlocal(call_context* context)
 {
 	//setlocal
-	uint32_t i = ((*codep)++)->data>>8;
+	uint32_t i = ((context->exec_pos)++)->data>>8;
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << obj->toDebugString() );
@@ -1255,37 +1239,35 @@ void ABCVm::abc_setlocal(call_context* context,preloadedcodedata** codep)
 		context->locals[i]=*obj;
 	}
 }
-void ABCVm::abc_getglobalscope(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getglobalscope(call_context* context)
 {
 	//getglobalscope
 	asAtom ret = asAtom::fromObject(getGlobalScope(context));
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getscopeobject(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getscopeobject(call_context* context)
 {
 	//getscopeobject
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	asAtom ret=context->scope_stack[t];
 	ASATOM_INCREF(ret);
 	LOG_CALL( _("getScopeObject: ") << ret.toDebugString());
-	
+
 	RUNTIME_STACK_PUSH(context,ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getProperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getProperty(call_context* context)
 {
-	uint32_t t = (++(*codep))->data;
-	multiname* name=context->context->getMultiname(t,context);
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name=context->mi->context->getMultiname(t,context);
 
-
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
 
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
-	
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
 	if(prop.type == T_INVALID)
@@ -1299,46 +1281,46 @@ void ABCVm::abc_getProperty(call_context* context,preloadedcodedata** codep)
 		if (obj->is<Undefined>())
 			throwError<TypeError>(kConvertUndefinedToObjectError);
 		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
-			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
+			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->mi->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 		prop = asAtom::undefinedAtom;
 	}
 	obj->decRef();
 	name->resetNameIfObject();
 
 	RUNTIME_STACK_PUSH(context,prop);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_initproperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_initproperty(call_context* context)
 {
 	//initproperty
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_POP_CREATE(context,value);
-	multiname* name=context->context->getMultiname(t,context);
+	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< obj->toDebugString());
-	obj->toObject(context->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	obj->toObject(context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
 	ASATOM_DECREF_POINTER(obj);
 	name->resetNameIfObject();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_deleteproperty(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_deleteproperty(call_context* context)
 {
 	//deleteproperty
-	uint32_t t = (++(*codep))->data;
-	multiname* name = context->context->getMultiname(t,context);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->context->root->getSystemState());
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name = context->mi->context->getMultiname(t,context);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
 	bool ret = deleteProperty(obj,name);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,asAtom(ret));
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getslot(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getslot(call_context* context)
 {
 	//getslot
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	
-	asAtom ret=pval->toObject(context->context->root->getSystemState())->getSlot(t);
+
+	asAtom ret=pval->toObject(context->mi->context->root->getSystemState())->getSlot(t);
 	LOG_CALL("getSlot " << t << " " << ret.toDebugString());
 	//getSlot can only access properties defined in the current
 	//script, so they should already be defind by this script
@@ -1346,99 +1328,99 @@ void ABCVm::abc_getslot(call_context* context,preloadedcodedata** codep)
 	ASATOM_DECREF_POINTER(pval);
 
 	*pval=ret;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setslot(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setslot(call_context* context)
 {
 	//setslot
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_POP_CREATE(context,v1);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->mi->context->root->getSystemState());
 
 	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< v1->toDebugString());
 	v2->setSlot(t,*v1);
 	v2->decRef();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getglobalSlot(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getglobalSlot(call_context* context)
 {
 	//getglobalSlot
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 
 	Global* globalscope = getGlobalScope(context);
 	asAtom ret=globalscope->getSlot(t);
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setglobalSlot(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setglobalSlot(call_context* context)
 {
 	//setglobalSlot
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 
 	Global* globalscope = getGlobalScope(context);
 	RUNTIME_STACK_POP_CREATE(context,o);
 	globalscope->setSlot(t,*o);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_s(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_s(call_context* context)
 {
 	//convert_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL( _("convert_s") );
 	if(pval->type != T_STRING)
 	{
-		tiny_string s = pval->toString(context->context->root->getSystemState());
+		tiny_string s = pval->toString(context->mi->context->root->getSystemState());
 		ASATOM_DECREF_POINTER(pval);
-		pval->replace((ASObject*)abstract_s(context->context->root->getSystemState(),s));
+		pval->replace((ASObject*)abstract_s(context->mi->context->root->getSystemState(),s));
 	}
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_esc_xelem(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_esc_xelem(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->replace(esc_xelem(pval->toObject(context->context->root->getSystemState())));
-	++(*codep);
+	pval->replace(esc_xelem(pval->toObject(context->mi->context->root->getSystemState())));
+	++(context->exec_pos);
 }
-void ABCVm::abc_esc_xattr(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_esc_xattr(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->replace(esc_xattr(pval->toObject(context->context->root->getSystemState())));
-	++(*codep);
+	pval->replace(esc_xattr(pval->toObject(context->mi->context->root->getSystemState())));
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_i(call_context* context)
 {
 	//convert_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_i");
 	pval->convert_i();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_u(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_u(call_context* context)
 {
 	//convert_u
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_u");
 	pval->convert_u();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_d(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_d(call_context* context)
 {
 	//convert_d
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_d");
 	pval->convert_d();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_b(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_b(call_context* context)
 {
 	//convert_b
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_b");
 	pval->convert_b();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_convert_o(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_convert_o(call_context* context)
 {
 	//convert_o
 	LOG_CALL("convert_o");
@@ -1453,321 +1435,321 @@ void ABCVm::abc_convert_o(call_context* context,preloadedcodedata** codep)
 		LOG(LOG_ERROR,"trying to call convert_o on undefined");
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_checkfilter(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_checkfilter(call_context* context)
 {
 	//checkfilter
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	checkfilter(pval->toObject(context->context->root->getSystemState()));
-	++(*codep);
+	checkfilter(pval->toObject(context->mi->context->root->getSystemState()));
+	++(context->exec_pos);
 }
-void ABCVm::abc_coerce(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_coerce(call_context* context)
 {
 	//coerce
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	coerce(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_coerce_a(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_coerce_a(call_context* context)
 {
 	//coerce_a
 	coerce_a();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_coerce_s(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_coerce_s(call_context* context)
 {
 	//coerce_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<pval->toDebugString());
 	if (pval->type != T_STRING)
-		Class<ASString>::getClass(context->context->root->getSystemState())->coerce(context->context->root->getSystemState(),*pval);
-	++(*codep);
+		Class<ASString>::getClass(context->mi->context->root->getSystemState())->coerce(context->mi->context->root->getSystemState(),*pval);
+	++(context->exec_pos);
 }
-void ABCVm::abc_astype(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_astype(call_context* context)
 {
 	//astype
-	uint32_t t = (++(*codep))->data;
-	multiname* name=context->context->getMultiname(t,NULL);
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name=context->mi->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->replace(asType(context->context, pval->toObject(context->context->root->getSystemState()), name));
-	++(*codep);
+	pval->replace(asType(context->mi->context, pval->toObject(context->mi->context->root->getSystemState()), name));
+	++(context->exec_pos);
 }
-void ABCVm::abc_astypelate(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_astypelate(call_context* context)
 {
 	//astypelate
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	*pval = pval->asTypelate(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_negate(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_negate(call_context* context)
 {
 	//negate
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	number_t ret=-(pval->toNumber());
 	ASATOM_DECREF_POINTER(pval);
 	pval->setNumber(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_increment(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_increment(call_context* context)
 {
 	//increment
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->increment();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_inclocal(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_inclocal(call_context* context)
 {
 	//inclocal
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	incLocal(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_decrement(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_decrement(call_context* context)
 {
 	//decrement
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->decrement();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_declocal(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_declocal(call_context* context)
 {
 	//declocal
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	decLocal(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_typeof(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_typeof(call_context* context)
 {
 	//typeof
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL(_("typeOf"));
-	asAtom ret = pval->typeOf(context->context->root->getSystemState());
+	asAtom ret = pval->typeOf(context->mi->context->root->getSystemState());
 	ASATOM_DECREF_POINTER(pval);
 	*pval = ret;
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_not(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_not(call_context* context)
 {
 	//not
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->_not();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_bitnot(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bitnot(call_context* context)
 {
 	//bitnot
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bitnot();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_add(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_add(call_context* context)
 {
 	//add
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->add(*v2,context->context->root->getSystemState());
-	++(*codep);
+	pval->add(*v2,context->mi->context->root->getSystemState());
+	++(context->exec_pos);
 }
-void ABCVm::abc_subtract(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_subtract(call_context* context)
 {
 	//subtract
 	//Be careful, operands in subtract implementation are swapped
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->subtract(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_multiply(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_multiply(call_context* context)
 {
 	//multiply
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->multiply(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_divide(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_divide(call_context* context)
 {
 	//divide
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->divide(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_modulo(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_modulo(call_context* context)
 {
 	//modulo
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	pval->modulo(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_lshift(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lshift(call_context* context)
 {
 	//lshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->lshift(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_rshift(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_rshift(call_context* context)
 {
 	//rshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->rshift(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_urshift(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_urshift(call_context* context)
 {
 	//urshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->urshift(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_bitand(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bitand(call_context* context)
 {
 	//bitand
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_and(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_bitor(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bitor(call_context* context)
 {
 	//bitor
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_or(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_bitxor(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bitxor(call_context* context)
 {
 	//bitxor
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_xor(*v1);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_equals(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_equals(call_context* context)
 {
 	//equals
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	bool ret=pval->isEqual(context->context->root->getSystemState(),*v2);
+	bool ret=pval->isEqual(context->mi->context->root->getSystemState(),*v2);
 	LOG_CALL( _("equals ") << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_strictequals(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_strictequals(call_context* context)
 {
 	//strictequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	bool ret = pval->isEqualStrict(context->context->root->getSystemState(),*v2);
+	bool ret = pval->isEqualStrict(context->mi->context->root->getSystemState(),*v2);
 	LOG_CALL( _("strictequals ") << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_lessthan(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lessthan(call_context* context)
 {
 	//lessthan
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(pval->isLess(context->context->root->getSystemState(),*v2)==TTRUE);
+	bool ret=(pval->isLess(context->mi->context->root->getSystemState(),*v2)==TTRUE);
 	LOG_CALL(_("lessThan ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_lessequals(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_lessequals(call_context* context)
 {
 	//lessequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(v2->isLess(context->context->root->getSystemState(),*pval)==TFALSE);
+	bool ret=(v2->isLess(context->mi->context->root->getSystemState(),*pval)==TFALSE);
 	LOG_CALL(_("lessEquals ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_greaterthan(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_greaterthan(call_context* context)
 {
 	//greaterthan
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(v2->isLess(context->context->root->getSystemState(),*pval)==TTRUE);
+	bool ret=(v2->isLess(context->mi->context->root->getSystemState(),*pval)==TTRUE);
 	LOG_CALL(_("greaterThan ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_greaterequals(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_greaterequals(call_context* context)
 {
 	//greaterequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(pval->isLess(context->context->root->getSystemState(),*v2)==TFALSE);
+	bool ret=(pval->isLess(context->mi->context->root->getSystemState(),*v2)==TFALSE);
 	LOG_CALL(_("greaterEquals ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_instanceof(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_instanceof(call_context* context)
 {
 	//instanceof
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->mi->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	bool ret = instanceOf(pval->toObject(context->context->root->getSystemState()),type);
+	bool ret = instanceOf(pval->toObject(context->mi->context->root->getSystemState()),type);
 	ASATOM_DECREF_POINTER(pval);
 	pval->setBool(ret);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_istype(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_istype(call_context* context)
 {
 	//istype
-	uint32_t t = (++(*codep))->data;
-	multiname* name=context->context->getMultiname(t,NULL);
+	uint32_t t = (++(context->exec_pos))->data;
+	multiname* name=context->mi->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	pval->setBool(isType(context->context,pval->toObject(context->context->root->getSystemState()),name));
-	++(*codep);
+	pval->setBool(isType(context->mi->context,pval->toObject(context->mi->context->root->getSystemState()),name));
+	++(context->exec_pos);
 }
-void ABCVm::abc_istypelate(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_istypelate(call_context* context)
 {
 	//istypelate
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->mi->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	pval->setBool(isTypelate(v1, pval->toObject(context->context->root->getSystemState())));
-	++(*codep);
+	pval->setBool(isTypelate(v1, pval->toObject(context->mi->context->root->getSystemState())));
+	++(context->exec_pos);
 }
-void ABCVm::abc_in(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_in(call_context* context)
 {
 	//in
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->mi->context->root->getSystemState());
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	LOG_CALL( _("in") );
@@ -1775,113 +1757,113 @@ void ABCVm::abc_in(call_context* context,preloadedcodedata** codep)
 		throwError<TypeError>(kConvertNullToObjectError);
 
 	multiname name(NULL);
-	pval->fillMultiname(context->context->root->getSystemState(),name);
-	name.ns.emplace_back(context->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	pval->fillMultiname(context->mi->context->root->getSystemState(),name);
+	name.ns.emplace_back(context->mi->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool ret=v1->hasPropertyByMultiname(name, true, true);
 	ASATOM_DECREF_POINTER(pval);
 	v1->decRef();
 	pval->setBool(ret);
 
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_increment_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_increment_i(call_context* context)
 {
 	//increment_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment_i:"<<pval->toDebugString());
 	pval->increment_i();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_decrement_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_decrement_i(call_context* context)
 {
 	//decrement_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("decrement_i:"<<pval->toDebugString());
 	pval->decrement_i();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_inclocal_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_inclocal_i(call_context* context)
 {
 	//inclocal_i
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	incLocal_i(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_declocal_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_declocal_i(call_context* context)
 {
 	//declocal_i
-	uint32_t t = (++(*codep))->data;
+	uint32_t t = (++(context->exec_pos))->data;
 	decLocal_i(context, t);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_negate_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_negate_i(call_context* context)
 {
 	//negate_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->negate_i();
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_add_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_add_i(call_context* context)
 {
 	//add_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->add_i(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_subtract_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_subtract_i(call_context* context)
 {
 	//subtract_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->subtract_i(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_multiply_i(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_multiply_i(call_context* context)
 {
 	//multiply_i
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->multiply_i(*v2);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlocal_0(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlocal_0(call_context* context)
 {
 	//getlocal_0
 	int i=0;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlocal_1(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlocal_1(call_context* context)
 {
 	//getlocal_1
 	int i=1;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlocal_2(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlocal_2(call_context* context)
 {
 	//getlocal_2
 	int i=2;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_getlocal_3(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_getlocal_3(call_context* context)
 {
 	//getlocal_3
 	int i=3;
 	LOG_CALL( _("getLocal ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setlocal_0(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setlocal_0(call_context* context)
 {
 	//setlocal_0
 	unsigned int i=0;
@@ -1897,14 +1879,14 @@ void ABCVm::abc_setlocal_0(call_context* context,preloadedcodedata** codep)
 		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_setlocal_1(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setlocal_1(call_context* context)
 {
 	//setlocal_1
 	unsigned int i=1;
 	LOG_CALL( _("setLocal ") << i);
-	++(*codep);
+	++(context->exec_pos);
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1918,11 +1900,11 @@ void ABCVm::abc_setlocal_1(call_context* context,preloadedcodedata** codep)
 		context->locals[i]=*obj;
 	}
 }
-void ABCVm::abc_setlocal_2(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setlocal_2(call_context* context)
 {
 	//setlocal_2
 	unsigned int i=2;
-	++(*codep);
+	++(context->exec_pos);
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1936,11 +1918,11 @@ void ABCVm::abc_setlocal_2(call_context* context,preloadedcodedata** codep)
 		context->locals[i]=*obj;
 	}
 }
-void ABCVm::abc_setlocal_3(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_setlocal_3(call_context* context)
 {
 	//setlocal_3
 	unsigned int i=3;
-	++(*codep);
+	++(context->exec_pos);
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (i >= context->locals_size)
@@ -1954,46 +1936,46 @@ void ABCVm::abc_setlocal_3(call_context* context,preloadedcodedata** codep)
 		context->locals[i]=*obj;
 	}
 }
-void ABCVm::abc_debug(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_debug(call_context* context)
 {
 	//debug
 	LOG_CALL( _("debug") );
-	++(*codep);
-	++(*codep);
-	++(*codep);
-	++(*codep);
-	++(*codep);
+	++(context->exec_pos);
+	++(context->exec_pos);
+	++(context->exec_pos);
+	++(context->exec_pos);
+	++(context->exec_pos);
 }
-void ABCVm::abc_debugline(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_debugline(call_context* context)
 {
 	//debugline
 	LOG_CALL( _("debugline") );
-	++(*codep);
-	++(*codep);
+	++(context->exec_pos);
+	++(context->exec_pos);
 }
-void ABCVm::abc_debugfile(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_debugfile(call_context* context)
 {
 	//debugfile
 	LOG_CALL( _("debugfile") );
-	++(*codep);
-	++(*codep);
+	++(context->exec_pos);
+	++(context->exec_pos);
 }
-void ABCVm::abc_bkptline(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_bkptline(call_context* context)
 {
 	//bkptline
 	LOG_CALL( _("bkptline") );
-	++(*codep);
-	++(*codep);
+	++(context->exec_pos);
+	++(context->exec_pos);
 }
-void ABCVm::abc_timestamp(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_timestamp(call_context* context)
 {
 	//timestamp
 	LOG_CALL( _("timestamp") );
-	++(*codep);
+	++(context->exec_pos);
 }
-void ABCVm::abc_invalidinstruction(call_context* context,preloadedcodedata** codep)
+void ABCVm::abc_invalidinstruction(call_context* context)
 {
-	LOG(LOG_ERROR,"invalid instruction " << hex << (*codep)->data << dec);
+	LOG(LOG_ERROR,"invalid instruction " << hex << (context->exec_pos)->data << dec);
 	throw ParseException("Not implemented instruction in interpreter");
 }
 
@@ -2015,7 +1997,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		uint8_t opcode = code.readbyte();
 		//LOG(LOG_INFO,"preload opcode:"<<code.tellg()-1<<" "<<hex<<(int)opcode);
-		
+
 
 		switch(opcode)
 		{
@@ -2185,7 +2167,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0xaa://bitxor
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
-				if (code.peekbyte() == 0x75) //convert_d 
+				if (code.peekbyte() == 0x75) //convert_d
 				{
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					// skip unneccessary convert_d

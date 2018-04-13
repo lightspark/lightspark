@@ -267,7 +267,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
-	RootMovieClip* root=getVm(sys)->currentCallContext->context->root.getPtr();
+	RootMovieClip* root=getVm(sys)->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
@@ -291,7 +291,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	std::istream s(sbuf);
 	
 	// execute loaded abc bytes
-	RootMovieClip* root=getVm(sys)->currentCallContext->context->root.getPtr();
+	RootMovieClip* root=getVm(sys)->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();

@@ -53,10 +53,9 @@ struct call_context
 		asAtom* locals;
 		asAtom* stack;
 		asAtom* stackp;
-		uint32_t exec_pos;
+		struct preloadedcodedata* exec_pos;
 	} PACKED;
 #include "packed_end.h"
-	ABCContext* context;
 	uint32_t locals_size;
 	asAtom* max_stackp;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)

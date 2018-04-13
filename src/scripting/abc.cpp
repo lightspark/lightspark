@@ -705,21 +705,21 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 	//We are allowed to access only the ABCContext, as the stack is not synced
 	multiname* ret;
 
-	multiname_info* m=&th->context->constant_pool.multinames[n];
+	multiname_info* m=&th->mi->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm(th->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->context->root->getSystemState())->vmDataMemory);
+		m->cached=new (getVm(th->mi->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->mi->context->root->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x1b:
 			{
-				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				const ns_set_info* s=&th->mi->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(th->context, s->ns[i]);
+					ret->ns.emplace_back(th->mi->context, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
@@ -757,21 +757,21 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 	//We are allowed to access only the ABCContext, as the stack is not synced
 	multiname* ret;
 
-	multiname_info* m=&th->context->constant_pool.multinames[n];
+	multiname_info* m=&th->mi->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm(th->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->context->root->getSystemState())->vmDataMemory);
+		m->cached=new (getVm(th->mi->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->mi->context->root->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
 		{
 			case 0x1b:
 			{
-				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				const ns_set_info* s=&th->mi->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
 				for(unsigned int i=0;i<s->count;i++)
 				{
-					ret->ns.emplace_back(th->context, s->ns[i]);
+					ret->ns.emplace_back(th->mi->context, s->ns[i]);
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
@@ -1710,8 +1710,8 @@ void ABCVm::not_impl(int n)
 }
 
 call_context::call_context(method_info* _mi, Class_base* _inClass, asAtom& ret):
-	stackp(NULL),exec_pos(0),
-	context(_mi->context),locals_size(_mi->body->local_count+1),max_stackp(NULL),argarrayposition(-1),
+	stackp(NULL),exec_pos(NULL),
+	locals_size(_mi->body->local_count+1),max_stackp(NULL),argarrayposition(-1),
 	max_scope_stack(_mi->body->max_scope_depth),curr_scope_stack(0),mi(_mi),
 	inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
 {
@@ -2109,12 +2109,12 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 
 _R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
 {
-	return th->context->root->applicationDomain;
+	return th->mi->context->root->applicationDomain;
 }
 
 _R<SecurityDomain> ABCVm::getCurrentSecurityDomain(call_context* th)
 {
-	return th->context->root->securityDomain;
+	return th->mi->context->root->securityDomain;
 }
 
 uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)

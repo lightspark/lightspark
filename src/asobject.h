@@ -295,6 +295,7 @@ public:
 	FORCE_INLINE void setBool(bool val);
 	FORCE_INLINE void setNull();
 	FORCE_INLINE void setUndefined();
+	FORCE_INLINE void setFunction(ASObject* obj, ASObject* closure);
 	FORCE_INLINE void increment();
 	FORCE_INLINE void decrement();
 	FORCE_INLINE void increment_i();
@@ -614,7 +615,7 @@ public:
 #endif
 	bool implEnable:1;
 
-	Class_base* getClass() const { return classdef; }
+	inline Class_base* getClass() const { return classdef; }
 	ASFUNCTION_ATOM(_constructor);
 	// constructor for subclasses that can't be instantiated.
 	// Throws ArgumentError.
@@ -654,7 +655,7 @@ public:
 
 	virtual void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		getVariableByMultiname(ret,name,opt,classdef);
+		getVariableByMultinameIntern(ret,name,classdef);
 	}
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
@@ -666,7 +667,7 @@ public:
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	void getVariableByMultiname(asAtom& ret,const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls);
+	void getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
 	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);
@@ -1603,7 +1604,12 @@ FORCE_INLINE void asAtom::setUndefined()
 	type = T_UNDEFINED;
 	objval = NULL;
 }
-
+FORCE_INLINE void asAtom::setFunction(ASObject* obj, ASObject* closure)
+{
+	type = T_FUNCTION;
+	objval = obj;
+	closure_this = closure;
+}
 FORCE_INLINE void asAtom::increment()
 {
 	switch(type)

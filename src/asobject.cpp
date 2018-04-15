@@ -1195,7 +1195,7 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	check();
 
 	asAtom ret;
-	getVariableByMultiname(ret,name);
+	getVariableByMultinameIntern(ret,name,this->getClass());
 	assert_and_throw(ret.type != T_INVALID);
 	return ret.toInt();
 }
@@ -1242,7 +1242,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 	return obj;
 }
 
-void ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls)
+bool ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls,  GET_VARIABLE_OPTION opt)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -1284,7 +1284,7 @@ void ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 			}
 		}
 		if(!obj)
-			return;
+			return false;
 	}
 
 
@@ -1296,6 +1296,11 @@ void ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 
 	if(obj->getter.type != T_INVALID)
 	{
+		if (opt & DONT_CALL_GETTER)
+		{
+			ret.set(obj->getter);
+			return true;
+		}
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
 		assert(obj->getter.type == T_FUNCTION);
@@ -1322,6 +1327,7 @@ void ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 		else
 			ret.set(obj->var);
 	}
+	return false;
 }
 
 void ASObject::getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces)
@@ -1345,7 +1351,7 @@ void ASObject::getVariableByMultiname(asAtom& ret, const tiny_string& name, std:
 	}
 	varName.isAttribute = false;
 
-	getVariableByMultiname(ret,varName,SKIP_IMPL);
+	getVariableByMultinameIntern(ret,varName,this->getClass());
 }
 
 void ASObject::executeASMethod(asAtom& ret,const tiny_string& methodName,
@@ -2203,6 +2209,46 @@ void asAtom::getVariableByMultiname(asAtom& ret,SystemState* sys, const multinam
 			return;
 		default:
 			return;
+	}
+}
+Class_base *asAtom::getClass(SystemState* sys)
+{
+	// classes for primitives are final and sealed, so we only have to check the class for the variable
+	// no need to create ASObjects for the primitives
+	switch(type)
+	{
+		case T_INTEGER:
+			return Class<Integer>::getClass(sys);
+		case T_UINTEGER:
+			return Class<UInteger>::getClass(sys);
+		case T_NUMBER:
+			return Class<Number>::getClass(sys);
+		case T_BOOLEAN:
+			return Class<Boolean>::getClass(sys);
+		case T_STRING:
+			return Class<ASString>::getClass(sys);
+		default:
+			return objval->getClass();
+	}
+}
+
+bool asAtom::canCacheMethod(const multiname* name)
+{
+	assert(name->isStatic);
+	switch(type)
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_BOOLEAN:
+		case T_STRING:
+		case T_FUNCTION:
+			return true;
+		case T_ARRAY:
+			// Array class is dynamic, but if it is not inherited, no methods are overwritten and we can cache them
+			return (objval->getClass()->isSealed || !objval->getClass()->is<Class_inherit>());
+		default:
+			return objval->getClass()->isSealed;
 	}
 }
 

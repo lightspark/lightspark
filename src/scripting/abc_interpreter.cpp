@@ -987,9 +987,10 @@ void ABCVm::abc_callsuper(call_context* context)
 void ABCVm::abc_callproperty(call_context* context)
 {
 	//callproperty
+	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	uint32_t t2 = (++(context->exec_pos))->data;
-	callPropIntern(context,t,t2,true,false);
+	callPropIntern(context,t,t2,true,false,instrptr);
 	++(context->exec_pos);
 }
 void ABCVm::abc_returnvoid(call_context* context)
@@ -1026,9 +1027,10 @@ void ABCVm::abc_constructprop(call_context* context)
 void ABCVm::abc_callproplex(call_context* context)
 {
 	//callproplex
+	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	uint32_t t2 = (++(context->exec_pos))->data;
-	callPropLex(context,t,t2,NULL,true);
+	callPropIntern(context,t,t2,true,true,instrptr);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callsupervoid(call_context* context)
@@ -1043,9 +1045,10 @@ void ABCVm::abc_callsupervoid(call_context* context)
 void ABCVm::abc_callpropvoid(call_context* context)
 {
 	//callpropvoid
+	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	uint32_t t2 = (++(context->exec_pos))->data;
-	callProperty(context,t,t2,NULL,false);
+	callPropIntern(context,t,t2,false,false,instrptr);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sxi1(call_context* context)
@@ -1165,9 +1168,9 @@ void ABCVm::abc_getlex(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	if ((instrptr->data&0x00000100) == 0x00000100)
 	{
-		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->obj,instrptr->closure));
-		instrptr->obj->incRef();
-		LOG_CALL( "getLex from cache: " <<  instrptr->obj->toDebugString());
+		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->cacheobj1,instrptr->cacheobj2));
+		instrptr->cacheobj1->incRef();
+		LOG_CALL( "getLex from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
 	else if (getLex(context,t))
 	{
@@ -1175,8 +1178,8 @@ void ABCVm::abc_getlex(call_context* context)
 		instrptr->data |= 0x00000100;
 		RUNTIME_STACK_PEEK_CREATE(context,v);
 		
-		instrptr->obj = v->getObject();
-		instrptr->closure = v->getClosure();
+		instrptr->cacheobj1 = v->getObject();
+		instrptr->cacheobj2 = v->getClosure();
 	}
 	++(context->exec_pos);
 }
@@ -1261,15 +1264,71 @@ void ABCVm::abc_getscopeobject(call_context* context)
 }
 void ABCVm::abc_getProperty(call_context* context)
 {
+	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
+	ASObject* obj= NULL;
+	if ((instrptr->data&0x00000100) == 0x00000100)
+	{
+		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+		if (instrptr->cacheobj1 == obj->getClass())
+		{
+			asAtom prop;
+			//Call the getter
+			LOG_CALL("Calling the getter for " << *context->mi->context->getMultiname(t,context) << " on " << obj->toDebugString());
+			assert(instrptr->cacheobj2->type == T_FUNCTION);
+			IFunction* f = instrptr->cacheobj2->as<IFunction>();
+			f->callGetter(prop,instrptr->cacheobj3 ? instrptr->cacheobj3 : obj);
+			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+			if(prop.type == T_INVALID)
+			{
+				multiname* name=context->mi->context->getMultiname(t,context);
+				if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
+					throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+				if (obj->getClass() && obj->getClass()->isSealed)
+					throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+				if (name->isEmpty() || !name->hasEmptyNS)
+					throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+				if (obj->is<Undefined>())
+					throwError<TypeError>(kConvertUndefinedToObjectError);
+				if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+					LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(context->mi->context->root->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
+				prop = asAtom::undefinedAtom;
+			}
+			obj->decRef();
+			RUNTIME_STACK_PUSH(context,prop);
+			++(context->exec_pos);
+			return;
+		}
+	}
 	multiname* name=context->mi->context->getMultiname(t,context);
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+	if (obj == NULL)
+	{
+		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+	}
 
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name);
+	bool isgetter = obj->getVariableByMultiname(prop,*name,(name->isStatic && obj->getClass() && obj->getClass()->isSealed)? ASObject::DONT_CALL_GETTER:ASObject::NONE);
+	if (isgetter)
+	{
+		//Call the getter
+		LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+		assert(prop.type == T_FUNCTION);
+		IFunction* f = prop.as<IFunction>();
+		ASObject* closure = prop.getClosure();
+		f->callGetter(prop,closure ? closure : obj);
+		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+		if(prop.type != T_INVALID)
+		{
+			// cache getter if multiname is static and it is a getter of a sealed class
+			instrptr->data |= 0x00000100;
+			instrptr->cacheobj1 = obj->getClass();
+			instrptr->cacheobj2 = f;
+			instrptr->cacheobj3 = closure;
+		}
+	}
 	if(prop.type == T_INVALID)
 	{
 		if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))

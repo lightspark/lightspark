@@ -723,11 +723,11 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 	}
 }
 
-void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
+		bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 
 		//If a method is not found on XMLList object and this
 		//is a single element list with simple content,
@@ -735,10 +735,10 @@ void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VAR
 		if(ret.type == T_INVALID && nodes.size()==1 && nodes[0]->hasSimpleContent())
 		{
 			ASObject *contentstr=abstract_s(getSystemState(),nodes[0]->toString_priv());
-			contentstr->getVariableByMultiname(ret,name, opt);
+			contentstr->getVariableByMultiname(ret,name,opt);
 			contentstr->decRef();
 		}
-		return;
+		return res;
 	}
 	
 	if (name.isAttribute)
@@ -756,10 +756,10 @@ void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VAR
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return;
+			return false;
 
 		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));
-		return;
+		return false;
 	}
 	unsigned int index=0;
 	if(XML::isValidMultiname(getSystemState(),name,index))
@@ -787,10 +787,11 @@ void XMLList::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VAR
 		}
 
 		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
-			return;
+			return false;
 
 		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));
 	}
+	return false;
 }
 
 bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

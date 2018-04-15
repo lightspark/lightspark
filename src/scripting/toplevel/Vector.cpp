@@ -1038,19 +1038,17 @@ bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic,
 }
 
 /* this handles the [] operator, because vec[12] becomes vec.12 in bytecode */
-void Vector::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Vector::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	unsigned int index=0;
@@ -1089,10 +1087,10 @@ void Vector::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARI
 				break;
 		}
 
-		ASObject::getVariableByMultiname(ret,name,opt);
+		bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 		if (ret.type == T_INVALID)
 			throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-		return;
+		return res;
 	}
 	if(index < vec.size())
 	{
@@ -1113,6 +1111,7 @@ void Vector::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARI
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
+	return false;
 }
 
 void Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)

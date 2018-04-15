@@ -37,7 +37,7 @@ public:
 	static void buildTraits(ASObject* o);
 //	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_isAttribute);
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);

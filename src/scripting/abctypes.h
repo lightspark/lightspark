@@ -277,9 +277,10 @@ struct preloadedcodedata
 		int32_t idata;
 		uint32_t data;
 	};
-	ASObject* obj;
-	ASObject* closure;
-	preloadedcodedata(uint32_t d):data(d),obj(NULL),closure(NULL){}
+	ASObject* cacheobj1;
+	ASObject* cacheobj2;
+	ASObject* cacheobj3;
+	preloadedcodedata(uint32_t d):data(d),cacheobj1(NULL),cacheobj2(NULL),cacheobj3(NULL){}
 };
 
 struct method_body_info

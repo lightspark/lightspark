@@ -185,7 +185,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-void Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & ASObject::SKIP_IMPL)==0 && implEnable)
 	{
@@ -199,23 +199,19 @@ void Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_
 				case T_INTEGER:
 					tmpname.name_type=multiname::NAME_INT;
 					tmpname.name_i = name.name_o->toInt();
-					ASObject::getVariableByMultiname(ret, tmpname, opt);
-					return;
+					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt);
 				case T_UINTEGER:
 					tmpname.name_type=multiname::NAME_UINT;
 					tmpname.name_ui = name.name_o->toUInt();
-					ASObject::getVariableByMultiname(ret,tmpname, opt);
-					return;
+					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt);
 				case T_NUMBER:
 					tmpname.name_type=multiname::NAME_NUMBER;
 					tmpname.name_d = name.name_o->toNumber();
-					ASObject::getVariableByMultiname(ret,tmpname, opt);
-					return;
+					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt);
 				case T_STRING:
 					tmpname.name_type=multiname::NAME_STRING;
 					tmpname.name_s_id = name.name_o->toStringId();
-					ASObject::getVariableByMultiname(ret,tmpname, opt);
-					return;
+					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt);
 				default:
 					break;
 			}
@@ -235,10 +231,10 @@ void Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_
 				}
 				else
 					ASATOM_INCREF(ret);
-				return;
+				return false;
 			}
 			else
-				return;
+				return false;
 		}
 		else
 		{
@@ -248,12 +244,11 @@ void Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_
 				name.name_type==multiname::NAME_INT ||
 				name.name_type==multiname::NAME_UINT ||
 				name.name_type==multiname::NAME_NUMBER);
-			ASObject::getVariableByMultiname(ret,name, opt);
-			return;
+			return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 		}
 	}
 	//Try with the base implementation
-	ASObject::getVariableByMultiname(ret,name, opt);
+	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 }
 
 bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

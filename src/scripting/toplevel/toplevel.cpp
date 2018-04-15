@@ -675,10 +675,11 @@ int32_t Null::getVariableByMultiname_i(const multiname& name)
 	return 0;
 }
 
-void Null::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Null::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	LOG(LOG_ERROR,"trying to get variable on null:"<<name);
 	throwError<TypeError>(kConvertNullToObjectError);
+	return false;
 }
 
 int32_t Null::toInt()
@@ -2344,19 +2345,19 @@ void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& n
 	//Do not attempt to define the variable now in any case
 }
 
-void Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
+	bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	/*
 	 * All properties are registered by now, even if the script init has
 	 * not been run. Thus if ret == NULL, we don't have to run the script init.
 	 */
 	if(ret.type == T_INVALID || !context || context->hasRunScriptInit[scriptId])
-		return;
+		return res;
 	LOG_CALL("Access to " << name << ", running script init");
 	asAtom v = asAtom::fromObject(this);
 	context->runScriptInit(scriptId,v);
-	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
+	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 }
 
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
@@ -2764,13 +2765,13 @@ bool ObjectPrototype::isEqual(ASObject* r)
 	return ASObject::isEqual(r);
 }
 
-void ObjectPrototype::getVariableByMultiname(asAtom& res, const multiname& name, GET_VARIABLE_OPTION opt)
+bool ObjectPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	ASObject::getVariableByMultiname(res,name, opt);
-	if(res.type != T_INVALID || prevPrototype.isNull())
-		return;
+	bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+	if(ret.type != T_INVALID || prevPrototype.isNull())
+		return res;
 
-	prevPrototype->getObj()->getVariableByMultiname(res,name, opt);
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
 void ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst)
@@ -2787,17 +2788,18 @@ ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c
 	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
 }
 
-void ObjectConstructor::getVariableByMultiname(asAtom& res, const multiname& name, GET_VARIABLE_OPTION opt)
+bool ObjectConstructor::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if (name.normalizedName(getSystemState()) == "prototype")
 	{
 		prototype->getObj()->incRef();
-		res = asAtom::fromObject(prototype->getObj());
+		ret = asAtom::fromObject(prototype->getObj());
 	}
 	else if (name.normalizedName(getSystemState()) == "length")
-		res.setUInt(_length);
+		ret.setUInt(_length);
 	else
-		getClass()->getVariableByMultiname(res,name, opt);
+		return getClass()->getVariableByMultiname(ret,name, opt);
+	return false;
 }
 bool ObjectConstructor::isEqual(ASObject* r)
 {
@@ -2812,13 +2814,13 @@ FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function
 	obj = this;
 }
 
-void FunctionPrototype::getVariableByMultiname(asAtom& res, const multiname& name, GET_VARIABLE_OPTION opt)
+bool FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	Function::getVariableByMultiname(res,name, opt);
-	if(res.type != T_INVALID || prevPrototype.isNull())
-		return;
+	bool res =Function::getVariableByMultiname(ret,name, opt);
+	if(ret.type != T_INVALID || prevPrototype.isNull())
+		return res;
 
-	prevPrototype->getObj()->getVariableByMultiname(res,name, opt);
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
 Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c,T_OBJECT,SUBTYPE_FUNCTIONOBJECT), functionPrototype(p)
@@ -2828,14 +2830,14 @@ Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c,T_O
 	constructorCallComplete = true;
 }
 
-void Function_object::getVariableByMultiname(asAtom& res, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Function_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	ASObject::getVariableByMultiname(res,name, opt);
+	bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	assert(!functionPrototype.isNull());
-	if(res.type != T_INVALID)
-		return;
+	if(ret.type != T_INVALID)
+		return res;
 
-	functionPrototype->getVariableByMultiname(res,name, opt);
+	return functionPrototype->getVariableByMultiname(ret,name, opt);
 }
 
 EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& name) const

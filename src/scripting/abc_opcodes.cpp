@@ -320,26 +320,43 @@ int32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 
 void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	callPropIntern(th, n, m, keepReturn, false);
+	callPropIntern(th, n, m, keepReturn, false,NULL);
 }
 
 void ABCVm::callPropLex(call_context *th, int n, int m, method_info **called_mi, bool keepReturn)
 {
-	callPropIntern(th, n, m, keepReturn, true);
+	callPropIntern(th, n, m, keepReturn, true,NULL);
 }
 
-void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool callproplex)
+void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool callproplex,preloadedcodedata* instrptr)
 {
 	asAtom* args=g_newa(asAtom, m);
 	for(int i=0;i<m;i++)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 
+	asAtom obj;
+	if (instrptr && (instrptr->data&0x00000100) == 0x00000100)
+	{
+		RUNTIME_STACK_POP(th,obj);
+		if (obj.getObject() && obj.getObject()->getClass() == instrptr->cacheobj1)
+		{
+			asAtom o = asAtom::fromObject(instrptr->cacheobj2);
+			ASATOM_INCREF(o);
+			LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << "from cache:"<<*th->mi->context->getMultiname(n,th)<<" "<<obj.toDebugString()<<" "<<o.toDebugString());
+			callImpl(th, o, obj, args, m, keepReturn);
+			LOG_CALL("End of calling cached property "<<*th->mi->context->getMultiname(n,th));
+			return;
+		}
+	}
+	
 	multiname* name=th->mi->context->getMultiname(n,th);
 	
 	LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << *name << ' ' << m);
 
-	asAtom obj;
-	RUNTIME_STACK_POP(th,obj);
+	if (obj.type == T_INVALID)
+	{
+		RUNTIME_STACK_POP(th,obj);
+	}
 
 	if(obj.is<Null>())
 	{
@@ -387,6 +404,16 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	}
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
+		if (instrptr && name->isStatic && obj.canCacheMethod(name))
+		{
+			// cache method if multiname is static and it is a method of a sealed class
+			instrptr->data |= 0x00000100;
+			instrptr->cacheobj1 = obj.getClass(th->mi->context->root->getSystemState());
+			instrptr->cacheobj2 = o.getObject();
+			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
+		}
+//		else
+//			LOG(LOG_ERROR,"callprop caching failed:"<<*name<<" "<<name->isStatic<<" "<<obj.toDebugString()<<" "<<obj.getClass(th->mi->context->root->getSystemState())->isSealed);
 		callImpl(th, o, obj, args, m, keepReturn);
 	}
 	else
@@ -1786,11 +1813,11 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 
 	if ((instrptr->data&0x00000100) == 0x00000100)
 	{
-		instrptr->obj->incRef();
-		if (instrptr->obj->is<IFunction>())
-			ret.setFunction(instrptr->obj,instrptr->closure);
+		instrptr->cacheobj1->incRef();
+		if (instrptr->cacheobj1->is<IFunction>())
+			ret.setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
 		else
-			ret = asAtom::fromObject(instrptr->obj);
+			ret = asAtom::fromObject(instrptr->cacheobj1);
 		return;
 	}
 	multiname* name=th->mi->context->getMultiname(t,th);
@@ -1815,8 +1842,8 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			{
 				// put object in cache
 				instrptr->data |= 0x00000100;
-				instrptr->obj = ret.toObject(th->mi->context->root->getSystemState());
-				instrptr->closure = ret.getClosure();
+				instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
+				instrptr->cacheobj2 = ret.getClosure();
 			}
 			break;
 		}
@@ -1870,8 +1897,8 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		{
 			// put object in cache
 			instrptr->data |= 0x00000100;
-			instrptr->obj = ret.toObject(th->mi->context->root->getSystemState());
-			instrptr->closure = ret.getClosure();
+			instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
+			instrptr->cacheobj2 = ret.getClosure();
 		}
 	}
 	name->resetNameIfObject();

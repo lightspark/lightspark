@@ -359,7 +359,7 @@ class ObjectPrototype: public ASObject, public Prototype
 public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
 };
@@ -375,7 +375,7 @@ public:
 	ObjectConstructor(Class_base* c,uint32_t length);
 	void incRef() { getClass()->incRef(); }
 	void decRef() { getClass()->decRef(); }
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool isEqual(ASObject* r);
 };
 
@@ -396,7 +396,7 @@ public:
 	_NR<ASObject> functionPrototype;
 	void finalize() { functionPrototype.reset(); }
 
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -494,7 +494,7 @@ public:
 		return Function::destruct();
 	}
 	
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 };
 
 /*
@@ -630,7 +630,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	int32_t toInt();
 	int64_t toInt64();
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 
@@ -711,7 +711,7 @@ public:
 	Global(Class_base* cb, ABCContext* c, int s);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	void getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name);
 	/*
 	 * Utility method to register builtin methods and classes

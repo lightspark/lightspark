@@ -253,6 +253,8 @@ public:
 	void callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true);
 	// returns invalidAtom for not-primitive values
 	void getVariableByMultiname(asAtom &ret, SystemState *sys, const multiname& name);
+	Class_base* getClass(SystemState *sys);
+	bool canCacheMethod(const multiname* name);
 	void fillMultiname(SystemState *sys, multiname& name);
 	void replace(ASObject* obj);
 	FORCE_INLINE void set(const asAtom& a)
@@ -651,11 +653,11 @@ public:
 	*/
 	inline virtual void finalize() {}
 
-	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02};
+	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02, DONT_CALL_GETTER=0x04};
 
-	virtual void getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
-		getVariableByMultinameIntern(ret,name,classdef);
+		return getVariableByMultinameIntern(ret,name,classdef,opt);
 	}
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
@@ -667,7 +669,7 @@ public:
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	void getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls);
+	bool getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt=NONE);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
 	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);

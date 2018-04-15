@@ -1008,22 +1008,22 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 	return index<len;
 }
 
-void ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
 	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
 		ret.setUInt(static_cast<uint32_t>(value));
-		return;
+		return false;
 	}
 	ret.setUndefined();
+	return false;
 }
 
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)

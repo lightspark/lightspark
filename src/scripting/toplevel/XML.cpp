@@ -1470,11 +1470,11 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 	return ret;
 }
 
-void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
+		bool res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 
 		//If a method is not found on XML object and the
 		//object is a leaf node, delegate to ASString
@@ -1484,8 +1484,7 @@ void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABL
 			contentstr->getVariableByMultiname(ret,name, opt);
 			contentstr->decRef();
 		}
-
-		return;
+		return res;
 	}
 
 	bool isAttr=name.isAttribute;
@@ -1502,7 +1501,7 @@ void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABL
 		//Lookup attribute
 		const XMLVector& attributes=getAttributesByMultiname(name,normalizedName);
 		ret = asAtom::fromObject(XMLList::create(getSystemState(),attributes,attributelist.getPtr(),name));
-		return;
+		return false;
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
@@ -1534,10 +1533,11 @@ void XML::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABL
 			const XMLVector& res=getValuesByMultiname(childrenlist,name);
 			
 			if(res.empty() && (opt & XML_STRICT)!=0)
-				return;
+				return false;
 			ret =asAtom::fromObject(XMLList::create(getSystemState(),res,this->getChildrenlist(),name));
 		}
 	}
+	return false;
 }
 void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {

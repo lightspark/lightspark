@@ -292,7 +292,7 @@ private:
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callPropLex(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
-	static void callPropIntern(call_context* th, int n, int m, bool keepReturn, bool callproplex);
+	static void callPropIntern(call_context* th, int n, int m, bool keepReturn, bool callproplex, preloadedcodedata *instrptr);
 	static void callMethod(call_context* th, int n, int m);
 	static void callImpl(call_context* th, asAtom& f, asAtom &obj, asAtom *args, int m, bool keepReturn);
 	static void constructProp(call_context* th, int n, int m); 

@@ -1526,26 +1526,23 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-void Array::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+bool Array::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & SKIP_IMPL)!=0 || !implEnable)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	uint32_t index=0;
 	if(!isValidMultiname(getSystemState(),name,index))
 	{
-		ASObject::getVariableByMultiname(ret,name,opt);
-		return;
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
 	if (getClass() && getClass()->isSealed)
@@ -1558,7 +1555,7 @@ void Array::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIA
 			ret = data_first.at(index);
 			ASATOM_INCREF(ret);
 			if (ret.type != T_INVALID)
-				return;
+				return false;
 		}
 	}
 	auto it = data_second.find(index);
@@ -1566,7 +1563,7 @@ void Array::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIA
 	{
 		ASATOM_INCREF(it->second);
 		ret = it->second;
-		return;
+		return false;
 	}
 	if (name.hasEmptyNS)
 	{
@@ -1574,14 +1571,15 @@ void Array::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIA
 		Prototype* proto = this->getClass()->prototype.getPtr();
 		while(proto)
 		{
-			proto->getObj()->getVariableByMultiname(ret,name, opt);
+			bool res = proto->getObj()->getVariableByMultiname(ret,name, opt);
 			if(ret.type != T_INVALID)
-				return;
+				return res;
 			proto = proto->prevPrototype.getPtr();
 		}
 	}
 	if(index<size())
 		ret.setUndefined();
+	return false;
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, int32_t value)

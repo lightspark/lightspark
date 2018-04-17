@@ -404,7 +404,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	}
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
-		if (instrptr && name->isStatic && obj.canCacheMethod(name))
+		if (instrptr && name->isStatic && o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState()) && obj.canCacheMethod(name))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
 			instrptr->data |= 0x00000100;

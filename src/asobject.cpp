@@ -389,6 +389,7 @@ void ASObject::call_valueOf(asAtom& ret)
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
+	ASATOM_INCREF(v);
 	o.callFunction(ret,v,NULL,0,false);
 }
 
@@ -422,6 +423,7 @@ void ASObject::call_toString(asAtom &ret)
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
+	ASATOM_INCREF(v);
 	o.callFunction(ret,v,NULL,0,false);
 }
 
@@ -2334,9 +2336,17 @@ std::string asAtom::toDebugString()
 		case T_INVALID:
 			return "Invalid";
 		case T_STRING:
+		{
 			if (!objval && stringID != UINT32_MAX)
 				return getSys()->getStringFromUniqueId(stringID);
-			return objval->toDebugString();
+			std::string ret = objval->toDebugString();
+#ifndef _NDEBUG
+			char buf[300];
+			sprintf(buf,"(%p / %d)",objval,objval->getRefCount());
+			ret += buf;
+#endif
+			return ret;
+		}
 		case T_FUNCTION:
 			assert(objval);
 			if (closure_this)

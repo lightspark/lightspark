@@ -277,9 +277,24 @@ struct preloadedcodedata
 		int32_t idata;
 		uint32_t data;
 	};
-	ASObject* cacheobj1;
-	ASObject* cacheobj2;
-	ASObject* cacheobj3;
+	union
+	{
+		ASObject* cacheobj1;
+		asAtom* arg1_constant;
+		uint32_t local_pos1;
+	};
+	union
+	{
+		ASObject* cacheobj2;
+		asAtom* arg2_constant;
+		uint32_t local_pos2;
+	};
+	union
+	{
+		ASObject* cacheobj3;
+		asAtom* arg3_constant;
+		uint32_t local_pos3;
+	};
 	preloadedcodedata(uint32_t d):data(d),cacheobj1(NULL),cacheobj2(NULL),cacheobj3(NULL){}
 };
 

@@ -142,6 +142,13 @@ enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_
 	ARGS_CONTEXT_INT_INT_INT, ARGS_CONTEXT_INT_INT_INT_BOOL, ARGS_CONTEXT_OBJ_OBJ_INT, ARGS_CONTEXT_OBJ, ARGS_CONTEXT_OBJ_OBJ,
 	ARGS_CONTEXT_OBJ_OBJ_OBJ, ARGS_OBJ_OBJ_OBJ_INT, ARGS_OBJ_OBJ_OBJ };
 
+enum OPERANDTYPES { 
+	OP_UNDEFINED=0x00, OP_STRING=0x01, OP_INTEGER=0x03, OP_UINTEGER=0x04, OP_DOUBLE=0x06, OP_NAMESPACE=0x08, 
+	OP_FALSE=0x0a, OP_TRUE=0x0b, OP_NULL=0x0c, 
+	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30};
+
+#define ABC_OP_CACHED 0x10000000 
+
 struct typed_opcode_handler
 {
 	const char* name;
@@ -163,6 +170,7 @@ public:
 	static multiname* s_getMultiname_i(call_context*, uint32_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
 	void getConstant(asAtom& ret, int kind, int index);
+	asAtom* getConstantAtom(OPERANDTYPES kind, int index);
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -180,7 +188,15 @@ public:
 	//Base for namespaces in this context
 	uint32_t namespaceBaseId;
 
+	
 	std::vector<bool> hasRunScriptInit;
+	std::vector<asAtom> constantAtoms_integer;
+	std::vector<asAtom> constantAtoms_uinteger;
+	std::vector<asAtom> constantAtoms_doubles;
+	std::vector<asAtom> constantAtoms_strings;
+	std::vector<asAtom> constantAtoms_namespaces;
+	std::vector<asAtom> constantAtoms_byte;
+	std::vector<asAtom> constantAtoms_short;
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -232,7 +248,6 @@ public:
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);
-
 #ifdef PROFILING_SUPPORT
 	void dumpProfilingData(std::ostream& f) const;
 #endif
@@ -603,24 +618,116 @@ private:
 
 	static void abc_negate(call_context* context); // 0x90
 	static void abc_increment(call_context* context);
+	static void abc_increment_local(call_context* context);
+	static void abc_increment_local_localresult(call_context* context);
 	static void abc_inclocal(call_context* context);
 	static void abc_decrement(call_context* context);
+	static void abc_decrement_local(call_context* context);
+	static void abc_decrement_local_localresult(call_context* context);
 	static void abc_declocal(call_context* context);
 	static void abc_typeof(call_context* context);
 	static void abc_not(call_context* context);
 	static void abc_bitnot(call_context* context);
 
 	static void abc_add(call_context* context); //0xa0
+	static void abc_add_constant_constant(call_context* context);
+	static void abc_add_local_constant(call_context* context);
+	static void abc_add_constant_local(call_context* context);
+	static void abc_add_local_local(call_context* context);
+	static void abc_add_constant_constant_localresult(call_context* context);
+	static void abc_add_local_constant_localresult(call_context* context);
+	static void abc_add_constant_local_localresult(call_context* context);
+	static void abc_add_local_local_localresult(call_context* context);
 	static void abc_subtract(call_context* context);
+	static void abc_subtract_constant_constant(call_context* context);
+	static void abc_subtract_local_constant(call_context* context);
+	static void abc_subtract_constant_local(call_context* context);
+	static void abc_subtract_local_local(call_context* context);
+	static void abc_subtract_constant_constant_localresult(call_context* context);
+	static void abc_subtract_local_constant_localresult(call_context* context);
+	static void abc_subtract_constant_local_localresult(call_context* context);
+	static void abc_subtract_local_local_localresult(call_context* context);
 	static void abc_multiply(call_context* context);
+	static void abc_multiply_constant_constant(call_context* context);
+	static void abc_multiply_local_constant(call_context* context);
+	static void abc_multiply_constant_local(call_context* context);
+	static void abc_multiply_local_local(call_context* context);
+	static void abc_multiply_constant_constant_localresult(call_context* context);
+	static void abc_multiply_local_constant_localresult(call_context* context);
+	static void abc_multiply_constant_local_localresult(call_context* context);
+	static void abc_multiply_local_local_localresult(call_context* context);
 	static void abc_divide(call_context* context);
+	static void abc_divide_constant_constant(call_context* context);
+	static void abc_divide_local_constant(call_context* context);
+	static void abc_divide_constant_local(call_context* context);
+	static void abc_divide_local_local(call_context* context);
+	static void abc_divide_constant_constant_localresult(call_context* context);
+	static void abc_divide_local_constant_localresult(call_context* context);
+	static void abc_divide_constant_local_localresult(call_context* context);
+	static void abc_divide_local_local_localresult(call_context* context);
 	static void abc_modulo(call_context* context);
+	static void abc_modulo_constant_constant(call_context* context);
+	static void abc_modulo_local_constant(call_context* context);
+	static void abc_modulo_constant_local(call_context* context);
+	static void abc_modulo_local_local(call_context* context);
+	static void abc_modulo_constant_constant_localresult(call_context* context);
+	static void abc_modulo_local_constant_localresult(call_context* context);
+	static void abc_modulo_constant_local_localresult(call_context* context);
+	static void abc_modulo_local_local_localresult(call_context* context);
 	static void abc_lshift(call_context* context);
+	static void abc_lshift_constant_constant(call_context* context);
+	static void abc_lshift_local_constant(call_context* context);
+	static void abc_lshift_constant_local(call_context* context);
+	static void abc_lshift_local_local(call_context* context);
+	static void abc_lshift_constant_constant_localresult(call_context* context);
+	static void abc_lshift_local_constant_localresult(call_context* context);
+	static void abc_lshift_constant_local_localresult(call_context* context);
+	static void abc_lshift_local_local_localresult(call_context* context);
 	static void abc_rshift(call_context* context);
+	static void abc_rshift_constant_constant(call_context* context);
+	static void abc_rshift_local_constant(call_context* context);
+	static void abc_rshift_constant_local(call_context* context);
+	static void abc_rshift_local_local(call_context* context);
+	static void abc_rshift_constant_constant_localresult(call_context* context);
+	static void abc_rshift_local_constant_localresult(call_context* context);
+	static void abc_rshift_constant_local_localresult(call_context* context);
+	static void abc_rshift_local_local_localresult(call_context* context);
 	static void abc_urshift(call_context* context);
+	static void abc_urshift_constant_constant(call_context* context);
+	static void abc_urshift_local_constant(call_context* context);
+	static void abc_urshift_constant_local(call_context* context);
+	static void abc_urshift_local_local(call_context* context);
+	static void abc_urshift_constant_constant_localresult(call_context* context);
+	static void abc_urshift_local_constant_localresult(call_context* context);
+	static void abc_urshift_constant_local_localresult(call_context* context);
+	static void abc_urshift_local_local_localresult(call_context* context);
 	static void abc_bitand(call_context* context);
+	static void abc_bitand_constant_constant(call_context* context);
+	static void abc_bitand_local_constant(call_context* context);
+	static void abc_bitand_constant_local(call_context* context);
+	static void abc_bitand_local_local(call_context* context);
+	static void abc_bitand_constant_constant_localresult(call_context* context);
+	static void abc_bitand_local_constant_localresult(call_context* context);
+	static void abc_bitand_constant_local_localresult(call_context* context);
+	static void abc_bitand_local_local_localresult(call_context* context);
 	static void abc_bitor(call_context* context);
+	static void abc_bitor_constant_constant(call_context* context);
+	static void abc_bitor_local_constant(call_context* context);
+	static void abc_bitor_constant_local(call_context* context);
+	static void abc_bitor_local_local(call_context* context);
+	static void abc_bitor_constant_constant_localresult(call_context* context);
+	static void abc_bitor_local_constant_localresult(call_context* context);
+	static void abc_bitor_constant_local_localresult(call_context* context);
+	static void abc_bitor_local_local_localresult(call_context* context);
 	static void abc_bitxor(call_context* context);
+	static void abc_bitxor_constant_constant(call_context* context);
+	static void abc_bitxor_local_constant(call_context* context);
+	static void abc_bitxor_constant_local(call_context* context);
+	static void abc_bitxor_local_local(call_context* context);
+	static void abc_bitxor_constant_constant_localresult(call_context* context);
+	static void abc_bitxor_local_constant_localresult(call_context* context);
+	static void abc_bitxor_constant_local_localresult(call_context* context);
+	static void abc_bitxor_local_local_localresult(call_context* context);
 	static void abc_equals(call_context* context);
 	static void abc_strictequals(call_context* context);
 	static void abc_lessthan(call_context* context);

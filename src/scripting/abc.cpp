@@ -1100,6 +1100,34 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);
 	in >> constant_pool;
 
+	constantAtoms_integer.resize(constant_pool.integer.size());
+	for (uint32_t i = 0; i < constant_pool.integer.size(); i++)
+		constantAtoms_integer[i] = asAtom(constant_pool.integer[i]);
+	constantAtoms_uinteger.resize(constant_pool.uinteger.size());
+	for (uint32_t i = 0; i < constant_pool.uinteger.size(); i++)
+		constantAtoms_uinteger[i] = asAtom(constant_pool.uinteger[i]);
+	constantAtoms_doubles.resize(constant_pool.doubles.size());
+	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
+		constantAtoms_doubles[i] = asAtom(constant_pool.doubles[i]);
+	constantAtoms_strings.resize(constant_pool.strings.size());
+	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)
+		constantAtoms_strings[i] = asAtom::fromStringID(constant_pool.strings[i]);
+	constantAtoms_namespaces.resize(constant_pool.namespaces.size());
+	for (uint32_t i = 0; i < constant_pool.namespaces.size(); i++)
+	{
+		Namespace* res = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind);
+		if (constant_pool.namespaces[i].kind != 0)
+			res->nskind =(NS_KIND)(int)(constant_pool.namespaces[i].kind);
+		res->setConstant();
+		constantAtoms_namespaces[i] = asAtom::fromObject(res);
+	}
+	constantAtoms_byte.resize(0x100);
+	for (uint32_t i = 0; i < 0x100; i++)
+		constantAtoms_byte[i] = asAtom((int32_t)(int8_t)i);
+	constantAtoms_short.resize(0x10000);
+	for (int32_t i = 0; i < 0x10000; i++)
+		constantAtoms_short[i] = asAtom((int32_t)(int16_t)i);
+	
 	namespaceBaseId=vm->getAndIncreaseNamespaceBase(constant_pool.namespaces.size());
 
 	in >> method_count;
@@ -2285,6 +2313,53 @@ void ABCContext::getConstant(asAtom &ret, int kind, int index)
 			throw UnsupportedException("Constant trait not supported");
 		}
 	}
+}
+
+asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
+{
+	asAtom* ret = NULL;
+	switch(kind)
+	{
+		case OP_UNDEFINED:
+			ret = &asAtom::undefinedAtom;
+			break;
+		case OP_STRING:
+			ret = &constantAtoms_strings[index];
+			break;
+		case OP_INTEGER: //Int
+			ret = &constantAtoms_integer[index];
+			break;
+		case OP_UINTEGER:
+			ret = &constantAtoms_uinteger[index];
+			break;
+		case OP_DOUBLE:
+			ret = &constantAtoms_doubles[index];
+			break;
+		case OP_NAMESPACE:
+			ret = &constantAtoms_namespaces[index];
+			break;
+		case OP_FALSE:
+			ret = &asAtom::falseAtom;
+			break;
+		case OP_TRUE:
+			ret = &asAtom::trueAtom;
+			break;
+		case OP_NULL:
+			ret = &asAtom::nullAtom;
+			break;
+		case OP_BYTE:
+			ret = &constantAtoms_byte[index];
+			break;
+		case OP_SHORT:
+			ret = &constantAtoms_short[index];
+			break;
+		default:
+		{
+			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
+			throw UnsupportedException("Constant trait not supported");
+		}
+	}
+	return ret;
 }
 
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)

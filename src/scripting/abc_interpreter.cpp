@@ -57,10 +57,11 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-//LOG(LOG_INFO,"opcode:"<<hex<<(int)((codep->data)&0xff));
+		//LOG(LOG_INFO,"opcode:"<<hex<<(int)((context->exec_pos->data)&0x1ff));
+
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
-		abcfunctions[(context->exec_pos->data)&0xff](context);
+		abcfunctions[(context->exec_pos->data)&0x1ff](context);
 
 		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
@@ -83,7 +84,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_label,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
-	abc_ifnlt,
+	abc_ifnlt, //0x0c
 	abc_ifnle,
 	abc_ifngt,
 	abc_ifnge,
@@ -341,8 +342,139 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
-	abc_invalidinstruction
+	abc_invalidinstruction,
 
+	// instructions for optimized opcodes (indicated by 0x01xx)
+	abc_increment_local, // 0x100 ABC_OP_OPTIMZED_INCREMENT
+	abc_increment_local_localresult,
+	abc_decrement_local, // 0x102 ABC_OP_OPTIMZED_DECREMENT
+	abc_decrement_local_localresult,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_ifnlt, //0x10c  jump data may have the 0x100 bit set, so we also add the jump opcodes here
+	abc_ifnle,
+	abc_ifngt,
+	abc_ifnge,
+
+	abc_jump, // 0x110
+	abc_iftrue,
+	abc_iffalse,
+	abc_ifeq,
+	abc_ifne,
+	abc_iflt,
+	abc_ifle,
+	abc_ifgt,
+	abc_ifge,
+	abc_ifstricteq,
+	abc_ifstrictne,
+	abc_lookupswitch,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	// optimized arithmetical operations for all possible combinations of operand1/operand2/result
+	abc_multiply_constant_constant, // 0x120 ABC_OP_OPTIMZED_MULTIPLY
+	abc_multiply_local_constant,
+	abc_multiply_constant_local,
+	abc_multiply_local_local,
+	abc_multiply_constant_constant_localresult,
+	abc_multiply_local_constant_localresult,
+	abc_multiply_constant_local_localresult,
+	abc_multiply_local_local_localresult,
+	abc_bitor_constant_constant, // 0x128 ABC_OP_OPTIMZED_BITOR
+	abc_bitor_local_constant,
+	abc_bitor_constant_local,
+	abc_bitor_local_local,
+	abc_bitor_constant_constant_localresult,
+	abc_bitor_local_constant_localresult,
+	abc_bitor_constant_local_localresult,
+	abc_bitor_local_local_localresult,
+
+	abc_bitxor_constant_constant, // 0x130 ABC_OP_OPTIMZED_BITXOR
+	abc_bitxor_local_constant,
+	abc_bitxor_constant_local,
+	abc_bitxor_local_local,
+	abc_bitxor_constant_constant_localresult,
+	abc_bitxor_local_constant_localresult,
+	abc_bitxor_constant_local_localresult,
+	abc_bitxor_local_local_localresult,
+	abc_subtract_constant_constant, // 0x138 ABC_OP_OPTIMZED_SUBTRACT
+	abc_subtract_local_constant,
+	abc_subtract_constant_local,
+	abc_subtract_local_local,
+	abc_subtract_constant_constant_localresult,
+	abc_subtract_local_constant_localresult,
+	abc_subtract_constant_local_localresult,
+	abc_subtract_local_local_localresult,
+
+	abc_add_constant_constant, // 0x140 ABC_OP_OPTIMZED_ADD
+	abc_add_local_constant,
+	abc_add_constant_local,
+	abc_add_local_local,
+	abc_add_constant_constant_localresult,
+	abc_add_local_constant_localresult,
+	abc_add_constant_local_localresult,
+	abc_add_local_local_localresult,
+	abc_divide_constant_constant, // 0x148 ABC_OP_OPTIMZED_DIVIDE
+	abc_divide_local_constant,
+	abc_divide_constant_local,
+	abc_divide_local_local,
+	abc_divide_constant_constant_localresult,
+	abc_divide_local_constant_localresult,
+	abc_divide_constant_local_localresult,
+	abc_divide_local_local_localresult,
+
+	abc_modulo_constant_constant, // 0x150 ABC_OP_OPTIMZED_MODULO
+	abc_modulo_local_constant,
+	abc_modulo_constant_local,
+	abc_modulo_local_local,
+	abc_modulo_constant_constant_localresult,
+	abc_modulo_local_constant_localresult,
+	abc_modulo_constant_local_localresult,
+	abc_modulo_local_local_localresult,
+	abc_lshift_constant_constant, // 0x158 ABC_OP_OPTIMZED_LSHIFT
+	abc_lshift_local_constant,
+	abc_lshift_constant_local,
+	abc_lshift_local_local,
+	abc_lshift_constant_constant_localresult,
+	abc_lshift_local_constant_localresult,
+	abc_lshift_constant_local_localresult,
+	abc_lshift_local_local_localresult,
+
+	abc_rshift_constant_constant, // 0x160 ABC_OP_OPTIMZED_RSHIFT
+	abc_rshift_local_constant,
+	abc_rshift_constant_local,
+	abc_rshift_local_local,
+	abc_rshift_constant_constant_localresult,
+	abc_rshift_local_constant_localresult,
+	abc_rshift_constant_local_localresult,
+	abc_rshift_local_local_localresult,
+	abc_urshift_constant_constant, // 0x168 ABC_OP_OPTIMZED_URSHIFT
+	abc_urshift_local_constant,
+	abc_urshift_constant_local,
+	abc_urshift_local_local,
+	abc_urshift_constant_constant_localresult,
+	abc_urshift_local_constant_localresult,
+	abc_urshift_constant_local_localresult,
+	abc_urshift_local_local_localresult,
+
+	abc_bitand_constant_constant, // 0x170 ABC_OP_OPTIMZED_BITAND
+	abc_bitand_local_constant,
+	abc_bitand_constant_local,
+	abc_bitand_local_local,
+	abc_bitand_constant_constant_localresult,
+	abc_bitand_local_constant_localresult,
+	abc_bitand_constant_local_localresult,
+	abc_bitand_local_local_localresult,
+
+	abc_invalidinstruction
 };
 
 void ABCVm::abc_bkpt(call_context* context)
@@ -1166,7 +1298,7 @@ void ABCVm::abc_getlex(call_context* context)
 	//getlex
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
-	if ((instrptr->data&0x00000100) == 0x00000100)
+	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->cacheobj1,instrptr->cacheobj2));
 		instrptr->cacheobj1->incRef();
@@ -1175,7 +1307,7 @@ void ABCVm::abc_getlex(call_context* context)
 	else if (getLex(context,t))
 	{
 		// put object in cache
-		instrptr->data |= 0x00000100;
+		instrptr->data |= ABC_OP_CACHED;
 		RUNTIME_STACK_PEEK_CREATE(context,v);
 		
 		instrptr->cacheobj1 = v->getObject();
@@ -1219,7 +1351,7 @@ void ABCVm::abc_setproperty(call_context* context)
 void ABCVm::abc_getlocal(call_context* context)
 {
 	//getlocal
-	uint32_t i = ((context->exec_pos)++)->data>>8;
+	uint32_t i = ((context->exec_pos)++)->data>>9;
 	LOG_CALL( _("getLocal n ") << i << _(": ") << context->locals[i].toDebugString() );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
@@ -1227,7 +1359,7 @@ void ABCVm::abc_getlocal(call_context* context)
 void ABCVm::abc_setlocal(call_context* context)
 {
 	//setlocal
-	uint32_t i = ((context->exec_pos)++)->data>>8;
+	uint32_t i = ((context->exec_pos)++)->data>>9;
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << obj->toDebugString() );
@@ -1267,7 +1399,7 @@ void ABCVm::abc_getProperty(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	ASObject* obj= NULL;
-	if ((instrptr->data&0x00000100) == 0x00000100)
+	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
 		if (instrptr->cacheobj1 == obj->getClass())
@@ -1323,7 +1455,7 @@ void ABCVm::abc_getProperty(call_context* context)
 		if(prop.type != T_INVALID)
 		{
 			// cache getter if multiname is static and it is a getter of a sealed class
-			instrptr->data |= 0x00000100;
+			instrptr->data |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = obj->getClass();
 			instrptr->cacheobj2 = f;
 			instrptr->cacheobj3 = closure;
@@ -1559,6 +1691,21 @@ void ABCVm::abc_increment(call_context* context)
 	pval->increment();
 	++(context->exec_pos);
 }
+void ABCVm::abc_increment_local(call_context* context)
+{
+	//increment
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.increment();
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_increment_local_localresult(call_context* context)
+{
+	//increment
+	context->locals[context->exec_pos->local_pos3-1]= context->locals[context->exec_pos->local_pos1];
+	context->locals[context->exec_pos->local_pos3-1].increment();
+	++(context->exec_pos);
+}
 void ABCVm::abc_inclocal(call_context* context)
 {
 	//inclocal
@@ -1571,6 +1718,21 @@ void ABCVm::abc_decrement(call_context* context)
 	//decrement
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->decrement();
+	++(context->exec_pos);
+}
+void ABCVm::abc_decrement_local(call_context* context)
+{
+	//decrement
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.decrement();
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_decrement_local_localresult(call_context* context)
+{
+	//decrement
+	context->locals[context->exec_pos->local_pos3-1]= context->locals[context->exec_pos->local_pos1];
+	context->locals[context->exec_pos->local_pos3-1].decrement();
 	++(context->exec_pos);
 }
 void ABCVm::abc_declocal(call_context* context)
@@ -1612,6 +1774,82 @@ void ABCVm::abc_add(call_context* context)
 	pval->add(*v2,context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
+void ABCVm::abc_add_constant_constant(call_context* context)
+{
+	//add
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_local_constant(call_context* context)
+{
+	//add
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
+	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_constant_local(call_context* context)
+{
+	//add
+	asAtom res = *context->exec_pos->arg1_constant;
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos2]);
+	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_local_local(call_context* context)
+{
+	//add
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos2]);
+	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_constant_constant_localresult(call_context* context)
+{
+	//add
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_local_constant_localresult(call_context* context)
+{
+	//add
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
+	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_constant_local_localresult(call_context* context)
+{
+	//add
+	asAtom res = *context->exec_pos->arg1_constant;
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos2]);
+	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState());
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_add_local_local_localresult(call_context* context)
+{
+	//add
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos2]);
+	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState());
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_subtract(call_context* context)
 {
 	//subtract
@@ -1621,6 +1859,75 @@ void ABCVm::abc_subtract(call_context* context)
 	pval->subtract(*v2);
 	++(context->exec_pos);
 }
+void ABCVm::abc_subtract_constant_constant(call_context* context)
+{
+	//subtract
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.subtract(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_local_constant(call_context* context)
+{
+	//subtract
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.subtract(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_constant_local(call_context* context)
+{
+	//subtract
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_local_local(call_context* context)
+{
+	//subtract
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_constant_constant_localresult(call_context* context)
+{
+	//subtract
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.subtract(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_local_constant_localresult(call_context* context)
+{
+	//subtract
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.subtract(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_constant_local_localresult(call_context* context)
+{
+	//subtract
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_subtract_local_local_localresult(call_context* context)
+{
+	//subtract
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_multiply(call_context* context)
 {
 	//multiply
@@ -1629,12 +1936,149 @@ void ABCVm::abc_multiply(call_context* context)
 	pval->multiply(*v2);
 	++(context->exec_pos);
 }
+void ABCVm::abc_multiply_constant_constant(call_context* context)
+{
+	//multiply
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.multiply(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_local_constant(call_context* context)
+{
+	//multiply
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.multiply(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_constant_local(call_context* context)
+{
+	//multiply
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_local_local(call_context* context)
+{
+	//multiply
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_constant_constant_localresult(call_context* context)
+{
+	//multiply
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.multiply(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_local_constant_localresult(call_context* context)
+{
+	//multiply
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.multiply(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_constant_local_localresult(call_context* context)
+{
+	//multiply
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_multiply_local_local_localresult(call_context* context)
+{
+	//multiply
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_divide(call_context* context)
 {
 	//divide
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->divide(*v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_constant_constant(call_context* context)
+{
+	//divide
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.divide(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_local_constant(call_context* context)
+{
+	//divide
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.divide(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_constant_local(call_context* context)
+{
+	//divide
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.divide(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_local_local(call_context* context)
+{
+	//divide
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.divide(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_constant_constant_localresult(call_context* context)
+{
+	//divide
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.divide(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_local_constant_localresult(call_context* context)
+{
+	//divide
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.divide(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_constant_local_localresult(call_context* context)
+{
+	//divide
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.divide(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_divide_local_local_localresult(call_context* context)
+{
+	//divide
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.divide(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_modulo(call_context* context)
@@ -1646,12 +2090,148 @@ void ABCVm::abc_modulo(call_context* context)
 	pval->modulo(*v2);
 	++(context->exec_pos);
 }
+void ABCVm::abc_modulo_constant_constant(call_context* context)
+{
+	//modulo
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.modulo(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_local_constant(call_context* context)
+{
+	//modulo
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.modulo(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_constant_local(call_context* context)
+{
+	//modulo
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_local_local(call_context* context)
+{
+	//modulo
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_constant_constant_localresult(call_context* context)
+{
+	//modulo
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.modulo(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_local_constant_localresult(call_context* context)
+{
+	//modulo
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.modulo(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_constant_local_localresult(call_context* context)
+{
+	//modulo
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_modulo_local_local_localresult(call_context* context)
+{
+	//modulo
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
 void ABCVm::abc_lshift(call_context* context)
 {
 	//lshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->lshift(*v1);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_constant_constant(call_context* context)
+{
+	//lshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.lshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_local_constant(call_context* context)
+{
+	//lshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.lshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_constant_local(call_context* context)
+{
+	//lshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.lshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_local_local(call_context* context)
+{
+	//lshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.lshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_constant_constant_localresult(call_context* context)
+{
+	//lshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.lshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_local_constant_localresult(call_context* context)
+{
+	//lshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.lshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_constant_local_localresult(call_context* context)
+{
+	//lshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.lshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lshift_local_local_localresult(call_context* context)
+{
+	//lshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.lshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_rshift(call_context* context)
@@ -1662,12 +2242,148 @@ void ABCVm::abc_rshift(call_context* context)
 	pval->rshift(*v1);
 	++(context->exec_pos);
 }
+void ABCVm::abc_rshift_constant_constant(call_context* context)
+{
+	//rshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.rshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_local_constant(call_context* context)
+{
+	//rshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.rshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_constant_local(call_context* context)
+{
+	//rshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.rshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_local_local(call_context* context)
+{
+	//rshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.rshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_constant_constant_localresult(call_context* context)
+{
+	//rshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.rshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_local_constant_localresult(call_context* context)
+{
+	//rshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.rshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_constant_local_localresult(call_context* context)
+{
+	//rshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.rshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_rshift_local_local_localresult(call_context* context)
+{
+	//rshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.rshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
 void ABCVm::abc_urshift(call_context* context)
 {
 	//urshift
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->urshift(*v1);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_constant_constant(call_context* context)
+{
+	//urshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.urshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_local_constant(call_context* context)
+{
+	//urshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.urshift(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_constant_local(call_context* context)
+{
+	//urshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.urshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_local_local(call_context* context)
+{
+	//urshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.urshift(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_constant_constant_localresult(call_context* context)
+{
+	//urshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.urshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_local_constant_localresult(call_context* context)
+{
+	//urshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.urshift(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_constant_local_localresult(call_context* context)
+{
+	//urshift
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.urshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_urshift_local_local_localresult(call_context* context)
+{
+	//urshift
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.urshift(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand(call_context* context)
@@ -1678,6 +2394,74 @@ void ABCVm::abc_bitand(call_context* context)
 	pval->bit_and(*v1);
 	++(context->exec_pos);
 }
+void ABCVm::abc_bitand_constant_constant(call_context* context)
+{
+	//bitand
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_and(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_local_constant(call_context* context)
+{
+	//bitand
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_and(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_constant_local(call_context* context)
+{
+	//bitand
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_and(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_local_local(call_context* context)
+{
+	//bitand
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_and(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_constant_constant_localresult(call_context* context)
+{
+	//bitand
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_and(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_local_constant_localresult(call_context* context)
+{
+	//bitand
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_and(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_constant_local_localresult(call_context* context)
+{
+	//bitand
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_and(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitand_local_local_localresult(call_context* context)
+{
+	//bitand
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_and(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
 void ABCVm::abc_bitor(call_context* context)
 {
 	//bitor
@@ -1686,12 +2470,148 @@ void ABCVm::abc_bitor(call_context* context)
 	pval->bit_or(*v1);
 	++(context->exec_pos);
 }
+void ABCVm::abc_bitor_constant_constant(call_context* context)
+{
+	//bitor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_or(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_local_constant(call_context* context)
+{
+	//bitor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_or(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_constant_local(call_context* context)
+{
+	//bitor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_or(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_local_local(call_context* context)
+{
+	//bitor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_or(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_constant_constant_localresult(call_context* context)
+{
+	//bitor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_or(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_local_constant_localresult(call_context* context)
+{
+	//bitor
+	asAtom res = *context->exec_pos->arg2_constant;
+	res.bit_or(context->locals[context->exec_pos->local_pos1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_constant_local_localresult(call_context* context)
+{
+	//bitor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_or(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitor_local_local_localresult(call_context* context)
+{
+	//bitor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_or(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_bitxor(call_context* context)
 {
 	//bitxor
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	pval->bit_xor(*v1);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_constant_constant(call_context* context)
+{
+	//bitxor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_xor(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_local_constant(call_context* context)
+{
+	//bitxor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_xor(*context->exec_pos->arg2_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_constant_local(call_context* context)
+{
+	//bitxor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_local_local(call_context* context)
+{
+	//bitxor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_constant_constant_localresult(call_context* context)
+{
+	//bitxor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_xor(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_local_constant_localresult(call_context* context)
+{
+	//bitxor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_xor(*context->exec_pos->arg2_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_constant_local_localresult(call_context* context)
+{
+	//bitxor
+	asAtom res = *context->exec_pos->arg1_constant;
+	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_bitxor_local_local_localresult(call_context* context)
+{
+	//bitxor
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_equals(call_context* context)
@@ -2038,19 +2958,366 @@ void ABCVm::abc_invalidinstruction(call_context* context)
 	throw ParseException("Not implemented instruction in interpreter");
 }
 
+struct operands
+{
+	OPERANDTYPES type;
+	int32_t index;
+	uint32_t codecount;
+	uint32_t preloadedcodepos;
+	operands(OPERANDTYPES _t,int32_t _i,uint32_t _c, uint32_t _p):type(_t),index(_i),codecount(_c),preloadedcodepos(_p) {}
+	void removeArg(method_info* mi)
+	{
+		if (codecount)
+			mi->body->preloadedcode.erase(mi->body->preloadedcode.begin()+preloadedcodepos,mi->body->preloadedcode.begin()+preloadedcodepos+codecount);
+	}
+	void fillCode(int pos, preloadedcodedata& code, ABCContext* context, bool switchopcode)
+	{
+		switch (type)
+		{
+			case OP_LOCAL:
+				switch (pos)
+				{
+					case 0:
+						code.local_pos1 = index;
+						break;
+					case 1:
+						code.local_pos2 = index;
+						break;
+				}
+				if (switchopcode)
+					code.data+=1+pos; // increase opcode
+				break;
+			default:
+				switch (pos)
+				{
+					case 0:
+						code.arg1_constant = context->getConstantAtom(type,index);
+						break;
+					case 1:
+						code.arg2_constant = context->getConstantAtom(type,index);
+						break;
+				}
+				break;
+		}
+	}
+};
+#define ABC_OP_OPTIMZED_INCREMENT 0x00000100
+#define ABC_OP_OPTIMZED_DECREMENT 0x00000102
+#define ABC_OP_OPTIMZED_MULTIPLY 0x00000120
+#define ABC_OP_OPTIMZED_BITOR 0x00000128
+#define ABC_OP_OPTIMZED_BITXOR 0x00000130
+#define ABC_OP_OPTIMZED_SUBTRACT 0x00000138
+#define ABC_OP_OPTIMZED_ADD 0x00000140
+#define ABC_OP_OPTIMZED_DIVIDE 0x00000148
+#define ABC_OP_OPTIMZED_MODULO 0x00000150
+#define ABC_OP_OPTIMZED_LSHIFT 0x00000158
+#define ABC_OP_OPTIMZED_RSHIFT 0x00000160
+#define ABC_OP_OPTIMZED_URSHIFT 0x00000168
+#define ABC_OP_OPTIMZED_BITAND 0x00000170
 
+void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets)
+{
+	bool hasoperands = operandlist.size() >= 1 && operandlist.back().type == OP_LOCAL;
+	if (hasoperands)
+	{
+		auto it = operandlist.end();
+		(--it)->removeArg(mi);// remove arg1
+		it = operandlist.end();
+		mi->body->preloadedcode.push_back(operator_start);
+		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,false);
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+		operandlist.pop_back();
+	}
+	else
+		mi->body->preloadedcode.push_back((uint32_t)opcode);
+	switch (code.peekbyte())
+	{
+		case 0x73://convert_i
+		case 0x74://convert_u
+		case 0x75://convert_d
+		case 0x82://coerce_a
+			oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+			code.readbyte();
+			break;
+	}
+	if (hasoperands)
+	{
+		uint8_t b = code.peekbyte();
+		switch (b)
+		{
+			case 0x63://setlocal
+			{
+				if (jumptargets.find(code.tellg()+1) == jumptargets.end())
+				{
+					code.readbyte();
+					uint32_t num = code.readu30();
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 1;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
+					operandlist.push_back(operands(OP_LOCAL,num,0,0));
+				}
+				break;
+			}
+			case 0xd4: //setlocal_0
+			case 0xd5: //setlocal_1
+			case 0xd6: //setlocal_2
+			case 0xd7: //setlocal_3
+				if (jumptargets.find(code.tellg()+1) == jumptargets.end() && mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1 == (uint32_t)(b-0xd4))
+				{
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 1;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
+					code.readbyte();
+					operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
+				}
+				break;
+			case 0x91://increment
+			case 0x93://decrement
+			case 0xa0://add
+			case 0xa1://subtract
+			case 0xa2://multiply
+			case 0xa3://divide
+			case 0xa4://modulo
+			case 0xa5://lshift
+			case 0xa6://rshift
+			case 0xa7://urshift
+			case 0xa8://bitand
+			case 0xa9://bitor
+			case 0xaa://bitxor
+				if (operandlist.size() > 0 && jumptargets.find(code.tellg()+1) == jumptargets.end())
+				{
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 1;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
+					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
+				}
+				break;
+			default:
+				operandlist.clear();
+				break;
+		}
+	}
+	else
+		operandlist.clear();
+}
+
+void setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets, bool skip_conversion)
+{
+	bool hasoperands = operandlist.size() >= 2;
+	if (hasoperands)
+	{
+		auto it = operandlist.end();
+		(--it)->removeArg(mi);// remove arg2
+		(--it)->removeArg(mi);// remove arg1
+		it = operandlist.end();
+		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
+		mi->body->preloadedcode.push_back(operator_start);
+		(--it)->fillCode(1,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
+		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+		operandlist.pop_back();
+		operandlist.pop_back();
+	}
+	else
+		mi->body->preloadedcode.push_back((uint32_t)opcode);
+	if (skip_conversion && code.peekbyte() == 0x75) //convert_d
+	{
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+		// skip unneccessary convert_d
+		code.readbyte();
+	}
+	if (hasoperands)
+	{
+		uint8_t b = code.peekbyte();
+		switch (b)
+		{
+			case 0x63://setlocal
+			{
+				if (jumptargets.find(code.tellg()+1) == jumptargets.end())
+				{
+					code.readbyte();
+					uint32_t num = code.readu30();
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
+					operandlist.push_back(operands(OP_LOCAL,num,0,0));
+				}
+				break;
+			}
+			case 0xd4: //setlocal_0
+			case 0xd5: //setlocal_1
+			case 0xd6: //setlocal_2
+			case 0xd7: //setlocal_3
+				if (jumptargets.find(code.tellg()+1) == jumptargets.end())
+				{
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
+					code.readbyte();
+					operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
+				}
+				break;
+			case 0x91://increment
+			case 0x93://decrement
+			case 0xa0://add
+			case 0xa1://subtract
+			case 0xa2://multiply
+			case 0xa3://divide
+			case 0xa4://modulo
+			case 0xa5://lshift
+			case 0xa6://rshift
+			case 0xa7://urshift
+			case 0xa8://bitand
+			case 0xa9://bitor
+			case 0xaa://bitxor
+				if (operandlist.size() > 0 && jumptargets.find(code.tellg()+1) == jumptargets.end())
+				{
+					// set optimized opcode to corresponding opcode with local result 
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
+					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
+				}
+				break;
+			default:
+				operandlist.clear();
+				break;
+		}
+	}
+	else
+		operandlist.clear();
+}
 
 void ABCVm::preloadFunction(const SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
 
 	const int code_len=mi->body->code.size();
-	memorystream code(mi->body->code.data(), code_len);
 	std::map<int32_t,int32_t> oldnewpositions;
 	std::map<int32_t,int32_t> jumppositions;
 	std::map<int32_t,int32_t> jumpstartpositions;
 	std::map<int32_t,int32_t> switchpositions;
 	std::map<int32_t,int32_t> switchstartpositions;
+
+	// first pass: store all jump target points
+	std::set<int32_t> jumptargets;
+	memorystream codejumps(mi->body->code.data(), code_len);
+	while(!codejumps.atend())
+	{
+		uint8_t opcode = codejumps.readbyte();
+		switch(opcode)
+		{
+			case 0x04://getsuper
+			case 0x05://setsuper
+			case 0x06://dxns
+			case 0x08://kill
+			case 0x2c://pushstring
+			case 0x2d://pushint
+			case 0x2e://pushuint
+			case 0x2f://pushdouble
+			case 0x31://pushnamespace
+			case 0x40://newfunction
+			case 0x41://call
+			case 0x42://construct
+			case 0x49://constructsuper
+			case 0x53://constructgenerictype
+			case 0x55://newobject
+			case 0x56://newarray
+			case 0x58://newclass
+			case 0x59://getdescendants
+			case 0x5a://newcatch
+			case 0x5d://findpropstrict
+			case 0x5e://findproperty
+			case 0x5f://finddef
+			case 0x60://getlex
+			case 0x61://setproperty
+			case 0x62://getlocal
+			case 0x63://setlocal
+			case 0x65://getscopeobject
+			case 0x66://getproperty
+			case 0x68://initproperty
+			case 0x6a://deleteproperty
+			case 0x6c://getslot
+			case 0x6d://setslot
+			case 0x6e://getglobalSlot
+			case 0x6f://setglobalSlot
+			case 0x80://coerce
+			case 0x86://astype
+			case 0x92://inclocal
+			case 0x94://declocal
+			case 0xb2://istype
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+			case 0xf0://debugline
+			case 0xf1://debugfile
+			case 0xf2://bkptline
+				codejumps.readu30();
+				break;
+			case 0x0c://ifnlt
+			case 0x0d://ifnle
+			case 0x0e://ifngt
+			case 0x0f://ifnge
+			case 0x10://jump
+			case 0x11://iftrue
+			case 0x12://iffalse
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
+				jumptargets.insert(codejumps.reads24()+codejumps.tellg()+1);
+				break;
+			case 0x1b://lookupswitch
+			{
+				int32_t p = codejumps.tellg()-1;
+				jumptargets.insert(p+codejumps.reads24());
+				uint32_t count = codejumps.readu30();
+				for(unsigned int i=0;i<count+1;i++)
+				{
+					jumptargets.insert(p+codejumps.reads24());
+				}
+				break;
+			}
+			case 0x24://pushbyte
+			{
+				codejumps.readbyte();
+				break;
+			}
+			case 0x25://pushshort
+			{
+				codejumps.readu32();
+				break;
+			}
+			case 0x32://hasnext2
+			case 0x43://callmethod
+			case 0x44://callstatic
+			case 0x45://callsuper
+			case 0x46://callproperty
+			case 0x4c://callproplex
+			case 0x4a://constructprop
+			case 0x4e://callsupervoid
+			case 0x4f://callpropvoid
+			{
+				codejumps.readu30();
+				codejumps.readu30();
+				break;
+			}
+			case 0xef://debug
+			{
+				codejumps.readbyte();
+				codejumps.readu30();
+				codejumps.readbyte();
+				codejumps.readu30();
+				break;
+			}
+		}
+	}
+	
+	// second pass: use optimized opcode version if it doesn't interfere with a jump target
+	std::list<operands> operandlist;
+	memorystream code(mi->body->code.data(), code_len);
 	while(!code.atend())
 	{
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
@@ -2064,11 +3331,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x05://setsuper
 			case 0x06://dxns
 			case 0x08://kill
-			case 0x2c://pushstring
-			case 0x2d://pushint
-			case 0x2e://pushuint
-			case 0x2f://pushdouble
-			case 0x31://pushnamespace
 			case 0x40://newfunction
 			case 0x41://call
 			case 0x42://construct
@@ -2103,14 +3365,42 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
+				operandlist.clear();
 				break;
 			}
 			case 0x62://getlocal
+			{
+				int32_t p = code.tellg();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
+				int32_t value =code.readu30();
+				uint32_t num = value<<9 | opcode;
+				mi->body->preloadedcode.push_back(num);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_LOCAL,value,1,mi->body->preloadedcode.size()-1));
+				else
+					operandlist.clear();
+				break;
+			}
 			case 0x63://setlocal
 			{
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
-				uint32_t num = code.readu30()<<8 | opcode;
+				uint32_t num = code.readu30()<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
+				operandlist.clear();
+				break;
+			}
+			case 0xd0://getlocal_0
+			case 0xd1://getlocal_1
+			case 0xd2://getlocal_2
+			case 0xd3://getlocal_3
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_LOCAL,((uint32_t)opcode)-0xd0,1,mi->body->preloadedcode.size()-1));
+				else
+					operandlist.clear();
 				break;
 			}
 			case 0x01://bkpt
@@ -2150,6 +3440,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				operandlist.clear();
 				break;
 			}
 			case 0x1b://lookupswitch
@@ -2170,20 +3461,100 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					switchstartpositions[mi->body->preloadedcode.size()] = p;
 					mi->body->preloadedcode.push_back(0);
 				}
+				operandlist.clear();
 				break;
 			}
 			case 0x24://pushbyte
 			{
+				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				mi->body->preloadedcode.push_back((int32_t)(int8_t)code.readbyte());
+				int32_t value = (int32_t)(int8_t)code.readbyte();
+				uint8_t index = value;
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_BYTE,index,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
 				break;
 			}
 			case 0x25://pushshort
 			{
+				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				mi->body->preloadedcode.push_back(code.readu32());
+				int32_t value = code.readu32();
+				uint16_t index = value;
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_SHORT,index,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
+				break;
+			}
+			case 0x2c://pushstring
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t value = code.readu30();
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_STRING,value,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
+				break;
+			}
+			case 0x2d://pushint
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t value = code.readu30();
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_INTEGER,value,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
+				break;
+			}
+			case 0x2e://pushuint
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t value = code.readu30();
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_UINTEGER,value,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
+				break;
+			}
+			case 0x2f://pushdouble
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t value = code.readu30();
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_DOUBLE,value,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
+				break;
+			}
+			case 0x31://pushnamespace
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t value = code.readu30();
+				mi->body->preloadedcode.push_back(value);
+				if (jumptargets.find(p) == jumptargets.end())
+					operandlist.push_back(operands(OP_NAMESPACE,value,2,mi->body->preloadedcode.size()-2));
+				else
+					operandlist.clear();
 				break;
 			}
 			case 0x32://hasnext2
@@ -2201,6 +3572,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				mi->body->preloadedcode.push_back(code.readu30());
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
+				operandlist.clear();
 				break;
 			}
 			case 0xef://debug
@@ -2213,27 +3585,44 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x91://increment
-			case 0x93://decrement
-			case 0xa1://subtract
-			case 0xa2://multiply
-			case 0xa3://divide
-			case 0xa4://modulo
-			case 0xa5://lshift
-			case 0xa6://rshift
-			case 0xa7://urshift
-			case 0xa8://bitand
-			case 0xa9://bitor
-			case 0xaa://bitxor
-			{
-				mi->body->preloadedcode.push_back((uint32_t)opcode);
-				if (code.peekbyte() == 0x75) //convert_d
-				{
-					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-					// skip unneccessary convert_d
-					code.readbyte();
-				}
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT,opcode,code,oldnewpositions, jumptargets);
 				break;
-			}
+			case 0x93://decrement
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets);
+				break;
+			case 0xa0://add
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false);
+				break;
+			case 0xa1://subtract
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa2://multiply
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa3://divide
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa4://modulo
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa5://lshift
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa6://rshift
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa7://urshift
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa8://bitand
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xa9://bitor
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,oldnewpositions, jumptargets,true);
+				break;
+			case 0xaa://bitxor
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true);
+				break;
 			default:
 			{
 				if (abcfunctions[opcode] == abc_invalidinstruction)
@@ -2246,6 +3635,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				}
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				operandlist.clear();
 				break;
 			}
 		}

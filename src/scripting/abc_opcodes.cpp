@@ -335,7 +335,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 
 	asAtom obj;
-	if (instrptr && (instrptr->data&0x00000100) == 0x00000100)
+	if (instrptr && (instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_POP(th,obj);
 		if (obj.getObject() && obj.getObject()->getClass() == instrptr->cacheobj1)
@@ -404,10 +404,10 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	}
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
-		if (instrptr && name->isStatic && o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState()) && obj.canCacheMethod(name))
+		if (instrptr && name->isStatic && o.getObject() && o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState()) && obj.canCacheMethod(name))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
-			instrptr->data |= 0x00000100;
+			instrptr->data |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = obj.getClass(th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = o.getObject();
 			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
@@ -1811,7 +1811,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	preloadedcodedata* instrptr = th->exec_pos;
 	uint32_t t = (*(++(th->exec_pos))).data;
 
-	if ((instrptr->data&0x00000100) == 0x00000100)
+	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		instrptr->cacheobj1->incRef();
 		if (instrptr->cacheobj1->is<IFunction>())
@@ -1841,7 +1841,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			if (ret.is<Class_base>() && !hasdynamic)
 			{
 				// put object in cache
-				instrptr->data |= 0x00000100;
+				instrptr->data |= ABC_OP_CACHED;
 				instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
 				instrptr->cacheobj2 = ret.getClosure();
 			}
@@ -1896,7 +1896,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		if (!hasdynamic)
 		{
 			// put object in cache
-			instrptr->data |= 0x00000100;
+			instrptr->data |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = ret.getClosure();
 		}

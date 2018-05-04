@@ -2582,7 +2582,7 @@ void asAtom::convert_b()
 	setBool(v);
 }
 
-void asAtom::add(asAtom &v2, SystemState* sys)
+void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 
@@ -2614,8 +2614,11 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 		tiny_string a = toString(sys);
 		tiny_string b = v2.toString(sys);
 		LOG_CALL("add " << a << '+' << b);
-		decRef();
-		ASATOM_DECREF(v2);
+		if (isrefcounted)
+		{
+			decRef();
+			ASATOM_DECREF(v2);
+		}
 		type = T_STRING;
 		stringID = UINT32_MAX;
 		objval = abstract_s(sys,a + b);
@@ -2656,8 +2659,11 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 				string a(val1p.toString(sys).raw_buf());
 				string b(val2p.toString(sys).raw_buf());
 				LOG_CALL("add " << a << '+' << b);
-				val1->decRef();
-				val2->decRef();
+				if (isrefcounted)
+				{
+					val1->decRef();
+					val2->decRef();
+				}
 				type = T_STRING;
 				stringID = UINT32_MAX;
 				objval = abstract_s(sys,a+b);
@@ -2668,8 +2674,11 @@ void asAtom::add(asAtom &v2, SystemState* sys)
 				number_t num2=val2p.toNumber();
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
-				val1->decRef();
-				val2->decRef();
+				if (isrefcounted)
+				{
+					val1->decRef();
+					val2->decRef();
+				}
 				setNumber(result);
 			}
 		}

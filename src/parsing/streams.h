@@ -167,6 +167,37 @@ public:
 			return 0;
 		}
 	}
+	inline uint8_t peekbyteFromPosition(uint32_t pos)
+	{
+		const char* codepos_peek = code+pos;
+		if (codepos_peek < lastcodepos)
+		{
+			return *(codepos_peek);
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	inline uint32_t skipu30FromPosition(uint32_t pos)
+	{
+		const char* codepos_prev = codepos;
+		codepos = code+pos;
+		readu32();
+		uint32_t codepos_new = codepos-code;
+		codepos = codepos_prev;
+		return codepos_new;
+	}
+	inline uint32_t peeku30FromPosition(uint32_t pos)
+	{
+		const char* codepos_prev = codepos;
+		codepos = code+pos;
+		uint32_t val = readu32();
+		if(val&0xc0000000)
+			memorystream::handleError("Invalid u30");
+		codepos = codepos_prev;
+		return val;
+	}
 	inline uint32_t readu30()
 	{
 		uint32_t val = readu32();

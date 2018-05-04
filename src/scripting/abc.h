@@ -242,7 +242,7 @@ public:
 	}
 	
 	multiname* getMultiname(unsigned int m, call_context* th);
-	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m);
+	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	void exec(bool lazy);
@@ -544,6 +544,8 @@ private:
 	static void abc_pushdouble(call_context* context);
 
 	static void abc_pushScope(call_context* context);// 0x30
+	static void abc_pushScope_constant(call_context* context);// 0x30
+	static void abc_pushScope_local(call_context* context);// 0x30
 	static void abc_pushnamespace(call_context* context);
 	static void abc_hasnext2(call_context* context);
 	static void abc_li8(call_context* context);
@@ -593,6 +595,18 @@ private:
 	static void abc_getglobalscope(call_context* context);
 	static void abc_getscopeobject(call_context* context);
 	static void abc_getProperty(call_context* context);
+	static void abc_getProperty_constant_constant(call_context* context);
+	static void abc_getProperty_local_constant(call_context* context);
+	static void abc_getProperty_constant_local(call_context* context);
+	static void abc_getProperty_local_local(call_context* context);
+	static void abc_getProperty_constant_constant_localresult(call_context* context);
+	static void abc_getProperty_local_constant_localresult(call_context* context);
+	static void abc_getProperty_constant_local_localresult(call_context* context);
+	static void abc_getProperty_local_local_localresult(call_context* context);
+	static void abc_getPropertyStaticName_constant(call_context* context);
+	static void abc_getPropertyStaticName_local(call_context* context);
+	static void abc_getPropertyStaticName_constant_localresult(call_context* context);
+	static void abc_getPropertyStaticName_local_localresult(call_context* context);
 	static void abc_initproperty(call_context* context);
 	static void abc_deleteproperty(call_context* context);
 	static void abc_getslot(call_context* context);

@@ -302,7 +302,7 @@ public:
 	FORCE_INLINE void decrement();
 	FORCE_INLINE void increment_i();
 	FORCE_INLINE void decrement_i();
-	void add(asAtom& v2, SystemState *sys);
+	void add(asAtom& v2, SystemState *sys, bool isrefcounted);
 	FORCE_INLINE void bitnot();
 	FORCE_INLINE void subtract(asAtom& v2);
 	FORCE_INLINE void multiply(asAtom& v2);

@@ -286,6 +286,7 @@ struct preloadedcodedata
 	union
 	{
 		ASObject* cacheobj2;
+		multiname* cachedmultiname2;
 		asAtom* arg2_constant;
 		uint32_t local_pos2;
 	};

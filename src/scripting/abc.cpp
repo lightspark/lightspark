@@ -855,7 +855,7 @@ multiname* ABCContext::s_getMultiname(ABCContext* th, asAtom& n, ASObject* n2, i
  * with the next invocation of getMultinameImpl if
  * getMultinameRTData(midx) != 0.
  */
-multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int midx)
+multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int midx,bool isrefcounted)
 {
 	if (constant_pool.multiname_count == 0)
 		return NULL;
@@ -1027,7 +1027,10 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->name_i=n.intval;
 				ret->name_type = multiname::NAME_INT;
 				ret->name_s_id = UINT32_MAX;
-				ASATOM_DECREF(n);
+				if (isrefcounted)
+				{
+					ASATOM_DECREF(n);
+				}
 				n.applyProxyProperty(root->getSystemState(),*ret);
 				break;
 			}
@@ -1048,7 +1051,10 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			else
 				n.applyProxyProperty(root->getSystemState(),*ret);
 			ret->setName(n,root->getSystemState());
-			ASATOM_DECREF(n);
+			if (isrefcounted)
+			{
+				ASATOM_DECREF(n);
+			}
 			break;
 		}
 		case 0x0f: //RTQName
@@ -1062,7 +1068,10 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
-			ASATOM_DECREF(n);
+			if (isrefcounted)
+			{
+				ASATOM_DECREF(n);
+			}
 			break;
 		}
 		case 0x11: //RTQNameL
@@ -1077,8 +1086,11 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 			ret->setName(n,root->getSystemState());
-			ASATOM_DECREF(n);
-			n2->decRef();
+			if (isrefcounted)
+			{
+				ASATOM_DECREF(n);
+				n2->decRef();
+			}
 			break;
 		}
 		default:

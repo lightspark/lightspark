@@ -267,11 +267,11 @@ struct preloadedcodedata
 		{
 			// this is used to automatically extract the jump position for a branch (24 bit signed integer)
 #if G_BYTE_ORDER == G_BIG_ENDIAN
-			signed int jump:24;
-			uint8_t opcode;
+			signed int jump:23;
+			uint16_t opcode:9;
 #else
-			uint8_t opcode;
-			signed int jump:24;
+			uint16_t opcode:9;
+			signed int jump:23;
 #endif
 		} jumpdata;
 		int32_t idata;

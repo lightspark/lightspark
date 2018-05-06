@@ -473,7 +473,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_bitand_local_constant_localresult,
 	abc_bitand_constant_local_localresult,
 	abc_bitand_local_local_localresult,
-	abc_getProperty_constant_constant, // 0x1780 ABC_OP_OPTIMZED_GETPROPERTY
+	abc_getProperty_constant_constant, // 0x178 ABC_OP_OPTIMZED_GETPROPERTY
 	abc_getProperty_local_constant,
 	abc_getProperty_constant_local,
 	abc_getProperty_local_local,
@@ -481,6 +481,38 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_getProperty_local_constant_localresult,
 	abc_getProperty_constant_local_localresult,
 	abc_getProperty_local_local_localresult,
+	abc_ifeq_constant_constant, // 0x180 ABC_OP_OPTIMZED_IFEQ
+	abc_ifeq_local_constant,
+	abc_ifeq_constant_local,
+	abc_ifeq_local_local,
+	abc_ifne_constant_constant, // 0x184 ABC_OP_OPTIMZED_IFNE
+	abc_ifne_local_constant,
+	abc_ifne_constant_local,
+	abc_ifne_local_local,
+	abc_iflt_constant_constant, // 0x188 ABC_OP_OPTIMZED_IFLT
+	abc_iflt_local_constant,
+	abc_iflt_constant_local,
+	abc_iflt_local_local,
+	abc_ifle_constant_constant, // 0x18c ABC_OP_OPTIMZED_IFLE
+	abc_ifle_local_constant,
+	abc_ifle_constant_local,
+	abc_ifle_local_local,
+	abc_ifgt_constant_constant, // 0x190 ABC_OP_OPTIMZED_IFGT
+	abc_ifgt_local_constant,
+	abc_ifgt_constant_local,
+	abc_ifgt_local_local,
+	abc_ifge_constant_constant, // 0x194 ABC_OP_OPTIMZED_IFGE
+	abc_ifge_local_constant,
+	abc_ifge_constant_local,
+	abc_ifge_local_local,
+	abc_ifstricteq_constant_constant, // 0x198 ABC_OP_OPTIMZED_IFSTRICTEQ
+	abc_ifstricteq_local_constant,
+	abc_ifstricteq_constant_local,
+	abc_ifstricteq_local_local,
+	abc_ifstrictne_constant_constant, // 0x19c ABC_OP_OPTIMZED_IFSTRICTNE
+	abc_ifstrictne_local_constant,
+	abc_ifstrictne_constant_local,
+	abc_ifstrictne_local_local,
 
 	abc_invalidinstruction
 };
@@ -660,6 +692,51 @@ void ABCVm::abc_ifeq(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifeq_constant_constant(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifEq_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifeq_local_constant(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifEq_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifeq_constant_local(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifEq_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifeq_local_local(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifEq_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+
 void ABCVm::abc_ifne(call_context* context)
 {
 	//ifne
@@ -671,6 +748,50 @@ void ABCVm::abc_ifne(call_context* context)
 	LOG_CALL(_("ifNE (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifne_constant_constant(call_context* context)
+{
+	//ifne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifNE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifne_local_constant(call_context* context)
+{
+	//ifne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifNE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifne_constant_local(call_context* context)
+{
+	//ifne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifNE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifne_local_local(call_context* context)
+{
+	//ifne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifNE_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -693,6 +814,50 @@ void ABCVm::abc_iflt(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_iflt_constant_constant(call_context* context)
+{
+	//iflt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifLT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iflt_local_constant(call_context* context)
+{
+	//iflt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	LOG_CALL(_("ifLT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iflt_constant_local(call_context* context)
+{
+	//iflt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifLT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iflt_local_local(call_context* context)
+{
+	//iflt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	LOG_CALL(_("ifLT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_ifle(call_context* context)
 {
 	//ifle
@@ -705,6 +870,50 @@ void ABCVm::abc_ifle(call_context* context)
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
 
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifle_constant_constant(call_context* context)
+{
+	//ifle
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant) == TFALSE;
+	LOG_CALL(_("ifLE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifle_local_constant(call_context* context)
+{
+	//ifle
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]) == TFALSE;
+	LOG_CALL(_("ifLE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifle_constant_local(call_context* context)
+{
+	//ifle
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant) == TFALSE;
+	LOG_CALL(_("ifLE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifle_local_local(call_context* context)
+{
+	//ifle
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]) == TFALSE;
+	LOG_CALL(_("ifLE_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -727,6 +936,50 @@ void ABCVm::abc_ifgt(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifgt_constant_constant(call_context* context)
+{
+	//ifgt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant) == TTRUE;
+	LOG_CALL(_("ifGT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifgt_local_constant(call_context* context)
+{
+	//ifgt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]) == TTRUE;
+	LOG_CALL(_("ifGT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifgt_constant_local(call_context* context)
+{
+	//ifgt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant) == TTRUE;
+	LOG_CALL(_("ifGT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifgt_local_local(call_context* context)
+{
+	//ifgt
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]) == TTRUE;
+	LOG_CALL(_("ifGT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_ifge(call_context* context)
 {
 	//ifge
@@ -739,6 +992,50 @@ void ABCVm::abc_ifge(call_context* context)
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
 
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifge_constant_constant(call_context* context)
+{
+	//ifge
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE;
+	LOG_CALL(_("ifGE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifge_local_constant(call_context* context)
+{
+	//ifge
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE;
+	LOG_CALL(_("ifGE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifge_constant_local(call_context* context)
+{
+	//ifge
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE;
+	LOG_CALL(_("ifGE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifge_local_local(call_context* context)
+{
+	//ifge
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE;
+	LOG_CALL(_("ifGE_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -761,6 +1058,50 @@ void ABCVm::abc_ifstricteq(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifstricteq_constant_constant(call_context* context)
+{
+	//ifstricteq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isEqualStrict(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	LOG_CALL(_("ifstricteq_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstricteq_local_constant(call_context* context)
+{
+	//ifstricteq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isEqualStrict(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	LOG_CALL(_("ifstricteq_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstricteq_constant_local(call_context* context)
+{
+	//ifstricteq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->isEqualStrict(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	LOG_CALL(_("ifstricteq_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstricteq_local_local(call_context* context)
+{
+	//ifstricteq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].isEqualStrict(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	LOG_CALL(_("ifstricteq_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_ifstrictne(call_context* context)
 {
 	//ifstrictne
@@ -773,6 +1114,50 @@ void ABCVm::abc_ifstrictne(call_context* context)
 	LOG_CALL(_("ifStrictNE ")<<cond <<" "<<v1->toDebugString()<<" "<<v2->toDebugString());
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstrictne_constant_constant(call_context* context)
+{
+	//ifstrictne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->exec_pos->arg1_constant->isEqualStrict(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	LOG_CALL(_("ifstrictne_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstrictne_local_constant(call_context* context)
+{
+	//ifstrictne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->locals[context->exec_pos->local_pos1].isEqualStrict(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	LOG_CALL(_("ifstrictne_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstrictne_constant_local(call_context* context)
+{
+	//ifstrictne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->exec_pos->arg1_constant->isEqualStrict(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	LOG_CALL(_("ifstrictne_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifstrictne_local_local(call_context* context)
+{
+	//ifstrictne
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->locals[context->exec_pos->local_pos1].isEqualStrict(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	LOG_CALL(_("ifstrictne_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -3235,6 +3620,14 @@ struct operands
 #define ABC_OP_OPTIMZED_URSHIFT 0x00000168
 #define ABC_OP_OPTIMZED_BITAND 0x00000170
 #define ABC_OP_OPTIMZED_GETPROPERTY 0x00000178
+#define ABC_OP_OPTIMZED_IFEQ 0x00000180
+#define ABC_OP_OPTIMZED_IFNE 0x00000184
+#define ABC_OP_OPTIMZED_IFLT 0x00000188
+#define ABC_OP_OPTIMZED_IFLE 0x0000018C
+#define ABC_OP_OPTIMZED_IFGT 0x00000190
+#define ABC_OP_OPTIMZED_IFGE 0x00000194
+#define ABC_OP_OPTIMZED_IFSTRICTEQ 0x00000198
+#define ABC_OP_OPTIMZED_IFSTRICTNE 0x0000019c
 
 void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions)
 {
@@ -3247,6 +3640,29 @@ void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method
 		mi->body->preloadedcode.push_back(operator_start);
 		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+		operandlist.pop_back();
+	}
+	else
+	{
+		mi->body->preloadedcode.push_back((uint32_t)opcode);
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+	}
+}
+void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions)
+{
+	bool hasoperands = operandlist.size() >= 2;
+	if (hasoperands)
+	{
+		auto it = operandlist.end();
+		(--it)->removeArg(mi);// remove arg2
+		(--it)->removeArg(mi);// remove arg1
+		it = operandlist.end();
+		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
+		mi->body->preloadedcode.push_back(operator_start);
+		(--it)->fillCode(1,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
+		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
+		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+		operandlist.pop_back();
 		operandlist.pop_back();
 	}
 	else
@@ -3288,37 +3704,41 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		bool needstwoargs = false;
 		uint32_t pos = code.tellg()+1;
 		uint8_t b = code.peekbyte();
-		// check if the next opcode can be skipped
-		switch (b)
+		if (jumptargets.find(pos) == jumptargets.end())
 		{
-			case 0x25://pushshort
-			case 0x2c://pushstring
-			case 0x2d://pushint
-			case 0x2e://pushuint
-			case 0x2f://pushdouble
-			case 0x31://pushnamespace
-			case 0x62://getlocal
-				pos = code.skipu30FromPosition(pos);
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			case 0xd0://getlocal_0
-			case 0xd1://getlocal_1
-			case 0xd2://getlocal_2
-			case 0xd3://getlocal_3
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			case 0x24://pushbyte
-				pos++;
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			default:
-				break;
+			// check if the next opcode can be skipped
+			switch (b)
+			{
+				case 0x25://pushshort
+				case 0x2c://pushstring
+				case 0x2d://pushint
+				case 0x2e://pushuint
+				case 0x2f://pushdouble
+				case 0x31://pushnamespace
+				case 0x62://getlocal
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				case 0x20://pushnull
+				case 0xd0://getlocal_0
+				case 0xd1://getlocal_1
+				case 0xd2://getlocal_2
+				case 0xd3://getlocal_3
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				case 0x24://pushbyte
+					pos++;
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				default:
+					break;
+			}
 		}
 		// check if we need to store the result of the operation on stack
 		switch (b)
@@ -3374,6 +3794,14 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
 				}
 				break;
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
 			case 0xa0://add
 			case 0xa1://subtract
 			case 0xa2://multiply
@@ -3432,39 +3860,42 @@ void setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 		bool needstwoargs = false;
 		uint32_t pos = code.tellg()+1;
 		uint8_t b = code.peekbyte();
-		// check if the next opcode can be skipped
-		switch (b)
+		if (jumptargets.find(pos) == jumptargets.end())
 		{
-			case 0x25://pushshort
-			case 0x2c://pushstring
-			case 0x2d://pushint
-			case 0x2e://pushuint
-			case 0x2f://pushdouble
-			case 0x31://pushnamespace
-			case 0x62://getlocal
-				pos = code.skipu30FromPosition(pos);
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			case 0xd0://getlocal_0
-			case 0xd1://getlocal_1
-			case 0xd2://getlocal_2
-			case 0xd3://getlocal_3
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			case 0x24://pushbyte
-				pos++;
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			default:
-				break;
+			// check if the next opcode can be skipped
+			switch (b)
+			{
+				case 0x25://pushshort
+				case 0x2c://pushstring
+				case 0x2d://pushint
+				case 0x2e://pushuint
+				case 0x2f://pushdouble
+				case 0x31://pushnamespace
+				case 0x62://getlocal
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				case 0x20://pushnull
+				case 0xd0://getlocal_0
+				case 0xd1://getlocal_1
+				case 0xd2://getlocal_2
+				case 0xd3://getlocal_3
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				case 0x24://pushbyte
+					pos++;
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					needstwoargs=true;
+					break;
+				default:
+					break;
+			}
 		}
-		
 		// check if we need to store the result of the operation on stack
 		switch (b)
 		{
@@ -3519,6 +3950,14 @@ void setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
 				}
 				break;
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
 			case 0xa0://add
 			case 0xa1://subtract
 			case 0xa2://multiply
@@ -3734,10 +4173,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				int32_t value =code.readu30();
 				uint32_t num = value<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_LOCAL,value,1,mi->body->preloadedcode.size()-1));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
+				operandlist.push_back(operands(OP_LOCAL,value,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
 			case 0x63://setlocal
@@ -3756,10 +4194,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_LOCAL,((uint32_t)opcode)-0xd0,1,mi->body->preloadedcode.size()-1));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
+				operandlist.push_back(operands(OP_LOCAL,((uint32_t)opcode)-0xd0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
 			case 0x01://bkpt
@@ -3786,14 +4223,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x10://jump
 			case 0x11://iftrue
 			case 0x12://iffalse
-			case 0x13://ifeq
-			case 0x14://ifne
-			case 0x15://iflt
-			case 0x16://ifle
-			case 0x17://ifgt
-			case 0x18://ifge
-			case 0x19://ifstricteq
-			case 0x1a://ifstrictne
 			{
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
@@ -3802,6 +4231,54 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				operandlist.clear();
 				break;
 			}
+			case 0x13://ifeq
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFEQ,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x14://ifne
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x15://iflt
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLT,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x16://ifle
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLE,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x17://ifgt
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGT,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x18://ifge
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGE,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x19://ifstricteq
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTEQ,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			case 0x1a://ifstrictne
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code,oldnewpositions);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
 			case 0x1b://lookupswitch
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
@@ -3823,6 +4300,14 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				operandlist.clear();
 				break;
 			}
+			case 0x20://pushnull
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(code.tellg()) == jumptargets.end())
+					operandlist.push_back(operands(OP_NULL,0,1,mi->body->preloadedcode.size()-1));
+				else
+					operandlist.clear();
+				break;
 			case 0x24://pushbyte
 			{
 				int32_t p = code.tellg();

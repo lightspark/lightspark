@@ -1581,12 +1581,12 @@ void ABCVm::getSuper(call_context* th, int n)
 	RUNTIME_STACK_PUSH(th,ret);
 }
 
-bool ABCVm::getLex(call_context* th, int n)
+bool ABCVm::getLex(call_context* th, int n,int localresult)
 {
 	multiname* name=th->mi->context->getMultiname(n,NULL);
 	//getlex is specified not to allow runtime multinames
 	assert_and_throw(name->isStatic);
-	LOG_CALL( "getLex: " << *name );
+	LOG_CALL( "getLex"<<(localresult ? "_l:":":") << *name );
 	vector<scope_entry>::reverse_iterator it;
 	// o will be a reference owned by this function (or NULL). At
 	// the end the reference will be handed over to the runtime
@@ -1660,7 +1660,10 @@ bool ABCVm::getLex(call_context* th, int n)
 		canCache = false;
 
 	name->resetNameIfObject();
-	RUNTIME_STACK_PUSH(th,o);
+	if (localresult)
+		th->locals[localresult-1].set(o);
+	else
+		RUNTIME_STACK_PUSH(th,o);
 	return canCache && !o.isPrimitive(); // don't cache primitive values as they may change
 }
 

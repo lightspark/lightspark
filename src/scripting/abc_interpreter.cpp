@@ -355,7 +355,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_getPropertyStaticName_local,
 	abc_getPropertyStaticName_constant_localresult,
 	abc_getPropertyStaticName_local_localresult,
-	abc_invalidinstruction,
+	abc_getlex_localresult, // 0x10a ABC_OP_OPTIMZED_GETLEX
 	abc_invalidinstruction,
 	abc_ifnlt, //0x10c  jump data may have the 0x100 bit set, so we also add the jump opcodes here
 	abc_ifnle,
@@ -1729,6 +1729,26 @@ void ABCVm::abc_getlex(call_context* context)
 		
 		instrptr->cacheobj1 = v->getObject();
 		instrptr->cacheobj2 = v->getClosure();
+	}
+	++(context->exec_pos);
+}
+void ABCVm::abc_getlex_localresult(call_context* context)
+{
+	//getlex
+	preloadedcodedata* instrptr = context->exec_pos;
+	assert(instrptr->local_pos3 > 0);
+	uint32_t t = (++(context->exec_pos))->data;
+	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
+	{
+		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
+		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
+	}
+	else if (getLex(context,t,instrptr->local_pos3))
+	{
+		// put object in cache
+		instrptr->data |= ABC_OP_CACHED;
+		instrptr->cacheobj1 = context->locals[instrptr->local_pos3-1].getObject();
+		instrptr->cacheobj2 = context->locals[instrptr->local_pos3-1].getClosure();
 	}
 	++(context->exec_pos);
 }
@@ -3608,6 +3628,7 @@ struct operands
 #define ABC_OP_OPTIMZED_DECREMENT 0x00000102
 #define ABC_OP_OPTIMZED_PUSHSCOPE 0x00000104
 #define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME 0x00000106
+#define ABC_OP_OPTIMZED_GETLEX 0x0000010a
 #define ABC_OP_OPTIMZED_MULTIPLY 0x00000120
 #define ABC_OP_OPTIMZED_BITOR 0x00000128
 #define ABC_OP_OPTIMZED_BITXOR 0x00000130
@@ -3628,6 +3649,152 @@ struct operands
 #define ABC_OP_OPTIMZED_IFGE 0x00000194
 #define ABC_OP_OPTIMZED_IFSTRICTEQ 0x00000198
 #define ABC_OP_OPTIMZED_IFSTRICTNE 0x0000019c
+
+bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
+{
+	bool res = false;
+	bool needstwoargs = false;
+	uint32_t resultpos=0;
+	uint32_t pos = code.tellg()+1;
+	uint8_t b = code.peekbyte();
+	if (jumptargets.find(pos) == jumptargets.end())
+	{
+		// check if the next opcode can be skipped
+		switch (b)
+		{
+			case 0x25://pushshort
+			case 0x2c://pushstring
+			case 0x2d://pushint
+			case 0x2e://pushuint
+			case 0x2f://pushdouble
+			case 0x31://pushnamespace
+			case 0x62://getlocal
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				break;
+			case 0x60://getlex
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				resultpos=1;
+				break;
+			case 0x20://pushnull
+			case 0xd0://getlocal_0
+			case 0xd1://getlocal_1
+			case 0xd2://getlocal_2
+			case 0xd3://getlocal_3
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				break;
+			case 0x24://pushbyte
+				pos++;
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				break;
+			default:
+				break;
+		}
+	}
+	// check if we need to store the result of the operation on stack
+	switch (b)
+	{
+		case 0x63://setlocal
+		{
+			if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			{
+				code.readbyte();
+				uint32_t num = code.readu30();
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
+				operandlist.push_back(operands(OP_LOCAL,num,0,0));
+				res = true;
+			}
+			break;
+		}
+		case 0xd4: //setlocal_0
+		case 0xd5: //setlocal_1
+		case 0xd6: //setlocal_2
+		case 0xd7: //setlocal_3
+			if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
+				code.readbyte();
+				operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
+				res = true;
+			}
+			break;
+		case 0x66://getproperty
+		{
+			uint32_t t = code.peeku30FromPosition(pos);
+			uint32_t argcount = needstwoargs ? 1 : 0;
+			if (jumptargets.find(pos) == jumptargets.end() && 
+					((uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == argcount
+					|| (!needstwoargs && (operandlist.size() >= 1) && mi->context->constant_pool.multinames[t].runtimeargs == 1)
+					))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				operandlist.clear();
+			break;
+		}
+		case 0x91://increment
+		case 0x93://decrement
+			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			break;
+		case 0x13://ifeq
+		case 0x14://ifne
+		case 0x15://iflt
+		case 0x16://ifle
+		case 0x17://ifgt
+		case 0x18://ifge
+		case 0x19://ifstricteq
+		case 0x1a://ifstrictne
+		case 0xa0://add
+		case 0xa1://subtract
+		case 0xa2://multiply
+		case 0xa3://divide
+		case 0xa4://modulo
+		case 0xa5://lshift
+		case 0xa6://rshift
+		case 0xa7://urshift
+		case 0xa8://bitand
+		case 0xa9://bitor
+		case 0xaa://bitxor
+			if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			break;
+		default:
+			operandlist.clear();
+			break;
+	}
+	return res;
+}
 
 void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions)
 {
@@ -3700,132 +3867,7 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		}
 	}
 	if (hasoperands)
-	{
-		bool needstwoargs = false;
-		uint32_t pos = code.tellg()+1;
-		uint8_t b = code.peekbyte();
-		if (jumptargets.find(pos) == jumptargets.end())
-		{
-			// check if the next opcode can be skipped
-			switch (b)
-			{
-				case 0x25://pushshort
-				case 0x2c://pushstring
-				case 0x2d://pushint
-				case 0x2e://pushuint
-				case 0x2f://pushdouble
-				case 0x31://pushnamespace
-				case 0x62://getlocal
-					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				case 0x20://pushnull
-				case 0xd0://getlocal_0
-				case 0xd1://getlocal_1
-				case 0xd2://getlocal_2
-				case 0xd3://getlocal_3
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				case 0x24://pushbyte
-					pos++;
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				default:
-					break;
-			}
-		}
-		// check if we need to store the result of the operation on stack
-		switch (b)
-		{
-			case 0x63://setlocal
-			{
-				if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					code.readbyte();
-					uint32_t num = code.readu30();
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += constantsallowed ? 2 : 1;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
-					operandlist.push_back(operands(OP_LOCAL,num,0,0));
-				}
-				break;
-			}
-			case 0xd4: //setlocal_0
-			case 0xd5: //setlocal_1
-			case 0xd6: //setlocal_2
-			case 0xd7: //setlocal_3
-				if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()) && (mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1 == (uint32_t)(b-0xd4)))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += constantsallowed ? 2 : 1;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
-					code.readbyte();
-					operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
-				}
-				break;
-			case 0x66://getproperty
-			{
-				uint32_t t = code.peeku30FromPosition(pos);
-				uint32_t argcount = needstwoargs ? 1 : 0;
-				if (jumptargets.find(pos) == jumptargets.end() && (uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == argcount)
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += constantsallowed ? 2 : 1;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				else
-					operandlist.clear();
-				break;
-			}
-			case 0x91://increment
-			case 0x93://decrement
-				if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += constantsallowed ? 2 : 1;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				break;
-			case 0x13://ifeq
-			case 0x14://ifne
-			case 0x15://iflt
-			case 0x16://ifle
-			case 0x17://ifgt
-			case 0x18://ifge
-			case 0x19://ifstricteq
-			case 0x1a://ifstrictne
-			case 0xa0://add
-			case 0xa1://subtract
-			case 0xa2://multiply
-			case 0xa3://divide
-			case 0xa4://modulo
-			case 0xa5://lshift
-			case 0xa6://rshift
-			case 0xa7://urshift
-			case 0xa8://bitand
-			case 0xa9://bitor
-			case 0xaa://bitxor
-				if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += constantsallowed ? 2 : 1;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				break;
-			default:
-				operandlist.clear();
-				break;
-		}
-	}
+		checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,constantsallowed ? 2 : 1);
 	else
 		operandlist.clear();
 }
@@ -3856,132 +3898,7 @@ void setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 		code.readbyte();
 	}
 	if (hasoperands)
-	{
-		bool needstwoargs = false;
-		uint32_t pos = code.tellg()+1;
-		uint8_t b = code.peekbyte();
-		if (jumptargets.find(pos) == jumptargets.end())
-		{
-			// check if the next opcode can be skipped
-			switch (b)
-			{
-				case 0x25://pushshort
-				case 0x2c://pushstring
-				case 0x2d://pushint
-				case 0x2e://pushuint
-				case 0x2f://pushdouble
-				case 0x31://pushnamespace
-				case 0x62://getlocal
-					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				case 0x20://pushnull
-				case 0xd0://getlocal_0
-				case 0xd1://getlocal_1
-				case 0xd2://getlocal_2
-				case 0xd3://getlocal_3
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				case 0x24://pushbyte
-					pos++;
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					needstwoargs=true;
-					break;
-				default:
-					break;
-			}
-		}
-		// check if we need to store the result of the operation on stack
-		switch (b)
-		{
-			case 0x63://setlocal
-			{
-				if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					code.readbyte();
-					uint32_t num = code.readu30();
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
-					operandlist.push_back(operands(OP_LOCAL,num,0,0));
-				}
-				break;
-			}
-			case 0xd4: //setlocal_0
-			case 0xd5: //setlocal_1
-			case 0xd6: //setlocal_2
-			case 0xd7: //setlocal_3
-				if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
-					code.readbyte();
-					operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
-				}
-				break;
-			case 0x66://getproperty
-			{
-				uint32_t t = code.peeku30FromPosition(pos);
-				uint32_t argcount = needstwoargs ? 1 : 0;
-				if (jumptargets.find(pos) == jumptargets.end() && (uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == argcount)
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				else
-					operandlist.clear();
-				break;
-			}
-			case 0x91://increment
-			case 0x93://decrement
-				if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				break;
-			case 0x13://ifeq
-			case 0x14://ifne
-			case 0x15://iflt
-			case 0x16://ifle
-			case 0x17://ifgt
-			case 0x18://ifge
-			case 0x19://ifstricteq
-			case 0x1a://ifstrictne
-			case 0xa0://add
-			case 0xa1://subtract
-			case 0xa2://multiply
-			case 0xa3://divide
-			case 0xa4://modulo
-			case 0xa5://lshift
-			case 0xa6://rshift
-			case 0xa7://urshift
-			case 0xa8://bitand
-			case 0xa9://bitor
-			case 0xaa://bitxor
-				if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
-				{
-					// set optimized opcode to corresponding opcode with local result 
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += 4;
-					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2;
-					operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1,0,0));
-				}
-				break;
-			default:
-				operandlist.clear();
-				break;
-		}
-	}
+		checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,4);
 	else
 		operandlist.clear();
 }
@@ -4143,7 +4060,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x5d://findpropstrict
 			case 0x5e://findproperty
 			case 0x5f://finddef
-			case 0x60://getlex
 			case 0x61://setproperty
 			case 0x65://getscopeobject
 			case 0x68://initproperty
@@ -4164,6 +4080,22 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
 				operandlist.clear();
+				break;
+			}
+			case 0x60://getlex
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				uint32_t t =code.readu30();
+				mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (!checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0))
+				{
+					// no local result possible, use standard operation
+					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data=(uint32_t)opcode;
+				}
+				mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0x62://getlocal

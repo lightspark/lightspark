@@ -342,7 +342,7 @@ private:
 	static void setSlot(ASObject*, ASObject*, int n); 
 	static void kill(int n); 
 	static ASObject* pushString(call_context* th, int n); 
-	static bool getLex(call_context* th, int n); 
+	static bool getLex(call_context* th, int n, int localresult=0); 
 	static ASObject* getScopeObject(call_context* th, int n); 
 	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(ASObject* obj, ASObject* val, multiname* name);
@@ -621,6 +621,7 @@ private:
 	static void abc_finddef(call_context* context);
 	
 	static void abc_getlex(call_context* context);// 0x60
+	static void abc_getlex_localresult(call_context* context);// 0x60
 	static void abc_setproperty(call_context* context);
 	static void abc_getlocal(call_context* context);
 	static void abc_setlocal(call_context* context);

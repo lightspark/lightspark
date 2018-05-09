@@ -512,7 +512,11 @@ private:
 	
 	static void abc_jump(call_context* context);// 0x10
 	static void abc_iftrue(call_context* context);
+	static void abc_iftrue_constant(call_context* context);
+	static void abc_iftrue_local(call_context* context);
 	static void abc_iffalse(call_context* context);
+	static void abc_iffalse_constant(call_context* context);
+	static void abc_iffalse_local(call_context* context);
 	static void abc_ifeq(call_context* context);
 	static void abc_ifeq_constant_constant(call_context* context);
 	static void abc_ifeq_local_constant(call_context* context);

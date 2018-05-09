@@ -531,6 +531,11 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_greaterthan_local_constant_localresult,
 	abc_greaterthan_constant_local_localresult,
 	abc_greaterthan_local_local_localresult,
+
+	abc_iftrue_constant,// 0x1b0 ABC_OP_OPTIMZED_IFTRUE
+	abc_iftrue_local,
+	abc_iffalse_constant,// 0x1b2 ABC_OP_OPTIMZED_IFFALSE
+	abc_iffalse_local,
 	
 	abc_invalidinstruction
 };
@@ -680,6 +685,28 @@ void ABCVm::abc_iftrue(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_iftrue_constant(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->exec_pos->arg1_constant->Boolean_concrete();
+	LOG_CALL(_("ifTrue_c (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iftrue_local(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=context->locals[context->exec_pos->local_pos1].Boolean_concrete();
+	LOG_CALL(_("ifTrue_l (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_iffalse(call_context* context)
 {
 	//iffalse
@@ -689,6 +716,28 @@ void ABCVm::abc_iffalse(call_context* context)
 	bool cond=!v1->Boolean_concrete();
 	LOG_CALL(_("ifFalse (") << ((cond)?_("taken"):_("not taken")) << ')');
 	ASATOM_DECREF_POINTER(v1);
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iffalse_constant(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->exec_pos->arg1_constant->Boolean_concrete();
+	LOG_CALL(_("ifFalse_c (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_iffalse_local(call_context* context)
+{
+	//ifeq
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!context->locals[context->exec_pos->local_pos1].Boolean_concrete();
+	LOG_CALL(_("ifFalse_l (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -4037,6 +4086,8 @@ struct operands
 #define ABC_OP_OPTIMZED_IFSTRICTNE 0x0000019c
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME 0x000001a0
 #define ABC_OP_OPTIMZED_GREATERTHAN 0x000001a8
+#define ABC_OP_OPTIMZED_IFTRUE 0x000001b0
+#define ABC_OP_OPTIMZED_IFFALSE 0x000001b2
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -4070,6 +4121,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				resultpos=1;
 				break;
 			case 0x20://pushnull
+			case 0x2a://dup
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
@@ -4541,6 +4593,20 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				operandlist.push_back(operands(OP_LOCAL,((uint32_t)opcode)-0xd0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
+			case 0x2a://dup
+			{
+				int32_t p = code.tellg();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				else if (operandlist.size() > 0)
+				{
+					operands op = operandlist.back();
+					operandlist.push_back(operands(op.type,op.index,1,mi->body->preloadedcode.size()-1));
+				}
+				break;
+			}
 			case 0x01://bkpt
 			case 0x02://nop
 			case 0x82://coerce_a
@@ -4563,13 +4629,35 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x0e://ifngt
 			case 0x0f://ifnge
 			case 0x10://jump
-			case 0x11://iftrue
-			case 0x12://iffalse
 			{
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				operandlist.clear();
+				break;
+			}
+			case 0x11://iftrue
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) == jumptargets.end())
+					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE,opcode,code,oldnewpositions);
+				else
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				operandlist.clear();
+				break;
+			}
+			case 0x12://iffalse
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) == jumptargets.end())
+					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions);
+				else
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			}

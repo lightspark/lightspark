@@ -28,9 +28,6 @@
 using namespace std;
 using namespace lightspark;
 
-// maximum index stored in vector
-#define ARRAY_SIZE_THRESHOLD 65536
-
 Array::Array(Class_base* c):ASObject(c,T_ARRAY),currentsize(0)
 {
 }

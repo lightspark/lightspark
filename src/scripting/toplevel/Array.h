@@ -25,6 +25,9 @@
 
 namespace lightspark
 {
+// maximum index stored in vector
+#define ARRAY_SIZE_THRESHOLD 65536
+
 
 struct sorton_field
 {
@@ -133,6 +136,23 @@ public:
 	ASFUNCTION_ATOM(removeAt);
 
 	asAtom at(unsigned int index);
+	FORCE_INLINE void at_nocheck(asAtom& ret,unsigned int index)
+	{
+		if (index < ARRAY_SIZE_THRESHOLD)
+		{
+			if (index < data_first.size())
+				ret.set(data_first.at(index));
+		}
+		else
+		{
+			auto it = data_second.find(index);
+			if (it != data_second.end())
+				ret.set(it->second);
+		}
+		if (ret.type == T_INVALID)
+			ret.setUndefined();
+	}
+	
 	void set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
 	uint64_t size();
 	void push(asAtom o);

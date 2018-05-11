@@ -27,6 +27,7 @@ class memorystream;
 
 namespace lightspark
 {
+struct variable;
 
 class u8
 {
@@ -287,6 +288,7 @@ struct preloadedcodedata
 	{
 		ASObject* cacheobj2;
 		multiname* cachedmultiname2;
+		variable* cachedvar2;
 		asAtom* arg2_constant;
 		uint32_t local_pos2;
 	};

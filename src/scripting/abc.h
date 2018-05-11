@@ -148,6 +148,7 @@ enum OPERANDTYPES {
 	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30};
 
 #define ABC_OP_CACHED 0x10000000 
+#define ABC_OP_NOTCACHEABLE 0x20000000 
 
 struct typed_opcode_handler
 {

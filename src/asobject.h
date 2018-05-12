@@ -206,6 +206,7 @@ private:
 	inline void decRef();
 	void replaceNumber(ASObject* obj);
 	void replaceBool(ASObject* obj);
+	bool Boolean_concrete_string();
 public:
 	SWFOBJECT_TYPE type;
 	asAtom():intval(0),objval(NULL),type(T_INVALID) {}
@@ -283,7 +284,7 @@ public:
 	tiny_string toLocaleString();
 	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
-	bool Boolean_concrete();
+	FORCE_INLINE bool Boolean_concrete();
 	FORCE_INLINE void convert_i();
 	FORCE_INLINE void convert_u();
 	FORCE_INLINE void convert_d();
@@ -2014,6 +2015,41 @@ FORCE_INLINE asAtom asAtom::fromFunction(ASObject *f, ASObject *closure)
 	a.objval = f;
 	a.closure_this = closure;
 	return a;
+}
+/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
+FORCE_INLINE bool asAtom::Boolean_concrete()
+{
+	switch(type)
+	{
+		case T_UNDEFINED:
+		case T_NULL:
+			return false;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NUMBER:
+			return numberval != 0.0 && !std::isnan(numberval);
+		case T_INTEGER:
+			return intval != 0;
+		case T_UINTEGER:
+			return uintval != 0;
+		case T_STRING:
+			if (stringID != UINT32_MAX && !objval)
+				return stringID != BUILTIN_STRINGS::EMPTY;
+			if (!objval->isConstructed())
+				return false;
+			return Boolean_concrete_string();
+		case T_FUNCTION:
+		case T_ARRAY:
+		case T_OBJECT:
+			assert(objval);
+			// not constructed objects return false
+			if (!objval->isConstructed())
+				return false;
+			return true;
+		default:
+			//everything else is an Object regarding to the spec
+			return true;
+	}
 }
 }
 #endif /* ASOBJECT_H */

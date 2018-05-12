@@ -2220,15 +2220,17 @@ Class_base *asAtom::getClass(SystemState* sys)
 	switch(type)
 	{
 		case T_INTEGER:
-			return Class<Integer>::getClass(sys);
+			return Class<Integer>::getRef(sys).getPtr()->as<Class_base>();
 		case T_UINTEGER:
-			return Class<UInteger>::getClass(sys);
+			return Class<UInteger>::getRef(sys).getPtr()->as<Class_base>();
 		case T_NUMBER:
-			return Class<Number>::getClass(sys);
+			return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
 		case T_BOOLEAN:
-			return Class<Boolean>::getClass(sys);
+			return Class<Boolean>::getRef(sys).getPtr()->as<Class_base>();
 		case T_STRING:
-			return Class<ASString>::getClass(sys);
+			return Class<ASString>::getRef(sys).getPtr()->as<Class_base>();
+		case T_CLASS:
+			return objval->as<Class_base>();
 		default:
 			return objval->getClass();
 	}
@@ -2246,6 +2248,8 @@ bool asAtom::canCacheMethod(const multiname* name)
 		case T_STRING:
 		case T_FUNCTION:
 			return true;
+		case T_CLASS:
+			return objval->as<Class_base>()->isSealed;
 		case T_ARRAY:
 			// Array class is dynamic, but if it is not inherited, no methods are overwritten and we can cache them
 			return (objval->getClass()->isSealed || !objval->getClass()->is<Class_inherit>());
@@ -2503,40 +2507,9 @@ asAtom asAtom::typeOf(SystemState* sys)
 	return asAtom::fromString(sys,ret);
 }
 
-/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
-bool asAtom::Boolean_concrete()
+bool asAtom::Boolean_concrete_string()
 {
-	switch(type)
-	{
-		case T_UNDEFINED:
-		case T_NULL:
-			return false;
-		case T_BOOLEAN:
-			return boolval;
-		case T_NUMBER:
-			return numberval != 0.0 && !std::isnan(numberval);
-		case T_INTEGER:
-			return intval != 0;
-		case T_UINTEGER:
-			return uintval != 0;
-		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
-				return stringID != BUILTIN_STRINGS::EMPTY;
-			if (!objval->isConstructed())
-				return false;
-			return !objval->as<ASString>()->isEmpty();
-		case T_FUNCTION:
-		case T_ARRAY:
-		case T_OBJECT:
-			assert(objval);
-			// not constructed objects return false
-			if (!objval->isConstructed())
-				return false;
-			return true;
-		default:
-			//everything else is an Object regarding to the spec
-			return true;
-	}
+	return !objval->as<ASString>()->isEmpty();
 }
 
 void asAtom::convert_b()

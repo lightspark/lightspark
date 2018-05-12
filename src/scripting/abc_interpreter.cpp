@@ -39,6 +39,21 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	return ret;
 }
 
+void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
+{
+	if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
+		throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+	if (obj->getClass() && obj->getClass()->isSealed)
+		throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+	if (name->isEmpty() || !name->hasEmptyNS)
+		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+	if (obj->is<Undefined>())
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(obj->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
+	prop = asAtom::undefinedAtom;
+}
+
 void ABCVm::executeFunction(call_context* context)
 {
 #ifdef PROFILING_SUPPORT
@@ -1610,8 +1625,34 @@ void ABCVm::abc_callproperty(call_context* context)
 	++(context->exec_pos);
 }
 
-void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,multiname* name)
+void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,multiname* name,preloadedcodedata* cacheptr)
 {
+	if ((cacheptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
+	{
+		if (obj.getObject() && 
+				((obj.is<Class_base>() && obj.getObject() == cacheptr->cacheobj1)
+				|| obj.getObject()->getClass() == cacheptr->cacheobj1))
+		{
+			asAtom o = asAtom::fromObject(cacheptr->cacheobj3);
+			ASATOM_INCREF(o);
+			LOG_CALL( "callProperty from cache:"<<*name<<" "<<obj.toDebugString()<<" "<<o.toDebugString());
+			if(o.is<IFunction>())
+				o.callFunction(ret,obj,args,1,false);
+			else if(o.is<Class_base>())
+				o.as<Class_base>()->generator(ret,args,1);
+			else if(o.is<RegExp>())
+				RegExp::exec(ret,context->mi->context->root->getSystemState(),o,args,1);
+			else
+			{
+				LOG(LOG_ERROR,"trying to call an object as a function:"<<o.toDebugString() <<" on "<<obj.toDebugString());
+				throwError<TypeError>(kCallOfNonFunctionError, "Object");
+			}
+			LOG_CALL("End of calling cached property "<<*name);
+			return;
+		}
+		else
+			cacheptr->data = ABC_OP_NOTCACHEABLE;
+	}
 	if(obj.is<Null>())
 	{
 		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
@@ -1651,7 +1692,22 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
 		if(o.is<IFunction>())
+		{
+			if ((cacheptr->data & ABC_OP_NOTCACHEABLE)==0 
+					&& obj.canCacheMethod(name) 
+					&& o.getObject() 
+					&& (obj.is<Class_base>() || o.as<IFunction>()->inClass == obj.getClass(context->mi->context->root->getSystemState())))
+			{
+				// cache method if multiname is static and it is a method of a sealed class
+				cacheptr->data |= ABC_OP_CACHED;
+				cacheptr->cacheobj1 = obj.getClass(context->mi->context->root->getSystemState());
+				cacheptr->cacheobj3 = o.getObject();
+				LOG_CALL("caching callproperty:"<<*name<<" "<<cacheptr->cacheobj1->toDebugString()<<" "<<cacheptr->cacheobj3->toDebugString());
+			}
+			else
+				cacheptr->data = ABC_OP_NOTCACHEABLE;
 			o.callFunction(ret,obj,args,1,false);
+		}
 		else if(o.is<Class_base>())
 			o.as<Class_base>()->generator(ret,args,1);
 		else if(o.is<RegExp>())
@@ -1763,7 +1819,7 @@ void ABCVm::abc_callpropertyStaticName_localresult(call_context* context)
 
 	LOG_CALL( "callProperty_l " << *name);
 	RUNTIME_STACK_POP_CREATE(context,obj);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],*obj,args,name);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],*obj,args,name,context->exec_pos);
 
 	++(context->exec_pos);
 }
@@ -1780,7 +1836,7 @@ void ABCVm::abc_callpropertyStaticName_constant_constant(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cc " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name);
+	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1797,7 +1853,7 @@ void ABCVm::abc_callpropertyStaticName_local_constant(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lc " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name);
+	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1814,7 +1870,7 @@ void ABCVm::abc_callpropertyStaticName_constant_local(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cl " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name);
+	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1831,7 +1887,7 @@ void ABCVm::abc_callpropertyStaticName_local_local(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_ll " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name);
+	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1847,7 +1903,7 @@ void ABCVm::abc_callpropertyStaticName_constant_constant_localresult(call_contex
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_ccl " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* context)
@@ -1861,7 +1917,7 @@ void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* 
 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lcl " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
 
 	++(context->exec_pos);
 }
@@ -1876,7 +1932,7 @@ void ABCVm::abc_callpropertyStaticName_constant_local_localresult(call_context* 
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cll " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
 
 	++(context->exec_pos);
 }
@@ -1891,7 +1947,7 @@ void ABCVm::abc_callpropertyStaticName_local_local_localresult(call_context* con
 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lll " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
 
 	++(context->exec_pos);
 }
@@ -2186,20 +2242,6 @@ void ABCVm::abc_getscopeobject(call_context* context)
 
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
-}
-void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
-{
-	if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
-		throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
-	if (obj->getClass() && obj->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
-	if (name->isEmpty() || !name->hasEmptyNS)
-		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
-	if (obj->is<Undefined>())
-		throwError<TypeError>(kConvertUndefinedToObjectError);
-	if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
-		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(obj->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
-	prop = asAtom::undefinedAtom;
 }
 
 void ABCVm::abc_getProperty(call_context* context)

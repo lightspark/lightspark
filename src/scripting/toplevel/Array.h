@@ -151,6 +151,7 @@ public:
 		}
 		if (ret.type == T_INVALID)
 			ret.setUndefined();
+		ASATOM_INCREF(ret);
 	}
 	
 	void set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);

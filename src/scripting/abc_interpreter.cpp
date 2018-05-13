@@ -73,7 +73,7 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		//LOG(LOG_INFO,"opcode:"<<hex<<(int)((context->exec_pos->data)&0x1ff));
+		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x1ff));
 
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
@@ -2962,6 +2962,7 @@ void ABCVm::abc_add_local_local_localresult(call_context* context)
 	//add
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState(),false);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -4288,6 +4289,11 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				pos++;
 				needstwoargs=true;
 				break;
+			case 0x82://coerce_a
+				code.readbyte();
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				break;
 			default:
 				break;
 		}
@@ -4466,13 +4472,19 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 	}
 	else
 		mi->body->preloadedcode.push_back((uint32_t)opcode);
-	if (!constantsallowed)
+	if (jumptargets.find(code.tellg()+1) == jumptargets.end())
 	{
 		switch (code.peekbyte())
 		{
 			case 0x73://convert_i
 			case 0x74://convert_u
 			case 0x75://convert_d
+				if (!constantsallowed)
+				{
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					code.readbyte();
+				}
+				break;
 			case 0x82://coerce_a
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				code.readbyte();
@@ -4504,11 +4516,22 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 	}
 	else
 		mi->body->preloadedcode.push_back((uint32_t)opcode);
-	if (skip_conversion && code.peekbyte() == 0x75) //convert_d
+	if (jumptargets.find(code.tellg()+1) == jumptargets.end())
 	{
-		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-		// skip unneccessary convert_d
-		code.readbyte();
+		switch (code.peekbyte())
+		{
+			case 0x75://convert_d
+				if (skip_conversion)
+				{
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					code.readbyte();
+				}
+				break;
+			case 0x82://coerce_a
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				code.readbyte();
+				break;
+		}
 	}
 	if (hasoperands)
 		checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,4);

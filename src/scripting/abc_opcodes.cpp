@@ -631,7 +631,7 @@ Global* ABCVm::getGlobalScope(call_context* th)
 		ret =th->scope_stack[0].getObject();
 	}
 	assert_and_throw(ret->is<Global>());
-	LOG_CALL(_("getGlobalScope: ") << ret);
+	LOG_CALL(_("getGlobalScope: ") << ret->toDebugString());
 	return ret->as<Global>();
 }
 
@@ -2356,9 +2356,9 @@ void ABCVm::newObject(call_context* th, int n)
 	{
 		RUNTIME_STACK_POP_CREATE(th,value);
 		RUNTIME_STACK_POP_CREATE(th,name);
-		propertyName.name_s_id=name->toStringId(th->mi->context->root->getSystemState());
+		uint32_t nameid=name->toStringId(th->mi->context->root->getSystemState());
 		ASATOM_DECREF_POINTER(name);
-		ret->setVariableByMultiname(propertyName, *value, ASObject::CONST_NOT_ALLOWED);
+		ret->setDynamicVariableNoCheck(nameid,*value);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtom::fromObject(ret));

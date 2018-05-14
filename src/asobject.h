@@ -397,6 +397,14 @@ public:
 	*/
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
+	// adds a dynamic variable without checking if a variable with this name already exists
+	FORCE_INLINE void setDynamicVarNoCheck(uint32_t nameID,asAtom& v)
+	{
+		var_iterator inserted=Variables.insert(Variables.cbegin(),
+				make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind())));
+		inserted->second.var.set(v);
+	}
+
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
@@ -695,6 +703,14 @@ public:
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
+	
+	// sets dynamic variable without checking for existence
+	// use it if it is guarranteed that the variable doesn't exist in this object
+	FORCE_INLINE void setDynamicVariableNoCheck(uint32_t nameID, asAtom& o)
+	{
+		Variables.setDynamicVarNoCheck(nameID,o);
+		++varcount;
+	}
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */

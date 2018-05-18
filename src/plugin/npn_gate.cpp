@@ -37,10 +37,33 @@ void NPN_Version(int* plugin_major, int* plugin_minor, int* netscape_major, int*
   *netscape_minor = LOBYTE(NPNFuncs.version);
 }
 
+struct AsyncCallWorkaroundData
+{
+    void (*func)(void *);
+    void *data;
+};
+
+static gboolean AsyncCallWorkaroundCallback(void *userData)
+{
+    AsyncCallWorkaroundData *data = (AsyncCallWorkaroundData *) userData;
+    data->func(data->data);
+    delete data;
+    return false;
+}
 //TODO: understand the Call... wrappers and npupp.h
 void NPN_PluginThreadAsyncCall(NPP instance, void (*func) (void *), void *userData)
 {
-  NPNFuncs.pluginthreadasynccall(instance, func, userData);
+  if (NPNFuncs.pluginthreadasynccall)
+      NPNFuncs.pluginthreadasynccall(instance, func, userData);
+   else
+   {
+      // pluginthreadasynccall is not available on Firefox >= 58, so we use a workaround
+      // taken from vlc npapi plugin ( https://code.videolan.org/videolan/npapi-vlc/ )
+      AsyncCallWorkaroundData *data = new AsyncCallWorkaroundData;
+      data->func = func;
+      data->data = userData;
+      g_idle_add(AsyncCallWorkaroundCallback, (void *)data);
+  }
 }
 
 NPError NPN_GetValueForURL(NPP instance, NPNURLVariable variable, const char *url, char **value, uint32_t *len)

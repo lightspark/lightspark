@@ -1625,7 +1625,7 @@ FORCE_INLINE void asAtom::setUndefined()
 }
 FORCE_INLINE void asAtom::setFunction(ASObject* obj, ASObject* closure)
 {
-	type = T_FUNCTION;
+	type = obj->getObjectType(); // type may be T_CLASS or T_FUNCTION
 	objval = obj;
 	closure_this = closure;
 }

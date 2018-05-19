@@ -147,7 +147,7 @@ public:
 	 * ExtObject instances are always owned by the objectMaps
 	 */
 	ExtObject* getObject() const { return objectValue; }
-	ASObject* getASObject(std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const;
+	ASObject* getASObject(SystemState* sys,std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const;
 protected:
 	std::string strValue;
 	ExtObject* objectValue;
@@ -361,8 +361,8 @@ public:
 			const lightspark::ExtVariant** args, uint32_t argc, const lightspark::ExtVariant** result);
 protected:
 	bool doinvoke(const ExtIdentifier &id, const ExtVariant**args, uint32_t argc, const ExtVariant *result);
-private:
 	SystemState* m_sys;
+private:
 	// Used to determine if a method is called in the main plugin thread
 	Thread* mainThread;
 

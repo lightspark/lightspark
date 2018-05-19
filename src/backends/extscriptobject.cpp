@@ -248,23 +248,23 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 }
 
 // Conversion to ASObject
-ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
+ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
 {
 	//don't create ASObjects from cache, as we are not in the vm thread
 	ASObject* asobj;
 	switch(getType())
 	{
 	case EV_STRING:
-		asobj = Class<ASString>::getInstanceS(getSys(),getString().c_str());
+		asobj = Class<ASString>::getInstanceS(sys,getString().c_str());
 		break;
 	case EV_INT32:
-		asobj = Class<Integer>::getInstanceS(getSys(),getInt());
+		asobj = Class<Integer>::getInstanceS(sys,getInt());
 		break;
 	case EV_DOUBLE:
-		asobj = Class<Number>::getInstanceS(getSys(),getDouble());
+		asobj = Class<Number>::getInstanceS(sys,getDouble());
 		break;
 	case EV_BOOLEAN:
-		asobj = Class<Boolean>::getInstanceS(getSys(),getBoolean());
+		asobj = Class<Boolean>::getInstanceS(sys,getBoolean());
 		break;
 	case EV_OBJECT:
 		{
@@ -282,7 +282,7 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 			// We are converting an array, so lets set indexes
 			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
-				asobj = Class<Array>::getInstanceSNoArgs(getSys());
+				asobj = Class<Array>::getInstanceSNoArgs(sys);
 				objectsMap[objValue] = asobj;
 
 				count = objValue->getLength();
@@ -290,14 +290,14 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 				for(uint32_t i = 0; i < count; i++)
 				{
 					const ExtVariant& property = objValue->getProperty(i);
-					asAtom v = asAtom::fromObject(property.getASObject(objectsMap));
+					asAtom v = asAtom::fromObject(property.getASObject(sys,objectsMap));
 					static_cast<Array*>(asobj)->set(i, v);
 				}
 			}
 			// We are converting an object, so lets set variables
 			else
 			{
-				asobj = Class<ASObject>::getInstanceS(getSys());
+				asobj = Class<ASObject>::getInstanceS(sys);
 				objectsMap[objValue] = asobj;
 			
 				ExtIdentifier** ids;
@@ -312,19 +312,19 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 						if(ids[i]->getType() == ExtIdentifier::EI_STRING)
 						{
 							asobj->setVariableByQName(ids[i]->getString(), "",
-									property.getASObject(objectsMap), DYNAMIC_TRAIT);
+									property.getASObject(sys,objectsMap), DYNAMIC_TRAIT);
 						}
 						else
 						{
 							conv.str("");
 							conv << ids[i]->getInt();
-							if(asobj->hasPropertyByMultiname(QName(getSys()->getUniqueStringId(conv.str()),BUILTIN_STRINGS::EMPTY),true,true))
+							if(asobj->hasPropertyByMultiname(QName(sys->getUniqueStringId(conv.str()),BUILTIN_STRINGS::EMPTY),true,true))
 							{
 								LOG(LOG_NOT_IMPLEMENTED,"ExtVariant::getASObject: duplicate property " << conv.str());
 								continue;
 							}
 							asobj->setVariableByQName(conv.str().c_str(), "",
-									property.getASObject(objectsMap), DYNAMIC_TRAIT);
+									property.getASObject(sys,objectsMap), DYNAMIC_TRAIT);
 						}
 						delete ids[i];
 					}
@@ -334,11 +334,11 @@ ASObject* ExtVariant::getASObject(std::map<const lightspark::ExtObject*, lightsp
 		}
 		break;
 	case EV_NULL:
-		asobj = getSys()->getNullRef();
+		asobj = sys->getNullRef();
 		break;
 	case EV_VOID:
 	default:
-		asobj = getSys()->getUndefinedRef();
+		asobj = sys->getUndefinedRef();
 		break;
 	}
 	return asobj;
@@ -375,7 +375,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	asArgs = new ASObject*[argc];
 	std::map<const ExtObject*, ASObject*> objectsMap;
 	for(uint32_t i = 0; i < argc; i++)
-		asArgs[i] = args[i]->getASObject(objectsMap);
+		asArgs[i] = args[i]->getASObject(func.getObject()->getSystemState(),objectsMap);
 
 	if(!synchronous)
 	{
@@ -384,7 +384,10 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 		// Add the callback function event to the top of the VM event queue
 		funcWasCalled=getVm(func.getObject()->getSystemState())->prependEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
+		{
+			LOG(LOG_ERROR,"funcEvent not called");
 			funcEvent = NullRef;
+		}
 		else
 			func.getObject()->getSystemState()->sendMainSignal();
 	}

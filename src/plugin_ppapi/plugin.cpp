@@ -1242,7 +1242,7 @@ bool ppPluginInstance::executeScript(const std::string script, const ExtVariant 
 	std::map<int64_t, std::unique_ptr<ExtObject>> ppObjectsMap;
 	ppVariantObject tmp(ppObjectsMap, resultVariant);
 	std::map<const ExtObject*, ASObject*> asObjectsMap;
-	*(result) = tmp.getASObject(asObjectsMap);
+	*(result) = tmp.getASObject(m_sys,asObjectsMap);
 	return true;
 }
 

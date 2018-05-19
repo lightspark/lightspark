@@ -642,7 +642,7 @@ void RenderThread::draw(bool force)
 	if(!diff.negative()) /* is one seconds elapsed? */
 	{
 		time_s=time_d;
-		LOG(LOG_INFO,_("FPS: ") << dec << frameCount<<" "<<getVm(m_sys)->getEventQueueSize());
+		LOG(LOG_INFO,_("FPS: ") << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
 		frameCount=0;
 		secsCount++;
 	}

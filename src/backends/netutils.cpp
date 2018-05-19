@@ -305,7 +305,7 @@ void Downloader::setFailed()
 void Downloader::setFinished()
 {
 	length = cache->markFinished();
-	LOG(LOG_INFO,"download finished:"<<url<<" "<<length);
+	LOG(LOG_INFO,"download finished:"<<length);
 }
 
 /**

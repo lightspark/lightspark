@@ -863,7 +863,7 @@ void ppPluginInstance::worker()
 {
 	g_messageloop_interface->AttachToCurrentThread(m_messageloop);
 	
-	while (g_messageloop_interface->GetCurrent() != 0)
+	while (g_messageloop_interface->GetCurrent() != 0 && (!m_sys || !m_sys->isShuttingDown()))
 	{
 		g_messageloop_interface->Run(m_messageloop);
 	}
@@ -1263,9 +1263,14 @@ static void Instance_DidDestroy(PP_Instance instance)
 {
 	LOG(LOG_INFO,"Instance_DidDestroy:"<<instance);
 	ppPluginInstance* it = all_instances[instance];
-	all_instances.erase(instance);
-	if (it)
-		delete it;
+	// if the instance has an extScriptObject, the instance will be destroyed in PPP_Class_Deallocate
+	if (it && !it->getSystemState()->extScriptObject)
+	{
+		LOG(LOG_INFO,"Instance_DidDestroy no extscriptobject:"<<instance);
+		all_instances.erase(instance);
+		if (it)
+			delete it;
+	}
 }
 static void Instance_DidChangeView(PP_Instance instance,PP_Resource view) 
 {
@@ -1423,6 +1428,8 @@ static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_V
 
 static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t argc,struct PP_Var* argv,struct PP_Var* exception)
 {
+	LOG(LOG_CALLS,"PPP_Class_Call:"<<object);
+	
 	ppPluginInstance* instance = ((ppExtScriptObject*)object)->getInstance();
 	
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
@@ -1441,6 +1448,7 @@ static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t arg
 			return PP_MakeUndefined();
 	}
 	instance->handleExternalCall(method_name,argc,argv,exception);
+	LOG(LOG_CALLS,"PPP_Class_Call done:"<<object);
 	return ((ppExtScriptObject*)object)->externalcallresult;
 }
 
@@ -1452,7 +1460,13 @@ static struct PP_Var PPP_Class_Construct(void* object,uint32_t argc,struct PP_Va
 
 static void PPP_Class_Deallocate(void* object)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"PPP_Class_Deallocate:"<<object);
+	LOG(LOG_CALLS,"PPP_Class_Deallocate:"<<object);
+	PP_Instance instance = ((ppExtScriptObject*)object)->getInstance()->getppInstance(); 
+	ppPluginInstance* it = all_instances[instance];
+	all_instances.erase(instance);
+	if (it)
+		delete it;
+	LOG(LOG_CALLS,"PPP_Class_Deallocate done:"<<object);
 }
 
 static PPP_Class_Deprecated ppp_class_deprecated_scriptobject = {

@@ -1,7 +1,7 @@
 {
     "description": "Lightspark Flash Player", 
     "name": "Flapper", 
-    "version": "20.0.0.267", 
+    "version": "50.0.8.0", 
     "x-ppapi-required-interfaces": [
         "PPB_AudioConfig;1.1|PPB_AudioConfig;1.0", 
         "PPB_AudioInput(Dev);0.4|PPB_AudioInput(Dev);0.3", 

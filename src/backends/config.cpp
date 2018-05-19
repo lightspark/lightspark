@@ -121,20 +121,26 @@ Config::Config():
 #endif
 
 	//If cache dir doesn't exist, create it
-	try
+	while (true)
 	{
-		path cacheDirectoryP(cacheDirectory);
-		if(!is_directory(cacheDirectoryP))
+		try
 		{
-			LOG(LOG_INFO, "Cache directory does not exist, trying to create");
-				create_directories(cacheDirectoryP);
+			path cacheDirectoryP(cacheDirectory);
+			if(!is_directory(cacheDirectoryP))
+			{
+				LOG(LOG_INFO, "Cache directory does not exist, trying to create");
+					create_directories(cacheDirectoryP);
+			}
+			break;
 		}
-	}
-	catch(const filesystem_error& e)
-	{
-		LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
-				defaultCacheDirectory);
-		cacheDirectory = defaultCacheDirectory;
+		catch(const filesystem_error& e)
+		{
+			if (cacheDirectory == defaultCacheDirectory)
+				break;
+			LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+					defaultCacheDirectory);
+			cacheDirectory = defaultCacheDirectory;
+		}
 	}
 	try
 	{
@@ -146,6 +152,11 @@ Config::Config():
 		dataDirectory = dataDirectoryP.string();
 	}
 	catch(const filesystem_error& e)
+	{
+		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
+		dataDirectory = "";
+	}
+	catch(const std::exception& e)
 	{
 		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
 		dataDirectory = "";

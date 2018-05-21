@@ -43,6 +43,7 @@ void XMLNode::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("nextSibling","",Class<IFunction>::getFunction(c->getSystemState(),nextSibling),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeType),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(c->getSystemState(),_setNodeName),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeValue),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("parentNode","",Class<IFunction>::getFunction(c->getSystemState(),parentNode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("previousSibling","",Class<IFunction>::getFunction(c->getSystemState(),previousSibling),GETTER_METHOD,true);
@@ -230,6 +231,16 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)
 {
 	XMLNode* th=obj.as<XMLNode>();
 	ret = asAtom::fromObject(abstract_s(sys,th->node.name()));
+}
+ASFUNCTIONBODY_ATOM(XMLNode,_setNodeName)
+{
+	XMLNode* th=obj.as<XMLNode>();
+	tiny_string name;
+	ARG_UNPACK_ATOM(name);
+	if (name.empty())
+		LOG(LOG_NOT_IMPLEMENTED,"XMLNode.setNodeName with empty argument");
+	else
+		th->node.set_name(name.raw_buf());
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeValue)

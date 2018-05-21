@@ -56,6 +56,7 @@ public:
 	ASFUNCTION_ATOM(attributes);
 	ASFUNCTION_ATOM(_getNodeType);
 	ASFUNCTION_ATOM(_getNodeName);
+	ASFUNCTION_ATOM(_setNodeName);
 	ASFUNCTION_ATOM(_getNodeValue);
 	ASFUNCTION_ATOM(_getLocalName);
 	ASFUNCTION_ATOM(nextSibling);

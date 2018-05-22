@@ -667,6 +667,10 @@ private:
 	static void abc_convert_i(call_context* context);
 	static void abc_convert_u(call_context* context);
 	static void abc_convert_d(call_context* context);
+	static void abc_convert_d_constant(call_context* context);
+	static void abc_convert_d_local(call_context* context);
+	static void abc_convert_d_constant_localresult(call_context* context);
+	static void abc_convert_d_local_localresult(call_context* context);
 	static void abc_convert_b(call_context* context);
 	static void abc_convert_o(call_context* context);
 	static void abc_checkfilter(call_context* context);

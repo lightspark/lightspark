@@ -1022,15 +1022,15 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	ret = obj;
 }
 
-bool Array::sortOnComparator::operator()(const asAtom& d1, const asAtom& d2)
+bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_value& d2)
 {
 	std::vector<sorton_field>::iterator it=fields.begin();
+	uint32_t i = 0;
 	for(;it != fields.end();++it)
 	{
-		asAtom obj1;
-		d1.getObject()->getVariableByMultiname(obj1,it->fieldname);
-		asAtom obj2;
-		d2.getObject()->getVariableByMultiname(obj2,it->fieldname);
+		asAtom obj1 = d1.sortvalues.at(i);
+		asAtom obj2 = d2.sortvalues.at(i);
+		i++;
 		if(it->isNumeric)
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
@@ -1051,8 +1051,8 @@ bool Array::sortOnComparator::operator()(const asAtom& d1, const asAtom& d2)
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1.toString(getSys());
-			s2=obj2.toString(getSys());
+			s1=obj1.toString(sys);
+			s2=obj2.toString(sys);
 			if (s1 != s2)
 			{
 				if(it->isDescending)
@@ -1138,7 +1138,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 		sortfields.push_back(sf);
 	}
 	
-	std::vector<asAtom> tmp;
+	std::vector<sorton_value> tmp;
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
@@ -1146,7 +1146,15 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 			continue;
 		// ensure ASObjects are created
 		it1->toObject(sys);
-		tmp.push_back(*it1);
+		
+		sorton_value v(*it1);
+		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
+		{
+			asAtom tmpval;
+			it1->getObject()->getVariableByMultiname(tmpval,itsf->fieldname);
+			v.sortvalues.push_back(tmpval);
+		}
+		tmp.push_back(v);
 	}
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
@@ -1155,21 +1163,27 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 			continue;
 		// ensure ASObjects are created
 		it2->second.toObject(sys);
-		tmp.push_back(it2->second);
+		
+		sorton_value v(it2->second);
+		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
+		{
+			asAtom tmpval;
+			it2->second.getObject()->getVariableByMultiname(tmpval,itsf->fieldname);
+			v.sortvalues.push_back(tmpval);
+		}
+		tmp.push_back(v);
 	}
 	
-	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
+	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields,sys));
 
 	th->data_first.clear();
 	th->data_second.clear();
-	std::vector<asAtom>::iterator ittmp=tmp.begin();
+	std::vector<sorton_value>::iterator ittmp=tmp.begin();
 	uint32_t i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
-		th->set(i++, *ittmp,false);
+		th->set(i++, ittmp->dataAtom,false);
 	}
-	ASATOM_INCREF(obj);
-	ret = obj;
 }
 
 ASFUNCTIONBODY_ATOM(Array,unshift)

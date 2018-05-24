@@ -37,6 +37,12 @@ struct sorton_field
 	multiname fieldname;
 	sorton_field(const multiname& sortfieldname):isNumeric(false),isCaseInsensitive(false),isDescending(false),fieldname(sortfieldname){}
 };
+struct sorton_value
+{
+	std::vector<asAtom> sortvalues;
+	asAtom dataAtom;
+	sorton_value(asAtom _dataAtom):dataAtom(_dataAtom) {}
+};
 
 class Array: public ASObject
 {
@@ -65,9 +71,10 @@ private:
 	{
 	private:
 		std::vector<sorton_field> fields;
+		SystemState* sys;
 	public:
-		sortOnComparator(const std::vector<sorton_field>& sf):fields(sf){}
-		bool operator()(const asAtom& d1, const asAtom& d2);
+		sortOnComparator(const std::vector<sorton_field>& sf,SystemState* s):fields(sf),sys(s){}
+		bool operator()(const sorton_value& d1, const sorton_value& d2);
 	};
 	void constructorImpl(asAtom *args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false);

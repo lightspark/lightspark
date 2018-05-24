@@ -555,7 +555,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_convert_d_local,
 	abc_convert_d_constant_localresult,
 	abc_convert_d_local_localresult,
-	
+	abc_returnvalue_constant,// 0x1b8 ABC_OP_OPTIMZED_RETURNVALUE
+	abc_returnvalue_local,
 	
 	abc_invalidinstruction
 };
@@ -1969,6 +1970,23 @@ void ABCVm::abc_returnvalue(call_context* context)
 	//returnvalue
 	RUNTIME_STACK_POP(context,context->returnvalue);
 	LOG_CALL(_("returnValue ") << context->returnvalue.toDebugString());
+	context->returning = true;
+	++(context->exec_pos);
+}
+void ABCVm::abc_returnvalue_constant(call_context* context)
+{
+	//returnvalue
+	context->returnvalue.set(*context->exec_pos->arg1_constant);
+	LOG_CALL(_("returnValue_c ") << context->returnvalue.toDebugString());
+	context->returning = true;
+	++(context->exec_pos);
+}
+void ABCVm::abc_returnvalue_local(call_context* context)
+{
+	//returnvalue
+	context->returnvalue.set(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL(_("returnValue_l ") << context->returnvalue.toDebugString());
+	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
 	context->returning = true;
 	++(context->exec_pos);
 }
@@ -4296,7 +4314,7 @@ struct operands
 #define ABC_OP_OPTIMZED_IFTRUE 0x000001b0
 #define ABC_OP_OPTIMZED_IFFALSE 0x000001b2
 #define ABC_OP_OPTIMZED_CONVERTD 0x000001b4
-
+#define ABC_OP_OPTIMZED_RETURNVALUE 0x000001b8
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -4446,6 +4464,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x18://ifge
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
+		case 0x48://returnvalue
 		case 0xa0://add
 		case 0xa1://subtract
 		case 0xa2://multiply
@@ -5093,6 +5112,14 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				code.readu30();
 				code.readbyte();
 				code.readu30();
+				break;
+			}
+			case 0x48://returnvalue
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions);
 				break;
 			}
 			case 0x46://callproperty

@@ -614,6 +614,8 @@ private:
 	static void abc_callpropertyStaticName_local_local_localresult(call_context* context);
 	static void abc_returnvoid(call_context* context);
 	static void abc_returnvalue(call_context* context);
+	static void abc_returnvalue_constant(call_context* context);
+	static void abc_returnvalue_local(call_context* context);
 	static void abc_constructsuper(call_context* context);
 	static void abc_constructprop(call_context* context);
 	static void abc_callproplex(call_context* context);

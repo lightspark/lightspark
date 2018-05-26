@@ -2592,8 +2592,10 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 		LOG_CALL( _("getProperty_sll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		asAtom prop;
 		if (((context->exec_pos->data&ABC_OP_NOTCACHEABLE) == 0) 
-				&& obj->getClass() 
-				&& (obj->getClass()->isSealed || (obj->getClass() == Class<Array>::getRef(obj->getSystemState()).getPtr())))
+				&& ((obj->is<Class_base>() && obj->as<Class_base>()->isSealed) ||
+					(obj->getClass() 
+					 && (obj->getClass()->isSealed 
+						 || (obj->getClass() == Class<Array>::getRef(obj->getSystemState()).getPtr())))))
 		{
 			variable* v = obj->findVariableByMultiname(*name,ASObject::NONE,obj->getClass());
 			if (v)
@@ -4372,6 +4374,38 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				break;
 		}
 	}
+	if (b == 0x10) // jump
+	{
+		int32_t j = code.peeks24FromPosition(pos);
+		uint32_t p = pos+3;//3 bytes from s24;
+		bool hastargets = j < 0;
+		if (!hastargets)
+		{
+			// check if the code following the jump is unreachable
+			for (int32_t i = 0; i < j; i++)
+			{
+				if (jumptargets.find(p+i+1) != jumptargets.end())
+				{
+					hastargets = true;
+					break;
+				}
+			}
+		}
+		if (!hastargets)
+		{
+			// skip unreachable code
+			pos = p+j; 
+			jumptargets.erase(p+j+1);
+			b = code.peekbyteFromPosition(pos);
+			if (!needstwoargs)
+			{
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				code.seekg(pos);
+				oldnewpositions[code.tellg()+1] = (int32_t)mi->body->preloadedcode.size();
+			}
+			pos++;
+		}
+	}
 	// check if we need to store the result of the operation on stack
 	switch (b)
 	{
@@ -4486,6 +4520,9 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			break;
+		case 0x10://jump
+			// don't clear operandlist yet, because the jump may be skipped
+			break;
 		default:
 			operandlist.clear();
 			break;
@@ -4493,9 +4530,9 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 	return res;
 }
 
-void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions)
+void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets)
 {
-	bool hasoperands = operandlist.size() >= 1;
+	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 1;
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
@@ -4512,7 +4549,7 @@ void setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	}
 }
-void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions)
+void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets)
 {
 	bool hasoperands = operandlist.size() >= 2;
 	if (hasoperands)
@@ -4537,7 +4574,7 @@ void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,metho
 }
 void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,bool constantsallowed)
 {
-	bool hasoperands = operandlist.size() >= 1 && (constantsallowed || operandlist.back().type == OP_LOCAL);
+	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 1 && (constantsallowed || operandlist.back().type == OP_LOCAL);
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
@@ -4577,7 +4614,7 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 
 bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets, bool skip_conversion)
 {
-	bool hasoperands = operandlist.size() >= 2;
+	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 2;
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
@@ -4631,6 +4668,15 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 
 	// first pass: store all jump target points
 	std::set<int32_t> jumptargets;
+
+	auto itex = mi->body->exceptions.begin();
+	while (itex != mi->body->exceptions.end())
+	{
+		// add exception jump targets
+		jumptargets.insert((int32_t)itex->target+1);
+		itex++;
+	}
+
 	memorystream codejumps(mi->body->code.data(), code_len);
 	while(!codejumps.atend())
 	{
@@ -4882,7 +4928,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			case 0x0f://ifnge
-			case 0x10://jump
 			{
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
@@ -4891,11 +4936,46 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				operandlist.clear();
 				break;
 			}
+			case 0x10://jump
+			{
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				int32_t j = code.reads24();
+				uint32_t p = code.tellg();
+				bool hastargets = j < 0;
+				if (!hastargets)
+				{
+					// check if the code following the jump is unreachable
+					for (int32_t i = 0; i <= j; i++)
+					{
+						if (jumptargets.find(p+i) != jumptargets.end())
+						{
+							hastargets = true;
+							break;
+						}
+					}
+				}
+				if (hastargets)
+				{
+					jumppositions[mi->body->preloadedcode.size()] = j;
+					jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					operandlist.clear();
+				}
+				else
+				{
+					// skip unreachable code
+					for (int32_t i = 0; i < j; i++)
+						code.readbyte();
+					jumptargets.erase(code.tellg()+1);
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				}
+				break;
+			}
 			case 0x11://iftrue
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) == jumptargets.end())
-					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE,opcode,code,oldnewpositions);
+					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE,opcode,code,oldnewpositions, jumptargets);
 				else
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
@@ -4907,7 +4987,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) == jumptargets.end())
-					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions);
+					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions, jumptargets);
 				else
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
@@ -4916,49 +4996,49 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x13://ifeq
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFEQ,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFEQ,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x14://ifne
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x15://iflt
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLT,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLT,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x16://ifle
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLE,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x17://ifgt
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGT,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGT,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x18://ifge
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGE,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x19://ifstricteq
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTEQ,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTEQ,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
 				break;
 			case 0x1a://ifstrictne
-				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code,oldnewpositions);
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				operandlist.clear();
@@ -5073,7 +5153,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x30://pushscope
-				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_PUSHSCOPE,opcode,code,oldnewpositions);
+				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_PUSHSCOPE,opcode,code,oldnewpositions, jumptargets);
 				break;
 			case 0x31://pushnamespace
 			{
@@ -5119,7 +5199,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
-				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions);
+				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions, jumptargets);
 				break;
 			}
 			case 0x46://callproperty

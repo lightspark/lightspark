@@ -231,6 +231,14 @@ public:
 		while(t&0x80);
 		return val;
 	}
+	inline int32_t peeks24FromPosition(uint32_t pos)
+	{
+		const char* codepos_prev = codepos;
+		codepos = code+pos;
+		int32_t val = reads24();
+		codepos = codepos_prev;
+		return val;
+	}
 	inline int32_t reads24()
 	{
 		uint32_t val=0;

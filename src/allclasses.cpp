@@ -52,6 +52,7 @@
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h"
+#include "scripting/flash/net/Socket.h"
 #include "scripting/flash/net/XMLSocket.h"
 #include "scripting/flash/net/NetStreamInfo.h"
 #include "scripting/flash/net/NetStreamPlayOptions.h"

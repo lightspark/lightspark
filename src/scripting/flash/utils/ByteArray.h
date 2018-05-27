@@ -44,9 +44,9 @@ protected:
 	void compress_zlib();
 	void uncompress_zlib();
 	Mutex mutex;
+public:
 	void lock();
 	void unlock();
-public:
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
@@ -56,6 +56,7 @@ public:
 	bool readUnsignedInt(uint32_t& ret);
 	bool readU29(uint32_t& ret);
 	bool readUTF(tiny_string& ret);
+	bool readUTFBytes(uint32_t length,tiny_string& ret);
 	void writeByte(uint8_t b);
 	void writeBytes(uint8_t* data, int length);
 	void writeShort(uint16_t val);

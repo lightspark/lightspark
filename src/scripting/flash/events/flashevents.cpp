@@ -261,7 +261,7 @@ ProgressEvent::ProgressEvent(Class_base* c):Event(c, "progress",false,false,SUBT
 {
 }
 
-ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total):Event(c, "progress",false,false,SUBTYPE_PROGRESSEVENT),bytesLoaded(loaded),bytesTotal(total)
+ProgressEvent::ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total, const tiny_string &t):Event(c, t,false,false,SUBTYPE_PROGRESSEVENT),bytesLoaded(loaded),bytesTotal(total)
 {
 }
 
@@ -274,6 +274,10 @@ void ProgressEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("PROGRESS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"progress"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SOCKET_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"socketData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_ERROR_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardErrorData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_INPUT_PROGRESS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardInputProgress"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,bytesLoaded);
 	REGISTER_GETTER_SETTER(c,bytesTotal);
 }

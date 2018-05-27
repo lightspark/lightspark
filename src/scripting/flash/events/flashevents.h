@@ -250,7 +250,7 @@ private:
 	Event* cloneImpl() const;
 public:
 	ProgressEvent(Class_base* c);
-	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total);
+	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

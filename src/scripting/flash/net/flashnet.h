@@ -441,13 +441,6 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,extension);
 	ASPROPERTY_GETTER_SETTER(tiny_string,macType);
 };
-class ASSocket: public EventDispatcher, IDataInput, IDataOutput
-{
-public:
-	ASSocket(Class_base* c);
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-};
 
 class DRMManager: public EventDispatcher
 {

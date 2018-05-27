@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* partially implement flash.net.Socket
 	* fix several rendering issues
 	* implement support for Stage3D
 	* partially implement MorphShape rendering

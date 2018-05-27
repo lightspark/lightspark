@@ -1235,8 +1235,6 @@ bool SocketPolicyFile::isMaster() const
 
 SocketPolicyFile* SocketPolicyFile::getMasterPolicyFile()
 {
-	Mutex::Lock l(mutex);
-
 	if(isMaster())
 		return this;
 
@@ -1321,8 +1319,8 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	}
 
 	// The policy file is considered invalid if the last character
-	// is not '\0'
-	if (outData.size() == 0 || outData[outData.size()-1] != '\0')
+	// is not '\0' or '>'
+	if (outData.size() == 0 || (outData[outData.size()-1] != '\0' && outData[outData.size()-1] != '>'))
 	{
 		return false;
 	}

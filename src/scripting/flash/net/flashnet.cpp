@@ -2488,23 +2488,6 @@ ASFUNCTIONBODY_ATOM(FileFilter,_constructor)
 	ARG_UNPACK_ATOM(th->description)(th->extension)(th->macType,"");
 }
 
-ASSocket::ASSocket(Class_base* c):
-	EventDispatcher(c)
-{
-}
-
-void ASSocket::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-}
-
-ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
-{
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
-	//ASSocket* th=Class<ASSocket>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"ASSocket is not implemented");
-}
-
 DRMManager::DRMManager(Class_base* c):
 	EventDispatcher(c),isSupported(false)
 {

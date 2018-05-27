@@ -25,26 +25,10 @@
 #include "asobject.h"
 #include "threading.h"
 #include <glib.h>
+#include "Socket.h"
 
 namespace lightspark
 {
-
-class SocketIO
-{
-private:
-	int fd;
-public:
-	SocketIO();
-	~SocketIO();
-
-	bool connect(const tiny_string& hostname, int port);
-	bool connected() const;
-	void close();
-	ssize_t receive(void *buf, size_t count) const;
-	ssize_t sendAll(const void *buf, size_t count) const;
-	int fileDescriptor() const { return fd; }
-};
-
 class XMLSocketThread;
 
 class XMLSocket : public EventDispatcher

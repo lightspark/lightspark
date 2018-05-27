@@ -458,25 +458,31 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
+	tiny_string res;
+	th->readUTFBytes(length,res);
+	ret = asAtom::fromObject(abstract_s(sys,res));
+}
+
+bool ByteArray::readUTFBytes(uint32_t length,tiny_string& ret)
+{
 	// check for BOM
-	if (th->len > th->position+3)
+	if (this->len > position+3)
 	{
-		if (th->bytes[th->position] == 0xef &&
-			th->bytes[th->position+1] == 0xbb &&
-			th->bytes[th->position+2] == 0xbf)
+		if (bytes[position] == 0xef &&
+			bytes[position+1] == 0xbb &&
+			bytes[position+2] == 0xbf)
 		{
-			th->position += 3;
+			position += 3;
 			length -=  length > 3 ? 3 : 0;
 		}
 	}
-
-	uint8_t *bufStart=th->bytes+th->position;
+	uint8_t *bufStart=bytes+position;
 	char buf[length+1];
 	buf[length]=0;
 	strncpy(buf,(char*)bufStart,(size_t)length);
-	th->position+=length;
-	th->unlock();
-	ret = asAtom::fromObject(abstract_s(sys,(char *)buf,strlen(buf)));
+	position+=length;
+	ret = buf;
+	return true;
 }
 
 void ByteArray::writeUTF(const tiny_string& str)

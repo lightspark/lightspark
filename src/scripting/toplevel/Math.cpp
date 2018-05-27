@@ -182,27 +182,27 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 		{
 			int32_t n = a.toInt();
 			if (n == INT32_MIN)
-				ret = asAtom((uint32_t)n);
+				ret.setUInt((uint32_t)n);
 			else
-				ret = asAtom(n < 0 ? -n : n);
+				ret.setInt(n < 0 ? -n : n);
 			break;
 		}
 		case T_UINTEGER:
-			ret = a;
+			ret.set(a);
 			break;
 		case T_UNDEFINED:
-			ret = asAtom(Number::NaN);
+			ret.setNumber(Number::NaN);
 			break;
 		case T_NULL:
-			ret = asAtom((int32_t)0);
+			ret.setInt((int32_t)0);
 			break;
 		default:
 		{
 			number_t n = a.toNumber();
 			if (n  == 0.)
-				ret = asAtom((int32_t)0);
+				ret.setInt((int32_t)0);
 			else
-				ret = asAtom((number_t)::fabs(n));
+				ret.setNumber((number_t)::fabs(n));
 			break;
 		}
 	}

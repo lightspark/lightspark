@@ -27,6 +27,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/rendering_context.h"
+#include "3rdparty/perlinnoise/PerlinNoise.hpp"
 
 #include <cstdlib> 
 
@@ -962,6 +963,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 {
+	BitmapData* th = obj.as<BitmapData>();
+	if(th->pixels.isNull())
+		throw Class<ArgumentError>::getInstanceS(sys,"Disposed BitmapData", 2015);
+
 	number_t baseX;
 	number_t baseY;
 	unsigned int numOctaves;
@@ -973,7 +978,52 @@ ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 	_NR<Array> offsets;
 	ARG_UNPACK_ATOM(baseX)(baseY)(numOctaves)(randomSeed)(stitch) (fractalNoise) (channelOptions, 7) (grayScale, false) (offsets, NullRef);
 
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.perlinNoise not implemented");
+	if (stitch)
+		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter stitch is ignored");
+	if (fractalNoise)
+		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter fractalNoise is ignored");
+	if (!offsets.isNull())
+		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter offsets is ignored");
+
+	const siv::PerlinNoise perlin(randomSeed);
+	for (int32_t x=0; x<th->getWidth(); x++)
+	{
+		for (int32_t y=0; y<th->getHeight(); y++)
+		{
+			uint32_t pixel = 0x000000ff;
+			number_t v1 = perlin.octaveNoise0_1(x / baseX, y / baseY, numOctaves);
+			if (grayScale)
+			{
+				uint8_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint8_t>(v1 * 255.0 + 0.5);
+				pixel |= v<<24 | v<<16 | v<<8;
+			}
+			else
+			{
+				if((channelOptions & 0x1) == 0x1) // R
+				{
+					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
+					pixel |= v&0xff000000;
+				}
+				if((channelOptions & 0x2) == 0x2) // G
+				{
+					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
+					pixel |= v&0x00ff0000;
+				}
+				if((channelOptions & 0x4) == 0x4) // B
+				{
+					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
+					pixel |= v&0x0000ff00;
+				}
+				if((channelOptions & 0x8) == 0x8) // A
+				{
+					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
+					pixel |= v&0x000000ff;
+				}
+			}
+			th->pixels->setPixel(x, y,pixel,true,true);
+			//LOG(LOG_INFO,"perlinnoise pixel:"<<x<<" "<<y<<" "<<hex<<th->pixels->getPixel(x,y)<<" "<<grayScale);
+		}
+	}
 }
 ASFUNCTIONBODY_ATOM(BitmapData,threshold)
 {

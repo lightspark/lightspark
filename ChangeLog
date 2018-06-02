@@ -1,8 +1,10 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.8.1:
 
+	* make plugins work with newer versions of firefox and chromium
 	* partially implement flash.net.Socket
+	* several performance improvements, but lightspark is still slower than adobe player
 	* fix several rendering issues
 	* implement support for Stage3D
 	* partially implement MorphShape rendering

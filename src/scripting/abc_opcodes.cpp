@@ -368,18 +368,20 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		LOG(LOG_ERROR,"trying to call property on undefined:"<<*name);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
+	bool canCache = false;
 	ASObject* pobj = obj.getObject();
 	asAtom o;
 	if (!pobj)
 	{
 		// fast path for primitives to avoid creation of ASObjects
 		obj.getVariableByMultiname(o,th->mi->context->root->getSystemState(),*name);
+		canCache = o.type != T_INVALID;
 	}
 	if(o.type == T_INVALID)
 	{
 		pobj = obj.toObject(th->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
-		pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
+		canCache = pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
@@ -390,7 +392,10 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		{
 			tmpcls->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
 			if(o.type != T_INVALID)
+			{
+				canCache = true;
 				break;
+			}
 			tmpcls = tmpcls->super;
 		}
 	}
@@ -404,7 +409,12 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	}
 	if(o.type != T_INVALID && !obj.is<Proxy>())
 	{
-		if (instrptr && name->isStatic && o.getObject() && o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState()) && obj.canCacheMethod(name))
+		if (canCache 
+				&& instrptr 
+				&& name->isStatic 
+				&& obj.canCacheMethod(name)
+				&& o.getObject() 
+				&& (obj.is<Class_base>() || o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState())))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
 			instrptr->data |= ABC_OP_CACHED;
@@ -413,7 +423,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
 		}
 //		else
-//			LOG(LOG_ERROR,"callprop caching failed:"<<*name<<" "<<name->isStatic<<" "<<obj.toDebugString()<<" "<<obj.getClass(th->mi->context->root->getSystemState())->isSealed);
+//			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<obj.toDebugString());
 		callImpl(th, o, obj, args, m, keepReturn);
 	}
 	else

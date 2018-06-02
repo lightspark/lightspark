@@ -518,6 +518,8 @@ public:
 	void destroyContents();
 };
 
+enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02};
+
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
@@ -664,7 +666,7 @@ public:
 
 	enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, XML_STRICT=0x02, DONT_CALL_GETTER=0x04};
 
-	virtual bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
 		return getVariableByMultinameIntern(ret,name,classdef,opt);
 	}
@@ -678,7 +680,7 @@ public:
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	bool getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt=NONE);
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
 	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);

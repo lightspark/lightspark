@@ -95,7 +95,7 @@ public:
 	ASFUNCTION_ATOM(_propertyIsEnumerable);
 	ASFUNCTION_ATOM(_prependChild);
 	ASFUNCTION_ATOM(_hasOwnProperty);
-	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultinameIntern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);

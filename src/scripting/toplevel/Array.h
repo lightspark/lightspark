@@ -165,7 +165,7 @@ public:
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);
-	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
 	bool deleteVariableByMultiname(const multiname& name);

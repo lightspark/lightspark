@@ -96,12 +96,12 @@ void Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOW
 	implEnable=true;
 }
 
-bool Proxy::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	asAtom o;
-	bool res = false;
+	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	LOG_CALL("Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true));
 	if(ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & ASObject::SKIP_IMPL)!=0)
 		res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
@@ -131,7 +131,7 @@ bool Proxy::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIA
 	ASATOM_INCREF(v);
 	o.callFunction(ret,v,&arg,1,true);
 	implEnable=true;
-	return false;
+	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

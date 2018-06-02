@@ -155,7 +155,7 @@ public:
 	
 	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const;
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
-	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	bool hasProperty(const multiname& name,bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype);
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);

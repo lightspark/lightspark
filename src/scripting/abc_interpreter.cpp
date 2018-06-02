@@ -1671,16 +1671,18 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 	}
 	ASObject* pobj = obj.getObject();
 	asAtom o;
+	bool canCache = false;
 	if (!pobj)
 	{
 		// fast path for primitives to avoid creation of ASObjects
 		obj.getVariableByMultiname(o,context->mi->context->root->getSystemState(),*name);
+		canCache = o.type != T_INVALID;
 	}
 	if(o.type == T_INVALID)
 	{
 		pobj = obj.toObject(context->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
-		pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
+		canCache = pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
@@ -1691,7 +1693,10 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 		{
 			tmpcls->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
 			if(o.type != T_INVALID)
+			{
+				canCache = true;
 				break;
+			}
 			tmpcls = tmpcls->super;
 		}
 	}
@@ -1699,7 +1704,8 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 	{
 		if(o.is<IFunction>())
 		{
-			if ((cacheptr->data & ABC_OP_NOTCACHEABLE)==0 
+			if (canCache 
+					&& (cacheptr->data & ABC_OP_NOTCACHEABLE)==0 
 					&& obj.canCacheMethod(name) 
 					&& o.getObject() 
 					&& (obj.is<Class_base>() || o.as<IFunction>()->inClass == obj.getClass(context->mi->context->root->getSystemState())))
@@ -2305,7 +2311,7 @@ void ABCVm::abc_getProperty(call_context* context)
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
 	asAtom prop;
-	bool isgetter = obj->getVariableByMultiname(prop,*name,(name->isStatic && obj->getClass() && obj->getClass()->isSealed)? ASObject::DONT_CALL_GETTER:ASObject::NONE);
+	bool isgetter = obj->getVariableByMultiname(prop,*name,(name->isStatic && obj->getClass() && obj->getClass()->isSealed)? ASObject::DONT_CALL_GETTER:ASObject::NONE) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 	if (isgetter)
 	{
 		//Call the getter

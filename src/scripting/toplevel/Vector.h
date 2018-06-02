@@ -75,7 +75,7 @@ public:
 	tiny_string toString();
 	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	bool getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = NULL);
 
 	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);

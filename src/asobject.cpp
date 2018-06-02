@@ -1244,12 +1244,12 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 	return obj;
 }
 
-bool ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls,  GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls,  GET_VARIABLE_OPTION opt)
 {
 	check();
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
-
+	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
 	if(obj)
 	{
@@ -1286,13 +1286,18 @@ bool ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 			}
 		}
 		if(!obj)
-			return false;
+			return res;
+		else
+			res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
 	}
+	else if (obj->kind == CONSTANT_TRAIT)
+		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
 
 
-	if ( this->is<Class_base>() && obj->kind == INSTANCE_TRAIT)
+	if ( this->is<Class_base>() )
 	{
-		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
+		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
+		if (obj->kind == INSTANCE_TRAIT && getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 	}
 
@@ -1301,7 +1306,8 @@ bool ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 		if (opt & DONT_CALL_GETTER)
 		{
 			ret.set(obj->getter);
-			return true;
+			res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISGETTER);
+			return res;
 		}
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
@@ -1329,7 +1335,7 @@ bool ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, 
 		else
 			ret.set(obj->var);
 	}
-	return false;
+	return res;
 }
 
 void ASObject::getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces)

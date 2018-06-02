@@ -160,7 +160,7 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	bool getVariableByMultiname(asAtom &ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);

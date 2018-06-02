@@ -185,7 +185,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 	}
 }
 
-bool Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	if((opt & ASObject::SKIP_IMPL)==0 && implEnable)
 	{
@@ -231,10 +231,10 @@ bool Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_
 				}
 				else
 					ASATOM_INCREF(ret);
-				return false;
+				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			}
 			else
-				return false;
+				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		}
 		else
 		{

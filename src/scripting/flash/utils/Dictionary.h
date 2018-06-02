@@ -55,7 +55,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toJSON);
 
-	bool getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
 	int32_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);

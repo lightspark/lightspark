@@ -835,8 +835,10 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 		if (sf->mi->body && !sf->mi->needsActivation())
 		{
 			LOG_CALL("Building method traits " <<sf->mi->body->trait_count);
+			std::vector<multiname*> additionalslots;
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->mi->context->buildTrait(ret.getObject(),&sf->mi->body->traits[i],false);
+				th->mi->context->buildTrait(ret.getObject(),additionalslots,&sf->mi->body->traits[i],false);
+			ret.getObject()->initAdditionalSlots(additionalslots);
 		}
 	}
 #ifndef NDEBUG
@@ -2658,8 +2660,9 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->addConstructorGetter();
 
 	LOG_CALL(_("Building class traits"));
+	std::vector<multiname*> additionalslots;
 	for(unsigned int i=0;i<th->mi->context->classes[n].trait_count;i++)
-		th->mi->context->buildTrait(ret,&th->mi->context->classes[n].traits[i],false);
+		th->mi->context->buildTrait(ret,additionalslots,&th->mi->context->classes[n].traits[i],false);
 
 	LOG_CALL(_("Adding immutable object traits to class"));
 	//Class objects also contains all the methods/getters/setters declared for instances
@@ -2668,8 +2671,9 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		//int kind=cur->traits[i].kind&0xf;
 		//if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
-			th->mi->context->buildTrait(ret,&cur->traits[i],true);
+			th->mi->context->buildTrait(ret,additionalslots,&cur->traits[i],true);
 	}
+	ret->initAdditionalSlots(additionalslots);
 
 	method_info* constructor=&th->mi->context->methods[th->mi->context->instances[n].init];
 	if(constructor->body) /* e.g. interfaces have no valid constructor */
@@ -2802,8 +2806,10 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 	act->initialized=false;
 #endif
 	act->Variables.Variables.reserve(mi->body->trait_count);
+	std::vector<multiname*> additionalslots;
 	for(unsigned int i=0;i<mi->body->trait_count;i++)
-		th->mi->context->buildTrait(act,&mi->body->traits[i],false,-1,false);
+		th->mi->context->buildTrait(act,additionalslots,&mi->body->traits[i],false,-1,false);
+	act->initAdditionalSlots(additionalslots);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif

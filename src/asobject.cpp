@@ -1192,6 +1192,12 @@ void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	Variables.initSlot(n,name.name_s_id,name.ns[0]);
 }
+void ASObject::initAdditionalSlots(std::vector<multiname*> additionalslots)
+{
+	unsigned int n = Variables.slots_vars.size();
+	for (auto it = additionalslots.begin(); it != additionalslots.end(); it++)
+		Variables.initSlot(++n,(*it)->name_s_id,(*it)->ns[0]);
+}
 int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();

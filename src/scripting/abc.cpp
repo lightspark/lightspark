@@ -1827,10 +1827,12 @@ void ABCContext::exec(bool lazy)
 		LOG(LOG_CALLS, _("Building script traits: ") << scripts[i].trait_count );
 
 
+		std::vector<multiname*> additionalslots;
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		{
-			buildTrait(global,&scripts[i].traits[j],false,i);
+			buildTrait(global,additionalslots,&scripts[i].traits[j],false,i);
 		}
+		global->initAdditionalSlots(additionalslots);
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1847,10 +1849,12 @@ void ABCContext::exec(bool lazy)
 #endif
 
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
+	std::vector<multiname*> additionalslots;
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 	{
-		buildTrait(global,&scripts[i].traits[j],false,i);
+		buildTrait(global,additionalslots,&scripts[i].traits[j],false,i);
 	}
+	global->initAdditionalSlots(additionalslots);
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -2182,15 +2186,17 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 		return;
 
 	//Build only the traits that has not been build in the class
+	std::vector<multiname*> additionalslots;
 	for(unsigned int i=0;i<instances[class_index].trait_count;i++)
 	{
 		int kind=instances[class_index].traits[i].kind&0xf;
 		if(kind==traits_info::Slot || kind==traits_info::Class ||
 			kind==traits_info::Function || kind==traits_info::Const)
 		{
-			buildTrait(obj,&instances[class_index].traits[i],false);
+			buildTrait(obj,additionalslots,&instances[class_index].traits[i],false);
 		}
 	}
+	obj->initAdditionalSlots(additionalslots);
 }
 
 void ABCContext::linkTrait(Class_base* c, const traits_info* t)
@@ -2374,7 +2380,7 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 	return ret;
 }
 
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)
+void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslots, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)
 {
 	multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -2433,7 +2439,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
-					buildTrait(ci,&classes[t->classi].traits[i],false);
+					buildTrait(ci,additionalslots,&classes[t->classi].traits[i],false);
 				//Add protected namespace if needed
 				if((instances[t->classi].flags)&0x08)
 				{
@@ -2448,7 +2454,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				{
 					int kind=instances[t->classi].traits[i].kind&0xf;
 					if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
-						buildTrait(ci,&instances[t->classi].traits[i],true);
+						buildTrait(ci,additionalslots,&instances[t->classi].traits[i],true);
 				}
 
 				//add implemented interfaces
@@ -2506,6 +2512,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, *mname);
+			else
+				additionalslots.push_back(mname);
 			break;
 		}
 		case traits_info::Getter:
@@ -2594,6 +2602,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, isBorrowed ? INSTANCE_TRAIT : DECLARED_TRAIT,t->slot_id,isenumerable);
+			if (t->slot_id == 0)
+				additionalslots.push_back(mname);
 			break;
 		}
 		default:

@@ -201,11 +201,12 @@ public:
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
+		@param additionalslots multiname of t will be added if slot_is is 0
 		@param t the trait to build
 		@param isBorrowed True if we're building a trait on behalf of an object, False otherwise
 		@param deferred_initialization A pointer to a function that can be used to build the given trait later
 	*/
-	void buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, int scriptid=-1, bool checkExisting=true);
+	void buildTrait(ASObject* obj, std::vector<multiname *> &additionalslots, const traits_info* t, bool isBorrowed, int scriptid=-1, bool checkExisting=true);
 	void runScriptInit(unsigned int scriptid, asAtom& g);
 
 	void linkTrait(Class_base* obj, const traits_info* t);

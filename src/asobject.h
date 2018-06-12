@@ -745,6 +745,7 @@ public:
 		Variables.setSlotNoCoerce(n,o);
 	}
 	void initSlot(unsigned int n, const multiname& name);
+	void initAdditionalSlots(std::vector<multiname*> additionalslots);
 	unsigned int numVariables() const;
 	inline tiny_string getNameAt(int i) const
 	{

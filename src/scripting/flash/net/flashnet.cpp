@@ -689,11 +689,13 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 ASFUNCTIONBODY_ATOM(SharedObject,getRemote)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getRemote not implemented");
+	ret.setUndefined();
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,flush)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
+	ret = asAtom::fromString(sys,"flushed");
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,clear)

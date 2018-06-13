@@ -28,14 +28,14 @@ void Math::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	// public constants
-	c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(2.71828182845905),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(2.302585092994046),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(0.6931471805599453),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(0.4342944819032518),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(1.442695040888963387),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(3.141592653589793),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(0.7071067811865476),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(1.4142135623730951),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(2.71828182845904523536),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(2.30258509299404568402),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(0.693147180559945309417),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(0.434294481903251827651),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(1.44269504088896340736),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(3.14159265358979323846),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(0.707106781186547524401),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(1.41421356237309504880),CONSTANT_TRAIT);
 
 	// public methods
 	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),abs,1),NORMAL_METHOD,false);

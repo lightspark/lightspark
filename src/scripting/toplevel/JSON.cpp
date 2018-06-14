@@ -71,7 +71,10 @@ ASFUNCTIONBODY_ATOM(JSON,_parse)
 			throwError<TypeError>(kCheckTypeFailedError);
 		reviver = args[1];
 	}
-	ret = asAtom::fromObject(doParse(text,reviver));
+	ASObject* res = doParse(text,reviver);
+	if (!res)
+		throwError<TypeError>(kJSONInvalidParseInput);
+	ret = asAtom::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(JSON,_stringify)

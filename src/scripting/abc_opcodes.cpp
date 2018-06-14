@@ -1611,11 +1611,12 @@ bool ABCVm::getLex(call_context* th, int n,int localresult)
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
 		ASObject* s = th->scope_stack[i-1].toObject(th->mi->context->root->getSystemState());
-		// XML_STRICT flag tells getVariableByMultiname to
+		// FROM_GETLEX flag tells getVariableByMultiname to
 		// ignore non-existing properties in XML obejcts
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
-		ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
+		// And this ensures dynamic properties are also searched
+		ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
 		if(!th->scope_stack_dynamic[i-1])
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 		else
@@ -1637,7 +1638,8 @@ bool ABCVm::getLex(call_context* th, int n,int localresult)
 			// ignore non-existing properties in XML obejcts
 			// (normally it would return an empty XMLList if the
 			// property does not exist).
-			ASObject::GET_VARIABLE_OPTION opt=ASObject::XML_STRICT;
+			// And this ensures dynamic properties are also searched
+			ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
 			if(!it->considerDynamic)
 				opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 			else

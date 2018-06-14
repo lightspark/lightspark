@@ -755,7 +755,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 			retnodes.insert(retnodes.end(), o.getObject()->as<XMLList>()->nodes.begin(), o.getObject()->as<XMLList>()->nodes.end());
 		}
 
-		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
+		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
 			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 
 		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));
@@ -786,7 +786,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 			retnodes.insert(retnodes.end(), o.getObject()->as<XMLList>()->nodes.begin(), o.getObject()->as<XMLList>()->nodes.end());
 		}
 
-		if(retnodes.size()==0 && (opt & XML_STRICT)!=0)
+		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
 			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 
 		ret = asAtom::fromObject(create(getSystemState(),retnodes,this,name));

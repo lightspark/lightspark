@@ -1532,7 +1532,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 		{
 			const XMLVector& res=getValuesByMultiname(childrenlist,name);
 			
-			if(res.empty() && (opt & XML_STRICT)!=0)
+			if(res.empty() && (opt & FROM_GETLEX)!=0)
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			ret =asAtom::fromObject(XMLList::create(getSystemState(),res,this->getChildrenlist(),name));
 		}

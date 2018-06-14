@@ -383,7 +383,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	cc.exec_pos = mi->body->preloadedcode.data();
 	asAtom* locals = g_newa(asAtom, cc.locals_size+2); // +2, because we need two more elements to store result of optimized operations
 	for(asAtom* i=locals;i< locals+cc.locals_size+2;++i)
-		*i = asAtom::invalidAtom;
+		i->setUndefined();
 	cc.locals=locals;
 	asAtom* stack = g_newa(asAtom, cc.mi->body->max_stack+1);
 	cc.stack=stack;

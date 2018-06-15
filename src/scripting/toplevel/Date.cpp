@@ -80,6 +80,7 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toTimeString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toTimeString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toLocaleString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toLocaleDateString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toLocaleDateString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleTimeString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toLocaleTimeString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),_parse),NORMAL_METHOD,false);
 
 	c->setDeclaredMethodByQName("date","",Class<IFunction>::getFunction(c->getSystemState(),getDate),GETTER_METHOD,true);

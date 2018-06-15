@@ -470,9 +470,16 @@ ASFUNCTIONBODY_ATOM(Rectangle,_union)
 ASFUNCTIONBODY_ATOM(Rectangle,_toString)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	char buf[512];
-	snprintf(buf,512,"(x=%.2f, y=%.2f, w=%.2f, h=%.2f)",th->x,th->y,th->width,th->height);
-	ret = asAtom::fromObject(abstract_s(sys,buf));
+	tiny_string s = "(x=";
+	s+= Number::toString(th->x);
+	s+= ", y=";
+	s+= Number::toString(th->y);
+	s+= ", w=";
+	s+= Number::toString(th->width);
+	s+= ", h=";
+	s+= Number::toString(th->height);
+	s+= ")";
+	ret = asAtom::fromObject(abstract_s(sys,s));
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,setTo)

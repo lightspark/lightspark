@@ -264,11 +264,16 @@ tiny_string Number::toString(number_t val)
 
 	//See ecma3 8.9.1
 	char buf[40];
-	if(fabs(val) >= 1e+21 || fabs(val) <= 1e-6)
-		snprintf(buf,40,"%.15e",val);
+	if (val==(int)(val))
+		snprintf(buf,40,"%d",(int)(val));
 	else
-		snprintf(buf,40,"%.14f",val);
-	purgeTrailingZeroes(buf);
+	{
+		if(fabs(val) >= 1e+21 || fabs(val) <= 1e-6)
+			snprintf(buf,40,"%.15e",val);
+		else
+			snprintf(buf,40,"%.14f",val);
+		purgeTrailingZeroes(buf);
+	}
 	return tiny_string(buf,true);
 }
 

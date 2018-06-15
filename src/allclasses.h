@@ -221,6 +221,10 @@ REGISTER_CLASS_NAME(StageVideoAvailability,"flash.media")
 REGISTER_CLASS_NAME(Video,"flash.media")
 REGISTER_CLASS_NAME(VideoStatus,"flash.media")
 REGISTER_CLASS_NAME(Microphone,"flash.media")
+REGISTER_CLASS_NAME(Camera,"flash.media")
+REGISTER_CLASS_NAME(VideoStreamSettings,"flash.media")
+REGISTER_CLASS_NAME(H264VideoStreamSettings,"flash.media")
+
 
 //Net
 REGISTER_CLASS_NAME(FileFilter,"flash.net")
@@ -281,6 +285,8 @@ REGISTER_CLASS_NAME(SecurityDomain,"flash.system")
 REGISTER_CLASS_NAME(System,"flash.system")
 REGISTER_CLASS_NAME(ASWorker,"flash.system")
 REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
+REGISTER_CLASS_NAME(IMEConversionMode,"flash.system")
+
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")

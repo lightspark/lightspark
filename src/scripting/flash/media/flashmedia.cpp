@@ -665,4 +665,41 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Microphone,isSupported)
 ASFUNCTIONBODY_ATOM(Microphone,getMicrophone)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Microphone.getMicrophone always returns null");
+	ret.setNull();
+}
+
+void Camera::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED | CLASS_FINAL);
+	REGISTER_GETTER(c,isSupported);
+
+}
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Camera,isSupported)
+
+void VideoStreamSettings::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("setKeyFrameInterval","",Class<IFunction>::getFunction(c->getSystemState(),setKeyFrameInterval),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMode","",Class<IFunction>::getFunction(c->getSystemState(),setMode),NORMAL_METHOD,true);
+}
+ASFUNCTIONBODY_ATOM(VideoStreamSettings,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"VideoStreamSettings is a stub");
+}
+ASFUNCTIONBODY_ATOM(VideoStreamSettings,setKeyFrameInterval)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"VideoStreamSettings.setKeyFrameInterval");
+}
+ASFUNCTIONBODY_ATOM(VideoStreamSettings,setMode)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"VideoStreamSettings.setMode");
+}
+
+void H264VideoStreamSettings::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, VideoStreamSettings, _constructor, CLASS_SEALED);
+}
+ASFUNCTIONBODY_ATOM(H264VideoStreamSettings,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"H264VideoStreamSettings is a stub");
 }

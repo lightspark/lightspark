@@ -565,7 +565,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("System","flash.system",Class<System>::getRef(m_sys));
 	builtin->registerBuiltin("Worker","flash.system",Class<ASWorker>::getRef(m_sys));
 	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef(m_sys));
-	
+	builtin->registerBuiltin("IMEConversionMode","flash.system",Class<IMEConversionMode>::getRef(m_sys));
+
 
 	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef(m_sys));
 	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef(m_sys));
@@ -577,6 +578,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("StageVideoAvailability","flash.media",Class<StageVideoAvailability>::getRef(m_sys));
 	builtin->registerBuiltin("VideoStatus","flash.media",Class<VideoStatus>::getRef(m_sys));
 	builtin->registerBuiltin("Microphone","flash.media",Class<Microphone>::getRef(m_sys));
+	builtin->registerBuiltin("Camera","flash.media",Class<Camera>::getRef(m_sys));
+	builtin->registerBuiltin("VideoStreamSettings","flash.media",Class<VideoStreamSettings>::getRef(m_sys));
+	builtin->registerBuiltin("H264VideoStreamSettings","flash.media",Class<H264VideoStreamSettings>::getRef(m_sys));
+	
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));

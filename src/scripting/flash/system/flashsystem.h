@@ -180,5 +180,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class IMEConversionMode: public ASObject
+{
+public:
+	IMEConversionMode(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 }
 #endif /* SCRIPTING_FLASH_SYSTEM_FLASHSYSTEM_H */

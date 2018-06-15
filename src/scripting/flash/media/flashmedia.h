@@ -200,7 +200,30 @@ public:
 	ASPROPERTY_GETTER(bool ,isSupported);
 	ASFUNCTION_ATOM(getMicrophone);
 };
-
+class Camera : public EventDispatcher
+{
+public:
+	Camera(Class_base* c):EventDispatcher(c),isSupported(false){}
+	static void sinit(Class_base*);
+	ASPROPERTY_GETTER(bool ,isSupported);
+};
+class VideoStreamSettings : public ASObject
+{
+public:
+	VideoStreamSettings(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(setKeyFrameInterval);
+	ASFUNCTION_ATOM(setMode);
+};
+class H264VideoStreamSettings : public VideoStreamSettings
+{
+public:
+	H264VideoStreamSettings(Class_base* c):VideoStreamSettings(c){}
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+};
+	
 }
 
 #endif /* SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H */

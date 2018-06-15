@@ -700,3 +700,16 @@ void ImageDecodingPolicy::sinit(Class_base* c)
 	c->setVariableAtomByQName("ON_LOAD",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"onLoad"),CONSTANT_TRAIT);
 }
 
+void IMEConversionMode::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("ALPHANUMERIC_FULL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ALPHANUMERIC_FULL"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ALPHANUMERIC_HALF",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ALPHANUMERIC_HALF"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CHINESE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"CHINESE"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("JAPANESE_HIRAGANA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"JAPANESE_HIRAGANA"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("JAPANESE_KATAKANA_FULL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"JAPANESE_KATAKANA_FULL"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("JAPANESE_KATAKANA_HALF",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"JAPANESE_KATAKANA_HALF"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("KOREAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"KOREAN"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("UNKNOWN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"UNKNOWN"),CONSTANT_TRAIT);
+}
+

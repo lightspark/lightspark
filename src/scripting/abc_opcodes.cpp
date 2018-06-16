@@ -3043,8 +3043,12 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		// itself or super classes
 		return type == Class_object::getClass(type->getSystemState()) || 
 			type == Class<ASObject>::getClass(type->getSystemState());
-	else
-		return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
+	if (value->is<Function_object>())
+	{
+		Function_object* t=static_cast<Function_object*>(value);
+		value = t->functionPrototype.getPtr();
+	}
+	return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
 }
 
 Namespace* ABCVm::pushNamespace(call_context* th, int n)

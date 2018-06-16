@@ -57,6 +57,7 @@ public:
 	bool readU29(uint32_t& ret);
 	bool readUTF(tiny_string& ret);
 	bool readUTFBytes(uint32_t length,tiny_string& ret);
+	bool readBytes(uint32_t offset, uint32_t length, uint8_t* ret);
 	void writeByte(uint8_t b);
 	void writeBytes(uint8_t* data, int length);
 	void writeShort(uint16_t val);
@@ -85,6 +86,8 @@ public:
 	void setObjectEncoding(uint8_t encoding) { objectEncoding = encoding; }
 	uint8_t getCurrentObjectEncoding() const { return currentObjectEncoding; }
 	void setCurrentObjectEncoding(uint8_t encoding) { currentObjectEncoding = encoding; }
+	bool getLittleEndian() const { return littleEndian; }
+	void setLittleEndian(bool l) { littleEndian = l; }
 	
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getBytesAvailable);

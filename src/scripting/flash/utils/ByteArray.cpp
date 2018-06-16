@@ -484,6 +484,13 @@ bool ByteArray::readUTFBytes(uint32_t length,tiny_string& ret)
 	ret = buf;
 	return true;
 }
+bool ByteArray::readBytes(uint32_t offset, uint32_t length,uint8_t* ret)
+{
+	assert_and_throw(offset+length <= this->len);
+	uint8_t *bufStart=bytes+offset;
+	memcpy(ret,bufStart,(size_t)length);
+	return true;
+}
 
 void ByteArray::writeUTF(const tiny_string& str)
 {

@@ -61,6 +61,8 @@ protected:
 	ASFUNCTION_ATOM(_connected);
 	ASFUNCTION_ATOM(_flush);
 	ASFUNCTION_ATOM(bytesAvailable);
+	ASFUNCTION_ATOM(_getEndian);
+	ASFUNCTION_ATOM(_setEndian);
 	ASFUNCTION_ATOM(readBoolean);
 	ASFUNCTION_ATOM(readByte);
 	ASFUNCTION_ATOM(readBytes);

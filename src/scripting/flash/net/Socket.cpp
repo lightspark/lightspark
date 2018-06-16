@@ -179,8 +179,10 @@ void ASSocket::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_connected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(c->getSystemState(),_flush),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(c->getSystemState(),bytesAvailable),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_getEndian),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_setEndian),SETTER_METHOD,true);
 //	c->setDeclaredMethodByQName("readBoolean","",Class<IFunction>::getFunction(c->getSystemState(),readBoolean),NORMAL_METHOD,true);
-//	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(c->getSystemState(),readBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(c->getSystemState(),readBytes),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(c->getSystemState(),readByte),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(c->getSystemState(),readDouble),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(c->getSystemState(),readFloat),NORMAL_METHOD,true);
@@ -196,7 +198,7 @@ void ASSocket::sinit(Class_base* c)
 //	c->setDeclaredMethodByQName("writeBoolean","",Class<IFunction>::getFunction(c->getSystemState(),writeBoolean),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("writeUTF","",Class<IFunction>::getFunction(c->getSystemState(),writeUTF),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTFBytes","",Class<IFunction>::getFunction(c->getSystemState(),writeUTFBytes),NORMAL_METHOD,true);
-//	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(c->getSystemState(),writeBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeBytes","",Class<IFunction>::getFunction(c->getSystemState(),writeBytes),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("writeByte","",Class<IFunction>::getFunction(c->getSystemState(),writeByte),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("writeDouble","",Class<IFunction>::getFunction(c->getSystemState(),writeDouble),NORMAL_METHOD,true);
 //	c->setDeclaredMethodByQName("writeFloat","",Class<IFunction>::getFunction(c->getSystemState(),writeFloat),NORMAL_METHOD,true);
@@ -327,6 +329,68 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 		ret.setUInt(0);
 }
 
+ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
+{
+	ASSocket* th=obj.as<ASSocket>();
+	SpinlockLocker l(th->joblock);
+	if (th->job)
+	{
+		if(th->job->datasend->getLittleEndian())
+			ret = asAtom::fromString(sys,Endian::littleEndian);
+		else
+			ret = asAtom::fromString(sys,Endian::bigEndian);
+	}
+	else
+		ret = asAtom::fromString(sys,Endian::bigEndian);
+}
+
+ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
+{
+	ASSocket* th=obj.as<ASSocket>();
+	bool v = false;
+	if(args[0].toString(sys) == Endian::littleEndian)
+		v = true;
+	else if(args[0].toString(sys) == Endian::bigEndian)
+		v = false;
+	else
+		throwError<ArgumentError>(kInvalidEnumError, "endian");
+	SpinlockLocker l(th->joblock);
+	if (th->job)
+	{
+		th->job->datasend->setLittleEndian(v);
+		th->job->datareceive->setLittleEndian(v);
+	}
+}
+
+ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
+{
+	ASSocket* th=obj.as<ASSocket>();
+	_NR<ByteArray> data;
+	uint32_t offset;
+	uint32_t length;
+	ARG_UNPACK_ATOM (data)(offset,0)(length,0);
+	if (data.isNull())
+		return;
+	SpinlockLocker l(th->joblock);
+	if (th->job)
+	{
+		th->job->datareceive->lock();
+		if (length == 0)
+			length = th->job->datareceive->getLength();
+		uint8_t buf[length];
+		th->job->datareceive->readBytes(0,length,buf);
+		th->job->datareceive->unlock();
+		uint32_t pos = data->getPosition();
+		data->setPosition(offset);
+		data->writeBytes(buf,length);
+		data->setPosition(pos);
+	}
+	else
+	{
+		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+	}
+}
+
 ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 {
 	ASSocket* th=obj.as<ASSocket>();
@@ -337,6 +401,35 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 	{
 		th->job->datasend->lock();
 		th->job->datasend->writeUTF(data);
+		th->job->datasend->unlock();
+	}
+	else
+	{
+		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+	}
+}
+ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
+{
+	ASSocket* th=obj.as<ASSocket>();
+	_NR<ByteArray> data;
+	uint32_t offset;
+	uint32_t length;
+	ARG_UNPACK_ATOM (data)(offset,0)(length,0);
+	if (data.isNull())
+		return;
+	if (offset >= data->getLength())
+		throwError<RangeError>(kParamRangeError);
+	if (offset+length > data->getLength())
+		throwError<RangeError>(kParamRangeError);
+	SpinlockLocker l(th->joblock);
+	if (th->job)
+	{
+		if (length == 0)
+			length = data->getLength()-offset;
+		uint8_t buf[length];
+		data->readBytes(offset,length,buf);
+		th->job->datasend->lock();
+		th->job->datasend->writeBytes(buf,length);
 		th->job->datasend->unlock();
 	}
 	else
@@ -451,9 +544,7 @@ void ASSocketThread::execute()
 		return;
 	}
 
-	owner->incRef();
-	getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
-
+	bool first=true;
 	struct timeval timeout;
 	int maxfd;
 	fd_set readfds;
@@ -498,6 +589,13 @@ void ASSocketThread::execute()
 			else
 			{
 				executeCommand(cmd, sock);
+			}
+			if (first && !threadAborting)
+			{
+				// send connect event only after first succesful communication
+				first = false;
+				owner->incRef();
+				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
 			}
 		}
 		else if (FD_ISSET(sock.fileDescriptor(), &readfds))
@@ -556,6 +654,7 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_CLOSE:
 		{
 			sock.close();
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
 			threadAborting = true;
 			break;
 		}

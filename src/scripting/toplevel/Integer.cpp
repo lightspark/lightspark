@@ -242,23 +242,202 @@ void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringM
 	}
 }
 
-bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix)
+int32_t parseIntDigit(char ch)
+{
+	if (ch >= '0' && ch <= '9') {
+		return (ch - '0');
+	} else if (ch >= 'a' && ch <= 'z') {
+		return (ch - 'a' + 10);
+	} else if (ch >= 'A' && ch <= 'Z') {
+		return (ch - 'A' + 10);
+	} else {
+		return -1;
+	}
+}
+// algorithm taken from avmplus:
+bool parseIntECMA262(number_t& result, tiny_string& s, int32_t radix,bool negate, bool strict )
+{
+	bool gotDigits = false;
+	result = 0;
+	uint32_t index = 0;
+
+	// Make sure radix is valid, and we have digits
+	if (radix >= 2 && radix <= 36 && index < s.numChars()) {
+		result = 0;
+		int32_t start = index;
+		const char* cur = s.raw_buf();
+
+		// Read the digits, generate result
+		while (index < s.numChars()) {
+			int32_t v = parseIntDigit(g_utf8_get_char(cur));
+			if (v == -1 || v >= radix) {
+				break;
+			}
+			result = result * radix + v;
+			gotDigits = true;
+			index++;
+			cur = g_utf8_next_char(cur);
+		}
+
+		while(ASString::isEcmaSpace(g_utf8_get_char(cur))) // trailing whitespace is valid.
+		{
+			cur = g_utf8_next_char(cur);
+			index++;
+		}
+		if (strict && index < s.numChars()) {
+			result = Number::NaN;
+			return false;
+		}
+
+		if ( result >= 0x20000000000000LL &&  // i.e. if the result may need at least 54 bits of mantissa
+				(radix == 2 || radix == 4 || radix == 8 || radix == 16 || radix == 32) )  {
+
+			// CN:  we're here because we may have incurred roundoff error with the above.
+			//  Error will creep in once we need more than the available 53 bits
+			//  of precision in the mantissa portion of a double.  No way to deduce
+			//  this from the result, so we have to recalculate it more slowly.
+			result = 0;
+
+			int32_t powOf2 = 1;
+			for(int32_t x = radix; (x != 1); x >>= 1)
+				powOf2++;
+			powOf2--; // each word contains one less than this # of bits.
+			index = start;
+			int32_t v=0;
+
+			uint32_t end,next;
+			// skip leading zeros
+			for(end=index; end < s.numChars() && s.charAt(end) == '0'; end++)
+				;
+			if (end >= s.numChars())
+			{
+				result = 0;
+				return false;
+			}
+			for (next=0; next*powOf2 <= 52; next++) { // read first 52 non-zero digits.  Once charPosition*log2(radix) is > 53, we can have rounding issues
+				v = parseIntDigit(s.charAt(end++));
+				if (v == -1 || v >= radix) {
+					v = 0;
+					break;
+				}
+				result = result * radix + v;
+				if (end >= s.numChars())
+					break;
+			}
+			if (next*powOf2 > 52) { // If number contains more than 53 bits of precision, may need to roundUp last digit processed.
+				bool roundUp = false;
+				int32_t bit53 = 0;
+				int32_t bit54 = 0;
+
+				double factor = 1;
+
+				switch(radix) {
+				case 32:  // last word read contained digits 51,52,53,54,55
+					bit53 = v & (1 << 2);
+					bit54 = v & (1 << 1);
+					roundUp = (v & 1);
+					break;
+				case 16:  // last word read contained digits 50,51,52,53
+					bit53 = v & (1 << 0);
+					v = parseIntDigit(s.charAt(end));
+					if (v != -1 && v < radix) {
+						factor *= radix;
+						bit54 = v & (1 << 3);
+						roundUp = (v & 0x3) != 0;  // check if any bit after bit54 is set
+					} else {
+						roundUp = bit53 != 0;
+					}
+					break;
+				case 8: // last work read contained digits 49,50,51, next word contains 52,53,54
+					v = parseIntDigit(s.charAt(end));
+					if (v == -1 || v >= radix) {
+						v = 0;
+					}
+					factor *= radix;
+					bit53 = v & (1 << 1);
+					bit54 = v & (1 << 0);
+					break;
+				case 4: // 51,52 - 53,54
+					v = parseIntDigit(s.charAt(end));
+					if (v == -1 || v >= radix) {
+						v = 0;
+					}
+					factor *= radix;
+					bit53 = v & (1 << 1);
+					bit54 = v & (1 << 0);
+					break;
+				case 2: // 52 - 53 - 54
+					/*
+					v = parseIntDigit(s[end++]);
+					result = result * radix;  // add factor before round-off adjustment for 52 bit
+					*/
+					bit53 = v & (1 << 0);
+					v = parseIntDigit(s.charAt(end));
+					if (v != -1 && v < radix) {
+						factor *= radix;
+						bit54 = (v != -1 ? (v & (1 << 0)) : 0); // Might be there are only 53 digits.
+					}
+
+					break;
+				}
+
+				bit53 = !!bit53;
+				bit54 = !!bit54;
+
+
+				while(++end < s.numChars()) {
+					v = parseIntDigit(s.charAt(end));
+					if (v == -1 || v >= radix) {
+						break;
+					}
+					roundUp |= (v != 0); // any trailing positive bit causes us to round up
+					factor *= radix;
+				}
+				roundUp = bit54 && (bit53 || roundUp);
+				result += (roundUp ? 1.0 : 0.0);
+				result *= factor;
+			}
+
+		}
+		/*
+		else if (radix == 10 && result >= 0x20000000000000)
+		// if there are more than 15 digits, roundoff error may affect us.  Need to use exact integer rep instead of float
+		//int32_t numDigits = len - (s - sStart);
+		*/
+		if (negate) {
+			result = -result;
+		}
+	}
+	if (!gotDigits)
+		result = Number::NaN;
+	return gotDigits;
+}
+
+
+bool Integer::fromStringFlashCompatible(const char* cur, number_t& ret, int radix,bool strict)
 {
 	//Skip whitespace chars
 	while(ASString::isEcmaSpace(g_utf8_get_char(cur)))
 		cur = g_utf8_next_char(cur);
 
-	int64_t multiplier=1;
-	//Skip and take note of minus sign
-	if(*cur=='-')
+	bool negate=false;
+	//Skip and take note of plus/minus sign
+	if(*cur=='+')
+		cur++;
+	else if(*cur=='-')
 	{
-		multiplier=-1;
+		negate=true;
 		cur++;
 	}
-	if (radix == 0 && (g_str_has_prefix(cur,"0x") || g_str_has_prefix(cur,"0X")))
+	if (radix == 0 || radix==16)
 	{
-		radix = 16;
-		cur+=2;
+		if (g_str_has_prefix(cur,"0x") || g_str_has_prefix(cur,"0X"))
+		{
+			radix = 16;
+			cur+=2;
+		}
+		else if (radix == 0)
+			radix = 10;
 	}
 	//Skip leading zeroes
 	if (radix == 0)
@@ -278,26 +457,19 @@ bool Integer::fromStringFlashCompatible(const char* cur, int64_t& ret, int radix
 		}
 	}
 	
-	errno=0;
-	char *end;
-	ret=g_ascii_strtoll(cur, &end, radix);
-
-	if(end==cur || errno==ERANGE)
-		return false;
-
-	ret*=multiplier;
-	return true;
+	tiny_string s(cur);
+	return parseIntECMA262(ret, s,radix,negate,strict);
 }
 
-int32_t Integer::stringToASInteger(const char* cur, int radix)
+int32_t Integer::stringToASInteger(const char* cur, int radix,bool strict)
 {
-	int64_t value;
-	bool valid=Integer::fromStringFlashCompatible(cur, value, 0);
+	number_t value;
+	bool valid=Integer::fromStringFlashCompatible(cur, value, radix,strict);
 
 	if (!valid)
 		return 0;
 	else
-		return static_cast<int32_t>(value & 0xFFFFFFFF);
+		return (int32_t)(int64_t)value;
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toExponential)

@@ -3,6 +3,7 @@ tamarin-SWF/abcasm/bug_655118.swf
 tamarin-SWF/ecma3/Exceptions/exception_011_rt.swf
 tamarin-SWF/ecma3/RegExp/eregress_119909.swf
 tamarin-SWF/as3/ByteArray/ByteArrayLzmaThirdParty.swf
+tamarin-SWF/as3/Math/e15_1_2_2.swf
 tamarin-SWF/as3/Vector/concat.swf
 tamarin-SWF/recursion/pcre_find_fixedlength.swf
 tamarin-SWF/regress/bug_599357.swf

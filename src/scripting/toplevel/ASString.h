@@ -92,6 +92,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	number_t toNumber();
 	int32_t toInt();
+	int32_t toIntStrict();
 	uint32_t toUInt();
 	int64_t toInt64();
 	

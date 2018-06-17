@@ -278,6 +278,7 @@ public:
 	asAtom asTypelate(asAtom& atomtype);
 	FORCE_INLINE number_t toNumber();
 	FORCE_INLINE int32_t toInt();
+	FORCE_INLINE int32_t toIntStrict();
 	FORCE_INLINE int64_t toInt64();
 	FORCE_INLINE uint32_t toUInt();
 	tiny_string toString(SystemState *sys);
@@ -771,6 +772,7 @@ public:
 	tiny_string toLocaleString();
 	uint32_t toStringId();
 	virtual int32_t toInt();
+	virtual int32_t toIntStrict() { return toInt(); }
 	virtual uint32_t toUInt();
 	virtual int64_t toInt64();
 	uint16_t toUInt16();
@@ -1104,6 +1106,26 @@ FORCE_INLINE int32_t asAtom::toInt()
 			return 0;
 		default:
 			return checkObject()->toInt();
+	}
+}
+FORCE_INLINE int32_t asAtom::toIntStrict()
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return NumbertoInt(numberval);
+		case T_BOOLEAN:
+			return boolval;
+		case T_UNDEFINED:
+		case T_NULL:
+		case T_INVALID:
+			return 0;
+		default:
+			return checkObject()->toIntStrict();
 	}
 }
 FORCE_INLINE number_t asAtom::toNumber()
@@ -1718,7 +1740,7 @@ FORCE_INLINE void asAtom::convert_i()
 {
 	if (type == T_INTEGER)
 		return;
-	int32_t v = toInt();
+	int32_t v = toIntStrict();
 	decRef();
 	setInt(v);
 }

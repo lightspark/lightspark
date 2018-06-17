@@ -1210,7 +1210,7 @@ int64_t XMLList::toInt64()
 		return 0;
 
 	tiny_string str = toString_priv();
-	int64_t value;
+	number_t value;
 	bool valid=Integer::fromStringFlashCompatible(str.raw_buf(), value, 0);
 	if (!valid)
 		return 0;

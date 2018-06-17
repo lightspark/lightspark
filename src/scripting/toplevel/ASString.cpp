@@ -557,13 +557,18 @@ int32_t ASString::toInt()
 	assert_and_throw(implEnable);
 	return Integer::stringToASInteger(getData().raw_buf(), 0);
 }
+int32_t ASString::toIntStrict()
+{
+	assert_and_throw(implEnable);
+	return Integer::stringToASInteger(getData().raw_buf(), 0,true);
+}
 int64_t ASString::toInt64()
 {
-	int64_t value;
+	number_t value;
 	bool valid=Integer::fromStringFlashCompatible(getData().raw_buf(), value, 0);
 	if (!valid)
 		return 0;
-	return value;
+	return (int64_t)value;
 }
 uint32_t ASString::toUInt()
 {

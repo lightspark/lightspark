@@ -2402,19 +2402,15 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	}
 
 	const char* cur=str.raw_buf();
-	int64_t res;
+	number_t res;
 	bool valid=Integer::fromStringFlashCompatible(cur,res,radix);
 
 	if(valid==false)
 		ret.setNumber(numeric_limits<double>::quiet_NaN());
-	else if(res==INT64_MAX)
-		ret.setNumber(numeric_limits<double>::infinity());
-	else if(res==INT64_MIN)
-		ret.setNumber(-numeric_limits<double>::infinity());
 	else if (res < INT32_MAX && res > INT32_MIN)
 		ret.setInt((int32_t)res);
 	else
-		ret = asAtom::fromObject(abstract_di(sys,res));
+		ret.setNumber(res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseFloat)

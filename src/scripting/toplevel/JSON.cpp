@@ -406,7 +406,7 @@ int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,c
 					if (it==sub.end()) 
 						throwError<SyntaxError>(kJSONInvalidParseInput);
 				}
-				int64_t hexnum;
+				number_t hexnum;
 				if (Integer::fromStringFlashCompatible(strhex.raw_buf(),hexnum,16))
 				{
 					if (hexnum < 0x20 && hexnum != 0xf)

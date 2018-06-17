@@ -573,6 +573,8 @@ public:
 		if(it==sys->templates.end()) //This class is not yet in the map, create it
 		{
 			ret=new (sys->unaccountedMemory) Template<T>(name);
+			ret->prototype = _MNR(new_objectPrototype(sys));
+			ret->addPrototypeGetter(sys);
 			sys->templates.insert(std::make_pair(name,ret));
 		}
 		else

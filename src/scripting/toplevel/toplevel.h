@@ -296,6 +296,8 @@ public:
 	Template_base(QName name);
 	virtual Class_base* applyType(const std::vector<const Type*>& t,_NR<ApplicationDomain> appdomain)=0;
 	QName getTemplateName() { return template_name; }
+	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
+	void addPrototypeGetter(SystemState *sys);
 };
 
 class Class_object: public Class_base

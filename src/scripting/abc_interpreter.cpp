@@ -49,7 +49,7 @@ void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 	if (obj->is<Undefined>())
 		throwError<TypeError>(kConvertUndefinedToObjectError);
-	if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+	if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (obj->getClass() && !obj->getClass()->isSealed))
 		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(obj->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 	prop = asAtom::undefinedAtom;
 }

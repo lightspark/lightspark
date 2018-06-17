@@ -1082,6 +1082,22 @@ Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),templat
 {
 	type = T_TEMPLATE;
 }
+void Template_base::addPrototypeGetter(SystemState* sys)
+{
+	this->setSystemState(sys);
+	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(sys,_getter_prototype),GETTER_METHOD,false);
+}
+void Template_base::_getter_prototype(asAtom& ret, SystemState* sys,asAtom& obj, asAtom* args, const unsigned int argslen)
+{
+	if(!obj.is<Template_base>())
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	Template_base* th = obj.as<Template_base>();
+	if(argslen != 0)
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+	ASObject* res=th->prototype->getObj();
+	res->incRef();
+	ret = asAtom::fromObject(res);
+}
 
 Class_object* Class_object::getClass(SystemState *sys)
 {

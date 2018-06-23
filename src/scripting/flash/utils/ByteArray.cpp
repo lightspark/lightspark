@@ -992,6 +992,88 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 	ASATOM_INCREF(ret);
 }
 
+tiny_string parseUtf8(uint8_t* bytes, int32_t len)
+{
+	tiny_string res;
+	uint8_t* p = bytes;
+	while (len > 0)
+	{
+		switch ((*p)&0xc0)
+		{
+			case 0x00: // ascii
+			case 0x40: // ascii
+			case 0x80: // invalid, is added as byte
+				res += (uint32_t)(uint8_t)(*p++);
+				--len;
+				break;
+			case 0xc0: // > 1 byte UTF8
+			{
+				switch ((*p)&0x30)
+				{
+					case 0x00:// 2 byte UTF8
+					case 0x10:// 2 byte UTF8
+						if (len < 2 // truncated
+							|| (((*(p+1))&0xC0) != 0x80))  // invalid 2nd char
+						{
+							res += (uint32_t)(uint8_t)(*p++);
+							--len;
+						}
+						else
+						{
+							uint32_t c = (uint32_t)(uint8_t)(*p);
+							res += (((c<<6) & 0x7C0) | ((*(p+1)) & 0x3F));
+							p+=2;
+							len-=2;
+						}
+						break;
+					case 0x20: // 3 byte UTF8
+						if (len < 3  // truncated
+							|| (((*(p+1))&0xC0) != 0x80)  // invalid 2nd char
+							|| (((*(p+2))&0xC0) != 0x80)) // invalid 3rd char
+						{
+							res += (uint32_t)(uint8_t)(*p++);
+							--len;
+						}
+						else
+						{
+							uint32_t c = (uint32_t)(uint8_t)(*p);
+							res += (((c<<12) & 0xF000) 
+									| ((((uint32_t)(uint8_t)(*(p+1)))<<6) & 0xFC0) 
+									| ((*(p+2)) & 0x3F));
+							p+=3;
+							len-=3;
+						}
+						break;
+					case 0x30: // 4 byte UTF8
+					{
+						if (len < 4  // truncated
+							|| (((*(p+1))&0xC0) != 0x80)  // invalid 2nd char
+							|| (((*(p+2))&0xC0) != 0x80)  // invalid 3rd char
+							|| (((*(p+3))&0xC0) != 0x80)) // invalid 4th char
+						{
+							res += (uint32_t)(uint8_t)(*p++);
+							--len;
+						}
+						else
+						{
+							uint32_t c = (uint32_t)(uint8_t)(*p);
+							res += (((c<<18) & 0x1C0000) 
+									| ((((uint32_t)(uint8_t)(*(p+1)))<<12) & 0x3F000)
+									| ((((uint32_t)(uint8_t)(*(p+2)))<<6) & 0xFC0)
+									| ((*(p+3)) & 0x3F));
+							p+=4;
+							len-=4;
+						}
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+	return res;
+}
+
 ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 {
 	ByteArray* th=obj.as<ByteArray>();
@@ -1004,7 +1086,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	ret = asAtom::fromObject(abstract_s(sys,(char*)th->bytes+start,th->len-start));
+	ret = asAtom::fromObject(abstract_s(sys,parseUtf8((uint8_t*)th->bytes+start,th->len-start)));
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

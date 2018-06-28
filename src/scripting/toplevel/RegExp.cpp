@@ -42,10 +42,10 @@ void RegExp::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("test",AS3,Class<IFunction>::getFunction(c->getSystemState(),test),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(c->getSystemState(),exec),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(c->getSystemState(),test),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(c->getSystemState(),test),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(c->getSystemState(),exec),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("test","",Class<IFunction>::getFunction(c->getSystemState(),test),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("test",AS3,Class<IFunction>::getFunction(c->getSystemState(),test),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,dotall);
 	REGISTER_GETTER(c,global);
 	REGISTER_GETTER(c,ignoreCase);

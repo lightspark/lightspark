@@ -519,7 +519,7 @@ public:
 	void destroyContents();
 };
 
-enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02};
+enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04};
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
@@ -1401,10 +1401,11 @@ FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 				case T_INTEGER:
 				case T_UINTEGER:
 				case T_BOOLEAN:
-					return toNumber()==v2.toNumber();
+					return numberval==v2.toNumber();
 				case T_NUMBER:
+					return numberval == v2.numberval;
 				case T_STRING:
-					return toNumber()==v2.toNumber();
+					return numberval==v2.toNumber();
 				case T_NULL:
 				case T_UNDEFINED:
 					return false;

@@ -735,7 +735,10 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
+		if (obj->var.type == T_FUNCTION || obj->setter.type != T_INVALID)
+			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
+		else
+			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 	}
 	if(!obj && cls)
 	{
@@ -1293,17 +1296,16 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		}
 		if(!obj)
 			return res;
-		else
-			res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
+		res = (GET_VARIABLE_RESULT)(res | GETVAR_CACHEABLE);
 	}
-	else if (obj->kind == CONSTANT_TRAIT)
-		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
+	if (obj->kind == CONSTANT_TRAIT)
+		res = (GET_VARIABLE_RESULT)(res | GETVAR_CACHEABLE | GETVAR_ISCONSTANT);
 
 
 	if ( this->is<Class_base>() )
 	{
 		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
-		if (obj->kind == INSTANCE_TRAIT && getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
+		if (!(opt & FROM_GETLEX) && obj->kind == INSTANCE_TRAIT && getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 	}
 

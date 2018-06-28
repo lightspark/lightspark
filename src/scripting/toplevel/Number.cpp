@@ -319,9 +319,9 @@ void Number::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toLocaleString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),Number::toFixed, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),Number::toExponential, 1),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),Number::toPrecision, 1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),Number::toFixed, 1),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),Number::toExponential, 1),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),Number::toPrecision, 1),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
 
 	// if needed add AVMPLUS definitions

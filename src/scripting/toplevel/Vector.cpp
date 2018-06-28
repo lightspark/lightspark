@@ -79,24 +79,24 @@ void Vector::sinit(Class_base* c)
 	
 
 	c->prototype->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("every",AS3,Class<IFunction>::getFunction(c->getSystemState(),every),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(c->getSystemState(),filter),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(c->getSystemState(),forEach),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),indexOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("join",AS3,Class<IFunction>::getFunction(c->getSystemState(),join),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(c->getSystemState(),_map),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(c->getSystemState(),_pop),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("push",AS3,Class<IFunction>::getFunction(c->getSystemState(),push),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(c->getSystemState(),_reverse),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(c->getSystemState(),shift),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(c->getSystemState(),slice),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("some",AS3,Class<IFunction>::getFunction(c->getSystemState(),some),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(c->getSystemState(),_sort),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(c->getSystemState(),_concat),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("every",AS3,Class<IFunction>::getFunction(c->getSystemState(),every),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(c->getSystemState(),filter),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(c->getSystemState(),forEach),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),indexOf),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),lastIndexOf),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("join",AS3,Class<IFunction>::getFunction(c->getSystemState(),join),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("map",AS3,Class<IFunction>::getFunction(c->getSystemState(),_map),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(c->getSystemState(),_pop),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("push",AS3,Class<IFunction>::getFunction(c->getSystemState(),push),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(c->getSystemState(),_reverse),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(c->getSystemState(),shift),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(c->getSystemState(),slice),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("some",AS3,Class<IFunction>::getFunction(c->getSystemState(),some),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(c->getSystemState(),_sort),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(c->getSystemState(),splice),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(c->getSystemState(),unshift),CONSTANT_TRAIT);
 }
 
 Vector::Vector(Class_base* c, const Type *vtype):ASObject(c,T_OBJECT,SUBTYPE_VECTOR),vec_type(vtype),fixed(false),vec(reporter_allocator<asAtom>(c->memoryAccount))

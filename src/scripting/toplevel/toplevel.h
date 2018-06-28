@@ -351,6 +351,10 @@ public:
 	{
 		getObj()->setVariableByQName(name,ns,o,traitKind);
 	}
+	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind)
+	{
+		getObj()->setVariableAtomByQName(name,ns,o,traitKind);
+	}
 };
 
 /* Special object used as prototype for classes

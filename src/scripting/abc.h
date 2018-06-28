@@ -145,7 +145,7 @@ enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_
 enum OPERANDTYPES { 
 	OP_UNDEFINED=0x00, OP_STRING=0x01, OP_INTEGER=0x03, OP_UINTEGER=0x04, OP_DOUBLE=0x06, OP_NAMESPACE=0x08, 
 	OP_FALSE=0x0a, OP_TRUE=0x0b, OP_NULL=0x0c, 
-	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30};
+	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30, OP_CACHED_CONSTANT=0x40};
 
 #define ABC_OP_CACHED 0x10000000 
 #define ABC_OP_NOTCACHEABLE 0x20000000 
@@ -198,6 +198,9 @@ public:
 	std::vector<asAtom> constantAtoms_namespaces;
 	std::vector<asAtom> constantAtoms_byte;
 	std::vector<asAtom> constantAtoms_short;
+	std::unordered_map<uint32_t,asAtom> constantAtoms_cached;
+	ATOMIC_INT32(atomsCachedMaxID);
+	uint32_t addCachedConstantAtom(asAtom a);
 	/**
 		Construct and insert in the a object a given trait
 		@param obj the tarhget object
@@ -839,6 +842,8 @@ private:
 	static void abc_debugfile(call_context* context);
 	static void abc_bkptline(call_context* context);
 	static void abc_timestamp(call_context* context);
+	
+	static void abc_pushcachedconstant(call_context* context);
 
 	static void abc_invalidinstruction(call_context* context);
 

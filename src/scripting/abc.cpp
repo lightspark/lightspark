@@ -1144,6 +1144,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	constantAtoms_short.resize(0x10000);
 	for (int32_t i = 0; i < 0x10000; i++)
 		constantAtoms_short[i] = asAtom((int32_t)(int16_t)i);
+	atomsCachedMaxID=0;
 	
 	namespaceBaseId=vm->getAndIncreaseNamespaceBase(constant_pool.namespaces.size());
 
@@ -2376,6 +2377,9 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 		case OP_SHORT:
 			ret = &constantAtoms_short[index];
 			break;
+		case OP_CACHED_CONSTANT:
+			ret =&constantAtoms_cached[index];
+			break;
 		default:
 		{
 			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
@@ -2383,6 +2387,13 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 		}
 	}
 	return ret;
+}
+
+uint32_t ABCContext::addCachedConstantAtom(asAtom a)
+{
+	++atomsCachedMaxID;
+	constantAtoms_cached[atomsCachedMaxID]=a;
+	return atomsCachedMaxID;
 }
 
 void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslots, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)

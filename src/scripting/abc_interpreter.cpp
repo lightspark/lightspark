@@ -557,6 +557,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_convert_d_local_localresult,
 	abc_returnvalue_constant,// 0x1b8 ABC_OP_OPTIMZED_RETURNVALUE
 	abc_returnvalue_local,
+	abc_pushcachedconstant,// 0x1ba ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT
 	
 	abc_invalidinstruction
 };
@@ -1387,6 +1388,16 @@ void ABCVm::abc_pushnan(call_context* context)
 	//pushnan
 	LOG_CALL("pushNaN");
 	RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
+	++(context->exec_pos);
+}
+void ABCVm::abc_pushcachedconstant(call_context* context)
+{
+	int32_t t = (++(context->exec_pos))->idata;
+	assert(t <= (int)context->mi->context->atomsCachedMaxID);
+	asAtom a = context->mi->context->constantAtoms_cached[t];
+	LOG_CALL("pushcachedconstant "<<t<<" "<<a->toDebugString());
+	ASATOM_INCREF(a);
+	RUNTIME_STACK_PUSH(context,a);
 	++(context->exec_pos);
 }
 void ABCVm::abc_pop(call_context* context)
@@ -4323,6 +4334,7 @@ struct operands
 #define ABC_OP_OPTIMZED_IFFALSE 0x000001b2
 #define ABC_OP_OPTIMZED_CONVERTD 0x000001b4
 #define ABC_OP_OPTIMZED_RETURNVALUE 0x000001b8
+#define ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT 0x000001ba
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -4618,12 +4630,70 @@ void setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		operandlist.clear();
 }
 
-bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets, bool skip_conversion)
+bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets, bool skip_conversion,bool cancollapse)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 2;
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
+		if (cancollapse && (--it)->type != OP_LOCAL && (--it)->type != OP_LOCAL) // two constants means we can compute the result now and use it
+		{
+			it =operandlist.end();
+			(--it)->removeArg(mi);// remove arg2
+			(--it)->removeArg(mi);// remove arg1
+			it = operandlist.end();
+			--it;
+			asAtom* op2 = mi->context->getConstantAtom((it)->type,(it)->index);
+			--it;
+			asAtom* op1 = mi->context->getConstantAtom((it)->type,(it)->index);
+			asAtom res = *op1;
+			switch (operator_start)
+			{
+				case ABC_OP_OPTIMZED_SUBTRACT:
+					res.subtract(*op2);
+					break;
+				case ABC_OP_OPTIMZED_MULTIPLY:
+					res.multiply(*op2);
+					break;
+				case ABC_OP_OPTIMZED_DIVIDE:
+					res.divide(*op2);
+					break;
+				case ABC_OP_OPTIMZED_MODULO:
+					res.modulo(*op2);
+					break;
+				case ABC_OP_OPTIMZED_LSHIFT:
+					res.lshift(*op2);
+					break;
+				case ABC_OP_OPTIMZED_RSHIFT:
+					res.rshift(*op2);
+					break;
+				case ABC_OP_OPTIMZED_URSHIFT:
+					res.urshift(*op2);
+					break;
+				case ABC_OP_OPTIMZED_BITAND:
+					res.bit_and(*op2);
+					break;
+				case ABC_OP_OPTIMZED_BITOR:
+					res.bit_or(*op2);
+					break;
+				case ABC_OP_OPTIMZED_BITXOR:
+					res.bit_xor(*op2);
+					break;
+				default:
+					LOG(LOG_ERROR,"setupInstructionTwoArguments: trying to collaps invalid opcode:"<<hex<<operator_start);
+					break;
+			}
+			operandlist.pop_back();
+			operandlist.pop_back();
+			uint32_t value = mi->context->addCachedConstantAtom(res);
+			mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
+			oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+			mi->body->preloadedcode.push_back(value);
+			operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+			return true;
+		}
+		
+		it =operandlist.end();
 		(--it)->removeArg(mi);// remove arg2
 		(--it)->removeArg(mi);// remove arg1
 		it = operandlist.end();
@@ -4855,6 +4925,42 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
 				uint32_t t =code.readu30();
+				if (function->inClass) // class method
+				{
+					multiname* name=mi->context->getMultiname(t,NULL);
+					if (name->isStatic)
+					{
+						asAtom o;
+						if(!function->func_scope.isNull()) // check scope stack
+						{
+							for(auto it=function->func_scope->scope.rbegin();it!=function->func_scope->scope.rend();++it)
+							{
+								ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
+								if(!it->considerDynamic)
+									opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+								else
+									break;
+								it->object.toObject(mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+								if(o.type != T_INVALID)
+									break;
+							}
+						}
+						if(o.type == T_INVALID)
+						{
+							ASObject* target;
+							mi->context->root->applicationDomain->getVariableAndTargetByMultiname(o,*name, target);
+						}
+						if (o.is<Class_base>())
+						{
+							uint32_t value = mi->context->addCachedConstantAtom(o);
+							mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
+							oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+							mi->body->preloadedcode.push_back(value);
+							operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+							break;
+						}
+					}
+				}
 				mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (!checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0))
@@ -5221,7 +5327,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
-							if (setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false))
+							if (setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false))
 							{
 								mi->body->preloadedcode.push_back(t);
 								mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
@@ -5262,16 +5368,38 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
 				uint32_t t = code.readu30();
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);
+				bool addname = true;
 				if (jumptargets.find(p) == jumptargets.end())
 				{
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
+							if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+							{
+								asAtom* a = mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
+								if (a->getObject())
+								{
+									asAtom ret;
+									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false));
+									if (r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT)
+									{
+										operandlist.back().removeArg(mi);
+										operandlist.pop_back();
+										uint32_t value = mi->context->addCachedConstantAtom(ret);
+										mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
+										oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+										mi->body->preloadedcode.push_back(value);
+										operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+										addname = false;
+										break;
+									}
+								}
+							}
 							setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true);
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
 							break;
 						case 1:
-							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false);
+							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false);
 							break;
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
@@ -5284,7 +5412,8 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 					operandlist.clear();
 				}
-				mi->body->preloadedcode.push_back(t);
+				if (addname)
+					mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0x75://convert_d
@@ -5297,40 +5426,40 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false);
 				break;
 			case 0xa0://add
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false,false);
 				break;
 			case 0xa1://subtract
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa2://multiply
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa3://divide
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa4://modulo
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa5://lshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa6://rshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa7://urshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa8://bitand
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xa9://bitor
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xaa://bitxor
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xaf://greaterthan
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false,false);
 				break;
 			default:
 			{

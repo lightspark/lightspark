@@ -196,6 +196,15 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 		case T_NULL:
 			ret.setInt((int32_t)0);
 			break;
+		case T_NUMBER:
+		{
+			number_t n = a.getNumber();
+			if (n  == 0.)
+				ret.setInt((int32_t)0);
+			else
+				ret.setNumber((number_t)::fabs(n));
+			break;
+		}
 		default:
 		{
 			number_t n = a.toNumber();

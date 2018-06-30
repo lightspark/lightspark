@@ -1597,7 +1597,6 @@ bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, n
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frameSize=f;
-	assert_and_throw(f.Xmin==0 && f.Ymin==0);
 }
 
 lightspark::RECT RootMovieClip::getFrameSize() const

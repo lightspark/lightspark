@@ -49,8 +49,6 @@ void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 	if (obj->is<Undefined>())
 		throwError<TypeError>(kConvertUndefinedToObjectError);
-	if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (obj->getClass() && !obj->getClass()->isSealed))
-		LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(obj->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 	prop = asAtom::undefinedAtom;
 }
 
@@ -1395,7 +1393,7 @@ void ABCVm::abc_pushcachedconstant(call_context* context)
 	int32_t t = (++(context->exec_pos))->idata;
 	assert(t <= (int)context->mi->context->atomsCachedMaxID);
 	asAtom a = context->mi->context->constantAtoms_cached[t];
-	LOG_CALL("pushcachedconstant "<<t<<" "<<a->toDebugString());
+	LOG_CALL("pushcachedconstant "<<t<<" "<<a.toDebugString());
 	ASATOM_INCREF(a);
 	RUNTIME_STACK_PUSH(context,a);
 	++(context->exec_pos);
@@ -5479,7 +5477,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 		}
 	}
 	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-
+	// also add position for end of code, as it seems that jumps to this position are allowed
+	oldnewpositions[code.tellg()+1] = (int32_t)mi->body->preloadedcode.size();
+	
 	// adjust jump positions to new code vector;
 	auto itj = jumppositions.begin();
 	while (itj != jumppositions.end())

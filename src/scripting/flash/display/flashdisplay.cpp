@@ -2532,6 +2532,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 {
 	//Stage* th=obj.as<Stage>();
 	const tiny_string& arg0=args[0].toString(sys);
+	SystemState::SCALE_MODE oldScaleMode = sys->scaleMode;
 	if(arg0=="exactFit")
 		sys->scaleMode=SystemState::EXACT_FIT;
 	else if(arg0=="showAll")
@@ -2541,8 +2542,11 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 	else if(arg0=="noScale")
 		sys->scaleMode=SystemState::NO_SCALE;
 
-	RenderThread* rt=sys->getRenderThread();
-	rt->requestResize(rt->windowWidth, rt->windowHeight, true);
+	if (oldScaleMode != sys->scaleMode)
+	{
+		RenderThread* rt=sys->getRenderThread();
+		rt->requestResize(rt->windowWidth, rt->windowHeight, true);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)

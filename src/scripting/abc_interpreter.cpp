@@ -2152,8 +2152,16 @@ void ABCVm::abc_finddef(call_context* context)
 	//finddef
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultiname(t,context);
-	LOG(LOG_NOT_IMPLEMENTED,"opcode 0x5f (finddef) not implemented:"<<*name);
-	RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
+	ASObject* target = NULL;
+	asAtom o;
+	getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(o,*name, target);
+	if (target)
+	{
+		target->incRef();
+		RUNTIME_STACK_PUSH(context,asAtom::fromObject(target));
+	}
+	else
+		RUNTIME_STACK_PUSH(context,asAtom::nullAtom);
 	name->resetNameIfObject();
 	++(context->exec_pos);
 }

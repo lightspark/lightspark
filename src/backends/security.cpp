@@ -1308,19 +1308,20 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	{
 		char buf[4096];
 		nbytes = sock.receive(buf, sizeof buf);
-		outData.insert(outData.end(), buf, buf + nbytes);
+		if (nbytes > 0)
+			outData.insert(outData.end(), buf, buf + nbytes);
 	}
 	while (nbytes > 0);
 
-	if (nbytes < 0)
+	if (nbytes < 0 && outData.size() == 0)
 	{
 		// error reading from socket
 		return false;
 	}
 
 	// The policy file is considered invalid if the last character
-	// is not '\0' or '>'
-	if (outData.size() == 0 || (outData[outData.size()-1] != '\0' && outData[outData.size()-1] != '>'))
+	// is not '\0' or '>' or '\n'
+	if (outData.size() == 0 || (outData[outData.size()-1] != '\0' && outData[outData.size()-1] != '>' && outData[outData.size()-1] != '\n'))
 	{
 		return false;
 	}

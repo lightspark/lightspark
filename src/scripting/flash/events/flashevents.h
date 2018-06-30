@@ -156,6 +156,7 @@ public:
 	{
 	}
 	ASFUNCTION_ATOM(_constructor);
+	tiny_string statuscode;
 };
 
 class HTTPStatusEvent: public Event
@@ -368,6 +369,7 @@ public:
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
 	virtual void defaultEventBehavior(_R<Event> e) {}
+	virtual void afterExecution(_R<Event> e) {}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(addEventListener);
 	ASFUNCTION_ATOM(removeEventListener);

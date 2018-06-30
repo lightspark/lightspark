@@ -657,7 +657,7 @@ uint32_t URLInfo::decodeHexDigit(CharIterator& c, const CharIterator& end)
 bool URLInfo::isRTMP() const
 {
 	return protocol == "rtmp" || protocol == "rtmpe" || protocol == "rtmps" ||
-	       protocol == "rtmpt" || protocol == "rtmpte" || protocol == "rtmpts";
+	       protocol == "rtmpt" || protocol == "rtmpte" || protocol == "rtmpts" || protocol == "rtmfp";
 }
 
 std::list< std::pair<tiny_string, tiny_string> > URLInfo::getQueryKeyValue() const

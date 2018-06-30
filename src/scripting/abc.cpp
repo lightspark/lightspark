@@ -1428,7 +1428,8 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
-
+	dispatcher->afterExecution(event);
+	
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->setTarget(asAtom::invalidAtom);

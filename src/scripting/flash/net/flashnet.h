@@ -234,6 +234,9 @@ public:
 	ASFUNCTION_ATOM(_getURI);
 	ASFUNCTION_ATOM(close);
 	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
+	ASPROPERTY_GETTER_SETTER(uint32_t,maxPeerConnections);
+	ASPROPERTY_GETTER(tiny_string,nearID);
+	void afterExecution(_R<Event> e);
 };
 
 class NetStreamAppendBytesAction: public ASObject
@@ -327,6 +330,7 @@ public:
 	ASFUNCTION_ATOM(appendBytes);
 	ASFUNCTION_ATOM(appendBytesAction);
 	ASFUNCTION_ATOM(_getInfo);
+	ASFUNCTION_ATOM(publish);
 	ASPROPERTY_GETTER(number_t, backBufferLength);
 	ASPROPERTY_GETTER_SETTER(number_t, backBufferTime);
 	ASPROPERTY_GETTER(number_t, bufferLength);

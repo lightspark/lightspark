@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <map>
 #include "backends/security.h"
 #include "scripting/abc.h"
@@ -745,11 +747,16 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableAtomByQName("AMF3",nsNameAndKind(),asAtom(AMF3),DECLARED_TRAIT);
 	c->setVariableAtomByQName("DEFAULT",nsNameAndKind(),asAtom(DEFAULT),DECLARED_TRAIT);
 }
-
+// this is a global counter to produce uinque IDs for NetConnections
+// TODO maybe it would be better to use some form of GUID
+std::atomic<uint64_t> nearIDcounter(0);
 NetConnection::NetConnection(Class_base* c):
 	EventDispatcher(c),_connected(false),downloader(NULL),messageCount(0),
-	proxyType(PT_NONE)
+	proxyType(PT_NONE),maxPeerConnections(8)
 {
+	char buf[100];
+	sprintf(buf, "nearID%" PRIu64 "", ++nearIDcounter);
+	nearID = buf;
 }
 
 void NetConnection::sinit(Class_base* c)
@@ -760,7 +767,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_getConnected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
-	getSys()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->getSystemState()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectEncoding),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(c->getSystemState(),_getProtocol),GETTER_METHOD,true);
@@ -769,6 +776,8 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_getURI),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
+	REGISTER_GETTER_SETTER(c,maxPeerConnections);
+	REGISTER_GETTER(c,nearID);
 }
 
 void NetConnection::buildTraits(ASObject* o)
@@ -944,12 +953,14 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 		if(th->uri.isRTMP())
 		{
 			isRTMP = true;
-			th->_connected = true;
+			// it seems that the connected flag should only be set after the NetConnection.Connect.Success event is handled
+			//th->_connected = true;
 		}
 		else if(th->uri.getProtocol() == "http" ||
 		     th->uri.getProtocol() == "https")
 		{
-			th->_connected = true;
+			// it seems that the connected flag should only be set after the NetConnection.Connect.Success event is handled
+			//th->_connected = true;
 			//isRPC = true;
 		}
 		else
@@ -969,7 +980,15 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetConnection.Connect.Success")));
 	}
 }
-
+void NetConnection::afterExecution(_R<Event> ev)
+{
+	if (ev->is<NetStatusEvent>())
+	{
+		// it seems that the connected flag should only be set after the NetConnection.Connect.Success event is handled
+		if (ev->as<NetStatusEvent>()->statuscode == "NetConnection.Connect.Success")
+			this->_connected = true;
+	}
+}
 ASFUNCTIONBODY_ATOM(NetConnection,_getConnected)
 {
 	NetConnection* th=obj.as<NetConnection>();
@@ -1106,6 +1125,8 @@ ASFUNCTIONBODY_ATOM(NetConnection,close)
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(NetConnection, client);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NetConnection, maxPeerConnections);
+ASFUNCTIONBODY_GETTER(NetConnection, nearID);
 
 void NetStreamAppendBytesAction::sinit(Class_base* c)
 {
@@ -1123,6 +1144,7 @@ NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused
 	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
 	maxPauseBufferTime(0)
 {
+	subtype=SUBTYPE_NETSTREAM;
 	soundTransform = _MNR(Class<SoundTransform>::getInstanceS(c->getSystemState()));
 }
 
@@ -1175,6 +1197,7 @@ void NetStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,soundTransform);
 	REGISTER_GETTER_SETTER(c,useHardwareDecoder);
 	c->setDeclaredMethodByQName("info","",Class<IFunction>::getFunction(c->getSystemState(),_getInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("publish","",Class<IFunction>::getFunction(c->getSystemState(),publish),NORMAL_METHOD,true);
 }
 
 void NetStream::buildTraits(ASObject* o)
@@ -1649,7 +1672,11 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytesAction)
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"NetStream.appendBytesAction is not implemented yet:"<<val);
 }
-
+ASFUNCTIONBODY_ATOM(NetStream,publish)
+{
+	//NetStream* th=obj.as<NetStream>();
+	LOG(LOG_NOT_IMPLEMENTED,"Netstream.publish not implemented");
+}
 //Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {

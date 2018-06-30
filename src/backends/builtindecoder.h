@@ -42,8 +42,11 @@ private:
 	enum STREAM_TYPE { FLV_STREAM=0, UNKOWN_STREAM=1 };
 	STREAM_TYPE classifyStream(std::istream& s);
 	NetStream* netstream;
+	uint8_t* headerbuf;
+	uint32_t headerLen;
 public:
 	BuiltinStreamDecoder(std::istream& _s, NetStream* _ns);
+	~BuiltinStreamDecoder();
 	bool decodeNextFrame();
 };
 

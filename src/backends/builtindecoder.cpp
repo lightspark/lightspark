@@ -26,7 +26,7 @@
 using namespace lightspark;
 
 BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns):
-	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0),netstream(_ns)
+	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0),netstream(_ns),headerbuf(NULL),headerLen(0)
 {
 	STREAM_TYPE t=classifyStream(stream);
 	if(t==FLV_STREAM)
@@ -37,6 +37,15 @@ BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns):
 	}
 	else
 		valid=false;
+}
+
+BuiltinStreamDecoder::~BuiltinStreamDecoder()
+{
+	if (headerLen)
+	{
+		delete headerbuf;
+		headerLen = 0;
+	}
 }
 
 BuiltinStreamDecoder::STREAM_TYPE BuiltinStreamDecoder::classifyStream(std::istream& s)
@@ -71,16 +80,25 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 			prevSize=tag.getTotalLen();
 			if (tag.packetLen == 0)
 				return false;
-
+			if (tag.isHeader() && tag.SoundFormat == AAC)
+			{
+				if (audioDecoder)
+					break;
+				if (headerLen)
+					delete headerbuf;
+				// store the aac header, don't pass it as initData to the FFMpegAudioDecoder constructor
+				headerbuf = new uint8_t[tag.packetLen];
+				memcpy(headerbuf,tag.packetData,tag.packetLen);
+				headerLen = tag.packetLen;
+			}
 			if(audioDecoder==NULL)
 			{
 				audioCodec=tag.SoundFormat;
 				switch(tag.SoundFormat)
 				{
 					case AAC:
-						assert_and_throw(tag.isHeader())
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat, tag.packetData, tag.packetLen);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,NULL,0);// tag.packetData, tag.packetLen);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif
@@ -94,7 +112,8 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 #endif
 						decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 						//Adjust timing
-						decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
+						if (audioDecoder->getBytesPerMSec())
+							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						break;
 					default:
 						throw RunTimeException("Unsupported SoundFormat");
@@ -102,20 +121,23 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 			}
 			else
 			{
-			/*
-				if(tag.isHeader())
+				assert_and_throw(audioCodec==tag.SoundFormat);
+				if (headerLen)
 				{
-					//The tag is the header, initialize decoding
-					audioDecoder->switchCodec(tag.SoundFormat, tag.packetData, tag.packetLen);
-					tag.releaseBuffer();
+					// add aac header to this packet
+					uint8_t buf[headerLen+tag.packetLen];
+					memcpy(buf,headerbuf,headerLen);
+					memcpy(buf+headerLen,tag.packetData,tag.packetLen);
+					
+					decodedAudioBytes+=audioDecoder->decodeData(buf,tag.packetLen+headerLen,decodedTime);
+					delete headerbuf;
+					headerLen = 0;
 				}
-				else*/
-				{
-					assert_and_throw(audioCodec==tag.SoundFormat);
+				else
 					decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-					//Adjust timing
+				//Adjust timing
+				if (audioDecoder->getBytesPerMSec())
 					decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
-				}
 			}
 			break;
 		}

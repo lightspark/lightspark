@@ -2592,7 +2592,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(t->vindex)
 				getConstant(ret,t->vkind,t->vindex);
 			else
-				ret.setUndefined();
+				ret.setNull();
 
 			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << ret.toDebugString());
 

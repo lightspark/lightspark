@@ -54,7 +54,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),handleCompleteEvent(true),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -67,7 +67,7 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),bytesData(NullRef),loadStatus(STARTED),handleCompleteEvent(true),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -162,7 +162,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		if(loadStatus==INIT_SENT)
 		{
 			//The clip is also complete now
-			if(getVm(getSystemState()))
+			if(handleCompleteEvent && getVm(getSystemState()))
 			{
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
@@ -181,8 +181,11 @@ void LoaderInfo::sendInit()
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+		if (handleCompleteEvent)
+		{
+			this->incRef();
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+		}
 		loadStatus=COMPLETE;
 	}
 }
@@ -367,12 +370,17 @@ void LoaderThread::execute()
 {
 	assert(source==URL || source==BYTES);
 
+	// the "complete" event will be sent after the calling DisplayObject is completely constructed (see DisplayObject::afterConstruction())
+	loaderInfo->setHandleCompleteEvent(false);
 	streambuf *sbuf = 0;
 	if(source==URL)
 	{
 		_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(loader->getSystemState())));
 		if(!createDownloader(cache, loaderInfo, loaderInfo.getPtr(), false))
+		{
+			loaderInfo->setHandleCompleteEvent(true);
 			return;
+		}
 
 		sbuf = cache->createReader();
 		
@@ -381,6 +389,7 @@ void LoaderThread::execute()
 		if(downloader->hasEmptyAnswer())
 		{
 			LOG(LOG_INFO,"empty answer:"<<url);
+			loaderInfo->setHandleCompleteEvent(true);
 			return;
 		}
 
@@ -392,6 +401,7 @@ void LoaderThread::execute()
 			loader->incRef();
 			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
 			delete sbuf;
+			loaderInfo->setHandleCompleteEvent(true);
 			// downloader will be deleted in jobFence
 			return;
 		}
@@ -1324,6 +1334,9 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
+	advanceFrame();
+	initFrame();
+	executeFrameScript();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -1344,12 +1357,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP+1;
 	th->state.explicit_FP=true;
-	if (!th->getParent())
-	{
-		th->advanceFrame();
-		th->initFrame();
-		th->executeFrameScript();
-	}
+	th->advanceFrame();
+	th->initFrame();
+	th->executeFrameScript();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -1358,12 +1368,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP-1;
 	th->state.explicit_FP=true;
-	if (!th->getParent())
-	{
-		th->advanceFrame();
-		th->initFrame();
-		th->executeFrameScript();
-	}
+	th->advanceFrame();
+	th->initFrame();
+	th->executeFrameScript();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)

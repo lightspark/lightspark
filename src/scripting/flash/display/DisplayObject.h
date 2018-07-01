@@ -125,6 +125,7 @@ public:
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	void constructionComplete();
+	void afterConstruction();
 	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;

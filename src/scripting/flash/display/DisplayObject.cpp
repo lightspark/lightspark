@@ -1168,6 +1168,16 @@ void DisplayObject::constructionComplete()
 		requestInvalidation(getSystemState());
 }
 
+void DisplayObject::afterConstruction()
+{
+	if(!loaderInfo.isNull())
+	{
+		loaderInfo->incRef();
+		getVm(getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+		loaderInfo->setHandleCompleteEvent(true);
+	}
+}
+
 void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const
 {
 	if(mask.isNull())

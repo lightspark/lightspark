@@ -2591,6 +2591,9 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			//If the index is valid we set the constant
 			if(t->vindex)
 				getConstant(ret,t->vkind,t->vindex);
+			else if(tname->name_type == multiname::NAME_STRING && tname->name_s_id==BUILTIN_STRINGS::ANY
+					&& tname->ns.size() == 1 && tname->hasEmptyNS)
+				ret.setUndefined();
 			else
 				ret.setNull();
 

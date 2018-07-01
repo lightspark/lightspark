@@ -447,7 +447,7 @@ void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, nu
 	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
-void DisplayObject::setOnStage(bool staged)
+void DisplayObject::setOnStage(bool staged, bool force)
 {
 	//TODO: When removing from stage released the cachedTex
 	if(staged!=onStage)
@@ -461,6 +461,10 @@ void DisplayObject::setOnStage(bool staged)
 		}
 		if(getVm(getSystemState())==NULL)
 			return;
+		force = true;
+	}
+	if (force)
+	{
 		/*NOTE: By tests we can assert that added/addedToStage is dispatched
 		  immediately when addChild is called. On the other hand setOnStage may
 		  be also called outside of the VM thread (for example by Loader::execute)

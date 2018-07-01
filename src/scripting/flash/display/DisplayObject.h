@@ -170,7 +170,7 @@ public:
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
-	virtual void setOnStage(bool staged);
+	virtual void setOnStage(bool staged, bool force = false);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
 	bool isVisible() const { return visible; }

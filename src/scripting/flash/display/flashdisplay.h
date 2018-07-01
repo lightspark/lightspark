@@ -99,7 +99,7 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setOnStage(bool staged);
+	void setOnStage(bool staged, bool force = false);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
@@ -561,7 +561,7 @@ protected:
 	void renderImpl(RenderContext& ctxt) const;
 public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
-	void setOnStage(bool staged) { assert(false); /* we are the stage */}
+	void setOnStage(bool staged, bool force = false) { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot();
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(Class_base* c);

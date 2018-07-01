@@ -1776,12 +1776,10 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
-void DisplayObjectContainer::setOnStage(bool staged)
+void DisplayObjectContainer::setOnStage(bool staged, bool force)
 {
-	if(staged!=onStage)
+	if(staged!=onStage||force)
 	{
-		DisplayObject::setOnStage(staged);
-		//Notify childern
 		//Make a copy of display list, and release the mutex
 		//before calling setOnStage
 		std::vector<_R<DisplayObject>> displayListCopy;
@@ -1790,9 +1788,13 @@ void DisplayObjectContainer::setOnStage(bool staged)
 			displayListCopy.assign(dynamicDisplayList.begin(),
 					       dynamicDisplayList.end());
 		}
+		DisplayObject::setOnStage(staged,force);
+		//Notify children
+		//calling DisplayObject::setOnStage may have changed the onStage state of the children, 
+		//but the addedToStage/removedFromStage event must always be dispatched
 		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
-			(*it)->setOnStage(staged);
+			(*it)->setOnStage(staged,true);
 	}
 }
 

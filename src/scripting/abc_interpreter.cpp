@@ -5386,8 +5386,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 								if (a->getObject())
 								{
 									asAtom ret;
-									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false));
-									if (r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT)
+									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),ASObject::DONT_CALL_GETTER);
+									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) && 
+										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{
 										operandlist.back().removeArg(mi);
 										operandlist.pop_back();

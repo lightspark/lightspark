@@ -4941,7 +4941,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 						{
 							for(auto it=function->func_scope->scope.rbegin();it!=function->func_scope->scope.rend();++it)
 							{
-								ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
+								ASObject::GET_VARIABLE_OPTION opt= (ASObject::GET_VARIABLE_OPTION)(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER);
 								if(!it->considerDynamic)
 									opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 								else
@@ -4953,10 +4953,11 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 						}
 						if(o.type == T_INVALID)
 						{
-							ASObject* target;
-							mi->context->root->applicationDomain->getVariableAndTargetByMultiname(o,*name, target);
+							ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+							if (var)
+								o = asAtom::fromObject(var);
 						}
-						if (o.is<Class_base>())
+						if (o.is<Class_base>() && o.as<Class_base>()->isConstructed())
 						{
 							uint32_t value = mi->context->addCachedConstantAtom(o);
 							mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
@@ -5387,7 +5388,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 								{
 									asAtom ret;
 									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),ASObject::DONT_CALL_GETTER);
-									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) && 
+									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
 										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{
 										operandlist.back().removeArg(mi);

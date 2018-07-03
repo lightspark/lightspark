@@ -267,7 +267,6 @@ private:
 	Spinlock spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
-	bool handleCompleteEvent;
 	/*
 	 * sendInit should be called with the spinlock held
 	 */
@@ -311,7 +310,6 @@ public:
 	void setParameters(_NR<ASObject> p) { parameters = p; }
 	void resetState();
 	void setFrameRate(number_t f) { frameRate=f; }
-	void setHandleCompleteEvent(bool dohandle) { handleCompleteEvent=dohandle;}
 };
 
 class URLRequest;

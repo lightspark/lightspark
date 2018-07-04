@@ -381,7 +381,10 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+	{
+		ret.setNull();
 		return;
+	}
 	tiny_string linetext = th->content->as<TextElement>()->text;
 	if (fitSomething && linetext == "")
 		linetext = " ";

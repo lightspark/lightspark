@@ -148,6 +148,15 @@ void LoaderInfo::resetState()
 	loadStatus=STARTED;
 }
 
+void LoaderInfo::setComplete()
+{
+	SpinlockLocker l(spinlock);
+	if (loadStatus==STARTED)
+	{
+		sendInit();
+	}
+}
+
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -200,7 +209,10 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 		return;
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
-	sendInit();
+
+	// MovieClips send the init/complete events after their first frame is executed
+	if (waitedObject.isNull() || !waitedObject->is<MovieClip>())
+		sendInit();
 	waitedObject.reset();
 }
 
@@ -3335,6 +3347,10 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 	}
 	Sprite::executeFrameScript();
+	
+	// MovieClips send the init/complete events after their first frame is executed
+	if (!this->loaderInfo.isNull())
+		this->loaderInfo->setComplete();
 }
 
 /* This is run in vm's thread context */

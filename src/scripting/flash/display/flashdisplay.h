@@ -310,6 +310,7 @@ public:
 	void setParameters(_NR<ASObject> p) { parameters = p; }
 	void resetState();
 	void setFrameRate(number_t f) { frameRate=f; }
+	void setComplete();
 };
 
 class URLRequest;

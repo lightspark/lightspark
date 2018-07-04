@@ -1185,6 +1185,9 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	{
 		th->set(i++, ittmp->dataAtom,false);
 	}
+	// according to spec sortOn should return "nothing"(?), but it seems that the array is returned
+	ASATOM_INCREF(obj);
+	ret = obj;
 }
 
 ASFUNCTIONBODY_ATOM(Array,unshift)

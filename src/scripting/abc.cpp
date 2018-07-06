@@ -1052,6 +1052,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
+				ret->isStatic = false;
 			}
 			else
 				n.applyProxyProperty(root->getSystemState(),*ret);

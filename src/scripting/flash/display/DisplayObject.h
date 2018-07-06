@@ -180,7 +180,7 @@ public:
 	void setLegacyMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
 	virtual void initFrame();
-	virtual void executeFrameScript() {}
+	virtual void executeFrameScript();
 	Vector2f getLocalMousePos();
 	Vector2f getXY();
 	void setX(number_t x);

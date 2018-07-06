@@ -210,9 +210,12 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
 
-	// MovieClips send the init/complete events after their first frame is executed
-	if (waitedObject.isNull() || !waitedObject->is<MovieClip>())
+	// the init/complete events are sended after the first frame of the waitedObject was executed
+	if (loader.isNull() || waitedObject.isNull())
 		sendInit();
+	else if (!loader->getParent()) // loader has no parent, ensure init/complete events are sended anyway
+		loader->getSystemState()->stage->addHiddenObject(waitedObject);
+		
 	waitedObject.reset();
 }
 
@@ -2586,6 +2589,31 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 	focus = f;
 }
 
+void Stage::initFrame()
+{
+	DisplayObjectContainer::initFrame();
+	auto it = hiddenobjects.begin();
+	while (it != hiddenobjects.end())
+	{
+		(*it)->initFrame();
+		it++;
+	}
+}
+
+void Stage::executeFrameScript()
+{
+	DisplayObjectContainer::executeFrameScript();
+	auto it = hiddenobjects.begin();
+	while (it != hiddenobjects.end())
+	{
+		hiddenobjects.front()->executeFrameScript();
+		it++;
+	}
+	// only execute first frame of hidden objects (?)
+	hiddenobjects.clear();
+}
+
+
 ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
 	Stage* th=obj.as<Stage>();
@@ -3265,6 +3293,7 @@ void DisplayObjectContainer::executeFrameScript()
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->executeFrameScript();
+	DisplayObject::executeFrameScript();
 }
 
 /* Go through the hierarchy and add all
@@ -3347,10 +3376,6 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 	}
 	Sprite::executeFrameScript();
-	
-	// MovieClips send the init/complete events after their first frame is executed
-	if (!this->loaderInfo.isNull())
-		this->loaderInfo->setComplete();
 }
 
 /* This is run in vm's thread context */

@@ -555,6 +555,9 @@ private:
 	Spinlock focusSpinlock;
 	_NR<InteractiveObject> focus;
 	_NR<RootMovieClip> root;
+	// list of objects that are not added to stage, but need to be handled when first frame is executed
+	// currently only used when Loader contents are added and the Loader is not on stage
+	list<_R<DisplayObject>> hiddenobjects;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
@@ -569,6 +572,9 @@ public:
 	_NR<Stage> getStage();
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
+	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
+	void initFrame();
+	void executeFrameScript();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);

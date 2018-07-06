@@ -1159,6 +1159,13 @@ void DisplayObject::initFrame()
 	}
 }
 
+void DisplayObject::executeFrameScript()
+{
+	// send the init/complete events after the first frame is executed
+	if (!this->loaderInfo.isNull())
+		this->loaderInfo->setComplete();
+}
+
 void DisplayObject::constructionComplete()
 {
 	RELEASE_WRITE(constructed,true);

@@ -40,7 +40,11 @@ class ASString: public ASObject
 private:
 	number_t parseStringInfinite(const char *s, char **end) const;
 	tiny_string data;
-	_NR<ASObject> strlength;
+	
+	// stores the position of the last call to charAt/charCodeAt
+	// speeds up iterating over all chars in the string
+	CharIterator currentpos;
+	uint32_t currentindex;
 public:
 	ASString(Class_base* c);
 	ASString(Class_base* c, const std::string& s);
@@ -107,7 +111,6 @@ public:
 	inline bool destruct() 
 	{ 
 		data.clear(); 
-		strlength.reset();
 		hasId = false;
 		datafilled=false; 
 		if (!ASObject::destruct())
@@ -115,6 +118,7 @@ public:
 			stringId = BUILTIN_STRINGS::EMPTY;
 			hasId = true;
 			datafilled = true;
+			currentindex=0;
 			return false;
 		}
 		return true;

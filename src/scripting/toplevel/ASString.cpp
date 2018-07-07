@@ -29,24 +29,24 @@
 using namespace std;
 using namespace lightspark;
 
-ASString::ASString(Class_base* c):ASObject(c,T_STRING),hasId(true),datafilled(true)
+ASString::ASString(Class_base* c):ASObject(c,T_STRING),currentindex(0),hasId(true),datafilled(true)
 {
 	stringId = BUILTIN_STRINGS::EMPTY;
 }
 
-ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),currentindex(0),hasId(false),datafilled(true)
 {
 }
 
@@ -55,6 +55,7 @@ ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c,T_STR
 	data = std::string(s,len);
 	hasId = false;
 	datafilled=true;
+	currentindex=0;
 }
 
 ASFUNCTIONBODY_ATOM(ASString,_constructor)
@@ -675,14 +676,33 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 	// fast path if obj is ASString
 	if (obj.is<ASString>() && obj.getObject())
 	{
-		int maxIndex=obj.as<ASString>()->getData().numChars();
+		ASString* th = obj.as<ASString>();
+		int maxIndex=th->getData().numChars();
 		
 		if(index<0 || index>=maxIndex || std::isinf(index))
 		{
 			ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
 			return;
 		}
-		uint32_t c = obj.as<ASString>()->getData().charAt(index);
+		uint32_t c;
+		if (th->getData().isSinglebyte())
+			c = th->getData().charAt(index);
+		else
+		{
+			if (index == 0)
+			{
+				th->currentpos = th->getData().begin();
+				th->currentindex = 0;
+				c = *(th->currentpos);
+			}
+			else if (th->currentpos.isValid() && th->currentindex == index-1)
+			{
+				th->currentindex++;
+				c = *(++th->currentpos);
+			}
+			else
+				c = th->getData().charAt(index);
+		}
 		ret = c < BUILTIN_STRINGS_CHAR_MAX ? asAtom::fromStringID(c) : asAtom::fromObject(abstract_s(sys, tiny_string::fromChar(c) ));
 		return;
 	}
@@ -706,10 +726,32 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	// fast path if obj is ASString
 	if (obj.type == T_STRING && obj.getObject())
 	{
-		if(index<0 || index>=(int64_t)obj.getObject()->as<ASString>()->getData().numChars())
+		ASString* th = obj.as<ASString>();
+		if(index<0 || index>=(int64_t)th->getData().numChars())
 			ret.setNumber(Number::NaN);
 		else
-			ret.setInt((int32_t)obj.getObject()->as<ASString>()->getData().charAt(index));
+		{
+			uint32_t c;
+			if (th->getData().isSinglebyte())
+				c = th->getData().charAt(index);
+			else
+			{
+				if (index == 0)
+				{
+					th->currentpos = th->getData().begin();
+					th->currentindex = 0;
+					c = *(th->currentpos);
+				}
+				else if (th->currentpos.isValid() && th->currentindex == index-1)
+				{
+					th->currentindex++;
+					c = *(++th->currentpos);
+				}
+				else
+					c = th->getData().charAt(index);
+			}
+			ret.setInt((int32_t)c);
+		}
 	}
 	else
 	{

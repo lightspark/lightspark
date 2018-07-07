@@ -43,6 +43,7 @@ friend class tiny_string;
 private:
 	char* buf_ptr;
 public:
+	CharIterator() : buf_ptr(NULL) {}
 	CharIterator(char* buf) : buf_ptr(buf) {}
 	/* Return the utf8-character value */
 	uint32_t operator*() const
@@ -77,6 +78,7 @@ public:
 	{
 		return g_unichar_digit_value(g_utf8_get_char(buf_ptr));
 	}
+	bool isValid() const { return buf_ptr; }
 };
 
 /*
@@ -175,6 +177,10 @@ public:
 	inline uint32_t numChars() const
 	{
 		return numchars;
+	}
+	inline bool isSinglebyte() const
+	{
+		return isASCII;
 	}
 	
 	/* start and len are indices of utf8-characters */

@@ -1346,6 +1346,22 @@ FORCE_INLINE TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
 			return TUNDEFINED;
 		case T_INVALID:
 			return TUNDEFINED;
+		case T_STRING:
+		{
+			if (stringID < BUILTIN_STRINGS_CHAR_MAX)
+			{
+				switch (v2.type)
+				{
+					case T_STRING:
+						if (v2.stringID < BUILTIN_STRINGS_CHAR_MAX)
+							return (stringID < v2.stringID)?TTRUE:TFALSE;
+						break;
+					default:
+						break;
+				}
+			}
+			break;
+		}
 		default:
 			break;
 	}

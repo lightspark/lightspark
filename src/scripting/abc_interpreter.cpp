@@ -4830,7 +4830,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			case 0x1b://lookupswitch
 			{
-				int32_t p = codejumps.tellg()-1;
+				int32_t p = codejumps.tellg();
 				jumptargets.insert(p+codejumps.reads24());
 				uint32_t count = codejumps.readu30();
 				for(unsigned int i=0;i<count+1;i++)
@@ -5313,12 +5313,25 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				code.readu30();
 				break;
 			}
+			case 0x47: //returnvoid
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				operandlist.clear();
+				// skip unreachable code
+				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+					code.readbyte();
+				break;
+			}
 			case 0x48://returnvalue
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
 				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions, jumptargets);
+				// skip unreachable code
+				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+					code.readbyte();
 				break;
 			}
 			case 0x46://callproperty
@@ -5496,10 +5509,10 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	{
 		uint32_t p = jumpstartpositions[itj->first];
 		assert (oldnewpositions.find(p) != oldnewpositions.end());
-		if (oldnewpositions.find(p+itj->second) == oldnewpositions.end())
+		if (oldnewpositions.find(p+itj->second) == oldnewpositions.end() && p+itj->second < code.tellg())
 		{
-			LOG(LOG_ERROR,"preloadfunction: jump position not found:"<<p<<" "<<itj->second);
-			mi->body->preloadedcode[itj->first].jumpdata.jump = 0;
+			LOG(LOG_ERROR,"preloadfunction: jump position not found:"<<p<<" "<<itj->second<<" "<<code.tellg());
+			throwError<VerifyError>(kInvalidBranchTargetError);
 		}
 		else
 			mi->body->preloadedcode[itj->first].jumpdata.jump = (oldnewpositions[p+itj->second]-(oldnewpositions[p]));

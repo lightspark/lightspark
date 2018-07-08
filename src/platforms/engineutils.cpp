@@ -239,10 +239,15 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	RecMutex::Lock l(mutex);
 
 	assert(!widget);
-	widget = createWidget(w,h);
-	this->width = this->origwidth = w;
-	this->height = this->origheight = h;
+	this->origwidth = w;
+	this->origheight = h;
 	
+	// width and height may already be set from the plugin
+	if (this->width == 0)
+		this->width = w;
+	if (this->height == 0)
+		this->height = h;
+	widget = createWidget(this->width,this->height);
 	// plugins create a hidden window that should not be shown
 	if (widget && !(SDL_GetWindowFlags(widget) & SDL_WINDOW_HIDDEN))
 		SDL_ShowWindow(widget);

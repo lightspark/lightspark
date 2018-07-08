@@ -877,7 +877,12 @@ void NetConnection::execute()
 	{
 		LOG(LOG_ERROR, "NetConnection::execute(): Download of URL failed: " << uri);
 //		getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
-		getSys()->downloadManager->destroy(downloader);
+		{
+			//Acquire the lock to ensure consistency in threadAbort
+			SpinlockLocker l(downloaderLock);
+			getSys()->downloadManager->destroy(downloader);
+			downloader = NULL;
+		}
 		return;
 	}
 	std::streambuf *sbuf = cache->createReader();

@@ -169,6 +169,7 @@ private:
 	};
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
+	ThreadPool* downloadThreadPool;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
 	Semaphore terminated;
@@ -379,6 +380,9 @@ public:
 
 	//Interfaces to the internal thread pool and timer thread
 	void addJob(IThreadJob* j) DLL_PUBLIC;
+	// downloaders may be executed from inside a job from the main threadpool,
+	// so we use a second threadpool for them, to avoid deadlocks
+	void addDownloadJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);

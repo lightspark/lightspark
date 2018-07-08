@@ -253,6 +253,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this));
 
 	threadPool=new ThreadPool(this);
+	downloadThreadPool=new ThreadPool(this);
+
 	timerThread=new TimerThread(this);
 	frameTimerThread=new TimerThread(this);
 	audioManager=NULL;
@@ -448,6 +450,8 @@ _NR<ASObject> SystemState::getParameters() const
 
 void SystemState::stopEngines()
 {
+	if(downloadThreadPool)
+		downloadThreadPool->forceStop();
 	if(threadPool)
 		threadPool->forceStop();
 	timerThread->wait();
@@ -461,6 +465,8 @@ void SystemState::stopEngines()
 	securityManager=NULL;
 	delete threadPool;
 	threadPool=NULL;
+	delete downloadThreadPool;
+	downloadThreadPool=NULL;
 	//Now stop the managers
 	delete audioManager;
 	audioManager=NULL;
@@ -586,6 +592,8 @@ void SystemState::destroy()
 	if(downloadManager)
 		downloadManager->stopAll();
 	//The thread pool should be stopped before everything
+	if(downloadThreadPool)
+		downloadThreadPool->forceStop();
 	if(threadPool)
 		threadPool->forceStop();
 	stopEngines();
@@ -1018,6 +1026,10 @@ void SystemState::setRenderRate(float rate)
 void SystemState::addJob(IThreadJob* j)
 {
 	threadPool->addJob(j);
+}
+void SystemState::addDownloadJob(IThreadJob* j)
+{
+	downloadThreadPool->addJob(j);
 }
 
 void SystemState::addTick(uint32_t tickTime, ITickJob* job)

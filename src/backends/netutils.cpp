@@ -196,7 +196,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, _R<StreamCac
 	}
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
-	getSys()->addJob(downloader);
+	getSys()->addDownloadJob(downloader);
 	return downloader;
 }
 
@@ -230,7 +230,7 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, _R<S
 	}
 	downloader->enableFencingWaiting();
 	addDownloader(downloader);
-	getSys()->addJob(downloader);
+	getSys()->addDownloadJob(downloader);
 	return downloader;
 }
 

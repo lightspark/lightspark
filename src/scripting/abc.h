@@ -803,6 +803,14 @@ private:
 	static void abc_strictequals(call_context* context);
 	static void abc_lessthan(call_context* context);
 	static void abc_lessequals(call_context* context);
+	static void abc_lessequals_constant_constant(call_context* context);
+	static void abc_lessequals_local_constant(call_context* context);
+	static void abc_lessequals_constant_local(call_context* context);
+	static void abc_lessequals_local_local(call_context* context);
+	static void abc_lessequals_constant_constant_localresult(call_context* context);
+	static void abc_lessequals_local_constant_localresult(call_context* context);
+	static void abc_lessequals_constant_local_localresult(call_context* context);
+	static void abc_lessequals_local_local_localresult(call_context* context);
 	static void abc_greaterthan(call_context* context);
 	static void abc_greaterthan_constant_constant(call_context* context);
 	static void abc_greaterthan_local_constant(call_context* context);
@@ -813,6 +821,14 @@ private:
 	static void abc_greaterthan_constant_local_localresult(call_context* context);
 	static void abc_greaterthan_local_local_localresult(call_context* context);
 	static void abc_greaterequals(call_context* context);// 0xb0
+	static void abc_greaterequals_constant_constant(call_context* context);
+	static void abc_greaterequals_local_constant(call_context* context);
+	static void abc_greaterequals_constant_local(call_context* context);
+	static void abc_greaterequals_local_local(call_context* context);
+	static void abc_greaterequals_constant_constant_localresult(call_context* context);
+	static void abc_greaterequals_local_constant_localresult(call_context* context);
+	static void abc_greaterequals_constant_local_localresult(call_context* context);
+	static void abc_greaterequals_local_local_localresult(call_context* context);
 	static void abc_instanceof(call_context* context);
 	static void abc_istype(call_context* context);
 	static void abc_istypelate(call_context* context);

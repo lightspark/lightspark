@@ -2442,8 +2442,15 @@ tiny_string asAtom::toString(SystemState* sys)
 		case T_UINTEGER:
 			return UInteger::toString(uintval);
 		case T_STRING:
-			if (!objval && stringID != UINT32_MAX)
-				return sys->getStringFromUniqueId(stringID);
+			if (!objval)
+			{
+				if (stringID == 0)
+					return "";
+				if (stringID < BUILTIN_STRINGS_CHAR_MAX)
+					return tiny_string::fromChar(stringID);
+				if (stringID != UINT32_MAX)
+					return sys->getStringFromUniqueId(stringID);
+			}
 			assert(objval);
 			return objval->toString();
 		case T_INVALID:
@@ -2599,8 +2606,8 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 	else if(type== T_STRING || v2.type == T_STRING)
 	{
 		tiny_string a = toString(sys);
-		tiny_string b = v2.toString(sys);
-		LOG_CALL("add " << a << '+' << b);
+		a += v2.toString(sys);
+		LOG_CALL("add " << toString(sys) << '+' << v2.toString(sys));
 		if (isrefcounted)
 		{
 			decRef();
@@ -2608,7 +2615,7 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 		}
 		type = T_STRING;
 		stringID = UINT32_MAX;
-		objval = abstract_s(sys,a + b);
+		objval = abstract_s(sys,a);
 	}
 	else
 	{

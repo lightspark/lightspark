@@ -556,8 +556,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_returnvalue_constant,// 0x1b8 ABC_OP_OPTIMZED_RETURNVALUE
 	abc_returnvalue_local,
 	abc_pushcachedconstant,// 0x1ba ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_getlexfromslot,// 0x1bb ABC_OP_OPTIMZED_GETLEX_FROMSLOT
+	abc_getlexfromslot_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1420,6 +1420,29 @@ void ABCVm::abc_pushcachedconstant(call_context* context)
 	RUNTIME_STACK_PUSH(context,a);
 	++(context->exec_pos);
 }
+void ABCVm::abc_getlexfromslot(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>9;
+	
+	ASObject* s = context->locals->toObject(context->mi->context->root->getSystemState());
+	asAtom a = s->getSlot(t);
+	LOG_CALL("getlexfromslot "<<s->toDebugString()<<" "<<t);
+	ASATOM_INCREF(a);
+	RUNTIME_STACK_PUSH(context,a);
+	++(context->exec_pos);
+}
+void ABCVm::abc_getlexfromslot_localresult(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>9;
+	
+	ASObject* s = context->locals->toObject(context->mi->context->root->getSystemState());
+	asAtom a = s->getSlot(t);
+	LOG_CALL("getlexfromslot_l "<<t<<" "<<a.toDebugString());
+	ASATOM_INCREF(a);
+	context->locals[context->exec_pos->local_pos3-1].set(a);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_pop(call_context* context)
 {
 	//pop
@@ -2191,14 +2214,13 @@ void ABCVm::abc_getlex(call_context* context)
 {
 	//getlex
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t t = (++(context->exec_pos))->data;
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->cacheobj1,instrptr->cacheobj2));
 		instrptr->cacheobj1->incRef();
 		LOG_CALL( "getLex from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
-	else if (getLex(context,t))
+	else if (getLex_multiname(context,instrptr->cachedmultiname2,0))
 	{
 		// put object in cache
 		instrptr->data |= ABC_OP_CACHED;
@@ -2214,13 +2236,12 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 	//getlex
 	preloadedcodedata* instrptr = context->exec_pos;
 	assert(instrptr->local_pos3 > 0);
-	uint32_t t = (++(context->exec_pos))->data;
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
 		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
-	else if (getLex(context,t,instrptr->local_pos3))
+	else if (getLex_multiname(context,instrptr->cachedmultiname2,instrptr->local_pos3))
 	{
 		// put object in cache
 		instrptr->data |= ABC_OP_CACHED;
@@ -4532,6 +4553,7 @@ struct operands
 #define ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT 0x000001ba
 #define ABC_OP_OPTIMZED_LESSEQUALS 0x000001c0
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
+#define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -5124,33 +5146,37 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				if (jumptargets.find(p) != jumptargets.end())
 					operandlist.clear();
 				uint32_t t =code.readu30();
+				multiname* name=mi->context->getMultiname(t,NULL);
+				if (!name->isStatic)
+					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method
 				{
-					multiname* name=mi->context->getMultiname(t,NULL);
-					if (name->isStatic)
+					asAtom o;
+					if(!function->func_scope.isNull()) // check scope stack
 					{
-						asAtom o;
-						if(!function->func_scope.isNull()) // check scope stack
+						auto it=function->func_scope->scope.rbegin();
+						while(it!=function->func_scope->scope.rend())
 						{
-							for(auto it=function->func_scope->scope.rbegin();it!=function->func_scope->scope.rend();++it)
-							{
-								ASObject::GET_VARIABLE_OPTION opt= (ASObject::GET_VARIABLE_OPTION)(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER);
-								if(!it->considerDynamic)
-									opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
-								else
-									break;
-								it->object.toObject(mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
-								if(o.type != T_INVALID)
-									break;
-							}
+							ASObject::GET_VARIABLE_OPTION opt= (ASObject::GET_VARIABLE_OPTION)(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER);
+							if(!it->considerDynamic)
+								opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+							else
+								break;
+							it->object.toObject(mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+							if(o.type != T_INVALID)
+								break;
+							++it;
 						}
-						if(o.type == T_INVALID)
-						{
-							ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
-							if (var)
-								o = asAtom::fromObject(var);
-						}
-						if (o.is<Class_base>() && o.as<Class_base>()->isConstructed())
+					}
+					if(o.type == T_INVALID)
+					{
+						ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+						if (var)
+							o = asAtom::fromObject(var);
+					}
+					if (o.is<Class_base>())
+					{
+						if (o.as<Class_base>()->isConstructed())
 						{
 							uint32_t value = mi->context->addCachedConstantAtom(o);
 							mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
@@ -5160,16 +5186,28 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 							break;
 						}
 					}
+					else
+					{
+						uint32_t slotid = function->inClass->findInstanceSlotByMultiname(name);
+						if (slotid != UINT32_MAX)
+						{
+							uint32_t num = slotid<<9 | ABC_OP_OPTIMZED_GETLEX_FROMSLOT;
+							mi->body->preloadedcode.push_back(num);
+							oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+							checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,1);
+							break;
+						}
+					}
 				}
 				mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].cachedmultiname2=name;
 				if (!checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0))
 				{
 					// no local result possible, use standard operation
 					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data=(uint32_t)opcode;
 					operandlist.clear();
 				}
-				mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0x62://getlocal

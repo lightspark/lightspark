@@ -1455,6 +1455,14 @@ void variables_map::dumpVariables()
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
 			it->second.var.toDebugString() << ' ' << it->second.setter.toDebugString() << ' ' << it->second.getter.toDebugString());
 	}
+	auto it2 = slots_vars.begin();
+	while (it2 != slots_vars.end())
+	{
+		LOG(LOG_INFO, "slot:" << (it2-slots_vars.begin() )
+			<<" "<<getSys()->getStringFromUniqueId(it2->nameId) 
+			<<"[" << it2->ns << "]");
+		it2++;
+	}
 }
 
 variables_map::~variables_map()
@@ -1534,8 +1542,10 @@ bool ASObject::destruct()
 
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
 {
+	if (n>slots_vars.capacity())
+		slots_vars.reserve(n+8);
 	if(n>slots_vars.size())
-		slots_vars.resize(n+8);
+		slots_vars.resize(n);
 
 	var_iterator ret=Variables.find(nameId);
 
@@ -1558,6 +1568,24 @@ asAtom variables_map::getSlot(unsigned int n)
 		it++;
 	}
 	return asAtom::invalidAtom;
+}
+uint32_t variables_map::findInstanceSlotByMultiname(multiname* name)
+{
+	for (auto it = slots_vars.begin(); it != slots_vars.end();it++)
+	{
+		if (it->nameId == name->name_s_id && (name->ns.size() == 0 || it->ns == name->ns[0]))
+		{
+			var_iterator it2 = Variables.find(it->nameId);
+			while(it2!=Variables.end() && it2->first == it->nameId)
+			{
+				if ((name->ns.size() == 0 || it->ns == it2->second.ns)
+						&& (it2->second.kind == INSTANCE_TRAIT))
+						return it-slots_vars.begin()+1;
+				it2++;
+			}
+		}
+	}
+	return UINT32_MAX;
 }
 void variables_map::setSlot(unsigned int n,asAtom o,SystemState* sys)
 {

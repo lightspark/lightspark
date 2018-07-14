@@ -492,6 +492,7 @@ public:
 	void initializeVar(const multiname& mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
 	asAtom getSlot(unsigned int n);
+	uint32_t findInstanceSlotByMultiname(multiname* name);
 	/*
 	 * This method does throw if the slot id is not valid
 	 */
@@ -745,7 +746,12 @@ public:
 	{
 		Variables.setSlotNoCoerce(n,o);
 	}
+	uint32_t findInstanceSlotByMultiname(multiname* name)
+	{
+		return Variables.findInstanceSlotByMultiname(name);
+	}
 	void initSlot(unsigned int n, const multiname& name);
+	
 	void initAdditionalSlots(std::vector<multiname*> additionalslots);
 	unsigned int numVariables() const;
 	inline tiny_string getNameAt(int i) const

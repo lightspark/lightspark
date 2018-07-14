@@ -388,6 +388,8 @@ public:
 	typedef std::unordered_multimap<uint32_t,variable>::iterator var_iterator;
 	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<varName> slots_vars;
+	// indicates if this map was initialized with no variables with non-primitive values
+	bool cloneable;
 	variables_map(MemoryAccount* m);
 	/**
 	   Find a variable in the map
@@ -518,6 +520,7 @@ public:
 				std::map<const Class_base*, uint32_t>& traitsMap);
 	void dumpVariables();
 	void destroyContents();
+	bool cloneInstance(variables_map& map);
 };
 
 enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04};
@@ -879,6 +882,9 @@ public:
 		}
 	}
 	CLASS_SUBTYPE getSubtype() const { return subtype;}
+	// copies all variables into the target
+	// returns false if cloning is not possible
+	bool cloneInstance(ASObject* target);
 };
 
 class Activation_object;

@@ -82,12 +82,20 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	if(tag)
 	{
 		ret=asAtom::fromObject(tag->instance(realClass));
+		if (instancefactory.isNull())
+			instancefactory = _MR(tag->instance(realClass));
 	}
 	else
 	{
 		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
 		super->getInstance(ret,false,NULL,0,realClass);
+		if (instancefactory.isNull())
+		{
+			asAtom instance;
+			super->getInstance(instance,false,NULL,0,realClass);
+			instancefactory = _MR(instance.getObject());
+		}
 	}
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
@@ -112,20 +120,44 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 
 	context->buildInstanceTraits(o,class_index);
 }
-void Class_inherit::setupDeclaredTraits(ASObject *target) const
+void Class_inherit::setupDeclaredTraits(ASObject *target)
 {
 	if (!target->traitsInitialized)
 	{
 	#ifndef NDEBUG
 		assert_and_throw(!target->initialized);
 	#endif
-		//HACK: suppress implementation handling of variables just now
-		bool bak=target->implEnable;
-		target->implEnable=false;
-		recursiveBuild(target);
-		
-		//And restore it
-		target->implEnable=bak;
+		bool cloneable = !instancefactory.isNull();
+		if (cloneable)
+		{
+			if (!instancefactory->isInitialized())
+			{
+				// fill instancefactory
+				
+				//HACK: suppress implementation handling of variables just now
+				bool bak=instancefactory->implEnable;
+				instancefactory->implEnable=false;
+				recursiveBuild(instancefactory.getPtr());
+				
+				//And restore it
+				instancefactory->implEnable=bak;
+
+				instancefactory->traitsInitialized = true;
+				cloneable = instancefactory->cloneInstance(target);
+			}
+			else
+				cloneable = instancefactory->cloneInstance(target);
+		}
+		if (!cloneable)
+		{
+			//HACK: suppress implementation handling of variables just now
+			bool bak=target->implEnable;
+			target->implEnable=false;
+			recursiveBuild(target);
+			
+			//And restore it
+			target->implEnable=bak;
+		}
 
 	#ifndef NDEBUG
 		target->initialized=true;

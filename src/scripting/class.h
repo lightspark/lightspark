@@ -50,10 +50,12 @@ private:
 	bool bindedToRoot;
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
+	_NR<ASObject> instancefactory;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait);
 	bool destruct()
 	{
+		instancefactory.reset();
 		auto it = class_scope.begin();
 		while (it != class_scope.end())
 		{
@@ -64,7 +66,7 @@ public:
 		return Class_base::destruct();
 	}
 	void buildInstanceTraits(ASObject* o) const;
-	void setupDeclaredTraits(ASObject *target) const;
+	void setupDeclaredTraits(ASObject *target);
 	void bindToTag(DictionaryTag* t)
 	{
 		tag=t;

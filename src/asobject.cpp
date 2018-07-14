@@ -471,7 +471,7 @@ bool ASObject::isConstructed() const
 {
 	return traitsInitialized && constructIndicator;
 }
-variables_map::variables_map(MemoryAccount *m)
+variables_map::variables_map(MemoryAccount *m):cloneable(true)
 {
 }
 
@@ -1043,6 +1043,8 @@ void variables_map::initializeVar(const multiname& mname, asAtom& obj, multiname
 			typemname->cachedType = type;
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
+	if (value.getObject())
+		cloneable = false;
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
@@ -1180,6 +1182,16 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 	variable* v = Variables.findObjVar(getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if (v)
 		v->isenumerable = isEnum;
+}
+
+bool ASObject::cloneInstance(ASObject *target)
+{
+	if (Variables.cloneInstance(target->Variables))
+	{
+		target->varcount = this->varcount;
+		return true;
+	}
+	return false;
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructor)
@@ -1483,6 +1495,15 @@ void variables_map::destroyContents()
 		}
 		it = Variables.erase(it);
 	}
+}
+
+bool variables_map::cloneInstance(variables_map &map)
+{
+	if (!cloneable)
+		return false;
+	map.Variables = Variables;
+	map.slots_vars = this->slots_vars;
+	return true;
 }
 
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),

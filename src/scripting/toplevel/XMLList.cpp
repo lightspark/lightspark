@@ -590,6 +590,11 @@ ASFUNCTIONBODY_ATOM(XMLList,_propertyIsEnumerable)
 }
 ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 {
+	if (!obj.is<XMLList>())
+	{
+		ASObject::hasOwnProperty(ret,sys,obj,args,argslen);
+		return;
+	}
 	XMLList* th=obj.as<XMLList>();
 	tiny_string prop;
 	ARG_UNPACK_ATOM(prop);

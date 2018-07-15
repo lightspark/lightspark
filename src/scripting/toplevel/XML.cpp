@@ -131,6 +131,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(c->getSystemState(),parent),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,Class<IFunction>::getFunction(c->getSystemState(),inScopeNamespaces),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addNamespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),addNamespace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("hasSimpleContent","",Class<IFunction>::getFunction(c->getSystemState(),_hasSimpleContent),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasSimpleContent),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasComplexContent),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(c->getSystemState(),text),NORMAL_METHOD,true);
@@ -139,6 +140,7 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setLocalName",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setLocalName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setName",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setName),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setNamespace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("copy","",Class<IFunction>::getFunction(c->getSystemState(),_copy),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("copy",AS3,Class<IFunction>::getFunction(c->getSystemState(),_copy),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("setChildren",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toJSON),NORMAL_METHOD,true);
@@ -2431,6 +2433,11 @@ ASFUNCTIONBODY_ATOM(XML,_propertyIsEnumerable)
 }
 ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 {
+	if (!obj.is<XML>())
+	{
+		ASObject::hasOwnProperty(ret,sys,obj,args,argslen);
+		return;
+	}
 	XML* th=obj.as<XML>();
 	tiny_string prop;
 	ARG_UNPACK_ATOM(prop);

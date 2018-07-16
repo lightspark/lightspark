@@ -1437,7 +1437,7 @@ void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 	
 	ASObject* s = context->locals->toObject(context->mi->context->root->getSystemState());
 	asAtom a = s->getSlot(t);
-	LOG_CALL("getlexfromslot_l "<<t<<" "<<a.toDebugString());
+	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t);
 	ASATOM_INCREF(a);
 	context->locals[context->exec_pos->local_pos3-1].set(a);
 	++(context->exec_pos);
@@ -5147,7 +5147,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					operandlist.clear();
 				uint32_t t =code.readu30();
 				multiname* name=mi->context->getMultiname(t,NULL);
-				if (!name->isStatic)
+				if (!name || !name->isStatic)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method
 				{
@@ -5186,7 +5186,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 							break;
 						}
 					}
-					else
+					else if (function->inClass->super.isNull()) //TODO slot access for derived classes
 					{
 						uint32_t slotid = function->inClass->findInstanceSlotByMultiname(name);
 						if (slotid != UINT32_MAX)

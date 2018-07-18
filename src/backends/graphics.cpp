@@ -321,10 +321,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 			}
 			case SET_STROKE:
 			{
+				instroke = true;
 				if(skipPaint)
 					break;
 
-				instroke = true;
 				cairo_stroke(stroke_cr);
 
 				const LINESTYLE2& style = tokens[i].lineStyle;
@@ -387,10 +387,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 				break;
 			case CLEAR_STROKE:
+				instroke = false;
 				if(skipPaint)
 					break;
 
-				instroke = false;
 				cairo_stroke(stroke_cr);
 
 				// Clear source.
@@ -587,7 +587,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
 	bool ret=false;
@@ -940,7 +940,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	uint32_t height=drawable->getHeight();
 	//Verify that the texture is large enough
 	if(!surface.tex.resizeIfLargeEnough(width, height))
-		surface.tex=getSys()->getRenderThread()->allocateTexture(width, height,false);
+		surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
 	surface.xOffset=drawable->getXOffset();
 	surface.yOffset=drawable->getYOffset();
 	surface.alpha=drawable->getAlpha();

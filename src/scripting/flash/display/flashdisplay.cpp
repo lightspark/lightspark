@@ -1341,7 +1341,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.stop_FP = stop;
 	advanceFrame();
 	initFrame();
-	executeFrameScript();
+	this->incRef();
+	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -1364,7 +1365,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	th->state.explicit_FP=true;
 	th->advanceFrame();
 	th->initFrame();
-	th->executeFrameScript();
+	th->incRef();
+	sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -1375,7 +1377,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	th->state.explicit_FP=true;
 	th->advanceFrame();
 	th->initFrame();
-	th->executeFrameScript();
+	th->incRef();
+	sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)

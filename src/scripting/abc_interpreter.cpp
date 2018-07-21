@@ -1438,7 +1438,8 @@ void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 	ASObject* s = context->locals->toObject(context->mi->context->root->getSystemState());
 	asAtom a = s->getSlot(t);
 	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t);
-	ASATOM_INCREF(a);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(a);
 	context->locals[context->exec_pos->local_pos3-1].set(a);
 	++(context->exec_pos);
 }
@@ -1736,7 +1737,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 	{
 		pobj = obj.toObject(context->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
-		canCache = pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
+		canCache = pobj->getVariableByMultiname(o,*name, ASObject::GET_VARIABLE_OPTION(ASObject::SKIP_IMPL | ASObject::NO_INCREF)) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
@@ -1745,7 +1746,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 		_NR<Class_base> tmpcls = obj.as<Class_base>()->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
-			tmpcls->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
+			tmpcls->getVariableByMultiname(o,*name, ASObject::GET_VARIABLE_OPTION(ASObject::SKIP_IMPL | ASObject::NO_INCREF));
 			if(o.type != T_INVALID)
 			{
 				canCache = true;
@@ -1903,6 +1904,7 @@ void ABCVm::abc_callpropertyStaticName_constant_constant(call_context* context)
 	LOG_CALL( "callProperty_cc " << *name);
 	asAtom ret;
 	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1920,6 +1922,7 @@ void ABCVm::abc_callpropertyStaticName_local_constant(call_context* context)
 	LOG_CALL( "callProperty_lc " << *name);
 	asAtom ret;
 	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1937,6 +1940,7 @@ void ABCVm::abc_callpropertyStaticName_constant_local(call_context* context)
 	LOG_CALL( "callProperty_cl " << *name);
 	asAtom ret;
 	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1954,6 +1958,7 @@ void ABCVm::abc_callpropertyStaticName_local_local(call_context* context)
 	LOG_CALL( "callProperty_ll " << *name);
 	asAtom ret;
 	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1970,6 +1975,8 @@ void ABCVm::abc_callpropertyStaticName_constant_constant_localresult(call_contex
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_ccl " << *name);
 	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* context)
@@ -1984,6 +1991,8 @@ void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lcl " << *name);
 	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2014,6 +2023,8 @@ void ABCVm::abc_callpropertyStaticName_local_local_localresult(call_context* con
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lll " << *name);
 	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2449,7 +2460,7 @@ void ABCVm::abc_getProperty_local_local(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 	ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
-	LOG_CALL( _("getProperty_ll ") << *name <<"("<<instrptr->local_pos1<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos2<<")"<< ' '<<obj->isInitialized());
+	LOG_CALL( _("getProperty_ll ") << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
 	if(prop.type == T_INVALID)
@@ -2491,7 +2502,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lcl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name);
+		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2507,7 +2518,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name);
+	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2532,7 +2543,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name);
+		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2591,7 +2602,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name);
+	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2688,7 +2699,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			}
 		}
 		if(prop.type == T_INVALID)
-			obj->getVariableByMultiname(prop,*name);
+			obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		context->locals[instrptr->local_pos3-1].set(prop);
@@ -3065,7 +3076,8 @@ void ABCVm::abc_add_constant_constant_localresult(call_context* context)
 	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState(),false);
 	if (res.getObject() != context->locals[context->exec_pos->local_pos3-1].getObject())
 	{
-		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+		if (context->exec_pos->local_pos3 <= context->locals_size)
+			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3077,7 +3089,8 @@ void ABCVm::abc_add_local_constant_localresult(call_context* context)
 	res.add(*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState(),false);
 	if (res.getObject() != context->locals[context->exec_pos->local_pos3-1].getObject())
 	{
-		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+		if (context->exec_pos->local_pos3 <= context->locals_size)
+			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3089,7 +3102,8 @@ void ABCVm::abc_add_constant_local_localresult(call_context* context)
 	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState(),false);
 	if (res.getObject() != context->locals[context->exec_pos->local_pos3-1].getObject())
 	{
-		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+		if (context->exec_pos->local_pos3 <= context->locals_size)
+			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3101,7 +3115,8 @@ void ABCVm::abc_add_local_local_localresult(call_context* context)
 	res.add(context->locals[context->exec_pos->local_pos2],context->mi->context->root->getSystemState(),false);
 	if (res.getObject() != context->locals[context->exec_pos->local_pos3-1].getObject())
 	{
-		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+		if (context->exec_pos->local_pos3 <= context->locals_size)
+			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3153,7 +3168,8 @@ void ABCVm::abc_subtract_constant_constant_localresult(call_context* context)
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.subtract(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3162,7 +3178,8 @@ void ABCVm::abc_subtract_local_constant_localresult(call_context* context)
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.subtract(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3171,7 +3188,8 @@ void ABCVm::abc_subtract_constant_local_localresult(call_context* context)
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.subtract(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3180,7 +3198,8 @@ void ABCVm::abc_subtract_local_local_localresult(call_context* context)
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.subtract(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3230,7 +3249,8 @@ void ABCVm::abc_multiply_constant_constant_localresult(call_context* context)
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.multiply(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3239,7 +3259,8 @@ void ABCVm::abc_multiply_local_constant_localresult(call_context* context)
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.multiply(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3248,7 +3269,8 @@ void ABCVm::abc_multiply_constant_local_localresult(call_context* context)
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.multiply(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3257,7 +3279,8 @@ void ABCVm::abc_multiply_local_local_localresult(call_context* context)
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.multiply(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3307,7 +3330,8 @@ void ABCVm::abc_divide_constant_constant_localresult(call_context* context)
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.divide(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3316,7 +3340,8 @@ void ABCVm::abc_divide_local_constant_localresult(call_context* context)
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.divide(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3325,7 +3350,8 @@ void ABCVm::abc_divide_constant_local_localresult(call_context* context)
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.divide(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3334,7 +3360,8 @@ void ABCVm::abc_divide_local_local_localresult(call_context* context)
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.divide(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3384,7 +3411,8 @@ void ABCVm::abc_modulo_constant_constant_localresult(call_context* context)
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.modulo(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3393,7 +3421,8 @@ void ABCVm::abc_modulo_local_constant_localresult(call_context* context)
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.modulo(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3402,7 +3431,8 @@ void ABCVm::abc_modulo_constant_local_localresult(call_context* context)
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.modulo(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3411,7 +3441,8 @@ void ABCVm::abc_modulo_local_local_localresult(call_context* context)
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.modulo(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3460,7 +3491,8 @@ void ABCVm::abc_lshift_constant_constant_localresult(call_context* context)
 	//lshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.lshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3469,7 +3501,8 @@ void ABCVm::abc_lshift_local_constant_localresult(call_context* context)
 	//lshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.lshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3478,7 +3511,8 @@ void ABCVm::abc_lshift_constant_local_localresult(call_context* context)
 	//lshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.lshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3487,7 +3521,8 @@ void ABCVm::abc_lshift_local_local_localresult(call_context* context)
 	//lshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.lshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3536,7 +3571,8 @@ void ABCVm::abc_rshift_constant_constant_localresult(call_context* context)
 	//rshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.rshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3545,7 +3581,8 @@ void ABCVm::abc_rshift_local_constant_localresult(call_context* context)
 	//rshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.rshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3554,7 +3591,8 @@ void ABCVm::abc_rshift_constant_local_localresult(call_context* context)
 	//rshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.rshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3563,7 +3601,8 @@ void ABCVm::abc_rshift_local_local_localresult(call_context* context)
 	//rshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.rshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3612,7 +3651,8 @@ void ABCVm::abc_urshift_constant_constant_localresult(call_context* context)
 	//urshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.urshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3621,7 +3661,8 @@ void ABCVm::abc_urshift_local_constant_localresult(call_context* context)
 	//urshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.urshift(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3630,7 +3671,8 @@ void ABCVm::abc_urshift_constant_local_localresult(call_context* context)
 	//urshift
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.urshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3639,7 +3681,8 @@ void ABCVm::abc_urshift_local_local_localresult(call_context* context)
 	//urshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.urshift(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3688,7 +3731,8 @@ void ABCVm::abc_bitand_constant_constant_localresult(call_context* context)
 	//bitand
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_and(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3697,7 +3741,8 @@ void ABCVm::abc_bitand_local_constant_localresult(call_context* context)
 	//bitand
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.bit_and(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3706,7 +3751,8 @@ void ABCVm::abc_bitand_constant_local_localresult(call_context* context)
 	//bitand
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_and(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3715,7 +3761,8 @@ void ABCVm::abc_bitand_local_local_localresult(call_context* context)
 	//bitand
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.bit_and(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3764,7 +3811,8 @@ void ABCVm::abc_bitor_constant_constant_localresult(call_context* context)
 	//bitor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_or(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3773,6 +3821,8 @@ void ABCVm::abc_bitor_local_constant_localresult(call_context* context)
 	//bitor
 	asAtom res = *context->exec_pos->arg2_constant;
 	res.bit_or(context->locals[context->exec_pos->local_pos1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3781,7 +3831,8 @@ void ABCVm::abc_bitor_constant_local_localresult(call_context* context)
 	//bitor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_or(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3790,7 +3841,8 @@ void ABCVm::abc_bitor_local_local_localresult(call_context* context)
 	//bitor
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.bit_or(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3840,7 +3892,8 @@ void ABCVm::abc_bitxor_constant_constant_localresult(call_context* context)
 	//bitxor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_xor(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3849,7 +3902,8 @@ void ABCVm::abc_bitxor_local_constant_localresult(call_context* context)
 	//bitxor
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.bit_xor(*context->exec_pos->arg2_constant);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3858,7 +3912,8 @@ void ABCVm::abc_bitxor_constant_local_localresult(call_context* context)
 	//bitxor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3867,7 +3922,8 @@ void ABCVm::abc_bitxor_local_local_localresult(call_context* context)
 	//bitxor
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.bit_xor(context->locals[context->exec_pos->local_pos2]);
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
 }
@@ -3971,6 +4027,8 @@ void ABCVm::abc_lessequals_constant_constant_localresult(call_context* context)
 	bool ret=(context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant)==TFALSE);
 	LOG_CALL(_("lessequals_ccl ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -3981,7 +4039,8 @@ void ABCVm::abc_lessequals_local_constant_localresult(call_context* context)
 	bool ret=(context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1])==TFALSE);
 	LOG_CALL(_("lessequals_lcl ")<<ret);
 
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -3992,6 +4051,8 @@ void ABCVm::abc_lessequals_constant_local_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant)==TFALSE);
 	LOG_CALL(_("lessequals_cll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4002,6 +4063,8 @@ void ABCVm::abc_lessequals_local_local_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1])==TFALSE);
 	LOG_CALL(_("lessequals_lll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4067,6 +4130,8 @@ void ABCVm::abc_greaterthan_constant_constant_localresult(call_context* context)
 	bool ret=(context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant)==TTRUE);
 	LOG_CALL(_("greaterThan_ccl ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4077,7 +4142,8 @@ void ABCVm::abc_greaterthan_local_constant_localresult(call_context* context)
 	bool ret=(context->exec_pos->arg2_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1])==TTRUE);
 	LOG_CALL(_("greaterThan_lcl ")<<ret);
 
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4088,6 +4154,8 @@ void ABCVm::abc_greaterthan_constant_local_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant)==TTRUE);
 	LOG_CALL(_("greaterThan_cll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4098,6 +4166,8 @@ void ABCVm::abc_greaterthan_local_local_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos2].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1])==TTRUE);
 	LOG_CALL(_("greaterThan_lll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4162,6 +4232,8 @@ void ABCVm::abc_greaterequals_constant_constant_localresult(call_context* contex
 	bool ret=(context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TFALSE);
 	LOG_CALL(_("greaterequals_ccl ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4172,7 +4244,8 @@ void ABCVm::abc_greaterequals_local_constant_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TFALSE);
 	LOG_CALL(_("greaterequals_lcl ")<<ret);
 
-	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4183,6 +4256,8 @@ void ABCVm::abc_greaterequals_constant_local_localresult(call_context* context)
 	bool ret=(context->exec_pos->arg1_constant->isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TFALSE);
 	LOG_CALL(_("greaterequals_cll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }
@@ -4193,6 +4268,8 @@ void ABCVm::abc_greaterequals_local_local_localresult(call_context* context)
 	bool ret=(context->locals[context->exec_pos->local_pos1].isLess(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TFALSE);
 	LOG_CALL(_("greaterequals_lll ")<<ret);
 
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
 	++(context->exec_pos);
 }

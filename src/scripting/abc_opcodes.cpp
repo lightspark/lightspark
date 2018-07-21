@@ -1620,7 +1620,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,int localresult)
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
 		// And this ensures dynamic properties are also searched
-		ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
+		ASObject::GET_VARIABLE_OPTION opt=ASObject::GET_VARIABLE_OPTION(localresult > th->locals_size ? ASObject::FROM_GETLEX | ASObject::NO_INCREF : ASObject::FROM_GETLEX);
 		if(!th->scope_stack_dynamic[i-1])
 			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 		else
@@ -1643,7 +1643,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,int localresult)
 			// (normally it would return an empty XMLList if the
 			// property does not exist).
 			// And this ensures dynamic properties are also searched
-			ASObject::GET_VARIABLE_OPTION opt=ASObject::FROM_GETLEX;
+			ASObject::GET_VARIABLE_OPTION opt=ASObject::GET_VARIABLE_OPTION(localresult > th->locals_size ? ASObject::FROM_GETLEX | ASObject::NO_INCREF : ASObject::FROM_GETLEX);
 			if(!it->considerDynamic)
 				opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
 			else

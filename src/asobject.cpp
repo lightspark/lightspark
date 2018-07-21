@@ -1338,7 +1338,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	else
 	{
 		assert_and_throw(obj->setter.type == T_INVALID);
-		ASATOM_INCREF(obj->var);
+		if (!(opt & NO_INCREF))
+			ASATOM_INCREF(obj->var);
 		if(obj->var.type==T_FUNCTION && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
 			if (obj->var.isBound())

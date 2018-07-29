@@ -558,6 +558,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	 */
 	if(isBorrowed && o->inClass == NULL)
 		o->inClass = this->as<Class_base>();
+	o->isStatic = !isBorrowed;
 
 	variable* obj=NULL;
 	if(isBorrowed)
@@ -1223,7 +1224,7 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret.toInt();
 }
 
-variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID)
+variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID, bool *isborrowed)
 {
 	//Get from the current object without considering borrowed properties
 	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
@@ -1232,7 +1233,9 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
 		if(!(obj->getter.type != T_INVALID|| obj->var.type != T_INVALID))
-			obj=NULL;
+			obj=nullptr;
+		if (isborrowed)
+			*isborrowed=false;
 	}
 
 	if(!obj)
@@ -1240,6 +1243,8 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 		//Look for borrowed traits before
 		if (cls)
 		{
+			if (isborrowed)
+				*isborrowed=true;
 			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,nsRealID);
 			if(!obj && name.hasEmptyNS)
 			{
@@ -1253,7 +1258,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
 						if(!(obj->getter.type != T_INVALID || obj->var.type != T_INVALID))
-							obj=NULL;
+							obj=nullptr;
 					}
 					if(obj)
 						break;

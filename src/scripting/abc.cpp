@@ -827,7 +827,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 	ASObject* rt2 = NULL;
 	if(fromStack > 0)
 	{
-		assert_and_throw(context);
+		if(!context)
+			return NULL;
 		RUNTIME_STACK_POP(context,rt1);
 	}
 	if(fromStack > 1)
@@ -1167,27 +1168,27 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	for(unsigned int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
-		LOG(LOG_CALLS,_("Class ") << *getMultiname(instances[i].name,NULL));
-		LOG(LOG_CALLS,_("Flags:"));
+		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,NULL));
+		LOG(LOG_TRACE,_("Flags:"));
 		if(instances[i].isSealed())
-			LOG(LOG_CALLS,_("\tSealed"));
+			LOG(LOG_TRACE,_("\tSealed"));
 		if(instances[i].isFinal())
-			LOG(LOG_CALLS,_("\tFinal"));
+			LOG(LOG_TRACE,_("\tFinal"));
 		if(instances[i].isInterface())
-			LOG(LOG_CALLS,_("\tInterface"));
+			LOG(LOG_TRACE,_("\tInterface"));
 		if(instances[i].isProtectedNs())
-			LOG(LOG_CALLS,_("\tProtectedNS ") << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
+			LOG(LOG_TRACE,_("\tProtectedNS ") << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
 		if(instances[i].supername)
-			LOG(LOG_CALLS,_("Super ") << *getMultiname(instances[i].supername,NULL));
+			LOG(LOG_TRACE,_("Super ") << *getMultiname(instances[i].supername,NULL));
 		if(instances[i].interface_count)
 		{
-			LOG(LOG_CALLS,_("Implements"));
+			LOG(LOG_TRACE,_("Implements"));
 			for(unsigned int j=0;j<instances[i].interfaces.size();j++)
 			{
-				LOG(LOG_CALLS,_("\t") << *getMultiname(instances[i].interfaces[j],NULL));
+				LOG(LOG_TRACE,_("\t") << *getMultiname(instances[i].interfaces[j],NULL));
 			}
 		}
-		LOG(LOG_CALLS,endl);
+		LOG(LOG_TRACE,endl);
 	}
 	classes.resize(class_count);
 	for(unsigned int i=0;i<class_count;i++)
@@ -2560,6 +2561,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			{
 				Class_inherit* prot = obj->as<Class_inherit>();
 				f->inClass = prot;
+				f->isStatic = !isBorrowed;
+
 
 				//Methods save a copy of the scope stack of the class
 				f->acquireScope(prot->class_scope);

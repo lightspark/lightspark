@@ -1897,13 +1897,13 @@ void ABCVm::abc_callpropertyStaticName_constant_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=instrptr->arg2_constant;
+	asAtom args=*instrptr->arg2_constant;
 	multiname* name=context->exec_pos->cachedmultiname2;
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cc " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	callpropOneArg(context,ret,obj,&args,name,context->exec_pos);
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
@@ -1915,13 +1915,13 @@ void ABCVm::abc_callpropertyStaticName_local_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=instrptr->arg2_constant;
+	asAtom args=*instrptr->arg2_constant;
 	multiname* name=context->exec_pos->cachedmultiname2;
 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lc " << *name);
 	asAtom ret;
-	callpropOneArg(context,ret,obj,args,name,context->exec_pos);
+	callpropOneArg(context,ret,obj,&args,name,context->exec_pos);
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
@@ -1969,12 +1969,12 @@ void ABCVm::abc_callpropertyStaticName_constant_constant_localresult(call_contex
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=instrptr->arg2_constant;
+	asAtom args=*instrptr->arg2_constant;
 	multiname* name=context->exec_pos->cachedmultiname2;
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_ccl " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,&args,name,context->exec_pos);
 	if (instrptr->local_pos3 <= context->locals_size)
 		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
@@ -1985,12 +1985,12 @@ void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* 
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=instrptr->arg2_constant;
+	asAtom args=*instrptr->arg2_constant;
 	multiname* name=context->exec_pos->cachedmultiname2;
 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lcl " << *name);
-	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,&args,name,context->exec_pos);
 	if (instrptr->local_pos3 <= context->locals_size)
 		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
@@ -5169,6 +5169,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	// second pass: use optimized opcode version if it doesn't interfere with a jump target
 	std::list<operands> operandlist;
 	memorystream code(mi->body->code.data(), code_len);
+	std::list<bool> scopelist;
 	while(!code.atend())
 	{
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
@@ -5192,7 +5193,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x58://newclass
 			case 0x59://getdescendants
 			case 0x5a://newcatch
-			case 0x5d://findpropstrict
 			case 0x5e://findproperty
 			case 0x5f://finddef
 			case 0x61://setproperty
@@ -5215,6 +5215,94 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
 				operandlist.clear();
+				break;
+			}
+			case 0x1c://pushwith
+				scopelist.push_back(true);
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				operandlist.clear();
+				break;
+			case 0x1d://popscope
+				scopelist.pop_back();
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				operandlist.clear();
+				break;
+			case 0x5d://findpropstrict
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				uint32_t t =code.readu30();
+				asAtom o;
+				if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
+				{
+					bool found = false;
+					multiname* name=mi->context->getMultiname(t,nullptr);
+					if (name && name->isStatic)
+					{
+						bool isborrowed = false;
+						variable* v = function->inClass->findVariableByMultiname(*name,ASObject::GET_VARIABLE_OPTION(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER | ASObject::NO_INCREF),function->inClass,nullptr,&isborrowed);
+						if (v)
+						{
+							found =true;
+							if (!function->isStatic && (isborrowed || v->kind == INSTANCE_TRAIT))
+							{
+								mi->body->preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
+								oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+								operandlist.push_back(operands(OP_LOCAL,0,1,mi->body->preloadedcode.size()-1));
+								break;
+							}
+						}
+						if(!function->func_scope.isNull()) // check scope stack
+						{
+							auto it=function->func_scope->scope.rbegin();
+							while(it!=function->func_scope->scope.rend())
+							{
+								if (it->considerDynamic)
+								{
+									found = true;
+									break;
+								}
+								ASObject* obj = it->object.toObject(mi->context->root->getSystemState());
+								v = obj->findVariableByMultiname(*name,ASObject::GET_VARIABLE_OPTION(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER | ASObject::NO_INCREF),obj->is<Class_base>() ? obj->as<Class_base>() : nullptr,nullptr,&isborrowed);
+									
+								if (v)
+								{
+									found = true;
+									break;
+								}
+								++it;
+							}
+						}
+						if (!found)
+						{
+							ASObject* target;
+							asAtom otmp;
+							mi->context->root->applicationDomain->getVariableAndTargetByMultiname(otmp,*name, target);
+							if(otmp.type != T_INVALID && !mi->needsActivation())
+							{
+								o=asAtom::fromObject(target);
+
+								uint32_t value = mi->context->addCachedConstantAtom(o);
+								mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
+								oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+								mi->body->preloadedcode.push_back(value);
+								operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+								break;
+							}
+						}
+						//LOG(LOG_ERROR,"findpropstrict preload inclass not found:"<<*name<<"|"<<function->isStatic<<"|"<<function->inClass->isInitialized()<<"|"<<function->inClass->toDebugString());
+					}
+				}
+				if(o.type == T_INVALID)
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					mi->body->preloadedcode.push_back(t);
+					operandlist.clear();
+				}
 				break;
 			}
 			case 0x60://getlex
@@ -5580,6 +5668,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x30://pushscope
+				scopelist.push_back(false);
 				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_PUSHSCOPE,opcode,code,oldnewpositions, jumptargets);
 				break;
 			case 0x31://pushnamespace
@@ -5708,7 +5797,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 								if (a->getObject())
 								{
 									asAtom ret;
-									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),ASObject::DONT_CALL_GETTER);
+									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),ASObject::GET_VARIABLE_OPTION(ASObject::DONT_CALL_GETTER|ASObject::FROM_GETLEX));
 									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
 										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{

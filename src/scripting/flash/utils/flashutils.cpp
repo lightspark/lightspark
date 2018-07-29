@@ -165,6 +165,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
+	ret.type =T_INVALID;
 	ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 
 	if(ret.type == T_INVALID)

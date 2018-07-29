@@ -286,6 +286,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	asAtom o;
+	ret.type = T_INVALID;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(o,name,target);
 	if(o.type == T_INVALID)
 		ret.setBool(false);
@@ -295,7 +296,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 			ret.setBool(false);
 		else
 		{
-			LOG(LOG_CALLS,_("Found definition for ") << name);
+			LOG(LOG_CALLS,_("Found definition for ") << name<<"|"<<o.toDebugString()<<"|"<<obj.toDebugString());
 			ret.setBool(true);
 		}
 	}
@@ -318,6 +319,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
+	ret.type = T_INVALID;
 	ASObject* target;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 	if(ret.type == T_INVALID)

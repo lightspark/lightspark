@@ -423,12 +423,15 @@ public:
 	 * If this is a function, inClass == NULL
 	 */
 	Class_base* inClass;
+	// if this is a class method, this indicates if it is a static or instance method
+	bool isStatic;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
 	bool isConstructed() const { return constructIndicator; }
 	inline bool destruct() 
 	{
 		inClass=NULL;
+		isStatic=false;
 		functionname=0;
 		length=0;
 		return ASObject::destruct();

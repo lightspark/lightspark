@@ -132,7 +132,7 @@ void Undefined::setVariableByMultiname(const multiname& name, asAtom& o, CONST_A
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 }
 
-IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),functionname(0)
+IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),isStatic(false),functionname(0)
 {
 }
 

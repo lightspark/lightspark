@@ -72,7 +72,13 @@ private:
 	*/
 	_NR<DisplayObject> maskOf;
 	void becomeMaskOf(_NR<DisplayObject> m);
-	_NR<DisplayObjectContainer> parent;
+
+	// the parent is not handled as a _NR<DisplayObjectContainer> because that will lead to circular dependencies in refcounting
+	// and the parent can never be destructed
+	DisplayObjectContainer* parent;
+	// pointer to the parent this object was pointing to when an event is handled with this object as the dispatcher
+	// this is used to keep track of refcounting, as the parent may change during handling the event
+	DisplayObjectContainer* eventparent;
 	/* cachedSurface may only be read/written from within the render thread
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
@@ -139,8 +145,8 @@ public:
 	bool computeCacheAsBitmap() const;
 	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks,MATRIX& totalMatrix) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
-	_NR<DisplayObjectContainer> getParent() const { return parent; }
-	void setParent(_NR<DisplayObjectContainer> p);
+	DisplayObjectContainer* getParent() const { return parent; }
+	void setParent(DisplayObjectContainer* p);
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
@@ -166,6 +172,9 @@ public:
 	}
 	// used by MorphShapes
 	virtual void checkRatio(uint32_t ratio) {}
+	virtual void onNewEvent();
+	virtual void afterHandleEvent();
+	
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);

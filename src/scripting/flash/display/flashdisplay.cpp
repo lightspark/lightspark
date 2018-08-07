@@ -639,13 +639,13 @@ ASFUNCTIONBODY_ATOM(Loader,_unloadAndStop)
 
 void Loader::unload()
 {
-	_NR<DisplayObject> content_copy = NullRef;
+	DisplayObject* content_copy = nullptr;
 	{
 		SpinlockLocker l(spinlock);
 		for (auto j=jobs.begin(); j!=jobs.end(); j++)
 			(*j)->threadAbort();
 
-		content_copy=content;
+		content_copy=content.getPtr();
 		content.reset();
 	}
 	
@@ -1608,7 +1608,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 
 	obj->incRef();
 	//this also removes it from depthToLegacyChild
-	bool ret = _removeChild(_MR(obj));
+	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
 }
 
@@ -1846,17 +1846,18 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(!child->getParent().isNull())
+	if(child->getParent())
 	{
 		//Child already in this container
 		if(child->getParent()==this)
 			return;
 		else
-			child->getParent()->_removeChild(child);
+		{
+			child->incRef();
+			child->getParent()->_removeChild(child.getPtr());
+		}
 	}
-	this->incRef();
-	child->incRef();
-	child->setParent(_MR(this));
+	child->setParent(this);
 	{
 		Locker l(mutexDisplayList);
 		//We insert the object in the back of the list
@@ -1868,28 +1869,39 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
+			if(!child->name.empty())
+			{
+				child->incRef();
+				multiname objName(NULL);
+				objName.name_type=multiname::NAME_STRING;
+				objName.name_s_id=getSystemState()->getUniqueStringId(child->name);
+				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+				asAtom v = asAtom::fromObject(child.getPtr());
+				setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
+			}
 		}
 	}
 	child->setOnStage(onStage);
 }
 
-bool DisplayObjectContainer::_removeChild(_R<DisplayObject> child)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
 
 	{
 		Locker l(mutexDisplayList);
-		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(child));
 		if(it==dynamicDisplayList.end())
 			return false;
-		dynamicDisplayList.erase(it);
 
+		child->setOnStage(false);
+		child->setParent(nullptr);
 		//Erase this from the legacy child map (if it is in there)
-		depthToLegacyChild.right.erase(child.getPtr());
+		depthToLegacyChild.right.erase(child);
+
+		dynamicDisplayList.erase(it);
 	}
-	child->setOnStage(false);
-	child->setParent(NullRef);
 	return true;
 }
 
@@ -1994,7 +2006,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	//Cast to object
 	DisplayObject* d=args[0].as<DisplayObject>();
 	d->incRef();
-	if(!th->_removeChild(_MR(d)))
+	if(!th->_removeChild(d))
 		throw Class<ArgumentError>::getInstanceS(sys,"removeChild: child not in list", 2025);
 
 	//As we return the child we have to incRef it
@@ -2019,13 +2031,14 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		for(int32_t i=0;i<index;i++)
 			++it;
 		child=(*it).getPtr();
+		//Erase this from the legacy child map (if it is in there)
+		th->depthToLegacyChild.right.erase(child);
+		child->setOnStage(false);
+		child->setParent(nullptr);
 		//incRef before the refrence is destroyed
 		child->incRef();
 		th->dynamicDisplayList.erase(it);
 	}
-	child->setOnStage(false);
-	child->setParent(NullRef);
-
 	//As we return the child we don't decRef it
 	ret = asAtom::fromObject(child);
 }
@@ -3053,14 +3066,23 @@ void SimpleButton::reflectState()
 {
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
-		_removeChild(dynamicDisplayList.front());
+		_removeChild(dynamicDisplayList.front().getPtr());
 
 	if(currentState == UP && !upState.isNull())
+	{
+		upState->incRef();
 		_addChildAt(upState,0);
+	}
 	else if(currentState == DOWN && !downState.isNull())
+	{
+		downState->incRef();
 		_addChildAt(downState,0);
+	}
 	else if(currentState == OVER && !overState.isNull())
+	{
+		overState->incRef();
 		_addChildAt(overState,0);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getUpState)

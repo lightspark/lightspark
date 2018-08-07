@@ -744,6 +744,7 @@ public:
 	void setSlot(unsigned int n,asAtom o)
 	{
 		Variables.setSlot(n,o,getSystemState());
+		checkFunctionScope(o.getObject());
 	}
 	void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
@@ -885,6 +886,18 @@ public:
 	// copies all variables into the target
 	// returns false if cloning is not possible
 	bool cloneInstance(ASObject* target);
+	
+	/*!
+	 * \brief checks for cirular dependencies within the function scope
+	 * currently only used for Activation_objects to ensure they are properly destroyed
+	 * \param o the function to check
+	 */
+	virtual void checkFunctionScope(ASObject* o) {}
+	/*!
+	 * \brief ensures objects are properly destroyed if they have circular dependencies
+	 * currently only used for Synthetic_Functions
+	 */
+	virtual void checkLastReference(){}
 };
 
 class Activation_object;

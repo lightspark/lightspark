@@ -108,7 +108,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q);
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
-	bool _removeChild(_R<DisplayObject> child);
+	bool _removeChild(DisplayObject* child);
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct();

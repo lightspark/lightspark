@@ -166,6 +166,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
+	selected->incRef();
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseDown",localX,localY,true,buttonState,pressed)));
 	lastMouseDownTarget=selected;
@@ -181,6 +182,7 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
+	selected->incRef();
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"doubleClick",localX,localY,true,buttonState,pressed)));
 }
@@ -195,11 +197,13 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		return;
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
+	selected->incRef();
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseUp",localX,localY,true,buttonState,pressed)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
+		selected->incRef();
 		m_sys->currentVm->addEvent(selected,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys,"click",localX,localY,true,buttonState,pressed)));
 	}
@@ -217,7 +221,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	if(curDragged)
 	{
 		Vector2f local;
-		_NR<DisplayObjectContainer> parent = curDragged->getParent();
+		DisplayObjectContainer* parent = curDragged->getParent();
 		if(!parent)
 		{
 			stopDrag(curDragged.getPtr());
@@ -240,21 +244,28 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 			return;
 		selected->globalToLocal(x,y,localX,localY);
 		if(currentMouseOver == selected)
+		{
+			selected->incRef();
 			m_sys->currentVm->addEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseMove",localX,localY,true,buttonState,pressed)));
+		}
 		else
 		{
 			if(!currentMouseOver.isNull())
 			{
 				number_t clocalX, clocalY;
 				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
+				currentMouseOver->incRef();
 				m_sys->currentVm->addEvent(currentMouseOver,
 					_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+				currentMouseOver->incRef();
 				m_sys->currentVm->addEvent(currentMouseOver,
 					_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 			}
+			selected->incRef();
 			m_sys->currentVm->addEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
+			selected->incRef();
 			m_sys->currentVm->addEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
@@ -283,6 +294,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 	if (selected.isNull())
 		return;
 	selected->globalToLocal(x,y,localX,localY);
+	selected->incRef();
 	m_sys->currentVm->addEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseWheel",localX,localY,true,buttonState,pressed,NullRef,delta)));
 }
@@ -335,6 +347,9 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			}
 			else
 				LOG(LOG_INFO, "No error to be copied to clipboard");
+			break;
+		case SDLK_d:
+			m_sys->stage->dumpDisplayList();
 			break;
 #ifndef NDEBUG
 		case SDLK_l:

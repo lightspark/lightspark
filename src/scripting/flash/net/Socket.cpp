@@ -654,6 +654,7 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_CLOSE:
 		{
 			sock.close();
+			owner->incRef();
 			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
 			threadAborting = true;
 			break;

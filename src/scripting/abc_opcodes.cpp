@@ -1703,6 +1703,7 @@ void ABCVm::constructSuper(call_context* th, int m)
 	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
+	ASATOM_DECREF(obj);
 	LOG_CALL(_("End super construct "));
 }
 

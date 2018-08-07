@@ -826,6 +826,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		assert_and_throw(obj->getter.type == T_INVALID);
 		obj->setVar(o,getSystemState());
 	}
+	checkFunctionScope(o.getObject());
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)

@@ -2668,36 +2668,38 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_sll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		asAtom prop;
-		if (((context->exec_pos->data&ABC_OP_NOTCACHEABLE) == 0) 
-				&& ((obj->is<Class_base>() && obj->as<Class_base>()->isSealed) ||
-					(obj->getClass() 
-					 && (obj->getClass()->isSealed 
-						 || (obj->getClass() == Class<Array>::getRef(obj->getSystemState()).getPtr())))))
-		{
-			variable* v = obj->findVariableByMultiname(*name,ASObject::NONE,obj->getClass());
-			if (v)
-			{
-				context->exec_pos->data |= ABC_OP_CACHED;
-				context->exec_pos->cachedvar2=v;
-				context->exec_pos->cacheobj1=obj;
-				if (v->getter.type != T_INVALID)
-				{
-					prop.set(v->getter);
-					//Call the getter
-					LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-					assert(prop.type == T_FUNCTION);
-					IFunction* f = prop.as<IFunction>();
-					ASObject* closure = prop.getClosure();
-					f->callGetter(prop,closure ? closure : obj);
-					LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
-				}
-				else
-				{
-					prop.set(v->var);
-					ASATOM_INCREF(prop);
-				}
-			}
-		}
+// TODO caching doesn't work until we find a way to detect if obj is a reused object 
+// that has been destroyed since the last call
+//		if (((context->exec_pos->data&ABC_OP_NOTCACHEABLE) == 0) 
+//				&& ((obj->is<Class_base>() && obj->as<Class_base>()->isSealed) ||
+//					(obj->getClass() 
+//					 && (obj->getClass()->isSealed 
+//						 || (obj->getClass() == Class<Array>::getRef(obj->getSystemState()).getPtr())))))
+//		{
+//			variable* v = obj->findVariableByMultiname(*name,ASObject::NONE,obj->getClass());
+//			if (v)
+//			{
+//				context->exec_pos->data |= ABC_OP_CACHED;
+//				context->exec_pos->cachedvar2=v;
+//				context->exec_pos->cacheobj1=obj;
+//				if (v->getter.type != T_INVALID)
+//				{
+//					prop.set(v->getter);
+//					//Call the getter
+//					LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+//					assert(prop.type == T_FUNCTION);
+//					IFunction* f = prop.as<IFunction>();
+//					ASObject* closure = prop.getClosure();
+//					f->callGetter(prop,closure ? closure : obj);
+//					LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+//				}
+//				else
+//				{
+//					prop.set(v->var);
+//					ASATOM_INCREF(prop);
+//				}
+//			}
+//		}
 		if(prop.type == T_INVALID)
 			obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
 		if(prop.type == T_INVALID)

@@ -96,7 +96,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),maskOf(),parent(),constructed(false),useLegacyMatrix(true),onStage(false),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -109,7 +109,8 @@ void DisplayObject::finalize()
 {
 	EventDispatcher::finalize();
 	maskOf.reset();
-	parent.reset();
+	parent=nullptr;
+	eventparent =nullptr;
 	mask.reset();
 	matrix.reset();
 	loaderInfo.reset();
@@ -306,7 +307,7 @@ void DisplayObject::setBlendMode(UI8 blendmode)
 }
 MATRIX DisplayObject::getConcatenatedMatrix() const
 {
-	if(parent.isNull())
+	if(!parent)
 		return getMatrix();
 	else
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
@@ -329,10 +330,28 @@ float DisplayObject::clippedAlpha() const
 
 float DisplayObject::getConcatenatedAlpha() const
 {
-	if(parent.isNull())
+	if(!parent)
 		return clippedAlpha();
 	else
 		return parent->getConcatenatedAlpha()*clippedAlpha();
+}
+
+void DisplayObject::onNewEvent()
+{
+	eventparent = parent;
+	if (eventparent)
+	{
+		eventparent->incRef();
+	}
+}
+
+void DisplayObject::afterHandleEvent()
+{
+	if (eventparent)
+	{
+		eventparent->decRef();
+	}
+	eventparent =nullptr;
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -438,7 +457,7 @@ void DisplayObject::requestInvalidation(InvalidateQueue* q)
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
-	if(!parent.isNull())
+	if(parent)
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 //TODO: Fix precision issues
@@ -474,21 +493,25 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		*/
 		if(onStage==true)
 		{
-			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
 			if(isVmThread())
-				ABCVm::publicHandleEvent(_MR(this),e);
+				ABCVm::publicHandleEvent(this,e);
 			else
+			{
+				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),e);
+			}
 		}
 		else if(onStage==false)
 		{
-			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"removedFromStage"));
 			if(isVmThread())
-				ABCVm::publicHandleEvent(_MR(this),e);
+				ABCVm::publicHandleEvent(this,e);
 			else
+			{
+				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),e);
+			}
 		}
 	}
 }
@@ -741,7 +764,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 	while(cur!=NULL && cur!=target)
 	{
 		m = cur->getMatrix().multiplyMatrix(m);
-		cur=cur->parent.getPtr();
+		cur=cur->parent;
 	}
 	if(cur==NULL)
 	{
@@ -931,7 +954,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getName)
 	ret = asAtom::fromObject(abstract_s(sys,th->name));
 }
 
-void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
+void DisplayObject::setParent(DisplayObjectContainer *p)
 {
 	if(parent!=p)
 	{
@@ -945,14 +968,14 @@ void DisplayObject::setParent(_NR<DisplayObjectContainer> p)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getParent)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	if(th->parent.isNull())
+	if(!th->parent)
 	{
 		ret.setUndefined();
 		return;
 	}
 
 	th->parent->incRef();
-	ret = asAtom::fromObject(th->parent.getPtr());
+	ret = asAtom::fromObject(th->parent);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
@@ -1014,7 +1037,7 @@ number_t DisplayObject::computeWidth()
 
 _NR<RootMovieClip> DisplayObject::getRoot()
 {
-	if(parent.isNull())
+	if(!parent)
 		return NullRef;
 
 	return parent->getRoot();
@@ -1022,7 +1045,7 @@ _NR<RootMovieClip> DisplayObject::getRoot()
 
 _NR<Stage> DisplayObject::getStage()
 {
-	if(parent.isNull())
+	if(!parent)
 		return NullRef;
 
 	return parent->getStage();
@@ -1144,17 +1167,15 @@ void DisplayObject::initFrame()
 		 * the related events must only be sent after the constructor is sent.
 		 * This is from "Order of Operations".
 		 */
-		if(!parent.isNull())
+		if(parent)
 		{
-			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"added"));
-			ABCVm::publicHandleEvent(_MR(this),e);
+			ABCVm::publicHandleEvent(this,e);
 		}
 		if(onStage)
 		{
-			this->incRef();
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
-			ABCVm::publicHandleEvent(_MR(this),e);
+			ABCVm::publicHandleEvent(this,e);
 		}
 	}
 }
@@ -1259,7 +1280,7 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 				gatherMasks=false;
 			}
 		}
-		cur=cur->getParent().getPtr();
+		cur=cur->getParent();
 	}
 }
 

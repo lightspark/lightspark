@@ -1307,12 +1307,12 @@ int ABCVm::getEventQueueSize()
 	return events_queue.size();
 }
 
-void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
+void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
-	std::deque<_R<DisplayObject>> parents;
+	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
 	if(event->target.type == T_INVALID)
-		event->setTarget(asAtom::fromObject(dispatcher.getPtr()));
+		event->setTarget(asAtom::fromObject(dispatcher));
 	/** rollOver/Out are special: according to spec 
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
 	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 
@@ -1332,9 +1332,8 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
-		dispatcher->incRef();
 		//We fetch the relatedObject in the case of rollOver/Out
-		_NR<DisplayObject> rcur;
+		DisplayObject* rcur=nullptr;
 		if(event->type == "rollOver" || event->type == "rollOut")
 		{
 			event->incRef();
@@ -1342,13 +1341,13 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 			if(mevent->relatedObject)
 			{  
 				mevent->relatedObject->incRef();
-				rcur = mevent->relatedObject;
+				rcur = mevent->relatedObject.getPtr();
 			}
 		}
 		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
 		if(rcur)
 		{
-			std::vector<_NR<DisplayObject>> rparents;
+			std::vector<DisplayObject*> rparents;
 			rparents.push_back(rcur);        
 			while(true)
 			{
@@ -1357,7 +1356,7 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 				rcur = rcur->getParent();
 				rparents.push_back(rcur);
 			}
-			_R<DisplayObject> cur = _MR(dispatcher->as<DisplayObject>());
+			DisplayObject* cur = dispatcher->as<DisplayObject>();
 			//Check if cur is an ancestor of rcur
 			auto i = rparents.begin();
 			for(;i!=rparents.end();++i)
@@ -1386,12 +1385,12 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 				}
 				if (stop) break;
 				parents.push_back(cur);
-			}          
+			}
 		}
 		//The standard behavior
 		else
 		{
-			_R<DisplayObject> cur = _MR(dispatcher->as<DisplayObject>());
+			DisplayObject* cur = dispatcher->as<DisplayObject>();
 			while(true)
 			{
 				if(!cur->getParent())
@@ -1403,8 +1402,10 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 		auto i = parents.rbegin();
 		for(;i!=parents.rend();++i)
 		{
-			event->currentTarget=*i;
+			(*i)->incRef();
+			event->currentTarget=_MR(*i);
 			(*i)->handleEvent(event);
+			event->currentTarget=NullRef;
 		}
 	}
 
@@ -1412,7 +1413,8 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 	if(doTarget)
 	{
 		event->eventPhase = EventPhase::AT_TARGET;
-		event->currentTarget=dispatcher;
+		dispatcher->incRef();
+		event->currentTarget=_MR(dispatcher);
 		dispatcher->handleEvent(event);
 	}
 
@@ -1423,8 +1425,10 @@ void ABCVm::publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event)
 		auto i = parents.begin();
 		for(;i!=parents.end();++i)
 		{
-			event->currentTarget=*i;
+			(*i)->incRef();
+			event->currentTarget=_MR(*i);
 			(*i)->handleEvent(event);
+			event->currentTarget=NullRef;
 		}
 	}
 	/* This must even be called if stop*Propagation has been called */
@@ -1441,7 +1445,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
 	e.second->check();
 	if(!e.first.isNull())
-		publicHandleEvent(e.first, e.second);
+		publicHandleEvent(e.first.getPtr(), e.second);
 	else
 	{
 		//Should be handled by the Vm itself
@@ -1601,6 +1605,8 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	if(shuttingdown)
 		return false;
 
+	if (!obj.isNull())
+		obj->onNewEvent();
 	events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_event_cond.signal();
 	return true;
@@ -1627,7 +1633,8 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
 		return false;
-
+	if (!obj.isNull())
+		obj->onNewEvent();
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_event_cond.signal();
 	return true;
@@ -1712,6 +1719,8 @@ void ABCVm::handleFrontEvent()
 		//Flush the invalidation queue
 		if (!e.first.isNull() || e.second->getEventType() != EXTERNAL_CALL)
 			m_sys->flushInvalidationQueue();
+		if (!e.first.isNull())
+			e.first->afterHandleEvent();
 	}
 	catch(LightsparkException& e)
 	{

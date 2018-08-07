@@ -390,6 +390,7 @@ class Activation_object: public ASObject
 {
 public:
     Activation_object(Class_base* c) : ASObject(c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
+	void checkFunctionScope(ASObject* o);
 };
 
 /* Special object returned when new func() syntax is used.
@@ -514,6 +515,7 @@ class SyntheticFunction : public IFunction
 friend class ABCVm;
 friend class Class<IFunction>;
 friend class Class_base;
+friend class Activation_object;
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 private:
@@ -521,6 +523,9 @@ private:
 	method_info* mi;
 	/* Pointer to JIT-compiled function or NULL if not yet compiled */
 	synt_function val;
+	// number of activation objects in the func_scope with a reference to this function
+	uint32_t activationobject_refcount;
+
 	SyntheticFunction(Class_base* c,method_info* m);
 	
 	method_info* getMethodInfo() const { return mi; }
@@ -552,6 +557,7 @@ public:
 		asAtom c = asAtom::fromObject(target);
 		call(ret,c,NULL,0,true);
 	}
+	void checkLastReference();
 };
 
 /*

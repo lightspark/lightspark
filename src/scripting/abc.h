@@ -923,7 +923,7 @@ public:
 
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
-	static void publicHandleEvent(_R<EventDispatcher> dispatcher, _R<Event> event);
+	static void publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event);
 	static _R<ApplicationDomain> getCurrentApplicationDomain(call_context* th);
 	static _R<SecurityDomain> getCurrentSecurityDomain(call_context* th);
 

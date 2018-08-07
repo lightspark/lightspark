@@ -187,13 +187,13 @@ ASFUNCTIONBODY_ATOM(Event,clone)
 
 ASFUNCTIONBODY_ATOM(Event,stopPropagation)
 {
-	//Event* th=obj.as<Event>();
-	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented");
+	Event* th=obj.as<Event>();
+	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented:"<<th->toDebugString());
 }
 ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 {
-	//Event* th=obj.as<Event>();
-	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented");
+	Event* th=obj.as<Event>();
+	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented:"<<th->toDebugString());
 }
 
 void WaitableEvent::wait()
@@ -566,7 +566,10 @@ void EventDispatcher::dumpHandlers()
 {
 	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
 	for(;it!=handlers.end();++it)
-		LOG(LOG_INFO, it->first);
+	{
+		for (auto it2 = it->second.begin();it2 != it->second.end(); it2++)
+			LOG(LOG_INFO, it->first<<":"<<it2->f.toDebugString());
+	}
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
@@ -641,7 +644,10 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
 											make_pair(args[1],useCapture));
 		if(it!=h->second.end())
+		{
+			ASATOM_DECREF(it->f);
 			h->second.erase(it);
+		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);
 	}
@@ -692,8 +698,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	}
 	if(th->forcedTarget.type != T_INVALID)
 		e->setTarget(th->forcedTarget);
-	th->incRef();
-	ABCVm::publicHandleEvent(_MR(th), e);
+	ABCVm::publicHandleEvent(th, e);
 	ret.setBool(true);
 }
 
@@ -744,6 +749,11 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
+
+		// the listener may have been removed in callFunction
+		// so we check if it can be destroyed
+		if (tmpListener[i].f.getObject())
+			tmpListener[i].f.getObject()->checkLastReference();
 	}
 	
 	e->check();

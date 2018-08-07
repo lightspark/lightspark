@@ -275,7 +275,7 @@ ASObject *IFunction::describeType() const
 	return XML::createFromNode(root);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(NULL),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(NULL),activationobject_refcount(0),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -588,7 +588,20 @@ bool SyntheticFunction::destruct()
 	func_scope.reset();
 	val = NULL;
 	mi = NULL;
+	activationobject_refcount=0;
 	return IFunction::destruct();
+}
+
+void SyntheticFunction::checkLastReference()
+{
+	if (this->getRefCount() ==(int32_t)activationobject_refcount)
+	{
+		// this is the last reference besides those in Activation_Objects, so we force destruction
+		uint32_t c = activationobject_refcount;
+		while (c--)
+			this->decRef();
+	}
+	
 }
 
 bool Function::isEqual(ASObject* r)
@@ -1031,7 +1044,6 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		target.getObject()->constructionComplete();
 	}
 
-	//TODO: is there any valid case for not having a constructor?
 	if(constructor)
 	{
 		ASATOM_INCREF(target);
@@ -2883,4 +2895,20 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 		return tname;
 	}
 	return NULL;
+}
+
+void Activation_object::checkFunctionScope(ASObject *o)
+{
+	if (o && o->is<SyntheticFunction>())
+	{
+		SyntheticFunction* f = o->as<SyntheticFunction>();
+		for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
+		{
+			if (it->object.getObject() == this)
+			{
+				f->activationobject_refcount++;
+				break;
+			}
+		}
+	}
 }

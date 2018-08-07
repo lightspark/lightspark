@@ -363,6 +363,10 @@ protected:
 public:
 	EventDispatcher(Class_base* c);
 	void finalize();
+	// is called when a new event is added to the event queue
+	virtual void onNewEvent(){}
+	// is called after an event was handled by the event queue
+	virtual void afterHandleEvent(){}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void handleEvent(_R<Event> e);

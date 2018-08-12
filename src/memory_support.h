@@ -28,6 +28,9 @@ namespace lightspark
 {
 
 #ifdef MEMORY_USAGE_PROFILING
+class MemoryAccount;
+DLL_PUBLIC MemoryAccount* getUnaccountedMemoryAccount();
+
 class MemoryAccount
 {
 public:
@@ -73,6 +76,8 @@ public:
 		//Adding the data to the object itself would not work
 		//since it can be reset by the constructors
 		objData* ret=reinterpret_cast<objData*>(malloc(size+sizeof(objData)));
+		if(!m)
+			m = getUnaccountedMemoryAccount();
 		m->addBytes(size);
 		ret->objSize = size;
 		ret->memoryAccount = m;
@@ -86,8 +91,6 @@ public:
 		free(th);
 	}
 };
-
-DLL_PUBLIC MemoryAccount* getUnaccountedMemoryAccount();
 
 template<class T>
 class reporter_allocator: protected std::allocator<T>

@@ -187,7 +187,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),flashMode(mode),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),
-	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL)
+	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),tokenMemory(NULL)
 {
 	//Forge the builtin strings
 	getUniqueStringId("");
@@ -222,6 +222,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	unaccountedMemory = allocateMemoryAccount("Unaccounted");
 	tagsMemory = allocateMemoryAccount("Tags");
 	stringMemory = allocateMemoryAccount("Tiny_string");
+	tokenMemory = allocateMemoryAccount("Tokens");
 
 	null=_MR(new (unaccountedMemory) Null);
 	null->setSystemState(this);

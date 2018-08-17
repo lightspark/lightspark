@@ -1554,6 +1554,8 @@ FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 					case T_STRING:
 						if (v2.stringID != UINT32_MAX)
 							return v2.stringID == stringID;
+						else
+							return v2.stringcompare(sys,stringID);
 						break;
 					default:
 						break;

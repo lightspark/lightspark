@@ -4815,7 +4815,8 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
 		case 0x48://returnvalue
-		case 0xa0://add
+// TODO add optimization breaks refcounting if the result is a string
+//		case 0xa0://add
 		case 0xa1://subtract
 		case 0xa2://multiply
 		case 0xa3://divide
@@ -5845,9 +5846,10 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x93://decrement
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false);
 				break;
-			case 0xa0://add
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false,false);
-				break;
+// TODO add optimization breaks refcounting if the result is a string
+//			case 0xa0://add
+//				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false,false);
+//				break;
 			case 0xa1://subtract
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;

@@ -21,6 +21,8 @@
 #define PLATFORMS_ENGINEUTILS_H 1
 
 #include <SDL2/SDL.h>
+// on ppc SDL.h includes altivec.h, so we have to undefine vector
+#undef vector
 #include "compat.h"
 #include "threading.h"
 #include "tiny_string.h"

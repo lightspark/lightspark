@@ -445,6 +445,7 @@ public:
 	MemoryAccount* unaccountedMemory;
 	MemoryAccount* tagsMemory;
 	MemoryAccount* stringMemory;
+	MemoryAccount* tokenMemory;
 #ifdef MEMORY_USAGE_PROFILING
 	void saveMemoryUsageInformation(std::ofstream& out, int snapshotCount) const;
 #endif

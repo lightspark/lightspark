@@ -183,6 +183,7 @@ class Type;
 class ABCContext;
 class SystemState;
 struct asfreelist;
+class SyntheticFunction;
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
@@ -744,7 +745,8 @@ public:
 	void setSlot(unsigned int n,asAtom o)
 	{
 		Variables.setSlot(n,o,getSystemState());
-		checkFunctionScope(o.getObject());
+		if (o.is<SyntheticFunction>())
+			checkFunctionScope(o.getObject());
 	}
 	void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
@@ -888,16 +890,10 @@ public:
 	bool cloneInstance(ASObject* target);
 	
 	/*!
-	 * \brief checks for cirular dependencies within the function scope
-	 * currently only used for Activation_objects to ensure they are properly destroyed
+	 * \brief checks for circular dependencies within the function scope
 	 * \param o the function to check
 	 */
-	virtual void checkFunctionScope(ASObject* o) {}
-	/*!
-	 * \brief ensures objects are properly destroyed if they have circular dependencies
-	 * currently only used for Synthetic_Functions
-	 */
-	virtual void checkLastReference(){}
+	void checkFunctionScope(ASObject *o);
 };
 
 class Activation_object;
@@ -956,7 +952,6 @@ class SoundTransform;
 class Sprite;
 class Stage;
 class Stage3D;
-class SyntheticFunction;
 class Template_base;
 class TextBlock;
 class TextElement;

@@ -1835,6 +1835,8 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		instrptr->cacheobj1->incRef();
+		if(instrptr->cacheobj2)
+			instrptr->cacheobj2->incRef();
 		if (instrptr->cacheobj1->is<IFunction>())
 			ret.setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
 		else
@@ -2852,7 +2854,7 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	RUNTIME_STACK_POP(th,obj);
 	asAtom f;
 	RUNTIME_STACK_POP(th,f);
-	LOG_CALL(_("call ") << m << ' ' << f.type);
+	LOG_CALL(_("call ") << m << ' ' << f.toDebugString());
 	callImpl(th, f, obj, args, m, true);
 }
 // this consumes one reference of f, obj and of each arg
@@ -2945,6 +2947,10 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	f->prototype = _MR(new_asobject(f->getSystemState()));
 	// the constructor object will not be refcounted, because otherwise the function object will never reach reference count 0
 	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtom::fromObject(f),DECLARED_TRAIT,true,false);
+
+	// destruction of f is handled after the parent function call is completed
+	th->dynamicfunctions.push_back(f);
+	f->incRef();
 	return f;
 }
 

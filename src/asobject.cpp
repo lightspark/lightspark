@@ -826,7 +826,8 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		assert_and_throw(obj->getter.type == T_INVALID);
 		obj->setVar(o,getSystemState());
 	}
-	checkFunctionScope(o.getObject());
+	if (o.is<SyntheticFunction>())
+		checkFunctionScope(o.getObject()->as<SyntheticFunction>());
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
@@ -1196,6 +1197,26 @@ bool ASObject::cloneInstance(ASObject *target)
 	return false;
 }
 
+void ASObject::checkFunctionScope(ASObject* o)
+{
+	SyntheticFunction* f = o->as<SyntheticFunction>();
+	if (f->inClass)
+		return;
+	for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
+	{
+		if ((it->considerDynamic)
+				&& it->object.getObject() == this
+				&& !it->object.is<Activation_object>()
+				&& !it->object.is<Function_object>()
+				)
+		{
+			f->incActivationCount();
+			f->addDynamicReferenceObject(this);
+			break;
+		}
+	}
+}
+
 ASFUNCTIONBODY_ATOM(ASObject,_constructor)
 {
 }
@@ -1356,6 +1377,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
+				this->incRef();
 				ret.setFunction(obj->var.getObject(),this);
 			}
 		}
@@ -1559,7 +1581,10 @@ bool ASObject::destruct()
 	bool dodestruct = true;
 	if (objfreelist)
 	{
-		dodestruct = !objfreelist->pushObjectToFreeList(this);
+		if (!getCached())
+			dodestruct = !objfreelist->pushObjectToFreeList(this);
+		else
+			dodestruct = false;
 	}
 	if (dodestruct)
 	{
@@ -2664,11 +2689,9 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 		tiny_string a = toString(sys);
 		a += v2.toString(sys);
 		LOG_CALL("add " << toString(sys) << '+' << v2.toString(sys));
+		decRef();
 		if (isrefcounted)
-		{
-			decRef();
 			ASATOM_DECREF(v2);
-		}
 		type = T_STRING;
 		stringID = UINT32_MAX;
 		objval = abstract_s(sys,a);
@@ -2709,11 +2732,9 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 				string a(val1p.toString(sys).raw_buf());
 				string b(val2p.toString(sys).raw_buf());
 				LOG_CALL("add " << a << '+' << b);
+				val1->decRef();
 				if (isrefcounted)
-				{
-					val1->decRef();
 					val2->decRef();
-				}
 				type = T_STRING;
 				stringID = UINT32_MAX;
 				objval = abstract_s(sys,a+b);
@@ -2724,11 +2745,9 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 				number_t num2=val2p.toNumber();
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
+				val1->decRef();
 				if (isrefcounted)
-				{
-					val1->decRef();
 					val2->decRef();
-				}
 				setNumber(result);
 			}
 		}

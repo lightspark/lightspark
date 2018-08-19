@@ -275,7 +275,7 @@ ASObject *IFunction::describeType() const
 	return XML::createFromNode(root);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(NULL),activationobject_refcount(0),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(NULL),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -569,6 +569,10 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		ASATOM_DECREF_POINTER(i);
 	}
 	cc.curr_scope_stack=0;
+	for (auto it = cc.dynamicfunctions.begin(); it != cc.dynamicfunctions.end(); it++)
+	{
+		(*it)->decRef();
+	}
 }
 
 bool SyntheticFunction::destruct()
@@ -585,23 +589,15 @@ bool SyntheticFunction::destruct()
 				o->decRef();
 		}
 	}
+	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
+	{
+		(*it)->decRef();
+	}
+	dynamicreferencedobjects.clear();
 	func_scope.reset();
 	val = NULL;
 	mi = NULL;
-	activationobject_refcount=0;
 	return IFunction::destruct();
-}
-
-void SyntheticFunction::checkLastReference()
-{
-	if (this->getRefCount() ==(int32_t)activationobject_refcount)
-	{
-		// this is the last reference besides those in Activation_Objects, so we force destruction
-		uint32_t c = activationobject_refcount;
-		while (c--)
-			this->decRef();
-	}
-	
 }
 
 bool Function::isEqual(ASObject* r)
@@ -2895,20 +2891,4 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 		return tname;
 	}
 	return NULL;
-}
-
-void Activation_object::checkFunctionScope(ASObject *o)
-{
-	if (o && o->is<SyntheticFunction>())
-	{
-		SyntheticFunction* f = o->as<SyntheticFunction>();
-		for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
-		{
-			if (it->object.getObject() == this)
-			{
-				f->activationobject_refcount++;
-				break;
-			}
-		}
-	}
 }

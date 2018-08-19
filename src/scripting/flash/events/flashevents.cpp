@@ -750,10 +750,6 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
 
-		// the listener may have been removed in callFunction
-		// so we check if it can be destroyed
-		if (tmpListener[i].f.getObject())
-			tmpListener[i].f.getObject()->checkLastReference();
 	}
 	
 	e->check();

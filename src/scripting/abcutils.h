@@ -31,6 +31,7 @@ class ABCContext;
 class ASObject;
 class Class_base;
 class asAtom;
+class SyntheticFunction;
 
 struct scope_entry
 {
@@ -64,6 +65,7 @@ struct call_context
 	uint32_t curr_scope_stack;
 	asAtom* scope_stack;
 	bool* scope_stack_dynamic;
+	std::vector<SyntheticFunction*> dynamicfunctions;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
 	 * by {construct,call,get,set}Super

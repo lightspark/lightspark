@@ -142,6 +142,7 @@ protected:
 		ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
 		if (ret.type == T_INVALID)
 			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
+		ret.getObject()->resetCached();
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 	}
@@ -180,6 +181,7 @@ public:
 			ret=new (c->memoryAccount) T(c);
 			assert_and_throw(ret);
 		}
+		ret->resetCached();
 		ret->setIsInitialized();
 		ret->constructionComplete();
 		ret->setConstructIndicator();
@@ -304,6 +306,7 @@ public:
 		ASObject* ret = c->freelist[0].getObjectFromFreeList();
 		if (!ret)
 			ret=new (c->memoryAccount) ASObject(c);
+		ret->resetCached();
 		c->setupDeclaredTraits(ret);
 		ret->constructionComplete();
 		ret->setConstructIndicator();

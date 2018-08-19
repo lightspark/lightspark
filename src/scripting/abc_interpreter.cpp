@@ -2249,6 +2249,8 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 	assert(instrptr->local_pos3 > 0);
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
+		if(instrptr->cacheobj2)
+			instrptr->cacheobj2->incRef();
 		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
 		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}

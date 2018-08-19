@@ -179,9 +179,10 @@ struct asfreelist
 		// all ASObjects must be created in the VM thread
 		//assert_and_throw(isVmThread());
 #endif
-		assert(obj->getRefCount() == 1);
+		assert(obj->isLastRef());
 		if (freelistsize < FREELIST_SIZE)
 		{
+			obj->setCached();
 			freelist[freelistsize++]=obj;
 			return true;
 		}
@@ -390,7 +391,6 @@ class Activation_object: public ASObject
 {
 public:
     Activation_object(Class_base* c) : ASObject(c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
-	void checkFunctionScope(ASObject* o);
 };
 
 /* Special object returned when new func() syntax is used.
@@ -515,16 +515,14 @@ class SyntheticFunction : public IFunction
 friend class ABCVm;
 friend class Class<IFunction>;
 friend class Class_base;
-friend class Activation_object;
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 private:
+	vector<ASObject*> dynamicreferencedobjects;
 	/* Data structure with information directly loaded from the SWF */
 	method_info* mi;
 	/* Pointer to JIT-compiled function or NULL if not yet compiled */
 	synt_function val;
-	// number of activation objects in the func_scope with a reference to this function
-	uint32_t activationobject_refcount;
 
 	SyntheticFunction(Class_base* c,method_info* m);
 	
@@ -552,12 +550,15 @@ public:
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
 		func_scope->scope.emplace_back(s);
 	}
+	void addDynamicReferenceObject(ASObject* o)
+	{
+		dynamicreferencedobjects.push_back(o);
+	}
 	FORCE_INLINE void callGetter(asAtom& ret, ASObject* target)
 	{
 		asAtom c = asAtom::fromObject(target);
 		call(ret,c,NULL,0,true);
 	}
-	void checkLastReference();
 };
 
 /*
@@ -584,6 +585,7 @@ public:
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (c->memoryAccount) Function(c);
+		ret->resetCached();
 		ret->val_atom = v;
 		ret->returnType = returnType;
 		ret->length = len;
@@ -603,6 +605,7 @@ public:
 		}
 		else
 		{
+			ret->resetCached();
 			ret->mi = m;
 			ret->length = _length;
 			ret->objfreelist = &c->freelist[1];

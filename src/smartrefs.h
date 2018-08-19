@@ -29,22 +29,28 @@ namespace lightspark
 class RefCountable {
 private:
 	ATOMIC_INT32(ref_count);
+	int32_t activation_refcount;
 	bool isConstant:1;
 	bool inDestruction:1;
+	bool cached:1;
 protected:
-	RefCountable() : ref_count(1),isConstant(false),inDestruction(false) {}
+	RefCountable() : ref_count(1),activation_refcount(1),isConstant(false),inDestruction(false),cached(false) {}
 
 public:
 	virtual ~RefCountable() {}
 
 	int getRefCount() const { return ref_count; }
-	inline bool isLastRef() const { return !isConstant && ref_count == 1; }
+	inline bool isLastRef() const { return !isConstant && ref_count == activation_refcount; }
 	inline void setConstant()
 	{
 		isConstant=true;
 	}
 	inline bool getConstant() const { return isConstant; }
 	inline bool getInDestruction() const { return inDestruction; }
+	inline bool getCached() const { return cached; }
+	inline void setCached() { cached=true; }
+	inline void resetCached() { cached=false; }
+	inline void incActivationCount() { activation_refcount++; }
 	inline void incRef()
 	{
 		if (!isConstant)
@@ -52,14 +58,16 @@ public:
 	}
 	inline bool decRef()
 	{
-		assert(ref_count>0);
-		if (!isConstant)
+		if (!isConstant && !cached)
 		{
-			if (ref_count == 1)
+			assert(ref_count>0);
+			if (ref_count == activation_refcount)
 			{
 				if (inDestruction)
 					return true;
 				inDestruction = true;
+				activation_refcount=1;
+				ref_count=1;
 				if (destruct())
 				{
 					//Let's make refcount very invalid
@@ -74,7 +82,7 @@ public:
 			else
 				--ref_count;
 		}
-		return false;
+		return cached;
 	}
 	virtual bool destruct()
 	{

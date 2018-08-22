@@ -122,85 +122,79 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 
 void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
 {
-	auto ittoken = tag->tokenmap.find(ratio);
-	if (ittoken == tag->tokenmap.end())
+	LOG(LOG_NOT_IMPLEMENTED,"MorphShape currently ignores most morph settings and just displays the start/end shape. ID:"<<tag->getId()<<" ratio:"<<ratio);
+	Vector2 cursor;
+	unsigned int color0=0;
+	unsigned int color1=0;
+	unsigned int linestyle=0;
+
+	const MATRIX matrix;
+	ShapesBuilder shapesBuilder;
+
+	// TODO compute SHAPERECORD entries based on ratio
+	auto it = ratio == 65535 ? tag->EndEdges.ShapeRecords.begin() : tag->StartEdges.ShapeRecords.begin();
+	auto last = ratio == 65535 ? tag->EndEdges.ShapeRecords.end() : tag->StartEdges.ShapeRecords.end();
+	while (it != last)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"MorphShape currently ignores most morph settings and just displays the start/end shape. ID:"<<tag->getId()<<" ratio:"<<ratio);
-		Vector2 cursor;
-		unsigned int color0=0;
-		unsigned int color1=0;
-		unsigned int linestyle=0;
-	
-		const MATRIX matrix;
-		ShapesBuilder shapesBuilder;
-	
-		// TODO compute SHAPERECORD entries based on ratio
-		auto it = ratio == 65535 ? tag->EndEdges.ShapeRecords.begin() : tag->StartEdges.ShapeRecords.begin();
-		auto last = ratio == 65535 ? tag->EndEdges.ShapeRecords.end() : tag->StartEdges.ShapeRecords.end();
-		while (it != last)
+		const SHAPERECORD* cur=&(*it);
+		it++;
+		if(cur->TypeFlag)
 		{
-			const SHAPERECORD* cur=&(*it);
-			it++;
-			if(cur->TypeFlag)
+			if(cur->StraightFlag)
 			{
-				if(cur->StraightFlag)
-				{
-					Vector2 p1(matrix.multiply2D(cursor));
-					cursor.x += cur->DeltaX;
-					cursor.y += cur->DeltaY;
-					Vector2 p2(matrix.multiply2D(cursor));
-	
-					if(color0)
-						shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
-					if(color1)
-						shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
-					if(linestyle)
-						shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
-				}
-				else
-				{
-					Vector2 p1(matrix.multiply2D(cursor));
-					cursor.x += cur->ControlDeltaX;
-					cursor.y += cur->ControlDeltaY;
-					Vector2 p2(matrix.multiply2D(cursor));
-					cursor.x += cur->AnchorDeltaX;
-					cursor.y += cur->AnchorDeltaY;
-					Vector2 p3(matrix.multiply2D(cursor));
-	
-					if(color0)
-						shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
-					if(color1)
-						shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
-					if(linestyle)
-						shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
-				}
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->DeltaX;
+				cursor.y += cur->DeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
 			}
 			else
 			{
-				if(cur->StateMoveTo)
-				{
-					cursor.x=cur->MoveDeltaX;
-					cursor.y=cur->MoveDeltaY;
-				}
-				if(cur->StateLineStyle)
-				{
-					linestyle = cur->LineStyle;
-				}
-				if(cur->StateFillStyle1)
-				{
-					color1=cur->FillStyle1;
-				}
-				if(cur->StateFillStyle0)
-				{
-					color0=cur->FillStyle0;
-				}
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->ControlDeltaX;
+				cursor.y += cur->ControlDeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
+				cursor.x += cur->AnchorDeltaX;
+				cursor.y += cur->AnchorDeltaY;
+				Vector2 p3(matrix.multiply2D(cursor));
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
 			}
 		}
-		tokensVector tmptokens(reporter_allocator<GeomToken>(sys->tokenMemory));
-		shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tmptokens,ratio);
-		ittoken = tag->tokenmap.insert(make_pair(ratio,tmptokens)).first;
+		else
+		{
+			if(cur->StateMoveTo)
+			{
+				cursor.x=cur->MoveDeltaX;
+				cursor.y=cur->MoveDeltaY;
+			}
+			if(cur->StateLineStyle)
+			{
+				linestyle = cur->LineStyle;
+			}
+			if(cur->StateFillStyle1)
+			{
+				color1=cur->FillStyle1;
+			}
+			if(cur->StateFillStyle0)
+			{
+				color0=cur->FillStyle0;
+			}
+		}
 	}
-	tokens.assign(ittoken->second.begin(),ittoken->second.end());
+	tokens.clear();
+	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio);
 }
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q)

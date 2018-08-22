@@ -1101,23 +1101,22 @@ void DefineTextTag::computeCached() const
 	}
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v),
-	tokens(reporter_allocator<GeomToken>(root->getSystemState()->tagsMemory))
+DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v)
 {
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1),
-	tokens(reporter_allocator<GeomToken>(root->getSystemState()->tagsMemory))
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 ASObject *DefineShapeTag::instance(Class_base *c)
 {
 	if(c==NULL)
 		c=Class<Shape>::getClass(loadedFrom->getSystemState());
+	tokensVector tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory));
+	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 	Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
 	return ret;
 }
@@ -1126,14 +1125,12 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip*
 {
 	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShape2Tag(h,3,root)
 {
 	LOG(LOG_TRACE,"DefineShape3Tag");
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineShape3Tag(h,4,root)
@@ -1146,7 +1143,6 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	UsesNonScalingStrokes=UB(1,bs);
 	UsesScalingStrokes=UB(1,bs);
 	in >> Shapes;
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
 }
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root),

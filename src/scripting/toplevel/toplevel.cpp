@@ -580,12 +580,12 @@ bool SyntheticFunction::destruct()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull())
+	if (!func_scope.isNull() && !inClass)
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
 			ASObject* o = it->object.getObject();
-			if (o && (o->is<Activation_object>() || o->is<Function_object>()))
+			if (o && !o->is<Global>())
 				o->decRef();
 		}
 	}

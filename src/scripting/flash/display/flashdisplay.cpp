@@ -1595,16 +1595,16 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		return;
 	}
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
-//	if(!obj->name.empty())
-//	{
-//		//The variable is not deleted, but just set to null
-//		//This is a tested behavior
-//		multiname objName(NULL);
-//		objName.name_type=multiname::NAME_STRING;
-//		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
-//		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-//		setVariableByMultiname(objName,asAtom::nullAtom, ASObject::CONST_NOT_ALLOWED);
-//	}
+	if(!obj->name.empty())
+	{
+		//The variable is not deleted, but just set to null
+		//This is a tested behavior
+		multiname objName(NULL);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
+		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		setVariableByMultiname(objName,asAtom::nullAtom, ASObject::CONST_NOT_ALLOWED);
+	}
 
 	obj->incRef();
 	//this also removes it from depthToLegacyChild
@@ -3399,6 +3399,7 @@ void MovieClip::executeFrameScript()
 		asAtom v;
 		frameScripts[f].callFunction(v,asAtom::invalidAtom,NULL,0,false);
 		ASATOM_DECREF(v);
+		frameScripts[f].getClosure()->decRef();
 	}
 	Sprite::executeFrameScript();
 }

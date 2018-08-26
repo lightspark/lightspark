@@ -302,11 +302,13 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
+		th->incRef();
 		th->downloader=th->getSystemState()->downloadManager->download(th->url, th->soundData, th);
 	}
 	else
 	{
 		list<tiny_string> headers=urlRequest->getHeaders();
+		th->incRef();
 		th->downloader=th->getSystemState()->downloadManager->downloadWithData(th->url,
 				th->soundData, th->postData, headers, th);
 		//Clean up the postData for the next load
@@ -339,7 +341,10 @@ ASFUNCTIONBODY_ATOM(Sound,close)
 {
 	Sound* th=obj.as<Sound>();
 	if(th->downloader)
+	{
 		th->downloader->stop();
+		th->decRef();
+	}
 }
 
 void Sound::setBytesTotal(uint32_t b)

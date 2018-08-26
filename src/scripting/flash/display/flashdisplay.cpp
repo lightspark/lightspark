@@ -1669,6 +1669,9 @@ void DisplayObjectContainer::checkClipDepth()
 			clipobj->incRef();
 			obj->setMask(_NR<DisplayObject>(clipobj));
 		}
+		else
+			obj->setMask(NullRef);
+		
 	}
 }
 
@@ -1869,16 +1872,6 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
-			if(!child->name.empty())
-			{
-				child->incRef();
-				multiname objName(NULL);
-				objName.name_type=multiname::NAME_STRING;
-				objName.name_s_id=getSystemState()->getUniqueStringId(child->name);
-				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-				asAtom v = asAtom::fromObject(child.getPtr());
-				setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
-			}
 		}
 	}
 	child->setOnStage(onStage);
@@ -1897,6 +1890,8 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 
 		child->setOnStage(false);
 		child->setParent(nullptr);
+		child->setMask(NullRef);
+		
 		//Erase this from the legacy child map (if it is in there)
 		depthToLegacyChild.right.erase(child);
 

@@ -122,7 +122,7 @@ protected:
 public:
 	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
-	virtual ~IDrawable(){}
+	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
 	 * The various implementation are responsible for applying the

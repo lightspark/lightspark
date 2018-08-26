@@ -956,3 +956,14 @@ void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	queue.emplace_back(d);
 }
+
+IDrawable::~IDrawable()
+{
+	auto it = masks.begin();
+	while (it != masks.end())
+	{
+		delete it->m;
+		it->m=nullptr;
+		it++;
+	}
+}

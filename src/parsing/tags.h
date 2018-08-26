@@ -116,8 +116,6 @@ protected:
 	UI16_SWF ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
-	/* tokens are computed from Shapes */
-	tokensVector tokens;
 	DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root);
 public:
 	DefineShapeTag(RECORDHEADER h,std::istream& in, RootMovieClip* root);
@@ -166,7 +164,6 @@ protected:
 	SHAPE StartEdges;
 	SHAPE EndEdges;
 	DefineMorphShapeTag(RECORDHEADER h, RootMovieClip* root, int version):DictionaryTag(h,root),MorphLineStyles(version){}
-	std::unordered_map<uint16_t, tokensVector> tokenmap;
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	int getId() const { return CharacterId; }

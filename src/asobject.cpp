@@ -1377,7 +1377,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				this->incRef();
+				if (!(opt & FROM_GETLEX) && !(opt & SKIP_IMPL))
+					this->incRef();
 				ret.setFunction(obj->var.getObject(),this);
 			}
 		}

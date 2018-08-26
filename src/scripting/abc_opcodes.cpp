@@ -1703,8 +1703,7 @@ void ABCVm::constructSuper(call_context* th, int m)
 	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
-	ASATOM_DECREF(obj);
-	LOG_CALL(_("End super construct "));
+	LOG_CALL(_("End super construct ")<<obj.toDebugString());
 }
 
 ASObject* ABCVm::findProperty(call_context* th, multiname* name)
@@ -2932,14 +2931,14 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		for (auto it = f->func_scope->scope.begin(); it != f->func_scope->scope.end(); it++)
 		{
 			ASObject* o = it->object.getObject();
-			if (o && (o->is<Activation_object>() || o->is<Function_object>()))
+			if (o && !o->is<Global>())
 				o->incRef();
 		}
 	}
 	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
 	{
 		ASObject* o = th->scope_stack[i].getObject();
-		if (o && (o->is<Activation_object>() || o->is<Function_object>()))
+		if (o && !o->is<Global>())
 			o->incRef();
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}

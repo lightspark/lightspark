@@ -21,6 +21,7 @@
 #define SCRIPTING_FLASH_TEXT_FLASHTEXT_H 1
 
 #include "compat.h"
+#include "swf.h"
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
@@ -249,9 +250,9 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:
-	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this) {}
+	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory) {}
 	StaticText(Class_base* c, const tokensVector& tokens):
-		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f) {}
+		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)

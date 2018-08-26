@@ -445,7 +445,11 @@ public:
 	MemoryAccount* unaccountedMemory;
 	MemoryAccount* tagsMemory;
 	MemoryAccount* stringMemory;
-	MemoryAccount* tokenMemory;
+	MemoryAccount* textTokenMemory;
+	MemoryAccount* shapeTokenMemory;
+	MemoryAccount* morphShapeTokenMemory;
+	MemoryAccount* bitmapTokenMemory;
+	MemoryAccount* spriteTokenMemory;
 #ifdef MEMORY_USAGE_PROFILING
 	void saveMemoryUsageInformation(std::ofstream& out, int snapshotCount) const;
 #endif

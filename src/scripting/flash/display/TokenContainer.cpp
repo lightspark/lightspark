@@ -26,12 +26,12 @@
 using namespace lightspark;
 using namespace std;
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(reporter_allocator<GeomToken>(_o->getSystemState()->tokenMemory)), scaling(1.0f)
+TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m) : owner(_o),tokens(reporter_allocator<GeomToken>(_m)), scaling(1.0f)
 {
 }
 
-TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o), tokens(_tokens.begin(),_tokens.end(),reporter_allocator<GeomToken>(_o->getSystemState()->tokenMemory)), scaling(_scaling)
+TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m, const tokensVector& _tokens, float _scaling) :
+	owner(_o), tokens(_tokens.begin(),_tokens.end(),reporter_allocator<GeomToken>(_m)), scaling(_scaling)
 
 {
 }
@@ -196,7 +196,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 				}
 			}
 		}
-		tokensVector tmptokens(reporter_allocator<GeomToken>(sys->tokenMemory));
+		tokensVector tmptokens(reporter_allocator<GeomToken>(sys->morphShapeTokenMemory));
 		shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tmptokens,ratio);
 		ittoken = tag->tokenmap.insert(make_pair(ratio,tmptokens)).first;
 	}

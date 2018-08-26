@@ -725,7 +725,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	_addChildAt(o, 0);
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),buttonMode(false),useHandCursor(false)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -2251,12 +2251,12 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 	}
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef)
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef)
 {
 }
 
 Shape::Shape(Class_base* c, const tokensVector& tokens, float scaling):
-	DisplayObject(c),TokenContainer(this, tokens, scaling),graphics(NullRef)
+	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, tokens, scaling),graphics(NullRef)
 {
 }
 
@@ -2290,12 +2290,12 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtom::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(NULL)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(NULL)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(_morphshapetag)
 {
 	scaling = 1.0f/20.0f;
 }
@@ -2770,7 +2770,7 @@ void StageDisplayState::sinit(Class_base* c)
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(c),TokenContainer(this),smoothing(false)
+	DisplayObject(c),TokenContainer(this, this->getSystemState()->bitmapTokenMemory),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
@@ -2814,7 +2814,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 	Bitmap::updatedData();
 }
 
-Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this),smoothing(false)
+Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this, this->getSystemState()->bitmapTokenMemory),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;

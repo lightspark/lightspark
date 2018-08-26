@@ -116,7 +116,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	ret.setBool(true);
 }
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
-	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
+	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL), alwaysShowSelection(false),
 	  caretIndex(0), condenseWhite(false), displayAsPassword(false),

@@ -199,6 +199,29 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 		{
 			ScriptDataTag tag(stream);
 			prevSize=tag.getTotalLen();
+			if (tag.methodName == "onMetaData")
+			{
+				// set framerate from metadata, if available
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.name_s_id=getSys()->getUniqueStringId("framerate");
+				m.ns.emplace_back(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+				m.isAttribute = false;
+				auto it = tag.dataobjectlist.begin();
+				while (it != tag.dataobjectlist.end())
+				{
+					ASObject* o = (*it).getObject();
+					if(o && o->hasPropertyByMultiname(m,true,false))
+					{
+						asAtom v;
+						o->getVariableByMultiname(v,m);
+						frameRate = v.toNumber();
+						break;
+					}
+					it++;
+				}
+			}
+			
 			netstream->sendClientNotification(tag.methodName,tag.dataobjectlist);
 			break;
 		}

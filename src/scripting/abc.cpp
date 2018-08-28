@@ -132,6 +132,7 @@
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
+#include"backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
@@ -2433,8 +2434,29 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		for(unsigned int i=0;i<t->metadata_count;i++)
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];
-			if (root->getSystemState()->getStringFromUniqueId(getString(minfo.name)) == "Transient")
-				isenumerable = false;
+			tiny_string name = root->getSystemState()->getStringFromUniqueId(getString(minfo.name));
+			if (name == "Transient")
+ 				isenumerable = false;
+			if (name == "SWF")
+			{
+				// it seems that settings from the SWF metadata tag override the entries in the swf header
+				uint32_t w = UINT32_MAX;
+				uint32_t h = UINT32_MAX;
+				for(unsigned int j=0;j<minfo.item_count;++j)
+				{
+					tiny_string key =root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key));
+
+					if (key =="width")
+						w = atoi(root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
+					if (key =="height")
+						h = atoi(root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
+				}
+				if (w != UINT32_MAX || h != UINT32_MAX)
+				{
+					RenderThread* rt=root->getSystemState()->getRenderThread();
+					rt->requestResize(w == UINT32_MAX ? rt->windowWidth : w, h == UINT32_MAX ? rt->windowHeight : h, true);
+				}
+			}
 		}
 	}
 	uint32_t kind = t->kind&0xf;

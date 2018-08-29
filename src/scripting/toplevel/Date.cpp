@@ -151,7 +151,7 @@ void Date::sinit(Class_base* c)
 	c->prototype->setVariableByQName("setUTCSeconds","",Class<IFunction>::getFunction(c->getSystemState(),setUTCSeconds,2),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setUTCMilliseconds","",Class<IFunction>::getFunction(c->getSystemState(),setUTCMilliseconds),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setTime","",Class<IFunction>::getFunction(c->getSystemState(),setTime,1),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toUTCString","",Class<IFunction>::getFunction(c->getSystemState(),toUTCString),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toDateString","",Class<IFunction>::getFunction(c->getSystemState(),toDateString),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("toTimeString","",Class<IFunction>::getFunction(c->getSystemState(),toTimeString),CONSTANT_TRAIT);

@@ -90,6 +90,7 @@ public:
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
 	uint32_t version;
 	uint32_t fileLength;
+	bool hasSymbolClass;
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);
@@ -519,7 +520,7 @@ private:
 	tiny_string url;
 	FILE_TYPE fileType;
 	void threadAbort();
-	void jobFence() {};
+	void jobFence() {}
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);
 	void parseSWF(UI8 ver);
 	void parseBitmap();

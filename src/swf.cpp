@@ -78,6 +78,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 {
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
+	hasSymbolClass=false;
 }
 
 RootMovieClip::~RootMovieClip()
@@ -1498,6 +1499,9 @@ void ParseThread::parseSWF(UI8 ver)
 					delete tag;
 					break;
 				case SYMBOL_CLASS_TAG:
+					root->hasSymbolClass = true;
+					// fall through
+				case ABC_TAG:
 				case ACTION_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
@@ -1509,6 +1513,7 @@ void ParseThread::parseSWF(UI8 ver)
 					break;
 				}
 				case CONTROL_TAG:
+				{
 					/* The spec is not clear about that,
 					 * but it seems that all the CONTROL_TAGs
 					 * (=not one of the other tag types here)
@@ -1522,9 +1527,6 @@ void ParseThread::parseSWF(UI8 ver)
 						delete tag;
 						break;
 					}
-					//fall through
-				case ABC_TAG:
-				{
 					const ControlTag* ctag = static_cast<const ControlTag*>(tag);
 					ctag->execute(root);
 					delete tag;

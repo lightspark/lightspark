@@ -198,7 +198,10 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	/* currentVM will free the context*/
-	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,((int32_t)Flags)&1)));
+	// some swf files have multiple abc tags without the "lazy" flag.
+	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
+	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
+	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,root->hasSymbolClass ? true : ((int32_t)Flags)&1)));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)

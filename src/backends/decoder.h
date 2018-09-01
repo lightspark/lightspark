@@ -28,7 +28,9 @@ extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#ifdef HAVE_LIBAVRESAMPLE
+#ifdef HAVE_LIBSWRESAMPLE
+#include <libswresample/swresample.h>
+#elif defined HAVE_LIBAVRESAMPLE
 #include <libavresample/avresample.h>
 #endif
 #include <libavutil/opt.h>
@@ -319,7 +321,9 @@ private:
 	EngineData* engine;
 	bool ownedContext;
 	AVCodecContext* codecContext;
-#ifdef HAVE_LIBAVRESAMPLE
+#ifdef HAVE_LIBSWRESAMPLE
+	SwrContext* resamplecontext;
+#elif defined HAVE_LIBAVRESAMPLE
 	AVAudioResampleContext* resamplecontext;
 #endif
 	std::vector<uint8_t> overflowBuffer;

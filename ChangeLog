@@ -1,5 +1,12 @@
 lightspark: An open source flash player implementation
 
+Version NEXT:
+
+	* use libswresample instead of libavresample, if available
+	* reduce memory usage
+	* several performance improvements
+	* add partial support for rtmfp protocol
+
 Version 0.8.1:
 
 	* make plugins work with newer versions of firefox and chromium

@@ -1808,8 +1808,6 @@ FORCE_INLINE void asAtom::bit_xor(asAtom &v1)
 {
 	int32_t i1=v1.toInt();
 	int32_t i2=toInt();
-	ASATOM_DECREF(v1);
-	decRef();
 	LOG_CALL(_("bitXor ") << std::hex << i1 << '^' << i2 << std::dec);
 	setInt(i1^i2);
 }
@@ -1817,7 +1815,6 @@ FORCE_INLINE void asAtom::bit_xor(asAtom &v1)
 FORCE_INLINE void asAtom::bitnot()
 {
 	int32_t i1=toInt();
-	decRef();
 	LOG_CALL(_("bitNot ") << std::hex << i1 << std::dec);
 	setInt(~i1);
 }
@@ -1830,8 +1827,6 @@ FORCE_INLINE void asAtom::subtract(asAtom &v2)
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
 	
-		decRef();
-		ASATOM_DECREF(v2);
 		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
 		int64_t res = num1-num2;
 		if (res > INT32_MIN && res < INT32_MAX)
@@ -1846,8 +1841,6 @@ FORCE_INLINE void asAtom::subtract(asAtom &v2)
 		number_t num2=v2.toNumber();
 		number_t num1=toNumber();
 	
-		decRef();
-		ASATOM_DECREF(v2);
 		LOG_CALL(_("subtract ") << num1 << '-' << num2);
 		setNumber(num1-num2);
 	}
@@ -1861,8 +1854,6 @@ FORCE_INLINE void asAtom::multiply(asAtom &v2)
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
 	
-		decRef();
-		ASATOM_DECREF(v2);
 		LOG_CALL(_("multiplyI ") << num1 << '*' << num2);
 		int64_t res = num1*num2;
 		if (res > INT32_MIN && res < INT32_MAX)
@@ -1887,8 +1878,6 @@ FORCE_INLINE void asAtom::divide(asAtom &v2)
 	double num1=toNumber();
 	double num2=v2.toNumber();
 
-	decRef();
-	ASATOM_DECREF(v2);
 	LOG_CALL(_("divide ")  << num1 << '/' << num2);
 	// handling of infinity according to ECMA-262, chapter 11.5.2
 	if (std::isinf(num1))
@@ -1924,8 +1913,6 @@ FORCE_INLINE void asAtom::modulo(asAtom &v2)
 		number_t num1=toNumber();
 		number_t num2=v2.toNumber();
 
-		decRef();
-		ASATOM_DECREF(v2);
 		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		setNumber(::fmod(num1,num2));
@@ -1936,8 +1923,6 @@ FORCE_INLINE void asAtom::lshift(asAtom &v1)
 {
 	int32_t i2=toInt();
 	uint32_t i1=v1.toUInt()&0x1f;
-	ASATOM_DECREF(v1);
-	decRef();
 	LOG_CALL(_("lShift ")<<std::hex<<i2<<_("<<")<<i1<<std::dec);
 	//Left shift are supposed to always work in 32bit
 	setInt(i2<<i1);
@@ -1947,8 +1932,6 @@ FORCE_INLINE void asAtom::rshift(asAtom &v1)
 {
 	int32_t i2=toInt();
 	uint32_t i1=v1.toUInt()&0x1f;
-	ASATOM_DECREF(v1);
-	decRef();
 	LOG_CALL(_("rShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	setInt(i2>>i1);
 }
@@ -1957,8 +1940,6 @@ FORCE_INLINE void asAtom::urshift(asAtom &v1)
 {
 	uint32_t i2=toUInt();
 	uint32_t i1=v1.toUInt()&0x1f;
-	ASATOM_DECREF(v1);
-	decRef();
 	LOG_CALL(_("urShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	setUInt(i2>>i1);
 }
@@ -1966,8 +1947,6 @@ FORCE_INLINE void asAtom::bit_and(asAtom &v1)
 {
 	int32_t i1=v1.toInt();
 	int32_t i2=toInt();
-	ASATOM_DECREF(v1);
-	decRef();
 	LOG_CALL(_("bitAnd_oo ") << std::hex << i1 << '&' << i2 << std::dec);
 	setInt(i1&i2);
 }
@@ -2000,8 +1979,6 @@ FORCE_INLINE void asAtom::add_i(asAtom &v2)
 	int32_t num2=v2.toInt();
 	int32_t num1=toInt();
 
-	decRef();
-	ASATOM_DECREF(v2);
 	LOG_CALL(_("add_i ") << num1 << '+' << num2);
 	setInt(num1+num2);
 }
@@ -2011,8 +1988,6 @@ FORCE_INLINE void asAtom::subtract_i(asAtom &v2)
 	int num2=v2.toInt();
 	int num1=toInt();
 
-	decRef();
-	ASATOM_DECREF(v2);
 	LOG_CALL(_("subtract_i ") << num1 << '-' << num2);
 	setInt(num1-num2);
 }
@@ -2021,8 +1996,6 @@ FORCE_INLINE void asAtom::multiply_i(asAtom &v2)
 {
 	int num1=toInt();
 	int num2=v2.toInt();
-	decRef();
-	ASATOM_DECREF(v2);
 	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
 	setInt(num1*num2);
 }

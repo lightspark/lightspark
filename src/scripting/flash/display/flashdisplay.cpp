@@ -1597,6 +1597,8 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
 	if(!obj->name.empty())
 	{
+		// ensure obj is not deleted before _removeChild is called
+		obj->incRef();
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
 		multiname objName(NULL);
@@ -1610,6 +1612,9 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
+
+	if(!obj->name.empty())
+			obj->decRef();
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* obj)
@@ -3394,7 +3399,6 @@ void MovieClip::executeFrameScript()
 		asAtom v;
 		frameScripts[f].callFunction(v,asAtom::invalidAtom,NULL,0,false);
 		ASATOM_DECREF(v);
-		frameScripts[f].getClosure()->decRef();
 	}
 	Sprite::executeFrameScript();
 }

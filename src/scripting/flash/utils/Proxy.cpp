@@ -84,6 +84,7 @@ void Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOW
 	asAtom args[2];
 	args[0]=asAtom::fromObject(namearg);
 	args[1]=o;
+	ASATOM_INCREF(args[0]);
 	ASATOM_INCREF(o);
 	//We now suppress special handling
 	implEnable=false;
@@ -124,6 +125,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
+	ASATOM_INCREF(arg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
@@ -162,6 +164,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
+	ASATOM_INCREF(arg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::hasProperty"));
@@ -198,6 +201,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtom::fromObject(namearg);
+	ASATOM_INCREF(arg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL(_("Proxy::deleteProperty"));

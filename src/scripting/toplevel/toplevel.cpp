@@ -249,8 +249,6 @@ ASFUNCTIONBODY_ATOM(IFunction,_toString)
 
 void Class<IFunction>::generator(asAtom& ret,asAtom* args, const unsigned int argslen)
 {
-	for(unsigned int i=0;i<argslen;i++)
-		ASATOM_DECREF(args[i]);
 	if (argslen > 0)
 		throwError<EvalError>(kFunctionConstructorError);
 	ret = asAtom::fromObject(getNopFunction());
@@ -1002,8 +1000,6 @@ ASFUNCTIONBODY_GETTER(Class_base, length);
 void Class_base::generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 {
 	ASObject::generator(ret,getSystemState(),asAtom::invalidAtom, args, argslen);
-	for(unsigned int i=0;i<argslen;i++)
-		ASATOM_DECREF(args[i]);
 }
 
 void Class_base::addImplementedInterface(const multiname& i)

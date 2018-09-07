@@ -231,8 +231,6 @@ public:
 	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
 		T::generator(ret,getSystemState(), asAtom::invalidAtom, args, argslen);
-		for(unsigned int i=0;i<argslen;i++)
-			ASATOM_DECREF(args[i]);
 	}
 	void coerce(SystemState* sys,asAtom& o) const
 	{
@@ -338,8 +336,6 @@ public:
 			ASATOM_INCREF(args[0]);
 			ret=args[0];
 		}
-		for(unsigned int i=0;i<argslen;i++)
-			ASATOM_DECREF(args[i]);
 	}
 };
 
@@ -430,8 +426,6 @@ public:
 	{
 		asAtom th = asAtom::fromObject(this);
 		T::generator(ret,this->getSystemState(),th,args,argslen);
-		for(size_t i=0;i<argslen;++i)
-			ASATOM_DECREF(args[i]);
 	}
 
 	const Template_base* getTemplate() const

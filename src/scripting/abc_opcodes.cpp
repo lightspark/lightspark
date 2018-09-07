@@ -1703,6 +1703,8 @@ void ABCVm::constructSuper(call_context* th, int m)
 	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
+	if (!th->inClass->super->super.isNull()) // only decref if super class is not ASObject
+		ASATOM_DECREF(obj);
 	LOG_CALL(_("End super construct ")<<obj.toDebugString());
 }
 
@@ -2873,6 +2875,8 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 		Class_base* c=f.as<Class_base>();
 		asAtom ret;
 		c->generator(ret,args,m);
+		for(unsigned int i=0;i<m;i++)
+			ASATOM_DECREF(args[i]);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else

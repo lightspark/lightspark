@@ -1826,7 +1826,6 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 					//We now suppress special handling
 					LOG_CALL(_("Proxy::callProperty"));
 					ASATOM_INCREF(oproxy);
-					asAtom ret;
 					oproxy.callFunction(ret,obj,proxyArgs,2,true);
 					ASATOM_DECREF(oproxy);
 				}
@@ -1873,7 +1872,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 			ret.setUndefined();
 		}
 	}
-	LOG_CALL(_("End of calling ") << *name);
+	LOG_CALL(_("End of calling ") << *name<<" "<<ret.toDebugString());
 }
 void ABCVm::abc_callpropertyStaticName_localresult(call_context* context)
 {
@@ -4736,7 +4735,6 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = num+1;
-				operandlist.push_back(operands(OP_LOCAL,num,0,0));
 				res = true;
 			}
 			break;
@@ -4751,7 +4749,6 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = b-0xd3;
 				code.readbyte();
-				operandlist.push_back(operands(OP_LOCAL,b-0xd4,0,0));
 				res = true;
 			}
 			break;

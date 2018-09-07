@@ -58,6 +58,10 @@ string ASObject::toDebugString()
 	{
 		ret = "[templated class]";
 	}
+	else if (this->is<Event>())
+	{
+		ret = "[event]";
+	}
 	else
 	{
 		assert(false);
@@ -1206,12 +1210,11 @@ void ASObject::checkFunctionScope(ASObject* o)
 	{
 		if ((it->considerDynamic)
 				&& it->object.getObject() == this
-				&& !it->object.is<Activation_object>()
-				&& !it->object.is<Function_object>()
-				)
+				&& !it->object.is<Global>())
 		{
 			f->incActivationCount();
-			f->addDynamicReferenceObject(this);
+			if (!it->object.is<Activation_object>())
+				f->addDynamicReferenceObject(this);
 			break;
 		}
 	}

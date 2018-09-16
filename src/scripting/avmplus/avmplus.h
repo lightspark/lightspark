@@ -58,6 +58,7 @@ public:
 	ASFUNCTION_ATOM(argv);
 	ASFUNCTION_ATOM(exec);
 	ASFUNCTION_ATOM(write);
+	ASFUNCTION_ATOM(sleep);
 	ASFUNCTION_ATOM(exit);
 	ASFUNCTION_ATOM(canonicalizeNumber);
 };
@@ -79,5 +80,6 @@ public:
 	ASFUNCTION_ATOM(_setDomainMemory);
 };
 
+void casi32(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 }
 #endif /* SCRIPTING_AVMPLUS_AVMPLUS_H */

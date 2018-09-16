@@ -26,6 +26,7 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Vector.h"
+#include "parsing/streams.h"
 
 #include <istream>
 
@@ -673,9 +674,10 @@ ASFUNCTIONBODY_ATOM(System,gc)
 }
 
 ASWorker::ASWorker(Class_base* c):
-	EventDispatcher(c)
+	EventDispatcher(c),loader(_MR(Class<Loader>::getInstanceS(c->getSystemState()))),parser(nullptr),
+	giveAppPrivileges(false),started(false),isPrimordial(false),state("new")
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
+	subtype = SUBTYPE_WORKER;
 }
 
 void ASWorker::sinit(Class_base* c)
@@ -683,16 +685,216 @@ void ASWorker::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),getSharedProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
+	REGISTER_GETTER(c, isPrimordial);
+	REGISTER_GETTER(c, state);
+	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),addEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createMessageChannel","",Class<IFunction>::getFunction(c->getSystemState(),createMessageChannel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(c->getSystemState(),removeEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),setSharedProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),start),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("terminate","",Class<IFunction>::getFunction(c->getSystemState(),terminate),NORMAL_METHOD,true);
 }
+
+void ASWorker::execute()
+{
+	setTLSWorker(this);
+
+	streambuf *sbuf = new bytes_buf(swf->bytes,swf->getLength());
+	istream s(sbuf);
+	parsemutex.lock();
+	parser = new ParseThread(s,getSystemState()->mainClip->applicationDomain,getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
+	parsemutex.unlock();
+	getSystemState()->addWorker(this);
+	this->incRef();
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
+	if (!this->threadAborting)
+	{
+		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial);
+		parser->execute();
+		LOG(LOG_INFO,"worker done"<<this->toDebugString()<<" "<<this->isPrimordial);
+	}
+	delete sbuf;
+}
+
+void ASWorker::jobFence()
+{
+	state ="terminated";
+	this->incRef();
+	getSystemState()->removeWorker(this);
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
+	parsemutex.lock();
+	delete parser;
+	parser = nullptr;
+	parsemutex.unlock();
+}
+ASFUNCTIONBODY_GETTER(ASWorker, state);
+ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial);
+
 ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Worker not implemented");
-	ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
+	ASWorker* w = getWorker();
+	if(!w)
+		w=sys->worker.getPtr();
+	w->incRef();
+	ret = asAtom::fromObject(w);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Worker.getSharedProperty not implemented");
-	ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
+	tiny_string key;
+	ARG_UNPACK_ATOM(key);
+	Locker l(sys->workerDomain->workersharedobjectmutex);
+	
+	multiname m(NULL);
+	m.name_type=multiname::NAME_STRING;
+	m.name_s_id=sys->getUniqueStringId(key);
+	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	m.isAttribute = false;
+	if (sys->workerDomain->workerSharedObject->hasPropertyByMultiname(m,true,false))
+		sys->workerDomain->workerSharedObject->getVariableByMultiname(ret,m);
+	else
+		ret.setNull();
+}
+ASFUNCTIONBODY_ATOM(ASWorker,isSupported)
+{
+	ret.setBool(true);
+}
+ASFUNCTIONBODY_ATOM(ASWorker,_addEventListener)
+{
+	EventDispatcher::addEventListener(ret,sys,obj,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Worker.createMessageChannel not implemented");
+	ret.setUndefined();
+}
+ASFUNCTIONBODY_ATOM(ASWorker,_removeEventListener)
+{
+	EventDispatcher::removeEventListener(ret,sys,obj,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(ASWorker,setSharedProperty)
+{
+	tiny_string key;
+	asAtom value;
+	ARG_UNPACK_ATOM(key)(value);
+	Locker l(sys->workerDomain->workersharedobjectmutex);
+	ASATOM_INCREF(value);
+	multiname m(NULL);
+	m.name_type=multiname::NAME_STRING;
+	m.name_s_id=sys->getUniqueStringId(key);
+	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	m.isAttribute = false;
+	sys->workerDomain->workerSharedObject->setVariableByMultiname(m,value,CONST_NOT_ALLOWED);
+}
+ASFUNCTIONBODY_ATOM(ASWorker,start)
+{
+	ASWorker* th = obj.as<ASWorker>();
+	if (th->started)
+		throwError<ASError>(kWorkerAlreadyStarted);
+	if (!th->swf.isNull())
+	{
+		th->started = true;
+		sys->addJob(th);
+	}
+	ret.setUndefined();
+}
+ASFUNCTIONBODY_ATOM(ASWorker,terminate)
+{
+	ASWorker* th = obj.as<ASWorker>();
+	if (th->isPrimordial)
+		ret.setBool(false);
+	else
+	{
+		th->threadAborting = true;
+		th->parsemutex.lock();
+		if (th->parser)
+			th->parser->threadAborting = true;
+		th->parsemutex.unlock();
+		th->threadAbort();
+		ret.setBool(th->started);
+		th->started = false;
+	}
+}
+
+WorkerDomain::WorkerDomain(Class_base* c):
+	ASObject(c)
+{
+	subtype = SUBTYPE_WORKERDOMAIN;
+	asAtom v;
+	Template<Vector>::getInstanceS(v,getSystemState(),Class<ASWorker>::getClass(getSystemState()),NullRef);
+	workerlist = _R<Vector>(v.as<Vector>());
+	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
+	workerSharedObject->setConstant();
+}
+
+void WorkerDomain::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_isSupported),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("createWorker","",Class<IFunction>::getFunction(c->getSystemState(),createWorker),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("listWorkers","",Class<IFunction>::getFunction(c->getSystemState(),listWorkers),NORMAL_METHOD,true);
+	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
+	{
+		c->setDeclaredMethodByQName("createWorkerFromPrimordial","",Class<IFunction>::getFunction(c->getSystemState(),createWorkerFromPrimordial),NORMAL_METHOD,true);
+		c->setDeclaredMethodByQName("createWorkerFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),createWorkerFromByteArray),NORMAL_METHOD,true);
+	}
+
+}
+ASFUNCTIONBODY_ATOM(WorkerDomain,_constructor)
+{
+	ret.setNull();
+}
+
+ASFUNCTIONBODY_ATOM(WorkerDomain,_getCurrent)
+{
+	ret = asAtom::fromObject(sys->workerDomain.getPtr());
+}
+ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
+{
+	ret.setBool(true);
+}
+ASFUNCTIONBODY_ATOM(WorkerDomain,createWorker)
+{
+	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
+	ARG_UNPACK_ATOM(w->swf)(w->giveAppPrivileges, false);
+	if (w->giveAppPrivileges)
+		LOG(LOG_NOT_IMPLEMENTED,"WorkerDomain.createWorker: giveAppPrivileges is ignored");
+	ret = asAtom::fromObject(w);
+}
+ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromPrimordial)
+{
+	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
+	
+	
+	ByteArray* ba = Class<ByteArray>::getInstanceS(sys);
+	FileStreamCache* sc = (FileStreamCache*)sys->getEngineData()->createFileStreamCache(sys);
+	sc->useExistingFile(sys->getDumpedSWFPath());
+	
+	ba->append(sc->createReader(),sys->swffilesize);
+	w->swf = _MR(ba);
+	ret = asAtom::fromObject(w);
+}
+ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromByteArray)
+{
+	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
+	ARG_UNPACK_ATOM(w->swf);
+	ret = asAtom::fromObject(w);
+}
+
+ASFUNCTIONBODY_ATOM(WorkerDomain,listWorkers)
+{
+	WorkerDomain* th = obj.as<WorkerDomain>();
+	
+	th->workerlist->incRef();
+	ret = asAtom::fromObject(th->workerlist.getPtr());
+}
+void WorkerState::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("NEW",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"new"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RUNNING",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"running"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("TERMINATED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"terminated"),CONSTANT_TRAIT);
 }
 
 void ImageDecodingPolicy::sinit(Class_base* c)

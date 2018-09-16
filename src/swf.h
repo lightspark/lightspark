@@ -55,6 +55,8 @@ class RenderThread;
 class SecurityManager;
 class Tag;
 class ApplicationDomain;
+class ASWorker;
+class WorkerDomain;
 class SecurityDomain;
 class Class_inherit;
 class DefineFont3Tag;
@@ -273,6 +275,7 @@ private:
 	void systemFinalize();
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
+	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
 
 	//Interative analysis flags
 	bool showProfilingData;
@@ -280,6 +283,7 @@ public:
 	//Flash for execution mode
 	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
 	const FLASH_MODE flashMode;
+	uint32_t swffilesize;
 	
 	// Error types used to decide when to exit, extend as a bitmap
 	enum ERROR_TYPE { ERROR_NONE    = 0x0000,
@@ -396,6 +400,13 @@ public:
 	 * The application domain for the system
 	 */
 	_NR<ApplicationDomain> systemDomain;
+
+	_NR<ASWorker> worker;
+	_NR<WorkerDomain> workerDomain;
+	bool singleworker;
+	Mutex workerMutex;
+	void addWorker(ASWorker* w);
+	void removeWorker(ASWorker* w);
 
 	//Stuff to be done once for process and not for plugin instance
 	static void staticInit() DLL_PUBLIC;
@@ -533,6 +544,9 @@ SystemState* getSys() DLL_PUBLIC;
 void setTLSSys(SystemState* sys) DLL_PUBLIC;
 
 ParseThread* getParseThread();
+/* Returns the thread-specific SystemState */
+ASWorker* getWorker() DLL_PUBLIC;
+void setTLSWorker(ASWorker* worker) DLL_PUBLIC;
 
-};
+}
 #endif /* SWF_H */

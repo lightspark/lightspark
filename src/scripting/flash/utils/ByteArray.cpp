@@ -1498,8 +1498,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 	th->unlock();
 	ret.setUInt(res);
 }
-ASFUNCTIONBODY_GETTER_SETTER(ByteArray,shareable);
-
+ASFUNCTIONBODY_GETTER(ByteArray,shareable);
+ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
+{
+	ByteArray* th=obj.as<ByteArray>();
+	bool value;
+	ARG_UNPACK_ATOM(value);
+	if (!th->shareable)
+		th->shareable=value;
+}
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 {
 	ByteArray* th=obj.as<ByteArray>();

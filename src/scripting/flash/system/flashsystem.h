@@ -165,14 +165,62 @@ public:
 	ASFUNCTION_ATOM(pauseForGCIfCollectionImminent);
 	ASFUNCTION_ATOM(gc);
 };
-class ASWorker: public EventDispatcher
+class WorkerDomain;
+class ParseThread;
+class ASWorker: public EventDispatcher, public IThreadJob
 {
+friend class WorkerDomain;
+private:
+	Mutex parsemutex;
+	_R<Loader> loader;
+	_NR<ByteArray> swf;
+	ParseThread* parser;
+	bool giveAppPrivileges;
+	bool started;
 public:
 	ASWorker(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(getSharedProperty);
+	ASFUNCTION_ATOM(isSupported);
+	ASPROPERTY_GETTER(bool,isPrimordial);
+	ASPROPERTY_GETTER(tiny_string,state);
+	ASFUNCTION_ATOM(_addEventListener);
+	ASFUNCTION_ATOM(createMessageChannel);
+	ASFUNCTION_ATOM(_removeEventListener);
+	ASFUNCTION_ATOM(setSharedProperty);
+	ASFUNCTION_ATOM(start);
+	ASFUNCTION_ATOM(terminate);
+	virtual void execute();
+	virtual void jobFence();
 };
+class WorkerDomain: public ASObject
+{
+friend class ASWorker;
+friend class SystemState;
+private:
+	Mutex workersharedobjectmutex;
+	_NR<Vector> workerlist;
+	_NR<ASObject> workerSharedObject;
+public:
+	WorkerDomain(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getCurrent);
+	ASFUNCTION_ATOM(_isSupported);
+	ASFUNCTION_ATOM(createWorker);
+	ASFUNCTION_ATOM(createWorkerFromPrimordial);
+	ASFUNCTION_ATOM(createWorkerFromByteArray);
+	ASFUNCTION_ATOM(listWorkers);
+};
+
+class WorkerState: public ASObject
+{
+public:
+	WorkerState(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 class ImageDecodingPolicy: public ASObject
 {
 public:
@@ -186,6 +234,7 @@ public:
 	IMEConversionMode(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 };
+
 
 }
 #endif /* SCRIPTING_FLASH_SYSTEM_FLASHSYSTEM_H */

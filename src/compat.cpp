@@ -36,6 +36,10 @@
 #	ifndef PATH_MAX
 #		define PATH_MAX 260
 #	endif
+#elif _POSIX_C_SOURCE >= 199309L
+#include <time.h>   // for nanosleep
+#else
+#include <unistd.h> // for usleep
 #endif
 
 using namespace std;
@@ -81,6 +85,21 @@ uint64_t compat_get_thread_cputime_us()
 #endif
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
 	return timespecToUsecs(tp);
+}
+
+
+void compat_msleep(unsigned int time)
+{
+#ifdef WIN32
+	Sleep(time);
+#elif _POSIX_C_SOURCE >= 199309L
+	struct timespec ts;
+	ts.tv_sec = time / 1000;
+	ts.tv_nsec = (time % 1000) * 1000000;
+	nanosleep(&ts, NULL);
+#else
+	usleep(time * 1000);
+#endif
 }
 
 void aligned_malloc(void **memptr, size_t alignment, size_t size)

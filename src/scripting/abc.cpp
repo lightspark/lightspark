@@ -172,7 +172,10 @@ void DoABCTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
-	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
+	if (!getWorker() || getWorker()->isPrimordial)
+		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
+	else
+		context->exec(false);
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -201,7 +204,10 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// some swf files have multiple abc tags without the "lazy" flag.
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
-	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,root->hasSymbolClass ? true : ((int32_t)Flags)&1)));
+	if (!getWorker() || getWorker()->isPrimordial)
+		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,root->hasSymbolClass ? true : ((int32_t)Flags)&1)));
+	else
+		context->exec(root->hasSymbolClass ? true : ((int32_t)Flags)&1);
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -293,6 +299,9 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("escape","",_MR(Class<IFunction>::getFunction(m_sys,escape,1)));
 	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(m_sys,unescape,1)));
 	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(m_sys,ASObject::_toString)));
+
+	// avm intrinsics, not documented, but implemented in avmplus
+	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
 }
 
 void ABCVm::registerClasses()
@@ -568,6 +577,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LoaderContext","flash.system",Class<LoaderContext>::getRef(m_sys));
 	builtin->registerBuiltin("System","flash.system",Class<System>::getRef(m_sys));
 	builtin->registerBuiltin("Worker","flash.system",Class<ASWorker>::getRef(m_sys));
+	builtin->registerBuiltin("WorkerDomain","flash.system",Class<WorkerDomain>::getRef(m_sys));
+	builtin->registerBuiltin("WorkerState","flash.system",Class<WorkerState>::getRef(m_sys));
 	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef(m_sys));
 	builtin->registerBuiltin("IMEConversionMode","flash.system",Class<IMEConversionMode>::getRef(m_sys));
 
@@ -1877,6 +1888,9 @@ void ABCContext::exec(bool lazy)
 		buildTrait(global,additionalslots,&scripts[i].traits[j],false,i);
 	}
 	global->initAdditionalSlots(additionalslots);
+
+	root->getSystemState()->worker->state ="running";
+	getVm(root->getSystemState())->addEvent(root->getSystemState()->worker,_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
 
 #ifndef NDEBUG
 		global->initialized=true;

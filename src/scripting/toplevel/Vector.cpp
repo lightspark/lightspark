@@ -365,6 +365,18 @@ void Vector::append(asAtom &o)
 	vec.push_back(o);
 }
 
+void Vector::remove(ASObject *o)
+{
+	for (auto it = vec.begin(); it != vec.end(); it++)
+	{
+		if (it->getObject() == o)
+		{
+			vec.erase(it);
+			break;
+		}
+	}
+}
+
 ASObject *Vector::describeType() const
 {
 	pugi::xml_document p;

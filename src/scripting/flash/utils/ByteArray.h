@@ -33,6 +33,7 @@ friend class LoaderThread;
 friend class URLLoader;
 friend class ApplicationDomain;
 friend class LoaderInfo;
+friend class ASWorker;
 protected:
 	bool littleEndian;
 	uint8_t objectEncoding;

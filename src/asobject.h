@@ -218,7 +218,7 @@ public:
 	asAtom(bool val):boolval(val),objval(NULL),type(T_BOOLEAN) {}
 	ASObject* toObject(SystemState* sys);
 	// returns NULL if this atom is a primitive;
-	FORCE_INLINE ASObject* getObject() const { return objval; }
+	FORCE_INLINE ASObject* getObject() const; 
 	FORCE_INLINE number_t getNumber() const { return numberval; }
 	static FORCE_INLINE asAtom fromObject(ASObject* obj)
 	{
@@ -899,8 +899,10 @@ public:
 class Activation_object;
 class ApplicationDomain;
 class Array;
+class ASMutex;
 class ASQName;
 class ASString;
+class ASWorker;
 class Bitmap;
 class BitmapData;
 class Boolean;
@@ -968,6 +970,7 @@ class Vector3D;
 class VertexBuffer3D;
 class VideoTexture;
 class WaitableEvent;
+class WorkerDomain;
 class XML;
 class XMLList;
 
@@ -977,9 +980,11 @@ class XMLList;
 template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
+template<> inline bool ASObject::is<ASMutex>() const { return subtype==SUBTYPE_MUTEX; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
+template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
 template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
 template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
@@ -1049,6 +1054,7 @@ template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_
 template<> inline bool ASObject::is<VertexBuffer3D>() const { return subtype==SUBTYPE_VERTEXBUFFER3D; }
 template<> inline bool ASObject::is<VideoTexture>() const { return subtype==SUBTYPE_VIDEOTEXTURE; }
 template<> inline bool ASObject::is<WaitableEvent>() const { return subtype==SUBTYPE_WAITABLE_EVENT; }
+template<> inline bool ASObject::is<WorkerDomain>() const { return subtype==SUBTYPE_WORKERDOMAIN; }
 template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
 
@@ -2002,7 +2008,10 @@ FORCE_INLINE void asAtom::multiply_i(asAtom &v2)
 FORCE_INLINE ASObject *asAtom::toObject(SystemState *sys)
 {
 	if (objval)
+	{
+		assert(objval->getRefCount() >= 1);
 		return objval;
+	}
 	switch(type)
 	{
 		case T_INTEGER:
@@ -2105,6 +2114,11 @@ FORCE_INLINE bool asAtom::Boolean_concrete()
 			//everything else is an Object regarding to the spec
 			return true;
 	}
+}
+FORCE_INLINE ASObject* asAtom::getObject() const 
+{ 
+	assert(!objval || objval->getRefCount() >= 1);
+	return objval; 
 }
 }
 #endif /* ASOBJECT_H */

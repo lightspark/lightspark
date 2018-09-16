@@ -105,6 +105,8 @@ public:
 	//Takes ownership of o.
 	void append(asAtom& o);
 	void setFixed(bool v) { fixed = v; }
+	
+	void remove(ASObject* o);
 
 	//TODO: do we need to implement generator?
 	ASFUNCTION_ATOM(_constructor);

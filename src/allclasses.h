@@ -58,7 +58,7 @@ REGISTER_CLASS_NAME(AccessibilityProperties,"flash.accessibility")
 REGISTER_CLASS_NAME(AccessibilityImplementation,"flash.accessibility")
 
 //Concurrent
-REGISTER_CLASS_NAME(ASMutex,"flash.concurrent")
+REGISTER_CLASS_NAME2(ASMutex,"Mutex","flash.concurrent")
 REGISTER_CLASS_NAME(ASCondition,"flash.concurrent")
 
 //Desktop (AIR)
@@ -283,7 +283,9 @@ REGISTER_CLASS_NAME(LoaderContext,"flash.system")
 REGISTER_CLASS_NAME(Security,"flash.system")
 REGISTER_CLASS_NAME(SecurityDomain,"flash.system")
 REGISTER_CLASS_NAME(System,"flash.system")
-REGISTER_CLASS_NAME(ASWorker,"flash.system")
+REGISTER_CLASS_NAME2(ASWorker,"Worker","flash.system")
+REGISTER_CLASS_NAME(WorkerDomain,"flash.system")
+REGISTER_CLASS_NAME(WorkerState,"flash.system")
 REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
 REGISTER_CLASS_NAME(IMEConversionMode,"flash.system")
 

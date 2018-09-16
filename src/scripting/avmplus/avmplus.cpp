@@ -21,6 +21,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "threading.h"
 #include "abc.h"
 
 using namespace lightspark;
@@ -102,6 +103,7 @@ void avmplusSystem::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("argv","",Class<IFunction>::getFunction(c->getSystemState(),argv),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(c->getSystemState(),write),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sleep","",Class<IFunction>::getFunction(c->getSystemState(),sleep),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("exit","",Class<IFunction>::getFunction(c->getSystemState(),exit),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("trace","",Class<IFunction>::getFunction(c->getSystemState(),lightspark::trace),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("canonicalizeNumber","",Class<IFunction>::getFunction(c->getSystemState(),canonicalizeNumber),NORMAL_METHOD,false);
@@ -182,6 +184,12 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,exec)
 ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.write is unimplemented."));
+}
+ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
+{
+	uint32_t ms;
+	ARG_UNPACK_ATOM(ms);
+	compat_msleep(ms);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {
@@ -329,4 +337,17 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 	if (b->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
 		throwError<RangeError>(kEndOfFileError);
 	th->appdomain->domainMemory = b;
+}
+
+ASFUNCTIONBODY_ATOM(lightspark,casi32)
+{
+	if (sys->mainClip 
+			&& sys->mainClip->applicationDomain
+			&& sys->mainClip->applicationDomain->domainMemory)
+	{
+		asAtom a = asAtom::fromObject(sys->mainClip->applicationDomain->domainMemory.getPtr());
+		ByteArray::atomicCompareAndSwapIntAt(ret,sys,a,args,argslen);
+	}
+	else
+		ret.setInt(0);
 }

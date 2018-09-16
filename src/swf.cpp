@@ -24,6 +24,7 @@
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Vector.h"
 #include "logger.h"
 #include "parsing/streams.h"
 #include "asobject.h"
@@ -70,6 +71,17 @@ ParseThread* lightspark::getParseThread()
 	assert(pt);
 	return pt;
 }
+
+DEFINE_AND_INITIALIZE_TLS(tls_worker);
+void lightspark::setTLSWorker(ASWorker* worker)
+{
+	tls_set(&tls_worker,worker);
+}
+ASWorker* lightspark::getWorker()
+{
+	return (ASWorker*)tls_get(&tls_worker);
+}
+
 
 RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
@@ -186,8 +198,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
-	showProfilingData(false),flashMode(mode),
-	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),
+	showProfilingData(false),flashMode(mode),swffilesize(fileSize),
+	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL)
 {
 	//Forge the builtin strings
@@ -551,6 +563,8 @@ SystemState::~SystemState()
 	undefined.forceDestruct();
 	trueRef.forceDestruct();
 	falseRef.forceDestruct();
+	workerDomain.forceDestruct();
+	worker.forceDestruct();
 }
 
 void SystemState::destroy()
@@ -720,6 +734,23 @@ void SystemState::setShutdownFlag()
 float SystemState::getRenderRate()
 {
 	return renderRate;
+}
+
+void SystemState::addWorker(ASWorker *w)
+{
+	Locker l(workerMutex);
+	asAtom a = asAtom::fromObject(w);
+	w->incRef();
+	workerDomain->workerlist->append(a);
+	singleworker=workerDomain->workerlist->size() > 1;
+}
+
+void SystemState::removeWorker(ASWorker *w)
+{
+	Locker l(workerMutex);
+	workerDomain->workerlist->remove(w);
+	singleworker=workerDomain->workerlist->size() > 1;
+
 }
 
 void SystemState::startRenderTicks()
@@ -1001,6 +1032,14 @@ void SystemState::needsAVM2(bool avm2)
 		LOG(LOG_INFO,_("Creating VM"));
 		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
 		currentVm=new ABCVm(this, vmDataMemory);
+		workerDomain = _MR(Class<WorkerDomain>::getInstanceS(this));
+		workerDomain->setConstant();
+		worker = _MR(Class<ASWorker>::getInstanceS(this));
+		worker->isPrimordial = true;
+		worker->state ="running";
+		worker->setConstant();
+		addWorker(worker.getPtr());
+		setTLSWorker(worker.getPtr());
 	}
 	else
 		vmVersion=AVM1;

@@ -23,6 +23,7 @@
 
 #include "compat.h"
 
+#ifdef LLVM_ENABLED
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #ifndef LLVM_36
 #include <llvm/ExecutionEngine/JIT.h>
@@ -59,6 +60,7 @@
 #include <llvm/Transforms/Scalar.h> 
 #ifdef HAVE_TRANSFORMS_SCALAR_GVN_H
 #  include <llvm/Transforms/Scalar/GVN.h>
+#endif
 #endif
 #include "logger.h"
 #include "swftypes.h"
@@ -1940,6 +1942,7 @@ void ABCVm::Run(ABCVm* th)
 #endif
 	if(th->m_sys->useJit)
 	{
+#ifdef LLVM_ENABLED
 #ifdef LLVM_31
 		llvm::TargetOptions Opts;
 #ifndef LLVM_34
@@ -2006,6 +2009,7 @@ void ABCVm::Run(ABCVm* th)
 		th->FPM->add(llvm::createDeadStoreEliminationPass());
 
 		th->registerFunctions();
+#endif
 	}
 	th->registerClasses();
 
@@ -2052,11 +2056,13 @@ void ABCVm::Run(ABCVm* th)
 		snapshotCount++;
 #endif
 	}
+#ifdef LLVM_ENABLED
 	if(th->m_sys->useJit)
 	{
 		th->ex->clearAllGlobalMappings();
 		delete th->module;
 	}
+#endif
 #ifndef NDEBUG
 	inStartupOrClose= true;
 #endif

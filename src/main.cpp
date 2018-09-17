@@ -342,7 +342,10 @@ int main(int argc, char* argv[])
 	if(fileName==NULL)
 	{
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
-			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi] [--enable-jit|-j]" <<
+			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi]" <<
+#ifdef LLVM_ENABLED
+			" [--enable-jit|-j]" <<
+#endif
 			" [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
 			" [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus] [--disable-rendering]" <<
 #ifdef PROFILING_SUPPORT

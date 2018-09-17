@@ -345,6 +345,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		ABCVm::optimizeFunction(this);
 	}
 
+#ifdef LLVM_ENABLED
 	//Temporarily disable JITting
 	if(getSystemState()->useJit && mi->body->exceptions.size()==0 && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
 	{
@@ -352,6 +353,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		val=mi->synt_method(getSystemState());
 		assert(val);
 	}
+#endif
 	++mi->body->hit_count;
 
 	//Prepare arguments

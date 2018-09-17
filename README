@@ -10,9 +10,12 @@ INSTALLATION
 ============
 
 To compile this software you need to install development packages for
-llvm (version 2.8 or >= 3.0), opengl, curl, zlib, libavcodec, libavresample
+opengl, curl, zlib, libavcodec, libavresample
 libglew, pcre, librtmp, cairo, libboost-filesystem, 
 sdl2, sdl2_mixer, libjpeg, libavformat, pango, liblzma
+
+If jit compilation using llvm is enabled(disabled by default),
+you also need the development packages for llvm (version 2.8 or >= 3.0)
 
 If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that 
 it will replace the adobe flash plugin, as only one flash plugin is allowed in chromium. 

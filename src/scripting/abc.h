@@ -34,6 +34,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/toplevel/toplevel.h"
 
+#ifdef LLVM_ENABLED
 namespace llvm {
 	class ExecutionEngine;
 #ifdef LLVM_36
@@ -50,17 +51,18 @@ namespace legacy {
 	class Value;
 	class LLVMContext;
 }
+#endif // LLVM_ENABLED
 
 namespace lightspark
 {
+
+#ifdef LLVM_ENABLED
 struct block_info;
 #ifdef LLVM_28
 typedef const llvm::Type* LLVMTYPE;
 #else
 typedef llvm::Type* LLVMTYPE;
 #endif
-
-bool isVmThread();
 
 std::ostream& operator<<(std::ostream& o, const block_info& b);
 
@@ -69,6 +71,9 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 {
 	return std::make_pair(v, t);
 }
+#endif
+
+bool isVmThread();
 
 class method_info
 {
@@ -78,6 +83,7 @@ friend class SyntheticFunction;
 private:
 	struct method_info_simple info;
 
+#ifdef LLVM_ENABLED
 	typedef std::vector<std::pair<int, STACK_TYPE> > static_stack_types_vector;
 	//Helper function to sync only part of the static stack to the memory
 	void consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const;
@@ -92,7 +98,7 @@ private:
 	struct BuilderWrapper;
 	//Does analysis on function code to find optimization chances
 	void doAnalysis(std::map<unsigned int,block_info>& blocks, BuilderWrapper& builderWrapper);
-
+#endif
 public:
 #ifdef PROFILING_SUPPORT
 	std::map<method_info*,uint64_t> profCalls;
@@ -104,7 +110,9 @@ public:
 	SyntheticFunction::synt_function f;
 	ABCContext* context;
 	method_body_info* body;
+#ifdef LLVM_ENABLED
 	SyntheticFunction::synt_function synt_method(SystemState* sys);
+#endif
 	bool needsArgs() { return info.needsArgs(); }
 	bool needsActivation() { return info.needsActivation(); }
 	bool needsRest() { return info.needsRest(); }
@@ -121,7 +129,9 @@ public:
 	const Type* returnType;
 	bool hasExplicitTypes;
 	method_info():
+#ifdef LLVM_ENABLED
 		llvmf(NULL),
+#endif
 #ifdef PROFILING_SUPPORT
 		profTime(0),
 		validProfName(false),
@@ -469,6 +479,7 @@ private:
 	static void constructFunction(asAtom & ret, call_context* th, asAtom& f, asAtom* args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 
+#ifdef LLVM_ENABLED
 	//Opcode tables
 	void register_table(LLVMTYPE ret_type,typed_opcode_handler* table, int table_len);
 	static opcode_handler opcode_table_args_pointer_2int[];
@@ -479,7 +490,7 @@ private:
 	static typed_opcode_handler opcode_table_void[];
 	static typed_opcode_handler opcode_table_voidptr[];
 	static typed_opcode_handler opcode_table_bool_t[];
-
+#endif
 
 	//Synchronization
 	Mutex event_queue_mutex;
@@ -873,6 +884,7 @@ public:
 
 	MemoryAccount* vmDataMemory;
 
+#ifdef LLVM_ENABLED
 	llvm::ExecutionEngine* ex;
 	llvm::Module* module;
 
@@ -882,6 +894,7 @@ public:
 	llvm::FunctionPassManager* FPM;
 #endif
 	llvm::LLVMContext& llvm_context();
+#endif
 
 	ABCVm(SystemState* s, MemoryAccount* m) DLL_PUBLIC;
 	/**

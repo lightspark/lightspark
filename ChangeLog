@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* make llvm dependency optional (disabled by default)
 	* implement flash.system.Worker/WorkerDomain
 	* use libswresample instead of libavresample, if available
 	* reduce memory usage

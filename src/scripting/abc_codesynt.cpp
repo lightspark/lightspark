@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifdef LLVM_ENABLED
+
 #ifdef LLVM_28
 #define alignof alignOf
 #define LLVMMAKEARRAYREF(T) T
@@ -4783,3 +4785,4 @@ void ABCVm::wrong_exec_pos()
 {
 	assert_and_throw(false && "wrong_exec_pos");
 }
+#endif //LLVM_ENABLED

@@ -511,7 +511,7 @@ public:
 	{
 		return Variables.size();
 	}
-	tiny_string getNameAt(SystemState* sys,unsigned int i) const;
+	uint32_t getNameAt(unsigned int i) const;
 	variable* getValueAt(unsigned int i);
 	int getNextEnumerable(unsigned int i) const;
 	~variables_map();
@@ -760,9 +760,9 @@ public:
 	
 	void initAdditionalSlots(std::vector<multiname*> additionalslots);
 	unsigned int numVariables() const;
-	inline tiny_string getNameAt(int i) const
+	inline uint32_t getNameAt(int i) const
 	{
-		return Variables.getNameAt(sys,i);
+		return Variables.getNameAt(i);
 	}
 	void getValueAt(asAtom &ret, int i);
 	inline SWFOBJECT_TYPE getObjectType() const

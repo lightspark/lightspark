@@ -211,12 +211,13 @@ void ASObject::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
 
-	const tiny_string& name = getNameAt(index-1);
+	uint32_t n = getNameAt(index-1);
+	const tiny_string& name = getSystemState()->getStringFromUniqueId(n);
 	// not mentioned in the specs, but Adobe seems to convert string names to Integers, if possible
 	if (Array::isIntegerWithoutLeadingZeros(name))
 		ret.setInt(Integer::stringToASInteger(name.raw_buf(), 0));
 	else
-		ret = asAtom::fromObject(abstract_s(getSystemState(),name));
+		ret = asAtom::fromStringID(n);
 }
 
 void ASObject::nextValue(asAtom& ret,uint32_t index)
@@ -1539,7 +1540,7 @@ bool variables_map::cloneInstance(variables_map &map)
 	return true;
 }
 
-ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
 	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1548,7 +1549,7 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
+ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->getSystemState()->singleworker && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
 	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1725,7 +1726,7 @@ void ASObject::getValueAt(asAtom &ret,int index)
 	}
 }
 
-tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
+uint32_t variables_map::getNameAt(unsigned int index) const
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
@@ -1737,7 +1738,7 @@ tiny_string variables_map::getNameAt(SystemState *sys, unsigned int index) const
 			++i;
 			++it;
 		}
-		return sys->getStringFromUniqueId(it->first);
+		return it->first;
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -2440,7 +2441,7 @@ std::string asAtom::toDebugString()
 			return "Invalid";
 		case T_STRING:
 		{
-			if (!objval && stringID != UINT32_MAX)
+			if (stringID != UINT32_MAX)
 				return getSys()->getStringFromUniqueId(stringID);
 			std::string ret = objval->toDebugString();
 #ifndef _NDEBUG

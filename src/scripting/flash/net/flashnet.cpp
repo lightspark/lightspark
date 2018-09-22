@@ -2242,7 +2242,7 @@ tiny_string URLVariables::toString_priv()
 	tiny_string tmp;
 	for(int i=0;i<size;i++)
 	{
-		const tiny_string& name=getNameAt(i);
+		const tiny_string& name=getSystemState()->getStringFromUniqueId(getNameAt(i));
 		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
 
 		asAtom val;

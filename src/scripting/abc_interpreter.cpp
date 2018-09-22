@@ -578,6 +578,14 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_greaterequals_local_constant_localresult,
 	abc_greaterequals_constant_local_localresult,
 	abc_greaterequals_local_local_localresult,
+	abc_equals_constant_constant,// 0x1d0 ABC_OP_OPTIMZED_EQUALS
+	abc_equals_local_constant,
+	abc_equals_constant_local,
+	abc_equals_local_local,
+	abc_equals_constant_constant_localresult,
+	abc_equals_local_constant_localresult,
+	abc_equals_constant_local_localresult,
+	abc_equals_local_local_localresult,
 
 	abc_invalidinstruction
 };
@@ -805,7 +813,7 @@ void ABCVm::abc_ifeq_constant_constant(call_context* context)
 {
 	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	LOG_CALL(_("ifEq_cc (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -816,7 +824,7 @@ void ABCVm::abc_ifeq_local_constant(call_context* context)
 {
 	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	bool cond=context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]);
 	LOG_CALL(_("ifEq_lc (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -827,7 +835,7 @@ void ABCVm::abc_ifeq_constant_local(call_context* context)
 {
 	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	bool cond=context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	LOG_CALL(_("ifEq_cl (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -838,7 +846,7 @@ void ABCVm::abc_ifeq_local_local(call_context* context)
 {
 	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	bool cond=context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	LOG_CALL(_("ifEq_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -877,7 +885,7 @@ void ABCVm::abc_ifne_local_constant(call_context* context)
 {
 	//ifne
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	bool cond=!context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]);
 	LOG_CALL(_("ifNE_lc (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -888,7 +896,7 @@ void ABCVm::abc_ifne_constant_local(call_context* context)
 {
 	//ifne
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	bool cond=!context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	LOG_CALL(_("ifNE_cl (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -899,7 +907,7 @@ void ABCVm::abc_ifne_local_local(call_context* context)
 {
 	//ifne
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE;
+	bool cond=!context->locals[context->exec_pos->local_pos1].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	LOG_CALL(_("ifNE_ll (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -1708,7 +1716,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 				LOG(LOG_ERROR,"trying to call an object as a function:"<<o.toDebugString() <<" on "<<obj.toDebugString());
 				throwError<TypeError>(kCallOfNonFunctionError, "Object");
 			}
-			LOG_CALL("End of calling cached property "<<*name);
+			LOG_CALL("End of calling cached property "<<*name<<" "<<ret.toDebugString());
 			return;
 		}
 		else
@@ -2416,6 +2424,7 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_cc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2446,6 +2455,7 @@ void ABCVm::abc_getProperty_constant_local(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_cl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2476,6 +2486,7 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_ccl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2517,6 +2528,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
@@ -2560,6 +2572,7 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 	multiname* name=instrptr->cachedmultiname2;
 
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_sc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2601,6 +2614,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	multiname* name=instrptr->cachedmultiname2;
 
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
+	obj->setConstant();
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
@@ -3943,6 +3957,95 @@ void ABCVm::abc_equals(call_context* context)
 	pval->setBool(ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_equals_constant_constant(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant));
+	LOG_CALL(_("equals_cc ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_local_constant(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]));
+	LOG_CALL(_("equals_lc ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_constant_local(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]));
+	LOG_CALL(_("equals_cl ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_local_local(call_context* context)
+{
+	//equals
+
+	bool ret=(context->locals[context->exec_pos->local_pos2].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]));
+	LOG_CALL(_("equals_ll ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_constant_constant_localresult(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant));
+	LOG_CALL(_("equals_ccl ")<<ret);
+
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_local_constant_localresult(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg2_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]));
+	LOG_CALL(_("equals_lcl ")<<ret);
+
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_constant_local_localresult(call_context* context)
+{
+	//equals
+
+	bool ret=(context->exec_pos->arg1_constant->isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]));
+	LOG_CALL(_("equals_cll ")<<ret);
+
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_equals_local_local_localresult(call_context* context)
+{
+	//equals
+
+	bool ret=(context->locals[context->exec_pos->local_pos2].isEqual(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos1]));
+	LOG_CALL(_("equals_lll ")<<ret);
+
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	context->locals[context->exec_pos->local_pos3-1].setBool(ret);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_strictequals(call_context* context)
 {
 	//strictequals
@@ -4634,6 +4737,8 @@ struct operands
 #define ABC_OP_OPTIMZED_LESSEQUALS 0x000001c0
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
 #define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
+#define ABC_OP_OPTIMZED_EQUALS 0x000001d0
+
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -4826,6 +4931,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0xa8://bitand
 		case 0xa9://bitor
 		case 0xaa://bitxor
+		case 0xab://equals
 		case 0xae://lessequals
 		case 0xaf://greaterthan
 		case 0xb0://greaterequals
@@ -5878,6 +5984,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			case 0xaa://bitxor
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true,true);
+				break;
+			case 0xab://equals
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,false);
 				break;
 			case 0xae://lessequals
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,false);

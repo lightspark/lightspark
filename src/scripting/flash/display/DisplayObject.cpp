@@ -97,7 +97,8 @@ void DisplayObject::Render(RenderContext& ctxt)
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false)
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false),
+	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
 //	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
@@ -143,8 +144,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_setVisible),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_setRotation),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_setName),SETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,name);
 	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(c->getSystemState(),_getParent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("root","",Class<IFunction>::getFunction(c->getSystemState(),_getRoot),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("blendMode","",Class<IFunction>::getFunction(c->getSystemState(),_getBlendMode),GETTER_METHOD,true);
@@ -178,6 +178,7 @@ void DisplayObject::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
+ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 //TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
@@ -939,19 +940,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 		if(th->onStage)
 			th->requestInvalidation(sys);
 	}
-}
-
-ASFUNCTIONBODY_ATOM(DisplayObject,_setName)
-{
-	DisplayObject* th=obj.as<DisplayObject>();
-	assert_and_throw(argslen==1);
-	th->name=args[0].toString(sys);
-}
-
-ASFUNCTIONBODY_ATOM(DisplayObject,_getName)
-{
-	DisplayObject* th=obj.as<DisplayObject>();
-	ret = asAtom::fromObject(abstract_s(sys,th->name));
 }
 
 void DisplayObject::setParent(DisplayObjectContainer *p)

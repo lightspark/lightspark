@@ -131,7 +131,6 @@ public:
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	void constructionComplete();
-	tiny_string name;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
@@ -229,8 +228,7 @@ public:
 	ASFUNCTION_ATOM(_getHeight);
 	ASFUNCTION_ATOM(_setHeight);
 	ASFUNCTION_ATOM(_getRotation);
-	ASFUNCTION_ATOM(_getName);
-	ASFUNCTION_ATOM(_setName);
+	ASPROPERTY_GETTER_SETTER(uint32_t,name);
 	ASFUNCTION_ATOM(_getParent);
 	ASFUNCTION_ATOM(_getRoot);
 	ASFUNCTION_ATOM(_getBlendMode);

@@ -46,7 +46,7 @@ using namespace lightspark;
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
 	s << "[" << r.getClass()->class_name << "]";
-	if(!r.name.empty())
+	if(r.name != BUILTIN_STRINGS::EMPTY)
 		s << " name: " << r.name;
 	return s;
 }
@@ -1595,7 +1595,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		return;
 	}
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
-	if(!obj->name.empty())
+	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		// ensure obj is not deleted before _removeChild is called
 		obj->incRef();
@@ -1603,7 +1603,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 		//This is a tested behavior
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
+		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		setVariableByMultiname(objName,asAtom::nullAtom, ASObject::CONST_NOT_ALLOWED);
 	}
@@ -1613,7 +1613,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
 
-	if(!obj->name.empty())
+	if(obj->name != BUILTIN_STRINGS::EMPTY)
 			obj->decRef();
 }
 
@@ -1625,12 +1625,12 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		return;
 	}
 	_addChildAt(_MR(obj),depth-1); /* depth is 1 based in SWF */
-	if(!obj->name.empty())
+	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		obj->incRef();
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=getSystemState()->getUniqueStringId(obj->name);
+		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtom::fromObject(obj);
 		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
@@ -2150,7 +2150,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==1);
-	const tiny_string& wantedName=args[0].toString(sys);
+	uint32_t wantedName=args[0].toStringId(sys);
 	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	ASObject* res=NULL;
 	for(;it!=th->dynamicDisplayList.end();++it)

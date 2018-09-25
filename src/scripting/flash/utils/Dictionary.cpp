@@ -187,7 +187,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 
 GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
-	if((opt & ASObject::SKIP_IMPL)==0 && implEnable)
+	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)==0 && implEnable)
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{

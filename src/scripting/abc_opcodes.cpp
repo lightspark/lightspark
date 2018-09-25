@@ -381,7 +381,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	{
 		pobj = obj.toObject(th->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
-		canCache = pobj->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
+		canCache = pobj->getVariableByMultiname(o,*name, SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
@@ -390,7 +390,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		_NR<Class_base> tmpcls = obj.as<Class_base>()->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
-			tmpcls->getVariableByMultiname(o,*name, ASObject::SKIP_IMPL);
+			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION::SKIP_IMPL);
 			if(o.type != T_INVALID)
 			{
 				canCache = true;
@@ -437,7 +437,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			callPropertyName.name_s_id=th->mi->context->root->getSystemState()->getUniqueStringId("callProperty");
 			callPropertyName.ns.emplace_back(th->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
 			asAtom oproxy;
-			pobj->getVariableByMultiname(oproxy,callPropertyName,ASObject::SKIP_IMPL);
+			pobj->getVariableByMultiname(oproxy,callPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 			if(oproxy.type != T_INVALID)
 			{
 				assert_and_throw(oproxy.type==T_FUNCTION);
@@ -1620,9 +1620,9 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,int localresult)
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
 		// And this ensures dynamic properties are also searched
-		ASObject::GET_VARIABLE_OPTION opt=ASObject::GET_VARIABLE_OPTION(localresult > th->locals_size ? ASObject::FROM_GETLEX | ASObject::NO_INCREF : ASObject::FROM_GETLEX);
+		GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(localresult > th->locals_size ? FROM_GETLEX | NO_INCREF : FROM_GETLEX);
 		if(!th->scope_stack_dynamic[i-1])
-			opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+			opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 		else
 			canCache = false;
 
@@ -1643,9 +1643,9 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,int localresult)
 			// (normally it would return an empty XMLList if the
 			// property does not exist).
 			// And this ensures dynamic properties are also searched
-			ASObject::GET_VARIABLE_OPTION opt=ASObject::GET_VARIABLE_OPTION(localresult > th->locals_size ? ASObject::FROM_GETLEX | ASObject::NO_INCREF : ASObject::FROM_GETLEX);
+			GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(localresult > th->locals_size ? FROM_GETLEX | NO_INCREF : FROM_GETLEX);
 			if(!it->considerDynamic)
-				opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+				opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 			else
 				canCache = false;
 	
@@ -2421,7 +2421,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		callPropertyName.name_s_id=obj->getSystemState()->getUniqueStringId("getDescendants");
 		callPropertyName.ns.emplace_back(th->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
 		asAtom o;
-		obj->getVariableByMultiname(o,callPropertyName,ASObject::SKIP_IMPL);
+		obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL);
 		
 		if(o.type != T_INVALID)
 		{

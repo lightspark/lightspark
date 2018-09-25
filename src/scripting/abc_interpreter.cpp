@@ -1745,7 +1745,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 	{
 		pobj = obj.toObject(context->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
-		canCache = pobj->getVariableByMultiname(o,*name, ASObject::GET_VARIABLE_OPTION(ASObject::SKIP_IMPL | ASObject::NO_INCREF)) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
+		canCache = pobj->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF)) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(o.type == T_INVALID && obj.is<Class_base>())
@@ -1754,7 +1754,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 		_NR<Class_base> tmpcls = obj.as<Class_base>()->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
-			tmpcls->getVariableByMultiname(o,*name, ASObject::GET_VARIABLE_OPTION(ASObject::SKIP_IMPL | ASObject::NO_INCREF));
+			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF));
 			if(o.type != T_INVALID)
 			{
 				canCache = true;
@@ -1804,7 +1804,7 @@ void callpropOneArg(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,m
 			callPropertyName.name_s_id=context->mi->context->root->getSystemState()->getUniqueStringId("callProperty");
 			callPropertyName.ns.emplace_back(context->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
 			asAtom oproxy;
-			pobj->getVariableByMultiname(oproxy,callPropertyName,ASObject::SKIP_IMPL);
+			pobj->getVariableByMultiname(oproxy,callPropertyName,SKIP_IMPL);
 			if(oproxy.type != T_INVALID)
 			{
 				assert_and_throw(oproxy.type==T_FUNCTION);
@@ -2391,7 +2391,7 @@ void ABCVm::abc_getProperty(call_context* context)
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
 	asAtom prop;
-	bool isgetter = obj->getVariableByMultiname(prop,*name,(name->isStatic && obj->getClass() && obj->getClass()->isSealed)? ASObject::DONT_CALL_GETTER:ASObject::NONE) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+	bool isgetter = obj->getVariableByMultiname(prop,*name,(name->isStatic && obj->getClass() && obj->getClass()->isSealed)? GET_VARIABLE_OPTION::DONT_CALL_GETTER:GET_VARIABLE_OPTION::NONE) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 	if (isgetter)
 	{
 		//Call the getter
@@ -2514,7 +2514,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lcl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
+		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2531,7 +2531,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	obj->setConstant();
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
+	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2556,7 +2556,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
+		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2617,7 +2617,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	obj->setConstant();
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
+	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2716,7 +2716,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //			}
 //		}
 		if(prop.type == T_INVALID)
-			obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? ASObject::NO_INCREF : ASObject::NONE);
+			obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		context->locals[instrptr->local_pos3-1].set(prop);
@@ -5351,7 +5351,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					if (name && name->isStatic)
 					{
 						bool isborrowed = false;
-						variable* v = function->inClass->findVariableByMultiname(*name,ASObject::GET_VARIABLE_OPTION(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER | ASObject::NO_INCREF),function->inClass,nullptr,&isborrowed);
+						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),function->inClass,nullptr,&isborrowed);
 						if (v)
 						{
 							found =true;
@@ -5374,7 +5374,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 									break;
 								}
 								ASObject* obj = it->object.toObject(mi->context->root->getSystemState());
-								v = obj->findVariableByMultiname(*name,ASObject::GET_VARIABLE_OPTION(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER | ASObject::NO_INCREF),obj->is<Class_base>() ? obj->as<Class_base>() : nullptr,nullptr,&isborrowed);
+								v = obj->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),obj->is<Class_base>() ? obj->as<Class_base>() : nullptr,nullptr,&isborrowed);
 									
 								if (v)
 								{
@@ -5430,9 +5430,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 						auto it=function->func_scope->scope.rbegin();
 						while(it!=function->func_scope->scope.rend())
 						{
-							ASObject::GET_VARIABLE_OPTION opt= (ASObject::GET_VARIABLE_OPTION)(ASObject::FROM_GETLEX | ASObject::DONT_CALL_GETTER);
+							GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER);
 							if(!it->considerDynamic)
-								opt=(ASObject::GET_VARIABLE_OPTION)(opt | ASObject::SKIP_IMPL);
+								opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 							else
 								break;
 							it->object.toObject(mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
@@ -5905,7 +5905,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 								if (a->getObject())
 								{
 									asAtom ret;
-									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),ASObject::GET_VARIABLE_OPTION(ASObject::DONT_CALL_GETTER|ASObject::FROM_GETLEX));
+									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX));
 									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
 										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{

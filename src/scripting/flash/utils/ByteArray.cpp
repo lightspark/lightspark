@@ -1106,7 +1106,7 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
-	if((opt & ASObject::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
+	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}

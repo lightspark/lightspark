@@ -1306,7 +1306,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		LOG(LOG_TRACE,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
-			obj->name = (const char*)Name;
+			obj->name = obj->getSystemState()->getUniqueStringId((const char*)Name);
 		}
 		else
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
@@ -1314,7 +1314,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	else if (!PlaceFlagMove)
 	{
 		//Remove the automatic name set by the DisplayObject constructor
-		obj->name = "";
+		obj->name = BUILTIN_STRINGS::EMPTY;
 	}
 }
 
@@ -1589,7 +1589,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
 			state->setLegacyMatrix(i->PlaceMatrix);
-			state->name = "";
+			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
@@ -1609,7 +1609,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 					spr->insertLegacyChildAt(curDepth[j],states[j]);
 					states[j] = spr;
 					//spr->name = "Button_spr";
-					spr->name = "";
+					spr->name = BUILTIN_STRINGS::EMPTY;
 				}
 				Sprite* spr = Class<Sprite>::cast(states[j]);
 				spr->insertLegacyChildAt(i->PlaceDepth,state);

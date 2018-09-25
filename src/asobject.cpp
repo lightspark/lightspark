@@ -2329,6 +2329,9 @@ Class_base *asAtom::getClass(SystemState* sys)
 			return Class<Boolean>::getRef(sys).getPtr()->as<Class_base>();
 		case T_STRING:
 			return Class<ASString>::getRef(sys).getPtr()->as<Class_base>();
+		case T_UNDEFINED:
+		case T_NULL:
+			return nullptr;
 		case T_CLASS:
 			return objval->as<Class_base>();
 		default:

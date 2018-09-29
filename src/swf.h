@@ -60,6 +60,7 @@ class WorkerDomain;
 class SecurityDomain;
 class Class_inherit;
 class DefineFont3Tag;
+class SoundTransform;
 
 class RootMovieClip: public MovieClip
 {
@@ -500,6 +501,10 @@ public:
 	void sendMainSignal() DLL_PUBLIC;
 
 	void dumpStacktrace();
+	
+	// static class properties are named static_<classname>_<propertyname>
+	_NR<SoundTransform> static_SoundMixer_soundTransform;
+	int static_SoundMixer_bufferTime;
 };
 
 class ParseThread: public IThreadJob

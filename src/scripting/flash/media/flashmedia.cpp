@@ -376,11 +376,11 @@ void SoundMixer::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("stopAll","",Class<IFunction>::getFunction(c->getSystemState(),stopAll),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("computeSpectrum","",Class<IFunction>::getFunction(c->getSystemState(),computeSpectrum),NORMAL_METHOD,false);
-	REGISTER_GETTER_SETTER(c,bufferTime);
-	REGISTER_GETTER_SETTER(c,soundTransform);
+	REGISTER_GETTER_SETTER_STATIC(c,bufferTime);
+	REGISTER_GETTER_SETTER_STATIC(c,soundTransform);
 }
-ASFUNCTIONBODY_GETTER_SETTER(SoundMixer,bufferTime);
-ASFUNCTIONBODY_GETTER_SETTER(SoundMixer,soundTransform);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,bufferTime);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,soundTransform);
 
 ASFUNCTIONBODY_ATOM(SoundMixer,stopAll)
 {

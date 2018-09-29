@@ -144,10 +144,10 @@ public:
 class SoundMixer : public ASObject
 {
 public:
-	SoundMixer(Class_base* c):ASObject(c),bufferTime(0){}
+	SoundMixer(Class_base* c):ASObject(c){}
 	static void sinit(Class_base*);
-	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
-	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
+	ASFUNCTION_GETTER_SETTER(bufferTime);
+	ASFUNCTION_GETTER_SETTER(soundTransform);
 	ASFUNCTION_ATOM(stopAll);
 	ASFUNCTION_ATOM(computeSpectrum);
 };

@@ -23,6 +23,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/media/flashmedia.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Vector.h"
 #include "logger.h"
@@ -200,7 +201,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),flashMode(mode),swffilesize(fileSize),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
-	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL)
+	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
+	static_SoundMixer_bufferTime(0)
 {
 	//Forge the builtin strings
 	getUniqueStringId("");

@@ -616,6 +616,7 @@ friend class Class_inherit;
 friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 friend class IFunction; //Needed for clone
 friend struct asfreelist;
+friend class asAtom;
 public:
 	asfreelist* objfreelist;
 private:
@@ -2145,7 +2146,7 @@ FORCE_INLINE void asAtom::replace(ASObject *obj)
 			closure_this = NULL;
 			break;
 		case T_STRING:
-			stringID = UINT32_MAX;
+			stringID = obj->stringId;
 			break;
 		default:
 			break;
@@ -2177,7 +2178,7 @@ FORCE_INLINE bool asAtom::Boolean_concrete()
 		case T_UINTEGER:
 			return uintval != 0;
 		case T_STRING:
-			if (stringID != UINT32_MAX && !objval)
+			if (stringID != UINT32_MAX)
 				return stringID != BUILTIN_STRINGS::EMPTY;
 			if (!objval->isConstructed())
 				return false;

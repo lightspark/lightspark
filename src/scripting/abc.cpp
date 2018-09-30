@@ -1147,7 +1147,11 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 		constantAtoms_doubles[i] = asAtom(constant_pool.doubles[i]);
 	constantAtoms_strings.resize(constant_pool.strings.size());
 	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)
-		constantAtoms_strings[i] = asAtom::fromStringID(constant_pool.strings[i]);
+	{
+		ASObject* res = abstract_s(root->getSystemState(),constant_pool.strings[i]);
+		res->setConstant();
+		constantAtoms_strings[i] = asAtom::fromObject(res);
+	}
 	constantAtoms_namespaces.resize(constant_pool.namespaces.size());
 	for (uint32_t i = 0; i < constant_pool.namespaces.size(); i++)
 	{

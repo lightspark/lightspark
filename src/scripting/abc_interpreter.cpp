@@ -388,10 +388,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_ifstricteq,
 	abc_ifstrictne,
 	abc_lookupswitch,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_setPropertyStaticName_constant_constant, // 0x11c ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME
+	abc_setPropertyStaticName_local_constant,
+	abc_setPropertyStaticName_constant_local,
+	abc_setPropertyStaticName_local_local,
 
 	// optimized arithmetical operations for all possible combinations of operand1/operand2/result
 	abc_multiply_constant_constant, // 0x120 ABC_OP_OPTIMZED_MULTIPLY
@@ -2303,6 +2303,110 @@ void ABCVm::abc_setproperty(call_context* context)
 	name->resetNameIfObject();
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom* obj = instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_scc ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
+
+	if(obj->type == T_NULL)
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->type == T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	//Do not allow to set contant traits
+	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom* obj = &context->locals[instrptr->local_pos1];
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_slc ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
+
+	if(obj->type == T_NULL)
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->type == T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	//Do not allow to set contant traits
+	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom* obj = instrptr->arg1_constant;
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_scl ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
+
+	if(obj->type == T_NULL)
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->type == T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	//Do not allow to set contant traits
+	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
+	ASATOM_INCREF_POINTER(value);
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom* obj = &context->locals[instrptr->local_pos1];
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_sll ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
+
+	if(obj->type == T_NULL)
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (obj->type == T_UNDEFINED)
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+	//Do not allow to set contant traits
+	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
+	ASATOM_INCREF_POINTER(value);
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_getlocal(call_context* context)
 {
 	//getlocal
@@ -4707,6 +4811,7 @@ struct operands
 #define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME 0x00000106
 #define ABC_OP_OPTIMZED_GETLEX 0x0000010a
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_LOCALRESULT 0x0000010b
+#define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME 0x0000011c 
 #define ABC_OP_OPTIMZED_MULTIPLY 0x00000120
 #define ABC_OP_OPTIMZED_BITOR 0x00000128
 #define ABC_OP_OPTIMZED_BITXOR 0x00000130
@@ -4738,7 +4843,6 @@ struct operands
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
 #define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
 #define ABC_OP_OPTIMZED_EQUALS 0x000001d0
-
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -4866,6 +4970,25 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 					&& argcount == 1 
 					&& mi->context->constant_pool.multinames[t].runtimeargs == 0
 					&& (needstwoargs || (operandlist.size() >= 1)))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				operandlist.clear();
+			break;
+		}
+		case 0x61://setproperty
+		{
+			uint32_t t = code.peeku30FromPosition(pos);
+			if (jumptargets.find(pos) == jumptargets.end() && 
+					!needstwoargs &&
+					operandlist.size() > 1 &&
+					(uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 0
+					)
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -5303,7 +5426,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x5a://newcatch
 			case 0x5e://findproperty
 			case 0x5f://finddef
-			case 0x61://setproperty
 			case 0x65://getscopeobject
 			case 0x68://initproperty
 			case 0x6a://deleteproperty
@@ -5479,6 +5601,36 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				{
 					// no local result possible, use standard operation
 					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data=(uint32_t)opcode;
+					operandlist.clear();
+				}
+				break;
+			}
+			case 0x61://setproperty
+			{
+				int32_t p = code.tellg();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
+				uint32_t t = code.readu30();
+				assert_and_throw(t < mi->context->constant_pool.multiname_count);
+				if (jumptargets.find(p) == jumptargets.end())
+				{
+					switch (mi->context->constant_pool.multinames[t].runtimeargs)
+					{
+						case 0:
+							setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets);
+							mi->body->preloadedcode.push_back(t);
+							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
+							break;
+						default:
+							mi->body->preloadedcode.push_back((uint32_t)opcode);
+							mi->body->preloadedcode.push_back(t);
+							operandlist.clear();
+							break;
+					}
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					mi->body->preloadedcode.push_back(t);
 					operandlist.clear();
 				}
 				break;

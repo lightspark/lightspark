@@ -2531,15 +2531,12 @@ tiny_string asAtom::toString(SystemState* sys)
 		case T_UINTEGER:
 			return UInteger::toString(uintval);
 		case T_STRING:
-			if (!objval)
-			{
-				if (stringID == 0)
-					return "";
-				if (stringID < BUILTIN_STRINGS_CHAR_MAX)
-					return tiny_string::fromChar(stringID);
-				if (stringID != UINT32_MAX)
-					return sys->getStringFromUniqueId(stringID);
-			}
+			if (stringID == 0)
+				return "";
+			if (stringID < BUILTIN_STRINGS_CHAR_MAX)
+				return tiny_string::fromChar(stringID);
+			if (stringID != UINT32_MAX)
+				return sys->getStringFromUniqueId(stringID);
 			assert(objval);
 			return objval->toString();
 		case T_INVALID:

@@ -653,8 +653,12 @@ private:
 	static void abc_finddef(call_context* context);
 	
 	static void abc_getlex(call_context* context);// 0x60
-	static void abc_getlex_localresult(call_context* context);// 0x60
+	static void abc_getlex_localresult(call_context* context);
 	static void abc_setproperty(call_context* context);
+	static void abc_setPropertyStaticName_constant_constant(call_context* context);
+	static void abc_setPropertyStaticName_local_constant(call_context* context);
+	static void abc_setPropertyStaticName_constant_local(call_context* context);
+	static void abc_setPropertyStaticName_local_local(call_context* context);
 	static void abc_getlocal(call_context* context);
 	static void abc_setlocal(call_context* context);
 	static void abc_getglobalscope(call_context* context);

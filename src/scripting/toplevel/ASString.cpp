@@ -724,7 +724,15 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	ARG_UNPACK_ATOM (index, 0);
 
 	// fast path if obj is ASString
-	if (obj.type == T_STRING && obj.getObject())
+	if (obj.type == T_STRING && obj.getStringId() != UINT32_MAX)
+	{
+		tiny_string s = sys->getStringFromUniqueId(obj.getStringId());
+		if(index<0 || index>=(int64_t)s.numChars())
+			ret.setNumber(Number::NaN);
+		else
+			ret.setInt((int32_t)s.charAt(index));
+	}
+	else if (obj.type == T_STRING && obj.getObject())
 	{
 		ASString* th = obj.as<ASString>();
 		if(index<0 || index>=(int64_t)th->getData().numChars())
@@ -870,9 +878,15 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 
 ASFUNCTIONBODY_ATOM(ASString,fromCharCode)
 {
+	if (argslen == 1 && ((args[0].toUInt()& 0xFFFF) != 0))
+	{
+		ret = asAtom::fromStringID(args[0].toUInt()& 0xFFFF);
+		return;
+	}
 	ASString* res=abstract_s(sys)->as<ASString>();
 	for(uint32_t i=0;i<argslen;i++)
 	{
+		res->stringId = UINT32_MAX;
 		res->hasId = false;
 		res->getData() += tiny_string::fromChar(args[i].toUInt()& 0xFFFF);
 	}

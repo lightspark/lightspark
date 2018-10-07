@@ -407,8 +407,8 @@ public:
 };
 #define ASATOM_INCREF(a) if (a.getObject()) a.getObject()->incRef()
 #define ASATOM_INCREF_POINTER(a) if (a->getObject()) a->getObject()->incRef()
-#define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
-#define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b && !b->getInDestruction()) b->decRef(); } while (0)
+#define ASATOM_DECREF(a) do { ASObject* b = a.getObject(); if (b && !b->getConstant() && !b->getInDestruction()) b->decRef(); } while (0)
+#define ASATOM_DECREF_POINTER(a) { ASObject* b = a->getObject(); if (b && !b->getConstant() && !b->getInDestruction()) b->decRef(); } while (0)
 struct variable
 {
 	asAtom var;

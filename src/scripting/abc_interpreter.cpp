@@ -586,6 +586,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_equals_local_constant_localresult,
 	abc_equals_constant_local_localresult,
 	abc_equals_local_local_localresult,
+	abc_not_constant,// 0x1d8 ABC_OP_OPTIMZED_NOT
+	abc_not_local,
+	abc_not_constant_localresult,
+	abc_not_local_localresult,
 
 	abc_invalidinstruction
 };
@@ -1894,6 +1898,8 @@ void ABCVm::abc_callpropertyStaticName_localresult(call_context* context)
 	LOG_CALL( "callProperty_l " << *name);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	callpropOneArg(context,context->locals[instrptr->local_pos3-1],*obj,args,name,context->exec_pos);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2015,6 +2021,8 @@ void ABCVm::abc_callpropertyStaticName_constant_local_localresult(call_context* 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cll " << *name);
 	callpropOneArg(context,context->locals[instrptr->local_pos3-1],obj,args,name,context->exec_pos);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2259,6 +2267,8 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
 		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
+		if (instrptr->local_pos3 <= context->locals_size)
+			ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
 	else if (getLex_multiname(context,instrptr->cachedmultiname2,instrptr->local_pos3))
@@ -2528,7 +2538,6 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_cc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2559,7 +2568,6 @@ void ABCVm::abc_getProperty_constant_local(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_cl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2590,7 +2598,6 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_ccl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2598,6 +2605,8 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
@@ -2624,6 +2633,8 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		name->resetNameIfObject();
 	}
 	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
@@ -2632,7 +2643,6 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->data;
 	multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
@@ -2640,6 +2650,8 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
@@ -2666,6 +2678,8 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		name->resetNameIfObject();
 	}
 	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 
@@ -2676,7 +2690,6 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 	multiname* name=instrptr->cachedmultiname2;
 
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_sc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
@@ -2718,7 +2731,6 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	multiname* name=instrptr->cachedmultiname2;
 
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
-	obj->setConstant();
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
@@ -2726,6 +2738,8 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
@@ -2767,6 +2781,8 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			if(prop.type == T_INVALID)
 				checkPropertyException(obj,name,prop);
 			context->locals[instrptr->local_pos3-1].set(prop);
+			if (instrptr->local_pos3 <= context->locals_size)
+				ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 			++(context->exec_pos);
 			return;
 		}
@@ -2824,6 +2840,8 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		context->locals[instrptr->local_pos3-1].set(prop);
+		if (instrptr->local_pos3 <= context->locals_size)
+			ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	}
 	++(context->exec_pos);
 }
@@ -3143,6 +3161,33 @@ void ABCVm::abc_not(call_context* context)
 	pval->_not();
 	++(context->exec_pos);
 }
+void ABCVm::abc_not_constant(call_context* context)
+{
+	LOG_CALL("not_c");
+	asAtom res(!context->exec_pos->arg1_constant->Boolean_concrete());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_not_local(call_context* context)
+{
+	LOG_CALL("not_l");
+	asAtom res(!context->locals[context->exec_pos->local_pos1].Boolean_concrete());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_not_constant_localresult(call_context* context)
+{
+	LOG_CALL("not_cl");
+	context->locals[context->exec_pos->local_pos3-1].setBool(!context->exec_pos->arg1_constant->Boolean_concrete());
+	++(context->exec_pos);
+}
+void ABCVm::abc_not_local_localresult(call_context* context)
+{
+	LOG_CALL("not_ll");
+	context->locals[context->exec_pos->local_pos3-1].setBool(!context->locals[context->exec_pos->local_pos1].Boolean_concrete());
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_bitnot(call_context* context)
 {
 	//bitnot
@@ -3201,6 +3246,8 @@ void ABCVm::abc_add_constant_constant_localresult(call_context* context)
 			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[context->exec_pos->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_local_constant_localresult(call_context* context)
@@ -3214,6 +3261,8 @@ void ABCVm::abc_add_local_constant_localresult(call_context* context)
 			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[context->exec_pos->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_constant_local_localresult(call_context* context)
@@ -3227,6 +3276,8 @@ void ABCVm::abc_add_constant_local_localresult(call_context* context)
 			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[context->exec_pos->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_local_local_localresult(call_context* context)
@@ -3240,6 +3291,8 @@ void ABCVm::abc_add_local_local_localresult(call_context* context)
 			ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	}
 	context->locals[context->exec_pos->local_pos3-1].set(res);
+	if (context->exec_pos->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[context->exec_pos->local_pos3-1]);
 	++(context->exec_pos);
 }
 
@@ -4843,6 +4896,7 @@ struct operands
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
 #define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
 #define ABC_OP_OPTIMZED_EQUALS 0x000001d0
+#define ABC_OP_OPTIMZED_NOT 0x000001d8
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -5019,8 +5073,22 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				operandlist.clear();
 			break;
 		}
+		case 0x11://iftrue
+		case 0x12://iffalse
+			if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				operandlist.clear();
+			break;
 		case 0x91://increment
 		case 0x93://decrement
+		case 0x96://not
 		case 0x75://convert_d
 			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
 			{
@@ -6102,6 +6170,9 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			case 0x93://decrement
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false);
+				break;
+			case 0x96: //not
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_NOT,opcode,code,oldnewpositions, jumptargets,true);
 				break;
 // TODO add optimization breaks refcounting if the result is a string
 //			case 0xa0://add

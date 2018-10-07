@@ -25,6 +25,10 @@
 
 #ifdef LLVM_ENABLED
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#ifdef LLVM_70
+#include <llvm/Transforms/Utils.h>
+#include <llvm/Transforms/InstCombine/InstCombine.h>
+#endif
 #ifndef LLVM_36
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/PassManager.h>

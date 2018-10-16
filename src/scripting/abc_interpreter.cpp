@@ -590,6 +590,11 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_not_local,
 	abc_not_constant_localresult,
 	abc_not_local_localresult,
+	abc_iftrue_dup_constant,// 0x1dc ABC_OP_OPTIMZED_IFTRUE_DUP
+	abc_iftrue_dup_local,
+	abc_iffalse_dup_constant,// 0x1de ABC_OP_OPTIMZED_IFFALSE_FALSE
+	abc_iffalse_dup_local,
+	
 
 	abc_invalidinstruction
 };
@@ -741,7 +746,6 @@ void ABCVm::abc_iftrue(call_context* context)
 }
 void ABCVm::abc_iftrue_constant(call_context* context)
 {
-	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=context->exec_pos->arg1_constant->Boolean_concrete();
 	LOG_CALL(_("ifTrue_c (") << ((cond)?_("taken)"):_("not taken)")));
@@ -752,7 +756,6 @@ void ABCVm::abc_iftrue_constant(call_context* context)
 }
 void ABCVm::abc_iftrue_local(call_context* context)
 {
-	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=context->locals[context->exec_pos->local_pos1].Boolean_concrete();
 	LOG_CALL(_("ifTrue_l (") << ((cond)?_("taken)"):_("not taken)")));
@@ -760,6 +763,31 @@ void ABCVm::abc_iftrue_local(call_context* context)
 		context->exec_pos += t+1;
 	else
 		++(context->exec_pos);
+}
+void ABCVm::abc_iftrue_dup_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool cond=instrptr->arg1_constant->Boolean_concrete();
+	LOG_CALL(_("ifTrue_dup_c (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+	RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
+}
+void ABCVm::abc_iftrue_dup_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool cond=context->locals[instrptr->local_pos1].Boolean_concrete();
+	LOG_CALL(_("ifTrue_dup_l (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+	ASATOM_INCREF(context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,context->locals[instrptr->local_pos1]);
 }
 void ABCVm::abc_iffalse(call_context* context)
 {
@@ -777,7 +805,6 @@ void ABCVm::abc_iffalse(call_context* context)
 }
 void ABCVm::abc_iffalse_constant(call_context* context)
 {
-	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=!context->exec_pos->arg1_constant->Boolean_concrete();
 	LOG_CALL(_("ifFalse_c (") << ((cond)?_("taken)"):_("not taken)")));
@@ -788,7 +815,6 @@ void ABCVm::abc_iffalse_constant(call_context* context)
 }
 void ABCVm::abc_iffalse_local(call_context* context)
 {
-	//ifeq
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=!context->locals[context->exec_pos->local_pos1].Boolean_concrete();
 	LOG_CALL(_("ifFalse_l (") << ((cond)?_("taken)"):_("not taken)")));
@@ -796,6 +822,31 @@ void ABCVm::abc_iffalse_local(call_context* context)
 		context->exec_pos += t+1;
 	else
 		++(context->exec_pos);
+}
+void ABCVm::abc_iffalse_dup_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool cond=!instrptr->arg1_constant->Boolean_concrete();
+	LOG_CALL(_("ifFalse_dup_c (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+	RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
+}
+void ABCVm::abc_iffalse_dup_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool cond=!context->locals[instrptr->local_pos1].Boolean_concrete();
+	LOG_CALL(_("ifFalse_dup_l (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+	ASATOM_INCREF(context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,context->locals[instrptr->local_pos1]);
 }
 void ABCVm::abc_ifeq(call_context* context)
 {
@@ -4897,11 +4948,14 @@ struct operands
 #define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
 #define ABC_OP_OPTIMZED_EQUALS 0x000001d0
 #define ABC_OP_OPTIMZED_NOT 0x000001d8
+#define ABC_OP_OPTIMZED_IFTRUE_DUP 0x000001dc
+#define ABC_OP_OPTIMZED_IFFALSE_DUP 0x000001de
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
 	bool res = false;
 	bool needstwoargs = false;
+	bool hasdup = false;
 	uint32_t resultpos=0;
 	uint32_t pos = code.tellg()+1;
 	uint8_t b = code.peekbyte();
@@ -4929,8 +4983,13 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				needstwoargs=true;
 				resultpos=1;
 				break;
-			case 0x20://pushnull
 			case 0x2a://dup
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				hasdup=true;
+				break;
+			case 0x20://pushnull
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
@@ -5075,7 +5134,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		}
 		case 0x11://iftrue
 		case 0x12://iffalse
-			if (!needstwoargs && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			if ((!needstwoargs || hasdup) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -5469,11 +5528,23 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 	std::list<operands> operandlist;
 	memorystream code(mi->body->code.data(), code_len);
 	std::list<bool> scopelist;
+	int dup_indicator=0;
 	while(!code.atend())
 	{
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		uint8_t opcode = code.readbyte();
 		//LOG(LOG_INFO,"preload opcode:"<<code.tellg()-1<<" "<<hex<<(int)opcode);
+		switch (dup_indicator)
+		{
+			case 0:
+				break;
+			case 1:// dup found
+				dup_indicator=2;
+				break;
+			case 2:// opcode after dup handled
+				dup_indicator=0;
+				break;
+		}
 
 
 		switch(opcode)
@@ -5747,6 +5818,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				{
 					operands op = operandlist.back();
 					operandlist.push_back(operands(op.type,op.index,1,mi->body->preloadedcode.size()-1));
+					dup_indicator=1;
 				}
 				break;
 			}
@@ -5818,7 +5890,16 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) == jumptargets.end())
-					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE,opcode,code,oldnewpositions, jumptargets);
+				{
+					if (dup_indicator)
+					{
+						operandlist.back().removeArg(mi);
+						operandlist.pop_back();
+						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE_DUP,opcode,code,oldnewpositions, jumptargets);
+					}
+					else
+						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFTRUE,opcode,code,oldnewpositions, jumptargets);
+				}
 				else
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
@@ -5830,7 +5911,14 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) == jumptargets.end())
-					setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions, jumptargets);
+					if (dup_indicator)
+					{
+						operandlist.back().removeArg(mi);
+						operandlist.pop_back();
+						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE_DUP,opcode,code,oldnewpositions, jumptargets);
+					}
+					else
+						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions, jumptargets);
 				else
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();

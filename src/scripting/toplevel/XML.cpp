@@ -101,7 +101,9 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("settings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_getSettings),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("setSettings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setSettings),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("defaultSettings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_getDefaultSettings),NORMAL_METHOD,false);
+
 	// undocumented method, see http://www.docsultant.com/site2/articles/flex_internals.html#xmlNotify
+	c->setDeclaredMethodByQName("notification",AS3,Class<IFunction>::getFunction(c->getSystemState(),notification),NORMAL_METHOD,true); // undocumented
 	c->setDeclaredMethodByQName("setNotification",AS3,Class<IFunction>::getFunction(c->getSystemState(),setNotification),NORMAL_METHOD,true); // undocumented
 
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
@@ -370,7 +372,22 @@ ASFUNCTIONBODY_ATOM(XML,_appendChild)
 	th->incRef();
 	ret = asAtom::fromObject(th);
 }
-
+void XML::handleNotification(const tiny_string& command, asAtom value, asAtom detail)
+{
+	if (!notifierfunction.isNull())
+	{
+		asAtom args[5];
+		args[0]=asAtom::fromObject(this); // TODO what is currentTarget?
+		args[1]=asAtom::fromStringID(getSystemState()->getUniqueStringId(command));
+		args[2]=asAtom::fromObject(this);
+		args[3]=value;
+		args[4]=detail;
+		asAtom ret;
+		asAtom obj = asAtom::nullAtom;
+		asAtom func = asAtom::fromObject(notifierfunction.getPtr());
+		func.callFunction(ret,obj,args,5,false);
+	}
+}
 void XML::appendChild(_R<XML> newChild)
 {
 	if (newChild->constructed)
@@ -387,6 +404,7 @@ void XML::appendChild(_R<XML> newChild)
 		this->incRef();
 		newChild->parentNode = _NR<XML>(this);
 		childrenlist->append(newChild);
+		handleNotification("nodeAdded",asAtom::fromObject(newChild.getPtr()),asAtom::nullAtom);
 	}
 }
 
@@ -1035,6 +1053,7 @@ void XML::setLocalName(const tiny_string& new_name)
 		throwError<TypeError>(kXMLInvalidName, new_name);
 	}
 	this->nodename = new_name;
+	handleNotification("nameSet",asAtom::fromObject(this),asAtom::nullAtom);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_setName)
@@ -1135,6 +1154,7 @@ void XML::setNamespace(uint32_t ns_uri, uint32_t ns_prefix)
 {
 	this->nodenamespace_prefix = ns_prefix;
 	this->nodenamespace_uri = ns_uri;
+	handleNotification("namespaceSet",asAtom::fromObject(this),asAtom::nullAtom);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_copy)
@@ -1608,7 +1628,9 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 				if (!a.isNull())
 					it=attributelist->nodes.erase(ittmp);
 				a = *ittmp;
+				asAtom oldval = asAtom::fromStringID(getSystemState()->getUniqueStringId(a->nodevalue));
 				a->nodevalue = nodeval;
+				handleNotification("attributeChanged",asAtom::fromStringID(getSystemState()->getUniqueStringId(a->nodename)),oldval);
 			}
 		}
 		if (a.isNull() && !((*buf=='*')|| (*buf==0)))
@@ -1624,6 +1646,7 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 			tmp->nodevalue = nodeval;
 			tmp->constructed = true;
 			attributelist->nodes.push_back(tmp);
+			handleNotification("attributeAdded",asAtom::fromStringID(getSystemState()->getUniqueStringId(tmp->nodename)),o);
 		}
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
@@ -1632,6 +1655,7 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 	}
 	else
 	{
+		bool notificationhandled = false;
 		bool found = false;
 		XMLVector tmpnodes;
 		for (auto it = childrenlist->nodes.begin(); it != childrenlist->nodes.end();it++)
@@ -1676,6 +1700,8 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 						}
 						if (!found)
 							tmpnodes.push_back(tmpnode);
+						handleNotification("textSet",asAtom::fromObject(this),asAtom::nullAtom);
+						notificationhandled=true;
 					}
 					else
 					{
@@ -1700,6 +1726,11 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 						tmpnode->childrenlist->clear();
 						asAtom v = asAtom::fromObject(newnode);
 						tmpnode->setVariableByMultiname(name,v,allowConst);
+						if (newnode->getNodeKind() == pugi::node_pcdata)
+						{
+							handleNotification("textSet",asAtom::fromObject(this),asAtom::nullAtom);
+							notificationhandled=true;
+						}
 					}
 					if (!found)
 					{
@@ -1764,6 +1795,8 @@ multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, C
 		}
 		childrenlist->nodes.clear();
 		childrenlist->nodes.assign(tmpnodes.begin(),tmpnodes.end());
+		if (!notificationhandled)
+			handleNotification("nodeChanged",asAtom::fromObject(this),asAtom::nullAtom);
 	}
 	return nullptr;
 }
@@ -1872,6 +1905,8 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 						(attr->nodenamespace_uri == ns_uri && attr->nodename == name.normalizedName(getSystemState())))
 				{
 					attributelist->nodes.erase(it);
+					asAtom oldval = asAtom::fromStringID(getSystemState()->getUniqueStringId(attr->nodevalue));
+					handleNotification("attributeRemoved",asAtom::fromStringID(getSystemState()->getUniqueStringId(attr->nodename)),oldval);
 				}
 			}
 		}
@@ -1903,6 +1938,7 @@ bool XML::deleteVariableByMultiname(const multiname& name)
 						(node->nodenamespace_uri == ns_uri && node->nodename == name.normalizedName(getSystemState())))
 				{
 					childrenlist->nodes.erase(it);
+					handleNotification("nodeRemoved",asAtom::fromObject(this),asAtom::nullAtom);
 				}
 			}
 		}
@@ -2379,6 +2415,7 @@ void XML::RemoveNamespace(Namespace *ns)
 			(*it)->RemoveNamespace(ns);
 		}
 	}
+	handleNotification("namespaceRemoved",asAtom::fromObject(this),asAtom::nullAtom);
 }
 
 ASFUNCTIONBODY_ATOM(XML,comments)
@@ -3038,5 +3075,14 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 }
 ASFUNCTIONBODY_ATOM(XML,setNotification)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"XML.setNotification does nothing");
+	XML* th=obj.as<XML>();
+	ARG_UNPACK_ATOM(th->notifierfunction);
+}
+ASFUNCTIONBODY_ATOM(XML,notification)
+{
+	XML* th=obj.as<XML>();
+	if (th->notifierfunction.isNull())
+		ret.setNull();
+	else
+		ret = asAtom::fromObject(th->notifierfunction.getPtr());
 }

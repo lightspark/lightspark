@@ -43,6 +43,7 @@ private:
 	uint32_t nodenamespace_prefix;
 	_NR<XMLList> attributelist;
 	_NR<XMLList> procinstlist;
+	_NR<IFunction> notifierfunction;
 	NSVector namespacedefs;
 
 	void createTree(const pugi::xml_node &rootnode, bool fromXMLList);
@@ -66,6 +67,7 @@ private:
 	uint32_t getNamespacePrefixByURI(uint32_t uri, bool create=false);
 	void setLocalName(const tiny_string& localname);
 	void setNamespace(uint32_t ns_uri, uint32_t ns_prefix=BUILTIN_STRINGS::EMPTY);
+	void handleNotification(const tiny_string& command, asAtom value, asAtom detail);
 	// Append node or attribute to this. Concatenates adjacent
 	// text nodes.
 	void appendChild(_R<XML> child);
@@ -139,6 +141,7 @@ public:
 	ASFUNCTION_ATOM(_prependChild);
 	ASFUNCTION_ATOM(_replace);
 	ASFUNCTION_ATOM(setNotification);
+	ASFUNCTION_ATOM(notification);
 
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);

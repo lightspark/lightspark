@@ -1137,7 +1137,7 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -1159,6 +1159,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_A
 	bytes[index] = value;
 
 	ASATOM_DECREF(o);
+	return nullptr;
 }
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)

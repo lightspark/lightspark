@@ -367,7 +367,7 @@ public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	bool isEqual(ASObject* r);
 };
 
@@ -444,7 +444,7 @@ public:
 	virtual method_info* getMethodInfo() const=0;
 	virtual ASObject *describeType() const;
 	uint32_t functionname;
-	virtual void callGetter(asAtom& ret, ASObject* target) =0;
+	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
 };
 
 /*
@@ -484,10 +484,11 @@ public:
 		val_atom(ret,getSystemState(),obj,args,num_args);
 	}
 	bool isEqual(ASObject* r);
-	FORCE_INLINE void callGetter(asAtom& ret, ASObject* target)
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
 		asAtom c = asAtom::fromObject(target);
 		val_atom(ret,getSystemState(),c,NULL,0);
+		return nullptr;
 	}
 };
 
@@ -523,7 +524,8 @@ private:
 	method_info* mi;
 	/* Pointer to JIT-compiled function or NULL if not yet compiled */
 	synt_function val;
-
+	/* Pointer to multiname, if this function is a simple getter or setter */
+	multiname* simpleGetterOrSetterName;
 	SyntheticFunction(Class_base* c,method_info* m);
 	
 	method_info* getMethodInfo() const { return mi; }
@@ -554,10 +556,19 @@ public:
 	{
 		dynamicreferencedobjects.push_back(o);
 	}
-	FORCE_INLINE void callGetter(asAtom& ret, ASObject* target)
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
+		if (simpleGetterOrSetterName)
+		{
+			target->getVariableByMultiname(ret,*simpleGetterOrSetterName);
+			return simpleGetterOrSetterName;
+		}
 		asAtom c = asAtom::fromObject(target);
 		call(ret,c,NULL,0,true);
+		return nullptr;
+	}
+	FORCE_INLINE multiname* getSimpleName() {
+		return simpleGetterOrSetterName;
 	}
 };
 
@@ -637,7 +648,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 };
 
 class Null: public ASObject
@@ -650,7 +661,7 @@ public:
 	int64_t toInt64();
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

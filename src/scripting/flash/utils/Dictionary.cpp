@@ -74,7 +74,7 @@ void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 	Dictionary::setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -87,23 +87,19 @@ void Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 			case T_INTEGER:
 				tmpname.name_type=multiname::NAME_INT;
 				tmpname.name_i = name.name_o->toInt();
-				ASObject::setVariableByMultiname(tmpname, o, allowConst);
-				return;
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
 			case T_UINTEGER:
 				tmpname.name_type=multiname::NAME_UINT;
 				tmpname.name_ui = name.name_o->toUInt();
-				ASObject::setVariableByMultiname(tmpname, o, allowConst);
-				return;
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
 			case T_NUMBER:
 				tmpname.name_type=multiname::NAME_NUMBER;
 				tmpname.name_d = name.name_o->toNumber();
-				ASObject::setVariableByMultiname(tmpname, o, allowConst);
-				return;
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
 			case T_STRING:
 				tmpname.name_type=multiname::NAME_STRING;
 				tmpname.name_s_id = name.name_o->toStringId();
-				ASObject::setVariableByMultiname(tmpname, o, allowConst);
-				return;
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
 			default:
 				break;
 		}
@@ -127,8 +123,9 @@ void Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 			name.name_type==multiname::NAME_INT ||
 			name.name_type==multiname::NAME_UINT ||
 			name.name_type==multiname::NAME_NUMBER);
-		ASObject::setVariableByMultiname(name, o, allowConst);
+		return ASObject::setVariableByMultiname(name, o, allowConst);
 	}
+	return nullptr;
 }
 
 bool Dictionary::deleteVariableByMultiname(const multiname& name)

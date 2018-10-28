@@ -1126,7 +1126,7 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-void Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
@@ -1181,6 +1181,7 @@ void Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLO
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
+	return nullptr;
 }
 
 tiny_string Vector::toString()

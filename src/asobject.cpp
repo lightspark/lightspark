@@ -731,8 +731,9 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 }
 
 
-void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
+multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
 {
+	multiname *retval = nullptr;
 	check();
 	assert(!cls || classdef->isSubClass(cls));
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
@@ -820,6 +821,8 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 		asAtom v =asAtom::fromObject(target);
 		asAtom ret;
 		obj->setter.callFunction(ret,v,arg1,1,false);
+		if (obj->setter.is<SyntheticFunction>())
+			retval = obj->setter.as<SyntheticFunction>()->getSimpleName();
 		ASATOM_DECREF(ret);
 		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
@@ -833,6 +836,7 @@ void ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_AL
 	}
 	if (o.is<SyntheticFunction>())
 		checkFunctionScope(o.getObject()->as<SyntheticFunction>());
+	return retval;
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
@@ -2447,6 +2451,8 @@ std::string asAtom::toDebugString()
 			if (stringID != UINT32_MAX)
 				return getSys()->getStringFromUniqueId(stringID);
 			std::string ret = objval->toDebugString();
+			if (ret.length() >100)
+				ret = ret.substr(0,100);
 #ifndef _NDEBUG
 			char buf[300];
 			sprintf(buf,"(%p / %d)",objval,objval->getRefCount());

@@ -1541,11 +1541,11 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-void XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
-	setVariableByMultinameIntern(name, o, allowConst, false);
+	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
-void XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
+multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {
 	unsigned int index=0;
 	bool isAttr=name.isAttribute;
@@ -1765,6 +1765,7 @@ void XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_A
 		childrenlist->nodes.clear();
 		childrenlist->nodes.assign(tmpnodes.begin(),tmpnodes.end());
 	}
+	return nullptr;
 }
 
 bool XML::hasProperty(const multiname& name, bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype)

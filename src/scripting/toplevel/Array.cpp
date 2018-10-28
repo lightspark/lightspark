@@ -1691,27 +1691,24 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
 	if(!isValidMultiname(getSystemState(),name,index))
-	{
-		ASObject::setVariableByMultiname(name,o,allowConst);
-//		setIsEnumerable(name,false);
-		return;
-	}
+		return ASObject::setVariableByMultiname(name,o,allowConst);
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,
 					   name.normalizedNameUnresolved(getSystemState()),
 					   getClass()->getQualifiedClassName());
 	if (index==0xFFFFFFFF)
-		return;
+		return nullptr;
 	if(index>=size())
 		resize((uint64_t)index+1);
 
 	set(index, o,false);
+	return nullptr;
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name)

@@ -71,7 +71,7 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x1ff));
+		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x1ff));
 
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
@@ -2574,9 +2574,15 @@ void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	//Do not allow to set contant traits
+	
 	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	multiname* simplesettername = nullptr;
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	if (simplesettername)
+		context->exec_pos->cachedmultiname2 = simplesettername;
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
@@ -2599,9 +2605,14 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	//Do not allow to set contant traits
 	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	multiname* simplesettername = nullptr;
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	if (simplesettername)
+		context->exec_pos->cachedmultiname2 = simplesettername;
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
@@ -2624,10 +2635,15 @@ void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	//Do not allow to set contant traits
 	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
 	ASATOM_INCREF_POINTER(value);
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	multiname* simplesettername = nullptr;
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	if (simplesettername)
+		context->exec_pos->cachedmultiname2 = simplesettername;
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
@@ -2650,10 +2666,15 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	//Do not allow to set contant traits
 	ASObject* o = obj->toObject(context->mi->context->root->getSystemState());
 	ASATOM_INCREF_POINTER(value);
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	multiname* simplesettername = nullptr;
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	if (simplesettername)
+		context->exec_pos->cachedmultiname2 = simplesettername;
 	++(context->exec_pos);
 }
 
@@ -2932,7 +2953,25 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_sc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name);
+	if(prop.type == T_INVALID)
+	{
+		bool isgetter = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		if (isgetter)
+		{
+			//Call the getter
+			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+			assert(prop.type == T_FUNCTION);
+			IFunction* f = prop.as<IFunction>();
+			ASObject* closure = prop.getClosure();
+			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
+			if (simplegetter)
+			{
+				LOG_CALL("is simple getter " << *simplegetter);
+				instrptr->cachedmultiname2 = simplegetter;
+			}
+			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+		}
+	}
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2957,7 +2996,25 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 	{
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_sl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name);
+		if(prop.type == T_INVALID)
+		{
+			bool isgetter = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+			if (isgetter)
+			{
+				//Call the getter
+				LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+				assert(prop.type == T_FUNCTION);
+				IFunction* f = prop.as<IFunction>();
+				ASObject* closure = prop.getClosure();
+				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
+				if (simplegetter)
+				{
+					LOG_CALL("is simple getter " << *simplegetter);
+					instrptr->cachedmultiname2 = simplegetter;
+				}
+				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+			}
+		}
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 	}
@@ -2973,7 +3030,25 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
+	if(prop.type == T_INVALID)
+	{
+		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		if (isgetter)
+		{
+			//Call the getter
+			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+			assert(prop.type == T_FUNCTION);
+			IFunction* f = prop.as<IFunction>();
+			ASObject* closure = prop.getClosure();
+			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
+			if (simplegetter)
+			{
+				LOG_CALL("is simple getter " << *simplegetter);
+				instrptr->cachedmultiname2 = simplegetter;
+			}
+			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+		}
+	}
 	if(prop.type == T_INVALID)
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -3076,7 +3151,24 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //			}
 //		}
 		if(prop.type == T_INVALID)
-			obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
+		{
+			bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+			if (isgetter)
+			{
+				//Call the getter
+				LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+				assert(prop.type == T_FUNCTION);
+				IFunction* f = prop.as<IFunction>();
+				ASObject* closure = prop.getClosure();
+				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
+				if (simplegetter)
+				{
+					LOG_CALL("is simple getter " << *simplegetter);
+					instrptr->cachedmultiname2 = simplegetter;
+				}
+				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+			}
+		}
 		if(prop.type == T_INVALID)
 			checkPropertyException(obj,name,prop);
 		context->locals[instrptr->local_pos3-1].set(prop);
@@ -5607,7 +5699,7 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 	return hasoperands;
 }
 
-void ABCVm::preloadFunction(const SyntheticFunction* function)
+void ABCVm::preloadFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
 
@@ -5628,11 +5720,37 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 		jumptargets.insert((int32_t)itex->target+1);
 		itex++;
 	}
-
+	uint32_t simple_getter_opcode_pos = 0;
+	uint8_t simple_getter_opcodes[] { 
+				0xd0, //getlocal_0
+				0x30, //pushscope
+				0x60, //getlex
+				0x48, //returnvalue
+				0x00
+			};
+	uint32_t simple_setter_opcode_pos = 0;
+	uint8_t simple_setter_opcodes[] { 
+				0xd0, //getlocal_0
+				0x30, //pushscope
+				0x5e, //findproperty
+				0xd1, //getlocal_1
+				0x68, //initproperty
+				0x47, //returnvoid
+				0x00
+			};
 	memorystream codejumps(mi->body->code.data(), code_len);
 	while(!codejumps.atend())
 	{
 		uint8_t opcode = codejumps.readbyte();
+		if (simple_getter_opcode_pos != UINT32_MAX && opcode && opcode == simple_getter_opcodes[simple_getter_opcode_pos])
+			++simple_getter_opcode_pos;
+		else
+			simple_getter_opcode_pos = UINT32_MAX;
+		if (simple_setter_opcode_pos != UINT32_MAX && opcode && opcode == simple_setter_opcodes[simple_setter_opcode_pos])
+			++simple_setter_opcode_pos;
+		else
+			simple_setter_opcode_pos = UINT32_MAX;
+		
 		switch(opcode)
 		{
 			case 0x04://getsuper
@@ -5785,7 +5903,6 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 			case 0x5a://newcatch
 			case 0x5f://finddef
 			case 0x65://getscopeobject
-			case 0x68://initproperty
 			case 0x6a://deleteproperty
 			case 0x6c://getslot
 			case 0x6d://setslot
@@ -5905,6 +6022,12 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method
 				{
+					if (simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
+					{
+						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
+						if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
+							function->simpleGetterOrSetterName = name;
+					}
 					asAtom o;
 					if(!function->func_scope.isNull()) // check scope stack
 					{
@@ -5965,6 +6088,7 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 				break;
 			}
 			case 0x61://setproperty
+			case 0x68://initproperty
 			{
 				int32_t p = code.tellg();
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
@@ -5975,10 +6099,20 @@ void ABCVm::preloadFunction(const SyntheticFunction* function)
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
+						{
+							multiname* name =  mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
 							setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets);
 							mi->body->preloadedcode.push_back(t);
-							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
+							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 =name;
+							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
+							if (simple_setter_opcode_pos != UINT32_MAX) // function is simple setter
+							{
+								variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
+								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
+									function->simpleGetterOrSetterName = name;
+							}
 							break;
+						}
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
 							mi->body->preloadedcode.push_back(t);

@@ -372,7 +372,7 @@ tiny_string URLInfo::encode(const tiny_string& u, ENCODING type)
 		return encodeURI(u, uriUnescaped);
 
 	tiny_string str;
-	char buf[7];
+	char buf[12];
 	
 	for(auto i=u.begin();i!=u.end();++i)
 	{

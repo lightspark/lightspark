@@ -443,7 +443,10 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>() || th->content->as<TextElement>()->text.empty())
+	{
+		ret.setNull();
 		return;
+	}
 
 	if (!fitSomething && (width < 0 || width > MAX_LINE_WIDTH))
 	{

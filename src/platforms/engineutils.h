@@ -52,6 +52,18 @@ enum BLEND_FACTOR { BLEND_ONE,BLEND_ZERO,BLEND_SRC_ALPHA,BLEND_SRC_COLOR,BLEND_D
 enum VERTEXBUFFER_FORMAT { BYTES_4, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
 
+// this is only used for font rendering in PPAPI plugin
+class externalFontRenderer : public IDrawable
+{
+	int32_t externalressource;
+	class EngineData* m_engine;
+public:
+	externalFontRenderer(const TextData &_textData,class EngineData* engine, int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m, bool smoothing);
+	
+	uint8_t* getPixelBuffer() override;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
+};
+
 class DLL_PUBLIC EngineData
 {
 	friend class RenderThread;
@@ -76,6 +88,7 @@ public:
 	uint32_t origheight;
 	bool needrenderthread;
 	bool supportPackedDepthStencil;
+	bool hasExternalFontRenderer;
 	tiny_string driverInfoString;
 	EngineData();
 	virtual ~EngineData();
@@ -234,7 +247,9 @@ public:
 	virtual int audio_getSampleRate();
 	
 	// Text rendering
-	virtual IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,bool smoothing);
+	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
+	virtual int32_t setupFontRenderer(const TextData &_textData,float a, bool smoothing) { return 0; }
+	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,bool smoothing);
 };
 
 }

@@ -44,7 +44,7 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false)
+EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
@@ -1011,5 +1011,18 @@ int EngineData::audio_getSampleRate()
 
 IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms,bool smoothing)
 {
-	return NULL;
+	if (hasExternalFontRenderer)
+		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _a, _ms,smoothing);
+	return nullptr;
+}
+
+externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<IDrawable::MaskData> &m, bool smoothing)
+	: IDrawable(w, h, x, y, a, m),m_engine(engine)
+{
+	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
+}
+
+uint8_t *externalFontRenderer::getPixelBuffer()
+{
+	return m_engine->getFontPixelBuffer(externalressource,this->width,this->height);
 }

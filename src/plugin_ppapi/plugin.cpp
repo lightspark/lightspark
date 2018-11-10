@@ -2447,7 +2447,15 @@ int ppPluginEngineData::audio_getSampleRate()
 	return PP_AUDIOSAMPLERATE_44100;
 }
 
-IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms,bool smoothing)
+uint8_t* ppPluginEngineData::getFontPixelBuffer(int32_t externalressource,int width,int height)
+{
+	uint8_t* data = new uint8_t[width*height*sizeof(uint32_t)];
+	memcpy(data,g_imagedata_interface->Map(externalressource),width*height*sizeof(uint32_t));
+	g_imagedata_interface->Unmap(externalressource);
+	return data;
+}
+
+int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a, bool smoothing)
 {
 	PP_BrowserFont_Trusted_Description desc;
 	desc.face = g_var_interface->VarFromUtf8(_textData.font.raw_buf(),_textData.font.numBytes());
@@ -2468,36 +2476,12 @@ IDrawable *ppPluginEngineData::getTextRenderDrawable(const TextData &_textData, 
 	text.override_direction = PP_FALSE;
 	text.rtl = PP_FALSE;
 	
-	uint32_t color = (_textData.textColor.Blue) + (_textData.textColor.Green<<8) + (_textData.textColor.Red<<16) + ((int)(255/_a)<<24);
+	uint32_t color = (_textData.textColor.Blue) + (_textData.textColor.Green<<8) + (_textData.textColor.Red<<16) + ((int)(255/a)<<24);
 
 	PP_Resource image_data = g_imagedata_interface->Create(instance->m_ppinstance,PP_IMAGEDATAFORMAT_BGRA_PREMUL,&size,PP_TRUE);
 	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
 	if (font == 0)
 		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
 	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,NULL,smoothing ? PP_TRUE : PP_FALSE);
-	
-	return new ppFontRenderer(_w,_h,_x,_y,_a,_ms,image_data);
+	return image_data;
 }
-ppFontRenderer::ppFontRenderer(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m, PP_Resource _image_data)
-	: IDrawable(w, h, x, y, a, m),ppimage(_image_data)
-{
-	
-}
-
-ppFontRenderer::~ppFontRenderer()
-{
-}
-
-uint8_t *ppFontRenderer::getPixelBuffer()
-{
-	uint8_t* data = new uint8_t[this->width*this->height*sizeof(uint32_t)];
-	memcpy(data,g_imagedata_interface->Map(ppimage),this->width*this->height*sizeof(uint32_t));
-	g_imagedata_interface->Unmap(ppimage);
-	return data;
-}
-
-void ppFontRenderer::applyCairoMask(cairo_t *cr, int32_t offsetX, int32_t offsetY) const
-{
-	
-}
-

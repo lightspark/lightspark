@@ -325,6 +325,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("generateRandomBytes","flash.crypto",_MR(Class<IFunction>::getFunction(m_sys,generateRandomBytes)));
 
+	builtin->registerBuiltin("ActionScriptVersion","flash.display",Class<ActionScriptVersion>::getRef(m_sys));
 	builtin->registerBuiltin("MovieClip","flash.display",Class<MovieClip>::getRef(m_sys));
 	builtin->registerBuiltin("DisplayObject","flash.display",Class<DisplayObject>::getRef(m_sys));
 	builtin->registerBuiltin("Loader","flash.display",Class<Loader>::getRef(m_sys));

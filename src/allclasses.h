@@ -67,6 +67,7 @@ REGISTER_CLASS_NAME(NativeDragManager,"flash.desktop")
 
 
 //Display
+REGISTER_CLASS_NAME(ActionScriptVersion,"flash.display")
 REGISTER_CLASS_NAME(AVM1Movie,"flash.display")
 REGISTER_CLASS_NAME(Bitmap,"flash.display")
 REGISTER_CLASS_NAME(BitmapData,"flash.display")

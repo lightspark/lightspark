@@ -392,6 +392,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, buttonMode);
 	ASPROPERTY_GETTER_SETTER(_NR<Sprite>, hitArea);
 	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
+	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	int getDepth() const
 	{
 		return 0;
@@ -795,6 +796,13 @@ public:
 	static unsigned int channelShift(uint32_t channelConstant);
 };
 
+class ActionScriptVersion: public ASObject
+{
+public:
+	ActionScriptVersion(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
 };
+
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H */

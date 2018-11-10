@@ -750,10 +750,12 @@ void Sprite::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, buttonMode);
 	REGISTER_GETTER_SETTER(c, hitArea);
 	REGISTER_GETTER_SETTER(c, useHandCursor);
+	REGISTER_GETTER_SETTER(c, soundTransform);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, buttonMode);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, useHandCursor);
+ASFUNCTIONBODY_GETTER_SETTER(Sprite, soundTransform);
 
 void Sprite::buildTraits(ASObject* o)
 {
@@ -3581,3 +3583,9 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3DMatchingProfiles)
 	LOG(LOG_NOT_IMPLEMENTED,"Stage3D.requestContext3DMatchingProfiles does nothing");
 }
 
+void ActionScriptVersion::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("ACTIONSCRIPT2",nsNameAndKind(),asAtom((uint32_t)2),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ACTIONSCRIPT3",nsNameAndKind(),asAtom((uint32_t)3),CONSTANT_TRAIT);
+}

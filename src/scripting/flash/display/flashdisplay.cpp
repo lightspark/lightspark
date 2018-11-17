@@ -1592,10 +1592,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(uint32_t depth,
 void DisplayObjectContainer::deleteLegacyChildAt(uint32_t depth)
 {
 	if(!hasLegacyChildAt(depth))
-	{
-		LOG(LOG_ERROR,"deleteLegacyChildAt: no child at that depth");
 		return;
-	}
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{

@@ -125,7 +125,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
-
+	virtual void afterSetLegacyMatrix() {}
 public:
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);

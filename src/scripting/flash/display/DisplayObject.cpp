@@ -258,6 +258,7 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 		{
 			matrix->matrix=m;
 			extractValuesFromMatrix();
+			afterSetLegacyMatrix();
 			mustInvalidate=true;
 		}
 	}

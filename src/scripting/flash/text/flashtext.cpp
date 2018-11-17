@@ -118,7 +118,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL), alwaysShowSelection(false),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0), alwaysShowSelection(false),
 	  caretIndex(0), condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
@@ -241,10 +241,10 @@ void TextField::buildTraits(ASObject* o)
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	xmin=0;
-	xmax=width;
-	ymin=0;
-	ymax=height;
+	xmin=tx;
+	xmax=tx+width;
+	ymin=ty;
+	ymax=ty+height;
 	return true;
 }
 
@@ -333,10 +333,18 @@ void TextField::setSizeAndPositionFromAutoSize()
 
 	if (!wordWrap)
 	{
-		if (autoSize == AS_RIGHT)
-			tx += (int)width-(int)textWidth;
-		else if (autoSize == AS_CENTER)
-			tx += ((int)width - (int)textWidth)/2.0;
+		switch (autoSize)
+		{
+			case AS_RIGHT:
+				autosizeposition = width-textWidth;
+				break;
+			case AS_CENTER:
+				autosizeposition = (width - textWidth)/2.0;
+				break;
+			default:
+				autosizeposition = 0;
+				break;
+		}
 		if (width < textWidth)
 			width = textWidth;
 		if (height < textHeight)
@@ -823,6 +831,11 @@ void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_str
 	textUpdated();
 }
 
+void TextField::afterSetLegacyMatrix()
+{
+	textUpdated();
+}
+
 void TextField::validateThickness(number_t /*oldValue*/)
 {
 	thickness = dmin(dmax(thickness, -200.), 200.);
@@ -904,7 +917,7 @@ void TextField::updateSizes()
 	{
 		tokens.clear();
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading);
 		number_t x1,x2,y1,y2;
 		if (TokenContainer::boundsRect(x1,x2,y1,y2))
 		{
@@ -965,6 +978,15 @@ void TextField::setHtmlText(const tiny_string& html)
 	updateSizes();
 	hasChanged=true;
 	textUpdated();
+}
+
+std::string TextField::toDebugString()
+{
+	std::string res = InteractiveObject::toDebugString();
+	res += " \"";
+	res += this->text;
+	res += "\";";
+	return res;
 }
 
 tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
@@ -1037,18 +1059,22 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	RootMovieClip* currentRoot=getSystemState()->mainClip;
 	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
+	MATRIX totalMatrix;
 	if (embeddedfont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading);
+		if (!tokensEmpty())
+		{
+			totalMatrix = initialMatrix;
+			totalMatrix.translate(autosizeposition,0);
+			return TokenContainer::invalidate(target, totalMatrix,smoothing);
+		}
 	}
-	if (!tokensEmpty())
-		return TokenContainer::invalidate(target, initialMatrix,smoothing);
-	
-	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
 	computeMasksAndMatrix(target, masks, totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	totalMatrix.translate(autosizeposition,0);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;

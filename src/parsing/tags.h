@@ -488,7 +488,7 @@ public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL);
 	const tiny_string getFontname() const;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor) const;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading) const;
 	bool hasGlyphs(const tiny_string text) const;
 };
 

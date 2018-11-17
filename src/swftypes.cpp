@@ -1110,12 +1110,22 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 		v.xx=FB(NScaleBits,bs);
 		v.yy=FB(NScaleBits,bs);
 	}
+	else
+	{
+		v.xx = 1;
+		v.yy = 1;
+	}
 	int HasRotate=UB(1,bs);
 	if(HasRotate)
 	{
 		int NRotateBits=UB(5,bs);
 		v.yx=FB(NRotateBits,bs);
 		v.xy=FB(NRotateBits,bs);
+	}
+	else
+	{
+		v.yx = 0;
+		v.xy = 0;
 	}
 	int NTranslateBits=UB(5,bs);
 	v.x0=SB(NTranslateBits,bs)/20;

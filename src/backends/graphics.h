@@ -265,11 +265,12 @@ class TextData
 {
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : width(100), height(100), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
+	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
 		autoSize(AS_NONE), fontSize(12), wordWrap(false) {}
 	uint32_t width;
 	uint32_t height;
+	uint32_t leading;
 	uint32_t textWidth;
 	uint32_t textHeight;
 	tiny_string text;

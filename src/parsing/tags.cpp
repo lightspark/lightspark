@@ -342,10 +342,10 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 				textData.autoSize = TextData::AS_LEFT;
 				break;
 			case 1:
-				textData.autoSize = TextData::AS_CENTER;
+				textData.autoSize = TextData::AS_RIGHT;
 				break;
 			case 2:
-				textData.autoSize = TextData::AS_RIGHT;
+				textData.autoSize = TextData::AS_CENTER;
 				break;
 			case 3:
 				LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Align justify on ID "<<CharacterID);
@@ -357,8 +357,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:RightMargin on ID "<<CharacterID);
 		if (Indent != 0)
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
-		if (Multiline && Leading != 0)
-			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Leading on ID "<<CharacterID);
 	}
 	in >> VariableName;
 	if (!VariableName.isNull())
@@ -373,6 +371,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.border = Border;
 	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
 	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
+	textData.leading = Leading/20;
 	if (AutoSize)
 		textData.autoSize = TextData::AS_LEFT;
 
@@ -778,7 +777,7 @@ const tiny_string DefineFont3Tag::getFontname() const
 	return tiny_string((const char*)FontName.data(),true);
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,RGB textColor) const
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,RGB textColor, uint32_t leading) const
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
@@ -788,14 +787,14 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	fillStyles.push_back(fs);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = 20*1024 * this->scaling;
+	curPos.y = (20*1024+this->FontLeading/2.0) * this->scaling;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		if (*it == 13 || *it == 10)
 		{
 			curPos.x = 0;
-			curPos.y += 20*1024 * this->scaling;
+			curPos.y += (20+leading)*1024 * this->scaling;
 		}
 		else
 		{
@@ -1588,7 +1587,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
-			state->setLegacyMatrix(i->PlaceMatrix);
+			state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
+			
 			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);

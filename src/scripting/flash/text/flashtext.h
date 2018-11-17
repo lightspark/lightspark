@@ -115,6 +115,9 @@ private:
 	GRID_FIT_TYPE gridFitType;
 	TEXT_INTERACTION_MODE textInteractionMode;
 	_NR<ASString> restrictChars;
+	number_t autosizeposition;
+protected:
+	void afterSetLegacyMatrix() override;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
 	void finalize();
@@ -184,6 +187,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, thickness);
 	ASFUNCTION_GETTER_SETTER(type);
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
+	
+	std::string toDebugString() override;
 };
 
 class TextFormat: public ASObject

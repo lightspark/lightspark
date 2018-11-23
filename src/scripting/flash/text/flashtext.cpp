@@ -241,10 +241,10 @@ void TextField::buildTraits(ASObject* o)
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	xmin=tx;
-	xmax=tx+width;
-	ymin=ty;
-	ymax=ty+height;
+	xmin=0;
+	xmax=width;
+	ymin=0;
+	ymax=height;
 	return true;
 }
 
@@ -917,7 +917,7 @@ void TextField::updateSizes()
 	{
 		tokens.clear();
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,0);
 		number_t x1,x2,y1,y2;
 		if (TokenContainer::boundsRect(x1,x2,y1,y2))
 		{
@@ -986,6 +986,9 @@ std::string TextField::toDebugString()
 	res += " \"";
 	res += this->text;
 	res += "\";";
+	char buf[100];
+	sprintf(buf,"%dx%d %5.2f",textWidth,textHeight,autosizeposition);
+	res += buf;
 	return res;
 }
 
@@ -1063,13 +1066,9 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	if (embeddedfont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,autosizeposition);
 		if (!tokensEmpty())
-		{
-			totalMatrix = initialMatrix;
-			totalMatrix.translate(autosizeposition,0);
 			return TokenContainer::invalidate(target, totalMatrix,smoothing);
-		}
 	}
 	std::vector<IDrawable::MaskData> masks;
 	computeMasksAndMatrix(target, masks, totalMatrix);
@@ -1151,9 +1150,15 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				if (value == "left")
 					textdata->autoSize = TextData::AS_LEFT;
 				if (value == "center")
+				{
 					textdata->autoSize = TextData::AS_CENTER;
+					textdata->wordWrap=false;
+				}
 				if (value == "right")
+				{
 					textdata->autoSize = TextData::AS_RIGHT;
+					textdata->wordWrap=false;
+				}
 			}
 			else
 			{

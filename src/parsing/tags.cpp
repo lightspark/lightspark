@@ -374,8 +374,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.leading = Leading/20;
 	if (AutoSize)
 		textData.autoSize = TextData::AS_LEFT;
-
-	LOG(LOG_NOT_IMPLEMENTED, "DefineEditTextTag does not parse many attributes");
 }
 
 ASObject* DefineEditTextTag::instance(Class_base* c)
@@ -392,9 +390,8 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 
 MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
 {
-	MATRIX m = mat;
-	m.translate(Bounds.Xmin/20,Bounds.Ymin/20);
-	return m;
+	MATRIX m (1,1,0,0,Bounds.Xmin/20,Bounds.Ymin/20);
+	return mat.multiplyMatrix(m);
 }
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
@@ -777,7 +774,7 @@ const tiny_string DefineFont3Tag::getFontname() const
 	return tiny_string((const char*)FontName.data(),true);
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,RGB textColor, uint32_t leading) const
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
@@ -807,7 +804,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					Vector2 glyphPos = curPos*tokenscaling;
 	
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x,
+							   glyphPos.x+startpos*1024*20* this->scaling,
 							   glyphPos.y);
 	
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
@@ -1608,8 +1605,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getSystemState());
 					spr->insertLegacyChildAt(curDepth[j],states[j]);
 					states[j] = spr;
-					//spr->name = "Button_spr";
 					spr->name = BUILTIN_STRINGS::EMPTY;
+					isSprite[j] = true;
 				}
 				Sprite* spr = Class<Sprite>::cast(states[j]);
 				spr->insertLegacyChildAt(i->PlaceDepth,state);

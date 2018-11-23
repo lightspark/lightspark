@@ -995,15 +995,15 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 		}
 		if(StateFillStyle0)
 		{
-			FillStyle0=UB(parent->NumFillBits,bs)+p->fillOffset;
+			FillStyle0=UB(parent->NumFillBits,bs);
 		}
 		if(StateFillStyle1)
 		{
-			FillStyle1=UB(parent->NumFillBits,bs)+p->fillOffset;
+			FillStyle1=UB(parent->NumFillBits,bs);
 		}
 		if(StateLineStyle)
 		{
-			LineStyle=UB(parent->NumLineBits,bs)+p->lineOffset;
+			LineStyle=UB(parent->NumLineBits,bs);
 		}
 		if(StateNewStyles && parent->version >= 2)
 		{
@@ -1018,12 +1018,18 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 
 			LINESTYLEARRAY b(ps->LineStyles.version);
 			bs.f >> b;
-			p->lineOffset=ps->LineStyles.LineStyles.size();
+			p->lineOffset=ps->LineStyles.LineStyles2.size();
 			ps->LineStyles.appendStyles(b);
 
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);
 		}
+		if(StateFillStyle0)
+			FillStyle0+=p->fillOffset;
+		if(StateFillStyle1)
+			FillStyle1+=p->fillOffset;
+		if(StateLineStyle)
+			LineStyle+=p->lineOffset;
 	}
 }
 

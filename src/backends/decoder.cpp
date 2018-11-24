@@ -572,7 +572,7 @@ void AudioDecoder::skipAll()
 
 #ifdef ENABLE_LIBAVCODEC
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):engine(eng),ownedContext(true)
-  #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
+#if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
 	,resamplecontext(NULL)
 #endif
 {
@@ -588,6 +588,7 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 #ifdef HAVE_LIBSWRESAMPLE
 	if (resamplecontext)
 		swr_free(&resamplecontext);
+	resamplecontext=nullptr;
 #elif defined HAVE_LIBAVRESAMPLE
 	if (resamplecontext)
 		avresample_free(&resamplecontext);
@@ -634,11 +635,18 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 	codecContext->codec_id = codecId;
 	codecContext->sample_rate = sampleRate;
 	codecContext->channels = channels;
-	// HACK: it seems the default is 0 for PCM formats, which is invalid.
-	if(channels == 1) {
-		codecContext->channel_layout = AV_CH_LAYOUT_MONO;
+	switch (channels)
+	{
+		case 1:
+			codecContext->channel_layout = AV_CH_LAYOUT_MONO;
+			break;
+		case 2:
+			codecContext->channel_layout = AV_CH_LAYOUT_STEREO;
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"FFMpegAudioDecoder: channel layout for "<<channels<<" channels");
+			break;
 	}
-
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
@@ -998,24 +1006,32 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	int maxLen;
 #ifdef HAVE_LIBSWRESAMPLE
 	if (!resamplecontext)
+	{
 		resamplecontext = swr_alloc();
-	av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
-	av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
-	av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
-	av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
-	av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
-	av_opt_set_int(resamplecontext, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
-	swr_init(resamplecontext);
+		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
+		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
+		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
+		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
+		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
+		av_opt_set_int(resamplecontext, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+		swr_init(resamplecontext);
+	}
 
-	
 	uint8_t *output;
-	int out_samples = av_rescale_rnd(swr_get_delay(resamplecontext, framesamplerate) + frameIn->nb_samples, sample_rate, sample_rate, AV_ROUND_UP);
+	int out_samples = swr_get_out_samples(resamplecontext,frameIn->nb_samples);
 	int res = av_samples_alloc(&output, NULL, 2, out_samples,AV_SAMPLE_FMT_S16, 0);
 
 	if (res >= 0)
 	{
 		maxLen = swr_convert(resamplecontext, &output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout);// 2 bytes in AV_SAMPLE_FMT_S16
-		memcpy(curTail.samples, output, maxLen);
+		if (maxLen > 0)
+			memcpy(curTail.samples, output, maxLen);
+		else
+		{
+				LOG(LOG_ERROR, "resampling failed");
+				memset(curTail.samples, 0, frameIn->linesize[0]);
+				maxLen = frameIn->linesize[0];
+		}
 		av_freep(&output);
 	}
 	else

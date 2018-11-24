@@ -305,7 +305,7 @@ void Downloader::setFailed()
 void Downloader::setFinished()
 {
 	length = cache->markFinished();
-	LOG(LOG_INFO,"download finished:"<<length);
+	LOG(LOG_INFO,"download finished:"<<url<<" "<<length);
 }
 
 /**
@@ -686,7 +686,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if(th->getRequestStatus()/100 == 2)
+	if(th->getRequestStatus()/100 == 2 || th->getRequestStatus()/100 == 3)
 		th->append((uint8_t*)buffer,added);
 	return added;
 }

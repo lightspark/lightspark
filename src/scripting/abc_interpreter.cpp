@@ -6022,7 +6022,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method
 				{
-					if (simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
+					if ((simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
+							&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 					{
 						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
 						if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
@@ -6105,7 +6106,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							mi->body->preloadedcode.push_back(t);
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 =name;
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
-							if (simple_setter_opcode_pos != UINT32_MAX) // function is simple setter
+							if ((simple_setter_opcode_pos != UINT32_MAX) // function is simple setter
+									&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 							{
 								variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
 								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)

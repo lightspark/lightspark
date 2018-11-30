@@ -2621,7 +2621,7 @@ void Stage::executeFrameScript()
 	auto it = hiddenobjects.begin();
 	while (it != hiddenobjects.end())
 	{
-		hiddenobjects.front()->executeFrameScript();
+		(*it)->executeFrameScript();
 		it++;
 	}
 	// only execute first frame of hidden objects (?)

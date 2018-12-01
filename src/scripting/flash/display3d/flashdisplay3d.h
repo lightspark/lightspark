@@ -118,6 +118,7 @@ private:
 	constantregister fragmentConstants[CONTEXT3D_PROGRAM_REGISTERS];
 	attribregister attribs[CONTEXT3D_ATTRIBUTE_COUNT];
 	uint32_t samplers[CONTEXT3D_SAMPLER_COUNT];
+	float vcposdata[4] = { 1.0,1.0,1.0,1.0 };
 	int currentactionvector;
 	uint32_t textureframebuffer;
 	uint32_t textureframebufferID;
@@ -132,6 +133,7 @@ private:
 	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
 	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
 	void setSamplers(EngineData* engineData);
+	void setPositionScale(EngineData *engineData);
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex);

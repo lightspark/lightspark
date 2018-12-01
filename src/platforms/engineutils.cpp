@@ -588,7 +588,10 @@ void EngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* pa
 void EngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,framebuffer);
-	glFrontFace(GL_CW);
+}
+void EngineData::exec_glFrontFace(bool ccw)
+{
+	glFrontFace(ccw ? GL_CCW : GL_CW);
 }
 
 void EngineData::exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer)

@@ -187,6 +187,7 @@ public:
 	virtual void exec_glLinkProgram(uint32_t program);
 	virtual void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
 	virtual void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
+	virtual void exec_glFrontFace(bool ccw);
 	virtual void exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer);
 	virtual uint32_t exec_glGenFramebuffer();
 	virtual uint32_t exec_glGenRenderbuffer();

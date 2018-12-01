@@ -2046,7 +2046,10 @@ void ppPluginEngineData::exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int
 void ppPluginEngineData::exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer)
 {
 	g_gles2_interface->BindFramebuffer(instance->m_graphics,GL_FRAMEBUFFER,framebuffer);
-	g_gles2_interface->FrontFace(instance->m_graphics,framebuffer == 0 ? GL_CCW : GL_CW);
+}
+void ppPluginEngineData::exec_glFrontFace(bool ccw)
+{
+	g_gles2_interface->FrontFace(instance->m_graphics,ccw ? GL_CCW : GL_CW);
 }
 
 void ppPluginEngineData::exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer)

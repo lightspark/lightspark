@@ -178,6 +178,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			p->vertexprogram = "";
 			p->fragmentprogram = "";
+			setPositionScale(engineData);
 			break;
 		}
 		case RENDER_RENDERTOBACKBUFFER:
@@ -187,6 +188,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(0);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+				engineData->exec_glFrontFace(false);
 				engineData->exec_glDrawBuffer_GL_BACK();
 				engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 				if (enableDepthAndStencilBackbuffer)
@@ -207,6 +209,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					textureframebufferID = UINT32_MAX;
 				}
 			}
+			vcposdata[1] = 1.0;
+			setPositionScale(engineData);
 			renderingToTexture = false;
 			break;
 		case RENDER_TOTEXTURE:
@@ -259,6 +263,9 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			engineData->exec_glViewport(0,0,tex->width,tex->height);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+			vcposdata[1] = -1.0;
+			setPositionScale(engineData);
+			engineData->exec_glFrontFace(true);
 			renderingToTexture = true;
 			break;
 		}
@@ -306,12 +313,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = numTriangles
 			if (currentprogram)
 			{
-				float vcposdata[4] = { 1.0,1.0,1.0,1.0 };
-				if (currentprogram->vcPositionScale == UINT32_MAX)
-					currentprogram->vcPositionScale = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,"vcPositionScale");
-				vcposdata[1] = renderingToTexture?-1.0:1.0;
-				engineData->exec_glUniform4fv(currentprogram->vcPositionScale,1, vcposdata);
-				
+				setPositionScale(engineData);
 				setSamplers(engineData);
 				setRegisters(engineData,currentprogram->vertexregistermap,vertexConstants,true);
 				setRegisters(engineData,currentprogram->fragmentregistermap,fragmentConstants,false);
@@ -539,6 +541,16 @@ void Context3D::setSamplers(EngineData *engineData)
 	}
 }
 
+void Context3D::setPositionScale(EngineData *engineData)
+{
+	if (currentprogram)
+	{
+		if (currentprogram->vcPositionScale == UINT32_MAX)
+			currentprogram->vcPositionScale = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,"vcPositionScale");
+		engineData->exec_glUniform4fv(currentprogram->vcPositionScale,1, vcposdata);
+	}
+}
+
 bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
@@ -562,6 +574,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	{
 		textureframebufferID = UINT32_MAX;
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+		engineData->exec_glFrontFace(false);
 		engineData->exec_glDrawBuffer_GL_BACK();
 		engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 		if (enableDepthAndStencilBackbuffer)

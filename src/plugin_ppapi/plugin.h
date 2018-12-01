@@ -249,6 +249,7 @@ public:
 	void exec_glLinkProgram(uint32_t program);
 	void exec_glGetProgramiv_GL_LINK_STATUS(uint32_t program,int32_t* params);
 	void exec_glBindFramebuffer_GL_FRAMEBUFFER(uint32_t framebuffer);
+	void exec_glFrontFace(bool ccw);
 	void exec_glBindRenderbuffer_GL_RENDERBUFFER(uint32_t renderbuffer);
 	uint32_t exec_glGenFramebuffer();
 	uint32_t exec_glGenRenderbuffer();

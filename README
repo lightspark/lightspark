@@ -74,22 +74,20 @@ Ctrl+M Mute/unmute sounds
 Ctrl+P Show profiling data
 Ctrl+C Copy an error to the clipboard (when Lightspark fails)
 
+Environment variables
+---------------------
+
+LIGHTSPARK_USE_GNASH: if set to 0, lightspark will not fall back to gnash for older swf files, but use the (experimental) lightspark implementation
+LIGHTSPARK_PLUGIN_LOGLEVEL: sets the log level (0-4) (browser plugins only)
+LIGHTSPARK_PLUGIN_LOGFILE: sets the file the log will be written to (browser plugins only)
+LIGHTSPARK_PLUGIN_PARAMFILE: if set, the flash variables set by the website will be written to this file (browser plugins only)
+
 SWF SUPPORT
 ===========
 
 Many web sites do not yet work yet because the implementation is
 incomplete. See the following page for support status of selected web
 sites: https://github.com/lightspark/lightspark/wiki/Site-Support
-
-You may also try Lightspark on some known-to-work Youtube movies:
-
-http://www.youtube.com/watch?v=ca20NEt4VSQ
-http://www.youtube.com/watch?v=4N2YWRJ-ppo
-http://www.youtube.com/watch?v=XITHbsUUlYI
-http://www.youtube.com/watch?v=-j7c0u9yZ8M
-http://www.youtube.com/watch?v=G4S9tV8ZLcE
-
-http://www.youtube.com/watch?v=FatHLHG2uGY
 
 REPORTING BUGS
 ==============

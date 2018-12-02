@@ -827,7 +827,7 @@ void SystemState::createEngines()
 		return;
 	}
 	//Check if we should fall back on gnash
-	if(vmVersion!=AVM2)
+	if(vmVersion==AVM1)
 	{
 		l.release();
 		launchGnash();
@@ -1452,41 +1452,53 @@ void ParseThread::parseSWF(UI8 ver)
 			_NR<LoaderInfo> li=loader->getContentLoaderInfo();
 			li->swfVersion = root->version;
 		}
+		
+		int usegnash = 1;
 		if(root->version < 9)
 		{
-			LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
-			//Enable flash fallback
-			root->getSystemState()->needsAVM2(false);
-			return; /* no more parsing necessary, handled by fallback */
+			char *envvar = getenv("LIGHTSPARK_USE_GNASH");
+			if (envvar)
+				usegnash= atoi(envvar);
+			if (usegnash)
+			{
+				LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
+				//Enable flash fallback
+				root->getSystemState()->needsAVM2(false);
+				return; /* no more parsing necessary, handled by fallback */
+			}
 		}
 
 		TagFactory factory(f);
 		Tag* tag=factory.readTag(root);
 
-		FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);
-		if(!fat)
+		if (root->version >= 8)
 		{
-			LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
-			return;
-		}
-		//Check if this clip is the main clip then honour its FileAttributesTag
-		if(root == root->getSystemState()->mainClip)
-		{
-			root->getSystemState()->needsAVM2(fat->ActionScript3);
-			if(!fat->ActionScript3)
+			FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);
+			if(!fat)
 			{
-				delete fat;
-				return; /* no more parsing necessary, handled by fallback */
+				LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
+				return;
 			}
-			if(fat->UseNetwork
-					&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+			//Check if this clip is the main clip then honour its FileAttributesTag
+			if(root == root->getSystemState()->mainClip)
 			{
-				root->getSystemState()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
-				LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+				root->getSystemState()->needsAVM2(!usegnash || fat->ActionScript3);
+				if(usegnash && !fat->ActionScript3)
+				{
+					delete fat;
+					return; /* no more parsing necessary, handled by fallback */
+				}
+				if(fat->UseNetwork
+						&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+				{
+					root->getSystemState()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+					LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+				}
 			}
+			delete fat;
 		}
-		delete fat;
-
+		else 
+			root->getSystemState()->needsAVM2(true);
 		bool done=false;
 		bool empty=true;
 		while(!done)

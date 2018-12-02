@@ -36,6 +36,7 @@ namespace lightspark
 
 class DisplayObject;
 class InvalidateQueue;
+class ColorTransform;
 
 class TextureChunk
 {
@@ -221,13 +222,14 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
-	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
 	*/
 	const tokensVector tokens;
+	_NR<ColorTransform> colortransform;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
@@ -248,8 +250,8 @@ public:
 	*/
 	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-		    float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing),tokens(_g){}
+		    float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,
+			ColorTransform* _ct);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 

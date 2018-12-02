@@ -26,6 +26,7 @@
 #include "backends/rendering.h"
 #include "backends/config.h"
 #include "compat.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/display/BitmapData.h"
 #include <pango/pangocairo.h>
@@ -132,7 +133,7 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform* colortransform)
 {
 	cairo_pattern_t* pattern = NULL;
 
@@ -141,8 +142,14 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		case SOLID_FILL:
 		{
 			const RGBA& color = style.Color;
-			pattern = cairo_pattern_create_rgba(color.rf(), color.gf(),
-			                                    color.bf(), color.af());
+			if (colortransform)
+			{
+				float r,g,b,a;
+				colortransform->applyTransformation(color,r,g,b,a);
+				pattern = cairo_pattern_create_rgba(r,g,b,a);
+			}
+			else
+				pattern = cairo_pattern_create_rgba(color.rf(), color.gf(),color.bf(), color.af());
 			break;
 		}
 		case LINEAR_GRADIENT:
@@ -191,9 +198,14 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			{
 				double ratio = grad.GradientRecords[i].Ratio / 255.0;
 				const RGBA& color=style.Gradient.GradientRecords[i].Color;
-
-				cairo_pattern_add_color_stop_rgba(pattern, ratio,
-				    color.rf(), color.gf(), color.bf(), color.af());
+				if (colortransform)
+				{
+					float r,g,b,a;
+					colortransform->applyTransformation(color,r,g,b,a);
+					cairo_pattern_add_color_stop_rgba(pattern, ratio,r,g,b,a);
+				}
+				else
+					cairo_pattern_add_color_stop_rgba(pattern, ratio,color.rf(), color.gf(),color.bf(), color.af());
 			}
 			break;
 		}
@@ -251,7 +263,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 	return pattern;
 }
 
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint,ColorTransform* colortransform)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
@@ -309,7 +321,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 					style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 					cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-				cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection);
+				cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,colortransform);
 				if(pattern)
 				{
 					cairo_set_source(cr, pattern);
@@ -335,7 +347,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 						style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection);
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,colortransform);
 					if (pattern)
 					{
 						cairo_set_source(stroke_cr, pattern);
@@ -461,7 +473,7 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
-	cairoPathFromTokens(cr, tokens, scaleFactor, false);
+	cairoPathFromTokens(cr, tokens, scaleFactor, false,colortransform.getPtr());
 }
 
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
@@ -589,7 +601,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
-	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,nullptr);
 	bool ret=false;
 	if(!empty)
 	{
@@ -610,12 +622,20 @@ void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOff
 	tmp.x0-=xOffset;
 	tmp.y0-=yOffset;
 	cairo_set_matrix(cr, &tmp);
-	cairoPathFromTokens(cr, tokens, scaleFactor, true);
+	cairoPathFromTokens(cr, tokens, scaleFactor, true,colortransform.getPtr());
 	cairo_clip(cr);
 }
 
+CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a
+									   , const std::vector<IDrawable::MaskData> &_ms, bool _smoothing, ColorTransform *_ct)
+	: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing),tokens(_g),colortransform(_ct)
+{
+	if (_ct)
+		_ct->incRef();
+}
+
 void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
-		uint32_t height, size_t* dataSize, size_t* stride, bool convertendianess)
+												  uint32_t height, size_t* dataSize, size_t* stride, bool convertendianess)
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;

@@ -226,7 +226,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		return NULL;
 	return new CairoTokenRenderer(tokens,
 				totalMatrix, x, y, width, height, scaling,
-				owner->getConcatenatedAlpha(), masks,smoothing);
+				owner->getConcatenatedAlpha(), masks,smoothing,
+				owner->colorTransform.getPtr());
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

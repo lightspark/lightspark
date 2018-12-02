@@ -500,6 +500,14 @@ ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
 					 redOffset, greenOffset, blueOffset, alphaOffset);
 }
 
+void ColorTransform::applyTransformation(const RGBA& color, float& r, float& g, float& b, float &a)
+{
+	a = max(0.0,min(1.0,color.af() * alphaMultiplier/256.0 + alphaOffset/256.0));
+	r = max(0.0,min(1.0,color.rf() * redMultiplier/256.0 + redOffset/256.0));
+	g = max(0.0,min(1.0,color.gf() * greenMultiplier/256.0 + greenOffset/256.0));
+	b = max(0.0,min(1.0,color.bf() * blueMultiplier/256.0 + blueOffset/256.0));
+}
+
 void ColorTransform::setProperties(const CXFORMWITHALPHA &cx)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,

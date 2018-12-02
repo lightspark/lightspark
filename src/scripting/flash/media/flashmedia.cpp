@@ -430,7 +430,7 @@ SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat 
 	{
 		// Start playback
 		incRef();
-		getSys()->addJob(this);
+		c->getSystemState()->addJob(this);
 	}
 }
 
@@ -492,6 +492,8 @@ void SoundChannel::execute()
 
 void SoundChannel::playStream()
 {
+	// ensure audio manager is initialized
+	getSystemState()->waitInitialized();
 	assert(!stream.isNull());
 	std::streambuf *sbuf = stream->createReader();
 	istream s(sbuf);

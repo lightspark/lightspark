@@ -202,7 +202,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	showProfilingData(false),flashMode(mode),swffilesize(fileSize),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
-	static_SoundMixer_bufferTime(0)
+	static_SoundMixer_bufferTime(0),isinitialized(false),semaphore_initialized(0)
 {
 	//Forge the builtin strings
 	getUniqueStringId("");
@@ -805,6 +805,8 @@ void SystemState::delayedCreation(SystemState* sys)
 
 	if(sys->renderRate)
 		sys->startRenderTicks();
+	sys->isinitialized=true;
+	sys->semaphore_initialized.signal();
 }
 
 void SystemState::delayedStopping()
@@ -2092,6 +2094,13 @@ void SystemState::dumpStacktrace()
 		stacktrace += "()\n";
 	}
 	LOG(LOG_INFO,"current stacktrace:\n" << stacktrace);
+}
+
+void SystemState::waitInitialized()
+{
+	if (isinitialized)
+		return;
+	semaphore_initialized.wait();
 }
 
 /* This is run in vm's thread context */

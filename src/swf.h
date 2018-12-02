@@ -505,6 +505,9 @@ public:
 	// static class properties are named static_<classname>_<propertyname>
 	_NR<SoundTransform> static_SoundMixer_soundTransform;
 	int static_SoundMixer_bufferTime;
+	ACQUIRE_RELEASE_FLAG(isinitialized);
+	Semaphore semaphore_initialized;
+	void waitInitialized();
 };
 
 class ParseThread: public IThreadJob

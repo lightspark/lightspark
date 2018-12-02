@@ -336,6 +336,7 @@ bool RenderThread::loadShaderPrograms()
 void RenderThread::commonGLDeinit()
 {
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glFrontFace(false);
 	for(uint32_t i=0;i<largeTextures.size();i++)
 	{
 		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
@@ -536,6 +537,7 @@ void RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glFrontFace(false);
 	engineData->exec_glDrawBuffer_GL_BACK();
 	//Clear the back buffer
 	RGB bg=m_sys->mainClip->getBackground();

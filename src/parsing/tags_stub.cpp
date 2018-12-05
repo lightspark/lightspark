@@ -39,18 +39,6 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	skip(in);
 }
 
-SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("SoundStreamHead Tag"));
-	skip(in);
-}
-
-SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("SoundStreamHead2 Tag"));
-	skip(in);
-}
-
 DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineFontNameTag Tag"));
@@ -67,12 +55,6 @@ DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag
 {
 	in >> CharacterId >> Splitter;
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineScalingGridTag Tag on ID ") << CharacterId);
-}
-
-SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("SoundStreamBlockTag"));
-	skip(in);
 }
 
 CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)

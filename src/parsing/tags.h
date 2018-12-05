@@ -33,6 +33,7 @@ namespace lightspark
 class Class_base;
 class RootMovieClip;
 class DisplayObjectContainer;
+class DefineSpriteTag;
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG};
 
@@ -259,8 +260,24 @@ public:
 
 class SoundStreamHeadTag: public Tag
 {
+friend class SoundStreamBlockTag;
+private:
+	int StreamSoundCompression;
+	int StreamSoundRate;
+	char StreamSoundSize;
+	char StreamSoundType;
+	UI16_SWF StreamSoundSampleCount;
+	SI16_SWF LatencySeek;
+	_R<MemoryStreamCache> SoundData;
 public:
-	SoundStreamHeadTag(RECORDHEADER h, std::istream& s);
+	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
+};
+
+class SoundStreamBlockTag: public Tag
+{
+public:
+	SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip* root,DefineSpriteTag* sprite);
+	static void decodeSoundBlock(StreamCache *cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len);
 };
 
 class ShowFrameTag: public Tag
@@ -351,12 +368,6 @@ private:
 public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
 	void execute(RootMovieClip* root) const;
-};
-
-class SoundStreamHead2Tag: public Tag
-{
-public:
-	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
 };
 
 class DefineButtonTag: public DictionaryTag
@@ -537,6 +548,7 @@ private:
 	UI16_SWF SpriteID;
 	UI16_SWF FrameCount;
 public:
+	SoundStreamHeadTag* soundheadtag;
 	DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~DefineSpriteTag();
 	virtual int getId() const { return SpriteID; }
@@ -673,12 +685,6 @@ public:
 	ASObject* instance(Class_base* c=NULL);
 };
 
-class SoundStreamBlockTag: public Tag
-{
-public:
-	SoundStreamBlockTag(RECORDHEADER h, std::istream& in);
-};
-
 class MetadataTag: public Tag
 {
 private:
@@ -765,7 +771,7 @@ public:
 	 * The RootMovieClip that is the owner of the content.
 	 * It is needed to solve references to other tags during construction
 	 */
-	Tag* readTag(RootMovieClip* root);
+	Tag* readTag(RootMovieClip* root,DefineSpriteTag* sprite=nullptr);
 };
 
 }

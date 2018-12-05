@@ -55,7 +55,7 @@ using namespace lightspark;
 uint8_t* JPEGTablesTag::JPEGTables = NULL;
 int JPEGTablesTag::tableSize = 0;
 
-Tag* TagFactory::readTag(RootMovieClip* root)
+Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 {
 	RECORDHEADER h;
 
@@ -117,10 +117,10 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 			ret=new StartSoundTag(h,f);
 			break;
 		case 18:
-			ret=new SoundStreamHeadTag(h,f);
+			ret=new SoundStreamHeadTag(h,f,root,sprite);
 			break;
 		case 19:
-			ret=new SoundStreamBlockTag(h,f);
+			ret=new SoundStreamBlockTag(h,f,root,sprite);
 			break;
 		case 20:
 			ret=new DefineBitsLosslessTag(h,f,1,root);
@@ -168,7 +168,7 @@ Tag* TagFactory::readTag(RootMovieClip* root)
 			ret=new FrameLabelTag(h,f);
 			break;
 		case 45:
-			ret=new SoundStreamHead2Tag(h,f);
+			ret=new SoundStreamHeadTag(h,f,root,sprite);
 			break;
 		case 46:
 			ret=new DefineMorphShapeTag(h,f,root);
@@ -396,6 +396,7 @@ MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
 {
+	soundheadtag=nullptr;
 	in >> SpriteID >> FrameCount;
 
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
@@ -406,7 +407,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	bool empty=true;
 	do
 	{
-		tag=factory.readTag(root);
+		tag=factory.readTag(root,this);
 		/* We need no locking here, because the vm can only
 		 * access this object after construction
 		 */
@@ -2009,5 +2010,74 @@ void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root) const
 	for(size_t i=0;i<FrameLabelCount;++i)
 	{
 		root->addFrameLabel(FrameNum[i],FrameLabel[i]);
+	}
+}
+
+SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag* sprite):Tag(h),SoundData(new MemoryStreamCache(root->getSystemState()))
+{
+	BitStream bs(in);
+	UB(4,bs);
+	UB(2,bs); //PlaybackSoundRate
+	UB(1,bs); //PlaybackSoundSize
+	UB(1,bs); //PlaybackSoundType
+	StreamSoundCompression = UB(4,bs);
+	switch (UB(2,bs))
+	{
+		case 0: StreamSoundRate = 5500; break;
+		case 1: StreamSoundRate = 11000; break;
+		case 2: StreamSoundRate = 22000; break;
+		case 3: StreamSoundRate = 44000; break;
+	}
+	StreamSoundSize = UB(1,bs);
+	StreamSoundType = UB(1,bs);
+	in>>StreamSoundSampleCount;
+	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3) 
+		in>>LatencySeek;
+	if (sprite)
+	{
+		sprite->soundheadtag = this;
+	}
+	else if (root)
+	{
+		SoundChannel *schannel = Class<SoundChannel>::getInstanceS(root->getSystemState(),
+									SoundData,
+									AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
+		root->setSound(schannel);
+	}
+}
+
+SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag *sprite):Tag(h)
+{
+	int len = Header.getLength();
+	uint8_t* inData=new(nothrow) uint8_t[len];
+	in.read((char*)inData,len);
+	if (sprite)
+	{
+		if (!sprite->soundheadtag)
+			throw ParseException("SoundStreamBlock tag without SoundStreamHeadTag.");
+		decodeSoundBlock(sprite->soundheadtag->SoundData.getPtr(),(LS_AUDIO_CODEC)sprite->soundheadtag->StreamSoundCompression,inData,len);
+	}
+	else if (root)
+		root->appendSound(inData,len);
+	delete[] inData;
+}
+void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len)
+{
+	switch (codec)
+	{
+		case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
+		case LS_AUDIO_CODEC::ADPCM:
+			cache->append(buf,len);
+			break;
+		case LS_AUDIO_CODEC::MP3:
+		{
+			// skip 4 bytes (SampleCount and SeekSamples)
+			if (len> 4)
+				cache->append(buf+4,len-4);
+			break;
+		}
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"decoding sound block format "<<(int)codec);
+			break;
 	}
 }

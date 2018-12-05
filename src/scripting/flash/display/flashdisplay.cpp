@@ -750,12 +750,12 @@ void Sprite::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, buttonMode);
 	REGISTER_GETTER_SETTER(c, hitArea);
 	REGISTER_GETTER_SETTER(c, useHandCursor);
-	REGISTER_GETTER_SETTER(c, soundTransform);
+	c->setDeclaredMethodByQName("soundTransform","",Class<IFunction>::getFunction(c->getSystemState(),getSoundTransform),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("soundTransform","",Class<IFunction>::getFunction(c->getSystemState(),setSoundTransform),SETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, buttonMode);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, useHandCursor);
-ASFUNCTIONBODY_GETTER_SETTER(Sprite, soundTransform);
 
 void Sprite::buildTraits(ASObject* o)
 {
@@ -808,6 +808,29 @@ ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 	{
 		th->incRef();
 		th->hitArea->hitTarget = _MNR(th);
+	}
+}
+
+ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
+{
+	Sprite* th=obj.as<Sprite>();
+	if (th->sound && th->sound->soundTransform)
+	{
+		ret = asAtom::fromObject(th->sound->soundTransform.getPtr());
+		ASATOM_INCREF(ret);
+	}
+	else
+		ret.setNull();
+}
+ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
+{
+	Sprite* th=obj.as<Sprite>();
+	if (th->sound)
+	{
+		if (argslen == 0 || !args[0].is<SoundTransform>())
+			th->sound->soundTransform.reset();
+		else
+			th->sound->soundTransform =  _MR(args[0].getObject()->as<SoundTransform>());
 	}
 }
 
@@ -972,6 +995,17 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	}
 
 	return ret;
+}
+
+void Sprite::setSound(SoundChannel *s)
+{
+	sound = _MR(s);
+}
+
+void Sprite::appendSound(unsigned char *buf, int len)
+{
+	if (sound)
+		sound->appendStreamBlock(buf,len);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)

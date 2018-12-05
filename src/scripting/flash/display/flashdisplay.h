@@ -376,12 +376,15 @@ private:
 	//hitTarget is non-null if another Sprite has registered this
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
+	_NR<SoundChannel> sound;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 public:
 	Sprite(Class_base* c);
+	void setSound(SoundChannel* s);
+	void appendSound(unsigned char* buf, int len);
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -392,7 +395,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, buttonMode);
 	ASPROPERTY_GETTER_SETTER(_NR<Sprite>, hitArea);
 	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
-	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
+	ASFUNCTION_ATOM(getSoundTransform);
+	ASFUNCTION_ATOM(setSoundTransform);
 	int getDepth() const
 	{
 		return 0;

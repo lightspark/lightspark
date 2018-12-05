@@ -90,15 +90,16 @@ private:
 	AudioStream* audioStream;
 	AudioFormat format;
 	number_t oldVolume;
-	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
 public:
 	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0));
 	~SoundChannel();
+	void appendStreamBlock(unsigned char* buf, int len);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();
+	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	ASPROPERTY_GETTER(number_t,leftPeak);
 	ASPROPERTY_GETTER(number_t,position);
 	ASPROPERTY_GETTER(number_t,rightPeak);

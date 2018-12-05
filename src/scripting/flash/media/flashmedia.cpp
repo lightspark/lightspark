@@ -439,6 +439,12 @@ SoundChannel::~SoundChannel()
 	threadAbort();
 }
 
+void SoundChannel::appendStreamBlock(unsigned char *buf, int len)
+{
+	if (stream)
+		SoundStreamBlockTag::decodeSoundBlock(stream.getPtr(),format.codec,buf,len);
+}
+
 void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);

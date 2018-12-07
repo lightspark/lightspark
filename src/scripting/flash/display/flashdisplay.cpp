@@ -1657,7 +1657,27 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 		LOG(LOG_ERROR,"insertLegacyChildAt: there is already one child at that depth");
 		return;
 	}
-	_addChildAt(_MR(obj),depth-1); /* depth is 1 based in SWF */
+	
+	uint32_t insertpos = 0;
+	// find DisplayObject to insert obj after
+	DisplayObject* preobj=nullptr;
+	for (auto it = depthToLegacyChild.begin(); it != depthToLegacyChild.end();it++)
+	{
+		if (it->left > depth)
+			break;
+		preobj = it->right;
+	}
+	if (preobj)
+	{
+		preobj->incRef();
+		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(preobj));
+		if(it!=dynamicDisplayList.end())
+		{
+			insertpos = it-dynamicDisplayList.begin()+1;
+		}
+	}
+	
+	_addChildAt(_MR(obj),insertpos);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		obj->incRef();
@@ -1676,7 +1696,7 @@ void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX
 {
 	if(!hasLegacyChildAt(depth))
 	{
-		LOG(LOG_ERROR,"transformLegacyChildAt: no child at that depth");
+		LOG(LOG_ERROR,"transformLegacyChildAt: no child at depth:"<<depth);
 		return;
 	}
 	depthToLegacyChild.left.at(depth)->setLegacyMatrix(mat);
@@ -1696,10 +1716,10 @@ void DisplayObjectContainer::checkClipDepth()
 {
 	DisplayObject* clipobj = NULL;
 	int depth = 0;
-	for (auto it=dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	for (auto it=depthToLegacyChild.begin(); it != depthToLegacyChild.end(); it++)
 	{
-		depth++;
-		DisplayObject* obj = (*it).getPtr();
+		DisplayObject* obj = it->right;
+		depth = it->left;
 		if (obj->ClipDepth)
 			clipobj = obj;
 		else if (clipobj && clipobj->ClipDepth > depth)
@@ -1815,13 +1835,19 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") << " " <<
+		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
 			"a=" << (*it)->clippedAlpha());
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
 			(*it)->as<DisplayObjectContainer>()->dumpDisplayList(level+1);
 		}
+	}
+	auto i = depthToLegacyChild.begin();
+	while( i != depthToLegacyChild.end() )
+	{
+		LOG(LOG_INFO, indent << "legacy:"<<i->left <<" "<<i->right->toDebugString());
+		i++;
 	}
 }
 

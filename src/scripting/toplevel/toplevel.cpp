@@ -130,6 +130,7 @@ multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, C
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<o.toDebugString());
 	throwError<TypeError>(kConvertUndefinedToObjectError);
+	return nullptr;
 }
 
 IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),isStatic(false),functionname(0)
@@ -289,7 +290,6 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
 void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult)
 {
 	const uint32_t opt_hit_threshold=1;
-	const uint32_t jit_hit_threshold=20;
 	if (!mi->body)
 		return;
 
@@ -347,6 +347,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 #ifdef LLVM_ENABLED
 	//Temporarily disable JITting
+	const uint32_t jit_hit_threshold=20;
 	if(getSystemState()->useJit && mi->body->exceptions.size()==0 && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
@@ -715,6 +716,7 @@ multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<o.toDebugString());
 	ASATOM_DECREF(o);
 	throwError<TypeError>(kConvertNullToObjectError);
+	return nullptr;
 }
 
 void Void::coerce(SystemState* sys, asAtom& o) const

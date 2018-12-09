@@ -1600,7 +1600,7 @@ bool ABCVm::getLex(call_context* th, int n)
 	assert_and_throw(name->isStatic);
 	return getLex_multiname(th,name,0);
 }
-bool ABCVm::getLex_multiname(call_context* th, multiname* name,int localresult)
+bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localresult)
 {
 	LOG_CALL( "getLex"<<(localresult ? "_l:":":") << *name );
 	vector<scope_entry>::reverse_iterator it;
@@ -2875,7 +2875,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 		Class_base* c=f.as<Class_base>();
 		asAtom ret;
 		c->generator(ret,args,m);
-		for(unsigned int i=0;i<m;i++)
+		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);

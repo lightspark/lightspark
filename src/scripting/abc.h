@@ -358,7 +358,7 @@ private:
 	static void kill(int n); 
 	static ASObject* pushString(call_context* th, int n); 
 	static bool getLex(call_context* th, int n); 
-	static bool getLex_multiname(call_context* th, multiname* n, int localresult); 
+	static bool getLex_multiname(call_context* th, multiname* n, uint32_t localresult); 
 	static ASObject* getScopeObject(call_context* th, int n); 
 	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(ASObject* obj, ASObject* val, multiname* name);

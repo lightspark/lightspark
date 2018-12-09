@@ -56,7 +56,7 @@ typedef Mutex Spinlock;
 typedef Mutex::Lock SpinlockLocker;
 
 #if GLIB_CHECK_VERSION(2, 31, 0)
-#define DEFINE_AND_INITIALIZE_TLS(name) static GPrivate (name)
+#define DEFINE_AND_INITIALIZE_TLS(name) static GPrivate name
 void tls_set(GPrivate *key, gpointer value);
 gpointer tls_get(GPrivate *key);
 #else

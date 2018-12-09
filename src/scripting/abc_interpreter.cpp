@@ -1898,7 +1898,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 					ASObject* namearg = abstract_s(context->mi->context->root->getSystemState(),name->normalizedName(context->mi->context->root->getSystemState()));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtom::fromObject(namearg);
-					for(int i=0;i<argsnum;i++)
+					for(uint32_t i=0;i<argsnum;i++)
 						proxyArgs[i+1]=args[i];
 					
 					//We now suppress special handling
@@ -6519,8 +6519,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							switch (argcount)
 							{
 								case 0:
-									if (opcode == 0x4f && setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets) ||
-									   (opcode == 0x46 && setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true)))
+									if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets)) ||
+									   ((opcode == 0x46 && setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true))))
 									{
 										mi->body->preloadedcode.push_back(t);
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
@@ -6533,8 +6533,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 									break;
 								case 1:
-									if (opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false) ||
-									   (opcode == 0x46 && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false)))
+									if ((opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false)) ||
+									   ((opcode == 0x46 && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false))))
 									{
 										mi->body->preloadedcode.push_back(t);
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);

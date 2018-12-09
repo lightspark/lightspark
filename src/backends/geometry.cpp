@@ -107,8 +107,9 @@ void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=0;i<outlinesForColor.size();i++)
+	for(unsigned int i=outlinesForColor.size();i;)
 	{
+		--i;
 		assert_and_throw(outlinesForColor[i].size()>=2);
 		if(outlinesForColor[i].front()==outlinesForColor[i].back())
 			continue;
@@ -136,8 +137,9 @@ void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const V
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=0;i<outlinesForColor.size();i++)
+	for(unsigned int i=outlinesForColor.size();i;)
 	{
+		--i;
 		assert_and_throw(outlinesForColor[i].size()>=2);
 		if(outlinesForColor[i].front()==outlinesForColor[i].back())
 			continue;
@@ -166,8 +168,9 @@ void ShapesBuilder::extendStrokeOutline(unsigned int stroke, const Vector2 &v1, 
 
 	vector< vector<ShapePathSegment> >& outlinesForStroke=strokeShapesMap[stroke];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=0;i<outlinesForStroke.size();i++)
+	for(unsigned int i=outlinesForStroke.size();i;)
 	{
+		--i;
 		assert_and_throw(outlinesForStroke[i].size()>=2);
 		if(outlinesForStroke[i].front()==outlinesForStroke[i].back())
 			continue;
@@ -195,8 +198,9 @@ void ShapesBuilder::extendStrokeOutlineCurve(unsigned int color, const Vector2& 
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=strokeShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=0;i<outlinesForColor.size();i++)
+	for(unsigned int i=outlinesForColor.size();i;)
 	{
+		--i;
 		assert_and_throw(outlinesForColor[i].size()>=2);
 		if(outlinesForColor[i].front()==outlinesForColor[i].back())
 			continue;

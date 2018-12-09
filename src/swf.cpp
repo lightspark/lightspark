@@ -1613,6 +1613,8 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
 	}
+	root->markSoundFinished();
+	
 	LOG(LOG_TRACE,_("End of parsing"));
 }
 
@@ -1690,6 +1692,7 @@ float RootMovieClip::getFrameRate() const
 
 void RootMovieClip::commitFrame(bool another)
 {
+	checkSound();
 	setFramesLoaded(frames.size());
 
 	if(another)

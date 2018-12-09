@@ -103,6 +103,7 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
+	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 public:
 	void requestInvalidation(InvalidateQueue* q);
@@ -365,7 +366,7 @@ public:
 	void setContent(_R<DisplayObject> o);
 	_NR<DisplayObject> getContent() { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
-	bool allowLoadingSWF() { return allowCodeImport; };
+	bool allowLoadingSWF() { return allowCodeImport; }
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer
@@ -381,6 +382,9 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	void resetToStart();
+	void checkSound();// start sound streaming if it is not already playing
+	void markSoundFinished();
 public:
 	Sprite(Class_base* c);
 	void setSound(SoundChannel* s);

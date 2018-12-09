@@ -258,7 +258,7 @@ public:
 	virtual void execute(RootMovieClip* root) const;
 };
 
-class SoundStreamHeadTag: public Tag
+class SoundStreamHeadTag: public DisplayListTag
 {
 friend class SoundStreamBlockTag;
 private:
@@ -268,16 +268,19 @@ private:
 	char StreamSoundType;
 	UI16_SWF StreamSoundSampleCount;
 	SI16_SWF LatencySeek;
-	_R<MemoryStreamCache> SoundData;
 public:
 	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
+	_R<MemoryStreamCache> SoundData;
+	void setSoundChannel(Sprite* spr, bool autoplay);
+	void execute(DisplayObjectContainer *parent) {}
 };
 
-class SoundStreamBlockTag: public Tag
+class SoundStreamBlockTag: public DisplayListTag
 {
 public:
 	SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip* root,DefineSpriteTag* sprite);
 	static void decodeSoundBlock(StreamCache *cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len);
+	void execute(DisplayObjectContainer *parent) {}
 };
 
 class ShowFrameTag: public Tag

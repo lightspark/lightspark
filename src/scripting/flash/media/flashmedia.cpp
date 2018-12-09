@@ -420,18 +420,14 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format)
-	: EventDispatcher(c),stream(_stream),stopped(false),audioDecoder(NULL),audioStream(NULL),
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
+	: EventDispatcher(c),stream(_stream),stopped(!autoplay),audioDecoder(NULL),audioStream(NULL),
 	format(_format),oldVolume(-1.0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),position(0),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
-	if (!stream.isNull())
-	{
-		// Start playback
-		incRef();
-		c->getSystemState()->addJob(this);
-	}
+	if (autoplay)
+		play();
 }
 
 SoundChannel::~SoundChannel()
@@ -443,6 +439,23 @@ void SoundChannel::appendStreamBlock(unsigned char *buf, int len)
 {
 	if (stream)
 		SoundStreamBlockTag::decodeSoundBlock(stream.getPtr(),format.codec,buf,len);
+}
+
+void SoundChannel::play()
+{
+	if (!stream.isNull() && stopped)
+	{
+		// Start playback
+		incRef();
+		getSystemState()->addJob(this);
+		stopped=false;
+	}
+}
+
+void SoundChannel::markFinished()
+{
+	if (stream)
+		stream->markFinished();
 }
 
 void SoundChannel::sinit(Class_base* c)

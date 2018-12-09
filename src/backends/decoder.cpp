@@ -1119,10 +1119,10 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 			case LS_AUDIO_CODEC::AAC:
 				fmt = av_find_input_format("aac");
 				break;
+			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
 			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
 				fmt = av_find_input_format("s16le");
 				break;
-			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
 			case LS_AUDIO_CODEC::ADPCM:
 				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
 				break;

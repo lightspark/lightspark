@@ -446,6 +446,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				break;
 			case END_TAG:
 				delete tag;
+				if (soundheadtag)
+					soundheadtag->SoundData->markFinished(true);
 				done=true;
 				if(empty && frames.size()!=FrameCount)
 					frames.pop_back();
@@ -479,8 +481,10 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		retClass=bindedTo;
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
-
-	return new (retClass->memoryAccount) MovieClip(retClass, *this, true);
+	MovieClip* spr = new (retClass->memoryAccount) MovieClip(retClass, *this, true);
+	if (soundheadtag)
+		soundheadtag->setSoundChannel(spr,true);
+	return spr;
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -2013,7 +2017,7 @@ void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root) const
 	}
 }
 
-SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag* sprite):Tag(h),SoundData(new MemoryStreamCache(root->getSystemState()))
+SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag* sprite):DisplayListTag(h),SoundData(new MemoryStreamCache(root->getSystemState()))
 {
 	BitStream bs(in);
 	UB(4,bs);
@@ -2023,30 +2027,37 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	StreamSoundCompression = UB(4,bs);
 	switch (UB(2,bs))
 	{
-		case 0: StreamSoundRate = 5500; break;
-		case 1: StreamSoundRate = 11000; break;
-		case 2: StreamSoundRate = 22000; break;
-		case 3: StreamSoundRate = 44000; break;
+		case 0: StreamSoundRate = 5512; break;
+		case 1: StreamSoundRate = 11025; break;
+		case 2: StreamSoundRate = 22050; break;
+		case 3: StreamSoundRate = 44100; break;
 	}
 	StreamSoundSize = UB(1,bs);
 	StreamSoundType = UB(1,bs);
 	in>>StreamSoundSampleCount;
 	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3) 
 		in>>LatencySeek;
+	SoundData->incRef();
 	if (sprite)
 	{
 		sprite->soundheadtag = this;
 	}
 	else if (root)
 	{
-		SoundChannel *schannel = Class<SoundChannel>::getInstanceS(root->getSystemState(),
-									SoundData,
-									AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
-		root->setSound(schannel);
+		setSoundChannel(root,false);
 	}
 }
 
-SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag *sprite):Tag(h)
+void SoundStreamHeadTag::setSoundChannel(Sprite *spr,bool autoplay)
+{
+	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getSystemState(),
+								SoundData,
+								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1),autoplay);
+	spr->setSound(schannel);
+}
+
+
+SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip *root, DefineSpriteTag *sprite):DisplayListTag(h)
 {
 	int len = Header.getLength();
 	uint8_t* inData=new(nothrow) uint8_t[len];

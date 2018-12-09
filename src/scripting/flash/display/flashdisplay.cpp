@@ -732,6 +732,7 @@ Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, thi
 
 bool Sprite::destruct()
 {
+	resetToStart();
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
@@ -997,6 +998,15 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	return ret;
 }
 
+void Sprite::resetToStart()
+{
+	if (sound)
+	{
+		sound->threadAbort();
+		sound.reset();
+	}
+}
+
 void Sprite::setSound(SoundChannel *s)
 {
 	sound = _MR(s);
@@ -1006,6 +1016,19 @@ void Sprite::appendSound(unsigned char *buf, int len)
 {
 	if (sound)
 		sound->appendStreamBlock(buf,len);
+}
+
+void Sprite::checkSound()
+{
+	if (sound)
+		sound->play(); 
+	
+}
+
+void Sprite::markSoundFinished()
+{
+	if (sound)
+		sound->markFinished();
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
@@ -3402,7 +3425,10 @@ void MovieClip::initFrame()
 	 *
 	 */
 	if((int)state.FP < state.last_FP)
+	{
 		purgeLegacyChildren();
+		resetToStart();
+	}
 
 	//Declared traits must exists before legacy objects are added
 	if (getClass())

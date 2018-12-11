@@ -1744,7 +1744,11 @@ void DisplayObjectContainer::checkClipDepth()
 		DisplayObject* obj = it->right;
 		depth = it->left;
 		if (obj->ClipDepth)
+		{
+			if (clipobj)
+				clipobj->hasChanged = false; // ensure clipobj is not rendered
 			clipobj = obj;
+		}
 		else if (clipobj && clipobj->ClipDepth > depth)
 		{
 			clipobj->incRef();
@@ -1752,8 +1756,9 @@ void DisplayObjectContainer::checkClipDepth()
 		}
 		else
 			obj->setMask(NullRef);
-		
 	}
+	if (clipobj)
+		clipobj->hasChanged = false; // ensure clipobj is not rendered
 }
 
 bool DisplayObjectContainer::destruct()

@@ -276,7 +276,7 @@ void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
 {
-	bool mustInvalidate=(mask!=m) && onStage;
+	bool mustInvalidate=(mask!=m || (m && m->hasChanged)) && onStage;
 
 	if(!mask.isNull())
 	{

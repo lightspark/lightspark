@@ -105,6 +105,7 @@ class ASString;
 class ABCContext;
 class URLInfo;
 class DisplayObject;
+class MovieClip;
 struct namespace_info;
 
 struct multiname;
@@ -259,8 +260,11 @@ friend class ASString;
 private:
 	std::string String;
 public:
-	STRING():String(){};
+	STRING():String(){}
 	STRING(const char* s):String(s)
+	{
+	}
+	STRING(const char* s, int len):String(s,len)
 	{
 	}
 	bool operator==(const STRING& s)
@@ -1375,6 +1379,40 @@ public:
 	RunState();
 };
 
+class ACTIONRECORD
+{
+friend std::istream& operator>>(std::istream& s, ACTIONRECORD& v);
+public:
+	UI8 actionCode;
+	UI16_SWF Length;
+	tiny_string data_string1;
+	tiny_string data_string2;
+	UI16_SWF data_uint16;
+	UI8 data_byte;
+	static void executeActions(MovieClip* clip, const std::vector<ACTIONRECORD>& actionlist);
+};
+class BUTTONCONDACTION
+{
+friend std::istream& operator>>(std::istream& s, BUTTONCONDACTION& v);
+public:
+	BUTTONCONDACTION():CondActionSize(0)
+	  ,CondIdleToOverDown(false),CondOutDownToIdle(false),CondOutDownToOverDown(false),CondOverDownToOutDown(false)
+	  ,CondOverDownToOverUp(false),CondOverUpToOverDown(false),CondOverUpToIdle(false),CondIdleToOverUp(false),CondOverDownToIdle(false)
+	{}
+	UI16_SWF CondActionSize;
+	bool CondIdleToOverDown;
+	bool CondOutDownToIdle;
+	bool CondOutDownToOverDown;
+	bool CondOverDownToOutDown;
+	bool CondOverDownToOverUp;
+	bool CondOverUpToOverDown;
+	bool CondOverUpToIdle;
+	bool CondIdleToOverUp;
+	bool CondOverDownToIdle;
+	int CondKeyPress;
+	std::vector<ACTIONRECORD> actions;
+};
+
 ASObject* abstract_i(SystemState *sys, int32_t i);
 ASObject* abstract_ui(SystemState *sys, uint32_t i);
 ASObject* abstract_d(SystemState *sys, number_t i);
@@ -1444,6 +1482,7 @@ std::istream& operator>>(std::istream& stream, CONVOLUTIONFILTER& v);
 std::istream& operator>>(std::istream& stream, COLORMATRIXFILTER& v);
 std::istream& operator>>(std::istream& stream, GRADIENTBEVELFILTER& v);
 std::istream& operator>>(std::istream& stream, SOUNDINFO& v);
-
-};
+std::istream& operator>>(std::istream& stream, ACTIONRECORD& v);
+std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v);
+}
 #endif /* SWFTYPES_H */

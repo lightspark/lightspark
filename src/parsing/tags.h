@@ -35,7 +35,7 @@ class RootMovieClip;
 class DisplayObjectContainer;
 class DefineSpriteTag;
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -109,6 +109,17 @@ public:
 	ActionTag(RECORDHEADER h):ControlTag(h){}
 	virtual TAGTYPE getType()const{ return ACTION_TAG; }
 	virtual void execute(RootMovieClip* root) const=0;
+};
+
+class AVM1ActionTag: public Tag
+{
+private:
+	std::vector<ACTIONRECORD> actions;
+public:
+	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
+	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
+	void execute(MovieClip* clip) const;
+	bool empty() { return actions.empty(); }
 };
 
 class DefineShapeTag: public DictionaryTag
@@ -379,9 +390,9 @@ private:
 	UI16_SWF ButtonId;
 	UB ReservedFlags;
 	bool TrackAsMenu;
-	UI16_SWF ActionOffset;
 	std::vector<BUTTONRECORD> Characters;
 public:
+	std::vector<BUTTONCONDACTION> condactions;
 	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root);
 	virtual int getId() const { return ButtonId; }
 	ASObject* instance(Class_base* c=NULL);

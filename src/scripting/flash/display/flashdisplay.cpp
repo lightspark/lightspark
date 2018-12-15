@@ -1151,6 +1151,9 @@ void Frame::destroyTags()
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 		delete (*it);
+	auto it2=avm1actions.begin();
+	for(;it2!=avm1actions.end();++it2)
+		delete (*it2);
 }
 
 void Frame::execute(DisplayObjectContainer* displayList)
@@ -1159,6 +1162,13 @@ void Frame::execute(DisplayObjectContainer* displayList)
 	for(;it!=blueprint.end();++it)
 		(*it)->execute(displayList);
 	displayList->checkClipDepth();
+
+}
+void Frame::AVM1executeActions(MovieClip* clip)
+{
+	auto it2=avm1actions.begin();
+	for(;it2!=avm1actions.end();++it2)
+		(*it2)->execute(clip);
 }
 
 FrameContainer::FrameContainer():framesLoaded(0)
@@ -1177,6 +1187,10 @@ FrameContainer::FrameContainer(const FrameContainer& f):frames(f.frames),scenes(
 void FrameContainer::addToFrame(DisplayListTag* t)
 {
 	frames.back().blueprint.push_back(t);
+}
+void FrameContainer::addAvm1ActionToFrame(AVM1ActionTag* t)
+{
+	frames.back().avm1actions.push_back(t);
 }
 
 /**
@@ -1402,6 +1416,23 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	initFrame();
 	this->incRef();
 	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+}
+
+void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
+{
+	uint32_t dest=getFrameIdByLabel(label, "");
+	if(dest==FRAME_NOT_FOUND)
+	{
+		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
+		return;
+	}
+	AVM1gotoFrame(dest,false);
+}
+void MovieClip::AVM1gotoFrame(int frame, bool stop)
+{
+	state.next_FP = frame;
+	state.explicit_FP = true;
+	state.stop_FP = stop;
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -3077,6 +3108,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 
 void SimpleButton::defaultEventBehavior(_R<Event> e)
 {
+	BUTTONSTATE oldstate = currentState;
 	if(e->type == "mouseDown")
 	{
 		currentState = DOWN;
@@ -3094,15 +3126,39 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 	}
 	else if(e->type == "mouseOut")
 	{
-		currentState = UP;
+		currentState = OUT;
 		reflectState();
+	}
+	if (buttontag)
+	{
+		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
+		{
+			if (it->CondIdleToOverDown && currentState==DOWN)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOutDownToIdle && oldstate==DOWN && currentState==OUT)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOutDownToOverDown && oldstate==DOWN && currentState==OVER)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOverDownToOutDown && (oldstate==DOWN || oldstate==OVER) && currentState==OUT)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOverDownToOverUp && (oldstate==DOWN || oldstate==OVER) && currentState==UP)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOverUpToOverDown && (oldstate==UP || oldstate==OVER) && currentState==DOWN)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOverUpToIdle && (oldstate==UP || oldstate==OVER) && currentState==OUT)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondIdleToOverUp && oldstate==OUT && currentState==OVER)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+			if (it->CondOverDownToIdle && oldstate==DOWN && currentState==OVER)
+				ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+		}
 	}
 }
 
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
-				DisplayObject *oS, DisplayObject *uS)
+				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
 	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  currentState(UP),enabled(true),useHandCursor(true)
+	  buttontag(tag),currentState(OUT),enabled(true),useHandCursor(true)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?
@@ -3122,6 +3178,7 @@ void SimpleButton::finalize()
 	hitTestState.reset();
 	overState.reset();
 	upState.reset();
+	buttontag=nullptr;
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
@@ -3155,7 +3212,7 @@ void SimpleButton::reflectState()
 	if(!dynamicDisplayList.empty())
 		_removeChild(dynamicDisplayList.front().getPtr());
 
-	if(currentState == UP && !upState.isNull())
+	if((currentState == UP || currentState == OUT) && !upState.isNull())
 	{
 		upState->incRef();
 		_addChildAt(upState,0);
@@ -3448,6 +3505,8 @@ void MovieClip::initFrame()
 			{
 				iter->execute(this);
 			}
+			if (i==state.FP)
+				iter->AVM1executeActions(this);
 			++iter;
 		}
 	}

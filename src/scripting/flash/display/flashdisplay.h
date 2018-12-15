@@ -40,6 +40,8 @@ namespace lightspark
 
 class RootMovieClip;
 class DisplayListTag;
+class AVM1ActionTag;
+class DefineButtonTag;
 class InteractiveObject;
 class Downloader;
 class RenderContext;
@@ -160,12 +162,15 @@ private:
 	_NR<DisplayObject> hitTestState;
 	_NR<DisplayObject> overState;
 	_NR<DisplayObject> upState;
-	enum
+	DefineButtonTag* buttontag;
+	enum BUTTONSTATE
 	{
 		UP,
 		OVER,
-		DOWN
-	} currentState;
+		DOWN,
+		OUT
+	};
+	BUTTONSTATE currentState;
 	bool enabled;
 	bool useHandCursor;
 	void reflectState();
@@ -173,8 +178,8 @@ private:
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
-	SimpleButton(Class_base* c, DisplayObject *dS = NULL, DisplayObject *hTS = NULL,
-				 DisplayObject *oS = NULL, DisplayObject *uS = NULL);
+	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
+				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -456,7 +461,9 @@ class Frame
 {
 public:
 	std::list<DisplayListTag*> blueprint;
+	std::list<AVM1ActionTag*> avm1actions;
 	void execute(DisplayObjectContainer* displayList);
+	void AVM1executeActions(MovieClip* clip);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -484,7 +491,7 @@ protected:
 	std::list<Frame> frames;
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
-	uint32_t getFramesLoaded() { return framesLoaded; }
+	void addAvm1ActionToFrame(AVM1ActionTag* t);
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();
 	FrameContainer(const FrameContainer& f);
@@ -493,6 +500,7 @@ private:
 	ATOMIC_INT32(framesLoaded);
 public:
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
+	uint32_t getFramesLoaded() { return framesLoaded; }
 };
 
 class MovieClip: public Sprite, public FrameContainer
@@ -517,6 +525,8 @@ public:
 	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
 	bool destruct();
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
+	void AVM1gotoFrameLabel(const tiny_string &label);
+	void AVM1gotoFrame(int frame, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	/*

@@ -107,6 +107,9 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 		case 11:
 			ret=new DefineTextTag(h,f,root);
 			break;
+		case 12:
+			ret=new AVM1ActionTag(h,f,root);
+			break;
 		case 13:
 			ret=new DefineFontInfoTag(h,f);
 			break;
@@ -433,12 +436,20 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				delete tag;
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case ACTION_TAG:
+				LOG(LOG_NOT_IMPLEMENTED,"ActionTag inside sprite");
 				delete tag;
 				break;
 			case FRAMELABEL_TAG:
 				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				delete tag;
 				empty=false;
+				break;
+			case AVM1ACTION_TAG:
+				if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
+				{
+					addAvm1ActionToFrame(static_cast<AVM1ActionTag*>(tag));
+					empty=false;
+				}
 				break;
 			case TAG:
 				delete tag;
@@ -1292,7 +1303,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	assert_and_throw(obj && PlaceFlagHasCharacter);
 
 	//TODO: move these three attributes in PlaceInfo
-	if(PlaceFlagHasColorTransform)
+	if(PlaceFlagHasColorTransform && ColorTransformWithAlpha.isfilled())
 		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
 
 	if(PlaceFlagHasRatio)
@@ -1365,7 +1376,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 				parent->insertLegacyChildAt(Depth,toAdd);
 			}
 			else
-				LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that overwrites an object without moving"));
+				LOG(LOG_ERROR,"Invalid PlaceObject2Tag that overwrites an object without moving at depth "<<Depth);
 		}
 		else
 		{
@@ -1530,12 +1541,17 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root):DictionaryTag(h,root)
 {
 	in >> ButtonId;
+	int len = Header.getLength();
+	UI16_SWF ActionOffset;
+	int pos = in.tellg();
 	if (version > 1)
 	{
 		BitStream bs(in);
 		UB(7,bs);
 		TrackAsMenu=UB(1,bs);
+		pos = in.tellg();
 		in >> ActionOffset;
+		len-=3;
 	}
 	else
 	{
@@ -1553,9 +1569,59 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 		Characters.push_back(br);
 	}
 	while(true);
+	int realactionoffset = (((int)in.tellg())-pos);
+	len -= realactionoffset;
 
-	if(ActionOffset || version == 1)
-		LOG(LOG_NOT_IMPLEMENTED,"DefineButton(2)Tag: Actions are not supported");
+	if (root->version >= 9)
+	{
+		// ignore actions on SWF version >= 9
+		ignore(in,len);
+		return;
+	}
+	if (version == 1)
+	{
+		BUTTONCONDACTION a;
+		a.CondOverDownToOverUp=true; // clicked indicator
+		while (true)
+		{
+			ACTIONRECORD r;
+			in>>r;
+			len -= 1; // actionCode;
+			if (r.actionCode >= 0x80)
+				len -= r.Length+2;
+			if (r.actionCode== 0)
+				break;
+			a.actions.push_back(r);
+		}
+		condactions.push_back(a);
+		if (len < 0)
+			throw ParseException("Malformed SWF file, DefineButtonTag: invalid length of ACTIONRECORD");
+		if (len > 0)
+		{
+			LOG(LOG_ERROR,"DefineButtonTag: bytes available after reading all actions:"<<len);
+			ignore(in,len);
+		}
+	}
+	else if(ActionOffset)
+	{
+		if (ActionOffset != realactionoffset)
+			throw ParseException("Malformed SWF file, DefineButtonTag: invalid ActionOffset");
+		pos = in.tellg();
+		while (true)
+		{
+			BUTTONCONDACTION r;
+			in>>r;
+			condactions.push_back(r);
+			if (r.CondActionSize == 0)
+				break;
+		}
+		len -= (((int)in.tellg())-pos);
+		if (len > 0)
+		{
+			LOG(LOG_ERROR,"DefineButtonTag: bytes available after reading all BUTTONCONDACTION entries:"<<len);
+			ignore(in,len);
+		}
+	}
 }
 
 ASObject* DefineButtonTag::instance(Class_base* c)
@@ -1622,7 +1688,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 
 	if(realClass==NULL)
 		realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
-	SimpleButton* ret=new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3]);
+	SimpleButton* ret=new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3],this);
 	return ret;
 }
 
@@ -2038,6 +2104,8 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3) 
 		in>>LatencySeek;
 	SoundData->incRef();
+	if (StreamSoundSampleCount == 0) // ignore sounds with no samples
+		return;
 	if (sprite)
 	{
 		sprite->soundheadtag = this;
@@ -2091,4 +2159,39 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 			LOG(LOG_NOT_IMPLEMENTED,"decoding sound block format "<<(int)codec);
 			break;
 	}
+}
+
+AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
+{
+	// ActionTags are ignored in swf > 9
+	if (root->version >= 9)
+	{
+		skip(s);
+		return; 
+	}
+	
+	int len = Header.getLength();
+	while (true)
+	{
+		ACTIONRECORD r;
+		s>>r;
+		len -= 1; // actionCode;
+		if (r.actionCode >= 0x80)
+			len -= r.Length+2;
+		if (r.actionCode== 0)
+			break;
+		actions.push_back(r);
+	}
+	if (len < 0)
+		throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
+	if (len > 0)
+	{
+		LOG(LOG_ERROR,"DoActionTag: bytes available after reading all actions:"<<len);
+		ignore(s,len);
+	}
+}
+
+void AVM1ActionTag::execute(MovieClip* clip) const
+{
+	ACTIONRECORD::executeActions(clip,actions);
 }

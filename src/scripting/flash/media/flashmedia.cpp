@@ -421,7 +421,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
-	: EventDispatcher(c),stream(_stream),stopped(!autoplay),audioDecoder(NULL),audioStream(NULL),
+	: EventDispatcher(c),stream(_stream),stopped(true),audioDecoder(NULL),audioStream(NULL),
 	format(_format),oldVolume(-1.0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),position(0),rightPeak(1)
 {

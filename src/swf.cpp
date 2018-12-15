@@ -1538,6 +1538,14 @@ void ParseThread::parseSWF(UI8 ver)
 					root->addToFrame(static_cast<DisplayListTag*>(tag));
 					empty=false;
 					break;
+				case AVM1ACTION_TAG:
+					if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
+					{
+						root->addAvm1ActionToFrame(static_cast<AVM1ActionTag*>(tag));
+						empty=false;
+					}
+					empty=false;
+					break;
 				case SHOW_TAG:
 					// The whole frame has been parsed, now execute all queued SymbolClass tags,
 					// in the order in which they appeared in the file.

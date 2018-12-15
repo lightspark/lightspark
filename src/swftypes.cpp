@@ -1013,22 +1013,27 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 			bs.pos=0;
 			FILLSTYLEARRAY a(ps->FillStyles.version);
 			bs.f >> a;
-			p->fillOffset=ps->FillStyles.FillStyles.size();
-			ps->FillStyles.appendStyles(a);
+			if (!a.FillStyles.empty())
+			{
+				p->fillOffset=ps->FillStyles.FillStyles.size();
+				ps->FillStyles.appendStyles(a);
+			}
 
 			LINESTYLEARRAY b(ps->LineStyles.version);
 			bs.f >> b;
-			p->lineOffset=ps->LineStyles.LineStyles2.size();
-			ps->LineStyles.appendStyles(b);
-
+			if (!b.LineStyles2.empty())
+			{
+				p->lineOffset=ps->LineStyles.LineStyles2.size();
+				ps->LineStyles.appendStyles(b);
+			}
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);
 		}
-		if(StateFillStyle0)
+		if(StateFillStyle0 && (FillStyle0 != 0))
 			FillStyle0+=p->fillOffset;
-		if(StateFillStyle1)
+		if(StateFillStyle1 && (FillStyle1 != 0))
 			FillStyle1+=p->fillOffset;
-		if(StateLineStyle)
+		if(StateLineStyle && (LineStyle != 0))
 			LineStyle+=p->lineOffset;
 	}
 }
@@ -1724,4 +1729,175 @@ std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
 	}
 	return stream;
 }
+std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
+{
+	stream >> v.actionCode;
+	if (v.actionCode >= 0x80)
+	{
+		stream >> v.Length;
+		switch (v.actionCode)
+		{
+			// SWF3 action model
+			case 0x04: // ActionNextFrame
+			case 0x05: // ActionPreviousFrame
+			case 0x06: // ActionPlay
+			case 0x07: // ActionStop
+			case 0x08: // ActionToggleQuality
+			case 0x09: // ActionStopSounds
+				break;
+			case 0x81: // ActionGotoFrame
+				if (v.Length != 2)
+					throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionGotoFrame tag");
+				stream>>v.data_uint16;
+				break;
+			case 0x83: // ActionGetURL
+			{
+				STRING s;
+				stream>>s;
+				v.data_string1 = (const char*)s;
+				stream>>s;
+				v.data_string2 = (const char*)s;
+				break;
+			}
+			case 0x8a: // ActionWaitForFrame
+				if (v.Length != 3)
+					throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionWaitForFrame tag");
+				stream>>v.data_uint16>>v.data_byte;
+				break;
+			case 0x8b: // ActionSetTarget
+			case 0x8c: // ActionGotoLabel
+				v.data_string1 = tiny_string(stream,v.Length);
+				break;
+			// SWF4+ action model
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1: SWF4+ actionCode "<<hex<<(int)v.actionCode);
+				v.data_string1 = tiny_string(stream,v.Length);
+				break;
+		}
+	}
+	else
+		v.Length=0;
+	return stream;
+}
+void ACTIONRECORD::executeActions(MovieClip *clip, const std::vector<ACTIONRECORD> &actionlist)
+{
+	for (auto it = actionlist.begin(); it != actionlist.end();it++)
+	{
+		switch (it->actionCode)
+		{
+			case 0x04: // ActionNextFrame
+			{
+				uint32_t frame = clip->state.FP+1;
+				LOG_CALL("AVM1:"<<clip->state.FP<<" gotoNextFrame "<<frame);
+				clip->AVM1gotoFrame(frame,false);
+				return;
+			}
+			case 0x05: // ActionPreviousFrame
+			{
+				uint32_t frame = clip->state.FP > 0 ? clip->state.FP-1 : 0;
+				LOG_CALL("AVM1:"<<clip->state.FP<<" gotoPreviousFrame "<<frame);
+				clip->AVM1gotoFrame(frame,false);
+				return;
+			}
+			case 0x06: // ActionPlay
+			{
+				uint32_t frame = clip->state.FP;
+				LOG_CALL("AVM1:"<<clip->state.FP<<" play "<<frame);
+				clip->AVM1gotoFrame(frame,false);
+				return;
+			}
+			case 0x07: // ActionStop
+			{
+				uint32_t frame = clip->state.FP;
+				LOG_CALL("AVM1:"<<clip->state.FP<<" stop "<<frame);
+				clip->AVM1gotoFrame(frame,true);
+				return;
+			}
+			case 0x81: // ActionGotoFrame
+			{
+				uint32_t frame = it->data_uint16;
+				LOG_CALL("AVM1:"<<clip->state.FP<<" gotoFrame "<<frame);
+				clip->AVM1gotoFrame(frame,false);
+				return;
+			}
+			case 0x83: // ActionGetURL
+			{
+				LOG_CALL("AVM1:"<<clip->state.FP<<" GetURL "<<it->data_string1<<" "<<it->data_string2);
+				clip->getSystemState()->openPageInBrowser(it->data_string1,it->data_string2);
+				break;
+			}
+			case 0x8a: // ActionWaitForFrame
+			{
+				LOG_CALL("AVM1:"<<clip->state.FP<<" WaitForFrame "<<it->data_uint16<<"/"<<clip->getFramesLoaded()<<" skip "<<(uint32_t)it->data_byte);
+				if (clip->getFramesLoaded() <= it->data_uint16)
+				{
+					// frame not yet loaded, skip actions
+					uint32_t skipcount = (uint32_t)it->data_byte;
+					while (skipcount && it != actionlist.end())
+					{
+						it++;
+						skipcount--;
+					}
+				}
+				break;
+			}
+			case 0x8c: // ActionGotoLabel
+			{
+				tiny_string s(it->data_string1.raw_buf(),true);
+				LOG_CALL("AVM1:"<<clip->state.FP<<" GotoLabel "<<s);
+				clip->AVM1gotoFrameLabel(s);
+				return;
+			}
+			case 0x08: // ActionToggleQuality
+			case 0x09: // ActionStopSounds
+			case 0x8b: // ActionSetTarget
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->state.FP<<" SWF3 DoActionTag "<<hex<<(int)it->actionCode);
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->state.FP<<" SWF4+ DoActionTag "<<hex<<(int)it->actionCode);
+				break;
+		}
+	}
+	
+}
 
+std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)
+{
+	int pos =stream.tellg();
+	stream >> v.CondActionSize;
+	int len = v.CondActionSize;
+	BitStream bs(stream);
+	v.CondIdleToOverDown = UB(1,bs);
+	v.CondOutDownToIdle = UB(1,bs);
+	v.CondOutDownToOverDown = UB(1,bs);
+	v.CondOverDownToOutDown = UB(1,bs);
+	v.CondOverDownToOverUp = UB(1,bs);
+	v.CondOverUpToOverDown = UB(1,bs);
+	v.CondOverUpToIdle = UB(1,bs);
+	v.CondIdleToOverUp = UB(1,bs);
+	v.CondKeyPress = UB(7,bs);
+	if (v.CondKeyPress != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"AVM1: Button key press action");
+	v.CondOverDownToIdle = UB(1,bs);
+
+	while (true)
+	{
+		ACTIONRECORD r;
+		stream>>r;
+		if (r.actionCode== 0)
+			break;
+		v.actions.push_back(r);
+	}
+	if (v.CondActionSize)
+	{
+		len -= (((int)stream.tellg())-pos);
+		if (len < 0)
+			throw ParseException("Malformed SWF file, BUTTONCONDACTION: invalid length of ACTIONRECORD");
+		if (len > 0)
+		{
+			LOG(LOG_ERROR,"BUTTONCONDACTION: bytes available after reading all actions:"<<len);
+			ignore(stream,len);
+		}
+	}
+	return stream;
+}

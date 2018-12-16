@@ -1409,11 +1409,12 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		}
 	}
 
-	state.next_FP = next_FP;
-	state.explicit_FP = true;
-	state.stop_FP = stop;
-	advanceFrame();
-	initFrame();
+	RunState newstate = state;
+	newstate.next_FP = next_FP;
+	newstate.explicit_FP = true;
+	newstate.stop_FP = stop;
+	this->incRef();
+	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) InitFrameEvent(_MR(this),newstate)));
 	this->incRef();
 	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 }

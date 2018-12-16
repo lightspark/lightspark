@@ -1561,6 +1561,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"INIT_FRAME");
 				assert(!ev->clip.isNull());
+				if (ev->newstate.explicit_FP && ev->clip->is<MovieClip>())
+				{
+					ev->clip->as<MovieClip>()->state.explicit_FP=true;
+					ev->clip->as<MovieClip>()->state.next_FP=ev->newstate.next_FP;
+					ev->clip->as<MovieClip>()->state.stop_FP=ev->newstate.stop_FP;
+					ev->clip->advanceFrame();
+				}
 				ev->clip->initFrame();
 				break;
 			}

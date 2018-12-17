@@ -1477,7 +1477,7 @@ void ParseThread::parseSWF(UI8 ver)
 			if(!fat)
 			{
 				LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
-				return;
+				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
 			if(root == root->getSystemState()->mainClip)
@@ -1501,6 +1501,7 @@ void ParseThread::parseSWF(UI8 ver)
 		{
 			root->getSystemState()->needsAVM2(true);
 		}
+
 		bool done=false;
 		bool empty=true;
 		while(!done)
@@ -1523,6 +1524,7 @@ void ParseThread::parseSWF(UI8 ver)
 						root->commitFrame(false);
 					else
 						root->revertFrame();
+
 					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
 					root->check();
@@ -1626,6 +1628,7 @@ void ParseThread::parseSWF(UI8 ver)
 			}// end switch
 			if(root->getSystemState()->shouldTerminate() || threadAborting)
 				break;
+
 			tag=factory.readTag(root);
 		}// end while
 	}

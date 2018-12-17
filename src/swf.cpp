@@ -1505,7 +1505,6 @@ void ParseThread::parseSWF(UI8 ver)
 		bool empty=true;
 		while(!done)
 		{
-			tag=factory.readTag(root);
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1627,6 +1626,7 @@ void ParseThread::parseSWF(UI8 ver)
 			}// end switch
 			if(root->getSystemState()->shouldTerminate() || threadAborting)
 				break;
+			tag=factory.readTag(root);
 		}// end while
 	}
 	catch(std::exception& e)

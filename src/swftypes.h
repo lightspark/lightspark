@@ -1385,11 +1385,15 @@ friend std::istream& operator>>(std::istream& s, ACTIONRECORD& v);
 public:
 	UI8 actionCode;
 	UI16_SWF Length;
-	tiny_string data_string1;
-	tiny_string data_string2;
+	std::vector<tiny_string> data_string;
 	UI16_SWF data_uint16;
+	SI16_SWF data_int16;
 	UI8 data_byte;
-	static void executeActions(MovieClip* clip, const std::vector<ACTIONRECORD>& actionlist);
+	FLOAT data_float;
+	bool data_flag1;
+	bool data_flag2;
+	static void executeActions(MovieClip* clip, std::vector<ACTIONRECORD> &actionlist);
+	int getFullLength() { return actionCode < 0x80 ? 1 : Length+3; }
 };
 class BUTTONCONDACTION
 {
@@ -1409,7 +1413,7 @@ public:
 	bool CondOverUpToIdle;
 	bool CondIdleToOverUp;
 	bool CondOverDownToIdle;
-	int CondKeyPress;
+	uint32_t CondKeyPress;
 	std::vector<ACTIONRECORD> actions;
 };
 

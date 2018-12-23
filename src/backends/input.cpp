@@ -531,7 +531,7 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 	target->incRef();
 	AS3KeyCode c = getAS3KeyCode(keyevent->keysym.sym);
 	m_sys->currentVm->addEvent(target,
-	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,c,c, (SDL_Keymod)keyevent->keysym.mod)));
+	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,c, (SDL_Keymod)keyevent->keysym.mod)));
 }
 
 void InputThread::addListener(InteractiveObject* ob)
@@ -586,3 +586,4 @@ void InputThread::stopDrag(Sprite* s)
 		dragLimit = 0;
 	}
 }
+

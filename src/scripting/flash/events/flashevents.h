@@ -121,6 +121,8 @@ public:
 	ASFUNCTION_GETTER_SETTER(controlKey);
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASFUNCTION_GETTER_SETTER(shiftKey);
+	uint32_t getCharCode() const { return charCode; }
+	uint32_t getKeyCode() const { return keyCode; }
 };
 
 class FocusEvent: public Event

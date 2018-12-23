@@ -196,6 +196,10 @@ public:
 	ASFUNCTION_ATOM(_setEnabled);
 	ASFUNCTION_ATOM(_getUseHandCursor);
 	ASFUNCTION_ATOM(_setUseHandCursor);
+
+	void afterLegacyInsert();
+	void afterLegacyDelete(DisplayObjectContainer* par);
+	void avm1HandleKeyboardEvent(KeyboardEvent* e);
 };
 
 class Shape: public DisplayObject, public TokenContainer
@@ -511,8 +515,13 @@ private:
 	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	std::map<uint32_t,asAtom > frameScripts;
-	bool fromDefineSpriteTag;
+	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
+
+	std::vector<uint32_t> avm1strings;
+	std::stack<asAtom> avm1stack;
+	std::map<uint32_t,asAtom> avm1variables;
+	std::map<uint32_t,_NR<DisplayObject>> avm1bindings;
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
@@ -522,11 +531,9 @@ public:
 	void afterConstruction();
 	RunState state;
 	MovieClip(Class_base* c);
-	MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag);
+	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct();
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
-	void AVM1gotoFrameLabel(const tiny_string &label);
-	void AVM1gotoFrame(int frame, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	/*
@@ -558,6 +565,17 @@ public:
 	void executeFrameScript();
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
+	uint32_t getTagID() { return fromDefineSpriteTag; }
+
+	void AVM1gotoFrameLabel(const tiny_string &label);
+	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
+	void AVM1SetConstants(const std::vector<tiny_string> c);
+	void AVM1PushStack(const asAtom& a);
+	asAtom AVM1PopStack();
+	MovieClip* AVM1GetClipFromPath(tiny_string& path);
+	void AVM1SetVariable(tiny_string& name, asAtom v);
+	asAtom AVM1GetVariable(tiny_string& name);
+	void AVM1SetBinding(tiny_string& name, _NR<DisplayObject> obj);
 };
 
 class Stage: public DisplayObjectContainer
@@ -577,6 +595,7 @@ private:
 	// list of objects that are not added to stage, but need to be handled when first frame is executed
 	// currently only used when Loader contents are added and the Loader is not on stage
 	list<_R<DisplayObject>> hiddenobjects;
+	vector<_R<DisplayObject>> avm1KeyboardListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
@@ -594,6 +613,7 @@ public:
 	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
 	void initFrame();
 	void executeFrameScript();
+	void defaultEventBehavior(_R<Event> e);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);
@@ -624,6 +644,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,stageFocusRect);
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
+	
+	void avm1AddKeyboardListener(DisplayObject* o);
+	void avm1RemoveKeyboardListener(DisplayObject* o);
 };
 
 class StageScaleMode: public ASObject

@@ -115,10 +115,10 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	LOG(LOG_NOT_IMPLEMENTED,"Font.hasGlyphs always returns true for not embedded fonts:"<<text<<" "<<th->fontName<<" "<<th->fontStyle<<" "<<th->fontType);
 	ret.setBool(true);
 }
-TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly)
+TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0), alwaysShowSelection(false),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),alwaysShowSelection(false),
 	  caretIndex(0), condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
@@ -355,7 +355,11 @@ void TextField::setSizeAndPositionFromAutoSize()
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setUInt(th->width);
+	// it seems that Adobe returns the textwidth if in autoSize mode
+	if ((th->autoSize == AS_NONE)||(th->wordWrap == true))
+		ret.setUInt(th->width);
+	else
+		ret.setUInt(th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setWidth)
@@ -1022,8 +1026,67 @@ void TextField::updateText(const tiny_string& new_text)
 	textUpdated();
 }
 
+void TextField::avm1SyncTagVar()
+{
+	if (!tagvarname.empty())
+	{
+		DisplayObject* par = getParent();
+		while (par)
+		{
+			if (par->is<MovieClip>())
+			{
+				asAtom value = asAtom::fromString(getSystemState(),text);
+				par->as<MovieClip>()->AVM1SetVariable(tagvarname,value);
+				break;
+			}
+			par = par->getParent();
+		}
+	}
+}
+
+void TextField::avm1UpdateVariable(asAtom v)
+{
+	updateText(v.toString(getSystemState()));
+}
+
+void TextField::afterLegacyInsert()
+{
+	if (!tagvarname.empty())
+	{
+		DisplayObject* par = getParent();
+		while (par)
+		{
+			if (par->is<MovieClip>())
+			{
+				par->as<MovieClip>()->AVM1SetBinding(tagvarname,_MR(this));
+				break;
+			}
+			par = par->getParent();
+		}
+	}
+	avm1SyncTagVar();
+}
+
+void TextField::afterLegacyDelete(DisplayObjectContainer *par)
+{
+	if (!tagvarname.empty())
+	{
+		while (par)
+		{
+			if (par->is<MovieClip>())
+			{
+				par->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtom::undefinedAtom);
+				par->as<MovieClip>()->AVM1SetBinding(tagvarname,NullRef);
+				break;
+			}
+			par = par->getParent();
+		}
+	}
+}
+
 void TextField::textUpdated()
 {
+	avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
 	selectionBeginIndex = 0;

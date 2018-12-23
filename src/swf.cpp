@@ -202,7 +202,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	showProfilingData(false),flashMode(mode),swffilesize(fileSize),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
-	static_SoundMixer_bufferTime(0),isinitialized(false),semaphore_initialized(0)
+	static_SoundMixer_bufferTime(0),isinitialized(false)
 {
 	//Forge the builtin strings
 	getUniqueStringId("");
@@ -805,8 +805,12 @@ void SystemState::delayedCreation(SystemState* sys)
 
 	if(sys->renderRate)
 		sys->startRenderTicks();
-	sys->isinitialized=true;
-	sys->semaphore_initialized.signal();
+	
+	{
+		Locker l(sys->initializedMutex);
+		sys->isinitialized=true;
+		sys->initializedCond.broadcast();
+	}
 }
 
 void SystemState::delayedStopping()
@@ -1443,6 +1447,7 @@ void ParseThread::parseSWF(UI8 ver)
 	}
 	objectSpinlock.unlock();
 
+	TAGTYPE lasttagtype = TAG;
 	std::queue<const ControlTag*> queuedTags;
 	try
 	{
@@ -1505,6 +1510,7 @@ void ParseThread::parseSWF(UI8 ver)
 		bool empty=true;
 		while(!done)
 		{
+			lasttagtype = tag->getType();
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1572,12 +1578,9 @@ void ParseThread::parseSWF(UI8 ver)
 				case SYMBOL_CLASS_TAG:
 				{
 					root->hasSymbolClass = true;
-					// fall through
 				}
+				// fall through
 				case ABC_TAG:
-				{
-					// fall through
-				}
 				case ACTION_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
@@ -1628,7 +1631,8 @@ void ParseThread::parseSWF(UI8 ver)
 			if(root->getSystemState()->shouldTerminate() || threadAborting)
 				break;
 
-			tag=factory.readTag(root);
+			if (!done)
+				tag=factory.readTag(root);
 		}// end while
 	}
 	catch(std::exception& e)
@@ -1636,7 +1640,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root->parsingFailed();
 		throw;
 	}
-	if (root->loaderInfo->getBytesLoaded() != root->loaderInfo->getBytesTotal())
+	if (lasttagtype != END_TAG || root->loaderInfo->getBytesLoaded()+2 != root->loaderInfo->getBytesTotal())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
 	}
@@ -2142,13 +2146,16 @@ void SystemState::waitInitialized()
 {
 	if (isinitialized)
 		return;
-	semaphore_initialized.wait();
+	{
+		Locker l(initializedMutex);
+		initializedCond.wait(initializedMutex);
+	}
 }
 
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {
-	LOG(LOG_CALLS,"Root:initFrame " << getFramesLoaded() << " " << state.FP);
+	LOG_CALL("Root:initFrame " << getFramesLoaded() << " " << state.FP<<" "<<state.stop_FP<<" "<<state.next_FP<<" "<<state.explicit_FP);
 	/* We have to wait for at least one frame
 	 * so our class get the right classdef. Else we will
 	 * call the wrong constructor. */

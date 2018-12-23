@@ -432,7 +432,6 @@ SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat 
 
 SoundChannel::~SoundChannel()
 {
-	threadAbort();
 }
 
 void SoundChannel::appendStreamBlock(unsigned char *buf, int len)
@@ -482,6 +481,7 @@ void SoundChannel::finalize()
 {
 	EventDispatcher::finalize();
 	soundTransform.reset();
+	threadAbort();
 }
 
 void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)

@@ -116,14 +116,19 @@ private:
 	TEXT_INTERACTION_MODE textInteractionMode;
 	_NR<ASString> restrictChars;
 	number_t autosizeposition;
+	tiny_string tagvarname;
 protected:
 	void afterSetLegacyMatrix() override;
 public:
-	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true);
+	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="");
 	void finalize();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
+	void avm1SyncTagVar();
+	void avm1UpdateVariable(asAtom v);
+	void afterLegacyInsert();
+	void afterLegacyDelete(DisplayObjectContainer* par);
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
 	ASFUNCTION_ATOM(_setAntiAliasType);

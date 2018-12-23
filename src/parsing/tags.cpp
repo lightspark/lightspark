@@ -316,7 +316,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if(HasFont)
 	{
 		in >> FontID;
-		DefineFont3Tag* fonttag =  dynamic_cast<DefineFont3Tag*>(root->dictionaryLookup(FontID));
+		FontTag* fonttag =  dynamic_cast<FontTag*>(root->dictionaryLookup(FontID));
 		if (fonttag)
 		{
 			textData.font = fonttag->getFontname();
@@ -362,8 +362,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
 	}
 	in >> VariableName;
-	if (!VariableName.isNull())
-		LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
 	if(HasText)
 	{
 		in >> InitialText;
@@ -372,6 +370,13 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.wordWrap = WordWrap;
 	textData.multiline = Multiline;
 	textData.border = Border;
+	if (textData.border)
+	{
+		textData.borderColor = RGB(0,0,0);
+		// it seems that textfields with border are filled with white background
+		textData.background = true;
+		textData.backgroundColor = RGB(0xff,0xff,0xff);
+	}
 	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
 	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
 	textData.leading = Leading/20;
@@ -385,7 +390,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 		c=Class<TextField>::getClass(loadedFrom->getSystemState());
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly);
+	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName);
 	if (HTML)
 		ret->setHtmlText((const char*)InitialText);
 	return ret;
@@ -457,8 +462,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				break;
 			case END_TAG:
 				delete tag;
-				if (soundheadtag)
-					soundheadtag->SoundData->markFinished(true);
 				done=true;
 				if(empty && frames.size()!=FrameCount)
 					frames.pop_back();
@@ -474,6 +477,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	}
 
 	setFramesLoaded(frames.size());
+	if (soundheadtag)
+		soundheadtag->SoundData->markFinished(true);
 }
 
 DefineSpriteTag::~DefineSpriteTag()
@@ -492,7 +497,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		retClass=bindedTo;
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
-	MovieClip* spr = new (retClass->memoryAccount) MovieClip(retClass, *this, true);
+	MovieClip* spr = new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,true);
 	return spr;
@@ -652,6 +657,11 @@ ASObject* DefineFont2Tag::instance(Class_base* c)
 	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
 	return ret;
 }
+const tiny_string DefineFont2Tag::getFontname() const
+{
+	return tiny_string((const char*)FontName.data(),true);
+}
+
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
 {
@@ -898,14 +908,14 @@ BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),b
 _R<BitmapContainer> BitmapTag::getBitmap() const {
 	return bitmap;
 }
-void BitmapTag::loadBitmap(uint8_t* inData, int datasize)
+void BitmapTag::loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesData, int tablesLen)
 {
 	if (datasize < 4)
 		return;
 	else if((inData[0]&0x80) && inData[1]=='P' && inData[2]=='N' && inData[3]=='G')
 		bitmap->fromPNG(inData,datasize);
 	else if(inData[0]==0xff && inData[1]==0xd8 && inData[2]==0xff)
-		bitmap->fromJPEG(inData,datasize);
+		bitmap->fromJPEG(inData,datasize,tablesData,tablesLen);
 	else if(inData[0]=='G' && inData[1]=='I' && inData[2]=='F' && inData[3]=='8')
 		LOG(LOG_ERROR,"GIF image found, not yet supported, ID :"<<getId());
 	else
@@ -1304,7 +1314,15 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 
 	//TODO: move these three attributes in PlaceInfo
 	if(PlaceFlagHasColorTransform && ColorTransformWithAlpha.isfilled())
+	{
 		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
+	}
+	else if (parent->colorTransform)
+	{
+		// use colorTransform from parent
+		parent->colorTransform->incRef();
+		obj->colorTransform=parent->colorTransform;
+	}
 
 	if(PlaceFlagHasRatio)
 		obj->Ratio=Ratio;
@@ -1663,7 +1681,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
 				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList"<<this->getId());
 			if (i->ColorTransform.isfilled())
-				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: ColorTransform "<<this->getId());
+				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
+
 			if(states[j] == NULL)
 			{
 				states[j] = state;
@@ -1989,7 +2008,7 @@ DefineBitsTag::DefineBitsTag(RECORDHEADER h, std::istream& in,RootMovieClip* roo
 	int dataSize=Header.getLength()-2;
 	uint8_t *inData=new(nothrow) uint8_t[dataSize];
 	in.read((char*)inData,dataSize);
-	loadBitmap(inData,dataSize);
+	loadBitmap(inData,dataSize,JPEGTablesTag::getJPEGTables(),JPEGTablesTag::getJPEGTableSize());
 	delete[] inData;
 }
 
@@ -2191,7 +2210,7 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Ta
 	}
 }
 
-void AVM1ActionTag::execute(MovieClip* clip) const
+void AVM1ActionTag::execute(MovieClip* clip)
 {
 	ACTIONRECORD::executeActions(clip,actions);
 }

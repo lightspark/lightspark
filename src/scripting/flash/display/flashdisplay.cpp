@@ -1239,12 +1239,12 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(false),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, bool defineSpriteTag):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTag),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -1262,7 +1262,7 @@ bool MovieClip::destruct()
 	}
 	frameScripts.clear();
 	
-	fromDefineSpriteTag = false;
+	fromDefineSpriteTag = UINT32_MAX;
 	totalFrames_unreliable = 1;
 	enabled = true;
 	return Sprite::destruct();
@@ -1427,13 +1427,14 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
 		return;
 	}
-	AVM1gotoFrame(dest,false);
+	AVM1gotoFrame(dest,false,false);
 }
-void MovieClip::AVM1gotoFrame(int frame, bool stop)
+void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {
 	state.next_FP = frame;
 	state.explicit_FP = true;
-	state.stop_FP = stop;
+	if (switchplaystate)
+		state.stop_FP = stop;
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -1612,6 +1613,146 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 	}
 }
 
+void MovieClip::AVM1SetConstants(const std::vector<tiny_string> c)
+{
+	avm1strings.clear();
+	for (auto it = c.begin(); it != c.end(); it++)
+	{
+		avm1strings.push_back(getSystemState()->getUniqueStringId(*it)); 
+	}
+}
+
+void MovieClip::AVM1PushStack(const asAtom &a)
+{
+	avm1stack.push(a);
+}
+
+asAtom MovieClip::AVM1PopStack()
+{
+	if (avm1stack.empty())
+		throw RunTimeException("AVM1: empty stack");
+	asAtom ret = avm1stack.top();
+	avm1stack.pop();
+	return ret;
+}
+
+MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
+{
+	if (path.empty())
+		return this;
+	if (path.startsWith("/"))
+	{
+		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
+		MovieClip* root = getSystemState()->mainClip;
+		if (root)
+			return root->AVM1GetClipFromPath(newpath);
+		LOG(LOG_ERROR,"AVM1: no root movie clip for path:"<<path<<" "<<this->toDebugString());
+		return nullptr;
+	}
+	if (path.startsWith("../"))
+	{
+		tiny_string newpath = path.substr_bytes(3,path.numBytes()-3);
+		if (this->getParent() && this->getParent()->is<MovieClip>())
+			return this->getParent()->as<MovieClip>()->AVM1GetClipFromPath(newpath);
+		LOG(LOG_ERROR,"AVM1: no parent clip for path:"<<path<<" "<<this->toDebugString());
+		return nullptr;
+	}
+	uint32_t pos = path.find("/");
+	tiny_string subpath = (pos == tiny_string::npos) ? path : path.substr_bytes(0,pos);
+	if (subpath.empty())
+	{
+		return nullptr;
+	}
+	multiname objName(NULL);
+	objName.name_type=multiname::NAME_STRING;
+	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
+	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	asAtom ret;
+	getVariableByMultiname(ret,objName);
+	if (ret.is<MovieClip>())
+	{
+		if (pos == tiny_string::npos)
+			return ret.as<MovieClip>();
+		else
+		{
+			subpath = path.substr_bytes(pos+1,path.numBytes()-pos-1);
+			return ret.as<MovieClip>()->AVM1GetClipFromPath(subpath);
+		}
+	}
+	return nullptr;
+}
+
+void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
+{
+	uint32_t pos = name.find(":");
+	if (pos == tiny_string::npos)
+	{
+		uint32_t nameId = getSystemState()->getUniqueStringId(name);
+		if (v.type == T_UNDEFINED)
+			avm1variables.erase(nameId);
+		else
+		{
+			auto it = avm1bindings.find(nameId);
+			if (it != avm1bindings.end())
+				(*it).second->avm1UpdateVariable(v);
+			avm1variables[nameId] = v;
+		}
+	}
+	else if (pos == 0)
+	{
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		AVM1SetVariable(localname,v);
+	}
+	else
+	{
+		tiny_string path = name.substr_bytes(0,pos);
+		MovieClip* clip = AVM1GetClipFromPath(path);
+		if (clip)
+		{
+			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+			clip->AVM1SetVariable(localname,v);
+		}
+	}
+}
+
+asAtom MovieClip::AVM1GetVariable(tiny_string &name)
+{
+	uint32_t pos = name.find(":");
+	if (pos == tiny_string::npos)
+	{
+		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name));
+		if (it != avm1variables.end())
+			return it->second;
+	}
+	else if (pos == 0)
+	{
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		return AVM1GetVariable(localname);
+	}
+	else
+	{
+		tiny_string path = name.substr_bytes(0,pos);
+		MovieClip* clip = AVM1GetClipFromPath(path);
+		if (clip)
+		{
+			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+			return clip->AVM1GetVariable(localname);
+		}
+	}
+	return asAtom::undefinedAtom;
+}
+
+void MovieClip::AVM1SetBinding(tiny_string &name, _NR<DisplayObject> obj)
+{
+	if (obj)
+	{
+		obj->incRef();
+		avm1bindings[getSystemState()->getUniqueStringId(name)] = obj;
+	}
+	else
+		avm1bindings.erase(getSystemState()->getUniqueStringId(name));
+}
+
 void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
@@ -1745,6 +1886,7 @@ void DisplayObjectContainer::insertLegacyChildAt(uint32_t depth, DisplayObject* 
 	}
 
 	depthToLegacyChild.insert(boost::bimap<uint32_t,DisplayObject*>::value_type(depth,obj));
+	obj->afterLegacyInsert();
 }
 
 void DisplayObjectContainer::transformLegacyChildAt(uint32_t depth, const MATRIX& mat)
@@ -2748,6 +2890,37 @@ void Stage::executeFrameScript()
 	hiddenobjects.clear();
 }
 
+void Stage::defaultEventBehavior(_R<Event> e)
+{
+	if (e->type == "keyDown")
+	{
+		auto it = avm1KeyboardListeners.begin();
+		while (it != avm1KeyboardListeners.end())
+		{
+			(*it)->avm1HandleKeyboardEvent(e->as<KeyboardEvent>());
+			it++;
+		}
+	}
+}
+
+void Stage::avm1AddKeyboardListener(DisplayObject *o)
+{
+	o->incRef();
+	avm1KeyboardListeners.push_back(_MR(o));
+}
+
+void Stage::avm1RemoveKeyboardListener(DisplayObject *o)
+{
+	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+	{
+		if ((*it).getPtr() == o)
+		{
+			avm1KeyboardListeners.erase(it);
+			break;
+		}
+	}
+}
+
 
 ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
@@ -3078,6 +3251,171 @@ void SimpleButton::buildTraits(ASObject* o)
 {
 }
 
+void SimpleButton::afterLegacyInsert()
+{
+	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
+	{
+		if (it->CondKeyPress)
+		{
+			getSystemState()->stage->avm1AddKeyboardListener(this);
+			break;
+		}
+	}
+}
+
+void SimpleButton::afterLegacyDelete(DisplayObjectContainer *par)
+{
+	getSystemState()->stage->avm1RemoveKeyboardListener(this);
+}
+
+void SimpleButton::avm1HandleKeyboardEvent(KeyboardEvent *e)
+{
+	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
+	{
+		bool execute=false;
+		uint32_t code = e->getCharCode();
+		if (e->getModifiers() & KMOD_SHIFT)
+		{
+			switch (it->CondKeyPress)
+			{
+				case 33:// !
+					execute = code==SDL_SCANCODE_1;break;
+				case 34:// "
+					execute = code==SDL_SCANCODE_APOSTROPHE;break;
+				case 35:// #
+					execute = code==SDL_SCANCODE_3;break;
+				case 36:// $
+					execute = code==SDL_SCANCODE_4;break;
+				case 37:// %
+					execute = code==SDL_SCANCODE_5;break;
+				case 38:// &
+					execute = code==SDL_SCANCODE_7;break;
+				case 40:// (
+					execute = code==SDL_SCANCODE_9;break;
+				case 41:// )
+					execute = code==SDL_SCANCODE_0;break;
+				case 42:// *
+					execute = code==SDL_SCANCODE_8;break;
+				case 43:// +
+					execute = code==SDL_SCANCODE_EQUALS;break;
+				case 58:// :
+					execute = code==SDL_SCANCODE_SEMICOLON;break;
+				case 60:// <
+					execute = code==SDL_SCANCODE_COMMA;break;
+				case 62:// >
+					execute = code==SDL_SCANCODE_PERIOD;break;
+				case 63:// ?
+					execute = code==SDL_SCANCODE_SLASH;break;
+				case 64:// @
+					execute = code==SDL_SCANCODE_2;break;
+				case 94:// ^
+					execute = code==SDL_SCANCODE_6;break;
+				case 95:// _
+					execute = code==SDL_SCANCODE_MINUS;break;
+				case 123:// {
+					execute = code==SDL_SCANCODE_LEFTBRACKET;break;
+				case 124:// |
+					execute = code==SDL_SCANCODE_BACKSLASH;break;
+				case 125:// }
+					execute = code==SDL_SCANCODE_RIGHTBRACKET;break;
+				case 126:// ~
+					execute = code==SDL_SCANCODE_GRAVE;break;
+				default:// A-Z
+					execute = it->CondKeyPress>=65
+							&& it->CondKeyPress<=90
+							&& code-SDL_SCANCODE_A==it->CondKeyPress-65;
+					break;
+			}
+		}
+		else
+		{
+			switch (it->CondKeyPress)
+			{
+				case 1:
+					execute = code==SDL_SCANCODE_LEFT;break;
+				case 2:
+					execute = code==SDL_SCANCODE_RIGHT;break;
+				case 3:
+					execute = code==SDL_SCANCODE_HOME;break;
+				case 4:
+					execute = code==SDL_SCANCODE_END;break;
+				case 5:
+					execute = code==SDL_SCANCODE_INSERT;break;
+				case 6:
+					execute = code==SDL_SCANCODE_DELETE;break;
+				case 8:
+					execute = code==SDL_SCANCODE_BACKSPACE;break;
+				case 13:
+					execute = code==SDL_SCANCODE_RETURN;break;
+				case 14:
+					execute = code==SDL_SCANCODE_UP;break;
+				case 15:
+					execute = code==SDL_SCANCODE_DOWN;break;
+				case 16:
+					execute = code==SDL_SCANCODE_PAGEUP;break;
+				case 17:
+					execute = code==SDL_SCANCODE_PAGEDOWN;break;
+				case 18:
+					execute = code==SDL_SCANCODE_TAB;break;
+				case 19:
+					execute = code==SDL_SCANCODE_ESCAPE;break;
+				case 32:
+					execute = code==SDL_SCANCODE_SPACE;break;
+				case 39:// '
+					execute = code==SDL_SCANCODE_APOSTROPHE;break;
+				case 44:// ,
+					execute = code==SDL_SCANCODE_COMMA;break;
+				case 45:// -
+					execute = code==SDL_SCANCODE_MINUS;break;
+				case 46:// .
+					execute = code==SDL_SCANCODE_PERIOD;break;
+				case 47:// /
+					execute = code==SDL_SCANCODE_SLASH;break;
+				case 48:// 0
+					execute = code==SDL_SCANCODE_0;break;
+				case 49:// 1
+					execute = code==SDL_SCANCODE_1;break;
+				case 50:// 2
+					execute = code==SDL_SCANCODE_2;break;
+				case 51:// 3
+					execute = code==SDL_SCANCODE_3;break;
+				case 52:// 4
+					execute = code==SDL_SCANCODE_4;break;
+				case 53:// 5
+					execute = code==SDL_SCANCODE_5;break;
+				case 54:// 6
+					execute = code==SDL_SCANCODE_6;break;
+				case 55:// 7
+					execute = code==SDL_SCANCODE_7;break;
+				case 56:// 8
+					execute = code==SDL_SCANCODE_8;break;
+				case 57:// 9
+					execute = code==SDL_SCANCODE_9;break;
+				case 59:// ;
+					execute = code==SDL_SCANCODE_SEMICOLON;break;
+				case 61:// =
+					execute = code==SDL_SCANCODE_EQUALS;break;
+				case 91:// [
+					execute = code==SDL_SCANCODE_LEFTBRACKET;break;
+				case 92:// \\
+					execute = code==SDL_SCANCODE_BACKSLASH;break;
+				case 93:// ]
+					execute = code==SDL_SCANCODE_RIGHTBRACKET;break;
+				case 96:// `
+					execute = code==SDL_SCANCODE_GRAVE;break;
+				default:// a-z
+					execute = it->CondKeyPress>=97
+							&& it->CondKeyPress<=122
+							&& code-SDL_SCANCODE_A==it->CondKeyPress-97;
+					break;
+			}
+		}
+		if (execute)
+			ACTIONRECORD::executeActions(getSystemState()->mainClip,it->actions);
+	}
+}
+
+
 _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<DisplayObject> ret = NullRef;
@@ -3109,28 +3447,33 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 
 void SimpleButton::defaultEventBehavior(_R<Event> e)
 {
+	bool handled = false;
 	BUTTONSTATE oldstate = currentState;
 	if(e->type == "mouseDown")
 	{
 		currentState = DOWN;
 		reflectState();
+		handled = true;
 	}
 	else if(e->type == "mouseUp")
 	{
 		currentState = UP;
 		reflectState();
+		handled = true;
 	}
 	else if(e->type == "mouseOver")
 	{
 		currentState = OVER;
 		reflectState();
+		handled = true;
 	}
 	else if(e->type == "mouseOut")
 	{
 		currentState = OUT;
 		reflectState();
+		handled = true;
 	}
-	if (buttontag)
+	if (buttontag && handled)
 	{
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
@@ -3506,7 +3849,7 @@ void MovieClip::initFrame()
 			{
 				iter->execute(this);
 			}
-			if (i==state.FP)
+			if (i==state.FP && !state.explicit_FP)
 				iter->AVM1executeActions(this);
 			++iter;
 		}
@@ -3575,7 +3918,7 @@ void MovieClip::advanceFrame()
 	 * 1b. or it is a DefineSpriteTag
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
-	if((!this->is<RootMovieClip>() && !fromDefineSpriteTag)
+	if((!this->is<RootMovieClip>() && fromDefineSpriteTag==UINT32_MAX)
 	   || !getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState())))
 		return;
 
@@ -3590,8 +3933,11 @@ void MovieClip::advanceFrame()
 		return;
 	}
 
-	state.FP=state.next_FP;
-	state.explicit_FP=false;
+	if (state.next_FP != state.FP)
+	{
+		state.FP=state.next_FP;
+		state.explicit_FP=false;
+	}
 	if(!state.stop_FP && getFramesLoaded()>0)
 	{
 		state.next_FP=imin(state.FP+1,getFramesLoaded()-1);

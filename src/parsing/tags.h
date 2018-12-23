@@ -118,7 +118,7 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
 	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
-	void execute(MovieClip* clip) const;
+	void execute(MovieClip* clip);
 	bool empty() { return actions.empty(); }
 };
 
@@ -433,6 +433,7 @@ public:
 		return GlyphShapeTable;
 	}
 	int getId() const { return FontID; }
+	virtual const tiny_string getFontname() const { return ""; }
 };
 
 class DefineFontTag: public FontTag
@@ -481,6 +482,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL);
+	const tiny_string getFontname() const;
 };
 
 class DefineFont3Tag: public FontTag
@@ -582,7 +584,7 @@ class BitmapTag: public DictionaryTag
 {
 protected:
         _R<BitmapContainer> bitmap;
-    void loadBitmap(uint8_t* inData, int datasize);
+    void loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesData=NULL, int tablesLen=0);
 public:
 	BitmapTag(RECORDHEADER h,RootMovieClip* root);
 	ASObject* instance(Class_base* c=NULL);

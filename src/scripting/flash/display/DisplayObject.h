@@ -35,6 +35,7 @@ class RenderContext;
 class Stage;
 class Transform;
 class Rectangle;
+class KeyboardEvent;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
@@ -173,6 +174,11 @@ public:
 	virtual void checkRatio(uint32_t ratio) {}
 	virtual void onNewEvent();
 	virtual void afterHandleEvent();
+	
+	virtual void avm1UpdateVariable(asAtom v) {}
+	virtual void avm1HandleKeyboardEvent(KeyboardEvent* e) {}
+	virtual void afterLegacyInsert() {}
+	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;

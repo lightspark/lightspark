@@ -1477,7 +1477,7 @@ void ParseThread::parseSWF(UI8 ver)
 			if(!fat)
 			{
 				LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
-				return;
+				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
 			if(root == root->getSystemState()->mainClip)
@@ -1495,15 +1495,16 @@ void ParseThread::parseSWF(UI8 ver)
 					LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 				}
 			}
-			delete fat;
 		}
-		else 
+		else
+		{
 			root->getSystemState()->needsAVM2(true);
+		}
+
 		bool done=false;
 		bool empty=true;
 		while(!done)
 		{
-			tag=factory.readTag(root);
 			switch(tag->getType())
 			{
 				case END_TAG:
@@ -1522,6 +1523,7 @@ void ParseThread::parseSWF(UI8 ver)
 						root->commitFrame(false);
 					else
 						root->revertFrame();
+
 					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
 					root->check();
@@ -1535,10 +1537,13 @@ void ParseThread::parseSWF(UI8 ver)
 					break;
 				}
 				case DISPLAY_LIST_TAG:
+				{
 					root->addToFrame(static_cast<DisplayListTag*>(tag));
 					empty=false;
 					break;
+				}
 				case AVM1ACTION_TAG:
+				{
 					if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
 					{
 						root->addAvm1ActionToFrame(static_cast<AVM1ActionTag*>(tag));
@@ -1546,7 +1551,9 @@ void ParseThread::parseSWF(UI8 ver)
 					}
 					empty=false;
 					break;
+				}
 				case SHOW_TAG:
+				{
 					// The whole frame has been parsed, now execute all queued SymbolClass tags,
 					// in the order in which they appeared in the file.
 					while(!queuedTags.empty())
@@ -1561,10 +1568,16 @@ void ParseThread::parseSWF(UI8 ver)
 					empty=true;
 					delete tag;
 					break;
+				}
 				case SYMBOL_CLASS_TAG:
+				{
 					root->hasSymbolClass = true;
 					// fall through
+				}
 				case ABC_TAG:
+				{
+					// fall through
+				}
 				case ACTION_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
@@ -1596,6 +1609,7 @@ void ParseThread::parseSWF(UI8 ver)
 					break;
 				}
 				case FRAMELABEL_TAG:
+				{
 					/* No locking required, as the last frames is not
 					 * commited to the vm yet.
 					 */
@@ -1603,14 +1617,19 @@ void ParseThread::parseSWF(UI8 ver)
 					empty=false;
 					delete tag;
 					break;
+				}
 				case TAG:
+				{
 					//Not yet implemented tag, ignore it
 					delete tag;
 					break;
-			}
+				}
+			}// end switch
 			if(root->getSystemState()->shouldTerminate() || threadAborting)
 				break;
-		}
+
+			tag=factory.readTag(root);
+		}// end while
 	}
 	catch(std::exception& e)
 	{

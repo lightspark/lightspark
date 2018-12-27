@@ -2275,22 +2275,25 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	}
 }
 
-void RootMovieClip::registerEmbeddedFont(const tiny_string fontname, DefineFont3Tag *tag)
+void RootMovieClip::registerEmbeddedFont(const tiny_string fontname, FontTag *tag)
 {
-	auto it = embeddedfonts.find(fontname);
-	if (it == embeddedfonts.end())
-		embeddedfonts[fontname] = tag;
+	if (!fontname.empty())
+	{
+		auto it = embeddedfonts.find(fontname);
+		if (it == embeddedfonts.end())
+			embeddedfonts[fontname] = tag;
+	}
 	embeddedfontsByID[tag->getId()] = tag;
 }
 
-DefineFont3Tag *RootMovieClip::getEmbeddedFont(const tiny_string fontname) const
+FontTag *RootMovieClip::getEmbeddedFont(const tiny_string fontname) const
 {
 	auto it = embeddedfonts.find(fontname);
 	if (it != embeddedfonts.end())
 		return it->second;
 	return NULL;
 }
-DefineFont3Tag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
+FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 {
 	auto it = embeddedfontsByID.find(fontID);
 	if (it != embeddedfontsByID.end())

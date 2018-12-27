@@ -33,12 +33,6 @@ ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h)
 	skip(in);
 }
 
-DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,_("DefineFontInfo Tag"));
-	skip(in);
-}
-
 DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,_("DefineFontNameTag Tag"));

@@ -111,7 +111,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 			ret=new AVM1ActionTag(h,f,root);
 			break;
 		case 13:
-			ret=new DefineFontInfoTag(h,f);
+			ret=new DefineFontInfoTag(h,f,root);
 			break;
 		case 14:
 			ret=new DefineSoundTag(h,f,root);
@@ -512,6 +512,87 @@ void lightspark::ignore(istream& i, int count)
 	delete[] buf;
 }
 
+DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):Tag(h)
+{
+	LOG(LOG_TRACE,_("DefineFontInfoTag"));
+	UI16_SWF FontID;
+	in >> FontID;
+	FontTag* fonttag = dynamic_cast<FontTag*>(root->dictionaryLookup(FontID));
+	if (!fonttag)
+	{
+		LOG(LOG_ERROR,"DefineFontInfoTag font not found:"<<FontID);
+		ignore(in,h.getLength()-2);
+	}
+	UI8 FontNameLen;
+	in >> FontNameLen;
+	fonttag->fontname = tiny_string(in,FontNameLen);
+
+	BitStream bs(in);
+	UB(2,bs);
+	fonttag->FontFlagsSmallText = UB(1,bs);
+	fonttag->FontFlagsShiftJIS = UB(1,bs);
+	fonttag->FontFlagsANSI = UB(1,bs);
+	fonttag->FontFlagsItalic = UB(1,bs);
+	fonttag->FontFlagsBold = UB(1,bs);
+
+	bool FontFlagsWideCodes = UB(1,bs);
+	int NumGlyphs = fonttag->getGlyphShapes().size();
+	if(FontFlagsWideCodes)
+	{
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			UI16_SWF t;
+			in >> t;
+			fonttag->CodeTable.push_back(t);
+		}
+	}
+	else
+	{
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			UI8 t;
+			in >> t;
+			fonttag->CodeTable.push_back(t);
+		}
+	}
+	root->registerEmbeddedFont(fonttag->getFontname(),fonttag);
+}
+
+ASObject* FontTag::instance(Class_base* c)
+{ 
+	Class_base* retClass=NULL;
+	if(c)
+		retClass=c;
+	else if(bindedTo)
+		retClass=bindedTo;
+	else
+		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
+
+	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	LOG(LOG_NOT_IMPLEMENTED,"FontTag::instance doesn't handle all font properties");
+	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
+	return ret;
+}
+
+bool FontTag::hasGlyphs(const tiny_string text) const
+{
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		bool found = false;
+		for (unsigned int i = 0; i < CodeTable.size(); i++)
+		{
+			if (CodeTable[i] == *it)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
 {
 	LOG(LOG_TRACE,_("DefineFont"));
@@ -535,24 +616,54 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 		in >> t;
 		GlyphShapeTable.push_back(t);
 	}
-}
-ASObject* DefineFontTag::instance(Class_base* c)
-{ 
-	tiny_string fontname("");
-	Class_base* retClass=NULL;
-	if(c)
-		retClass=c;
-	else if(bindedTo)
-		retClass=bindedTo;
-	else
-		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
-
-	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
-	LOG(LOG_NOT_IMPLEMENTED,"DefineFontTag::instance doesn't handle all font properties");
-	ret->SetFont(fontname,false,false,true,false);
-	return ret;
+	root->registerEmbeddedFont("",this);
 }
 
+void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
+{
+	std::list<FILLSTYLE> fillStyles;
+	Vector2 curPos;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+	fillStyles.push_back(fs);
+
+	int tokenscaling = fontpixelsize * this->scaling;
+	curPos.y = (1024);
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13 || *it == 10)
+		{
+			curPos.x = 0;
+			curPos.y += leading*1024;
+		}
+		else
+		{
+			bool found = false;
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
+					Vector2 glyphPos = curPos*tokenscaling;
+	
+					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
+							   glyphPos.x+startpos*1024*20,
+							   glyphPos.y);
+	
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+	
+					curPos.x += tokenscaling;
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				LOG(LOG_INFO,"DefineFontTag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
+		}
+	}
+}
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
 {
 	LOG(LOG_TRACE,_("DefineFont2"));
@@ -566,6 +677,8 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	FontFlagsWideCodes = UB(1,bs);
 	FontFlagsItalic = UB(1,bs);
 	FontFlagsBold = UB(1,bs);
+	UI8 FontNameLen;
+	std::vector <UI8> FontName;
 	in >> LanguageCode >> FontNameLen;
 	for(int i=0;i<FontNameLen;i++)
 	{
@@ -573,6 +686,8 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		in >> t;
 		FontName.push_back(t);
 	}
+	fontname = tiny_string((const char*)FontName.data(),true);
+
 	in >> NumGlyphs;
 	if(FontFlagsWideOffsets)
 	{
@@ -640,30 +755,59 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	}
 	//TODO: implmented Kerning support
 	ignore(in,KerningCount*4);
+	root->registerEmbeddedFont(getFontname(),this);
 }
-ASObject* DefineFont2Tag::instance(Class_base* c)
-{ 
-	tiny_string fontname((const char*)FontName.data(),true);
-	Class_base* retClass=NULL;
-	if(c)
-		retClass=c;
-	else if(bindedTo)
-		retClass=bindedTo;
-	else
-		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
-	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
-	LOG(LOG_NOT_IMPLEMENTED,"DefineFont2Tag::instance doesn't handle all font properties");
-	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
-	return ret;
-}
-const tiny_string DefineFont2Tag::getFontname() const
+void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
 {
-	return tiny_string((const char*)FontName.data(),true);
+	std::list<FILLSTYLE> fillStyles;
+	Vector2 curPos;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+	fillStyles.push_back(fs);
+
+	int tokenscaling = fontpixelsize * this->scaling;
+	curPos.y = (1024+this->FontLeading/2.0);
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13 || *it == 10)
+		{
+			curPos.x = 0;
+			curPos.y += leading*1024;
+		}
+		else
+		{
+			bool found = false;
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
+					Vector2 glyphPos = curPos*tokenscaling;
+	
+					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
+							   glyphPos.x+startpos*1024*20,
+							   glyphPos.y);
+	
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+	
+					if (FontFlagsHasLayout)
+						curPos.x += FontAdvanceTable[i];
+					else
+						curPos.x += tokenscaling;
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				LOG(LOG_INFO,"DefineFont2Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
+		}
+	}
 }
 
-
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root)
 {
 	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;
@@ -676,6 +820,8 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	FontFlagsWideCodes = UB(1,bs);
 	FontFlagsItalic = UB(1,bs);
 	FontFlagsBold = UB(1,bs);
+	UI8 FontNameLen;
+	std::vector <UI8> FontName;
 	in >> LanguageCode >> FontNameLen;
 	for(int i=0;i<FontNameLen;i++)
 	{
@@ -683,6 +829,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		in >> t;
 		FontName.push_back(t);
 	}
+	fontname = tiny_string((const char*)FontName.data(),true);
 	in >> NumGlyphs;
 	streampos offsetReference = in.tellg();
 	if(FontFlagsWideOffsets)
@@ -778,27 +925,6 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 
 }
-ASObject* DefineFont3Tag::instance(Class_base* c)
-{ 
-	tiny_string fontname((const char*)FontName.data(),true);
-	Class_base* retClass=NULL;
-	if(c)
-		retClass=c;
-	else if(bindedTo)
-		retClass=bindedTo;
-	else
-		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
-
-	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
-	LOG(LOG_NOT_IMPLEMENTED,"DefineFont3Tag::instance doesn't handle all font properties");
-	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
-	return ret;
-}
-
-const tiny_string DefineFont3Tag::getFontname() const
-{
-	return tiny_string((const char*)FontName.data(),true);
-}
 
 void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
 {
@@ -845,25 +971,6 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
-}
-
-bool DefineFont3Tag::hasGlyphs(const tiny_string text) const
-{
-	for (CharIterator it = text.begin(); it != text.end(); it++)
-	{
-		bool found = false;
-		for (unsigned int i = 0; i < CodeTable.size(); i++)
-		{
-			if (CodeTable[i] == *it)
-			{
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			return false;
-	}
-	return true;
 }
 
 DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)

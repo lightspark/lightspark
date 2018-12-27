@@ -418,9 +418,17 @@ public:
 
 class FontTag: public DictionaryTag
 {
+friend class DefineFontInfoTag;
 protected:
 	UI16_SWF FontID;
 	std::vector<SHAPE> GlyphShapeTable;
+	std::vector<uint16_t> CodeTable;
+	tiny_string fontname;
+	bool FontFlagsSmallText;
+	bool FontFlagsShiftJIS;
+	bool FontFlagsANSI;
+	bool FontFlagsItalic;
+	bool FontFlagsBold;
 public:
 	/* Multiply the coordinates of the SHAPEs by this
 	 * value to get a resolution of 1024*20th pixel
@@ -433,7 +441,10 @@ public:
 		return GlyphShapeTable;
 	}
 	int getId() const { return FontID; }
-	virtual const tiny_string getFontname() const { return ""; }
+	ASObject* instance(Class_base* c=NULL);
+	const tiny_string getFontname() const { return fontname;}
+	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const=0;
+	bool hasGlyphs(const tiny_string text) const;
 };
 
 class DefineFontTag: public FontTag
@@ -443,13 +454,13 @@ protected:
 	std::vector<uint16_t> OffsetTable;
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	ASObject* instance(Class_base* c=NULL);
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
 };
 
 class DefineFontInfoTag: public Tag
 {
 public:
-	DefineFontInfoTag(RECORDHEADER h, std::istream& in);
+	DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieClip* root);
 };
 
 class DefineFont2Tag: public FontTag
@@ -458,19 +469,11 @@ class DefineFont2Tag: public FontTag
 private:
 	std::vector<uint32_t> OffsetTable;
 	bool FontFlagsHasLayout;
-	bool FontFlagsShiftJIS;
-	bool FontFlagsSmallText;
-	bool FontFlagsANSI;
 	bool FontFlagsWideOffsets;
 	bool FontFlagsWideCodes;
-	bool FontFlagsItalic;
-	bool FontFlagsBold;
 	LANGCODE LanguageCode;
-	UI8 FontNameLen;
-	std::vector <UI8> FontName;
 	UI16_SWF NumGlyphs;
 	uint32_t CodeTableOffset;
-	std::vector <uint16_t> CodeTable;
 	SI16_SWF FontAscent;
 	SI16_SWF FontDescent;
 	SI16_SWF FontLeading;
@@ -481,8 +484,7 @@ private:
 
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	ASObject* instance(Class_base* c=NULL);
-	const tiny_string getFontname() const;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
 };
 
 class DefineFont3Tag: public FontTag
@@ -490,19 +492,11 @@ class DefineFont3Tag: public FontTag
 private:
 	std::vector<uint32_t> OffsetTable;
 	UB FontFlagsHasLayout;
-	UB FontFlagsShiftJIS;
-	UB FontFlagsSmallText;
-	UB FontFlagsANSI;
 	UB FontFlagsWideOffsets;
 	UB FontFlagsWideCodes;
-	UB FontFlagsItalic;
-	UB FontFlagsBold;
 	LANGCODE LanguageCode;
-	UI8 FontNameLen;
-	std::vector <UI8> FontName;
 	UI16_SWF NumGlyphs;
 	uint32_t CodeTableOffset;
-	std::vector <UI16_SWF> CodeTable;
 	SI16_SWF FontAscent;
 	SI16_SWF FontDescent;
 	SI16_SWF FontLeading;
@@ -513,10 +507,7 @@ private:
 
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	ASObject* instance(Class_base* c=NULL);
-	const tiny_string getFontname() const;
 	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
-	bool hasGlyphs(const tiny_string text) const;
 };
 
 class DefineFont4Tag : public DictionaryTag

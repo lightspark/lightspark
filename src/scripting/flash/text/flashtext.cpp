@@ -105,7 +105,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	ARG_UNPACK_ATOM(text);
 	if (th->fontType == "embedded")
 	{
-		DefineFont3Tag* f = sys->mainClip->getEmbeddedFont(th->fontName);
+		FontTag* f = sys->mainClip->getEmbeddedFont(th->fontName);
 		if (f)
 		{
 			ret.setBool(f->hasGlyphs(text));
@@ -916,7 +916,7 @@ void TextField::updateSizes()
 	//Compute (text)width, (text)height
 	
 	RootMovieClip* currentRoot=getSystemState()->mainClip;
-	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	if (embeddedfont)
 	{
 		tokens.clear();
@@ -1123,7 +1123,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 
 	RootMovieClip* currentRoot=getSystemState()->mainClip;
-	DefineFont3Tag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
 	MATRIX totalMatrix;
 	if (embeddedfont)
@@ -1136,7 +1136,6 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	std::vector<IDrawable::MaskData> masks;
 	computeMasksAndMatrix(target, masks, totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
-	totalMatrix.translate(autosizeposition,0);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	if(width==0 || height==0)
 		return NULL;

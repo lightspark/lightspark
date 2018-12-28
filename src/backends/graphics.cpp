@@ -774,6 +774,19 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	layout = pango_cairo_create_layout(cr);
 	pangoLayoutFromData(layout, textData);
 
+	int xpos=0;
+	switch(textData.autoSize)
+	{
+		case TextData::AUTO_SIZE::AS_RIGHT:
+			xpos = textData.width-textData.textWidth;
+			break;
+		case TextData::AUTO_SIZE::AS_CENTER:
+			xpos = (textData.width-textData.textWidth)/2;
+			break;
+		default:
+			break;
+	}
+	
 	if(textData.background)
 	{
 		cairo_set_source_rgb (cr, textData.backgroundColor.Red/255., textData.backgroundColor.Green/255., textData.backgroundColor.Blue/255.);
@@ -789,10 +802,12 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	}
 
 	/* draw the text */
+	cairo_translate(cr, xpos, 0);
 	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
 	cairo_translate(cr, translateX, translateY);
 	pango_cairo_show_layout(cr, layout);
 	cairo_translate(cr, -translateX, -translateY);
+	cairo_translate(cr, -xpos, 0);
 
 	if(textData.border)
 	{
@@ -801,14 +816,30 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 		cairo_rectangle(cr, 0, 0, textData.width, textData.height);
 		cairo_stroke_preserve(cr);
 	}
+	if(textData.caretblinkstate)
+	{
+		uint32_t w,h,tw,th;
+		tw=0;
+		tiny_string currenttext = textData.text;
+		if (caretIndex < currenttext.numChars())
+		{
+			textData.text = textData.text.substr(0,caretIndex);
+		}
+		getBounds(textData,w,h,tw,th);
+		textData.text = currenttext;
+		tw+=xpos;
+		cairo_set_source_rgb(cr, 0, 0, 0);
+		cairo_set_line_width(cr, 2);
+		cairo_move_to(cr,tw,2);
+		cairo_line_to(cr,tw, textData.height-2);
+		cairo_stroke_preserve(cr);
+	}
 
 	g_object_unref(layout);
 }
 
 bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th)
 {
-	//TODO:check locking
-	Locker l(pangoMutex);
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 

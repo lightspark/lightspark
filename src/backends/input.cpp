@@ -76,6 +76,22 @@ bool InputThread::worker(SDL_Event *event)
 			ret=TRUE;
 			break;
 		}
+		case SDL_TEXTINPUT:
+		{
+			if(m_sys->currentVm == NULL)
+				break;
+		
+			Locker locker(mutexListeners);
+		
+			_NR<InteractiveObject> target = m_sys->stage->getFocusTarget();
+			if (target.isNull())
+				break;
+		
+			tiny_string s = event->text.text;
+			target->incRef();
+			m_sys->currentVm->addEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
+			break;
+		}
 		case SDL_MOUSEBUTTONDOWN:
 		{
 			if(event->button.button == SDL_BUTTON_LEFT)

@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/ui/keycodes.h"
 #include "scripting/class.h"
 #include "compat.h"
 #include "backends/geometry.h"
@@ -119,7 +120,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),alwaysShowSelection(false),
-	  caretIndex(0), condenseWhite(false), displayAsPassword(false),
+	  condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
 	  sharpness(0), thickness(0), useRichTextClipboard(false)
@@ -930,7 +931,10 @@ void TextField::updateSizes()
 		}
 	}
 	else
+	{
+		Locker l(CairoPangoRenderer::pangoMutex);
 		CairoPangoRenderer::getBounds(*this, w, h, tw, th);
+	}
 	//width = w; //TODO: check the case when w,h == 0
 	textWidth=tw;
 	//height = h;
@@ -1084,6 +1088,44 @@ void TextField::afterLegacyDelete(DisplayObjectContainer *par)
 	}
 }
 
+void TextField::lostFocus()
+{
+	SDL_StopTextInput();
+	getSystemState()->removeJob(this);
+}
+
+void TextField::gotFocus()
+{
+	if (this->type != ET_EDITABLE)
+		return;
+	SDL_StartTextInput();
+	selectionBeginIndex = text.numChars();
+	selectionEndIndex = selectionBeginIndex;
+	caretIndex=selectionBeginIndex;
+	getSystemState()->addTick(500,this);
+}
+
+void TextField::textInputChanged(const tiny_string &newtext)
+{
+	if (this->type != ET_EDITABLE)
+		return;
+	tiny_string tmptext = text;
+	tmptext.replace(caretIndex,0,newtext);
+	this->updateText(tmptext);
+	caretIndex+= newtext.numChars();
+}
+
+void TextField::tick()
+{
+	if (this->type != ET_EDITABLE)
+		return;
+	caretblinkstate = !caretblinkstate;
+	hasChanged=true;
+	
+	if(onStage && isVisible())
+		requestInvalidation(this->getSystemState());
+}
+
 void TextField::textUpdated()
 {
 	avm1SyncTagVar();
@@ -1111,6 +1153,44 @@ void TextField::requestInvalidation(InvalidateQueue* q)
 	}
 }
 
+void TextField::defaultEventBehavior(_R<Event> e)
+{
+	if (this->type != ET_EDITABLE)
+		return;
+	if (e->type == "keyDown")
+	{
+		KeyboardEvent* ev = e->as<KeyboardEvent>();
+		uint32_t modifiers = ev->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
+		if (modifiers == KMOD_NONE)
+		{
+			tiny_string newtext = this->text;
+			switch (ev->getKeyCode())
+			{
+				case AS3KEYCODE_BACKSPACE:
+					if (!this->text.empty() && caretIndex > 0)
+					{
+						caretIndex--;
+						newtext=this->text.replace(caretIndex,1,"");
+					}
+					break;
+				case AS3KEYCODE_LEFT:
+					if (this->caretIndex > 0)
+						this->caretIndex--;
+					break;
+				case AS3KEYCODE_RIGHT:
+					if (this->caretIndex < this->text.numChars())
+						this->caretIndex++;
+					break;
+				default:
+					break;
+			}
+			this->updateText(newtext);
+		}
+		else
+			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getCharCode());
+	}
+}
+
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
 	int32_t x,y;
@@ -1129,8 +1209,66 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	if (embeddedfont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
+		if (this->border || this->background)
+		{
+			FILLSTYLE fillstyle(0xff);
+			fillstyle.FillStyleType=SOLID_FILL;
+			fillstyle.Color=this->backgroundColor;
+			tokens.emplace_back(GeomToken(SET_FILL, fillstyle));
+			tokens.emplace_back(GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(CLEAR_FILL));
+		}
+		if (this->border)
+		{
+			LINESTYLE2 linestyle(0xff);
+			linestyle.Color=this->borderColor;
+			linestyle.Width=20;
+			tokens.emplace_back(GeomToken(SET_STROKE, linestyle));
+			tokens.emplace_back(GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling)));
+			tokens.emplace_back(GeomToken(CLEAR_STROKE));
+		}
+		if (this->caretblinkstate)
+		{
+			uint32_t tw=0;
+			TokenContainer container(nullptr,nullptr);
+			if (!text.empty())
+			{
+				tiny_string tmptxt = text.substr(0,caretIndex);
+				embeddedfont->fillTextTokens(container.tokens,tmptxt,fontSize,textColor,leading,autosizeposition);
+				number_t x1,x2,y1,y2;
+				if (container.boundsRect(x1,x2,y1,y2))
+				{
+					tw = x2-x1;
+					tw += autosizeposition/scaling;
+				}
+				else
+					tw = autosizeposition/scaling;
+			}
+			else
+			{
+				tw -= autosizeposition;
+				tw /=scaling;
+			}
+			LINESTYLE2 linestyle(0xff);
+			linestyle.Color=RGB(0,0,0);
+			linestyle.Width=40;
+			int ypadding = (bymax-bymin-2)/scaling;
+			tokens.emplace_back(GeomToken(SET_STROKE, linestyle));
+			tokens.emplace_back(GeomToken(MOVE, Vector2(tw, bymin/scaling+ypadding)));
+			tokens.emplace_back(GeomToken(STRAIGHT, Vector2(tw, (bymax-bymin)/scaling-ypadding)));
+			tokens.emplace_back(GeomToken(CLEAR_STROKE));
+		}
+		uint32_t tokencount = tokens.size();
 		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,autosizeposition);
-		if (!tokensEmpty())
+		if (tokencount < tokens.size())
 			return TokenContainer::invalidate(target, totalMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
@@ -1152,7 +1290,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	*/
 	return new CairoPangoRenderer(*this,
 				totalMatrix, x, y, width, height, 1.0f,
-				getConcatenatedAlpha(), masks,smoothing);
+				getConcatenatedAlpha(), masks,smoothing,caretIndex);
 }
 
 void TextField::renderImpl(RenderContext& ctxt) const

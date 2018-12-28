@@ -67,7 +67,7 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
-class TextField: public InteractiveObject, public TextData, public TokenContainer
+class TextField: public InteractiveObject, public TextData, public TokenContainer, public ITickJob
 {
 private:
 	/*
@@ -96,6 +96,7 @@ private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
 	void requestInvalidation(InvalidateQueue* q);
+	void defaultEventBehavior(_R<Event> e);
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
@@ -129,6 +130,12 @@ public:
 	void avm1UpdateVariable(asAtom v);
 	void afterLegacyInsert();
 	void afterLegacyDelete(DisplayObjectContainer* par);
+	void lostFocus();
+	void gotFocus();
+	void textInputChanged(const tiny_string& newtext);
+	void tick();
+	void tickFence() {}
+	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
 	ASFUNCTION_ATOM(_setAntiAliasType);
@@ -174,7 +181,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
-	ASPROPERTY_GETTER(int32_t, caretIndex);
+	ASPROPERTY_GETTER(uint32_t, caretIndex);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
 	ASPROPERTY_GETTER_SETTER(bool, displayAsPassword);
 	ASPROPERTY_GETTER_SETTER(bool, embedFonts);

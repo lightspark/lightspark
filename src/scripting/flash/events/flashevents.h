@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -123,6 +123,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(shiftKey);
 	uint32_t getCharCode() const { return charCode; }
 	uint32_t getKeyCode() const { return keyCode; }
+	uint32_t getModifiers() const { return modifiers; }
 };
 
 class FocusEvent: public Event
@@ -522,6 +523,16 @@ public:
 	ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> client, _NR<Responder> responder);
 	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; }
 	void finalize();
+};
+class TextInputEvent: public Event
+{
+friend class ABCVm;
+private:
+	_NR<InteractiveObject> target;
+	tiny_string text;
+public:
+	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(NULL, "TextInputEvent"),target(m),text(s) {}
+	EVENT_TYPE getEventType() const { return TEXTINPUT_EVENT; }
 };
 
 class DRMErrorEvent: public ErrorEvent

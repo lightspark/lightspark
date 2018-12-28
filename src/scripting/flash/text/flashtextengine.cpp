@@ -678,6 +678,7 @@ void TextLine::updateSizes()
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
+	Locker l(CairoPangoRenderer::pangoMutex);
 	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
 	if (w == 0)
 		w = tw;
@@ -728,7 +729,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 
 	return new CairoPangoRenderer(*this,
 				      totalMatrix, x, y, width, height, 1.0f,
-				      getConcatenatedAlpha(),masks,smoothing);
+				      getConcatenatedAlpha(),masks,smoothing,0);
 }
 
 void TextLine::renderImpl(RenderContext& ctxt) const

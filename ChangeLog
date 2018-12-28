@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement support for text input
 	* implement support for sound streaming (SoundStreamHead/SoundStreamHeadBlock tags)
 	* experimental support for older swf (instead of calling gnash), activated by setting environment variable LIGHTSPARK_USE_GNASH=0
 	* PPAPI plugin works again

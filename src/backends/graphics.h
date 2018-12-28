@@ -269,7 +269,7 @@ public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
-		autoSize(AS_NONE), fontSize(12), wordWrap(false) {}
+		autoSize(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false) {}
 	uint32_t width;
 	uint32_t height;
 	uint32_t leading;
@@ -290,6 +290,7 @@ public:
 	AUTO_SIZE autoSize;
 	uint32_t fontSize;
 	bool wordWrap;
+	bool caretblinkstate;
 };
 
 class LineData {
@@ -316,19 +317,20 @@ public:
 
 class CairoPangoRenderer : public CairoRenderer
 {
-	static StaticMutex pangoMutex;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
 	void executeDraw(cairo_t* cr);
 	TextData textData;
+	uint32_t caretIndex;
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
+	static StaticMutex pangoMutex;
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing), textData(_textData) {}
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,uint32_t _ci)
+		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

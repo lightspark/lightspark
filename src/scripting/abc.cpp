@@ -1457,6 +1457,12 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
+	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
+	{
+		dispatcher->incRef();
+		dispatcher->getSystemState()->stage->setFocusTarget(_MR(dispatcher->as<InteractiveObject>()));
+	}
+	
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
@@ -1608,6 +1614,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				{
 					LOG(LOG_ERROR, "Internal exception while parsing RPC message");
 				}
+				break;
+			}
+			case TEXTINPUT_EVENT:
+			{
+				TextInputEvent* ev=static_cast<TextInputEvent*>(e.second.getPtr());
+				if (ev->target)
+					ev->target->textInputChanged(ev->text);
 				break;
 			}
 			default:

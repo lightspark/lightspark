@@ -37,6 +37,7 @@ class TokenContainer
 {
 	friend class Graphics;
 	friend class MorphShape;
+	friend class TextField;
 public:
 	DisplayObject* owner;
 	/* multiply shapes' coordinates by this

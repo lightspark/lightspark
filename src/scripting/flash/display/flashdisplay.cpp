@@ -2863,7 +2863,11 @@ _NR<InteractiveObject> Stage::getFocusTarget()
 void Stage::setFocusTarget(_NR<InteractiveObject> f)
 {
 	SpinlockLocker l(focusSpinlock);
+	if (focus)
+		focus->lostFocus();
 	focus = f;
+	if (focus)
+		focus->gotFocus();
 }
 
 void Stage::initFrame()
@@ -3397,7 +3401,7 @@ void SimpleButton::avm1HandleKeyboardEvent(KeyboardEvent *e)
 					execute = code==SDL_SCANCODE_EQUALS;break;
 				case 91:// [
 					execute = code==SDL_SCANCODE_LEFTBRACKET;break;
-				case 92:// \\
+				case 92:// 
 					execute = code==SDL_SCANCODE_BACKSLASH;break;
 				case 93:// ]
 					execute = code==SDL_SCANCODE_RIGHTBRACKET;break;

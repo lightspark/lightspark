@@ -86,6 +86,9 @@ public:
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	virtual void lostFocus() {}
+	virtual void gotFocus() {} 
+	virtual void textInputChanged(const tiny_string& newtext) {} 
 };
 
 class DisplayObjectContainer: public InteractiveObject

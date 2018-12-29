@@ -921,7 +921,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		in >> KerningCount;
 	}
 	//TODO: implment Kerning support
-	ignore(in,KerningCount*4);
+	ignore(in,KerningCount* (FontFlagsWideCodes ? 6 : 4));
 	root->registerEmbeddedFont(getFontname(),this);
 
 }
@@ -1564,6 +1564,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h)
 {
 	LOG(LOG_TRACE,_("PlaceObject3"));
+	uint32_t start = in.tellg();
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1613,7 +1614,14 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> BlendMode;
 
 	if(PlaceFlagHasCacheAsBitmap)
-		in >> BitmapCache;
+	{
+		uint32_t end = in.tellg();
+		// adobe seems to allow PlaceFlagHasCacheAsBitmap set without actual BitmapCache value
+		if (end-start == this->Header.getLength())
+			BitmapCache=1;
+		else
+			in >> BitmapCache;
+	}
 
 	if(PlaceFlagHasClipAction)
 		in >> ClipActions;
@@ -2078,16 +2086,19 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 JPEGTablesTag::JPEGTablesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	if (JPEGTables == NULL)
+	tableSize=Header.getLength();
+	if (tableSize != 0)
 	{
-		tableSize=Header.getLength();
-		JPEGTables=new(nothrow) uint8_t[tableSize];
-		in.read((char*)JPEGTables, tableSize);
-	}
-	else
-	{
-		LOG(LOG_ERROR, "Malformed SWF file: duplicated JPEGTables tag");
-		skip(in);
+		if (JPEGTables == NULL)
+		{
+			JPEGTables=new(nothrow) uint8_t[tableSize];
+			in.read((char*)JPEGTables, tableSize);
+		}
+		else
+		{
+			LOG(LOG_ERROR, "Malformed SWF file: duplicated JPEGTables tag");
+			skip(in);
+		}
 	}
 }
 

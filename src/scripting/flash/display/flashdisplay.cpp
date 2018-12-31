@@ -3844,6 +3844,7 @@ void MovieClip::initFrame()
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
 
+	std::list<Frame>::iterator curriter=frames.end();
 	if(getFramesLoaded())
 	{
 		std::list<Frame>::iterator iter=frames.begin();
@@ -3854,7 +3855,7 @@ void MovieClip::initFrame()
 				iter->execute(this);
 			}
 			if (i==state.FP && !state.explicit_FP)
-				iter->AVM1executeActions(this);
+				curriter= iter;
 			++iter;
 		}
 	}
@@ -3875,6 +3876,9 @@ void MovieClip::initFrame()
 
 	/* call our own constructor, if necassary */
 	DisplayObject::initFrame();
+
+	if (curriter != frames.end())
+		curriter->AVM1executeActions(this);
 
 	/* Run framescripts if this is a new frame. We do it at the end because our constructor
 	 * may just have registered one. 

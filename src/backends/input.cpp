@@ -176,10 +176,10 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 {
 	if(m_sys->currentVm == NULL)
 		return;
-	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	if (selected.isNull())
 		return;
+	Locker locker(mutexListeners);
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
@@ -192,10 +192,10 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 {
 	if(m_sys->currentVm == NULL)
 		return;
-	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
 	if (selected.isNull())
 		return;
+	Locker locker(mutexListeners);
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
@@ -207,10 +207,10 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 {
 	if(m_sys->currentVm == NULL)
 		return;
-	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	if (selected.isNull())
 		return;
+	Locker locker(mutexListeners);
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
@@ -304,11 +304,11 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
  		return;
 #endif
 
-	Locker locker(mutexListeners);
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
-	number_t localX, localY;
 	if (selected.isNull())
 		return;
+	Locker locker(mutexListeners);
+	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
 	m_sys->currentVm->addEvent(selected,
@@ -602,4 +602,3 @@ void InputThread::stopDrag(Sprite* s)
 		dragLimit = 0;
 	}
 }
-

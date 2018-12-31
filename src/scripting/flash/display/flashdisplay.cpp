@@ -2575,6 +2575,8 @@ void MorphShape::checkRatio(uint32_t ratio)
 {
 	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
 	this->hasChanged = true;
+	if (isOnStage())
+		requestInvalidation(getSystemState());
 }
 
 

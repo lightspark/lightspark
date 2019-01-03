@@ -127,7 +127,7 @@ public:
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
-	void avm1UpdateVariable(asAtom v);
+	void UpdateVariableBinding(asAtom v);
 	void afterLegacyInsert();
 	void afterLegacyDelete(DisplayObjectContainer* par);
 	void lostFocus();

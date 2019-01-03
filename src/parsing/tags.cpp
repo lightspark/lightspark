@@ -40,6 +40,8 @@
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/avm1/avm1sound.h"
+#include "scripting/avm1/avm1display.h"
 #include "backends/audio.h"
 
 #undef RGB
@@ -48,6 +50,10 @@
 #define LOSSLESS_BITMAP_PALETTE 3
 #define LOSSLESS_BITMAP_RGB15 4
 #define LOSSLESS_BITMAP_RGB24 5
+
+// Adobe seems to place legacy displayobjects at negative depths starting at -16384
+// see https://www.kirupa.com/developer/actionscript/depths2.htm
+#define LEGACY_DEPTH_START -16384
 
 using namespace std;
 using namespace lightspark;
@@ -179,6 +185,9 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 		case 48:
 			ret=new DefineFont2Tag(h,f,root);
 			break;
+		case 56:
+			ret=new ExportAssetsTag(h,f,root);
+			break;
 		case 58:
 			ret=new EnableDebuggerTag(h,f);
 			break;
@@ -283,7 +292,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 
 void RemoveObject2Tag::execute(DisplayObjectContainer* parent)
 {
-	parent->deleteLegacyChildAt(Depth);
+	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
 }
 
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -495,9 +504,13 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		retClass=c;
 	else if(bindedTo)
 		retClass=bindedTo;
+	else if (loadedFrom->version < 9)
+		retClass=Class<AVM1MovieClip>::getClass(loadedFrom->getSystemState());
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
-	MovieClip* spr = new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
+	MovieClip* spr = loadedFrom->version < 9 ?
+				new (retClass->memoryAccount) AVM1MovieClip(retClass, *this, this->getId()) :
+				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,true);
 	return spr;
@@ -579,6 +592,8 @@ bool FontTag::hasGlyphs(const tiny_string text) const
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		bool found = false;
+		if (*it < 0x20)
+			continue;
 		for (unsigned int i = 0; i < CodeTable.size(); i++)
 		{
 			if (CodeTable[i] == *it)
@@ -1243,10 +1258,17 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 ASObject *DefineShapeTag::instance(Class_base *c)
 {
 	if(c==NULL)
-		c=Class<Shape>::getClass(loadedFrom->getSystemState());
+	{
+		if (loadedFrom->version < 9)
+			c=Class<AVM1Shape>::getClass(loadedFrom->getSystemState());
+		else
+			c=Class<Shape>::getClass(loadedFrom->getSystemState());
+	}
 	tokensVector tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory));
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
-	Shape* ret=new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f);
+	Shape* ret= loadedFrom->version < 9 ?
+				new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f):
+				new (c->memoryAccount) AVM1Shape(c, tokens, 1.0f/20.0f);
 	return ret;
 }
 
@@ -1435,7 +1457,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		obj->Ratio=Ratio;
 
 	if(PlaceFlagHasClipDepth)
-		obj->ClipDepth=ClipDepth;
+		obj->ClipDepth=LEGACY_DEPTH_START+ClipDepth;
 
 	if(PlaceFlagHasName)
 	{
@@ -1462,8 +1484,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		LOG(LOG_ERROR,_("Invalid PlaceObject2Tag that does nothing"));
 		return;
 	}
+	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
+	uint32_t oldchar=0;
+	if (exists)
+		oldchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->getTagID();
 
-	if(PlaceFlagHasCharacter)
+	if(PlaceFlagHasCharacter && (!exists || (oldchar != CharacterId)))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
@@ -1489,38 +1515,43 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		assert_and_throw(toAdd);
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
+		toAdd->legacy = true;
 
 		setProperties(toAdd, parent);
 
-		if( parent->hasLegacyChildAt(Depth) )
+		if(exists)
 		{
-			if(PlaceFlagMove)
+			if(PlaceFlagMove || (oldchar != CharacterId))
 			{
-				parent->deleteLegacyChildAt(Depth);
+				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
 				/* parent becomes the owner of toAdd */
-				parent->insertLegacyChildAt(Depth,toAdd);
+				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
 			}
 			else
-				LOG(LOG_ERROR,"Invalid PlaceObject2Tag that overwrites an object without moving at depth "<<Depth);
+				LOG(LOG_ERROR,"Invalid PlaceObject2Tag that overwrites an object without moving at depth "<<LEGACY_DEPTH_START+Depth);
 		}
 		else
 		{
 			/* parent becomes the owner of toAdd */
-			parent->insertLegacyChildAt(Depth,toAdd);
+			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
 		}
 	}
 	else
 	{
-		parent->transformLegacyChildAt(Depth,Matrix);
+		parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
+	}
+	if (PlaceFlagHasClipAction)
+	{
+		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 	}
 	if (PlaceFlagHasRatio)
-		parent->checkRatioForLegacyChildAt(Depth,Ratio);
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio);
 	if(PlaceFlagHasColorTransform)
-		parent->checkColorTransformForLegacyChildAt(Depth,ColorTransformWithAlpha);
+		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
 	
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),placedTag(NULL)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),ClipActions(root->version),placedTag(nullptr)
 {
 	LOG(LOG_TRACE,_("PlaceObject2"));
 
@@ -1561,7 +1592,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		placedTag=root->dictionaryLookup(CharacterId);
 }
 
-PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h)
+PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h,root->version)
 {
 	LOG(LOG_TRACE,_("PlaceObject3"));
 	uint32_t start = in.tellg();
@@ -1808,21 +1839,28 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				if(!isSprite[j])
 				{
 					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getSystemState());
-					spr->insertLegacyChildAt(curDepth[j],states[j]);
+					spr->insertLegacyChildAt(LEGACY_DEPTH_START+curDepth[j],states[j]);
 					states[j] = spr;
 					spr->name = BUILTIN_STRINGS::EMPTY;
 					isSprite[j] = true;
 				}
 				Sprite* spr = Class<Sprite>::cast(states[j]);
-				spr->insertLegacyChildAt(i->PlaceDepth,state);
+				spr->insertLegacyChildAt(LEGACY_DEPTH_START+i->PlaceDepth,state);
 			}
 		}
 	}
 	Class_base* realClass=(c)?c:bindedTo;
 
 	if(realClass==NULL)
-		realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
-	SimpleButton* ret=new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3],this);
+	{
+		if (loadedFrom->version <9)
+			realClass=Class<AVM1SimpleButton>::getClass(loadedFrom->getSystemState());
+		else
+			realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
+	}
+	SimpleButton* ret= loadedFrom->version < 9 ?
+				new (realClass->memoryAccount) AVM1SimpleButton(realClass, states[0], states[1], states[2], states[3],this) :
+				new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3],this);
 	return ret;
 }
 
@@ -1930,11 +1968,17 @@ ASObject* DefineSoundTag::instance(Class_base* c)
 		retClass=c;
 	else if(bindedTo)
 		retClass=bindedTo;
+	else if (loadedFrom->version < 9)
+		retClass=Class<AVM1Sound>::getClass(loadedFrom->getSystemState());
 	else
 		retClass=Class<Sound>::getClass(loadedFrom->getSystemState());
 
-	return new (retClass->memoryAccount) Sound(retClass, SoundData,
-		AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
+	if (loadedFrom->version < 9)
+		return new (retClass->memoryAccount) AVM1Sound(retClass, SoundData,
+			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
+	else
+		return new (retClass->memoryAccount) Sound(retClass, SoundData,
+			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
 }
 
 LS_AUDIO_CODEC DefineSoundTag::getAudioCodec() const
@@ -2052,6 +2096,24 @@ EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 	if(h.getLength() > sizeof(ReservedWord))
 		in >> DebugPassword;
 	LOG(LOG_INFO,_("Debugger enabled, reserved: ") << ReservedWord << _(", password: ") << DebugPassword);
+}
+
+ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):Tag(h)
+{
+	LOG(LOG_TRACE,"ExportAssets Tag");
+	UI16_SWF count;
+	in>>count;
+	for (uint32_t i = 0; i < count; i++)
+	{
+		UI16_SWF tagid;
+		STRING tagname;
+		in >> tagid >> tagname;
+		DictionaryTag* tag = root->dictionaryLookup(tagid);
+		if (tag)
+			tag->nameID = root->getSystemState()->getUniqueStringId(tagname);
+		else
+			LOG(LOG_ERROR,"ExportAssetsTag: tag not found:"<<tagid<<" "<<tagname);
+	}
 }
 
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -2307,28 +2369,27 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Ta
 		return; 
 	}
 	
-	int len = Header.getLength();
+	uint32_t len = Header.getLength();
+	uint32_t pos = s.tellg();
 	while (true)
 	{
 		ACTIONRECORD r;
 		s>>r;
-		len -= 1; // actionCode;
-		if (r.actionCode >= 0x80)
-			len -= r.Length+2;
 		if (r.actionCode== 0)
 			break;
 		actions.push_back(r);
 	}
-	if (len < 0)
+	pos = (uint32_t)s.tellg()-pos;
+	if (len > pos)
 		throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
-	if (len > 0)
+	if (len < pos)
 	{
 		LOG(LOG_ERROR,"DoActionTag: bytes available after reading all actions:"<<len);
-		ignore(s,len);
+		ignore(s,pos-len);
 	}
 }
 
-void AVM1ActionTag::execute(MovieClip* clip)
+void AVM1ActionTag::execute(MovieClip* clip, Frame *frame)
 {
-	ACTIONRECORD::executeActions(clip,actions);
+	ACTIONRECORD::executeActions(clip,frame,actions);
 }

@@ -283,6 +283,7 @@ private:
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 
+	void registerClassesAVM1();
 	void registerClassesToplevel(Global* builtin);
 	void registerClasses();
 

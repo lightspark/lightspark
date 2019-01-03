@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <iostream>
 #include <vector>
+#include <stack>
 #include <list>
 #include <cairo.h>
 
@@ -40,7 +41,8 @@
 #define BUILTIN_STRINGS_CHAR_MAX 0x10000 // strings 0-0xffff are one-char strings of the corresponding unicode char
 namespace lightspark
 {
-enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MAX, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_AS3NS,STRING_NAMESPACENS,STRING_XML,STRING_TOSTRING,STRING_VALUEOF,STRING_LENGTH,STRING_CONSTRUCTOR,LAST_BUILTIN_STRING };
+enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MAX, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_AS3NS,STRING_NAMESPACENS,STRING_XML,STRING_TOSTRING,STRING_VALUEOF,STRING_LENGTH,STRING_CONSTRUCTOR
+					   ,STRING_AVM1_TARGET,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
 
@@ -55,7 +57,7 @@ enum CLASS_SUBTYPE { SUBTYPE_NOT_SET, SUBTYPE_PROXY, SUBTYPE_REGEXP, SUBTYPE_XML
 					 ,SUBTYPE_APPLICATIONDOMAIN,SUBTYPE_LOADERCONTEXT,SUBTYPE_SPRITE,SUBTYPE_MOVIECLIP,SUBTYPE_TEXTBLOCK,SUBTYPE_FONTDESCRIPTION,SUBTYPE_CONTENTELEMENT,SUBTYPE_ELEMENTFORMAT
 					 ,SUBTYPE_TEXTELEMENT, SUBTYPE_ACTIVATIONOBJECT,SUBTYPE_TEXTLINE,SUBTYPE_STAGE3D,SUBTYPE_MATRIX3D,SUBTYPE_INDEXBUFFER3D,SUBTYPE_PROGRAM3D,SUBTYPE_VERTEXBUFFER3D
 					 ,SUBTYPE_CONTEXT3D,SUBTYPE_TEXTUREBASE,SUBTYPE_TEXTURE,SUBTYPE_CUBETEXTURE,SUBTYPE_RECTANGLETEXTURE,SUBTYPE_VIDEOTEXTURE,SUBTYPE_VECTOR3D,SUBTYPE_NETSTREAM
-					 ,SUBTYPE_WORKER,SUBTYPE_WORKERDOMAIN,SUBTYPE_MUTEX
+					 ,SUBTYPE_WORKER,SUBTYPE_WORKERDOMAIN,SUBTYPE_MUTEX,SUBTYPE_AVM1FUNCTION
 				   };
  
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
@@ -106,6 +108,8 @@ class ABCContext;
 class URLInfo;
 class DisplayObject;
 class MovieClip;
+class Frame;
+class AVM1Function;
 struct namespace_info;
 
 struct multiname;
@@ -1324,22 +1328,49 @@ public:
 
 class CLIPEVENTFLAGS
 {
+private:
+	uint32_t swfversion;
 public:
-	uint32_t toParse;
+	CLIPEVENTFLAGS(uint32_t v):swfversion(v) {}
+	bool ClipEventKeyUp;
+	bool ClipEventKeyDown;
+	bool ClipEventMouseUp;
+	bool ClipEventMouseDown;
+	bool ClipEventMouseMove;
+	bool ClipEventUnload;
+	bool ClipEventEnterFrame;
+	bool ClipEventLoad;
+	bool ClipEventDragOver;
+	bool ClipEventRollOut;
+	bool ClipEventRollOver;
+	bool ClipEventReleaseOutside;
+	bool ClipEventRelease;
+	bool ClipEventPress;
+	bool ClipEventInitialize;
+	bool ClipEventData;
+	bool ClipEventConstruct;
+	bool ClipEventKeyPress;
+	bool ClipEventDragOut;
 	bool isNull();
+	uint32_t getSWFVersion() const { return swfversion; }
 };
 
+class ACTIONRECORD;
 class CLIPACTIONRECORD
 {
 public:
+	CLIPACTIONRECORD(uint32_t v):EventFlags(v) {}
 	CLIPEVENTFLAGS EventFlags;
 	UI32_SWF ActionRecordSize;
+	UI8 KeyCode;
+	std::vector<ACTIONRECORD> actions;
 	bool isLast();
 };
 
 class CLIPACTIONS
 {
 public:
+	CLIPACTIONS(uint32_t v):AllEventFlags(v) {}
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
 	CLIPEVENTFLAGS AllEventFlags;
 };
@@ -1390,9 +1421,15 @@ public:
 	SI16_SWF data_int16;
 	UI8 data_byte;
 	FLOAT data_float;
+	DOUBLE data_double;
+	UI32_SWF data_integer;
 	bool data_flag1;
 	bool data_flag2;
-	static void executeActions(MovieClip* clip, std::vector<ACTIONRECORD> &actionlist);
+	std::vector<ACTIONRECORD> data_actionlist;
+	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
+	static asAtom PopStack(std::stack<asAtom>& stack);
+	static asAtom PeekStack(std::stack<asAtom>& stack);
+	static void executeActions(MovieClip* clip, Frame *frame, std::vector<ACTIONRECORD> &actionlist, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>());
 	int getFullLength() { return actionCode < 0x80 ? 1 : Length+3; }
 };
 class BUTTONCONDACTION

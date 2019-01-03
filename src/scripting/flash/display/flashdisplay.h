@@ -34,6 +34,7 @@
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/toplevel/toplevel.h"
 
 namespace lightspark
 {
@@ -95,7 +96,7 @@ class DisplayObjectContainer: public InteractiveObject
 {
 private:
 	bool mouseChildren;
-	boost::bimap<uint32_t,DisplayObject*> depthToLegacyChild;
+	boost::bimap<int32_t,DisplayObject*> depthToLegacyChild;
 	bool _contains(_R<DisplayObject> child);
 	void getObjectsFromPoint(Point* point, Array* ar);
 protected:
@@ -118,12 +119,15 @@ public:
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct();
-	bool hasLegacyChildAt(uint32_t depth);
-	void checkRatioForLegacyChildAt(uint32_t depth, uint32_t ratio);
-	void checkColorTransformForLegacyChildAt(uint32_t depth,const CXFORMWITHALPHA& colortransform);
-	void deleteLegacyChildAt(uint32_t depth);
-	void insertLegacyChildAt(uint32_t depth, DisplayObject* obj);
-	void transformLegacyChildAt(uint32_t depth, const MATRIX& mat);
+	bool hasLegacyChildAt(int32_t depth);
+	// this does not test if a DisplayObject exists at the provided depth
+	DisplayObject* getLegacyChildAt(int32_t depth);
+	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
+	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio);
+	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
+	void deleteLegacyChildAt(int32_t depth);
+	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
+	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
 	void purgeLegacyChildren();
 	void checkClipDepth();
 	void advanceFrame();
@@ -202,7 +206,8 @@ public:
 
 	void afterLegacyInsert();
 	void afterLegacyDelete(DisplayObjectContainer* par);
-	void avm1HandleKeyboardEvent(KeyboardEvent* e);
+	bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e);
 };
 
 class Shape: public DisplayObject, public TokenContainer
@@ -398,6 +403,7 @@ protected:
 	void checkSound();// start sound streaming if it is not already playing
 	void markSoundFinished();
 public:
+	bool dragged;
 	Sprite(Class_base* c);
 	void setSound(SoundChannel* s);
 	void appendSound(unsigned char* buf, int len);
@@ -466,11 +472,16 @@ public:
 
 class Frame
 {
+friend class FrameContainer;
+private:
+	std::list<AVM1ActionTag*> avm1actions;
+	std::vector<uint32_t> avm1strings;
 public:
 	std::list<DisplayListTag*> blueprint;
-	std::list<AVM1ActionTag*> avm1actions;
 	void execute(DisplayObjectContainer* displayList);
 	void AVM1executeActions(MovieClip* clip);
+	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
+	asAtom AVM1GetConstant(uint16_t index);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -521,10 +532,11 @@ private:
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
 
-	std::vector<uint32_t> avm1strings;
-	std::stack<asAtom> avm1stack;
 	std::map<uint32_t,asAtom> avm1variables;
-	std::map<uint32_t,_NR<DisplayObject>> avm1bindings;
+	std::map<uint32_t,_NR<DisplayObject>> variablebindings;
+	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
+	
+	CLIPACTIONS actions;
 protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
@@ -533,6 +545,7 @@ public:
 	void constructionComplete();
 	void afterConstruction();
 	RunState state;
+	Frame* getCurrentFrame();
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct();
@@ -567,18 +580,27 @@ public:
 	void initFrame();
 	void executeFrameScript();
 
-	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
-	uint32_t getTagID() { return fromDefineSpriteTag; }
+	void afterLegacyInsert();
+	void afterLegacyDelete(DisplayObjectContainer* par);
 
+	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
+	uint32_t getTagID() const { return fromDefineSpriteTag; }
+	void setupActions(const CLIPACTIONS& clipactions);
+
+	asAtom getVariableBindingValue(const tiny_string &name);
+	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
+	
+	bool AVM1HandleKeyboardEvent(KeyboardEvent *e);
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e);
 	void AVM1gotoFrameLabel(const tiny_string &label);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
-	void AVM1SetConstants(const std::vector<tiny_string> c);
-	void AVM1PushStack(const asAtom& a);
-	asAtom AVM1PopStack();
 	MovieClip* AVM1GetClipFromPath(tiny_string& path);
 	void AVM1SetVariable(tiny_string& name, asAtom v);
-	asAtom AVM1GetVariable(tiny_string& name);
-	void AVM1SetBinding(tiny_string& name, _NR<DisplayObject> obj);
+	asAtom AVM1GetVariable(const tiny_string &name);
+	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
+	AVM1Function *AVM1GetFunction(uint32_t nameID);
+	static void AVM1SetupMethods(Class_base* c);
+	ASFUNCTION_ATOM(AVM1AttachMovie);
 };
 
 class Stage: public DisplayObjectContainer
@@ -599,6 +621,7 @@ private:
 	// currently only used when Loader contents are added and the Loader is not on stage
 	list<_R<DisplayObject>> hiddenobjects;
 	vector<_R<DisplayObject>> avm1KeyboardListeners;
+	vector<_R<DisplayObject>> avm1MouseListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
@@ -616,7 +639,6 @@ public:
 	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
 	void initFrame();
 	void executeFrameScript();
-	void defaultEventBehavior(_R<Event> e);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);
@@ -648,8 +670,11 @@ public:
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 	
-	void avm1AddKeyboardListener(DisplayObject* o);
-	void avm1RemoveKeyboardListener(DisplayObject* o);
+	void AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e);
+	void AVM1AddKeyboardListener(DisplayObject* o);
+	void AVM1RemoveKeyboardListener(DisplayObject* o);
+	void AVM1AddMouseListener(DisplayObject* o);
+	void AVM1RemoveMouseListener(DisplayObject* o);
 };
 
 class StageScaleMode: public ASObject

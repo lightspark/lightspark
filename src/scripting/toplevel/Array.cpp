@@ -1548,7 +1548,6 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
-	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);

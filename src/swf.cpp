@@ -26,6 +26,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/avm1/avm1display.h"
 #include "logger.h"
 #include "parsing/streams.h"
 #include "asobject.h"
@@ -189,7 +190,7 @@ void SystemState::staticDeinit()
 }
 
 //See BUILTIN_STRINGS enum
-static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "__AS3__.vec","Class", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor" };
+static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "__AS3__.vec","Class", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor","_target"};
 
 extern uint32_t asClassCount;
 
@@ -1445,6 +1446,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root=getRootMovie();
 		parsedObject->loaderInfo->setWaitedObject(parsedObject);
 	}
+	root->setupAVM1RootMovie(ver);
 	objectSpinlock.unlock();
 
 	TAGTYPE lasttagtype = TAG;
@@ -1459,11 +1461,11 @@ void ParseThread::parseSWF(UI8 ver)
 		}
 		
 		int usegnash = 1;
+		char *envvar = getenv("LIGHTSPARK_USE_GNASH");
+		if (envvar)
+			usegnash= atoi(envvar);
 		if(root->version < 9)
 		{
-			char *envvar = getenv("LIGHTSPARK_USE_GNASH");
-			if (envvar)
-				usegnash= atoi(envvar);
 			if (usegnash)
 			{
 				LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
@@ -1782,6 +1784,22 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	if(it==dictionary.end())
 	{
 		LOG(LOG_ERROR,_("No such Id on dictionary ") << id << " for " << origin);
+		throw RunTimeException("Could not find an object on the dictionary");
+	}
+	return *it;
+}
+DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
+{
+	SpinlockLocker l(dictSpinlock);
+	auto it = dictionary.begin();
+	for(;it!=dictionary.end();++it)
+	{
+		if((*it)->nameID==nameID)
+			break;
+	}
+	if(it==dictionary.end())
+	{
+		LOG(LOG_ERROR,_("No such name on dictionary ") << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
 		throw RunTimeException("Could not find an object on the dictionary");
 	}
 	return *it;
@@ -2299,4 +2317,10 @@ FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 	if (it != embeddedfontsByID.end())
 		return it->second;
 	return NULL;
+}
+
+void RootMovieClip::setupAVM1RootMovie(UI8 ver)
+{
+	if (ver < 9)
+		MovieClip::AVM1SetupMethods(getClass());
 }

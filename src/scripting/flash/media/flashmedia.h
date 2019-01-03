@@ -24,6 +24,7 @@
 #include "asobject.h"
 #include "timer.h"
 #include "backends/graphics.h"
+#include "backends/decoder.h"
 #include "backends/netutils.h"
 #include "scripting/flash/display/DisplayObject.h"
 
@@ -38,7 +39,7 @@ class StreamCache;
 
 class Sound: public EventDispatcher, public ILoadable
 {
-private:
+protected:
 	URLInfo url;
 	std::vector<uint8_t> postData;
 	Downloader* downloader;

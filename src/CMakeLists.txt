@@ -139,6 +139,10 @@ SET(LIBSPARK_SOURCES
   scripting/class.cpp
   scripting/toplevel/toplevel.cpp
   scripting/avmplus/avmplus.cpp
+  scripting/avm1/avm1key.cpp
+  scripting/avm1/avm1sound.cpp
+  scripting/avm1/avm1display.cpp
+  scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
   3rdparty/pugixml/src/pugixml.cpp)
 IF(MINGW)

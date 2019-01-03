@@ -950,7 +950,7 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 
 variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	uint32_t name=mname.normalizedNameId(sys);
+	uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 
 	var_iterator ret=Variables.find(name);
 	bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
@@ -1223,6 +1223,17 @@ void ASObject::checkFunctionScope(ASObject* o)
 			break;
 		}
 	}
+}
+
+asAtom ASObject::getVariableBindingValue(const tiny_string &name)
+{
+	uint32_t nameId = getSystemState()->getUniqueStringId(name);
+	asAtom obj;
+	multiname objName(NULL);
+	objName.name_type=multiname::NAME_STRING;
+	objName.name_s_id=nameId;
+	getVariableByMultiname(obj,objName);
+	return obj;
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructor)
@@ -1542,6 +1553,22 @@ bool variables_map::cloneInstance(variables_map &map)
 	map.Variables = Variables;
 	map.slots_vars = this->slots_vars;
 	return true;
+}
+
+void variables_map::removeAllDeclaredProperties()
+{
+	var_iterator it=Variables.begin();
+	while(it!=Variables.cend())
+	{
+		
+		if (it->second.getter.type != T_INVALID 
+			|| it->second.setter.type != T_INVALID)
+		{
+			it = Variables.erase(it);
+		}
+		else
+			it++;
+	}
 }
 
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
@@ -2752,8 +2779,8 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=val1p.toNumber();
-				number_t num2=val2p.toNumber();
+				number_t num1=val1p.AVM1toNumber(sys->mainClip->version);
+				number_t num2=val2p.AVM1toNumber(sys->mainClip->version);
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				val1->decRef();

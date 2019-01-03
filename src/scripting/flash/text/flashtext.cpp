@@ -918,7 +918,7 @@ void TextField::updateSizes()
 	
 	RootMovieClip* currentRoot=getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
-	if (embeddedfont)
+	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
 		tokens.clear();
 		scaling = 1.0f/1024.0f/20.0f;
@@ -1048,7 +1048,7 @@ void TextField::avm1SyncTagVar()
 	}
 }
 
-void TextField::avm1UpdateVariable(asAtom v)
+void TextField::UpdateVariableBinding(asAtom v)
 {
 	updateText(v.toString(getSystemState()));
 }
@@ -1062,7 +1062,7 @@ void TextField::afterLegacyInsert()
 		{
 			if (par->is<MovieClip>())
 			{
-				par->as<MovieClip>()->AVM1SetBinding(tagvarname,_MR(this));
+				par->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
 				break;
 			}
 			par = par->getParent();
@@ -1080,7 +1080,7 @@ void TextField::afterLegacyDelete(DisplayObjectContainer *par)
 			if (par->is<MovieClip>())
 			{
 				par->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtom::undefinedAtom);
-				par->as<MovieClip>()->AVM1SetBinding(tagvarname,NullRef);
+				par->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
 				break;
 			}
 			par = par->getParent();
@@ -1206,7 +1206,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
 	MATRIX totalMatrix;
-	if (embeddedfont)
+	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
 		scaling = 1.0f/1024.0f/20.0f;
 		if (this->border || this->background)
@@ -1278,7 +1278,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	if(width==0 || height==0)
 		return NULL;
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented");
+		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->text);
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks,smoothing);
 	if (res != NULL)
@@ -1326,6 +1326,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	if (!textdata)
 		return true;
 	tiny_string name = node.name();
+	name = name.lowercase();
 	textdata->text += node.value();
 	if (name == "br")
 	{
@@ -1344,6 +1345,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
 			tiny_string attrname = it->name();
+			attrname = attrname.lowercase();
 			tiny_string value = it->value();
 			if (attrname == "align")
 			{
@@ -1378,6 +1380,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
 			tiny_string attrname = it->name();
+			attrname = attrname.lowercase();
 			if (attrname == "face")
 			{
 				textdata->font = it->value();

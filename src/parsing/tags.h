@@ -81,7 +81,8 @@ public:
 	Class_base* bindedTo;
 	tiny_string bindingclassname;
 	RootMovieClip* loadedFrom;
-	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(NULL),loadedFrom(root){ }
+	uint32_t nameID;
+	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(NULL),loadedFrom(root),nameID(UINT32_MAX) { }
 	virtual TAGTYPE getType()const{ return DICT_TAG; }
 	virtual int getId() const=0;
 	virtual ASObject* instance(Class_base* c=NULL) { return NULL; }
@@ -118,7 +119,7 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
 	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
-	void execute(MovieClip* clip);
+	void execute(MovieClip* clip, Frame* frame);
 	bool empty() { return actions.empty(); }
 };
 
@@ -340,7 +341,7 @@ protected:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
+	PlaceObject2Tag(RECORDHEADER h,uint32_t v):DisplayListTag(h),ClipActions(v){}
 	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 	DictionaryTag* placedTag;
 public:
@@ -765,6 +766,12 @@ private:
 	UI8 DebugId[16];
 public:
 	DebugIDTag(RECORDHEADER h, std::istream& in);
+};
+
+class ExportAssetsTag: public Tag
+{
+public:
+	ExportAssetsTag(RECORDHEADER h, std::istream& in, RootMovieClip *root);
 };
 
 class TagFactory

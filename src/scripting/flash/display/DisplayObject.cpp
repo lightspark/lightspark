@@ -96,8 +96,8 @@ void DisplayObject::Render(RenderContext& ctxt)
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),cacheAsBitmap(false),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -354,6 +354,20 @@ void DisplayObject::afterHandleEvent()
 		eventparent->decRef();
 	}
 	eventparent =nullptr;
+}
+
+tiny_string DisplayObject::AVM1GetPath()
+{
+	tiny_string res;
+	if (getParent())
+		res = getParent()->AVM1GetPath();
+	if (this->name != BUILTIN_STRINGS::EMPTY)
+	{
+		if (!res.empty())
+			res += ".";
+		res += getSystemState()->getStringFromUniqueId(this->name);
+	}
+	return res;
 }
 
 MATRIX DisplayObject::getMatrix() const
@@ -1363,6 +1377,113 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE);
 
-		ret.setBool(hit.getPtr() == th);
+		ret.setBool(!hit.isNull());
 	}
+}
+
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	ret.setNumber(th->sx*100.0);
+}
+
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	assert_and_throw(argslen==1);
+	number_t val=args[0].toNumber();
+	//Stop using the legacy matrix
+	if(th->useLegacyMatrix)
+		th->useLegacyMatrix=false;
+	th->setScaleX(val/100.0);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleY)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	ret.setNumber(th->sy*100.0);
+}
+
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleY)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	assert_and_throw(argslen==1);
+	number_t val=args[0].toNumber();
+	//Stop using the legacy matrix
+	if(th->useLegacyMatrix)
+		th->useLegacyMatrix=false;
+	th->setScaleY(val/100.0);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	DisplayObject* p = th->parent;
+	if(!p)
+	{
+		ret.setUndefined();
+		return;
+	}
+	if (p->is<Stage>())
+		p= sys->mainClip;
+	p->incRef();
+	ret = asAtom::fromObject(p);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
+{
+	if (argslen==1)
+		hitTestObject(ret,sys,obj,args,argslen);
+	else
+		hitTestPoint(ret,sys,obj,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	assert_and_throw(argslen == 1);
+
+	
+	ASObject* pt=args[0].toObject(sys);
+	
+	asAtom x(0),y(0);
+	multiname mx(nullptr);
+	mx.name_type=multiname::NAME_STRING;
+	mx.name_s_id=sys->getUniqueStringId("x");
+	mx.isAttribute = false;
+	pt->getVariableByMultiname(x,mx);
+	multiname my(nullptr);
+	my.name_type=multiname::NAME_STRING;
+	my.name_s_id=sys->getUniqueStringId("y");
+	my.isAttribute = false;
+	pt->getVariableByMultiname(y,my);
+
+	number_t tempx, tempy;
+
+	th->localToGlobal(x.toNumber(), y.toNumber(), tempx, tempy);
+	x.setNumber(tempx);
+	y.setNumber(tempy);
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
+}
+void DisplayObject::AVM1SetupMethods(Class_base* c)
+{
+	// setup all methods and properties available for MovieClips in AVM1
+	// TODO check if it is better to remove all methods (not only the properties) 
+	// and explicitely add only those methods which are available at AVM1
+	
+	c->removeAllDeclaredProperties();
+	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_y","",Class<IFunction>::getFunction(c->getSystemState(),_setY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_visible","",Class<IFunction>::getFunction(c->getSystemState(),_getVisible),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_visible","",Class<IFunction>::getFunction(c->getSystemState(),_setVisible),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_xscale","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getScaleX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_xscale","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setScaleX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_yscale","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getScaleY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_yscale","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setScaleY),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_width","",Class<IFunction>::getFunction(c->getSystemState(),_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_parent","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getParent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
 }

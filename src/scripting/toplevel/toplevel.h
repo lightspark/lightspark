@@ -287,6 +287,7 @@ public:
 	bool checkExistingFunction(const multiname& name);
 	void getClassVariableByMultiname(asAtom& ret,const multiname& name);
 	bool isBuiltin() const { return true; }
+	void removeAllDeclaredProperties();
 };
 
 class Template_base : public ASObject
@@ -572,6 +573,28 @@ public:
 	}
 };
 
+class AVM1Function : public IFunction
+{
+	friend class Class<IFunction>;
+	friend class Class_base;
+protected:
+	MovieClip* clip;
+	Frame* frame;
+	std::vector<ACTIONRECORD> actionlist;
+	std::vector<uint32_t> paramnames;
+	AVM1Function(Class_base* c,MovieClip* cl,Frame* f, std::vector<uint32_t>& p, std::vector<ACTIONRECORD>& a):IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),frame(f),actionlist(a),paramnames(p) {}
+	method_info* getMethodInfo() const { return NULL; }
+public:
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args)
+	{
+		ACTIONRECORD::executeActions(clip,frame,this->actionlist,ret,obj, args, num_args, paramnames);
+	}
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
+	{
+		return nullptr;
+	}
+};
+
 /*
  * The Class of a Function
  */
@@ -626,6 +649,14 @@ public:
 		ret->constructorCallComplete = true;
 		asAtom obj = asAtom::fromObject(ret);
 		c->handleConstruction(obj,NULL,0,true);
+		return ret;
+	}
+	static AVM1Function* getAVM1Function(SystemState* sys,MovieClip* clip, Frame* frame,std::vector<uint32_t>& params, std::vector<ACTIONRECORD>& actions)
+	{
+		Class<IFunction>* c=Class<IFunction>::getClass(sys);
+		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, frame, params,actions);
+		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
 		return ret;
 	}
 	void buildInstanceTraits(ASObject* o) const

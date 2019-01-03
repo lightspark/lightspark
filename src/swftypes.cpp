@@ -34,6 +34,7 @@
 #include "scripting/toplevel/ASString.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/toplevel/toplevel.h"
 
 
 using namespace std;
@@ -1378,19 +1379,88 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& 
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 {
-	/* In SWF version <=5 this was UI16_SWF,
-	 * but parsing will then stop before we get here
-	 * to fallback on gnash
-	 */
-	UI32_SWF t;
-	s >> t;
-	v.toParse=t;
+	BitStream bs(s);
+	v.ClipEventKeyUp=UB(1,bs);
+	v.ClipEventKeyDown=UB(1,bs);
+	v.ClipEventMouseUp=UB(1,bs);
+	v.ClipEventMouseDown=UB(1,bs);
+	v.ClipEventMouseMove=UB(1,bs);
+	v.ClipEventUnload=UB(1,bs);
+	v.ClipEventEnterFrame=UB(1,bs);
+	v.ClipEventLoad=UB(1,bs);
+	v.ClipEventDragOver=UB(1,bs);
+	v.ClipEventRollOut=UB(1,bs);
+	v.ClipEventRollOver=UB(1,bs);
+	v.ClipEventReleaseOutside=UB(1,bs);
+	v.ClipEventRelease=UB(1,bs);
+	v.ClipEventPress=UB(1,bs);
+	v.ClipEventInitialize=UB(1,bs);
+	v.ClipEventData=UB(1,bs);
+	if (v.getSWFVersion() <= 5)
+	{
+		v.ClipEventConstruct=false;
+		v.ClipEventKeyPress=false;
+		v.ClipEventDragOut=false;
+	}
+	else
+	{
+		UB(5,bs);
+		v.ClipEventConstruct=UB(1,bs);
+		v.ClipEventKeyPress=UB(1,bs);
+		v.ClipEventDragOut=UB(1,bs);
+		UB(8,bs);
+	}
+	if (v.ClipEventUnload)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventUnload not handled");
+	if (v.ClipEventLoad)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventLoad not handled");
+	if (v.ClipEventDragOver)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOver not handled");
+	if (v.ClipEventRollOut)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOut not handled");
+	if (v.ClipEventRollOver)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOver not handled");
+	if (v.ClipEventReleaseOutside)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventReleaseOutside not handled");
+	if (v.ClipEventRelease)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRelease not handled");
+	if (v.ClipEventPress)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventPress not handled");
+	if (v.ClipEventInitialize)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventInitialize not handled");
+	if (v.ClipEventData)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventData not handled");
+	if (v.ClipEventConstruct)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventConstruct not handled");
+	if (v.ClipEventKeyPress)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventKeyPress not handled");
+	if (v.ClipEventDragOut)
+		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOut not handled");
 	return s;
 }
 
 bool CLIPEVENTFLAGS::isNull()
 {
-	return toParse==0;
+	return
+			!ClipEventKeyUp &&
+			!ClipEventKeyDown &&
+			!ClipEventMouseUp &&
+			!ClipEventMouseDown &&
+			!ClipEventMouseMove &&
+			!ClipEventUnload &&
+			!ClipEventEnterFrame &&
+			!ClipEventLoad &&
+			!ClipEventDragOver &&
+			!ClipEventRollOut &&
+			!ClipEventRollOver &&
+			!ClipEventReleaseOutside &&
+			!ClipEventRelease &&
+			!ClipEventPress &&
+			!ClipEventInitialize &&
+			!ClipEventData &&
+			!ClipEventConstruct &&
+			!ClipEventKeyPress &&
+			!ClipEventDragOut;
 }
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
@@ -1399,8 +1469,26 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 	if(v.EventFlags.isNull())
 		return s;
 	s >> v.ActionRecordSize;
-	LOG(LOG_NOT_IMPLEMENTED,_("Skipping ") << v.ActionRecordSize << _(" of action data"));
-	ignore(s,v.ActionRecordSize);
+	uint32_t len = v.ActionRecordSize;
+	if (v.EventFlags.ClipEventKeyPress)
+		s >> v.KeyCode;
+	uint32_t pos = s.tellg();
+	while (true)
+	{
+		ACTIONRECORD r;
+		s>>r;
+		if (r.actionCode== 0)
+			break;
+		v.actions.push_back(r);
+	}
+	pos = (uint32_t)s.tellg()-pos;
+	if (len > pos)
+		throw ParseException("Malformed SWF file, CLIPACTIONRECORD: invalid length of ACTIONRECORD");
+	if (len < pos)
+	{
+		LOG(LOG_ERROR,"CLIPACTIONRECORD: bytes available after reading all actions:"<<len);
+		ignore(s,pos-len);
+	}
 	return s;
 }
 
@@ -1415,7 +1503,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	s >> Reserved >> v.AllEventFlags;
 	while(1)
 	{
-		CLIPACTIONRECORD t;
+		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion());
 		s >> t;
 		if(t.isLast())
 			break;
@@ -1590,13 +1678,13 @@ FILLSTYLE::~FILLSTYLE()
 
 FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 {
-	std::swap(Matrix, r.Matrix);
-	std::swap(Gradient, r.Gradient);
-	std::swap(FocalGradient, r.FocalGradient);
-	std::swap(bitmap, r.bitmap);
-	std::swap(Color, r.Color);
-	std::swap(FillStyleType, r.FillStyleType);
-	std::swap(version, r.version);
+	Matrix = r.Matrix;
+	Gradient = r.Gradient;
+	FocalGradient = r.FocalGradient;
+	bitmap = r.bitmap;
+	Color = r.Color;
+	FillStyleType = r.FillStyleType;
+	version = r.version;
 	return *this;
 }
 
@@ -1736,623 +1824,257 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 	stream >> v.actionCode;
 	LOG(LOG_TRACE,"AVM1: read action:"<<hex<<(int)v.actionCode);
 	if (v.actionCode >= 0x80)
-	{
 		stream >> v.Length;
-		switch (v.actionCode)
-		{
-			// SWF3 action model
-			case 0x04: // ActionNextFrame
-			case 0x05: // ActionPreviousFrame
-			case 0x06: // ActionPlay
-			case 0x07: // ActionStop
-			case 0x08: // ActionToggleQuality
-			case 0x09: // ActionStopSounds
-				break;
-			case 0x81: // ActionGotoFrame
-				if (v.Length != 2)
-					throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionGotoFrame tag");
-				stream>>v.data_uint16;
-				break;
-			case 0x83: // ActionGetURL
-			{
-				STRING s;
-				stream>>s;
-				v.data_string.push_back(s);
-				stream>>s;
-				v.data_string.push_back(s);
-				break;
-			}
-			case 0x8a: // ActionWaitForFrame
-				if (v.Length != 3)
-					throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionWaitForFrame tag");
-				stream>>v.data_uint16>>v.data_byte;
-				break;
-			case 0x8b: // ActionSetTarget
-			case 0x8c: // ActionGotoLabel
-				v.data_string.push_back(tiny_string(stream,v.Length));
-				break;
+	else
+		v.Length=0;
 
-			// SWF4 action model
-			// ActionStringExtract ActionStringLength ActionMBStringExtract 
-			// ActionMBStringLength ActionStringLess ActionPop ActionAsciiToChar ActionCharToAscii ActionMBAsciiToChar ActionMBCharToAscii ActionCall ActionGetURL2 
-			// ActionRemoveSprite ActionSetTarget2 ActionWaitForFrame2 ActionCloneSprite 
-			// ActionGetTime ActionTrace
-			case 0x0a: // ActionAdd
-			case 0x0b: // ActionSubtract
-			case 0x0c: // ActionMultiply
-			case 0x0d: // ActionDivide
-			case 0x0e: // ActionEquals
-			case 0x0f: // ActionLess
-			case 0x10: // ActionAnd
-			case 0x11: // ActionOr
-			case 0x12: // ActionNot
-			case 0x13: // ActionStringEquals
-			case 0x18: // ActionToInteger
-			case 0x1c: // ActionGetVariable
-			case 0x1d: // ActionSetVariable
-			case 0x21: // ActionStringAdd
-			case 0x22: // ActionGetProperty
-			case 0x23: // ActionSetProperty
-			case 0x27: // ActionStartDrag
-			case 0x28: // ActionEndDrag
-			case 0x30: // ActionRandomNumber
-				break;
-			case 0x96: // ActionPush
+	switch (v.actionCode)
+	{
+		// SWF3 action model
+		case 0x00: // end
+		case 0x04: // ActionNextFrame
+		case 0x05: // ActionPreviousFrame
+		case 0x06: // ActionPlay
+		case 0x07: // ActionStop
+		case 0x08: // ActionToggleQuality
+		case 0x09: // ActionStopSounds
+			break;
+		case 0x81: // ActionGotoFrame
+			if (v.Length != 2)
+				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionGotoFrame tag");
+			stream>>v.data_uint16;
+			break;
+		case 0x83: // ActionGetURL
+		{
+			STRING s;
+			stream>>s;
+			v.data_string.push_back(s);
+			stream>>s;
+			v.data_string.push_back(s);
+			break;
+		}
+		case 0x8a: // ActionWaitForFrame
+			if (v.Length != 3)
+				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionWaitForFrame tag");
+			stream>>v.data_uint16>>v.data_byte;
+			break;
+		case 0x8b: // ActionSetTarget
+		case 0x8c: // ActionGotoLabel
+			v.data_string.push_back(tiny_string(stream,v.Length));
+			break;
+
+		// SWF4 action model
+		// ActionStringExtract ActionStringLength ActionMBStringExtract 
+		// ActionMBStringLength ActionStringLess ActionAsciiToChar ActionCharToAscii ActionMBAsciiToChar ActionMBCharToAscii ActionCall
+		// ActionSetTarget2 ActionWaitForFrame2 
+		// ActionTrace
+		case 0x0a: // ActionAdd
+		case 0x0b: // ActionSubtract
+		case 0x0c: // ActionMultiply
+		case 0x0d: // ActionDivide
+		case 0x0e: // ActionEquals
+		case 0x0f: // ActionLess
+		case 0x10: // ActionAnd
+		case 0x11: // ActionOr
+		case 0x12: // ActionNot
+		case 0x13: // ActionStringEquals
+		case 0x17: // ActionPop
+		case 0x18: // ActionToInteger
+		case 0x1c: // ActionGetVariable
+		case 0x1d: // ActionSetVariable
+		case 0x21: // ActionStringAdd
+		case 0x22: // ActionGetProperty
+		case 0x23: // ActionSetProperty
+		case 0x24: // ActionCloneSprite
+		case 0x25: // ActionRemoveSprite
+		case 0x27: // ActionStartDrag
+		case 0x28: // ActionEndDrag
+		case 0x30: // ActionRandomNumber
+		case 0x34: // ActionGetTime
+			break;
+		case 0x96: // ActionPush
+		{
+			uint32_t len = v.Length;
+			uint32_t start = stream.tellg();
+			while (((uint32_t)stream.tellg()-start) < len)
 			{
-				stream>>v.data_byte; // type
-				switch (v.data_byte)
+				ACTIONRECORD r;
+				stream>>r.data_byte; // type
+				switch (r.data_byte)
 				{
 					case 0:
 					{
 						STRING s;
 						stream>>s;
-						if (v.Length != s.size()+2)
-							throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionPush tag");
-						v.data_string.push_back(s);
+						r.data_string.push_back(s);
 						break;
 					}
 					case 1:
 					{
-						if (v.Length != 4+1) 
-							throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionPush tag");
-						stream>>v.data_float;
+						stream>>r.data_float;
+						break;
+					}
+					case 2:
+					case 3:
+						break;
+					case 4:
+					{
+						UI8 tmp;
+						stream>>tmp;
+						r.data_uint16 = (uint16_t)(uint8_t)tmp;
+						break;
+					}
+					case 5:
+					{
+						UI8 tmp;
+						stream>>tmp;
+						r.data_uint16 = (uint16_t)(uint8_t)tmp;
+						break;
+					}
+					case 6:
+					{
+						stream>>r.data_double;
+						break;
+					}
+					case 7:
+					{
+						stream>>r.data_integer;
+						break;
+					}
+					case 8:
+					{
+						UI8 tmp;
+						stream>>tmp;
+						r.data_uint16 = (uint16_t)(uint8_t)tmp;
+						break;
+					}
+					case 9:
+					{
+						stream>>r.data_uint16;
 						break;
 					}
 					default:
 						LOG(LOG_NOT_IMPLEMENTED,"AVM1: SWF5+ ActionPush type "<<(int)v.data_byte);
-						v.data_string.push_back(tiny_string(stream,v.Length-1));
+						throw ParseException("unsupported ActionPush type");
 						break;
 				}
-				break;
+				v.data_actionlist.push_back(r);
 			}
-			case 0x99: // ActionJump
-			case 0x9d: // ActionIf
-			{
-				stream>>v.data_int16;
-				break;
-			}
-			case 0x9f: // ActionGotoFrame2
-			{
-				BitStream bs(stream);
-				UB(6,bs);
-				v.data_flag1 = UB(1,bs);
-				v.data_flag2 = UB(1,bs);
-				if (v.data_flag1)
-					stream>>v.data_uint16;
-				else
-					v.data_uint16 = 0;
-				break;
-			}
-
-			// SWF5 action model
-			// ActionCallFunction ActionCallMethod ActionDefineFunction ActionDefineLocal ActionDefineLocal2 ActionDelete ActionDelete2 ActionEnumerate ActionEquals2
-			// ActionGetMember ActionInitArray ActionInitObject ActionNewMethod ActionNewObject ActionSetMember ActionTargetPath ActionWith ActionToNumber ActionToString
-			// ActionTypeOf ActionAdd2 ActionLess2 ActionModulo ActionBitAnd ActionBitLShift ActionBitOr ActionBitRShift ActionBitURShift ActionBitXor ActionDecrement ActionIncrement
-			// ActionPushDuplicate ActionReturn ActionStackSwap ActionStoreRegister
-			case 0x88: // ActionConstantPool
-			{
-				stream>>v.data_uint16;
-				for (uint32_t i = 0; i < v.data_uint16; i++)
-				{
-					STRING s;
-					stream>>s;
-					v.data_string.push_back((const char*)s);
-				}
-				break;
-			}
-
-			// SWF6 action model
-			// DoInitAction ActionInstanceOf ActionEnumerate2 ActionStrictEquals ActionGreater ActionStringGreater
-			// SWF7 action model
-			// ActionDefineFunction2 ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
-			default:
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1: SWF4+ actionCode "<<hex<<(int)v.actionCode);
-				v.data_string.push_back(tiny_string(stream,v.Length));
-				break;
+			if (((uint32_t)stream.tellg()-start) != len) 
+				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ActionPush tag");
+			break;
 		}
-	}
-	else
-		v.Length=0;
-	return stream;
-}
-void ACTIONRECORD::executeActions(MovieClip *clip, std::vector<ACTIONRECORD> &actionlist)
-{
-	MovieClip *originalclip = clip;
-	for (auto it = actionlist.begin(); it != actionlist.end();it++)
-	{
-		switch (it->actionCode)
+		case 0x99: // ActionJump
+		case 0x9d: // ActionIf
 		{
-			case 0x04: // ActionNextFrame
-			{
-				uint32_t frame = clip->state.FP+1;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNextFrame "<<frame);
-				clip->AVM1gotoFrame(frame,false);
-				break;
-			}
-			case 0x05: // ActionPreviousFrame
-			{
-				uint32_t frame = clip->state.FP > 0 ? clip->state.FP-1 : 0;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPreviousFrame "<<frame);
-				clip->AVM1gotoFrame(frame,false);
-				break;
-			}
-			case 0x06: // ActionPlay
-			{
-				uint32_t frame = clip->state.next_FP;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPlay ");
-				clip->AVM1gotoFrame(frame,false,true);
-				break;
-			}
-			case 0x07: // ActionStop
-			{
-				uint32_t frame = clip->state.next_FP;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStop ");
-				clip->AVM1gotoFrame(frame,true,true);
-				break;
-			}
-			case 0x09: // ActionStopSounds
-			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStopSounds");
-				// TODO for now we just mute all sounds instead of stopping them
-				clip->getSystemState()->audioManager->muteAll();
-				break;
-			}
-			case 0x0a: // ActionAdd
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionAdd "<<b<<"+"<<a);
-				clip->AVM1PushStack(asAtom(a+b));
-				break;
-			}
-			case 0x0b: // ActionSubtract
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSubtract "<<b<<"-"<<a);
-				clip->AVM1PushStack(asAtom(b-a));
-				break;
-			}
-			case 0x0c: // ActionMultiply
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionMultiply "<<b<<"*"<<a);
-				clip->AVM1PushStack(asAtom(b*a));
-				break;
-			}
-			case 0x0d: // ActionDivide
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDivide "<<b<<"/"<<a);
-				asAtom ret;
-				if (a == 0)
-				{
-					if (clip->getSystemState()->mainClip->version == 4)
-						ret = asAtom::fromString(clip->getSystemState(),"#ERROR#");
-					else
-						ret = asAtom(Number::NaN);
-				}
-				else
-					ret = asAtom(b/a);
-				clip->AVM1PushStack(ret);
-				break;
-			}
-			case 0x0e: // ActionEquals
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionEquals "<<b<<"=="<<a);
-				clip->AVM1PushStack(asAtom(b==a));
-				break;
-			}
-			case 0x0f: // ActionLess
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionLess "<<b<<"<"<<a);
-				clip->AVM1PushStack(asAtom(b<a));
-				break;
-			}
-			case 0x10: // ActionAnd
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionAnd "<<b<<" && "<<a);
-				clip->AVM1PushStack(asAtom(b && a));
-				break;
-			}
-			case 0x11: // ActionOr
-			{
-				number_t a = clip->AVM1PopStack().toNumber();
-				number_t b = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionOr "<<b<<" || "<<a);
-				clip->AVM1PushStack(asAtom(b || a));
-				break;
-			}
-			case 0x12: // ActionNot
-			{
-				number_t value = clip->AVM1PopStack().toNumber();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNot "<<value);
-				clip->AVM1PushStack(asAtom(value == 0));
-				break;
-			}
-			case 0x13: // ActionStringEquals
-			{
-				tiny_string a = clip->AVM1PopStack().toString(clip->getSystemState());
-				tiny_string b = clip->AVM1PopStack().toString(clip->getSystemState());
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStringEquals "<<a<<" "<<b);
-				clip->AVM1PushStack(asAtom(a == b));
-				break;
-			}
-			case 0x18: // ActionToInteger
-			{
-				asAtom a = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionToInteger "<<a.toDebugString());
-				clip->AVM1PushStack(asAtom(a.toInt()));
-				break;
-			}
-			case 0x1c: // ActionGetVariable
-			{
-				asAtom name = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetVariable "<<name.toDebugString());
-				tiny_string s = name.toString(clip->getSystemState());
-				asAtom res;
-				if (!s.startsWith("/") && !s.startsWith(":")) // local variable
-					res = originalclip->AVM1GetVariable(s);
-				else
-					res = clip->AVM1GetVariable(s);
-				if (res.type == T_INVALID)
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetVariable variable not found:"<<name.toDebugString());
-				clip->AVM1PushStack(res);
-				break;
-			}
-			case 0x1d: // ActionSetVariable
-			{
-				asAtom value = clip->AVM1PopStack();
-				asAtom name = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetVariable "<<name.toDebugString()<<" "<<value.toDebugString());
-				tiny_string s = name.toString(clip->getSystemState());
-				if (!s.startsWith("/") && !s.startsWith(":")) // local variable
-					originalclip->AVM1SetVariable(s,value);
-				else
-					clip->AVM1SetVariable(s,value);
-				break;
-			}
-			case 0x21: // ActionStringAdd
-			{
-				tiny_string a = clip->AVM1PopStack().toString(clip->getSystemState());
-				tiny_string b = clip->AVM1PopStack().toString(clip->getSystemState());
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStringAdd "<<b<<"+"<<a);
-				asAtom ret = asAtom::fromString(clip->getSystemState(),b+a);
-				clip->AVM1PushStack(ret);
-				break;
-			}
-			case 0x22: // ActionGetProperty
-			{
-				asAtom index = clip->AVM1PopStack();
-				asAtom target = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetProperty "<<target.toDebugString()<<" "<<index.toDebugString());
-				DisplayObject* o = clip;
-				if (target.toStringId(clip->getSystemState()) != BUILTIN_STRINGS::EMPTY)
-				{
-					tiny_string s = target.toString(clip->getSystemState());
-					o = clip->AVM1GetClipFromPath(s);
-				}
-				asAtom ret = asAtom::undefinedAtom;
-				if (o)
-				{
-					asAtom obj = asAtom::fromObject(o);
-					switch (index.toInt())
-					{
-						case 0:// x
-							DisplayObject::_getX(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 1:// y
-							DisplayObject::_getY(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 2:// xscale
-							DisplayObject::_getScaleX(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 3:// xscale
-							DisplayObject::_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 7:// visible
-							DisplayObject::_getVisible(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 8:// width
-							DisplayObject::_getWidth(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						case 9:// height
-							DisplayObject::_getHeight(ret,clip->getSystemState(),obj,nullptr,0);
-							break;
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1: GetProperty type:"<<index.toInt());
-							break;
-					}
-				}
-				clip->AVM1PushStack(ret);
-				break;
-			}
-			case 0x23: // ActionSetProperty
-			{
-				asAtom value = clip->AVM1PopStack();
-				asAtom index = clip->AVM1PopStack();
-				asAtom target = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetProperty "<<target.toDebugString()<<" "<<index.toDebugString()<<" "<<value.toDebugString());
-				DisplayObject* o = clip;
-				if (target.toStringId(clip->getSystemState()) != BUILTIN_STRINGS::EMPTY)
-				{
-					tiny_string s = target.toString(clip->getSystemState());
-					o = clip->AVM1GetClipFromPath(s);
-				}
-				if (o)
-				{
-					asAtom obj = asAtom::fromObject(o);
-					asAtom ret;
-					asAtom valueInt = asAtom(value.toInt());
-					switch (index.toInt())
-					{
-						case 0:// x
-							DisplayObject::_setX(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 1:// y
-							DisplayObject::_setY(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 2:// xscale
-							DisplayObject::_setScaleX(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 3:// xscale
-							DisplayObject::_setScaleY(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 7:// visible
-							DisplayObject::_setVisible(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 8:// width
-							DisplayObject::_setWidth(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						case 9:// height
-							DisplayObject::_setHeight(ret,clip->getSystemState(),obj,&valueInt,1);
-							break;
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<index.toInt());
-							break;
-					}
-				}
-				else
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetProperty target clip not found"<<target.toDebugString()<<" "<<index.toDebugString()<<" "<<value.toDebugString());
-				break;
-			}
-			case 0x27: // ActionStartDrag
-			{
-				tiny_string target = clip->AVM1PopStack().toString(clip->getSystemState());
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStartDrag "<<target);
-				asAtom lockcenter = clip->AVM1PopStack();
-				asAtom constrain = clip->AVM1PopStack();
-				Rectangle* rect = nullptr;
-				if (constrain.toInt())
-				{
-					asAtom y2 = clip->AVM1PopStack();
-					asAtom x2 = clip->AVM1PopStack();
-					asAtom y1 = clip->AVM1PopStack();
-					asAtom x1 = clip->AVM1PopStack();
-					rect = Class<Rectangle>::getInstanceS(clip->getSystemState());
-					asAtom ret;
-					asAtom obj = asAtom::fromObject(rect);
-					Rectangle::_setTop(ret,clip->getSystemState(),obj,&y1,1);
-					Rectangle::_setLeft(ret,clip->getSystemState(),obj,&x1,1);
-					Rectangle::_setBottom(ret,clip->getSystemState(),obj,&y2,1);
-					Rectangle::_setRight(ret,clip->getSystemState(),obj,&x2,1);
-				}
-				MovieClip* targetclip = clip->AVM1GetClipFromPath(target);
-				if (targetclip)
-				{
-					asAtom ret;
-					asAtom obj = asAtom::fromObject(targetclip);
-					asAtom args[2];
-					args[0] = lockcenter;
-					if (rect)
-						args[1] = asAtom::fromObject(rect);
-					Sprite::_startDrag(ret,clip->getSystemState(),obj,args,rect ? 2 : 1);
-				}
-				break;
-			}
-			case 0x28: // ActionEndDrag
-			{
-				asAtom ret;
-				asAtom obj = asAtom::fromObject(clip);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionEndDrag "<<obj.toDebugString());
-				Sprite::_stopDrag(ret,clip->getSystemState(),obj,nullptr,0);
-				break;
-			}
-			case 0x30: // ActionRandomNumber
-			{
-				int maximum = clip->AVM1PopStack().toInt();
-				int ret = (((number_t)rand())/(number_t)RAND_MAX)*maximum;
-				clip->AVM1PushStack(asAtom(ret));
-				break;
-			}
-			case 0x81: // ActionGotoFrame
-			{
-				uint32_t frame = it->data_uint16;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGotoFrame "<<frame);
-				clip->AVM1gotoFrame(frame,true,true);
-				break;
-			}
-			case 0x83: // ActionGetURL
-			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetURL "<<it->data_string[0]<<" "<<it->data_string[1]);
-				clip->getSystemState()->openPageInBrowser(it->data_string[0],it->data_string[1]);
-				break;
-			}
-			case 0x88: // ActionConstantPool
-			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionConstantPool "<<it->data_uint16);
-				clip->AVM1SetConstants(it->data_string);
-				break;
-			}
-			case 0x8a: // ActionWaitForFrame
-			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionWaitForFrame "<<it->data_uint16<<"/"<<clip->getFramesLoaded()<<" skip "<<(uint32_t)it->data_byte);
-				if (clip->getFramesLoaded() <= it->data_uint16 && !clip->hasFinishedLoading())
-				{
-					// frame not yet loaded, skip actions
-					uint32_t skipcount = (uint32_t)it->data_byte;
-					while (skipcount && it != actionlist.end())
-					{
-						it++;
-						skipcount--;
-					}
-				}
-				break;
-			}
-			case 0x8c: // ActionGotoLabel
-			{
-				tiny_string s(it->data_string[0].raw_buf(),true);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGotoLabel "<<s);
-				clip->AVM1gotoFrameLabel(s);
-				break;
-			}
-			case 0x08: // ActionToggleQuality
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->state.FP<<" SWF3 DoActionTag ActionToggleQuality "<<hex<<(int)it->actionCode);
-				break;
-			case 0x8b: // ActionSetTarget
-			{
-				tiny_string s(it->data_string[0].raw_buf(),true);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget "<<s);
-				if (s.empty())
-					clip = originalclip;
-				else
-				{
-					clip = clip->AVM1GetClipFromPath(s);
-					if (!clip)
-					{
-						LOG(LOG_ERROR,"AVM1: ActionSetTarget clip not found:"<<s);
-						clip = originalclip;
-					}
-				}
-				break;
-			}
-			case 0x96: // ActionPush
-			{
-				switch (it->data_byte) // type
-				{
-					case 0:
-					{
-						asAtom a = asAtom::fromStringID(clip->getSystemState()->getUniqueStringId(it->data_string[0]));
-						clip->AVM1PushStack(a);
-						LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPush "<<a.toDebugString());
-						break;
-					}
-					case 1:
-					{
-						asAtom a(it->data_float);
-						clip->AVM1PushStack(a);
-						LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPush "<<a.toDebugString());
-						break;
-					}
-					default:
-						LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->state.FP<<" SWF3 DoActionTag push type "<<(int)it->data_byte);
-						break;
-				}
-				break;
-			}
-			case 0x99: // ActionJump
-			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionJump "<<it->data_int16);
-				int skip = it->data_int16;
-				if (skip > 0)
-				{
-					while (skip < 0 && it != actionlist.begin())
-					{
-						it--;
-						skip += (it->Length+1);
-					}
-				}
-				else
-				{
-					while (skip > 0 && it != actionlist.end())
-					{
-						it++;
-						skip -= (it->Length+1);
-					}
-				}
-				break;
-			}
-			case 0x9d: // ActionIf
-			{
-				asAtom a = clip->AVM1PopStack();
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionIf "<<a.toDebugString()<<" "<<it->data_int16);
-				if (a.toInt())
-				{
-					int skip = it->data_int16;
-					if (skip < 0)
-					{
-						while (skip < 0 && it != actionlist.begin())
-						{
-							it--;
-							skip += it->getFullLength();
-						}
-					}
-					else
-					{
-						while (skip > 0 && it != actionlist.end())
-						{
-							it++;
-							skip -= it->getFullLength();
-						}
-					}
-				}
-				break;
-			}
-			case 0x9f: // ActionGotoFrame2
-			{
-				asAtom a = clip->AVM1PopStack();
-				if (a.type == T_STRING)
-				{
-					tiny_string s = a.toString(clip->getSystemState());
-					if (it->data_uint16)
-						LOG(LOG_NOT_IMPLEMENTED,"AVM1: GotFrame2 with bias and label:"<<a.toDebugString());
-					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGotoFrame2 label "<<s);
-					clip->AVM1gotoFrameLabel(s);
-					
-				}
-				else
-				{
-					uint32_t frame = a.toUInt()+it->data_uint16;
-					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGotoFrame2 "<<frame);
-					clip->AVM1gotoFrame(frame,!it->data_flag2);
-				}
-				break;
-			}
-			default:
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->state.FP<<" SWF4+ DoActionTag "<<hex<<(int)it->actionCode);
-				break;
+			stream>>v.data_int16;
+			break;
 		}
+		case 0x9a: // ActionGetURL2
+		{
+			BitStream bs(stream);
+			v.data_byte = (uint8_t)(int)UB(2,bs);
+			UB(4,bs);
+			v.data_flag1 = UB(1,bs);
+			v.data_flag2 = UB(1,bs);
+			break;
+		}
+		case 0x9f: // ActionGotoFrame2
+		{
+			BitStream bs(stream);
+			UB(6,bs);
+			v.data_flag1 = UB(1,bs);
+			v.data_flag2 = UB(1,bs);
+			if (v.data_flag1)
+				stream>>v.data_uint16;
+			else
+				v.data_uint16 = 0;
+			break;
+		}
+
+		// SWF5 action model
+		// ActionEnumerate
+		// ActionNewMethod ActionTargetPath ActionToString
+		// ActionTypeOf ActionBitAnd ActionBitLShift ActionBitOr ActionBitRShift ActionBitURShift ActionBitXor
+		// ActionStackSwap
+		case 0x3a: // ActionDelete
+		case 0x3b: // ActionDelete2
+		case 0x3c: // ActionDefineLocal
+		case 0x3d: // ActionCallFunction
+		case 0x3e: // ActionReturn
+		case 0x3f: // ActionModulo
+		case 0x40: // ActionNewObject
+		case 0x41: // ActionDefineLocal2
+		case 0x42: // ActionInitArray
+		case 0x43: // ActionInitObject
+		case 0x47: // ActionAdd2
+		case 0x48: // ActionLess2
+		case 0x49: // ActionEquals2
+		case 0x4a: // ActionToNumber
+		case 0x4c: // ActionPushDuplicate
+		case 0x4e: // ActionGetMember
+		case 0x4f: // ActionSetMember
+		case 0x50: // ActionIncrement
+		case 0x51: // ActionDecrement
+		case 0x52: // ActionCallMethod
+			break;
+		case 0x87: // ActionStoreRegister
+		{
+			stream>>v.data_byte;
+			break;
+		}
+		case 0x88: // ActionConstantPool
+		{
+			stream>>v.data_uint16;
+			for (uint32_t i = 0; i < v.data_uint16; i++)
+			{
+				STRING s;
+				stream>>s;
+				v.data_string.push_back(s);
+			}
+			break;
+		}
+		case 0x94: // ActionWith
+			stream>>v.data_uint16;
+			break;
+		case 0x9b: // ActionDefineFunction
+		{
+			STRING s;
+			stream>>s;
+			v.data_string.push_back(s);
+			stream>>v.data_uint16;
+			for (uint16_t i=0; i < v.data_uint16; i++)
+			{
+				stream>>s;
+				v.data_string.push_back(s);
+			}
+			stream>>v.data_uint16;
+			uint32_t pos = stream.tellg();
+			v.data_actionlist.clear();
+			while (((uint32_t)stream.tellg()-pos) < v.data_uint16 )
+			{
+				ACTIONRECORD action;
+				stream >> action;
+				v.data_actionlist.push_back(action);
+			}
+			if (((uint32_t)stream.tellg()-pos) != v.data_uint16)
+			{
+				LOG(LOG_ERROR,"AVM1: SWF5+ ActionDefineFunction invalid body length "<<v.data_string.front());
+				throw ParseException("ActionDefineFunction invalid body length");
+			}
+			break;
+		}
+
+		// SWF6 action model
+		// DoInitAction ActionInstanceOf ActionEnumerate2 ActionStrictEquals ActionGreater ActionStringGreater
+		// SWF7 action model
+		// ActionDefineFunction2 ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"AVM1: SWF4+ actionCode "<<hex<<(int)v.actionCode);
+			v.data_string.push_back(tiny_string(stream,v.Length));
+			break;
 	}
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" executeActions done");
-	
+	return stream;
 }
 
 std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)

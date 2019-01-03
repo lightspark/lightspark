@@ -26,6 +26,7 @@
 #include "platforms/engineutils.h"
 #include "swftypes.h"
 #include "smartrefs.h"
+#include "scripting/flash/ui/keycodes.h"
 #include <vector>
 
 namespace lightspark
@@ -55,6 +56,8 @@ private:
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
 	_NR<InteractiveObject> lastMouseDownTarget;
+	AS3KeyCode lastKeyDown;
+	AS3KeyCode lastKeyUp;
 	const RECT* dragLimit;
 	Vector2f dragOffset;
 	class MaskData
@@ -96,6 +99,8 @@ public:
 	{
 		return worker(event);
 	}
+	AS3KeyCode getLastKeyDown();
+	AS3KeyCode getLastKeyUp();
 };
 
 };

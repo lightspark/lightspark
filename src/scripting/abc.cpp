@@ -135,6 +135,9 @@
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
 #include "scripting/avmplus/avmplus.h"
+#include "scripting/avm1/avm1key.h"
+#include "scripting/avm1/avm1sound.h"
+#include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -256,6 +259,18 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
 }
 
+void ABCVm::registerClassesAVM1()
+{
+	Global* builtin = Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+	registerClassesToplevel(builtin);
+	builtin->registerBuiltin("Mouse","",Class<Mouse>::getRef(m_sys));
+	builtin->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
+	builtin->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
+	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
+
+	m_sys->avm1global=builtin;
+}
+
 void ABCVm::registerClassesToplevel(Global* builtin)
 {
 	builtin->registerBuiltin("Object","",Class<ASObject>::getRef(m_sys));
@@ -306,8 +321,9 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("unescape","",_MR(Class<IFunction>::getFunction(m_sys,unescape,1)));
 	builtin->registerBuiltin("toString","",_MR(Class<IFunction>::getFunction(m_sys,ASObject::_toString)));
 
-	// avm intrinsics, not documented, but implemented in avmplus
-	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
+	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(m_sys,isNaN,1)));
+	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(m_sys,isFinite,1)));
+	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(m_sys,_isXMLName)));
 }
 
 void ABCVm::registerClasses()
@@ -631,9 +647,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef(m_sys));
 	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef(m_sys));
 
-	builtin->registerBuiltin("isNaN","",_MR(Class<IFunction>::getFunction(m_sys,isNaN,1)));
-	builtin->registerBuiltin("isFinite","",_MR(Class<IFunction>::getFunction(m_sys,isFinite,1)));
-	builtin->registerBuiltin("isXMLName","",_MR(Class<IFunction>::getFunction(m_sys,_isXMLName)));
+	// avm intrinsics, not documented, but implemented in avmplus
+	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
 
 	//If needed add AIR definitions
 	if(m_sys->flashMode==SystemState::AIR)
@@ -1462,6 +1477,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		dispatcher->incRef();
 		dispatcher->getSystemState()->stage->setFocusTarget(_MR(dispatcher->as<InteractiveObject>()));
 	}
+	dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event);
 	
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
@@ -2041,6 +2057,8 @@ void ABCVm::Run(ABCVm* th)
 #endif
 	}
 	th->registerClasses();
+	th->registerClassesAVM1();
+	
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");

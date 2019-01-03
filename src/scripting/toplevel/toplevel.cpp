@@ -1698,6 +1698,12 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 	}
 }
 
+void Class_base::removeAllDeclaredProperties()
+{
+	Variables.removeAllDeclaredProperties();
+	borrowedVariables.removeAllDeclaredProperties();
+}
+
 ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
 {
 }

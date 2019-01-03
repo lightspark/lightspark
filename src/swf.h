@@ -102,6 +102,7 @@ public:
 	void setFrameRate(float f);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
+	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
@@ -132,6 +133,7 @@ public:
 	void registerEmbeddedFont(const tiny_string fontname, FontTag *tag);
 	FontTag* getEmbeddedFont(const tiny_string fontname) const;
 	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
+	void setupAVM1RootMovie(UI8 ver);
 };
 
 class ThreadProfile
@@ -285,7 +287,8 @@ public:
 	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
 	const FLASH_MODE flashMode;
 	uint32_t swffilesize;
-	
+	// the global object for AVM1
+	Global* avm1global;
 	// Error types used to decide when to exit, extend as a bitmap
 	enum ERROR_TYPE { ERROR_NONE    = 0x0000,
 			  ERROR_PARSING = 0x0001,

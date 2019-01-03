@@ -357,6 +357,7 @@ public:
 	FORCE_INLINE ASObject* checkObject();
 	asAtom asTypelate(asAtom& atomtype);
 	FORCE_INLINE number_t toNumber();
+	FORCE_INLINE number_t AVM1toNumber(int swfversion);
 	FORCE_INLINE int32_t toInt();
 	FORCE_INLINE int32_t toIntStrict();
 	FORCE_INLINE int64_t toInt64();
@@ -601,6 +602,7 @@ public:
 	void dumpVariables();
 	void destroyContents();
 	bool cloneInstance(variables_map& map);
+	void removeAllDeclaredProperties();
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
@@ -970,8 +972,11 @@ public:
 	 * \param o the function to check
 	 */
 	void checkFunctionScope(ASObject *o);
+	
+	virtual asAtom getVariableBindingValue(const tiny_string &name);
 };
 
+class AVM1Function;
 class Activation_object;
 class ApplicationDomain;
 class Array;
@@ -1052,6 +1057,7 @@ class XMLList;
 
 // this is used to avoid calls to dynamic_cast when testing for some classes
 // keep in mind that when adding a class here you have to take care of the class inheritance and add the new SUBTYPE_ to all apropriate is<> methods 
+template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
 template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
@@ -1253,6 +1259,29 @@ FORCE_INLINE number_t asAtom::toNumber()
 			return checkObject()->toNumber();
 	}
 }
+FORCE_INLINE number_t asAtom::AVM1toNumber(int swfversion)
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NULL:
+			return 0;
+		case T_UNDEFINED:
+			return swfversion >= 7 ? numeric_limits<double>::quiet_NaN() : 0;
+		case T_INVALID:
+			return 0;
+		default:
+			return checkObject()->toNumber();
+	}
+}
+
 FORCE_INLINE int64_t asAtom::toInt64()
 {
 	switch(type)

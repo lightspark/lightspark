@@ -66,7 +66,7 @@ private:
 	bool isLoadedRoot;
 public:
 	UI16_SWF Ratio;
-	UI16_SWF ClipDepth;
+	int ClipDepth;
 private:
 	/**
 	  	The object we are masking, if any
@@ -139,6 +139,8 @@ public:
 	_NR<ColorTransform> colorTransform;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
+	// this is set to true for DisplayObjects that are placed from a tag
+	bool legacy;
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */
@@ -175,10 +177,13 @@ public:
 	virtual void onNewEvent();
 	virtual void afterHandleEvent();
 	
-	virtual void avm1UpdateVariable(asAtom v) {}
-	virtual void avm1HandleKeyboardEvent(KeyboardEvent* e) {}
+	virtual void UpdateVariableBinding(asAtom v) {}
+	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e) { return false; }
+	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e) { return false; }
+	tiny_string AVM1GetPath();
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
+	virtual uint32_t getTagID() const { return 0;}
 	
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
@@ -253,6 +258,15 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, rotationX);
 	ASPROPERTY_GETTER_SETTER(number_t, rotationY);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, opaqueBackground);
+	
+	ASFUNCTION_ATOM(AVM1_getScaleX);
+	ASFUNCTION_ATOM(AVM1_setScaleX);
+	ASFUNCTION_ATOM(AVM1_getScaleY);
+	ASFUNCTION_ATOM(AVM1_setScaleY);
+	ASFUNCTION_ATOM(AVM1_getParent);
+	ASFUNCTION_ATOM(AVM1_hitTest);
+	ASFUNCTION_ATOM(AVM1_localToGlobal);
+	static void AVM1SetupMethods(Class_base* c);
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

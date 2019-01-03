@@ -372,4 +372,10 @@ REGISTER_CLASS_NAME(avmplusFile,"avmplus")
 REGISTER_CLASS_NAME(avmplusSystem,"avmplus")
 REGISTER_CLASS_NAME(avmplusDomain,"avmplus")
 
+//AVM1
+REGISTER_CLASS_NAME2(AVM1Key,"Key","")
+REGISTER_CLASS_NAME2(AVM1Sound,"Sound","")
+REGISTER_CLASS_NAME2(AVM1MovieClip,"MovieClip","")
+REGISTER_CLASS_NAME2(AVM1Shape,"Shape","")
+REGISTER_CLASS_NAME2(AVM1SimpleButton,"SimpleButton","")
 

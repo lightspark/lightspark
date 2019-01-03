@@ -22,7 +22,6 @@
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "compat.h"
-#include "scripting/flash/ui/keycodes.h"
 #include "scripting/class.h"
 
 #include <SDL2/SDL_keyboard.h>
@@ -33,7 +32,7 @@ using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(false),threaded(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	dragLimit(NULL)
+	lastKeyDown(AS3KeyCode::AS3KEYCODE_UNKNOWN),lastKeyUp(AS3KeyCode::AS3KEYCODE_UNKNOWN), dragLimit(NULL)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
@@ -533,6 +532,17 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 		return;
 
 	Locker locker(mutexListeners);
+	AS3KeyCode c = getAS3KeyCode(keyevent->keysym.sym);
+	if (keyevent->type == SDL_KEYDOWN)
+	{
+		lastKeyDown = c;
+		lastKeyUp =AS3KEYCODE_UNKNOWN;
+	}
+	else
+	{
+		lastKeyUp = c;
+		lastKeyDown =AS3KEYCODE_UNKNOWN;
+	}
 
 	_NR<DisplayObject> target = m_sys->stage->getFocusTarget();
 	if (target.isNull())
@@ -545,7 +555,6 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 		type = "keyUp";
 
 	target->incRef();
-	AS3KeyCode c = getAS3KeyCode(keyevent->keysym.sym);
 	m_sys->currentVm->addEvent(target,
 	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,c, (SDL_Keymod)keyevent->keysym.mod)));
 }
@@ -588,6 +597,7 @@ void InputThread::startDrag(_R<Sprite> s, const lightspark::RECT* limit, Vector2
 		return;
 
 	curDragged=s;
+	curDragged->dragged=true;
 	dragLimit=limit;
 	dragOffset=offset;
 }
@@ -597,8 +607,21 @@ void InputThread::stopDrag(Sprite* s)
 	Locker locker(mutexDragged);
 	if(curDragged == s)
 	{
+		curDragged->dragged=false;
 		curDragged = NullRef;
 		delete dragLimit;
 		dragLimit = 0;
 	}
+}
+
+AS3KeyCode InputThread::getLastKeyDown()
+{
+	Locker locker(mutexListeners);
+	return lastKeyDown;
+}
+
+AS3KeyCode InputThread::getLastKeyUp()
+{
+	Locker locker(mutexListeners);
+	return lastKeyUp;
 }

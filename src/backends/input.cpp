@@ -231,7 +231,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		return;
 	SpinlockLocker locker(inputDataSpinlock);
 	mousePos = Vector2(x,y);
-	Locker locker2(mutexDragged);
+	mutexDragged.lock();
 	// Handle current drag operation
 	if(curDragged)
 	{
@@ -239,7 +239,9 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		DisplayObjectContainer* parent = curDragged->getParent();
 		if(!parent)
 		{
-			stopDrag(curDragged.getPtr());
+			Sprite* s = curDragged.getPtr();
+			mutexDragged.unlock();
+			stopDrag(s);
 			return;
 		}
 		local = parent->getConcatenatedMatrix().getInverted().multiply2D(mousePos);
@@ -249,10 +251,12 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 
 		curDragged->setX(local.x);
 		curDragged->setY(local.y);
+		mutexDragged.unlock();
 	}
 	// Handle non-drag mouse movement
 	else
 	{
+		mutexDragged.unlock();
 		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 		number_t localX, localY;
 		if (selected.isNull())

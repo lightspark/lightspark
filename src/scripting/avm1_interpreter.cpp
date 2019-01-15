@@ -105,7 +105,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			}
 			case 0x07: // ActionStop
 			{
-				uint32_t frame = clip->state.next_FP;
+				uint32_t frame = clip->state.FP;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStop ");
 				clip->AVM1gotoFrame(frame,true,true);
 				break;
@@ -422,8 +422,8 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			}
 			case 0x27: // ActionStartDrag
 			{
-				tiny_string target = PopStack(stack).toString(clip->getSystemState());
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStartDrag "<<target);
+				asAtom target = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStartDrag "<<target.toDebugString());
 				asAtom lockcenter = PopStack(stack);
 				asAtom constrain = PopStack(stack);
 				Rectangle* rect = nullptr;
@@ -441,19 +441,31 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 					Rectangle::_setBottom(ret,clip->getSystemState(),obj,&y2,1);
 					Rectangle::_setRight(ret,clip->getSystemState(),obj,&x2,1);
 				}
-				MovieClip* targetclip = clip->AVM1GetClipFromPath(target);
-				if (targetclip)
+				asAtom obj;
+				if (target.is<MovieClip>())
 				{
-					asAtom ret;
-					asAtom obj = asAtom::fromObject(targetclip);
-					asAtom args[2];
-					args[0] = lockcenter;
-					if (rect)
-						args[1] = asAtom::fromObject(rect);
-					Sprite::_startDrag(ret,clip->getSystemState(),obj,args,rect ? 2 : 1);
+					obj = target;
 				}
 				else
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStartDrag target clip not found:"<<target);
+				{
+					tiny_string s = target.toString(clip->getSystemState());
+					MovieClip* targetclip = clip->AVM1GetClipFromPath(s);
+					if (targetclip)
+					{
+						obj = asAtom::fromObject(targetclip);
+					}
+					else
+					{
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStartDrag target clip not found:"<<target.toDebugString());
+						break;
+					}
+				}
+				asAtom ret;
+				asAtom args[2];
+				args[0] = lockcenter;
+				if (rect)
+					args[1] = asAtom::fromObject(rect);
+				Sprite::_startDrag(ret,clip->getSystemState(),obj,args,rect ? 2 : 1);
 				break;
 			}
 			case 0x28: // ActionEndDrag

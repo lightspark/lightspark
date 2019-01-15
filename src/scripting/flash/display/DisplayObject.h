@@ -180,6 +180,8 @@ public:
 	virtual void UpdateVariableBinding(asAtom v) {}
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e) { return false; }
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e) { return false; }
+	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) { }
+	
 	tiny_string AVM1GetPath();
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
@@ -264,8 +266,11 @@ public:
 	ASFUNCTION_ATOM(AVM1_getScaleY);
 	ASFUNCTION_ATOM(AVM1_setScaleY);
 	ASFUNCTION_ATOM(AVM1_getParent);
+	ASFUNCTION_ATOM(AVM1_getRoot);
 	ASFUNCTION_ATOM(AVM1_hitTest);
 	ASFUNCTION_ATOM(AVM1_localToGlobal);
+	ASFUNCTION_ATOM(AVM1_getBytesLoaded);
+	ASFUNCTION_ATOM(AVM1_getBytesTotal);
 	static void AVM1SetupMethods(Class_base* c);
 };
 }

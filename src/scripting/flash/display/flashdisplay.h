@@ -592,6 +592,8 @@ public:
 	
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e);
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e);
+	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e);
+	
 	void AVM1gotoFrameLabel(const tiny_string &label);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
 	MovieClip* AVM1GetClipFromPath(tiny_string& path);
@@ -622,6 +624,7 @@ private:
 	list<_R<DisplayObject>> hiddenobjects;
 	vector<_R<DisplayObject>> avm1KeyboardListeners;
 	vector<_R<DisplayObject>> avm1MouseListeners;
+	vector<_R<DisplayObject>> avm1EventListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
@@ -675,6 +678,8 @@ public:
 	void AVM1RemoveKeyboardListener(DisplayObject* o);
 	void AVM1AddMouseListener(DisplayObject* o);
 	void AVM1RemoveMouseListener(DisplayObject* o);
+	void AVM1AddEventListener(DisplayObject *o);
+	void AVM1RemoveEventListener(DisplayObject *o);
 };
 
 class StageScaleMode: public ASObject

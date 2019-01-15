@@ -1642,6 +1642,12 @@ void MovieClip::afterLegacyDelete(DisplayObjectContainer *par)
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+	if (this->actions.AllEventFlags.ClipEventEnterFrame)
+	{
+		this->incRef();
+		getSystemState()->unregisterFrameListener(_MR(this));
+		getSystemState()->stage->AVM1RemoveEventListener(this);
+	}
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
@@ -1680,6 +1686,20 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 	}
 	return false;
 }
+void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
+{
+	for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
+	{
+		if (e->type == "complete" && it->EventFlags.ClipEventLoad)
+		{
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+		}
+		if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
+		{
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+		}
+	}
+}
 
 
 void MovieClip::setupActions(const CLIPACTIONS &clipactions)
@@ -1692,6 +1712,14 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	if (this->actions.AllEventFlags.ClipEventKeyDown ||
 			this->actions.AllEventFlags.ClipEventKeyUp)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
+	if (this->actions.AllEventFlags.ClipEventLoad)
+		getSystemState()->stage->AVM1AddEventListener(this);
+	if (this->actions.AllEventFlags.ClipEventEnterFrame)
+	{
+		this->incRef();
+		getSystemState()->registerFrameListener(_MR(this));
+		getSystemState()->stage->AVM1AddEventListener(this);
+	}
 }
 
 MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
@@ -3081,6 +3109,15 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 			it++;
 		}
 	}
+	if (e->type == "complete" || e->type == "enterFrame")
+	{
+		auto it = avm1EventListeners.rbegin();
+		while (it != avm1EventListeners.rend())
+		{
+			(*it)->AVM1HandleEvent(dispatcher, e);
+			it++;
+		}
+	}
 }
 
 void Stage::AVM1AddKeyboardListener(DisplayObject *o)
@@ -3123,6 +3160,27 @@ void Stage::AVM1RemoveMouseListener(DisplayObject *o)
 		if ((*it).getPtr() == o)
 		{
 			avm1MouseListeners.erase(it);
+			break;
+		}
+	}
+}
+void Stage::AVM1AddEventListener(DisplayObject *o)
+{
+	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
+	{
+		if ((*it).getPtr() == o)
+			return;
+	}
+	o->incRef();
+	avm1EventListeners.push_back(_MR(o));
+}
+void Stage::AVM1RemoveEventListener(DisplayObject *o)
+{
+	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
+	{
+		if ((*it).getPtr() == o)
+		{
+			avm1EventListeners.erase(it);
 			break;
 		}
 	}

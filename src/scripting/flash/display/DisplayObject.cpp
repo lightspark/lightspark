@@ -1427,10 +1427,20 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
 	p->incRef();
 	ret = asAtom::fromObject(p);
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
+{
+	sys->mainClip->incRef();
+	ret = asAtom::fromObject(sys->mainClip);
+}
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 {
 	if (argslen==1)
-		hitTestObject(ret,sys,obj,args,argslen);
+	{
+		if (args[0].is<Undefined>())
+			ret.setBool(false);
+		else
+			hitTestObject(ret,sys,obj,args,argslen);
+	}
 	else
 		hitTestPoint(ret,sys,obj,args,argslen);
 }
@@ -1462,6 +1472,20 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
 	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
+{
+	if (sys->mainClip->loaderInfo)
+	{
+		ret.setUInt(sys->mainClip->loaderInfo->getBytesLoaded());
+	}
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
+{
+	if (sys->mainClip->loaderInfo)
+	{
+		ret.setUInt(sys->mainClip->loaderInfo->getBytesTotal());
+	}
+}
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
@@ -1484,6 +1508,9 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_parent","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getParent),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_root","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getRoot),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getBytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesLoaded),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getBytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesTotal),NORMAL_METHOD,true);
 }

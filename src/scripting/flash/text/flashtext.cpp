@@ -1063,6 +1063,9 @@ void TextField::afterLegacyInsert()
 			if (par->is<MovieClip>())
 			{
 				par->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
+				asAtom value = par->as<MovieClip>()->getVariableBindingValue(tagvarname);
+				if (value.type != T_INVALID)
+					this->text = value.toString(getSystemState());
 				break;
 			}
 			par = par->getParent();

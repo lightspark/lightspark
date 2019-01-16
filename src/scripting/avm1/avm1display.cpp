@@ -45,3 +45,9 @@ void AVM1SimpleButton::sinit(Class_base* c)
 	SimpleButton::sinit(c);
 	DisplayObject::AVM1SetupMethods(c);
 }
+
+void AVM1Stage::sinit(Class_base* c)
+{
+	Stage::sinit(c);
+	DisplayObject::AVM1SetupMethods(c);
+}

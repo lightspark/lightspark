@@ -267,6 +267,7 @@ void ABCVm::registerClassesAVM1()
 	builtin->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
 	builtin->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
 	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
+	builtin->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 
 	m_sys->avm1global=builtin;
 }

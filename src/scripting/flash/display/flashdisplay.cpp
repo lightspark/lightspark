@@ -1749,6 +1749,9 @@ MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 	{
 		return nullptr;
 	}
+	// path "/stage" is mapped to the root movie (?) 
+	if (this == getSystemState()->mainClip && subpath == "stage")
+		return this;
 	multiname objName(NULL);
 	objName.name_type=multiname::NAME_STRING;
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
@@ -1857,8 +1860,6 @@ asAtom MovieClip::getVariableBindingValue(const tiny_string &name)
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
 		ret = obj.toObject(getSystemState())->getVariableBindingValue(localname);
 	}
-	if (ret.type == T_INVALID)
-		LOG(LOG_ERROR,"Binding value not found for name:"<<name);
 	return ret;
 }
 void MovieClip::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)

@@ -24,6 +24,8 @@
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/toplevel/Vector.h"
 
 namespace lightspark
 {
@@ -51,6 +53,12 @@ public:
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr)
 		:SimpleButton(c,dS,hTS,oS,uS,tag) {}
 	
+	static void sinit(Class_base* c);
+};
+class AVM1Stage: public Stage
+{
+public:
+	AVM1Stage(Class_base* c):Stage(c) {}
 	static void sinit(Class_base* c);
 };
 

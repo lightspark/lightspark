@@ -1864,7 +1864,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		// SWF4 action model
 		// ActionStringExtract ActionStringLength ActionMBStringExtract 
 		// ActionMBStringLength ActionStringLess ActionAsciiToChar ActionCharToAscii ActionMBAsciiToChar ActionMBCharToAscii ActionCall
-		// ActionSetTarget2 ActionWaitForFrame2 
+		// ActionWaitForFrame2 
 		// ActionTrace
 		case 0x0a: // ActionAdd
 		case 0x0b: // ActionSubtract
@@ -1880,6 +1880,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x18: // ActionToInteger
 		case 0x1c: // ActionGetVariable
 		case 0x1d: // ActionSetVariable
+		case 0x20: // ActionSetTarget2
 		case 0x21: // ActionStringAdd
 		case 0x22: // ActionGetProperty
 		case 0x23: // ActionSetProperty

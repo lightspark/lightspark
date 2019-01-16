@@ -267,6 +267,23 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 					clip->AVM1SetVariable(s,value);
 				break;
 			}
+			case 0x20: // ActionSetTarget2
+			{
+				tiny_string s = PopStack(stack).toString(clip->getSystemState());
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget2 "<<s);
+				if (s.empty())
+					clip = originalclip;
+				else
+				{
+					clip = clip->AVM1GetClipFromPath(s);
+					if (!clip)
+					{
+						LOG(LOG_ERROR,"AVM1: ActionSetTarget2 clip not found:"<<s);
+						clip = originalclip;
+					}
+				}
+				break;
+			}
 			case 0x21: // ActionStringAdd
 			{
 				tiny_string a = PopStack(stack).toString(clip->getSystemState());

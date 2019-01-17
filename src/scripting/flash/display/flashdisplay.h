@@ -602,6 +602,8 @@ public:
 	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	static void AVM1SetupMethods(Class_base* c);
+	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
+	void AVM1ExecuteFrameActions(uint32_t frame);
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 };
 

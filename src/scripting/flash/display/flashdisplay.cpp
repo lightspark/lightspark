@@ -1752,6 +1752,19 @@ MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 	// path "/stage" is mapped to the root movie (?) 
 	if (this == getSystemState()->mainClip && subpath == "stage")
 		return this;
+	uint32_t posdot = subpath.find(".");
+	if (posdot != tiny_string::npos)
+	{
+		tiny_string subdotpath =  subpath.substr_bytes(0,posdot);
+		if (subdotpath.empty())
+			return nullptr;
+		MovieClip* parent = AVM1GetClipFromPath(subdotpath);
+		if (!parent)
+			return nullptr;
+		tiny_string localname = subpath.substr_bytes(posdot+1,subpath.numBytes()-posdot-1);
+		return parent->AVM1GetClipFromPath(localname);
+	}
+	
 	multiname objName(NULL);
 	objName.name_type=multiname::NAME_STRING;
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
@@ -1773,6 +1786,18 @@ MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 
 void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 {
+	if (name.empty())
+		return;
+	if (name.startsWith("/"))
+	{
+		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
+		MovieClip* root = getSystemState()->mainClip;
+		if (root)
+			root->AVM1SetVariable(newpath,v);
+		else
+			LOG(LOG_ERROR,"AVM1: no root movie clip for name:"<<name<<" "<<this->toDebugString());
+		return;
+	}
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
@@ -1785,6 +1810,9 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameId;
 		setVariableByMultiname(objName,v, ASObject::CONST_NOT_ALLOWED);
+		auto it = variablebindings.find(nameId);
+		if (it != variablebindings.end())
+			(*it).second->UpdateVariableBinding(v);
 	}
 	else if (pos == 0)
 	{
@@ -1897,6 +1925,30 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
+}
+
+void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
+{
+	uint32_t dest=getFrameIdByLabel(label, "");
+	if(dest==FRAME_NOT_FOUND)
+	{
+		LOG(LOG_INFO, "AVM1ExecuteFrameActionsFromLabel: label not found:" <<label);
+		return;
+	}
+	AVM1ExecuteFrameActions(dest);
+}
+
+void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
+{
+	auto it=frames.begin();
+	uint32_t i=0;
+	while(it != frames.end() && i < frame)
+	{
+		++i;
+		++it;
+	}
+	if (it != frames.end())
+		it->AVM1executeActions(this);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {

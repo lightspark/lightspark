@@ -331,6 +331,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 						case 9:// height
 							DisplayObject::_getHeight(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 13:// name
+							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 20:// xmouse
 							DisplayObject::_getMouseX(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -391,7 +394,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 					}
 				}
 				else
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetProperty target clip not found"<<target.toDebugString()<<" "<<index.toDebugString()<<" "<<value.toDebugString());
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetProperty target clip not found:"<<target.toDebugString()<<" "<<index.toDebugString()<<" "<<value.toDebugString());
 				break;
 			}
 			case 0x24: // ActionCloneSprite
@@ -1118,6 +1121,23 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				}
 				break;
 			}
+			case 0x9e: // ActionCall
+			{
+				asAtom a = PopStack(stack);
+				if (a.type == T_STRING)
+				{
+					tiny_string s = a.toString(clip->getSystemState());
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCall label "<<s);
+					clip->AVM1ExecuteFrameActionsFromLabel(s);
+				}
+				else
+				{
+					uint32_t frame = a.toUInt();
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCall frame "<<frame);
+					clip->AVM1ExecuteFrameActions(frame);
+				}
+				break;
+			}
 			case 0x9f: // ActionGotoFrame2
 			{
 				asAtom a = PopStack(stack);
@@ -1134,7 +1154,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				{
 					uint32_t frame = a.toUInt()+it->data_uint16;
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGotoFrame2 "<<frame);
-					clip->AVM1gotoFrame(frame,!it->data_flag2);
+					clip->AVM1gotoFrame(frame,!it->data_flag2,true);
 				}
 				break;
 			}

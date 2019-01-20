@@ -292,6 +292,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 
 void RemoveObject2Tag::execute(DisplayObjectContainer* parent)
 {
+	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
 }
 
@@ -1446,12 +1447,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	{
 		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
 	}
-	else if (parent->colorTransform)
-	{
-		// use colorTransform from parent
-		parent->colorTransform->incRef();
-		obj->colorTransform=parent->colorTransform;
-	}
 
 	if(PlaceFlagHasRatio)
 		obj->Ratio=Ratio;
@@ -1513,6 +1508,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		}
 
 		assert_and_throw(toAdd);
+
+		if (exists && !PlaceFlagHasMatrix) // reuse matrix of existing DispayObject at this depth
+			Matrix = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->getMatrix();
+
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 		toAdd->legacy = true;
@@ -1521,6 +1520,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 		if(exists)
 		{
+			if(!PlaceFlagHasColorTransform) // reuse colortransformation of existing DispayObject at this depth
+				toAdd->colorTransform= parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->colorTransform;
+
+			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+
 			if(PlaceFlagMove || (oldchar != CharacterId))
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);

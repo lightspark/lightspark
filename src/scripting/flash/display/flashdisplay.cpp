@@ -917,6 +917,24 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	}
 }
 
+void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
+{
+	auto it = legacyChildrenMarkedForDeletion.begin();
+	while (it != legacyChildrenMarkedForDeletion.end())
+	{
+		deleteLegacyChildAt(*it);
+		it = legacyChildrenMarkedForDeletion.erase(it);
+	}
+}
+
+void DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
+{
+	auto it = legacyChildrenMarkedForDeletion.find(depth);
+	if (it != legacyChildrenMarkedForDeletion.end())
+		legacyChildrenMarkedForDeletion.erase(it);
+}
+
+
 void Sprite::renderImpl(RenderContext& ctxt) const
 {
 	//Draw the dynamically added graphics, if any
@@ -2142,14 +2160,12 @@ void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX&
 
 void DisplayObjectContainer::purgeLegacyChildren()
 {
-	
 	auto i = depthToLegacyChild.begin();
 	while( i != depthToLegacyChild.end() )
 	{
 		if (i->left < 0)
-			deleteLegacyChildAt(i->left);
-		else
-			i++;
+			legacyChildrenMarkedForDeletion.insert(i->left);
+		i++;
 	}
 }
 
@@ -3574,10 +3590,7 @@ void SimpleButton::afterLegacyInsert()
 	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
 	{
 		if (it->CondKeyPress)
-		{
 			getSystemState()->stage->AVM1AddKeyboardListener(this);
-			break;
-		}
 		if (  it->CondIdleToOverDown
 			||it->CondOutDownToIdle
 			||it->CondOutDownToOverDown
@@ -3604,11 +3617,18 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
-	number_t x,y;
-	dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
-	this->globalToLocal(x,y,x,y);
-	_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK);
-	
+	_NR<DisplayObject> dispobj;
+	if (dispatcher == this)
+		dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK);
+	else
+	{
+		number_t x,y;
+		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
+		number_t x1,y1;
+		this->globalToLocal(x,y,x1,y1);
+		dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK);
+	}
+
 	if (dispobj.getPtr()!= this)
 		return false;
 	BUTTONSTATE oldstate = currentState;
@@ -3819,13 +3839,8 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
 	{
-		if(hitTestState->getMatrix().isInvertible())
-		{
-			number_t localX, localY;
-			hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-			this->incRef();
-			ret = hitTestState->hitTest(_MR(this), localX, localY, type);
-		}
+		this->incRef();
+		ret = hitTestState->hitTest(_MR(this), x, y, type);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -4198,7 +4213,7 @@ void MovieClip::initFrame()
 	 */
 	if((int)state.FP < state.last_FP)
 	{
-//		purgeLegacyChildren();
+		purgeLegacyChildren();
 		resetToStart();
 	}
 
@@ -4221,6 +4236,8 @@ void MovieClip::initFrame()
 			++iter;
 		}
 	}
+	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
+	LegacyChildEraseDeletionMarked();
 
 	/* Now the new legacy display objects are there, so we can also init their
 	 * first frame (top-down) and call their constructors (bottom-up) */

@@ -97,6 +97,7 @@ class DisplayObjectContainer: public InteractiveObject
 private:
 	bool mouseChildren;
 	boost::bimap<int32_t,DisplayObject*> depthToLegacyChild;
+	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(_R<DisplayObject> child);
 	void getObjectsFromPoint(Point* point, Array* ar);
 protected:
@@ -111,7 +112,9 @@ protected:
 	void renderImpl(RenderContext& ctxt) const;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
+	void LegacyChildEraseDeletionMarked();
 public:
+	void LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q);
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);

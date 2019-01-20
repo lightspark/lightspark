@@ -382,8 +382,14 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				//by transformations.
 				if (style.Width == 0)
 					cairo_set_line_width(stroke_cr, 1);
-				else
-					cairo_set_line_width(stroke_cr, (double)(style.Width / 20.0 / scaleCorrection));
+				else if (style.Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
+					cairo_set_line_width(stroke_cr, 5);
+				else 
+				{
+					double linewidth = (double)(style.Width / 20.0);
+					cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
+					cairo_set_line_width(stroke_cr, linewidth);
+				}
 				break;
 			}
 

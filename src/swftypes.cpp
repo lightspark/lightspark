@@ -1059,10 +1059,10 @@ void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
 	}
 	else
 	{
-		redMultiplier = 1.0;
-		greenMultiplier = 1.0;
-		blueMultiplier = 1.0;
-		alphaMultiplier = 1.0;
+		redMultiplier = 256.0;
+		greenMultiplier = 256.0;
+		blueMultiplier = 256.0;
+		alphaMultiplier = 256.0;
 	}
 
 	if (HasAddTerms)

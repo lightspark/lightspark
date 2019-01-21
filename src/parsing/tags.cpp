@@ -1480,11 +1480,15 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		return;
 	}
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
-	uint32_t oldchar=0;
+	uint32_t nameID;
+	DisplayObject* currchar=nullptr;
 	if (exists)
-		oldchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->getTagID();
+	{
+		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
+		nameID = currchar->name;
+	}
 
-	if(PlaceFlagHasCharacter && (!exists || (oldchar != CharacterId)))
+	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
@@ -1509,8 +1513,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 		assert_and_throw(toAdd);
 
-		if (exists && !PlaceFlagHasMatrix) // reuse matrix of existing DispayObject at this depth
-			Matrix = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->getMatrix();
+		if (currchar && !PlaceFlagHasMatrix) // reuse matrix of existing DispayObject at this depth
+			Matrix = currchar->getMatrix();
 
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
@@ -1525,11 +1529,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 
 			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 
-			if(PlaceFlagMove || (oldchar != CharacterId))
+			if(PlaceFlagMove || (currchar->getTagID() != CharacterId))
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
 				/* parent becomes the owner of toAdd */
 				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
+				currchar=toAdd;
 			}
 			else
 				LOG(LOG_ERROR,"Invalid PlaceObject2Tag that overwrites an object without moving at depth "<<LEGACY_DEPTH_START+Depth);
@@ -1538,11 +1543,23 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		{
 			/* parent becomes the owner of toAdd */
 			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
+			currchar=toAdd;
 		}
 	}
-	else
+	else if (PlaceFlagHasMatrix)
 	{
 		parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
+	}
+	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+	{
+		currchar->name = nameID;
+		currchar->incRef();
+		multiname objName(NULL);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=currchar->name;
+		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		asAtom v = asAtom::fromObject(currchar);
+		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
 	}
 	if (PlaceFlagHasClipAction)
 	{

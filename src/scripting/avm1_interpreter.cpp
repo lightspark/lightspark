@@ -424,14 +424,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				tiny_string sourcepath = PopStack(stack).toString(clip->getSystemState());
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite "<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
 				MovieClip* source = clip->AVM1GetClipFromPath(sourcepath);
-				DisplayObjectContainer* parent = clip->getParent();
-				if (!parent || !parent->is<MovieClip>())
-				{
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite: the clip has no parent:"<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
-					break;
-				}
 				if (source)
 				{
+					DisplayObjectContainer* parent = source->getParent();
+					if (!parent || !parent->is<MovieClip>())
+					{
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite: the clip has no parent:"<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
+						break;
+					}
 					DefineSpriteTag* tag = (DefineSpriteTag*)clip->getSystemState()->mainClip->dictionaryLookup(source->getTagID());
 					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(clip->getSystemState(),*tag,source->getTagID(),target.toStringId(clip->getSystemState()));
 					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret);

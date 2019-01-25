@@ -1448,12 +1448,11 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		}
 	}
 
-	RunState newstate = state;
-	newstate.next_FP = next_FP;
-	newstate.explicit_FP = true;
-	newstate.stop_FP = stop;
-	this->incRef();
-	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) InitFrameEvent(_MR(this),newstate)));
+	state.next_FP = next_FP;
+	state.explicit_FP = true;
+	state.stop_FP = stop;
+	advanceFrame();
+	initFrame();
 	this->incRef();
 	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 }
@@ -1742,7 +1741,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 
 MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 {
-	if (path.empty())
+	if (path.empty() || path == "this")
 		return this;
 	if (path.startsWith("/"))
 	{
@@ -1799,6 +1798,7 @@ MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 			return ret.as<MovieClip>()->AVM1GetClipFromPath(subpath);
 		}
 	}
+	LOG(LOG_ERROR,"AVM1:"<<getTagID()<<" "<<state.FP<<" path not found:"<<path<<" "<<subpath<<" "<<ret.toDebugString());
 	return nullptr;
 }
 
@@ -1827,7 +1827,7 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameId;
-		setVariableByMultiname(objName,v, ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
 		auto it = variablebindings.find(nameId);
 		if (it != variablebindings.end())
 			(*it).second->UpdateVariableBinding(v);
@@ -1835,7 +1835,11 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 	else if (pos == 0)
 	{
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		AVM1SetVariable(localname,v);
+		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		if (v.type == T_UNDEFINED)
+			avm1variables.erase(nameId);
+		else
+			avm1variables[nameId] = v;
 	}
 	else
 	{
@@ -2066,7 +2070,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 {
 	if(!hasLegacyChildAt(depth))
 	{
-		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth");
+		LOG(LOG_ERROR,"checkColorTransformForLegacyChildAt: no child at that depth");
 		return;
 	}
 	DisplayObject* o = depthToLegacyChild.left.at(depth);
@@ -4221,7 +4225,7 @@ void MovieClip::initFrame()
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
 
-	std::list<Frame>::iterator curriter=frames.end();
+	currentframeIterator=frames.end();
 	if(getFramesLoaded())
 	{
 		std::list<Frame>::iterator iter=frames.begin();
@@ -4232,7 +4236,7 @@ void MovieClip::initFrame()
 				iter->execute(this);
 			}
 			if (i==state.FP && !state.explicit_FP)
-				curriter= iter;
+				currentframeIterator= iter;
 			++iter;
 		}
 	}
@@ -4264,9 +4268,6 @@ void MovieClip::initFrame()
 		itbind++;
 	}
 	
-	if (curriter != frames.end())
-		curriter->AVM1executeActions(this);
-
 	/* Run framescripts if this is a new frame. We do it at the end because our constructor
 	 * may just have registered one. 
 	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
@@ -4280,6 +4281,9 @@ void MovieClip::initFrame()
 
 void MovieClip::executeFrameScript()
 {
+	if (currentframeIterator != frames.end())
+		currentframeIterator->AVM1executeActions(this);
+
 	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;

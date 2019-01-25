@@ -1434,12 +1434,26 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 {
+	ret.setBool(false);
 	if (argslen==1)
 	{
-		if (args[0].is<Undefined>())
-			ret.setBool(false);
-		else
-			hitTestObject(ret,sys,obj,args,argslen);
+		if (!args[0].is<Undefined>())
+		{
+			if (obj.is<MovieClip>())
+			{
+				tiny_string s = args[0].toString(sys);
+				MovieClip* path = obj.as<MovieClip>()->AVM1GetClipFromPath(s);
+				if (path)
+				{
+					asAtom pathobj = asAtom::fromObject(path);
+					hitTestObject(ret,sys,obj,&pathobj,1);
+				}
+				else
+					LOG(LOG_ERROR,"AVM1_hitTest:clip not found:"<<args[0].toDebugString());
+			}
+			else
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1_hitTest:object is no MovieClip:"<<obj.toDebugString());
+		}
 	}
 	else
 		hitTestPoint(ret,sys,obj,args,argslen);

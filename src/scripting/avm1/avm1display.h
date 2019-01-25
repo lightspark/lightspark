@@ -34,7 +34,10 @@ class AVM1MovieClip: public MovieClip
 {
 public:
 	AVM1MovieClip(Class_base* c):MovieClip(c){}
-	AVM1MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):MovieClip(c,f,defineSpriteTagID) {}
+	AVM1MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(c,f,defineSpriteTagID) 
+	{
+		name=nameID;
+	}
 	static void sinit(Class_base* c);
 };
 

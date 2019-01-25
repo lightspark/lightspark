@@ -1552,6 +1552,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
+		parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 		currchar->name = nameID;
 		currchar->incRef();
 		multiname objName(NULL);

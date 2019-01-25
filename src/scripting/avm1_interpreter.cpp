@@ -79,6 +79,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 		{
 			curdepth--;
 		}
+		if (!clip
+				&& it->actionCode != 0x20 // ActionSetTarget2
+				&& it->actionCode != 0x8b // ActionSetTarget
+				)
+		{
+			// we are in a target that was not found during ActionSetTarget(2), so these actions are ignored
+			continue;
+		}
 		
 		switch (it->actionCode)
 		{
@@ -270,7 +278,10 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			case 0x20: // ActionSetTarget2
 			{
 				tiny_string s = PopStack(stack).toString(clip->getSystemState());
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget2 "<<s);
+				if (!clip)
+					LOG_CALL("AVM1: ActionSetTarget2: setting target from undefined value to "<<s);
+				else
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget2 "<<s);
 				if (s.empty())
 					clip = originalclip;
 				else
@@ -279,7 +290,6 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 					if (!clip)
 					{
 						LOG(LOG_ERROR,"AVM1: ActionSetTarget2 clip not found:"<<s);
-						clip = originalclip;
 					}
 				}
 				break;
@@ -331,6 +341,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 						case 9:// height
 							DisplayObject::_getHeight(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 10:// rotation
+							DisplayObject::_getRotation(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 13:// name
 							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -355,7 +368,11 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				asAtom target = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetProperty "<<target.toDebugString()<<" "<<index.toDebugString()<<" "<<value.toDebugString());
 				DisplayObject* o = clip;
-				if (target.toStringId(clip->getSystemState()) != BUILTIN_STRINGS::EMPTY)
+				if (target.is<MovieClip>())
+				{
+					o = target.as<MovieClip>();
+				}
+				else if (target.toStringId(clip->getSystemState()) != BUILTIN_STRINGS::EMPTY)
 				{
 					tiny_string s = target.toString(clip->getSystemState());
 					o = clip->AVM1GetClipFromPath(s);
@@ -388,6 +405,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 						case 9:// height
 							DisplayObject::_setHeight(ret,clip->getSystemState(),obj,&valueInt,1);
 							break;
+						case 10:// rotation
+							DisplayObject::_setRotation(ret,clip->getSystemState(),obj,&valueInt,1);
+							break;
 						default:
 							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<index.toInt());
 							break;
@@ -401,17 +421,24 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			{
 				uint32_t depth = PopStack(stack).toUInt();
 				asAtom target = PopStack(stack);
-				asAtom source = PopStack(stack);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite "<<target.toDebugString()<<" "<<source.toDebugString()<<" "<<depth);
-				if (source.is<MovieClip>())
+				tiny_string sourcepath = PopStack(stack).toString(clip->getSystemState());
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite "<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
+				MovieClip* source = clip->AVM1GetClipFromPath(sourcepath);
+				DisplayObjectContainer* parent = clip->getParent();
+				if (!parent || !parent->is<MovieClip>())
 				{
-					DefineSpriteTag* tag = (DefineSpriteTag*)clip->getSystemState()->mainClip->dictionaryLookup(source.as<MovieClip>()->getTagID());
-					
-					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(clip->getSystemState(),*tag,source.as<MovieClip>()->getTagID());
-					clip->_addChildAt(_MR(ret),depth);
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite: the clip has no parent:"<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
+					break;
+				}
+				if (source)
+				{
+					DefineSpriteTag* tag = (DefineSpriteTag*)clip->getSystemState()->mainClip->dictionaryLookup(source->getTagID());
+					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(clip->getSystemState(),*tag,source->getTagID(),target.toStringId(clip->getSystemState()));
+					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret);
+					ret->setLegacyMatrix(source->getMatrix());
 				}
 				else
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite source is no MovieClip:"<<target.toDebugString()<<" "<<source.toDebugString()<<" "<<depth);
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite source clip not found:"<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);
 				break;
 			}
 			case 0x25: // ActionRemoveSprite
@@ -925,17 +952,17 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			case 0x8b: // ActionSetTarget
 			{
 				tiny_string s(it->data_string[0].raw_buf(),true);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget "<<s);
+				if (!clip)
+					LOG_CALL("AVM1: ActionSetTarget: setting target from undefined value to "<<s);
+				else
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget "<<s);
 				if (s.empty())
 					clip = originalclip;
 				else
 				{
 					clip = clip->AVM1GetClipFromPath(s);
 					if (!clip)
-					{
 						LOG(LOG_ERROR,"AVM1: ActionSetTarget clip not found:"<<s);
-						clip = originalclip;
-					}
 				}
 				break;
 			}

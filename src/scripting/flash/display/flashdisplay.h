@@ -191,6 +191,9 @@ public:
 	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void finalize();
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing);
+	void requestInvalidation(InvalidateQueue* q);
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

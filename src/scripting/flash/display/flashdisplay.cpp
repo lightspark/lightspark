@@ -2069,10 +2069,7 @@ void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t r
 void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,const CXFORMWITHALPHA& colortransform)
 {
 	if(!hasLegacyChildAt(depth))
-	{
-		LOG(LOG_ERROR,"checkColorTransformForLegacyChildAt: no child at that depth");
 		return;
-	}
 	DisplayObject* o = depthToLegacyChild.left.at(depth);
 	if (o->colorTransform.isNull())
 		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getSystemState(),colortransform));
@@ -3910,6 +3907,52 @@ void SimpleButton::finalize()
 	overState.reset();
 	upState.reset();
 	buttontag=nullptr;
+}
+
+IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+{
+	if (!upState.isNull())
+		upState->invalidate(target,initialMatrix,smoothing);
+	if (!overState.isNull())
+		overState->invalidate(target,initialMatrix,smoothing);
+	if (!downState.isNull())
+		downState->invalidate(target,initialMatrix,smoothing);
+	if (!hitTestState.isNull())
+		hitTestState->invalidate(target,initialMatrix,smoothing);
+	return DisplayObjectContainer::invalidate(target, initialMatrix,smoothing);
+}
+void SimpleButton::requestInvalidation(InvalidateQueue* q)
+{
+	if (!upState.isNull())
+	{
+		upState->hasChanged = true;
+		if (upState->colorTransform.isNull())
+			upState->colorTransform = this->colorTransform;
+		upState->requestInvalidation(q);
+	}
+	if (!overState.isNull())
+	{
+		overState->hasChanged = true;
+		if (overState->colorTransform.isNull())
+			overState->colorTransform = this->colorTransform;
+		overState->requestInvalidation(q);
+	}
+	if (!downState.isNull())
+	{
+		downState->hasChanged = true;
+		if (downState->colorTransform.isNull())
+			downState->colorTransform = this->colorTransform;
+		downState->requestInvalidation(q);
+	}
+	if (!hitTestState.isNull())
+	{
+		hitTestState->hasChanged = true;
+		if (hitTestState->colorTransform.isNull())
+			hitTestState->colorTransform = this->colorTransform;
+		hitTestState->requestInvalidation(q);
+	}
+	
+	DisplayObjectContainer::requestInvalidation(q);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)

@@ -2152,10 +2152,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX& mat)
 {
 	if(!hasLegacyChildAt(depth))
-	{
-		LOG(LOG_ERROR,"transformLegacyChildAt: no child at depth:"<<depth);
 		return;
-	}
 	depthToLegacyChild.left.at(depth)->setLegacyMatrix(mat);
 }
 
@@ -3169,7 +3166,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 			it++;
 		}
 	}
-	if (e->type == "mouseDown" || e->type == "mouseOver" || e->type == "mouseUp")
+	if (e->type == "mouseDown" || e->type == "mouseOver" || e->type == "mouseUp" || e->type == "mouseOut")
 	{
 		auto it = avm1MouseListeners.rbegin();
 		while (it != avm1MouseListeners.rend())
@@ -3618,20 +3615,27 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
-	_NR<DisplayObject> dispobj;
-	if (dispatcher == this)
-		dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK);
+	if(e->type == "mouseOut")
+	{
+		if (dispatcher!= this)
+			return false;
+	}
 	else
 	{
-		number_t x,y;
-		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
-		number_t x1,y1;
-		this->globalToLocal(x,y,x1,y1);
-		dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK);
+		_NR<DisplayObject> dispobj;
+		if (dispatcher == this)
+			dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK);
+		else
+		{
+			number_t x,y;
+			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
+			number_t x1,y1;
+			this->globalToLocal(x,y,x1,y1);
+			dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK);
+		}
+		if (dispobj.getPtr()!= this)
+			return false;
 	}
-
-	if (dispobj.getPtr()!= this)
-		return false;
 	BUTTONSTATE oldstate = currentState;
 	if(e->type == "mouseDown")
 	{
@@ -4303,14 +4307,6 @@ void MovieClip::initFrame()
 	/* call our own constructor, if necassary */
 	DisplayObject::initFrame();
 
-	auto itbind = variablebindings.begin();
-	while (itbind != variablebindings.end())
-	{
-		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
-		(*itbind).second->UpdateVariableBinding(v);
-		itbind++;
-	}
-	
 	/* Run framescripts if this is a new frame. We do it at the end because our constructor
 	 * may just have registered one. 
 	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
@@ -4324,6 +4320,13 @@ void MovieClip::initFrame()
 
 void MovieClip::executeFrameScript()
 {
+	auto itbind = variablebindings.begin();
+	while (itbind != variablebindings.end())
+	{
+		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
+		(*itbind).second->UpdateVariableBinding(v);
+		itbind++;
+	}
 	if (currentframeIterator != frames.end())
 		currentframeIterator->AVM1executeActions(this);
 

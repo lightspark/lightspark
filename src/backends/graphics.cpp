@@ -227,6 +227,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 								bm->getWidth(),
 								bm->getHeight(),
 								cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
+			if (colortransform)
+				LOG(LOG_NOT_IMPLEMENTED,"apply colortransform to bitmap fillstyle");
 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);
@@ -355,7 +357,17 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					}
 				} else {
 					const RGBA& color = style.Color;
-					cairo_set_source_rgba(stroke_cr, color.rf(), color.gf(), color.bf(), color.af());
+					float r,g,b,a;
+					if (colortransform)
+						colortransform->applyTransformation(color,r,g,b,a);
+					else
+					{
+						r = color.rf();
+						g = color.gf();
+						b = color.bf();
+						a = color.af();
+					}
+					cairo_set_source_rgba(stroke_cr, r, g, b, a);
 				}
 
 				// TODO: EndCapStyle

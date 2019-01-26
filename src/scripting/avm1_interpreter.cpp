@@ -376,6 +376,8 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				{
 					tiny_string s = target.toString(clip->getSystemState());
 					o = clip->AVM1GetClipFromPath(s);
+					if (!o) // it seems that Adobe falls back to the current clip if the path is invalid
+						o = clip;
 				}
 				if (o)
 				{

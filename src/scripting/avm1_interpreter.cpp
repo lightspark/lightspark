@@ -279,9 +279,13 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			{
 				tiny_string s = PopStack(stack).toString(clip->getSystemState());
 				if (!clip)
+				{
 					LOG_CALL("AVM1: ActionSetTarget2: setting target from undefined value to "<<s);
+				}
 				else
+				{
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget2 "<<s);
+				}
 				if (s.empty())
 					clip = originalclip;
 				else
@@ -467,6 +471,12 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				{
 					o->getParent()->_removeChild(o);
 				}
+				break;
+			}
+			case 0x26: // ActionTrace
+			{
+				asAtom value = PopStack(stack);
+				Log::print(value.toString(clip->getSystemState()));
 				break;
 			}
 			case 0x27: // ActionStartDrag
@@ -772,6 +782,12 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				PushStack(stack,asAtom(arg.toNumber()));
 				break;
 			}
+			case 0x4b: // ActionToString
+			{
+				asAtom arg = PopStack(stack);
+				PushStack(stack,asAtom::fromString(clip->getSystemState(),arg.toString(clip->getSystemState())));
+				break;
+			}
 			case 0x50: // ActionIncrement
 			{
 				asAtom num = PopStack(stack);
@@ -901,6 +917,76 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 				PushStack(stack,ret);
 				break;
 			}
+			case 0x60: // ActionBitAnd
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitAnd "<<arg1.toDebugString()<<" & "<<arg2.toDebugString());
+				arg1.bit_and(arg2);
+				PushStack(stack,arg1);
+				break;
+			}
+			case 0x61: // ActionBitOr
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitOr "<<arg1.toDebugString()<<" | "<<arg2.toDebugString());
+				arg1.bit_or(arg2);
+				PushStack(stack,arg1);
+				break;
+			}
+			case 0x62: // ActionBitXOr
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitXOr "<<arg1.toDebugString()<<" ^ "<<arg2.toDebugString());
+				arg1.bit_xor(arg2);
+				PushStack(stack,arg1);
+				break;
+			}
+			case 0x63: // ActionBitLShift
+			{
+				asAtom count = PopStack(stack);
+				asAtom value = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitLShift "<<value.toDebugString()<<" << "<<count.toDebugString());
+				value.lshift(count);
+				PushStack(stack,value);
+				break;
+			}
+			case 0x64: // ActionBitRShift
+			{
+				asAtom count = PopStack(stack);
+				asAtom value = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitRShift "<<value.toDebugString()<<" >> "<<count.toDebugString());
+				value.rshift(count);
+				PushStack(stack,value);
+				break;
+			}
+			case 0x65: // ActionBitURShift
+			{
+				asAtom count = PopStack(stack);
+				asAtom value = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionBitURShift "<<value.toDebugString()<<" >> "<<count.toDebugString());
+				value.urshift(count);
+				PushStack(stack,value);
+				break;
+			}
+			case 0x66: // ActionStrictEquals
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStrictEquals "<<arg2.toDebugString()<<" === "<<arg1.toDebugString());
+				PushStack(stack,asAtom(arg1.isEqualStrict(clip->getSystemState(),arg2) == TTRUE));
+				break;
+			}
+			case 0x67: // ActionGreater
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGreater "<<arg2.toDebugString()<<" > "<<arg1.toDebugString());
+				PushStack(stack,asAtom(arg1.isLess(clip->getSystemState(),arg2) == TTRUE));
+				break;
+			}
 			case 0x81: // ActionGotoFrame
 			{
 				uint32_t frame = it->data_uint16;
@@ -955,9 +1041,13 @@ void ACTIONRECORD::executeActions(MovieClip *clip,Frame* frame, std::vector<ACTI
 			{
 				tiny_string s(it->data_string[0].raw_buf(),true);
 				if (!clip)
+				{
 					LOG_CALL("AVM1: ActionSetTarget: setting target from undefined value to "<<s);
+				}
 				else
+				{
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetTarget "<<s);
+				}
 				if (s.empty())
 					clip = originalclip;
 				else

@@ -1186,8 +1186,15 @@ void Frame::execute(DisplayObjectContainer* displayList)
 	displayList->checkClipDepth();
 
 }
-void Frame::AVM1executeActions(MovieClip* clip)
+void Frame::AVM1executeActions(MovieClip* clip, bool avm1initactionsdone)
 {
+	if (!avm1initactionsdone)
+	{
+		auto it1=avm1initactions.begin();
+		for(;it1!=avm1initactions.end();++it1)
+			(*it1)->execute(clip,this);
+	}
+
 	auto it2=avm1actions.begin();
 	for(;it2!=avm1actions.end();++it2)
 		(*it2)->execute(clip,this);
@@ -1230,6 +1237,10 @@ void FrameContainer::addToFrame(DisplayListTag* t)
 void FrameContainer::addAvm1ActionToFrame(AVM1ActionTag* t)
 {
 	frames.back().avm1actions.push_back(t);
+}
+void FrameContainer::addAvm1InitActionToFrame(AVM1InitActionTag* t)
+{
+	frames.back().avm1initactions.push_back(t);
 }
 
 /**
@@ -1970,7 +1981,7 @@ void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
 		++it;
 	}
 	if (it != frames.end())
-		it->AVM1executeActions(this);
+		it->AVM1executeActions(this,this->frameinitactionsdone.find(frame) != this->frameinitactionsdone.end());
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {
@@ -4316,6 +4327,9 @@ void MovieClip::initFrame()
 	{
 		frameScriptToExecute=state.FP;
 	}
+	avm1initactionsdone = frameinitactionsdone.find(state.FP) != frameinitactionsdone.end();
+	if (!avm1initactionsdone)
+		frameinitactionsdone.insert(state.FP);
 }
 
 void MovieClip::executeFrameScript()
@@ -4328,7 +4342,7 @@ void MovieClip::executeFrameScript()
 		itbind++;
 	}
 	if (currentframeIterator != frames.end())
-		currentframeIterator->AVM1executeActions(this);
+		currentframeIterator->AVM1executeActions(this,avm1initactionsdone);
 
 	if (frameScriptToExecute != UINT32_MAX)
 	{

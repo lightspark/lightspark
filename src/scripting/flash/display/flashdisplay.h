@@ -42,6 +42,7 @@ namespace lightspark
 class RootMovieClip;
 class DisplayListTag;
 class AVM1ActionTag;
+class AVM1InitActionTag;
 class DefineButtonTag;
 class InteractiveObject;
 class Downloader;
@@ -481,11 +482,12 @@ class Frame
 friend class FrameContainer;
 private:
 	std::list<AVM1ActionTag*> avm1actions;
+	std::list<AVM1InitActionTag*> avm1initactions;
 	std::vector<uint32_t> avm1strings;
 public:
 	std::list<DisplayListTag*> blueprint;
 	void execute(DisplayObjectContainer* displayList);
-	void AVM1executeActions(MovieClip* clip);
+	void AVM1executeActions(MovieClip* clip, bool avm1initactionsdone);
 	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
 	asAtom AVM1GetConstant(uint16_t index);
 	/**
@@ -516,6 +518,7 @@ protected:
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
 	void addAvm1ActionToFrame(AVM1ActionTag* t);
+	void addAvm1InitActionToFrame(AVM1InitActionTag* t);
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();
 	FrameContainer(const FrameContainer& f);
@@ -537,11 +540,13 @@ private:
 	std::map<uint32_t,asAtom > frameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
+	bool avm1initactionsdone;
 
 	std::map<uint32_t,asAtom> avm1variables;
 	std::map<uint32_t,_NR<DisplayObject>> variablebindings;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
-	
+	std::set<uint32_t> frameinitactionsdone;
+
 	CLIPACTIONS actions;
 	std::list<Frame>::iterator currentframeIterator;
 protected:

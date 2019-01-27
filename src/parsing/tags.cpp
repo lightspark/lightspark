@@ -191,6 +191,9 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 		case 58:
 			ret=new EnableDebuggerTag(h,f);
 			break;
+		case 59:
+			ret=new AVM1InitActionTag(h,f,root);
+			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f,root);
 			break;
@@ -466,6 +469,15 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 					empty=false;
 				}
 				break;
+			case AVM1INITACTION_TAG:
+			{
+				if (!(static_cast<AVM1InitActionTag*>(tag)->empty()))
+				{
+					addAvm1InitActionToFrame(static_cast<AVM1InitActionTag*>(tag));
+					empty=false;
+				}
+				break;
+			}
 			case TAG:
 				delete tag;
 				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
@@ -1480,7 +1492,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		return;
 	}
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
-	uint32_t nameID;
+	uint32_t nameID = 0;
 	DisplayObject* currchar=nullptr;
 	if (exists)
 	{
@@ -1570,7 +1582,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio);
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
-	
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),ClipActions(root->version),placedTag(nullptr)
@@ -2384,7 +2395,7 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 
 AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
 {
-	// ActionTags are ignored in swf > 9
+	// ActionTags are ignored in swf >= 9
 	if (root->version >= 9)
 	{
 		skip(s);
@@ -2412,6 +2423,41 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Ta
 }
 
 void AVM1ActionTag::execute(MovieClip* clip, Frame *frame)
+{
+	ACTIONRECORD::executeActions(clip,frame,actions);
+}
+
+AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
+{
+	// InitActionTags are ignored in swf >= 9
+	if (root->version >= 9)
+	{
+		skip(s);
+		return; 
+	}
+	s >> SpriteId;
+	uint32_t len = Header.getLength()-2;
+	
+	uint32_t pos = s.tellg();
+	while (true)
+	{
+		ACTIONRECORD r;
+		s>>r;
+		if (r.actionCode== 0)
+			break;
+		actions.push_back(r);
+	}
+	pos = (uint32_t)s.tellg()-pos;
+	if (len > pos)
+		throw ParseException("Malformed SWF file, DoInitActionTag: invalid length of ACTIONRECORD");
+	if (len < pos)
+	{
+		LOG(LOG_ERROR,"DoInitActionTag: bytes available after reading all actions:"<<len);
+		ignore(s,pos-len);
+	}
+}
+
+void AVM1InitActionTag::execute(MovieClip* clip, Frame *frame)
 {
 	ACTIONRECORD::executeActions(clip,frame,actions);
 }

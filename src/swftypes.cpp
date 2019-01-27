@@ -1865,7 +1865,6 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		// ActionStringExtract ActionStringLength ActionMBStringExtract 
 		// ActionMBStringLength ActionStringLess ActionAsciiToChar ActionCharToAscii ActionMBAsciiToChar ActionMBCharToAscii
 		// ActionWaitForFrame2 
-		// ActionTrace
 		case 0x0a: // ActionAdd
 		case 0x0b: // ActionSubtract
 		case 0x0c: // ActionMultiply
@@ -1886,6 +1885,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x23: // ActionSetProperty
 		case 0x24: // ActionCloneSprite
 		case 0x25: // ActionRemoveSprite
+		case 0x26: // ActionTrace
 		case 0x27: // ActionStartDrag
 		case 0x28: // ActionEndDrag
 		case 0x30: // ActionRandomNumber
@@ -1994,8 +1994,8 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 
 		// SWF5 action model
 		// ActionEnumerate
-		// ActionNewMethod ActionTargetPath ActionToString
-		// ActionTypeOf ActionBitAnd ActionBitLShift ActionBitOr ActionBitRShift ActionBitURShift ActionBitXor
+		// ActionNewMethod ActionTargetPath
+		// ActionTypeOf
 		// ActionStackSwap
 		case 0x3a: // ActionDelete
 		case 0x3b: // ActionDelete2
@@ -2011,12 +2011,19 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x48: // ActionLess2
 		case 0x49: // ActionEquals2
 		case 0x4a: // ActionToNumber
+		case 0x4b: // ActionToString
 		case 0x4c: // ActionPushDuplicate
 		case 0x4e: // ActionGetMember
 		case 0x4f: // ActionSetMember
 		case 0x50: // ActionIncrement
 		case 0x51: // ActionDecrement
 		case 0x52: // ActionCallMethod
+		case 0x60: // ActionBitAnd
+		case 0x61: // ActionBitOr
+		case 0x62: // ActionBitXOr
+		case 0x63: // ActionBitLShift
+		case 0x64: // ActionBitRShift
+		case 0x65: // ActionBitURShift
 			break;
 		case 0x87: // ActionStoreRegister
 		{
@@ -2066,7 +2073,10 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		}
 
 		// SWF6 action model
-		// DoInitAction ActionInstanceOf ActionEnumerate2 ActionStrictEquals ActionGreater ActionStringGreater
+		// DoInitAction ActionInstanceOf ActionEnumerate2 ActionStringGreater
+		case 0x66: // ActionStrictEquals
+		case 0x67: // ActionGreater
+			break;
 		// SWF7 action model
 		// ActionDefineFunction2 ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
 		default:

@@ -35,7 +35,7 @@ class RootMovieClip;
 class DisplayObjectContainer;
 class DefineSpriteTag;
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG,AVM1INITACTION_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -119,6 +119,17 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
 	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
+	void execute(MovieClip* clip, Frame* frame);
+	bool empty() { return actions.empty(); }
+};
+class AVM1InitActionTag: public Tag
+{
+private:
+	UI16_SWF SpriteId;
+	std::vector<ACTIONRECORD> actions;
+public:
+	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
+	TAGTYPE getType()const{ return AVM1INITACTION_TAG; }
 	void execute(MovieClip* clip, Frame* frame);
 	bool empty() { return actions.empty(); }
 };

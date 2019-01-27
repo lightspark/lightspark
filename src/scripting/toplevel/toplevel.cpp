@@ -1366,6 +1366,8 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 				continue;
 		}
 		tiny_string name = getSystemState()->getStringFromUniqueId(it->first);
+		if (name == "constructor")
+			continue;
 		auto existing=instanceNodes.find(name);
 		if(existing != instanceNodes.cend())
 			continue;

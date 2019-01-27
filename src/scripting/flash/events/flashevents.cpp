@@ -127,12 +127,12 @@ ASFUNCTIONBODY_ATOM(Event,_constructor)
 	ARG_UNPACK_ATOM(th->type)(th->bubbles, false)(th->cancelable, false);
 }
 
-ASFUNCTIONBODY_GETTER(Event,currentTarget);
-ASFUNCTIONBODY_GETTER(Event,target);
-ASFUNCTIONBODY_GETTER(Event,type);
-ASFUNCTIONBODY_GETTER(Event,eventPhase);
-ASFUNCTIONBODY_GETTER(Event,bubbles);
-ASFUNCTIONBODY_GETTER(Event,cancelable);
+ASFUNCTIONBODY_GETTER(Event,currentTarget)
+ASFUNCTIONBODY_GETTER(Event,target)
+ASFUNCTIONBODY_GETTER(Event,type)
+ASFUNCTIONBODY_GETTER(Event,eventPhase)
+ASFUNCTIONBODY_GETTER(Event,bubbles)
+ASFUNCTIONBODY_GETTER(Event,cancelable)
 
 ASFUNCTIONBODY_ATOM(Event,_isDefaultPrevented)
 {
@@ -724,10 +724,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	Locker l(handlersMutex);
 	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
-	{
-		LOG(LOG_CALLS,_("Not handled event ") << e->type);
 		return;
-	}
 
 	LOG(LOG_CALLS, _("Handling event ") << h->first);
 
@@ -1277,7 +1274,7 @@ Event* VideoEvent::cloneImpl() const
 	return clone;
 }
 
-ASFUNCTIONBODY_GETTER(VideoEvent,status);
+ASFUNCTIONBODY_GETTER(VideoEvent,status)
 
 
 StageVideoEvent::StageVideoEvent(Class_base* c)
@@ -1322,8 +1319,8 @@ Event* StageVideoEvent::cloneImpl() const
 	return clone;
 }
 
-ASFUNCTIONBODY_GETTER(StageVideoEvent,colorSpace);
-ASFUNCTIONBODY_GETTER(StageVideoEvent,status);
+ASFUNCTIONBODY_GETTER(StageVideoEvent,colorSpace)
+ASFUNCTIONBODY_GETTER(StageVideoEvent,status)
 
 StageVideoAvailabilityEvent::StageVideoAvailabilityEvent(Class_base* c)
   : Event(c, "stageVideoAvailability"), availability("unavailable")
@@ -1361,7 +1358,7 @@ Event* StageVideoAvailabilityEvent::cloneImpl() const
 	return clone;
 }
 
-ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability);
+ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability)
 
 void ContextMenuEvent::sinit(Class_base* c)
 {
@@ -1420,4 +1417,61 @@ ASFUNCTIONBODY_ATOM(UncaughtErrorEvents,_constructor)
 	//EventDispatcher::_constructor(obj, NULL, 0);
 	//UncaughtErrorEvents* th=Class<UncaughtErrorEvents>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"UncaughtErrorEvents is not implemented");
+}
+
+void SampleDataEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
+	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
+	
+	REGISTER_GETTER_SETTER(c, data);
+	REGISTER_GETTER_SETTER(c, position);
+}
+ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,data)
+ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,position)
+
+ASFUNCTIONBODY_ATOM(SampleDataEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
+
+	SampleDataEvent* th=obj.as<SampleDataEvent>();
+	if(argslen>=4)
+	{
+		th->position = args[3].toNumber();
+		if (argslen>4 && args[4].is<ByteArray>())
+			th->data = _MR(args[4].as<ByteArray>());
+		else
+			th->data.reset();
+	}
+}
+ASFUNCTIONBODY_ATOM(SampleDataEvent,_toString)
+{
+	SampleDataEvent* th=obj.as<SampleDataEvent>();
+	tiny_string res = "[SampleDataEvent type=";
+	res += th->type;
+	res += " bubbles=";
+	res += th->bubbles ? "true" : "false";
+	res += " cancelable=";
+	res += th->cancelable ? "true" : "false";
+	res += " theposition=";
+	res += Number::toString(th->position);
+	res += " thedata=";
+	res += th->data.isNull() ? "null" : th->data->toString();
+	res += "]";
+	ret = asAtom::fromString(sys,res);
+}
+
+Event* SampleDataEvent::cloneImpl() const
+{
+	SampleDataEvent *clone;
+	clone = Class<SampleDataEvent>::getInstanceS(getSystemState());
+	clone->position = position;
+	clone->data = data;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
 }

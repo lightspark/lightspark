@@ -596,7 +596,6 @@ class ContextMenuEvent: public Event
 public:
 	ContextMenuEvent(Class_base* c) : Event(c, "ContextMenuEvent") {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class TouchEvent: public Event
@@ -604,7 +603,6 @@ class TouchEvent: public Event
 public:
 	TouchEvent(Class_base* c) : Event(c, "TouchEvent") {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class GestureEvent: public Event
@@ -612,7 +610,6 @@ class GestureEvent: public Event
 public:
 	GestureEvent(Class_base* c, const tiny_string& t = "GestureEvent") : Event(c, t) {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class PressAndTapGestureEvent: public GestureEvent
@@ -620,14 +617,12 @@ class PressAndTapGestureEvent: public GestureEvent
 public:
 	PressAndTapGestureEvent(Class_base* c) : GestureEvent(c, "PressAndTapGestureEvent") {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 class TransformGestureEvent: public GestureEvent
 {
 public:
 	TransformGestureEvent(Class_base* c) : GestureEvent(c, "TransformGestureEvent") {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class UncaughtErrorEvents: public EventDispatcher
@@ -636,6 +631,20 @@ public:
 	UncaughtErrorEvents(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+};
+
+class SampleDataEvent: public Event
+{
+private:
+	Event* cloneImpl() const;
+public:
+	SampleDataEvent(Class_base* c) : Event(c, "sampleData"),position(0) {}
+	SampleDataEvent(Class_base* c,_NR<ByteArray> _data,number_t _pos) : Event(c, "sampleData"),data(_data),position(_pos) {}
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toString);
+	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>,data);
+	ASPROPERTY_GETTER_SETTER(number_t,position);
 };
 
 }

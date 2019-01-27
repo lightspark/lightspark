@@ -36,6 +36,7 @@ namespace lightspark
 class AudioDecoder;
 class NetStream;
 class StreamCache;
+class SoundChannel;
 
 class Sound: public EventDispatcher, public ILoadable
 {
@@ -44,6 +45,7 @@ protected:
 	std::vector<uint8_t> postData;
 	Downloader* downloader;
 	_R<StreamCache> soundData;
+	_NR<SoundChannel> soundChannel;
 	// If container is true, audio format is parsed from
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.
@@ -60,11 +62,11 @@ public:
 	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format);
 	~Sound();
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);
 	ASFUNCTION_ATOM(close);
+	void afterExecution(_R<Event> e);
 };
 
 class SoundTransform: public ASObject

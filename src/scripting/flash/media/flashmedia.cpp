@@ -246,8 +246,8 @@ Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format)
 
 Sound::~Sound()
 {
-	if(downloader && getSys()->downloadManager)
-		getSys()->downloadManager->destroy(downloader);
+	if(downloader && getSystemState()->downloadManager)
+		getSystemState()->downloadManager->destroy(downloader);
 }
 
 void Sound::sinit(Class_base* c)
@@ -259,10 +259,6 @@ void Sound::sinit(Class_base* c)
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
 	REGISTER_GETTER(c,length);
-}
-
-void Sound::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
@@ -332,7 +328,19 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 
 	th->incRef();
 	if (th->container)
-		ret = asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData));
+	{
+		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(th->getSystemState()));
+		th->incRef();
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
+		// it seems that SampleData is always expected as 44kHz stereo
+		th->format.channels=2;
+		th->format.sampleRate=44100;
+		th->format.codec=LINEAR_PCM_LE;
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false));
+		th->soundChannel->incRef();
+		LOG(LOG_ERROR,"sound.play:"<<data.getPtr()<<" "<<th->soundChannel.getPtr());
+		ret = asAtom::fromObject(th->soundChannel.getPtr());
+	}
 	else
 		ret = asAtom::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
 }
@@ -344,6 +352,34 @@ ASFUNCTIONBODY_ATOM(Sound,close)
 	{
 		th->downloader->stop();
 		th->decRef();
+	}
+}
+
+void Sound::afterExecution(_R<Event> e)
+{
+	if (e->type == "sampleData")
+	{
+		_NR<ByteArray> data = e->as<SampleDataEvent>()->data;
+		if (data.isNull())
+		{
+			this->soundData->markFinished(false);
+			return;
+		}
+		uint32_t len = data->getLength();
+		this->soundData->append(data->getBuffer(len,false),len);
+		soundChannel->play();
+		if (len < 2048*sizeof(float))
+		{
+			// less than 2048 samples, stop requesting data
+			this->soundData->markFinished(true);
+		}
+		else
+		{
+			// request more data
+			_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
+			incRef();
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,0)));
+		}
 	}
 }
 

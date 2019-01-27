@@ -542,7 +542,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("UncaughtErrorEvent","flash.events",Class<UncaughtErrorEvent>::getRef(m_sys));
 	builtin->registerBuiltin("UncaughtErrorEvents","flash.events",Class<UncaughtErrorEvents>::getRef(m_sys));
 	builtin->registerBuiltin("VideoEvent","flash.events",Class<VideoEvent>::getRef(m_sys));
-
+	builtin->registerBuiltin("SampleDataEvent","flash.events",Class<SampleDataEvent>::getRef(m_sys));
+	
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
 	builtin->registerBuiltin("FileFilter","flash.net",Class<FileFilter>::getRef(m_sys));

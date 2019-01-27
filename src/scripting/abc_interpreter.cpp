@@ -41,7 +41,8 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 
 void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 {
-	if (obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
+	if (name->name_type != multiname::NAME_OBJECT // avoid calling toString() of multiname object
+			&& obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
 		throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 	if (obj->getClass() && obj->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());

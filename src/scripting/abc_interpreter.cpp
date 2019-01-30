@@ -561,8 +561,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_getlexfromslot_localresult,
 	abc_callpropertyStaticName,// 0x1bd ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS
 	abc_callpropvoidStaticName,// 0x1be ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS
-	abc_invalidinstruction,
-	
+	abc_getPropertyStaticName_localresult, // 0x1bf ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT	
+
 	abc_lessequals_constant_constant,// 0x1c0 ABC_OP_OPTIMZED_LESSEQUALS
 	abc_lessequals_local_constant,
 	abc_lessequals_constant_local,
@@ -3178,6 +3178,42 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 	}
 	++(context->exec_pos);
 }
+void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	multiname* name=instrptr->cachedmultiname2;
+
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,context->mi->context->root->getSystemState());
+	LOG_CALL( _("getProperty_scl_l ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop;
+	if(prop.type == T_INVALID)
+	{
+		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		if (isgetter)
+		{
+			//Call the getter
+			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
+			assert(prop.type == T_FUNCTION);
+			IFunction* f = prop.as<IFunction>();
+			ASObject* closure = prop.getClosure();
+			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
+			if (simplegetter)
+			{
+				LOG_CALL("is simple getter " << *simplegetter);
+				instrptr->cachedmultiname2 = simplegetter;
+			}
+			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
+		}
+	}
+	if(prop.type == T_INVALID)
+		checkPropertyException(obj,name,prop);
+	name->resetNameIfObject();
+	context->locals[instrptr->local_pos3-1].set(prop);
+	if (instrptr->local_pos3 <= context->locals_size)
+		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	++(context->exec_pos);
+}
 
 void ABCVm::abc_initproperty(call_context* context)
 {
@@ -5237,7 +5273,7 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS 0x000001e8
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS 0x000001bd
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS 0x000001be
-
+#define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT 0x000001bf
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -5406,8 +5442,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (jumptargets.find(pos) == jumptargets.end() && 
-					!needstwoargs &&
-					operandlist.size() > 1 &&
+					(needstwoargs || operandlist.size() > 1) &&
 					(uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 0
 					)
 			{
@@ -6024,6 +6059,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (function->inClass) // class method
 				{
 					if ((simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
+							&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 							&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 					{
 						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
@@ -6108,6 +6144,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 =name;
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
 							if ((simple_setter_opcode_pos != UINT32_MAX) // function is simple setter
+									&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 									&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 							{
 								variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
@@ -6511,6 +6548,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t t = code.readu30();
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);
 				uint32_t argcount = code.readu30();
+				if (opcode == 0x46 && code.peekbyte() == 0x29 && jumptargets.find(p+1) == jumptargets.end())
+				{
+					// callproperty is followed by pop
+					opcode = 0x4f; // treat call as callpropvoid
+					code.readbyte(); // skip pop
+				}
 				// TODO optimize non-static multinames
 				if (jumptargets.find(p) == jumptargets.end())
 				{
@@ -6591,6 +6634,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
+						{
 							if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
 							{
 								asAtom* a = mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
@@ -6613,9 +6657,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 								}
 							}
-							setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true);
+							bool hasoperands = setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true);
+							if (!hasoperands && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0))
+								mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT;
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false);
 							break;
+						}
 						case 1:
 							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false);
 							break;

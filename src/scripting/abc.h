@@ -695,6 +695,8 @@ private:
 	static void abc_getPropertyStaticName_local(call_context* context);
 	static void abc_getPropertyStaticName_constant_localresult(call_context* context);
 	static void abc_getPropertyStaticName_local_localresult(call_context* context);
+	static void abc_getPropertyStaticName_localresult(call_context* context);
+
 	static void abc_initproperty(call_context* context);
 	static void abc_deleteproperty(call_context* context);
 	static void abc_getslot(call_context* context);

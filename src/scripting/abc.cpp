@@ -921,12 +921,14 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			ret->hasEmptyNS=true;
 			ret->hasBuiltinNS=false;
 			ret->hasGlobalNS=true;
+			ret->isInteger=false;
 			return ret;
 		}
 		ret->isAttribute=m->isAttributeName();
 		ret->hasEmptyNS = false;
 		ret->hasBuiltinNS=false;
 		ret->hasGlobalNS=false;
+		ret->isInteger=false;
 		switch(m->kind)
 		{
 			case 0x07: //QName
@@ -947,6 +949,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				{
 					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
+					ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				}
 				break;
 			}
@@ -971,6 +974,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				{
 					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
+					ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				}
 				break;
 			}
@@ -999,6 +1003,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->isStatic = false;
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s_id=getString(m->name);
+				ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				break;
 			}
 			case 0x11: //RTQNameL
@@ -1072,6 +1077,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->name_i=n.intval;
 				ret->name_type = multiname::NAME_INT;
 				ret->name_s_id = UINT32_MAX;
+				ret->isInteger=true;
 				if (isrefcounted)
 				{
 					ASATOM_DECREF(n);

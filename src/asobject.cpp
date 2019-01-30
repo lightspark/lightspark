@@ -1115,8 +1115,26 @@ ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 {
 	assert_and_throw(argslen==1);
 	multiname name(NULL);
-	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=args[0].toStringId(sys);
+	switch (args[0].type)
+	{
+		case T_INTEGER:
+			name.name_type=multiname::NAME_INT;
+			name.name_i = args[0].toInt();
+			break;
+		case T_UINTEGER:
+			name.name_type=multiname::NAME_UINT;
+			name.name_ui = args[0].toUInt();
+			break;
+		case T_NUMBER:
+			name.name_type=multiname::NAME_NUMBER;
+			name.name_d = args[0].toNumber();
+			break;
+		default:
+			name.name_type=multiname::NAME_STRING;
+			name.name_s_id=args[0].toStringId(sys);
+			name.isInteger=Array::isIntegerWithoutLeadingZeros(sys->getStringFromUniqueId(name.name_s_id)) ;
+			break;
+	}
 	name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	ret.setBool(obj.toObject(sys)->hasPropertyByMultiname(name, true, false));

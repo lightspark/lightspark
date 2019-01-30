@@ -1657,7 +1657,7 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 				return true;
 			}
 			if (name.name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING ||
-					 !isIntegerWithoutLeadingZeros(name.normalizedName(sys)))
+					 !name.isInteger)
 				return false;
 			break;
 		default:

@@ -338,6 +338,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 						  Integer::toString(mi->numArgs()-mi->numOptions()),
 						  Integer::toString(numArgs));
 	}
+	if ((isMethod() || mi->hasExplicitTypes) && numArgs > mi->numArgs() && !mi->needsArgs() && !mi->needsRest() && !mi->hasOptional())
+		throwError<ArgumentError>(kWrongArgumentCountError,getSystemState()->getStringFromUniqueId(functionname),Integer::toString(mi->numArgs()),Integer::toString(numArgs));
 
 	//For sufficiently hot methods, optimize them to the internal bytecode
 	if(getSystemState()->useFastInterpreter && hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL)

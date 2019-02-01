@@ -1073,6 +1073,8 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 		ASATOM_INCREF(args[0]);
 		ret = args[0];
 	}
+	else if (argslen > 1)
+		throwError<ArgumentError>(kCoerceArgumentCountError,Integer::toString(argslen));
 	else
 		ret = asAtom::fromObject(Class<ASObject>::getInstanceS(sys));
 }

@@ -2003,8 +2003,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 
 		// SWF5 action model
 		// ActionEnumerate
-		// ActionNewMethod ActionTargetPath
-		// ActionTypeOf
+		// ActionTargetPath
 		// ActionStackSwap
 		case 0x3a: // ActionDelete
 		case 0x3b: // ActionDelete2
@@ -2016,6 +2015,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x41: // ActionDefineLocal2
 		case 0x42: // ActionInitArray
 		case 0x43: // ActionInitObject
+		case 0x44: // ActionTypeOf
 		case 0x47: // ActionAdd2
 		case 0x48: // ActionLess2
 		case 0x49: // ActionEquals2
@@ -2027,6 +2027,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x50: // ActionIncrement
 		case 0x51: // ActionDecrement
 		case 0x52: // ActionCallMethod
+		case 0x53: // ActionNewMethod
 		case 0x60: // ActionBitAnd
 		case 0x61: // ActionBitOr
 		case 0x62: // ActionBitXOr
@@ -2082,12 +2083,54 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		}
 
 		// SWF6 action model
-		// DoInitAction ActionInstanceOf ActionEnumerate2 ActionStringGreater
+		// DoInitAction ActionInstanceOf ActionStringGreater
+		case 0x55: // ActionEnumerate2
 		case 0x66: // ActionStrictEquals
 		case 0x67: // ActionGreater
 			break;
 		// SWF7 action model
-		// ActionDefineFunction2 ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
+		// ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
+		case 0x8e: // ActionDefineFunction2
+		{
+			STRING s;
+			stream>>s;
+			v.data_string.push_back(s);
+			stream>>v.data_uint16;
+			stream>>v.data_byte;
+			BitStream bs(stream);
+			v.data_flag1 = UB(1,bs);//PreloadParent
+			v.data_flag2 = UB(1,bs);//PreloadRoot
+			v.data_flag3 = UB(1,bs);//SuppressSuper
+			v.data_flag4 = UB(1,bs);//PreloadSuper
+			v.data_flag5 = UB(1,bs);//SuppressArguments
+			v.data_flag6 = UB(1,bs);//PreloadArguments
+			v.data_flag7 = UB(1,bs);//SuppressThis
+			v.data_flag8 = UB(1,bs);//PreloadThis
+			UB(7,bs);
+			v.data_flag9 = UB(1,bs);//PreloadGlobal
+			for (uint16_t i=0; i < v.data_uint16; i++)
+			{
+				stream>>v.data_byte;
+				stream>>s;
+				v.data_string.push_back(s);
+				v.data_registernumber.push_back(v.data_byte);
+			}
+			stream>>v.data_uint16;
+			uint32_t pos = stream.tellg();
+			v.data_actionlist.clear();
+			while (((uint32_t)stream.tellg()-pos) < v.data_uint16 )
+			{
+				ACTIONRECORD action;
+				stream >> action;
+				v.data_actionlist.push_back(action);
+			}
+			if (((uint32_t)stream.tellg()-pos) != v.data_uint16)
+			{
+				LOG(LOG_ERROR,"AVM1: SWF7+ ActionDefineFunction2 invalid body length "<<v.data_string.front()<<" "<<((uint32_t)stream.tellg()-pos)<<" "<<v.data_uint16);
+				throw ParseException("ActionDefineFunction2 invalid body length");
+			}
+			break;
+		}
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"AVM1: SWF4+ actionCode "<<hex<<(int)v.actionCode);
 			v.data_string.push_back(tiny_string(stream,v.Length));

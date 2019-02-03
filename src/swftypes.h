@@ -42,7 +42,7 @@
 namespace lightspark
 {
 enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MAX, VOID, PROTOTYPE, STRING_FUNCTION,STRING_AS3VECTOR,STRING_CLASS,STRING_AS3NS,STRING_NAMESPACENS,STRING_XML,STRING_TOSTRING,STRING_VALUEOF,STRING_LENGTH,STRING_CONSTRUCTOR
-					   ,STRING_AVM1_TARGET,LAST_BUILTIN_STRING };
+					   ,STRING_AVM1_TARGET,STRING_THIS,STRING_AVM1_ROOT,STRING_AVM1_PARENT,STRING_AVM1_GLOBAL,STRING_SUPER, STRING_ONENTERFRAME,STRING_ONMOUSEMOVE,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
 
@@ -110,6 +110,7 @@ class DisplayObject;
 class MovieClip;
 class Frame;
 class AVM1Function;
+class AVM1context;
 struct namespace_info;
 
 struct multiname;
@@ -1418,6 +1419,7 @@ public:
 	UI8 actionCode;
 	UI16_SWF Length;
 	std::vector<tiny_string> data_string;
+	std::vector<uint8_t> data_registernumber;
 	UI16_SWF data_uint16;
 	SI16_SWF data_int16;
 	UI8 data_byte;
@@ -1426,12 +1428,20 @@ public:
 	UI32_SWF data_integer;
 	bool data_flag1;
 	bool data_flag2;
+	bool data_flag3;
+	bool data_flag4;
+	bool data_flag5;
+	bool data_flag6;
+	bool data_flag7;
+	bool data_flag8;
+	bool data_flag9;
 	std::vector<ACTIONRECORD> data_actionlist;
 	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
-	static void executeActions(MovieClip* clip, Frame *frame, std::vector<ACTIONRECORD> &actionlist, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>());
-	int getFullLength() { return actionCode < 0x80 ? 1 : Length+3; }
+	static void executeActions(MovieClip* clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(),const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
+			bool preloadParent=false, bool preloadRoot=false,bool suppressSuper=true, bool preloadSuper=false,bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true,bool preloadThis=false, bool preloadGlobal=false);
+	int getFullLength();
 };
 class BUTTONCONDACTION
 {

@@ -482,9 +482,8 @@ class InitFrameEvent: public Event
 friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
-	RunState newstate;
 public:
-	InitFrameEvent(_NR<DisplayObject> m,const RunState& s = RunState()) : Event(NULL, "InitFrameEvent"),clip(m),newstate(s) {}
+	InitFrameEvent(_NR<DisplayObject> m) : Event(NULL, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 

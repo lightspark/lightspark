@@ -138,6 +138,7 @@
 #include "scripting/avm1/avm1key.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1net.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -262,12 +263,21 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 void ABCVm::registerClassesAVM1()
 {
 	Global* builtin = Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+
 	registerClassesToplevel(builtin);
+
+	if (m_sys->getSwfVersion() < 9)
+		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
+
+	builtin->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
+
+	builtin->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
 	builtin->registerBuiltin("Mouse","",Class<Mouse>::getRef(m_sys));
 	builtin->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
 	builtin->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
 	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
+	builtin->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
 
 	m_sys->avm1global=builtin;
 }
@@ -1591,13 +1601,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"INIT_FRAME");
 				assert(!ev->clip.isNull());
-				if (ev->newstate.explicit_FP && ev->clip->is<MovieClip>())
-				{
-					ev->clip->as<MovieClip>()->state.explicit_FP=true;
-					ev->clip->as<MovieClip>()->state.next_FP=ev->newstate.next_FP;
-					ev->clip->as<MovieClip>()->state.stop_FP=ev->newstate.stop_FP;
-					ev->clip->advanceFrame();
-				}
 				ev->clip->initFrame();
 				break;
 			}

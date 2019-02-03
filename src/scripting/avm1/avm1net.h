@@ -17,31 +17,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_AVM1_AVM1SOUND_H
-#define SCRIPTING_AVM1_AVM1SOUND_H
-
+#ifndef SCRIPTING_AVM1_AVM1NET_H
+#define SCRIPTING_AVM1_AVM1NET_H
 
 #include "asobject.h"
-#include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/net/flashnet.h"
 
 namespace lightspark
 {
 
-class AVM1Sound: public Sound
+class AVM1SharedObject: public SharedObject
 {
-private:
-	_NR<MovieClip> clip;
 public:
-	AVM1Sound(Class_base* c):Sound(c){}
-	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format):Sound(c,soundData,format) {}
+	AVM1SharedObject(Class_base* c):SharedObject(c){}
 	static void sinit(Class_base* c);
-
-	ASFUNCTION_ATOM(avm1constructor);
-	ASFUNCTION_ATOM(attachSound);
-	ASFUNCTION_ATOM(getVolume);
-	ASFUNCTION_ATOM(setVolume);
 };
 
 }
-
-#endif // SCRIPTING_AVM1_AVM1SOUND_H
+#endif // SCRIPTING_AVM1_AVM1NET_H

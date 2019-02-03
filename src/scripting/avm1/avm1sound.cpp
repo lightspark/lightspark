@@ -27,10 +27,20 @@ using namespace lightspark;
 
 void AVM1Sound::sinit(Class_base* c)
 {
-	Sound::sinit(c);
+	CLASS_SETUP(c, EventDispatcher, avm1constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachSound","",Class<IFunction>::getFunction(c->getSystemState(),attachSound),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getVolume","",Class<IFunction>::getFunction(c->getSystemState(),getVolume),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setVolume","",Class<IFunction>::getFunction(c->getSystemState(),getVolume),NORMAL_METHOD,true);
 }
+ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
+{
+	AVM1Sound* th=obj.as<AVM1Sound>();
+	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+
+	ARG_UNPACK_ATOM(th->clip,NullRef);
+}
+
 ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 {
 	AVM1Sound* th=obj.as<AVM1Sound>();
@@ -50,5 +60,27 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	th->soundData->incRef();
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());
 	th->container=false;
+	if(th->clip)
+	{
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false));
+		th->soundChannel->incRef();
+		th->clip->setSound(th->soundChannel.getPtr());
+	}
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
+{
+	AVM1Sound* th=obj.as<AVM1Sound>();
+	if (th->soundChannel)
+		ret.setNumber(th->soundChannel->soundTransform->volume*100);
+	else
+		ret.setInt(0);
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
+{
+	AVM1Sound* th=obj.as<AVM1Sound>();
+	number_t volume;
+	ARG_UNPACK_ATOM(volume);
+	if (th->soundChannel)
+		th->soundChannel->soundTransform->volume = volume/100.0;
 }
 

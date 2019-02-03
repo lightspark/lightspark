@@ -1059,15 +1059,21 @@ ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 	DisplayObjectContainer::_constructor(ret,sys,obj,NULL,0);
 }
 
+_NR<Graphics> Sprite::getGraphics()
+{
+	//Probably graphics is not used often, so create it here
+	if(graphics.isNull())
+		graphics=_MR(Class<Graphics>::getInstanceS(getSystemState(),this));
+	return graphics;
+}
+
 ASFUNCTIONBODY_ATOM(Sprite,_getGraphics)
 {
 	Sprite* th=obj.as<Sprite>();
-	//Probably graphics is not used often, so create it here
-	if(th->graphics.isNull())
-		th->graphics=_MR(Class<Graphics>::getInstanceS(sys,th));
+	_NR<Graphics> g = th->getGraphics();
 
-	th->graphics->incRef();
-	ret = asAtom::fromObject(th->graphics.getPtr());
+	g->incRef();
+	ret = asAtom::fromObject(g.getPtr());
 }
 
 FrameLabel::FrameLabel(Class_base* c):ASObject(c)
@@ -1190,31 +1196,16 @@ void Frame::AVM1executeActions(MovieClip* clip, bool avm1initactionsdone)
 {
 	if (!avm1initactionsdone)
 	{
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString());
 		auto it1=avm1initactions.begin();
 		for(;it1!=avm1initactions.end();++it1)
-			(*it1)->execute(clip,this);
+			(*it1)->execute(clip,&avm1context);
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done" << clip->toDebugString());
 	}
 
 	auto it2=avm1actions.begin();
 	for(;it2!=avm1actions.end();++it2)
-		(*it2)->execute(clip,this);
-}
-
-void Frame::AVM1SetConstants(SystemState *sys, const std::vector<tiny_string> &c)
-{
-	avm1strings.clear();
-	for (auto it = c.begin(); it != c.end(); it++)
-	{
-		avm1strings.push_back(sys->getUniqueStringId(*it)); 
-	}
-}
-
-asAtom Frame::AVM1GetConstant(uint16_t index)
-{
-	if (index < avm1strings.size())
-		return asAtom::fromStringID(avm1strings[index]);
-	LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
-	return asAtom::undefinedAtom;
+		(*it2)->execute(clip,&avm1context);
 }
 
 FrameContainer::FrameContainer():framesLoaded(0)
@@ -1458,14 +1449,16 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 			next_FP = getFramesLoaded()-1;
 		}
 	}
-
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	advanceFrame();
-	initFrame();
-	this->incRef();
-	this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+	if (getSystemState()->getSwfVersion() >= 9)
+	{
+		advanceFrame();
+		initFrame();
+		this->incRef();
+		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+	}
 }
 
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
@@ -1684,7 +1677,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
 				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 		}
 	}
 	return false;
@@ -1699,16 +1692,31 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 		this->globalToLocal(x,y,x,y);
 		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK);
-		
 		if (!dispobj)
 			return false;
 		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
 		{
 			if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown) ||
 					(e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp) ||
-					(e->type == "mouseOver" && it->EventFlags.ClipEventMouseMove))
+					(e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove))
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+			}
+		}
+		if (e->type == "mouseMove")
+		{
+			asAtom func;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+		
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+			getVariableByMultiname(func,m);
+			if (func.is<AVM1Function>())
+			{
+				asAtom ret;
+				asAtom obj = asAtom::fromObject(this);
+				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
 			}
 		}
 	}
@@ -1720,11 +1728,30 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 	{
 		if (e->type == "complete" && it->EventFlags.ClipEventLoad)
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 		}
 		if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame(),it->actions);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+		}
+	}
+	if (dispatcher == this)
+	{
+		if (e->type == "enterFrame")
+		{
+			asAtom func;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+		
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONENTERFRAME;
+			getVariableByMultiname(func,m);
+			if (func.is<AVM1Function>())
+			{
+				asAtom ret;
+				asAtom obj = asAtom::fromObject(this);
+				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			}
 		}
 	}
 }
@@ -1958,6 +1985,13 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1MoveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -1981,7 +2015,12 @@ void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
 		++it;
 	}
 	if (it != frames.end())
-		it->AVM1executeActions(this,this->frameinitactionsdone.find(frame) != this->frameinitactionsdone.end());
+	{
+		bool initactionsdone = frameinitactionsdone.find(frame) != frameinitactionsdone.end();
+		it->AVM1executeActions(this,initactionsdone);
+		if (!initactionsdone)
+			frameinitactionsdone.insert(frame);
+	}
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {
@@ -2008,6 +2047,68 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		th->insertLegacyChildAt(Depth,toAdd);
 	toAdd->constructionComplete();
 	ret=asAtom::fromObject(toAdd);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	if (argslen != 2)
+		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
+	int Depth = args[1].toInt();
+	uint32_t nameId = args[0].toStringId(sys);
+	MovieClip* toAdd= Class<MovieClip>::getInstanceSNoArgs(sys);
+	toAdd->name = nameId;
+	if(th->hasLegacyChildAt(Depth) )
+	{
+		th->deleteLegacyChildAt(Depth);
+		th->insertLegacyChildAt(Depth,toAdd);
+	}
+	else
+		th->insertLegacyChildAt(Depth,toAdd);
+	toAdd->incRef();
+	toAdd->constructionComplete();
+	ret=asAtom::fromObject(toAdd);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::clear(ret,sys,o,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1MoveTo)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::moveTo(ret,sys,o,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineTo)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::lineTo(ret,sys,o,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineStyle)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::lineStyle(ret,sys,o,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::beginFill(ret,sys,o,args,argslen);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtom::fromObject(g);
+	Graphics::endFill(ret,sys,o,args,argslen);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -3177,7 +3278,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 			it++;
 		}
 	}
-	if (e->type == "mouseDown" || e->type == "mouseOver" || e->type == "mouseUp" || e->type == "mouseOut")
+	else if (e->type == "mouseDown" || e->type == "mouseOver" || e->type == "mouseUp" || e->type == "mouseOut" || e->type == "mouseMove")
 	{
 		auto it = avm1MouseListeners.rbegin();
 		while (it != avm1MouseListeners.rend())
@@ -3187,7 +3288,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 			it++;
 		}
 	}
-	if (e->type == "complete" || e->type == "enterFrame")
+	else 
 	{
 		auto it = avm1EventListeners.rbegin();
 		while (it != avm1EventListeners.rend())
@@ -3596,26 +3697,13 @@ void SimpleButton::buildTraits(ASObject* o)
 
 void SimpleButton::afterLegacyInsert()
 {
-	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
-	{
-		if (it->CondKeyPress)
-			getSystemState()->stage->AVM1AddKeyboardListener(this);
-		if (  it->CondIdleToOverDown
-			||it->CondOutDownToIdle
-			||it->CondOutDownToOverDown
-			||it->CondOverDownToOutDown
-			||it->CondOverDownToOverUp
-			||it->CondOverUpToOverDown
-			||it->CondOverUpToIdle
-			||it->CondIdleToOverUp
-			||it->CondOverDownToIdle
-			)
-			getSystemState()->stage->AVM1AddMouseListener(this);
-	}
+	getSystemState()->stage->AVM1AddKeyboardListener(this);
+	getSystemState()->stage->AVM1AddMouseListener(this);
 }
 
 void SimpleButton::afterLegacyDelete(DisplayObjectContainer *par)
 {
+	LOG(LOG_ERROR,"afterLegacyDelete:"<<this->toDebugString());
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 }
@@ -3670,6 +3758,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	}
 	if (buttontag)
 	{
+		bool handled = false;
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
 			if (  (it->CondIdleToOverDown && currentState==DOWN)
@@ -3687,11 +3776,34 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				while (c && !c->is<MovieClip>())
 					c = c->getParent();
 				if (c)
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame(),it->actions);
+				{
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions);
+					handled = true;
+				}
+				
 			}
 		}
+		if (handled)
+			return true;
 	}
-	return true;
+	if (e->type == "mouseUp")
+	{
+		asAtom func;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+
+		m.name_s_id=getSystemState()->getUniqueStringId("onRelease");
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			asAtom ret;
+			asAtom obj = asAtom::fromObject(this);
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			return true;
+		}
+	}
+	return false;
 }
 
 bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
@@ -3842,7 +3954,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			DisplayObjectContainer* c = getParent();
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
-			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame(),it->actions);
+			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions);
 			handled=true;
 		}
 	}
@@ -4293,7 +4405,7 @@ void MovieClip::initFrame()
 			{
 				iter->execute(this);
 			}
-			if (i==state.FP && !state.explicit_FP)
+			if (i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
 				currentframeIterator= iter;
 			++iter;
 		}

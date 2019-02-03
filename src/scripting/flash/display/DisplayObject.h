@@ -172,6 +172,9 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
+	bool deleteVariableByMultiname(const multiname& name);
+	
 	// used by MorphShapes
 	virtual void checkRatio(uint32_t ratio) {}
 	virtual void onNewEvent();

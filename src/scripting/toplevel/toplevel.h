@@ -572,6 +572,15 @@ public:
 		return simpleGetterOrSetterName;
 	}
 };
+class AVM1context
+{
+private:
+	std::vector<uint32_t> avm1strings;
+public:
+	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
+	asAtom AVM1GetConstant(uint16_t index);
+	std::vector<ASObject*> scopes;
+};
 
 class AVM1Function : public IFunction
 {
@@ -579,18 +588,32 @@ class AVM1Function : public IFunction
 	friend class Class_base;
 protected:
 	MovieClip* clip;
-	Frame* frame;
+	AVM1context context;
 	std::vector<ACTIONRECORD> actionlist;
 	std::vector<uint32_t> paramnames;
-	AVM1Function(Class_base* c,MovieClip* cl,Frame* f, std::vector<uint32_t>& p, std::vector<ACTIONRECORD>& a):IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),frame(f),actionlist(a),paramnames(p) {}
+	std::vector<uint8_t> paramregisternumbers;
+	bool preloadParent;
+	bool preloadRoot;
+	bool suppressSuper;
+	bool preloadSuper;
+	bool suppressArguments;
+	bool preloadArguments;
+	bool suppressThis;
+	bool preloadThis;
+	bool preloadGlobal;
+	AVM1Function(Class_base* c,MovieClip* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<ACTIONRECORD>& a,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
+		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),context(*ctx),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),
+		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) {}
 	method_info* getMethodInfo() const { return NULL; }
 public:
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args)
 	{
-		ACTIONRECORD::executeActions(clip,frame,this->actionlist,ret,obj, args, num_args, paramnames);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
+		asAtom obj = asAtom::fromObject(target);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		return nullptr;
 	}
 };
@@ -651,10 +674,10 @@ public:
 		c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(SystemState* sys,MovieClip* clip, Frame* frame,std::vector<uint32_t>& params, std::vector<ACTIONRECORD>& actions)
+	static AVM1Function* getAVM1Function(SystemState* sys,MovieClip* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<ACTIONRECORD>& actions,std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, frame, params,actions);
+		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, ctx, params,actions,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;
@@ -792,6 +815,7 @@ void escape(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsign
 void unescape(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void print(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void trace(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void AVM1_ASSetPropFlags(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 bool isXMLName(SystemState *sys, asAtom &obj);
 void _isXMLName(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 number_t parseNumber(const tiny_string str, bool useoldversion=false);

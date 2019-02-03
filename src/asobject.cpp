@@ -239,7 +239,6 @@ void ASObject::sinit(Class_base* c)
 	c->prototype->setVariableByQName("isPrototypeOf","",Class<IFunction>::getFunction(c->getSystemState(),isPrototypeOf),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("propertyIsEnumerable","",Class<IFunction>::getFunction(c->getSystemState(),propertyIsEnumerable),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("setPropertyIsEnumerable","",Class<IFunction>::getFunction(c->getSystemState(),setPropertyIsEnumerable),DYNAMIC_TRAIT);
-
 }
 
 void ASObject::buildTraits(ASObject* o)
@@ -1209,6 +1208,22 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 	name.isAttribute=false;
 	obj.toObject(sys)->setIsEnumerable(name, isEnum);
 }
+ASFUNCTIONBODY_ATOM(ASObject,addProperty)
+{
+	tiny_string name;
+	_NR<IFunction> getter;
+	_NR<IFunction> setter;
+	ARG_UNPACK_ATOM(name)(getter)(setter);
+	if (name.empty())
+		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(0));
+	if (getter.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(1));
+	if (setter.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(2));
+	obj.toObject(sys)->setDeclaredMethodByQName(name,"",getter.getPtr(),GETTER_METHOD,false);
+	obj.toObject(sys)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
+}
+
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
 	variable* v = Variables.findObjVar(getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
@@ -2149,7 +2164,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				continue;
 			if(varIt->second.ns.hasEmptyName() && (varIt->second.getter.type != T_INVALID || varIt->second.var.type!= T_INVALID))
 			{
-				ASObject* v = varIt->second.var.toObject(getSystemState());
+				ASObject* v = varIt->second.var.type != T_INVALID ? varIt->second.var.toObject(getSystemState()) : nullptr;
 				if (varIt->second.getter.type != T_INVALID)
 				{
 					asAtom t=asAtom::fromObject(this);
@@ -2157,7 +2172,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 					varIt->second.getter.callFunction(res,t,NULL,0,false);
 					v=res.toObject(getSystemState());
 				}
-				if(v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
+				if(v && v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
 					// check for cylic reference
 					if (v->getObjectType() != T_UNDEFINED &&

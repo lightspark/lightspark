@@ -358,6 +358,7 @@ public:
 	asAtom asTypelate(asAtom& atomtype);
 	FORCE_INLINE number_t toNumber();
 	FORCE_INLINE number_t AVM1toNumber(int swfversion);
+	FORCE_INLINE bool AVM1toBool();
 	FORCE_INLINE int32_t toInt();
 	FORCE_INLINE int32_t toIntStrict();
 	FORCE_INLINE int64_t toInt64();
@@ -726,6 +727,7 @@ public:
 	ASFUNCTION_ATOM(isPrototypeOf);
 	ASFUNCTION_ATOM(propertyIsEnumerable);
 	ASFUNCTION_ATOM(setPropertyIsEnumerable);
+	ASFUNCTION_ATOM(addProperty);
 	void check() const;
 	static void s_incRef(ASObject* o)
 	{
@@ -1279,6 +1281,26 @@ FORCE_INLINE number_t asAtom::AVM1toNumber(int swfversion)
 			return 0;
 		default:
 			return checkObject()->toNumber();
+	}
+}
+FORCE_INLINE bool asAtom::AVM1toBool()
+{
+	switch(type)
+	{
+		case T_INTEGER:
+			return intval;
+		case T_UINTEGER:
+			return uintval;
+		case T_NUMBER:
+			return numberval;
+		case T_BOOLEAN:
+			return boolval;
+		case T_NULL:
+		case T_UNDEFINED:
+		case T_INVALID:
+			return false;
+		default:
+			return true;
 	}
 }
 
@@ -2146,8 +2168,8 @@ FORCE_INLINE ASObject *asAtom::toObject(SystemState *sys)
 				objval = abstract_s(sys,stringID);
 			break;
 		case T_INVALID:
-			LOG(LOG_ERROR,"calling toObject on invalid asAtom, should not happen");
-			return objval;
+			throw RunTimeException("calling toObject on invalid asAtom, should not happen");
+			break;
 		default:
 			break;
 	}

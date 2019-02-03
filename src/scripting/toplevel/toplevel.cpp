@@ -2578,7 +2578,52 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 	}
 	Log::print(s.str());
 }
-
+ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
+{
+	_NR<ASObject> o;
+	tiny_string names;
+	uint32_t set_true;
+	uint32_t set_false;
+	ARG_UNPACK_ATOM(o)(names)(set_true)(set_false,0);
+	if (o.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(0));
+	std::list<tiny_string> namelist = names.split((uint32_t)',');
+	auto it = namelist.begin();
+	{
+		multiname name(NULL);
+		name.name_type=multiname::NAME_STRING;
+		name.name_s_id=sys->getUniqueStringId(*it);
+		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		name.isAttribute=false;
+		if (set_true & 0x01) // dontEnum
+			obj.toObject(sys)->setIsEnumerable(name, false);
+		if (set_false & 0x01) // dontEnum
+			obj.toObject(sys)->setIsEnumerable(name, true);
+	}
+	if (set_true & ~0x0001)
+		LOG(LOG_NOT_IMPLEMENTED,"AVM1_ASSetPropFlags with set_true flags "<<hex<<set_true);
+	if (set_false & ~0x0001)
+		LOG(LOG_NOT_IMPLEMENTED,"AVM1_ASSetPropFlags with set_false flags "<<hex<<set_false);
+/* definition from gnash:
+	enum Flags {
+		/// Protect from enumeration
+		dontEnum	= 1 << 0, // 1
+		/// Protect from deletion
+		dontDelete	= 1 << 1, // 2
+		/// Protect from assigning a value
+		readOnly	= 1 << 2, // 4
+		/// Only visible by VM initialized for version 6 or higher 
+		onlySWF6Up 	= 1 << 7, // 128
+		/// Ignore in SWF6-initialized VM
+		ignoreSWF6	= 1 << 8, // 256
+		/// Only visible by VM initialized for version 7 or higher 
+		onlySWF7Up 	= 1 << 10, // 1024
+		/// Only visible by VM initialized for version 8 or higher 
+		onlySWF8Up	= 1 << 12, // 4096
+		/// Only visible by VM initialized for version 9 or higher 
+		onlySWF9Up	= 1 << 13 // 8192
+*/
+}
 bool lightspark::isXMLName(SystemState* sys, asAtom& obj)
 {
 	tiny_string name;
@@ -2901,4 +2946,20 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 		return tname;
 	}
 	return NULL;
+}
+void AVM1context::AVM1SetConstants(SystemState *sys, const std::vector<tiny_string> &c)
+{
+	avm1strings.clear();
+	for (auto it = c.begin(); it != c.end(); it++)
+	{
+		avm1strings.push_back(sys->getUniqueStringId(*it)); 
+	}
+}
+
+asAtom AVM1context::AVM1GetConstant(uint16_t index)
+{
+	if (index < avm1strings.size())
+		return asAtom::fromStringID(avm1strings[index]);
+	LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
+	return asAtom::undefinedAtom;
 }

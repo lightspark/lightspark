@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -17,31 +17,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_AVM1_AVM1SOUND_H
-#define SCRIPTING_AVM1_AVM1SOUND_H
+#include "scripting/avm1/avm1net.h"
+#include "scripting/class.h"
+#include "scripting/argconv.h"
 
+using namespace std;
+using namespace lightspark;
 
-#include "asobject.h"
-#include "scripting/flash/media/flashmedia.h"
-
-namespace lightspark
+void AVM1SharedObject::sinit(Class_base* c)
 {
-
-class AVM1Sound: public Sound
-{
-private:
-	_NR<MovieClip> clip;
-public:
-	AVM1Sound(Class_base* c):Sound(c){}
-	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format):Sound(c,soundData,format) {}
-	static void sinit(Class_base* c);
-
-	ASFUNCTION_ATOM(avm1constructor);
-	ASFUNCTION_ATOM(attachSound);
-	ASFUNCTION_ATOM(getVolume);
-	ASFUNCTION_ATOM(setVolume);
-};
-
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
+	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(c->getSystemState(),getLocal),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_getSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(c->getSystemState(),flush),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
+	REGISTER_GETTER(c,data);
 }
-
-#endif // SCRIPTING_AVM1_AVM1SOUND_H

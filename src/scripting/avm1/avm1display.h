@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_AVM1_AVM1MOVIECLIP_H
-#define SCRIPTING_AVM1_AVM1MOVIECLIP_H
+#ifndef SCRIPTING_AVM1_AVM1DISPLAY_H
+#define SCRIPTING_AVM1_AVM1DISPLAY_H
 
 
 #include "asobject.h"
@@ -67,4 +67,4 @@ public:
 
 }
 
-#endif // SCRIPTING_AVM1_AVM1MOVIECLIP_H
+#endif // SCRIPTING_AVM1_AVM1DISPLAY_H

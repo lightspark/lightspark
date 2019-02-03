@@ -433,6 +433,7 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void requestInvalidation(InvalidateQueue* q);
+	_NR<Graphics> getGraphics();
 };
 
 struct FrameLabel_data
@@ -483,13 +484,12 @@ friend class FrameContainer;
 private:
 	std::list<AVM1ActionTag*> avm1actions;
 	std::list<AVM1InitActionTag*> avm1initactions;
-	std::vector<uint32_t> avm1strings;
+	AVM1context avm1context;
 public:
+	inline AVM1context* getAVM1Context() { return &avm1context; }
 	std::list<DisplayListTag*> blueprint;
 	void execute(DisplayObjectContainer* displayList);
 	void AVM1executeActions(MovieClip* clip, bool avm1initactionsdone);
-	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
-	asAtom AVM1GetConstant(uint16_t index);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -617,6 +617,13 @@ public:
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
 	ASFUNCTION_ATOM(AVM1AttachMovie);
+	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);
+	ASFUNCTION_ATOM(AVM1Clear);
+	ASFUNCTION_ATOM(AVM1MoveTo);
+	ASFUNCTION_ATOM(AVM1LineTo);
+	ASFUNCTION_ATOM(AVM1LineStyle);
+	ASFUNCTION_ATOM(AVM1BeginFill);
+	ASFUNCTION_ATOM(AVM1EndFill);
 };
 
 class Stage: public DisplayObjectContainer

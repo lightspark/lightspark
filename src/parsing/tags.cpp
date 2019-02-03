@@ -2422,9 +2422,9 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Ta
 	}
 }
 
-void AVM1ActionTag::execute(MovieClip* clip, Frame *frame)
+void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
 {
-	ACTIONRECORD::executeActions(clip,frame,actions);
+	ACTIONRECORD::executeActions(clip,context,actions);
 }
 
 AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
@@ -2457,7 +2457,7 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 	}
 }
 
-void AVM1InitActionTag::execute(MovieClip* clip, Frame *frame)
+void AVM1InitActionTag::execute(MovieClip* clip, AVM1context *context)
 {
-	ACTIONRECORD::executeActions(clip,frame,actions);
+	ACTIONRECORD::executeActions(clip,context,actions);
 }

@@ -1381,6 +1381,39 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
+multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+{
+	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst);
+	if (getSystemState()->getSwfVersion() < 9)
+	{
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME)
+		{
+			this->incRef();
+			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->stage->AVM1AddEventListener(this);
+		}
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE)
+			getSystemState()->stage->AVM1AddMouseListener(this);
+	}
+	return res;
+}
+bool DisplayObject::deleteVariableByMultiname(const multiname& name)
+{
+	bool res = EventDispatcher::deleteVariableByMultiname(name);
+	if (getSystemState()->getSwfVersion() < 9)
+	{
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME)
+		{
+			this->incRef();
+			getSystemState()->unregisterFrameListener(_MR(this));
+			getSystemState()->stage->AVM1RemoveEventListener(this);
+		}
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE)
+			getSystemState()->stage->AVM1RemoveMouseListener(this);
+	}
+	return res;
+}
+
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
@@ -1527,4 +1560,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesLoaded),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesTotal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("_xmouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_ymouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseY),GETTER_METHOD,true);
 }

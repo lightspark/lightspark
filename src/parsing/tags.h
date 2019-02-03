@@ -119,7 +119,7 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
 	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
-	void execute(MovieClip* clip, Frame* frame);
+	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
 };
 class AVM1InitActionTag: public Tag
@@ -130,7 +130,7 @@ private:
 public:
 	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
 	TAGTYPE getType()const{ return AVM1INITACTION_TAG; }
-	void execute(MovieClip* clip, Frame* frame);
+	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
 };
 

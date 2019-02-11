@@ -5442,7 +5442,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (jumptargets.find(pos) == jumptargets.end() && 
-					(needstwoargs || operandlist.size() > 1) &&
+					(needstwoargs || operandlist.size() >= 1) &&
 					(uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 0
 					)
 			{
@@ -6552,6 +6552,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					// callproperty is followed by pop
 					opcode = 0x4f; // treat call as callpropvoid
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
 					code.readbyte(); // skip pop
 				}
 				// TODO optimize non-static multinames

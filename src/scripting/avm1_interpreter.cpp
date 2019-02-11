@@ -67,11 +67,10 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 		result->setUndefined();
 	std::stack<asAtom> stack;
 	asAtom registers[256];
+	std::map<uint32_t,asAtom> locals;
 	int curdepth = 0;
 	int maxdepth= clip->getSystemState()->mainClip->version < 6 ? 8 : 16;
 	asAtom* scopestack = g_newa(asAtom, maxdepth);
-	ASObject* locals = Class<ASObject>::getInstanceS(clip->getSystemState());
-	context->scopes.push_back(locals);
 	scopestack[0] = obj ? *obj : asAtom::fromObject(clip);
 	ASATOM_INCREF(scopestack[0]);
 	std::vector<ACTIONRECORD>::iterator* scopestackstop = g_newa(std::vector<ACTIONRECORD>::iterator, maxdepth);
@@ -83,12 +82,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 		if (preloadThis)
 			registers[currRegister++] = scopestack[0];
 		else
-		{
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=BUILTIN_STRINGS::STRING_THIS;
-			locals->setVariableByMultiname(m,scopestack[0],ASObject::CONST_NOT_ALLOWED);
-		}
+			locals[paramnames[currRegister++]] = scopestack[0];
 	}
 	if (!suppressArguments)
 	{
@@ -112,10 +106,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			{
 				ASATOM_INCREF(args[i]);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" parameter "<<i<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<args[i].toDebugString());
-				multiname m(nullptr);
-				m.name_type=multiname::NAME_STRING;
-				m.name_s_id=paramnames[i];
-				locals->setVariableByMultiname(m,args[i],ASObject::CONST_NOT_ALLOWED);
+				locals[paramnames[i]] = args[i];
 			}
 		}
 	}
@@ -126,13 +117,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 		if (preloadSuper)
 			registers[currRegister++] = asAtom::fromObject(clip->getClass()->super.getPtr());
 		else
-		{
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=BUILTIN_STRINGS::STRING_SUPER;
-			asAtom v = asAtom::fromObject(clip->getClass()->super.getPtr());
-			locals->setVariableByMultiname(m,v,ASObject::CONST_NOT_ALLOWED);
-		}
+			locals[paramnames[currRegister++]] = asAtom::fromObject(clip->getClass()->super.getPtr());
 	}
 	if (preloadRoot)
 	{
@@ -154,12 +139,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 	{
 		ASATOM_INCREF(args[i]);
 		if (paramregisternumbers[i] == 0)
-		{
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=paramnames[i];
-			locals->setVariableByMultiname(m,args[i],ASObject::CONST_NOT_ALLOWED);
-		}
+			locals[paramnames[i]] = args[i];
 		else
 			registers[paramregisternumbers[i]] = args[i];
 	}
@@ -339,20 +319,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				}
 				else if (s.find(".") == tiny_string::npos)
 				{
-					// variable names are case insensitive
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s.lowercase());
-					auto it = context->scopes.rbegin();
-					while(it != context->scopes.rend())
-					{
-						multiname m(nullptr);
-						m.name_type=multiname::NAME_STRING;
-						m.name_s_id=nameID;
-						(*it)->getVariableByMultiname(res,m);
-						if (res.type != T_INVALID)
-							break;
-						it++;
-					}
-					
+					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
+					if (it != locals.end()) // local variable
+						res = it->second;
 				}
 				if (res.type == T_INVALID)
 				{
@@ -373,25 +342,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetVariable "<<name.toDebugString()<<" "<<value.toDebugString());
 				tiny_string s = name.toString(clip->getSystemState());
 				bool found = false;
-				if (s.find(".") == tiny_string::npos)
+				if (!context->keepLocals && s.find(".") == tiny_string::npos)
 				{
 					// variable names are case insensitive
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s.lowercase());
-					auto it = context->scopes.rbegin();
-					while(it != context->scopes.rend())
+					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
+					if (it != locals.end()) // local variable
 					{
-						multiname m(nullptr);
-						m.name_type=multiname::NAME_STRING;
-						m.name_s_id=nameID;
-						m.ns.emplace_back(clip->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-						m.isAttribute = false;
-						if ((*it)->hasPropertyByMultiname(m,true,false))
-						{
-							(*it)->setVariableByMultiname(m,value,ASObject::CONST_NOT_ALLOWED);
-							found = true;
-							break;
-						}
-						it++;
+						it->second = value;
+						found = true;
 					}
 				}
 				if (!found)
@@ -729,11 +687,16 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom value = PopStack(stack);
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDefineLocal "<<name.toDebugString()<<" " <<value.toDebugString());
-				uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.toString(clip->getSystemState()).lowercase());
-				multiname m(nullptr);
-				m.name_type=multiname::NAME_STRING;
-				m.name_s_id=nameID;
-				locals->setVariableByMultiname(m,value,ASObject::CONST_NOT_ALLOWED);
+				if (context->keepLocals)
+				{
+					tiny_string s =name.toString(clip->getSystemState()).lowercase();
+					clip->AVM1SetVariable(s,value);
+				}
+				else
+				{
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.toString(clip->getSystemState()).lowercase());
+					locals[nameID] = value;
+				}
 				break;
 			}
 			case 0x3d: // ActionCallFunction
@@ -840,12 +803,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			{
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDefineLocal2 "<<name.toDebugString());
-				multiname m(nullptr);
-				m.name_type=multiname::NAME_STRING;
-				m.name_s_id=name.toStringId(clip->getSystemState());
-				m.ns.emplace_back(clip->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-				m.isAttribute = false;
-				locals->deleteVariableByMultiname(m);
+				uint32_t nameID = name.toStringId(clip->getSystemState());
+				if (locals.find(nameID) == locals.end())
+					locals[nameID] = asAtom::undefinedAtom;
 				break;
 			}
 			case 0x42: // ActionInitArray

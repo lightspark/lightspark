@@ -577,9 +577,10 @@ class AVM1context
 private:
 	std::vector<uint32_t> avm1strings;
 public:
+	AVM1context():keepLocals(true) {}
 	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
 	asAtom AVM1GetConstant(uint16_t index);
-	std::vector<ASObject*> scopes;
+	bool keepLocals;
 };
 
 class AVM1Function : public IFunction
@@ -603,7 +604,10 @@ protected:
 	bool preloadGlobal;
 	AVM1Function(Class_base* c,MovieClip* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<ACTIONRECORD>& a,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
 		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),context(*ctx),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),
-		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) {}
+		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) 
+	{
+		context.keepLocals=true;
+	}
 	method_info* getMethodInfo() const { return NULL; }
 public:
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args)

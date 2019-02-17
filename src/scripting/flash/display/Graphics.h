@@ -46,14 +46,17 @@ private:
 				       double c[3]);
 	int movex;
 	int movey;
+	tokensVector filltokens;
+	tokensVector stroketokens;
 	bool inFilling;
+	void dorender(bool closepath);
 public:
-	Graphics(Class_base* c):ASObject(c),owner(NULL)
+	Graphics(Class_base* c):ASObject(c),owner(NULL),movex(0),movey(0),filltokens(reporter_allocator<GeomToken>(nullptr)),stroketokens(reporter_allocator<GeomToken>(nullptr)),inFilling(false)
 	{
 //		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
 	Graphics(Class_base* c, TokenContainer* _o)
-		: ASObject(c),owner(_o),movex(0),movey(0),inFilling(false) {}
+		: ASObject(c),owner(_o),movex(0),movey(0),filltokens(reporter_allocator<GeomToken>(nullptr)),stroketokens(reporter_allocator<GeomToken>(nullptr)),inFilling(false) {}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	static FILLSTYLE createGradientFill(const tiny_string& type,
@@ -102,6 +105,6 @@ public:
 	ASFUNCTION_ATOM(copyFrom);
 };
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_GRAPHICS_H */

@@ -532,6 +532,13 @@ void DisplayObject::setOnStage(bool staged, bool force)
 	}
 }
 
+bool DisplayObject::isVisible() const
+{
+	if (visible)
+		return parent ? parent->isVisible() : true;
+	return visible;
+}
+
 ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
@@ -1125,7 +1132,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	ret.setNumber(th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
+_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	if(!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed())
 		return NullRef;
@@ -1148,11 +1155,11 @@ _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, n
 		}
 		number_t maskX, maskY;
 		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
-		if(mask->hitTest(last, maskX, maskY, type)==false)
+		if(mask->hitTest(last, maskX, maskY, type,false)==false)
 			return NullRef;
 	}
 
-	return hitTestImpl(last, x,y, type);
+	return hitTestImpl(last, x,y, type,interactiveObjectsOnly);
 }
 
 /* Display objects have no children in general,
@@ -1375,7 +1382,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		// right thing to do?
 		th->incRef();
 		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
-						     HIT_TYPE::GENERIC_HIT_INVISIBLE);
+						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
 		ret.setBool(!hit.isNull());
 	}
@@ -1392,7 +1399,11 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 			getSystemState()->registerFrameListener(_MR(this));
 			getSystemState()->stage->AVM1AddEventListener(this);
 		}
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE)
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE)
 			getSystemState()->stage->AVM1AddMouseListener(this);
 	}
 	return res;
@@ -1408,10 +1419,82 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 			getSystemState()->unregisterFrameListener(_MR(this));
 			getSystemState()->stage->AVM1RemoveEventListener(this);
 		}
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE)
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE)
 			getSystemState()->stage->AVM1RemoveMouseListener(this);
 	}
 	return res;
+}
+bool DisplayObject::AVM1HandleMouseEventStandard(MouseEvent *e)
+{
+	bool result = false;
+	asAtom func;
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.isAttribute = false;
+	asAtom ret;
+	asAtom obj = asAtom::fromObject(this);
+	if (e->type == "mouseMove")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "click")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "mouseDown")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "mouseUp")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "releaseOutside")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
+		getVariableByMultiname(func,m);
+		if (func.is<AVM1Function>())
+		{
+			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	return result;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
@@ -1533,6 +1616,15 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
 		ret.setUInt(sys->mainClip->loaderInfo->getBytesTotal());
 	}
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getQuality)
+{
+	ret = asAtom::fromString(sys,sys->stage->quality.uppercase());
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
+{
+	if (argslen > 0)
+		sys->stage->quality = args[0].toString(sys).uppercase();
+}
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
@@ -1562,4 +1654,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("getBytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesTotal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("_xmouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_ymouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_quality","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getQuality),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_quality","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setQuality),SETTER_METHOD,true);
 }

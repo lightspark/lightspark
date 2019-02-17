@@ -108,7 +108,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged, bool force = false);
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
 	virtual void resetToStart() {}
@@ -185,7 +185,7 @@ private:
 	bool enabled;
 	bool useHandCursor;
 	void reflectState();
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e);
 public:
@@ -225,7 +225,7 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
 	Shape(Class_base* c);
@@ -250,7 +250,7 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 		{ return TokenContainer::hitTestImpl(last,x,y, type); }
 public:
 	MorphShape(Class_base* c);
@@ -405,7 +405,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void renderImpl(RenderContext& ctxt) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	void resetToStart();
 	void checkSound();// start sound streaming if it is not already playing
 	void markSoundFinished();
@@ -650,7 +650,7 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
 public:
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	void setOnStage(bool staged, bool force = false) { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot();
 	void setRoot(_NR<RootMovieClip> _root);
@@ -857,7 +857,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)

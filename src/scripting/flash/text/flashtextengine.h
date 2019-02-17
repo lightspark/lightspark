@@ -212,7 +212,7 @@ private:
 	void requestInvalidation(InvalidateQueue* q);
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
 	void renderImpl(RenderContext& ctxt) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 public:
 	TextLine(Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);

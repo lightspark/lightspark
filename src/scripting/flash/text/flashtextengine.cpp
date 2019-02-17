@@ -737,7 +737,7 @@ void TextLine::renderImpl(RenderContext& ctxt) const
 	defaultRender(ctxt);
 }
 
-_NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
@@ -746,7 +746,7 @@ _NR<DisplayObject> TextLine::hitTestImpl(_NR<DisplayObject> last, number_t x, nu
 	else
 	{
 		incRef();
-		return DisplayObjectContainer::hitTestImpl(_MR(this), x, y, type);
+		return DisplayObjectContainer::hitTestImpl(_MR(this), x, y, type, interactiveObjectsOnly);
 	}
 }
 

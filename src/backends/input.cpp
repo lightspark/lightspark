@@ -153,7 +153,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	_NR<InteractiveObject> selected = NullRef;
 	try
 	{
-		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type);
+		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type,true);
 		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
 		{
 			dispobj->incRef();
@@ -221,6 +221,12 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		selected->incRef();
 		m_sys->currentVm->addEvent(selected,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys,"click",localX,localY,true,buttonState,pressed)));
+	}
+	else if (lastMouseDownTarget)
+	{
+		lastMouseDownTarget->incRef();
+		m_sys->currentVm->addEvent(lastMouseDownTarget,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys,"releaseOutside",localX,localY,true,buttonState,pressed)));
 	}
 	lastMouseDownTarget=NullRef;
 }

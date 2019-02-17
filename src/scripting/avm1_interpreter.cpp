@@ -437,6 +437,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 						case 13:// name
 							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 16:// quality
+							DisplayObject::AVM1_getQuality(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 20:// xmouse
 							DisplayObject::_getMouseX(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -499,6 +502,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 							break;
 						case 10:// rotation
 							DisplayObject::_setRotation(ret,clip->getSystemState(),obj,&valueInt,1);
+							break;
+						case 16:// quality
+							DisplayObject::AVM1_setQuality(ret,clip->getSystemState(),obj,&value,1);
 							break;
 						default:
 							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<index.toInt());

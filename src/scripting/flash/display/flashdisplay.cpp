@@ -947,7 +947,7 @@ void Sprite::renderImpl(RenderContext& ctxt) const
 Subclasses of DisplayObjectContainer must still check
 isHittable() to see if they should send out events.
 */
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
@@ -955,6 +955,9 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	std::vector<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
+		// only check interactive objects
+		if(interactiveObjectsOnly && !(*j)->is<InteractiveObject>())
+			continue;
 		//Don't check masks
 		if((*j)->isMask())
 			continue;
@@ -965,7 +968,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret=(*j)->hitTest(_MR(this), localX,localY, type);
+		ret=(*j)->hitTest(_MR(this), localX,localY, type,interactiveObjectsOnly);
 		if(!ret.isNull())
 			break;
 	}
@@ -983,14 +986,14 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type);
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly);
 
 	if (ret.isNull() && hitArea.isNull())
 	{
@@ -1684,41 +1687,30 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage())
+	if (!this->isOnStage() || !this->enabled || !this->visible)
 		return false;
 	if (dispatcher->is<DisplayObject>())
 	{
-		number_t x,y;
-		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
-		this->globalToLocal(x,y,x,y);
-		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK);
+		number_t x,y,xg,yg;
+		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
+		this->globalToLocal(xg,yg,x,y);
+		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK,true);
 		if (!dispobj)
 			return false;
 		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
 		{
-			if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown) ||
-					(e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp) ||
-					(e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove))
+			if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
+					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
+					|| (e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
+					|| (e->type == "click" && it->EventFlags.ClipEventPress)
+					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
+					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
+					)
 			{
 				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 			}
 		}
-		if (e->type == "mouseMove")
-		{
-			asAtom func;
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-		
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
-			getVariableByMultiname(func,m);
-			if (func.is<AVM1Function>())
-			{
-				asAtom ret;
-				asAtom obj = asAtom::fromObject(this);
-				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
-			}
-		}
+		AVM1HandleMouseEventStandard(e);
 	}
 	return false;
 }
@@ -2052,7 +2044,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 {
 	MovieClip* th=obj.as<MovieClip>();
 	if (argslen != 2)
-		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
+		throw RunTimeException("AVM1: invalid number of arguments for CreateEmptyMovieClip");
 	int Depth = args[1].toInt();
 	uint32_t nameId = args[0].toStringId(sys);
 	MovieClip* toAdd= Class<MovieClip>::getInstanceSNoArgs(sys);
@@ -3093,10 +3085,10 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type);
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type, interactiveObjectsOnly);
 	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -3269,7 +3261,7 @@ void Stage::executeFrameScript()
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 {
-	if (e->type == "keyDown")
+	if (e->is<KeyboardEvent>())
 	{
 		auto it = avm1KeyboardListeners.rbegin();
 		while (it != avm1KeyboardListeners.rend())
@@ -3279,7 +3271,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 			it++;
 		}
 	}
-	else if (e->type == "mouseDown" || e->type == "mouseOver" || e->type == "mouseUp" || e->type == "mouseOut" || e->type == "mouseMove")
+	else if (e->is<MouseEvent>())
 	{
 		auto it = avm1MouseListeners.rbegin();
 		while (it != avm1MouseListeners.rend())
@@ -3656,7 +3648,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
@@ -3704,14 +3696,13 @@ void SimpleButton::afterLegacyInsert()
 
 void SimpleButton::afterLegacyDelete(DisplayObjectContainer *par)
 {
-	LOG(LOG_ERROR,"afterLegacyDelete:"<<this->toDebugString());
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 }
 
 bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage())
+	if (!this->isOnStage() || !this->enabled || !this->isVisible())
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
@@ -3724,14 +3715,14 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	{
 		_NR<DisplayObject> dispobj;
 		if (dispatcher == this)
-			dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK);
+			dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK,true);
 		else
 		{
 			number_t x,y;
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
 			this->globalToLocal(x,y,x1,y1);
-			dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK);
+			dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true);
 		}
 		if (dispobj.getPtr()!= this)
 			return false;
@@ -3757,9 +3748,9 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		currentState = OUT;
 		reflectState();
 	}
+	bool handled = false;
 	if (buttontag)
 	{
-		bool handled = false;
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
 			if (  (it->CondIdleToOverDown && currentState==DOWN)
@@ -3784,27 +3775,9 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				
 			}
 		}
-		if (handled)
-			return true;
 	}
-	if (e->type == "mouseUp")
-	{
-		asAtom func;
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.isAttribute = false;
-
-		m.name_s_id=getSystemState()->getUniqueStringId("onRelease");
-		getVariableByMultiname(func,m);
-		if (func.is<AVM1Function>())
-		{
-			asAtom ret;
-			asAtom obj = asAtom::fromObject(this);
-			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
-			return true;
-		}
-	}
-	return false;
+	handled |= AVM1HandleMouseEventStandard(e);
+	return handled;
 }
 
 bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
@@ -3963,13 +3936,13 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type)
+_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
 	{
 		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), x, y, type);
+		ret = hitTestState->hitTest(_MR(this), x, y, type,false);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -3980,7 +3953,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	{
 		if(!isHittable(type))
 			return NullRef;
-			
+
 		this->incRef();
 		ret = _MR(this);
 	}

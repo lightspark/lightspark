@@ -122,7 +122,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
-	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type)
+	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
@@ -186,17 +186,19 @@ public:
 	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) { }
 	
 	tiny_string AVM1GetPath();
+	bool AVM1HandleMouseEventStandard(MouseEvent *e);
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	virtual uint32_t getTagID() const { return 0;}
 	
 	void Render(RenderContext& ctxt);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
-	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type);
+	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force = false);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
-	bool isVisible() const { return visible; }
+	// checks for visibility depending on parent visibility 
+	bool isVisible() const;
 	bool isLoadedRootObject() const { return isLoadedRoot; }
 	float clippedAlpha() const;
 	virtual _NR<RootMovieClip> getRoot();
@@ -274,6 +276,8 @@ public:
 	ASFUNCTION_ATOM(AVM1_localToGlobal);
 	ASFUNCTION_ATOM(AVM1_getBytesLoaded);
 	ASFUNCTION_ATOM(AVM1_getBytesTotal);
+	ASFUNCTION_ATOM(AVM1_getQuality);
+	ASFUNCTION_ATOM(AVM1_setQuality);
 	static void AVM1SetupMethods(Class_base* c);
 };
 }

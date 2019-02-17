@@ -617,7 +617,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
 
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,nullptr);
 	bool ret=false;

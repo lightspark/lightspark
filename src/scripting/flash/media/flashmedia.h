@@ -144,7 +144,7 @@ public:
 	ASFUNCTION_ATOM(clear);
 	void renderImpl(RenderContext& ctxt) const;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 };
 
 class SoundMixer : public ASObject

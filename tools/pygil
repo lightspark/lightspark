@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 #This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
 #sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
 
@@ -88,7 +88,7 @@ p2 = Popen(["xargs","cat"], stdin=p1.stdout, stdout=PIPE);
 p1.stdout.close() 
 
 ptmp =""
-for line in p2.communicate()[0].split("\n"):
+for line in p2.communicate()[0].decode("UTF-8","ignore").split("\n"):
 	m = rcomment.match(line)
 	if m:
 		continue
@@ -168,11 +168,11 @@ for line in ptmp.split(";"):
 
 #3. Step: parse documenation for classes, properties and methods
 try:
-	dbFile = open("langref.db", 'r')
+	dbFile = open("langref.db", 'rb')
 	(version, dclasses, dproperties, dmethods) = pickle.load( dbFile )
 	dbFile.close()
 except IOError:
-	print "Error opening langref.db. Have you run langref_parser in this directory?"
+	print ("Error opening langref.db. Have you run langref_parser in this directory?")
 	exit(1)
 
 dconst = set([])
@@ -249,44 +249,44 @@ for i in dclasses:
 	if i not in mclasses and i not in pmclasses:
 		fclasses.add(i)
 
-print "Fully implemented classes:"
+print ("Fully implemented classes:")
 for i in sorted(fclasses):
-	print "\t" + i
+	print ("\t" + i)
 
-print "\nFully Missing classes:"
+print ("\nFully Missing classes:")
 for i in sorted(mclasses):
-	print "\t" + i
+	print ("\t" + i)
 
-print "\nMissing getters/setters/methods (in partially implemented classes):"
+print ("\nMissing getters/setters/methods (in partially implemented classes):")
 for i in sorted(missing):
-	print "\t" + i
+	print ("\t" + i)
 
-print ""
+print ("")
 
 #If a subclass overrides a method of its base, then it has an entry
 # (flash.*.subclass,overridenMethod)
 for (cls,name) in sorted(getters):
 	if (cls,name) not in dgetters:
-		print "Warning: Implemented non-spec getter", getFullname(cls,name) 
+		print ("Warning: Implemented non-spec getter", getFullname(cls,name) )
 for (cls,name) in sorted(setters):
 	if (cls,name) not in dsetters:
-		print "Warning: Implemented non-spec setter", getFullname(cls,name) 
+		print ("Warning: Implemented non-spec setter", getFullname(cls,name) )
 for (cls,name) in sorted(methods):
 	if (cls,name) not in dmethods:
-		print "Warning: Implemented non-spec method", getFullname(cls,name) 
-print ""
+		print ("Warning: Implemented non-spec method", getFullname(cls,name) )
+print ("")
 for i in warnNotRegistered:
-	print "Warning: " + i + " is not registered in scripting/abc.cpp"
+	print ("Warning: " + i + " is not registered in scripting/abc.cpp")
 
 
 #print mmethods
 #print mclasses
 #print pmclasses
-print ""
-print "Number of fully implemented classes:                ", len(fclasses)
-print "Number of implemented getters/setters/methods/const:", len(setters),len(getters),len(methods),len(const)
-print "Total number of implemented                        :", len(setters)+len(getters)+len(methods)+len(const)
-print "Number of missing classes                          :", len(mclasses)
-print "Number of missing getters/setters/methods/consts:   ", (len(dsetters)-len(setters)), len(dgetters)-len(getters), len(dmethods)-len(methods), len(dconst)-len(const)
-print "Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)+len(const))
-print "Overall percentage completed:                       ", float(len(setters)+len(getters)+len(methods)+len(const))/float(len(dsetters)+len(dgetters)+len(dmethods)+len(dconst))*100
+print ("")
+print ("Number of fully implemented classes:                ", len(fclasses))
+print ("Number of implemented getters/setters/methods/const:", len(setters),len(getters),len(methods),len(const))
+print ("Total number of implemented                        :", len(setters)+len(getters)+len(methods)+len(const))
+print ("Number of missing classes                          :", len(mclasses))
+print ("Number of missing getters/setters/methods/consts:   ", (len(dsetters)-len(setters)), len(dgetters)-len(getters), len(dmethods)-len(methods), len(dconst)-len(const))
+print ("Total number of missing:                            ", (len(dsetters)+len(dgetters)+len(dmethods)+len(dconst)) - (len(setters)+len(getters)+len(methods)+len(const)))
+print ("Overall percentage completed:                       ", float(len(setters)+len(getters)+len(methods)+len(const))/float(len(dsetters)+len(dgetters)+len(dmethods)+len(dconst))*100)

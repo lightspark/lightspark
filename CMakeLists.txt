@@ -187,7 +187,7 @@ ENDIF(UNIX)
 
 SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
-SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
+SET(COMPILE_TIGHTSPARK FALSE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_NPAPI_PLUGIN TRUE CACHE BOOL "Compile the npapi browser plugin?")
 SET(COMPILE_PPAPI_PLUGIN TRUE CACHE BOOL "Compile the ppapi browser plugin?")
 SET(ENABLE_CURL TRUE CACHE BOOL "Enable CURL? (Required for Downloader functionality)")

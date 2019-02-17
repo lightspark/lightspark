@@ -1137,7 +1137,8 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				ASObject* o = obj.toObject(clip->getSystemState());
 				while ((index = o->nextNameIndex(index)))
 				{
-					asAtom name = asAtom::fromStringID(o->getNameAt(index-1));
+					asAtom name;
+					o->nextName(name,index);
 					PushStack(stack, name);
 				}
 				break;

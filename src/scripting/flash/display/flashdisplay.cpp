@@ -993,7 +993,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly);
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,false);
 
 	if (ret.isNull() && hitArea.isNull())
 	{

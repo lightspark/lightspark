@@ -33,9 +33,9 @@ class IGraphicsData
 protected:
 	virtual ~IGraphicsData() {}
 public:
-	static void linkTraits(Class_base* c) {};
+	static void linkTraits(Class_base* c) {}
 	// Appends GeomTokens for drawing this object into tokens
-	virtual void appendToTokens(tokensVector& tokens) = 0;
+	virtual void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens) = 0;
 };
 
 };

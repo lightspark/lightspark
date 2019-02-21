@@ -55,7 +55,7 @@ public:
 					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>());
 	static void FromDefineMorphShapeTagToShapeVector(SystemState *sys, DefineMorphShapeTag *tag,
 					 tokensVector& tokens, uint16_t ratio);
-	static void getTextureSize(tokensVector& tokens, int *width, int *height);
+	static void getTextureSize(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> &tokens, int *width, int *height);
 	uint16_t getCurrentLineWidth() const;
 	float scaling;
 protected:

@@ -41,7 +41,7 @@ FILLSTYLE GraphicsEndFill::toFillStyle()
 	return FILLSTYLE(0xff);
 }
 
-void GraphicsEndFill::appendToTokens(tokensVector& tokens)
+void GraphicsEndFill::appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>> > &tokens)
 {
-	tokens.emplace_back(CLEAR_FILL);
+	tokens.emplace_back(_MR(new GeomToken(CLEAR_FILL)));
 }

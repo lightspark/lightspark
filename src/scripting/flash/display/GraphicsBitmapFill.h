@@ -41,7 +41,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, repeat);
 	ASPROPERTY_GETTER_SETTER(bool, smooth);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(tokensVector& tokens);
+	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
 };
 
 };

@@ -31,9 +31,11 @@ TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m) : owner(_o)
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m, const tokensVector& _tokens, float _scaling) :
-	owner(_o), tokens(_tokens.begin(),_tokens.end(),reporter_allocator<GeomToken>(_m)), scaling(_scaling)
+	owner(_o), tokens(reporter_allocator<GeomToken>(_m)), scaling(_scaling)
 
 {
+	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
+	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
 }
 
 void TokenContainer::renderImpl(RenderContext& ctxt) const
@@ -259,18 +261,18 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 	bool hasContent = false;
 	double strokeWidth = 0;
 
-	for(unsigned int i=0;i<tokens.size();i++)
+	for(unsigned int i=0;i<tokens.filltokens.size();i++)
 	{
-		switch(tokens[i].type)
+		switch(tokens.filltokens[i]->type)
 		{
 			case CURVE_CUBIC:
 			{
-				VECTOR_BOUNDS(tokens[i].p3);
+				VECTOR_BOUNDS(tokens.filltokens[i]->p3);
 			}
 			// falls through
 			case CURVE_QUADRATIC:
 			{
-				VECTOR_BOUNDS(tokens[i].p2);
+				VECTOR_BOUNDS(tokens.filltokens[i]->p2);
 			}
 			// falls through
 			case STRAIGHT:
@@ -280,7 +282,7 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 			// falls through
 			case MOVE:
 			{
-				VECTOR_BOUNDS(tokens[i].p1);
+				VECTOR_BOUNDS(tokens.filltokens[i]->p1);
 				break;
 			}
 			case CLEAR_FILL:
@@ -290,7 +292,42 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
-				strokeWidth = (double)(tokens[i].lineStyle.Width / 20.0);
+				strokeWidth = (double)(tokens.filltokens[i]->lineStyle.Width / 20.0);
+				break;
+		}
+	}
+	for(unsigned int i=0;i<tokens.stroketokens.size();i++)
+	{
+		switch(tokens.stroketokens[i]->type)
+		{
+			case CURVE_CUBIC:
+			{
+				VECTOR_BOUNDS(tokens.stroketokens[i]->p3);
+			}
+			// falls through
+			case CURVE_QUADRATIC:
+			{
+				VECTOR_BOUNDS(tokens.stroketokens[i]->p2);
+			}
+			// falls through
+			case STRAIGHT:
+			{
+				hasContent = true;
+			}
+			// falls through
+			case MOVE:
+			{
+				VECTOR_BOUNDS(tokens.stroketokens[i]->p1);
+				break;
+			}
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
+			case SET_FILL:
+			case FILL_KEEP_SOURCE:
+			case FILL_TRANSFORM_TEXTURE:
+				break;
+			case SET_STROKE:
+				strokeWidth = (double)(tokens.stroketokens[i]->lineStyle.Width / 20.0);
 				break;
 		}
 	}
@@ -314,16 +351,16 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 }
 
 /* Find the size of the active texture (bitmap set by the latest SET_FILL). */
-void TokenContainer::getTextureSize(tokensVector& tokens, int *width, int *height)
+void TokenContainer::getTextureSize(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens, int *width, int *height)
 {
 	*width=0;
 	*height=0;
 
 	for(int i=tokens.size()-1;i>=0;i--)
 	{
-		const FILLSTYLE& style=tokens[i].fillStyle;
+		const FILLSTYLE& style=tokens[i]->fillStyle;
 		const FILL_STYLE_TYPE& fstype=style.FillStyleType;
-		if(tokens[i].type==SET_FILL && 
+		if(tokens[i]->type==SET_FILL && 
 		   (fstype==REPEATING_BITMAP ||
 		    fstype==NON_SMOOTHED_REPEATING_BITMAP ||
 		    fstype==CLIPPED_BITMAP ||
@@ -342,11 +379,11 @@ void TokenContainer::getTextureSize(tokensVector& tokens, int *width, int *heigh
 /* Return the width of the latest SET_STROKE */
 uint16_t TokenContainer::getCurrentLineWidth() const
 {
-	for(int i=tokens.size()-1;i>=0;i--)
+	for(int i=tokens.stroketokens.size()-1;i>=0;i--)
 	{
-		if(tokens[i].type==SET_STROKE)
+		if(tokens.stroketokens[i]->type==SET_STROKE)
 		{
-			return tokens[i].lineStyle.Width;
+			return tokens.stroketokens[i]->lineStyle.Width;
 		}
 	}
 

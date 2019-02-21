@@ -40,7 +40,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, indices);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, uvtData);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, vertices);
-	void appendToTokens(tokensVector& tokens);
+	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
 };
 
 };

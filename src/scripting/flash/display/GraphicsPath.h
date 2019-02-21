@@ -47,7 +47,7 @@ public:
 	ASFUNCTION_ATOM(moveTo);
 	ASFUNCTION_ATOM(wideLineTo);
 	ASFUNCTION_ATOM(wideMoveTo);
-	void appendToTokens(tokensVector& tokens);
+	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
 };
 
 }

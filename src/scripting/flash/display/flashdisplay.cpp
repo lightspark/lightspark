@@ -3633,12 +3633,12 @@ void Bitmap::updatedData()
 	else
 		style.FillStyleType=NON_SMOOTHED_CLIPPED_BITMAP;
 	style.bitmap=bitmapData->getBitmapContainer();
-	tokens.emplace_back(GeomToken(SET_FILL, style));
-	tokens.emplace_back(GeomToken(MOVE, Vector2(0, 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, style.bitmap->getHeight())));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), style.bitmap->getHeight())));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0)));
-	tokens.emplace_back(GeomToken(STRAIGHT, Vector2(0, 0)));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(SET_FILL, style)));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(0, 0))));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, style.bitmap->getHeight()))));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), style.bitmap->getHeight()))));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0))));
+	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, 0))));
 	hasChanged=true;
 	if(onStage)
 		requestInvalidation(getSystemState());

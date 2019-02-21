@@ -88,7 +88,7 @@ FILLSTYLE GraphicsGradientFill::toFillStyle()
 		matrix, spreadMethod, interpolationMethod, focalPointRatio);
 }
 
-void GraphicsGradientFill::appendToTokens(tokensVector& tokens)
+void GraphicsGradientFill::appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>> > &tokens)
 {
-	tokens.emplace_back(GeomToken(SET_FILL, toFillStyle()));
+	tokens.emplace_back(_MR(new GeomToken(SET_FILL, toFillStyle())));
 }

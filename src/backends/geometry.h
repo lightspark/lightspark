@@ -65,7 +65,7 @@ public:
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 
-class GeomToken
+class GeomToken :public RefCountable
 {
 public:
 	FILLSTYLE  fillStyle;
@@ -80,13 +80,31 @@ public:
 	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):fillStyle(0xff),lineStyle(0xff),type(_t),p1(_p1),p2(_p2),p3(0,0){}
 	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):fillStyle(0xff),lineStyle(0xff),type(_t),
 			p1(_p1),p2(_p2),p3(_p3){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE  _f):fillStyle(_f),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2 _s):fillStyle(0xff),lineStyle(_s),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE&  _f):fillStyle(_f),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2& _s):fillStyle(0xff),lineStyle(_s),type(_t),p1(0,0),p2(0,0),p3(0,0){}
 	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):fillStyle(0xff),lineStyle(0xff),textureTransform(_m),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2 _s);
+	GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2& _s);
 };
 
-typedef std::vector<GeomToken, reporter_allocator<GeomToken>> tokensVector;
+struct tokensVector
+{
+	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> filltokens;
+	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> stroketokens;
+	tokensVector(reporter_allocator<_NR<GeomToken>> m):filltokens(m),stroketokens(m) {}
+	void clear() 
+	{
+		filltokens.clear();
+		stroketokens.clear();
+	}
+	uint32_t size() const
+	{
+		return filltokens.size()+stroketokens.size();
+	}
+	bool empty() const
+	{
+		return filltokens.empty() && stroketokens.empty();
+	}
+};
 
 enum SHAPE_PATH_SEGMENT_TYPE { PATH_START=0, PATH_STRAIGHT, PATH_CURVE_QUADRATIC };
 

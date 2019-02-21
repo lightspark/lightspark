@@ -197,7 +197,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			for(uint32_t i=0;i<grad.GradientRecords.size();i++)
 			{
 				double ratio = grad.GradientRecords[i].Ratio / 255.0;
-				const RGBA& color=style.Gradient.GradientRecords[i].Color;
+				const RGBA& color=grad.GradientRecords[i].Color;
 				if (colortransform)
 				{
 					float r,g,b,a;
@@ -286,165 +286,189 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 		operation(instroke?stroke_cr:cr, ## args);
 
 	bool instroke = false;
-	for(uint32_t i=0;i<tokens.size();i++)
+	int tokentype = 1;
+	while (tokentype)
 	{
-		switch(tokens[i].type)
+		std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>::const_iterator it;
+		std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>::const_iterator itend;
+		switch(tokentype)
 		{
-			case MOVE:
-				PATH(cairo_move_to, tokens[i].p1.x, tokens[i].p1.y);
+			case 1:
+				it = tokens.filltokens.begin();
+				itend = tokens.filltokens.end();
+				tokentype++;
 				break;
-			case STRAIGHT:
-				PATH(cairo_line_to, tokens[i].p1.x, tokens[i].p1.y);
-				empty = false;
+			case 2:
+				it = tokens.stroketokens.begin();
+				itend = tokens.stroketokens.end();
+				tokentype++;
 				break;
-			case CURVE_QUADRATIC:
-				PATH(quadraticBezier,
-				   tokens[i].p1.x, tokens[i].p1.y,
-				   tokens[i].p2.x, tokens[i].p2.y);
-				empty = false;
+			default:
+				tokentype = 0;
 				break;
-			case CURVE_CUBIC:
-				PATH(cairo_curve_to,
-				   tokens[i].p1.x, tokens[i].p1.y,
-				   tokens[i].p2.x, tokens[i].p2.y,
-				   tokens[i].p3.x, tokens[i].p3.y);
-				empty = false;
-				break;
-			case SET_FILL:
+		}
+		if (tokentype == 0)
+			break;
+		for (;it != itend; it++)
+		{
+			switch((*it)->type)
 			{
-				if(skipPaint)
+				case MOVE:
+					PATH(cairo_move_to, (*it)->p1.x, (*it)->p1.y);
 					break;
-
-				cairo_fill(cr);
-
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-
-				const FILLSTYLE& style = tokens[i].fillStyle;
-				if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-					style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
-					cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-				cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,colortransform);
-				if(pattern)
-				{
-					cairo_set_source(cr, pattern);
-					// Destroy the first reference.
-					cairo_pattern_destroy(pattern);
-				}
-
-				break;
-			}
-			case SET_STROKE:
-			{
-				instroke = true;
-				if(skipPaint)
+				case STRAIGHT:
+					PATH(cairo_line_to, (*it)->p1.x, (*it)->p1.y);
+					empty = false;
 					break;
-
-				cairo_stroke(stroke_cr);
-
-				const LINESTYLE2& style = tokens[i].lineStyle;
-
-				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
-				if (style.HasFillFlag)
+				case CURVE_QUADRATIC:
+					PATH(quadraticBezier,
+					   (*it)->p1.x, (*it)->p1.y,
+					   (*it)->p2.x, (*it)->p2.y);
+					empty = false;
+					break;
+				case CURVE_CUBIC:
+					PATH(cairo_curve_to,
+					   (*it)->p1.x, (*it)->p1.y,
+					   (*it)->p2.x, (*it)->p2.y,
+					   (*it)->p3.x, (*it)->p3.y);
+					empty = false;
+					break;
+				case SET_FILL:
 				{
-					if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-						style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+					if(skipPaint)
+						break;
+	
+					cairo_fill(cr);
+	
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	
+					const FILLSTYLE& style = (*it)->fillStyle;
+					if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+						style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,colortransform);
-					if (pattern)
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,colortransform);
+					if(pattern)
 					{
-						cairo_set_source(stroke_cr, pattern);
+						cairo_set_source(cr, pattern);
+						// Destroy the first reference.
 						cairo_pattern_destroy(pattern);
 					}
-				} else {
-					const RGBA& color = style.Color;
-					float r,g,b,a;
-					if (colortransform)
-						colortransform->applyTransformation(color,r,g,b,a);
-					else
-					{
-						r = color.rf();
-						g = color.gf();
-						b = color.bf();
-						a = color.af();
-					}
-					cairo_set_source_rgba(stroke_cr, r, g, b, a);
+	
+					break;
 				}
-
-				// TODO: EndCapStyle
-				if (style.StartCapStyle == 0)
-					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_ROUND);
-				else if (style.StartCapStyle == 1)
-					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_BUTT);
-				else if (style.StartCapStyle == 2)
-					cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_SQUARE);
-
-				if (style.JointStyle == 0)
-					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_ROUND);
-				else if (style.JointStyle == 1)
-					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_BEVEL);
-				else if (style.JointStyle == 2) {
-					cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_MITER);
-					cairo_set_miter_limit(stroke_cr, style.MiterLimitFactor);
-				}
-
-				//Width == 0 should be a hairline, but
-				//cairo does not support hairlines.
-				//Line width 1 is not a perfect
-				//substitute, because it is affected
-				//by transformations.
-				if (style.Width == 0)
-					cairo_set_line_width(stroke_cr, 1);
-				else if (style.Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
-					cairo_set_line_width(stroke_cr, 5);
-				else 
+				case SET_STROKE:
 				{
-					double linewidth = (double)(style.Width / 20.0);
-					cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
-					cairo_set_line_width(stroke_cr, linewidth);
+					instroke = true;
+					if(skipPaint)
+						break;
+	
+					cairo_stroke(stroke_cr);
+	
+					const LINESTYLE2& style = (*it)->lineStyle;
+	
+					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
+					if (style.HasFillFlag)
+					{
+						if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+							style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+							cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
+						cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,colortransform);
+						if (pattern)
+						{
+							cairo_set_source(stroke_cr, pattern);
+							cairo_pattern_destroy(pattern);
+						}
+					} else {
+						const RGBA& color = style.Color;
+						float r,g,b,a;
+						if (colortransform)
+							colortransform->applyTransformation(color,r,g,b,a);
+						else
+						{
+							r = color.rf();
+							g = color.gf();
+							b = color.bf();
+							a = color.af();
+						}
+						cairo_set_source_rgba(stroke_cr, r, g, b, a);
+					}
+	
+					// TODO: EndCapStyle
+					if (style.StartCapStyle == 0)
+						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_ROUND);
+					else if (style.StartCapStyle == 1)
+						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_BUTT);
+					else if (style.StartCapStyle == 2)
+						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_SQUARE);
+	
+					if (style.JointStyle == 0)
+						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_ROUND);
+					else if (style.JointStyle == 1)
+						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_BEVEL);
+					else if (style.JointStyle == 2) {
+						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_MITER);
+						cairo_set_miter_limit(stroke_cr, style.MiterLimitFactor);
+					}
+	
+					//Width == 0 should be a hairline, but
+					//cairo does not support hairlines.
+					//Line width 1 is not a perfect
+					//substitute, because it is affected
+					//by transformations.
+					if (style.Width == 0)
+						cairo_set_line_width(stroke_cr, 1);
+					else if (style.Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
+						cairo_set_line_width(stroke_cr, 5);
+					else 
+					{
+						double linewidth = (double)(style.Width / 20.0 / scaleCorrection);
+						//cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
+						cairo_set_line_width(stroke_cr, linewidth);
+					}
+					break;
 				}
-				break;
-			}
-
-			case CLEAR_FILL:
-			case FILL_KEEP_SOURCE:
-				if(skipPaint)
+	
+				case CLEAR_FILL:
+				case FILL_KEEP_SOURCE:
+					if(skipPaint)
+						break;
+	
+					cairo_fill(cr);
+	
+					if((*it)->type==CLEAR_FILL)
+						// Clear source.
+						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;
-
-				cairo_fill(cr);
-
-				if(tokens[i].type==CLEAR_FILL)
+				case CLEAR_STROKE:
+					instroke = false;
+					if(skipPaint)
+						break;
+	
+					cairo_stroke(stroke_cr);
+	
 					// Clear source.
-					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
-				break;
-			case CLEAR_STROKE:
-				instroke = false;
-				if(skipPaint)
+					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 					break;
-
-				cairo_stroke(stroke_cr);
-
-				// Clear source.
-				cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-			{
-				if(skipPaint)
+				case FILL_TRANSFORM_TEXTURE:
+				{
+					if(skipPaint)
+						break;
+	
+					cairo_matrix_t origmat;
+					cairo_pattern_t* pattern;
+					pattern=cairo_get_source(cr);
+					cairo_pattern_get_matrix(pattern, &origmat);
+	
+					cairo_pattern_set_matrix(pattern, &(*it)->textureTransform);
+	
+					cairo_fill(cr);
+	
+					cairo_pattern_set_matrix(pattern, &origmat);
 					break;
-
-				cairo_matrix_t origmat;
-				cairo_pattern_t* pattern;
-				pattern=cairo_get_source(cr);
-				cairo_pattern_get_matrix(pattern, &origmat);
-
-				cairo_pattern_set_matrix(pattern, &tokens[i].textureTransform);
-
-				cairo_fill(cr);
-
-				cairo_pattern_set_matrix(pattern, &origmat);
-				break;
+				}
+				default:
+					assert(false);
 			}
-			default:
-				assert(false);
 		}
 	}
 

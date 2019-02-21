@@ -47,7 +47,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string, spreadMethod);
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(tokensVector& tokens);
+	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
 };
 
 };

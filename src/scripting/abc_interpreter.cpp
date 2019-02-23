@@ -5477,7 +5477,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		}
 		case 0x11://iftrue
 		case 0x12://iffalse
-			if ((!needstwoargs || hasdup) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			if ((!needstwoargs || hasdup) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -5492,7 +5492,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x93://decrement
 		case 0x96://not
 		case 0x75://convert_d
-			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -5528,7 +5528,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0xae://lessequals
 		case 0xaf://greaterthan
 		case 0xb0://greaterequals
-			if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(code.tellg()+1) == jumptargets.end()))
+			if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;

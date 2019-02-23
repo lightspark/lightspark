@@ -993,7 +993,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,false);
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,this->is<RootMovieClip>() ? interactiveObjectsOnly : false);
 
 	if (ret.isNull() && hitArea.isNull())
 	{
@@ -4379,7 +4379,7 @@ void MovieClip::initFrame()
 			{
 				iter->execute(this);
 			}
-			if (i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
+			if (getSystemState()->getSwfVersion() < 9 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
 				currentframeIterator= iter;
 			++iter;
 		}

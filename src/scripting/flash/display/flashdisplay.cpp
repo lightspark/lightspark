@@ -3224,7 +3224,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 _NR<InteractiveObject> Stage::getFocusTarget()
 {
 	SpinlockLocker l(focusSpinlock);
-	if (focus.isNull())
+	if (focus.isNull() || !focus->isOnStage() || !focus->isVisible())
 	{
 		incRef();
 		return _MNR(this);

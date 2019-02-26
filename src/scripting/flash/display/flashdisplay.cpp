@@ -1457,8 +1457,18 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.stop_FP = stop;
 	if (getSystemState()->getSwfVersion() >= 9)
 	{
-		advanceFrame();
-		initFrame();
+		if (this->getConstructIndicator())
+		{
+			advanceFrame();
+			initFrame();
+		}
+		else
+		{
+			this->incRef();
+			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) AdvanceFrameEvent()));
+			this->incRef();
+			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) InitFrameEvent(_MR(this))));
+		}
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
@@ -4393,8 +4403,6 @@ void MovieClip::initFrame()
 	for(;it!=dynamicDisplayList.end();it++)
 		(*it)->initFrame();
 
-	bool firstframe = state.last_FP < 0;
-	
 	/* Set last_FP to reflect the frame that we have initialized currently.
 	 * This must be set before the constructor of this MovieClip is run,
 	 * or it will call initFrame(). */
@@ -4409,7 +4417,7 @@ void MovieClip::initFrame()
 	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
 	 * we can't execute the framescript of the first frame now (it will be executed in afterConstruction)
 	 */
-	if(!firstframe && newFrame && frameScripts.count(state.FP))
+	if(this->getConstructIndicator() && newFrame && frameScripts.count(state.FP))
 	{
 		frameScriptToExecute=state.FP;
 	}
@@ -4507,14 +4515,18 @@ void MovieClip::afterConstruction()
 {
 	// execute framescript of frame 0 after construction is completed
 	if(frameScripts.count(0))
+	{
 		frameScriptToExecute = 0;
+		this->incRef();
+		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+	}
 }
 
 Frame *MovieClip::getCurrentFrame()
 {
 	if (state.FP >= frames.size())
 	{
-			LOG(LOG_ERROR,"MovieClip.getCurrentFrame invalid frame:"<<state.FP<<" "<<frames.size()<<" "<<this->toDebugString());
+		LOG(LOG_ERROR,"MovieClip.getCurrentFrame invalid frame:"<<state.FP<<" "<<frames.size()<<" "<<this->toDebugString());
 		throw RunTimeException("invalid current frame");
 	}
 	auto it = frames.begin();

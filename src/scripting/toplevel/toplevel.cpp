@@ -1047,17 +1047,16 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		ASATOM_INCREF(target);
 		asAtom ret;
 		asAtom::fromObject(constructor).callFunction(ret,target,args,argslen,true);
-		target.getObject()->constructIndicator = true;
 		target = asAtom::fromObject(target.getObject());
 	}
 	else
 	{
-		target.getObject()->constructIndicator = true;
 		for(uint32_t i=0;i<argslen;i++)
 			ASATOM_DECREF(args[i]);
 	}
 	if(buildAndLink)
 	{
+		target.getObject()->constructIndicator = true;
 		target.getObject()->afterConstruction();
 	}
 }

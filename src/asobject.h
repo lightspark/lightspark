@@ -954,6 +954,8 @@ public:
 	inline void setConstructIndicator() { constructIndicator = true; }
 	inline void setConstructorCallComplete() { constructorCallComplete = true; }
 	inline void setIsInitialized() { traitsInitialized=true;}
+	inline bool getConstructIndicator() const { return constructIndicator; }
+
 	
 	void setIsEnumerable(const multiname& name, bool isEnum);
 	inline void destroyContents()

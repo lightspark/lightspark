@@ -300,8 +300,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	// C -> D
 	th->owner->tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(x+width, y+height-ellipseHeight))));
 	th->hasChanged = true;
-	if (!th->inFilling)
-		th->dorender(true);
+	th->dorender(true);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
@@ -335,8 +334,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 	th->owner->tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, d)));
 	th->owner->tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, a)));
 	th->hasChanged = true;
-	if (!th->inFilling)
-		th->dorender(true);
+	th->dorender(true);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
@@ -407,8 +405,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 							Vector2(x+radius, y-kappa ),
 							Vector2(x+radius, y       ))));
 	th->hasChanged = true;
-	if (!th->inFilling)
-		th->dorender(true);
+	th->dorender(true);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
@@ -481,8 +478,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 							Vector2(left+width, top+height/2.0-ykappa),
 							Vector2(left+width, top+height/2.0))));
 	th->hasChanged = true;
-	if (!th->inFilling)
-		th->dorender(true);
+	th->dorender(true);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawRect)
@@ -515,8 +511,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 	th->owner->tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, d)));
 	th->owner->tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, a)));
 	th->hasChanged = true;
-	if (!th->inFilling)
-		th->dorender(true);
+	th->dorender(true);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawPath)
@@ -672,8 +667,7 @@ void Graphics::dorender(bool closepath)
 			owner->tokens.filltokens.emplace_back(_MR(new GeomToken(CLEAR_FILL)));
 		}
 		owner->owner->hasChanged=true;
-		if (owner->owner->isOnStage() && owner->owner->isVisible())
-			owner->owner->requestInvalidation(getSystemState());
+		owner->owner->requestInvalidation(getSystemState());
 		hasChanged = false;
 	}
 }

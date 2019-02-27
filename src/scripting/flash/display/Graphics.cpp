@@ -966,6 +966,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	FILLSTYLE style=createGradientFill(type, colors, alphas, ratios, matrix,
 					     spreadMethod, interpolationMethod,
 					     focalPointRatio);
+	th->inFilling=true;
 	th->owner->tokens.filltokens.emplace_back(_MR(new GeomToken(SET_FILL, style)));
 }
 

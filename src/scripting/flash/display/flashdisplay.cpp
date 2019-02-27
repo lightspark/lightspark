@@ -1457,18 +1457,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.stop_FP = stop;
 	if (getSystemState()->getSwfVersion() >= 9)
 	{
-		if (this->getConstructIndicator())
-		{
-			advanceFrame();
-			initFrame();
-		}
-		else
-		{
-			this->incRef();
-			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) AdvanceFrameEvent()));
-			this->incRef();
-			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) InitFrameEvent(_MR(this))));
-		}
+		advanceFrame();
+		initFrame();
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
@@ -4514,7 +4504,8 @@ void MovieClip::constructionComplete()
 void MovieClip::afterConstruction()
 {
 	// execute framescript of frame 0 after construction is completed
-	if(frameScripts.count(0))
+	// only if state.FP was not changed during construction
+	if(frameScripts.count(0) && state.FP == 0)
 	{
 		frameScriptToExecute = 0;
 		this->incRef();

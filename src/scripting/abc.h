@@ -700,6 +700,11 @@ private:
 	static void abc_initproperty(call_context* context);
 	static void abc_deleteproperty(call_context* context);
 	static void abc_getslot(call_context* context);
+	static void abc_getslot_constant(call_context* context);
+	static void abc_getslot_local(call_context* context);
+	static void abc_getslot_constant_localresult(call_context* context);
+	static void abc_getslot_local_localresult(call_context* context);
+
 	static void abc_setslot(call_context* context);
 	static void abc_getglobalSlot(call_context* context);
 	static void abc_setglobalSlot(call_context* context);

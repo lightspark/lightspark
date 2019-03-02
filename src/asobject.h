@@ -576,6 +576,7 @@ public:
 	void initializeVar(const multiname& mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
 	asAtom getSlot(unsigned int n);
+	TRAIT_KIND getSlotKind(unsigned int n);
 	uint32_t findInstanceSlotByMultiname(multiname* name);
 	/*
 	 * This method does throw if the slot id is not valid
@@ -821,6 +822,10 @@ public:
 	asAtom getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
+	}
+	TRAIT_KIND getSlotKind(unsigned int n)
+	{
+		return Variables.getSlotKind(n);
 	}
 	void setSlot(unsigned int n,asAtom o)
 	{

@@ -605,6 +605,12 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_callpropvoidStaticName_local_local,
 	abc_callpropvoidStaticName_constant,// 0x1e8 ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS
 	abc_callpropvoidStaticName_local,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_getslot_constant,// 0x1ec ABC_OP_OPTIMZED_GETSLOT
+	abc_getslot_local,
+	abc_getslot_constant_localresult,
+	abc_getslot_local_localresult,
 
 	abc_invalidinstruction
 };
@@ -3255,6 +3261,46 @@ void ABCVm::abc_getslot(call_context* context)
 	*pval=ret;
 	++(context->exec_pos);
 }
+void ABCVm::abc_getslot_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t t = (++(context->exec_pos))->data;
+	asAtom* pval = instrptr->arg1_constant;
+	asAtom ret=pval->toObject(context->mi->context->root->getSystemState())->getSlot(t);
+	LOG_CALL("getSlot_c " << t << " " << ret.toDebugString());
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_getslot_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t t = (++(context->exec_pos))->data;
+	asAtom val = context->locals[instrptr->local_pos1];
+	asAtom ret=val.toObject(context->mi->context->root->getSystemState())->getSlot(t);
+	LOG_CALL("getSlot_l " << t << " " << ret.toDebugString());
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,asAtom(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_getslot_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t t = (++(context->exec_pos))->data;
+	asAtom* pval = instrptr->arg1_constant;
+	context->locals[instrptr->local_pos3-1]=pval->toObject(context->mi->context->root->getSystemState())->getSlot(t);
+	LOG_CALL("getSlot_cl " << t << " " << context->locals[instrptr->local_pos3-1].toDebugString());
+	++(context->exec_pos);
+}
+void ABCVm::abc_getslot_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t t = (++(context->exec_pos))->data;
+	asAtom val = context->locals[instrptr->local_pos1];
+	context->locals[instrptr->local_pos3-1]=val.toObject(context->mi->context->root->getSystemState())->getSlot(t);
+	LOG_CALL("getSlot_ll " << t << " " << context->locals[instrptr->local_pos3-1].toDebugString());
+	++(context->exec_pos);
+}
 void ABCVm::abc_setslot(call_context* context)
 {
 	//setslot
@@ -5264,6 +5310,9 @@ struct operands
 #define ABC_OP_OPTIMZED_LESSEQUALS 0x000001c0
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
 #define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
+#define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS 0x000001bd
+#define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS 0x000001be
+#define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT 0x000001bf
 #define ABC_OP_OPTIMZED_EQUALS 0x000001d0
 #define ABC_OP_OPTIMZED_NOT 0x000001d8
 #define ABC_OP_OPTIMZED_IFTRUE_DUP 0x000001dc
@@ -5271,9 +5320,7 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS 0x000001e0
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME 0x000001e4
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS 0x000001e8
-#define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS 0x000001bd
-#define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS 0x000001be
-#define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT 0x000001bf
+#define ABC_OP_OPTIMZED_GETSLOT 0x000001ec
 
 bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
@@ -5439,6 +5486,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			break;
 		}
 		case 0x61://setproperty
+		case 0x68://initproperty
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (jumptargets.find(pos) == jumptargets.end() && 
@@ -5734,6 +5782,14 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 	}
 	return hasoperands;
 }
+void addCachedConstant(method_info* mi, asAtom& val,std::list<operands>& operandlist,std::map<int32_t,int32_t>& oldnewpositions,memorystream& code)
+{
+	uint32_t value = mi->context->addCachedConstantAtom(val);
+	mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
+	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+	mi->body->preloadedcode.push_back(value);
+	operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+}
 
 void ABCVm::preloadFunction(SyntheticFunction* function)
 {
@@ -5940,7 +5996,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x5f://finddef
 			case 0x65://getscopeobject
 			case 0x6a://deleteproperty
-			case 0x6c://getslot
 			case 0x6d://setslot
 			case 0x6e://getglobalSlot
 			case 0x6f://setglobalSlot
@@ -6018,20 +6073,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								++it;
 							}
 						}
-						if (!found)
+						if (!found && !mi->needsActivation())
 						{
 							ASObject* target;
-							asAtom otmp;
-							mi->context->root->applicationDomain->getVariableAndTargetByMultiname(otmp,*name, target);
-							if(otmp.type != T_INVALID && !mi->needsActivation())
+							if (mi->context->root->applicationDomain->findTargetByMultiname(*name, target))
 							{
 								o=asAtom::fromObject(target);
-
-								uint32_t value = mi->context->addCachedConstantAtom(o);
-								mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
-								oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-								mi->body->preloadedcode.push_back(value);
-								operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+								addCachedConstant(mi, o,operandlist,oldnewpositions,code);
 								break;
 							}
 						}
@@ -6093,11 +6141,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						if (o.as<Class_base>()->isConstructed())
 						{
-							uint32_t value = mi->context->addCachedConstantAtom(o);
-							mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
-							oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-							mi->body->preloadedcode.push_back(value);
-							operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+							addCachedConstant(mi, o,operandlist,oldnewpositions,code);
 							break;
 						}
 					}
@@ -6186,6 +6230,35 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t num = code.readu30()<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
 				operandlist.clear();
+				break;
+			}
+			case 0x6c://getslot
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				int32_t t =code.readu30();
+				if (!mi->needsActivation() && operandlist.size() > 0)
+				{
+					auto it = operandlist.rbegin();
+					if (it->type != OP_LOCAL)
+					{
+						asAtom* o = mi->context->getConstantAtom(it->type,it->index);
+						if (o->toObject(function->getSystemState())->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
+						{
+							asAtom cval = o->getObject()->getSlot(t);
+							if (cval.type != T_NULL && cval.type != T_UNDEFINED)
+							{
+								it->removeArg(mi);
+								operandlist.pop_back();
+								addCachedConstant(mi, cval,operandlist,oldnewpositions,code);
+								break;
+							}
+						}
+					}
+				}
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true);
+				mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0xd0://getlocal_0
@@ -6305,6 +6378,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) == jumptargets.end())
+				{
 					if (dup_indicator)
 					{
 						operandlist.back().removeArg(mi);
@@ -6313,6 +6387,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					else
 						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFFALSE,opcode,code,oldnewpositions, jumptargets);
+				}
 				else
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
@@ -6623,6 +6698,23 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				break;
 			}
+			case 0x64://getglobalscope
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
+				{
+					asAtom ret = function->func_scope->scope.front().object;
+					addCachedConstant(mi, ret,operandlist,oldnewpositions,code);
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					operandlist.clear();
+				}
+				break;
+			}
 			case 0x66://getproperty
 			{
 				int32_t p = code.tellg();
@@ -6648,11 +6740,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									{
 										operandlist.back().removeArg(mi);
 										operandlist.pop_back();
-										uint32_t value = mi->context->addCachedConstantAtom(ret);
-										mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
-										oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-										mi->body->preloadedcode.push_back(value);
-										operandlist.push_back(operands(OP_CACHED_CONSTANT,value,2,mi->body->preloadedcode.size()-2));
+										addCachedConstant(mi, ret,operandlist,oldnewpositions,code);
 										addname = false;
 										break;
 									}

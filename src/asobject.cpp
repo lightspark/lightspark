@@ -1693,6 +1693,18 @@ asAtom variables_map::getSlot(unsigned int n)
 	}
 	return asAtom::invalidAtom;
 }
+TRAIT_KIND variables_map::getSlotKind(unsigned int n)
+{
+	assert_and_throw(n > 0 && n<=slots_vars.size());
+	var_iterator it = Variables.find(slots_vars[n-1].nameId);
+	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	{
+		if (it->second.ns == slots_vars[n-1].ns)
+			return it->second.kind;
+		it++;
+	}
+	return TRAIT_KIND::NO_CREATE_TRAIT;
+}
 uint32_t variables_map::findInstanceSlotByMultiname(multiname* name)
 {
 	for (auto it = slots_vars.begin(); it != slots_vars.end();it++)

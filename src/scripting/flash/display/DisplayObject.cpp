@@ -1398,13 +1398,17 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 			this->incRef();
 			getSystemState()->registerFrameListener(_MR(this));
 			getSystemState()->stage->AVM1AddEventListener(this);
+			setIsEnumerable(name, false);
 		}
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE)
+		{
 			getSystemState()->stage->AVM1AddMouseListener(this);
+			setIsEnumerable(name, false);
+		}
 	}
 	return res;
 }
@@ -1624,6 +1628,25 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 	if (argslen > 0)
 		sys->stage->quality = args[0].toString(sys).uppercase();
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	ret.setNumber(th->alpha*100.0);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	number_t val;
+	ARG_UNPACK_ATOM (val);
+	val /= 100.0;
+	if(th->alpha != val)
+	{
+		th->alpha=val;
+		th->hasChanged=true;
+		if(th->onStage)
+			th->requestInvalidation(sys);
+	}
+}
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
@@ -1655,4 +1678,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_ymouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseY),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_quality","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getQuality),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_quality","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setQuality),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getAlpha),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setAlpha),SETTER_METHOD,true);
 }

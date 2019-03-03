@@ -278,6 +278,8 @@ public:
 	ASFUNCTION_ATOM(AVM1_getBytesTotal);
 	ASFUNCTION_ATOM(AVM1_getQuality);
 	ASFUNCTION_ATOM(AVM1_setQuality);
+	ASFUNCTION_ATOM(AVM1_getAlpha);
+	ASFUNCTION_ATOM(AVM1_setAlpha);
 	static void AVM1SetupMethods(Class_base* c);
 };
 }

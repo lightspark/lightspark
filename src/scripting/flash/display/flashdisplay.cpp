@@ -1695,14 +1695,14 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 		this->globalToLocal(xg,yg,x,y);
 		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK,true);
-		if (!dispobj)
-			return false;
+		if (!dispobj && ((e->type == "click")|| (e->type == "releaseOutside")))
+				return false;
 		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
 		{
 			if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
 					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
-					|| (e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
-					|| (e->type == "click" && it->EventFlags.ClipEventPress)
+					|| (e->type == "click" && it->EventFlags.ClipEventRelease)
+					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					)
@@ -1710,7 +1710,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 			}
 		}
-		AVM1HandleMouseEventStandard(e);
+		AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
 	}
 	return false;
 }
@@ -3706,6 +3706,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
+	_NR<DisplayObject> dispobj;
 	if(e->type == "mouseOut")
 	{
 		if (dispatcher!= this)
@@ -3713,7 +3714,6 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	}
 	else
 	{
-		_NR<DisplayObject> dispobj;
 		if (dispatcher == this)
 			dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK,true);
 		else
@@ -3776,7 +3776,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			}
 		}
 	}
-	handled |= AVM1HandleMouseEventStandard(e);
+	handled |= AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
 	return handled;
 }
 

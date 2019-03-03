@@ -1417,18 +1417,11 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 		{
 			this->incRef();
 			getSystemState()->unregisterFrameListener(_MR(this));
-			getSystemState()->stage->AVM1RemoveEventListener(this);
 		}
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE)
-			getSystemState()->stage->AVM1RemoveMouseListener(this);
 	}
 	return res;
 }
-bool DisplayObject::AVM1HandleMouseEventStandard(MouseEvent *e)
+bool DisplayObject::AVM1HandleMouseEventStandard(DisplayObject *dispobj,MouseEvent *e)
 {
 	bool result = false;
 	asAtom func;
@@ -1449,16 +1442,29 @@ bool DisplayObject::AVM1HandleMouseEventStandard(MouseEvent *e)
 	}
 	else if (e->type == "click")
 	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
-		getVariableByMultiname(func,m);
-		if (func.is<AVM1Function>())
+		if (dispobj == this)
 		{
-			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
-			result=true;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
+			getVariableByMultiname(func,m);
+			if (func.is<AVM1Function>())
+			{
+				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
 		}
 	}
 	else if (e->type == "mouseDown")
 	{
+		if (dispobj == this)
+		{
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
+			getVariableByMultiname(func,m);
+			if (func.is<AVM1Function>())
+			{
+				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
+		}
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 		getVariableByMultiname(func,m);
 		if (func.is<AVM1Function>())
@@ -1470,13 +1476,6 @@ bool DisplayObject::AVM1HandleMouseEventStandard(MouseEvent *e)
 	else if (e->type == "mouseUp")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
-		getVariableByMultiname(func,m);
-		if (func.is<AVM1Function>())
-		{
-			func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 		getVariableByMultiname(func,m);
 		if (func.is<AVM1Function>())
 		{

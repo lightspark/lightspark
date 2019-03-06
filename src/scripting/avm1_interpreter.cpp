@@ -945,7 +945,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					if (ret.type == T_INVALID)
 					{
 						ASObject* pr =o->getprop_prototype();
-						if (pr)
+						while (pr)
 						{
 							bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 							if (isGetter) // getter from prototype has to be called with o as target
@@ -953,7 +953,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 								IFunction* f = ret.as<IFunction>();
 								ret = asAtom();
 								f->callGetter(ret,o);
+								break;
 							}
+							pr = pr->getprop_prototype();
 						}
 					}
 				}
@@ -1014,6 +1016,17 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					m.name_s_id=name.toStringId(clip->getSystemState());
 					m.isAttribute = false;
 					ASATOM_INCREF(value);
+					ASObject* pr = o->getprop_prototype();
+					while (pr)
+					{
+						variable* var = pr->findVariableByMultiname(m,DONT_CALL_GETTER,nullptr);
+						if (var && var->setter.is<AVM1Function>())
+						{
+							var->setter.as<AVM1Function>()->call(nullptr,&scriptobject,&value,1);
+							break;
+						}
+						pr = pr->getprop_prototype();
+					}
 					o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
 				}
 				else
@@ -1061,20 +1074,29 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				m.name_s_id=nameID;
 				m.isAttribute = false;
 				asAtom func;
-				ASObject* scrobj = scriptobject.toObject(clip->getSystemState());
-				scrobj->getVariableByMultiname(func,m);
-				if (!func.is<IFunction>())
+				if (scriptobject.type != T_INVALID)
 				{
-					ASObject* pr =scrobj->getprop_prototype();
-					if (pr)
-						pr->getVariableByMultiname(func,m);
+					ASObject* scrobj = scriptobject.toObject(clip->getSystemState());
+					scrobj->getVariableByMultiname(func,m);
+					if (!func.is<IFunction>())
+					{
+						ASObject* pr =scrobj->getprop_prototype();
+						while (pr)
+						{
+							pr->getVariableByMultiname(func,m);
+							if (func.type != T_INVALID)
+								break;
+							pr = pr->getprop_prototype();
+						}
+						
+					}
+					if (func.is<Function>())
+						func.as<Function>()->call(ret,scriptobject,args,numargs);
+					else if (func.is<AVM1Function>())
+						func.as<AVM1Function>()->call(&ret,&scriptobject,args,numargs);
+					else
+						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCallMethod function not found "<<scriptobject.toDebugString()<<" "<<name.toDebugString()<<" "<<func.toDebugString());
 				}
-				if (func.is<Function>())
-					func.as<Function>()->call(ret,scriptobject,args,numargs);
-				else if (func.is<AVM1Function>())
-					func.as<AVM1Function>()->call(&ret,&scriptobject,args,numargs);
-				else
-					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCallMethod function not found "<<scriptobject.toDebugString()<<" "<<name.toDebugString()<<" "<<func.toDebugString());
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCallMethod done "<<name.toDebugString()<<" "<<numargs<<" "<<scriptobject.toDebugString());
 				PushStack(stack,ret);
 				break;

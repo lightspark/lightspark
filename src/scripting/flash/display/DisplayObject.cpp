@@ -410,13 +410,23 @@ void DisplayObject::defaultRender(RenderContext& ctxt) const
 {
 	// TODO: use scrollRect
 
-	ctxt.setProperties(blendMode);
-
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
 	if(!surface.tex.isValid())
 		return;
+
+	AS_BLENDMODE bl = this->blendMode;
+	if (bl == BLENDMODE_NORMAL)
+	{
+		DisplayObject* obj = this->getParent();
+		while (obj && bl == BLENDMODE_NORMAL)
+		{
+			bl = obj->getBlendMode();
+			obj = obj->getParent();
+		}
+	}
+	ctxt.setProperties(bl);
 
 	ctxt.lsglLoadIdentity();
 	ctxt.renderTextured(surface.tex, surface.xOffset, surface.yOffset,

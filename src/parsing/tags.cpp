@@ -1494,6 +1494,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
 	uint32_t nameID = 0;
 	DisplayObject* currchar=nullptr;
+	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 	if (exists)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
@@ -1539,8 +1540,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 			if(!PlaceFlagHasColorTransform) // reuse colortransformation of existing DispayObject at this depth
 				toAdd->colorTransform= parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->colorTransform;
 
-			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
-
 			if(PlaceFlagMove || (currchar->getTagID() != CharacterId))
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
@@ -1564,7 +1563,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
-		parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 		currchar->name = nameID;
 		currchar->incRef();
 		multiname objName(NULL);

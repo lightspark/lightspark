@@ -1657,13 +1657,61 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 			th->requestInvalidation(sys);
 	}
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
+{
+	DisplayObject* th=obj.as<DisplayObject>();
+	assert_and_throw(argslen==1);
+
+	ASObject* o =  Class<ASObject>::getInstanceS(sys);
+	ret = asAtom::fromObject(o);
+	if(args[0].is<Undefined>() || args[0].is<Null>())
+		return;
+	if (!args[0].is<DisplayObject>())
+		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<args[0].toDebugString());
+	assert_and_throw(args[0].is<DisplayObject>());
+	DisplayObject* target=args[0].as<DisplayObject>();
+	//Compute the transformation matrix
+	MATRIX m;
+	DisplayObject* cur=th;
+	while(cur!=NULL && cur!=target)
+	{
+		m = cur->getMatrix().multiplyMatrix(m);
+		cur=cur->parent;
+	}
+	if(cur==NULL)
+	{
+		//We crawled all the parent chain without finding the target
+		//The target is unrelated, compute it's transformation matrix
+		const MATRIX& targetMatrix=target->getConcatenatedMatrix();
+		//If it's not invertible just use the previous computed one
+		if(targetMatrix.isInvertible())
+			m = targetMatrix.getInverted().multiplyMatrix(m);
+	}
+
+	number_t x1=0,x2=0,y1=0,y2=0;
+	th->getBounds(x1,x2,y1,y2, m);
+
+	asAtom v;
+	multiname name(NULL);
+	name.name_type=multiname::NAME_STRING;
+	name.name_s_id=sys->getUniqueStringId("xMin");
+	v = asAtom(x1);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+	name.name_s_id=sys->getUniqueStringId("xMax");
+	v = asAtom(x2);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+	name.name_s_id=sys->getUniqueStringId("yMin");
+	v = asAtom(y1);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+	name.name_s_id=sys->getUniqueStringId("yMax");
+	v = asAtom(y2);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+}
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
-	// TODO check if it is better to remove all methods (not only the properties) 
-	// and explicitely add only those methods which are available at AVM1
 	
-	c->removeAllDeclaredProperties();
+	c->destroyContents();
 	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
@@ -1690,4 +1738,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_quality","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setQuality),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getAlpha),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setAlpha),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
 }
+

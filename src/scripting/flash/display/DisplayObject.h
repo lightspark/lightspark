@@ -280,6 +280,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_setQuality);
 	ASFUNCTION_ATOM(AVM1_getAlpha);
 	ASFUNCTION_ATOM(AVM1_setAlpha);
+	ASFUNCTION_ATOM(AVM1_getBounds);
 	static void AVM1SetupMethods(Class_base* c);
 };
 }

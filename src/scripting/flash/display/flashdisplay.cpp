@@ -1858,9 +1858,7 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameId;
 		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
-		auto it = variablebindings.find(nameId);
-		if (it != variablebindings.end())
-			(*it).second->UpdateVariableBinding(v);
+		AVM1UpdateVariableBindings(nameId,v);
 	}
 	else if (pos == 0)
 	{
@@ -1944,13 +1942,25 @@ asAtom MovieClip::getVariableBindingValue(const tiny_string &name)
 }
 void MovieClip::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
 {
+	uint32_t key = getSystemState()->getUniqueStringId(name);
 	if (obj)
 	{
 		obj->incRef();
-		variablebindings[getSystemState()->getUniqueStringId(name)] = obj;
+		variablebindings.insert(std::make_pair(key,obj));
 	}
 	else
-		variablebindings.erase(getSystemState()->getUniqueStringId(name));
+	{
+		auto it = variablebindings.find(key);
+		while (it != variablebindings.end() && it->first == key)
+		{
+			if (it->second == obj)
+			{
+				variablebindings.erase(it);
+				break;
+			}
+			it++;
+		}
+	}
 }
 void MovieClip::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
 {
@@ -1978,12 +1988,15 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1MoveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_getter_useHandCursor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_setter_useHandCursor),SETTER_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2014,6 +2027,17 @@ void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
 			frameinitactionsdone.insert(frame);
 	}
 }
+
+void MovieClip::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
+{
+	auto it = variablebindings.find(nameID);
+	while (it != variablebindings.end() && it->first == nameID)
+	{
+		(*it).second->UpdateVariableBinding(value);
+		it++;
+	}
+}
+
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {
 	MovieClip* th=obj.as<MovieClip>();
@@ -2047,7 +2071,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 		throw RunTimeException("AVM1: invalid number of arguments for CreateEmptyMovieClip");
 	int Depth = args[1].toInt();
 	uint32_t nameId = args[0].toStringId(sys);
-	MovieClip* toAdd= Class<MovieClip>::getInstanceSNoArgs(sys);
+	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(sys);
 	toAdd->name = nameId;
 	if(th->hasLegacyChildAt(Depth) )
 	{
@@ -2059,6 +2083,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	toAdd->incRef();
 	toAdd->constructionComplete();
 	ret=asAtom::fromObject(toAdd);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
+{
+	MovieClip* th=obj.as<MovieClip>();
+	if (th->getParent())
+		th->getParent()->_removeChild(th);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 {
@@ -2093,6 +2123,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	MovieClip* th=obj.as<MovieClip>();
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtom::fromObject(g);
+	if(argslen>=2)
+		args[1]=asAtom(args[1].toNumber()/100.0);
+	
 	Graphics::beginFill(ret,sys,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)

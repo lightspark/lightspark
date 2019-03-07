@@ -543,7 +543,7 @@ private:
 	bool avm1initactionsdone;
 
 	std::map<uint32_t,asAtom> avm1variables;
-	std::map<uint32_t,_NR<DisplayObject>> variablebindings;
+	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 	std::set<uint32_t> frameinitactionsdone;
 
@@ -616,8 +616,10 @@ public:
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
+	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);
+	ASFUNCTION_ATOM(AVM1RemoveMovieClip);
 	ASFUNCTION_ATOM(AVM1Clear);
 	ASFUNCTION_ATOM(AVM1MoveTo);
 	ASFUNCTION_ATOM(AVM1LineTo);

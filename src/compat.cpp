@@ -66,6 +66,20 @@ int kill_child(GPid childPid)
 	return 0;
 }
 
+void compat_msleep(unsigned int time)
+{
+#ifdef WIN32
+	Sleep(time);
+#elif _POSIX_C_SOURCE >= 199309L
+	struct timespec ts;
+	ts.tv_sec = time / 1000;
+	ts.tv_nsec = (time % 1000) * 1000000;
+	nanosleep(&ts, NULL);
+#else
+	usleep(time * 1000);
+#endif
+}
+
 #ifndef _WIN32
 #include "timer.h"
 uint64_t timespecToUsecs(timespec t)
@@ -85,21 +99,6 @@ uint64_t compat_get_thread_cputime_us()
 #endif
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
 	return timespecToUsecs(tp);
-}
-
-
-void compat_msleep(unsigned int time)
-{
-#ifdef WIN32
-	Sleep(time);
-#elif _POSIX_C_SOURCE >= 199309L
-	struct timespec ts;
-	ts.tv_sec = time / 1000;
-	ts.tv_nsec = (time % 1000) * 1000000;
-	nanosleep(&ts, NULL);
-#else
-	usleep(time * 1000);
-#endif
 }
 
 void aligned_malloc(void **memptr, size_t alignment, size_t size)

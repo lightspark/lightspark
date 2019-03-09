@@ -26,6 +26,15 @@
 #include "swf.h"
 #include "flash/errors/flasherrors.h"
 
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#	define _WIN32_WINNT 0x0501
+#endif
+#	include <winsock2.h>
+#	include <ws2tcpip.h>
+#	include <fcntl.h>
+#endif
+
 const char SOCKET_COMMAND_SEND = '*';
 const char SOCKET_COMMAND_CLOSE = '-';
 

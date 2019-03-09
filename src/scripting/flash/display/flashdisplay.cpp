@@ -3778,7 +3778,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	}
 	else if(e->type == "mouseOut")
 	{
-		currentState = OUT;
+		currentState = STATE_OUT;
 		reflectState();
 	}
 	bool handled = false;
@@ -3787,13 +3787,13 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
 			if (  (it->CondIdleToOverDown && currentState==DOWN)
-				||(it->CondOutDownToIdle && oldstate==DOWN && currentState==OUT)
+				||(it->CondOutDownToIdle && oldstate==DOWN && currentState==STATE_OUT)
 				||(it->CondOutDownToOverDown && oldstate==DOWN && currentState==OVER)
-				||(it->CondOverDownToOutDown && (oldstate==DOWN || oldstate==OVER) && currentState==OUT)
+				||(it->CondOverDownToOutDown && (oldstate==DOWN || oldstate==OVER) && currentState==STATE_OUT)
 				||(it->CondOverDownToOverUp && (oldstate==DOWN || oldstate==OVER) && currentState==UP)
 				||(it->CondOverUpToOverDown && (oldstate==UP || oldstate==OVER) && currentState==DOWN)
-				||(it->CondOverUpToIdle && (oldstate==UP || oldstate==OVER) && currentState==OUT)
-				||(it->CondIdleToOverUp && oldstate==OUT && currentState==OVER)
+				||(it->CondOverUpToIdle && (oldstate==UP || oldstate==OVER) && currentState==STATE_OUT)
+				||(it->CondIdleToOverUp && oldstate==STATE_OUT && currentState==OVER)
 				||(it->CondOverDownToIdle && oldstate==DOWN && currentState==OVER)
 				)
 			{
@@ -4012,7 +4012,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 	}
 	else if(e->type == "mouseOut")
 	{
-		currentState = OUT;
+		currentState = STATE_OUT;
 		reflectState();
 	}
 }
@@ -4020,7 +4020,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
 	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  buttontag(tag),currentState(OUT),enabled(true),useHandCursor(true)
+	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?
@@ -4120,7 +4120,7 @@ void SimpleButton::reflectState()
 	if(!dynamicDisplayList.empty())
 		_removeChild(dynamicDisplayList.front().getPtr());
 
-	if((currentState == UP || currentState == OUT) && !upState.isNull())
+	if((currentState == UP || currentState == STATE_OUT) && !upState.isNull())
 	{
 		upState->incRef();
 		_addChildAt(upState,0);

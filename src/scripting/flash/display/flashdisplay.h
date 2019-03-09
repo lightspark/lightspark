@@ -179,7 +179,7 @@ private:
 		UP,
 		OVER,
 		DOWN,
-		OUT
+		STATE_OUT
 	};
 	BUTTONSTATE currentState;
 	bool enabled;

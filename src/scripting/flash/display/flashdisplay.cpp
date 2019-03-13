@@ -1946,6 +1946,13 @@ void MovieClip::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
 	if (obj)
 	{
 		obj->incRef();
+		auto it = variablebindings.lower_bound(key);
+		while (it != variablebindings.end() && it->first == key)
+		{
+			if (it->second == obj)
+				return;
+			it++;
+		}
 		variablebindings.insert(std::make_pair(key,obj));
 	}
 	else

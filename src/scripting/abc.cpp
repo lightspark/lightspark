@@ -1793,7 +1793,10 @@ void ABCVm::handleFrontEvent()
 		//handle event without lock
 		handleEvent(e);
 		//Flush the invalidation queue
-		if (!e.first.isNull() || e.second->getEventType() != EXTERNAL_CALL)
+		if (!e.first.isNull() || 
+				(e.second->getEventType() != EXTERNAL_CALL 
+				 && e.second->getEventType() != INIT_FRAME) // don't flush between initFrame and executeFrameScript
+				)
 			m_sys->flushInvalidationQueue();
 		if (!e.first.isNull())
 			e.first->afterHandleEvent();

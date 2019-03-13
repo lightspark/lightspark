@@ -1605,8 +1605,6 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 		ASObject::setVariableByMultiname_i(name,value);
 		return;
 	}
-	if (index==0xFFFFFFFF)
-		return;
 	if(index>=size())
 		resize(index+1);
 	asAtom v(value);
@@ -1701,8 +1699,6 @@ multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 		throwError<ReferenceError>(kWriteSealedError,
 					   name.normalizedNameUnresolved(getSystemState()),
 					   getClass()->getQualifiedClassName());
-	if (index==0xFFFFFFFF)
-		return nullptr;
 	if(index>=size())
 		resize((uint64_t)index+1);
 
@@ -1894,11 +1890,6 @@ void Array::outofbounds(unsigned int index) const
 
 void Array::resize(uint64_t n)
 {
-	// Bug-for-bug compatible wrapping. See Tamarin test
-	// as3/Array/length_mods.swf and Tamarin bug #685323.
-	if (n > 0xFFFFFFFF)
-		n = (n % 0x100000000);
-
 	if (n < currentsize)
 	{
 		if (n < data_first.size())

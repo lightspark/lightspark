@@ -5322,7 +5322,46 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS 0x000001e8
 #define ABC_OP_OPTIMZED_GETSLOT 0x000001ec
 
-bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,uint32_t opcode_jumpspace)
+void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
+{
+	if (b == 0x10) // jump
+	{
+		int32_t j = code.peeks24FromPosition(pos);
+		uint32_t p = pos+3;//3 bytes from s24;
+		bool hastargets = j < 0;
+		if (!hastargets)
+		{
+			// check if the code following the jump is unreachable
+			for (int32_t i = 0; i < j; i++)
+			{
+				if (jumptargets.find(p+i+1) != jumptargets.end())
+				{
+					hastargets = true;
+					break;
+				}
+			}
+		}
+		if (!hastargets)
+		{
+			// skip unreachable code
+			pos = p+j; 
+			auto it = jumptargets.find(p+j+1);
+			if (it != jumptargets.end() && it->second > 1)
+				jumptargets[p+j+1]--;
+			else
+				jumptargets.erase(p+j+1);
+			b = code.peekbyteFromPosition(pos);
+			if (jumpInCode)
+			{
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				code.seekg(pos);
+				oldnewpositions[code.tellg()+1] = (int32_t)mi->body->preloadedcode.size();
+			}
+			pos++;
+		}
+	}
+}
+bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,uint32_t opcode_jumpspace)
 {
 	bool res = false;
 	bool needstwoargs = false;
@@ -5332,6 +5371,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 	uint8_t b = code.peekbyte();
 	if (jumptargets.find(pos) == jumptargets.end())
 	{
+		skipjump(b,mi,code,pos,oldnewpositions,jumptargets,true);
 		// check if the next opcode can be skipped
 		switch (b)
 		{
@@ -5384,38 +5424,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				break;
 		}
 	}
-	if (b == 0x10) // jump
-	{
-		int32_t j = code.peeks24FromPosition(pos);
-		uint32_t p = pos+3;//3 bytes from s24;
-		bool hastargets = j < 0;
-		if (!hastargets)
-		{
-			// check if the code following the jump is unreachable
-			for (int32_t i = 0; i < j; i++)
-			{
-				if (jumptargets.find(p+i+1) != jumptargets.end())
-				{
-					hastargets = true;
-					break;
-				}
-			}
-		}
-		if (!hastargets)
-		{
-			// skip unreachable code
-			pos = p+j; 
-			jumptargets.erase(p+j+1);
-			b = code.peekbyteFromPosition(pos);
-			if (!needstwoargs)
-			{
-				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				code.seekg(pos);
-				oldnewpositions[code.tellg()+1] = (int32_t)mi->body->preloadedcode.size();
-			}
-			pos++;
-		}
-	}
+	skipjump(b,mi,code,pos,oldnewpositions,jumptargets,!needstwoargs);
 	// check if we need to store the result of the operation on stack
 	switch (b)
 	{
@@ -5595,7 +5604,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 	return res;
 }
 
-bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets)
+bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 1;
 	if (hasoperands)
@@ -5615,7 +5624,7 @@ bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method
 	}
 	return hasoperands;
 }
-void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets)
+void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
 {
 	bool hasoperands = operandlist.size() >= 2;
 	if (hasoperands)
@@ -5638,7 +5647,7 @@ void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,metho
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	}
 }
-bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets,bool constantsallowed)
+bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 1 && (constantsallowed || operandlist.back().type == OP_LOCAL);
 	if (hasoperands)
@@ -5679,7 +5688,7 @@ bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 	return hasoperands;
 }
 
-bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::set<int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult=true)
+bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult=true)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 2;
 	if (hasoperands)
@@ -5803,13 +5812,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	std::map<int32_t,int32_t> switchstartpositions;
 
 	// first pass: store all jump target points
-	std::set<int32_t> jumptargets;
+	std::map<int32_t,int32_t> jumptargets;
 
 	auto itex = mi->body->exceptions.begin();
 	while (itex != mi->body->exceptions.end())
 	{
 		// add exception jump targets
-		jumptargets.insert((int32_t)itex->target+1);
+		jumptargets[(int32_t)itex->target+1]=1;
 		itex++;
 	}
 	uint32_t simple_getter_opcode_pos = 0;
@@ -5906,16 +5915,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x18://ifge
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
-				jumptargets.insert(codejumps.reads24()+codejumps.tellg()+1);
+				jumptargets[codejumps.reads24()+codejumps.tellg()+1]++;
 				break;
 			case 0x1b://lookupswitch
 			{
 				int32_t p = codejumps.tellg();
-				jumptargets.insert(p+codejumps.reads24());
+				jumptargets[p+codejumps.reads24()]++;
 				uint32_t count = codejumps.readu30();
 				for(unsigned int i=0;i<count+1;i++)
 				{
-					jumptargets.insert(p+codejumps.reads24());
+					jumptargets[p+codejumps.reads24()]++;
 				}
 				break;
 			}
@@ -6817,16 +6826,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true,true);
 				break;
 			case 0xab://equals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,true);
 				break;
 			case 0xae://lessequals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,true);
 				break;
 			case 0xaf://greaterthan
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false,true);
 				break;
 			case 0xb0://greaterequals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,oldnewpositions, jumptargets,false,false);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,oldnewpositions, jumptargets,false,true);
 				break;
 			default:
 			{

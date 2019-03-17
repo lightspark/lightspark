@@ -532,8 +532,10 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					}
 					DefineSpriteTag* tag = (DefineSpriteTag*)clip->getSystemState()->mainClip->dictionaryLookup(source->getTagID());
 					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(clip->getSystemState(),*tag,source->getTagID(),target.toStringId(clip->getSystemState()));
-					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret);
 					ret->setLegacyMatrix(source->getMatrix());
+					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret);
+					ret->incRef();
+					clip->getSystemState()->currentVm->addEvent(NullRef, _MR(new (clip->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(ret))));
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCloneSprite source clip not found:"<<target.toDebugString()<<" "<<sourcepath<<" "<<depth);

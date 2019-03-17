@@ -33,6 +33,11 @@ rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
 
 rcomment = re.compile('[ \t]*/')
 
+#looks like IDataInput::linkTraits(Class_base* c)
+linkTraits = re.compile('.*void\s*(\w*)::linkTraits\(.*')
+#looks like lookupAndLink(c,"bytesAvailable","flash.utils:IDataInput");
+lookupAndLink = re.compile('[^/]*lookupAndLink\(c,*"([^"]*)", *([^ ]*)')
+
 def getFullname(cls,name):
 	if cls != "":
 		return cls + "." + name
@@ -161,6 +166,19 @@ for line in ptmp.split(";"):
 		else:
 			curClassClone = internalToExternal[curClassClone]
 		methods.add((curClassClone, 'clone'))
+		continue
+	m = linkTraits.match(line)
+	if m:
+		curClass = m.group(1)
+		if curClass not in internalToExternal:
+			warnNotRegistered.add(curClass)
+		else:
+			curClass = internalToExternal[curClass]
+		curScope = curClass
+		continue
+	m = lookupAndLink.match(line)
+	if m:
+		methods.add((curClass, m.group(1)))
 		continue
 	
 #print getters

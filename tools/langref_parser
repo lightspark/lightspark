@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 #This greps the source for SET_NAMESPACE, REGISTER_CLASS_NAME2,
 #sinit definition and the following ->set{Getter,Setter,Method}ByQName calls
 
@@ -107,7 +107,7 @@ for dirpath, dirnames, filenames in os.walk(langref):
 version = 1
 langRefDB = (version, dclasses, dproperties, dmethods)
 
-dbFile = open("langref.db", 'w')
+dbFile = open("langref.db", 'wb')
 pickle.dump( langRefDB, dbFile )
 dbFile.close()
-print "Wrote langref.db"
+print("Wrote langref.db")

@@ -687,10 +687,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	}
 	//Only dynamic traits are deletable
 	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
-	{
-		throwError<ReferenceError>(kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),this->classdef->as<Class_base>()->getQualifiedClassName());
 		return false;
-	}
 
 	assert(obj->getter.type == T_INVALID && obj->setter.type == T_INVALID && obj->var.type!=T_INVALID);
 	//Now dereference the value

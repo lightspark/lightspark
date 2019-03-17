@@ -1039,7 +1039,12 @@ void TextField::avm1SyncTagVar()
 		{
 			if (par->is<MovieClip>())
 			{
-				asAtom value = asAtom::fromString(getSystemState(),text);
+				asAtom value;
+				number_t n;
+				if (Integer::fromStringFlashCompatible(text.raw_buf(),n,10,true))
+					value = asAtom(n);
+				else
+					value = asAtom::fromString(getSystemState(),text);
 				par->as<MovieClip>()->AVM1SetVariable(tagvarname,value);
 				break;
 			}

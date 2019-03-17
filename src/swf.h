@@ -508,6 +508,7 @@ public:
 	// static class properties are named static_<classname>_<propertyname>
 	_NR<SoundTransform> static_SoundMixer_soundTransform;
 	int static_SoundMixer_bufferTime;
+	_NR<ASObject> static_ObjectEncoding_dynamicPropertyWriter;
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

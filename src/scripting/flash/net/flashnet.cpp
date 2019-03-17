@@ -740,13 +740,46 @@ ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 	ret.setInt(0);
 }
 
+void IDynamicPropertyWriter::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"writeDynamicProperties","flash.net:IDynamicPropertyWriter");
+}
+void IDynamicPropertyOutput::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"writeDynamicProperty","flash.net:IDynamicPropertyOutput");
+}
+
+void DynamicPropertyOutput::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL);
+	c->setDeclaredMethodByQName("writeDynamicProperty","",Class<IFunction>::getFunction(c->getSystemState(),writeDynamicProperty),NORMAL_METHOD,true);
+	c->addImplementedInterface(InterfaceClass<IDynamicPropertyOutput>::getClass(c->getSystemState()));
+	IDynamicPropertyOutput::linkTraits(c);
+}
+ASFUNCTIONBODY_ATOM(DynamicPropertyOutput,writeDynamicProperty)
+{
+	DynamicPropertyOutput* th=obj.as<DynamicPropertyOutput>();
+	asAtom name;
+	asAtom value;
+	ARG_UNPACK_ATOM(name)(value);
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = name.toStringId(sys);
+	ASATOM_INCREF(value);
+	th->setVariableByMultiname(m,value,CONST_NOT_ALLOWED);
+}
+
 void ObjectEncoding::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
+	
+	REGISTER_GETTER_SETTER_STATIC(c,dynamicPropertyWriter);
 	c->setVariableAtomByQName("AMF0",nsNameAndKind(),asAtom(AMF0),DECLARED_TRAIT);
 	c->setVariableAtomByQName("AMF3",nsNameAndKind(),asAtom(AMF3),DECLARED_TRAIT);
 	c->setVariableAtomByQName("DEFAULT",nsNameAndKind(),asAtom(DEFAULT),DECLARED_TRAIT);
 }
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(ObjectEncoding,dynamicPropertyWriter);
+
 // this is a global counter to produce uinque IDs for NetConnections
 // TODO maybe it would be better to use some form of GUID
 std::atomic<uint64_t> nearIDcounter(0);

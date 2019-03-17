@@ -129,12 +129,32 @@ public:
 	ASFUNCTION_ATOM(_getSize);
 };
 
+class IDynamicPropertyWriter
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+class IDynamicPropertyOutput
+{
+public:
+	static void linkTraits(Class_base* c);
+};
+// this is an internal class not described in the specs, but avmplus defines it for dynamic property writing
+class DynamicPropertyOutput:public ASObject
+{
+public:
+	DynamicPropertyOutput(Class_base* c):ASObject(c){}
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(writeDynamicProperty);
+};
+
 class ObjectEncoding: public ASObject
 {
 public:
 	ObjectEncoding(Class_base* c):ASObject(c){}
 	enum ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
 	static void sinit(Class_base*);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, dynamicPropertyWriter);
 };
 
 class URLLoader;

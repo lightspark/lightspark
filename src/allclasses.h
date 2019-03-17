@@ -229,8 +229,11 @@ REGISTER_CLASS_NAME(H264VideoStreamSettings,"flash.media")
 
 
 //Net
+REGISTER_CLASS_NAME(DynamicPropertyOutput,"flash.net")
 REGISTER_CLASS_NAME(FileFilter,"flash.net")
 REGISTER_CLASS_NAME(FileReference,"flash.net")
+REGISTER_CLASS_NAME(IDynamicPropertyWriter,"flash.net")
+REGISTER_CLASS_NAME(IDynamicPropertyOutput,"flash.net")
 REGISTER_CLASS_NAME(LocalConnection,"flash.net")
 REGISTER_CLASS_NAME(NetConnection,"flash.net")
 REGISTER_CLASS_NAME(NetGroup,"flash.net")

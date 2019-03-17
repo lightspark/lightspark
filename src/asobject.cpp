@@ -68,7 +68,7 @@ string ASObject::toDebugString()
 	}
 #ifndef _NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p / %d)",this,this->getRefCount());
+	sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;
@@ -687,7 +687,10 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	}
 	//Only dynamic traits are deletable
 	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
+	{
+		throwError<ReferenceError>(kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),this->classdef->as<Class_base>()->getQualifiedClassName());
 		return false;
+	}
 
 	assert(obj->getter.type == T_INVALID && obj->setter.type == T_INVALID && obj->var.type!=T_INVALID);
 	//Now dereference the value
@@ -1411,7 +1414,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			return res;
 		}
 		//Call the getter
-		LOG_CALL("Calling the getter for " << name << " on " << obj->getter.toDebugString());
+		LOG_CALL("Calling the getter intern for " << name << " on " << this->toDebugString());
 		assert(obj->getter.type == T_FUNCTION);
 		obj->getter.as<IFunction>()->callGetter(ret,obj->getter.getClosure() ? obj->getter.getClosure() : this);
 		LOG_CALL(_("End of getter")<< ' ' << obj->getter.toDebugString()<<" result:"<<ret.toDebugString());
@@ -1829,9 +1832,34 @@ unsigned int ASObject::numVariables() const
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap)
+				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter)
 {
-	Variables.serialize(out, stringMap, objMap, traitsMap);
+	if (usedynamicPropertyWriter && 
+			!out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.isNull() &&
+			!out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter->is<Null>())
+	{
+		DynamicPropertyOutput* o = Class<DynamicPropertyOutput>::getInstanceS(out->getSystemState());
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = out->getSystemState()->getUniqueStringId("writeDynamicProperties");
+
+		asAtom wr;
+		out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter->getVariableByMultiname(wr,m,SKIP_IMPL);
+		if (wr.type != T_FUNCTION)
+			throwError<TypeError>(kCallOfNonFunctionError, m.normalizedNameUnresolved(out->getSystemState()));
+	
+		asAtom ret;
+		asAtom v =asAtom::fromObject(out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.getPtr());
+		ASATOM_INCREF(v);
+		asAtom args[2];
+		args[0] = asAtom::fromObject(this);
+		args[1] = asAtom::fromObject(o);
+		wr.callFunction(ret,v,args,2,false);
+		o->serializeDynamicProperties(out, stringMap, objMap, traitsMap,false);
+		delete o;
+	}
+	else
+		Variables.serialize(out, stringMap, objMap, traitsMap);
 }
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

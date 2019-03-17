@@ -556,8 +556,11 @@ void ABCVm::registerClasses()
 	
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
+	builtin->registerBuiltin("DynamicPropertyOutput","flash.net",Class<DynamicPropertyOutput>::getRef(m_sys));
 	builtin->registerBuiltin("FileFilter","flash.net",Class<FileFilter>::getRef(m_sys));
 	builtin->registerBuiltin("FileReference","flash.net",Class<FileReference>::getRef(m_sys));
+	builtin->registerBuiltin("IDynamicPropertyWriter","flash.net",InterfaceClass<IDynamicPropertyWriter>::getRef(m_sys));
+	builtin->registerBuiltin("IDynamicPropertyOutput","flash.net",InterfaceClass<IDynamicPropertyOutput>::getRef(m_sys));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef(m_sys));
 	builtin->registerBuiltin("NetConnection","flash.net",Class<NetConnection>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroup","flash.net",Class<NetGroup>::getRef(m_sys));

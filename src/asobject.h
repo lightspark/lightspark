@@ -667,7 +667,7 @@ protected:
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap);
+				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter=true);
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = NULL)

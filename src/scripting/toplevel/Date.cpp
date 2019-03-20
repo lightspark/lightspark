@@ -171,7 +171,7 @@ ASFUNCTIONBODY_ATOM(Date,_constructor)
 {
 	Date* th=obj.as<Date>();
 	for (uint32_t i = 0; i < argslen; i++) {
-		if(args[i].type==T_NUMBER && std::isnan(args[i].toNumber())) {
+		if(args[i].isNumeric() && std::isnan(args[i].toNumber())) {
 			th->nan = true;
 			return;
 		}
@@ -280,7 +280,7 @@ ASFUNCTIONBODY_ATOM(Date,generator)
 ASFUNCTIONBODY_ATOM(Date,UTC)
 {
 	for (uint32_t i = 0; i < argslen; i++) {
-		if(args[i].type==T_NUMBER && std::isnan(args[i].toNumber())) {
+		if(args[i].isNumeric() && std::isnan(args[i].toNumber())) {
 			ret.setNumber(Number::NaN);
 			return;
 		}

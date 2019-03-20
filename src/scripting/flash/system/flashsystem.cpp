@@ -287,13 +287,13 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	asAtom o;
-	ret.type = T_INVALID;
+	ret = asAtom::invalidAtom;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(o,name,target);
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 		ret.setBool(false);
 	else
 	{
-		if(o.type!=T_CLASS)
+		if(!o.isClass())
 			ret.setBool(false);
 		else
 		{
@@ -320,10 +320,10 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
-	ret.type = T_INVALID;
+	ret = asAtom::invalidAtom;
 	ASObject* target;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
-	if(ret.type == T_INVALID)
+	if(ret.isInvalid())
 		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
 
 	//TODO: specs says that also namespaces and function may be returned
@@ -386,14 +386,14 @@ void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multi
 	if(!parentDomain.isNull())
 	{
 		parentDomain->getVariableAndTargetByMultiname(ret,name, target);
-		if(ret.type != T_INVALID)
+		if(ret.isValid())
 			return;
 	}
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		globalScopes[i]->getVariableByMultiname(ret,name);
-		if(ret.type != T_INVALID)
+		if(ret.isValid())
 		{
 			target=globalScopes[i];
 			// No incRef, return a reference borrowed from globalScopes
@@ -404,7 +404,7 @@ void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multi
 void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target)
 {
 	getVariableAndTargetByMultiname(ret,name, target);
-	if (ret.type != T_INVALID)
+	if (ret.isValid())
 		return;
 	if (name.ns.size() >= 1 && name.ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 	{
@@ -430,7 +430,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			ASObject* tntarget;
 			asAtom typeobj;
 			getVariableAndTargetByMultiname(typeobj,tn, tntarget);
-			if (typeobj.type != T_INVALID)
+			if (typeobj.isValid())
 			{
 				const Type* t = typeobj.getObject()->as<Type>();
 				this->incRef();
@@ -453,7 +453,7 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 	{
 		asAtom o;
 		globalScopes[i]->getVariableByMultinameOpportunistic(o,name);
-		if(o.type != T_INVALID)
+		if(o.isValid())
 		{
 			// No incRef, return a reference borrowed from globalScopes
 			return o.toObject(getSystemState());
@@ -624,7 +624,7 @@ ASFUNCTIONBODY_ATOM(Security, pageDomain)
 ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 {
 	assert_and_throw(argslen >= 1 && argslen <= 2);
-	assert_and_throw(args[0].type == T_STRING);
+	assert_and_throw(args[0].isString());
 	tiny_string command = args[0].toString(sys);
 	if(command == "quit")
 	{

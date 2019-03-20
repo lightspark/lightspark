@@ -1388,7 +1388,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 	{
 		uint32_t frame=args[i].toInt();
 
-		if(args[i+1].type  !=T_FUNCTION)
+		if(!args[i+1].isFunction())
 		{
 			LOG(LOG_ERROR,_("Not a function"));
 			return;
@@ -1425,7 +1425,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	{
 		sceneName = args[1].toString(getSystemState());
 	}
-	if(args[0].type==T_STRING)
+	if(args[0].isString())
 	{
 		uint32_t dest=getFrameIdByLabel(args[0].toString(getSystemState()), sceneName);
 		if(dest==FRAME_NOT_FOUND)
@@ -1850,7 +1850,7 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 	if (pos == tiny_string::npos)
 	{
 		uint32_t nameId = getSystemState()->getUniqueStringId(name);
-		if (v.type == T_UNDEFINED)
+		if (v.isUndefined())
 			avm1variables.erase(nameId);
 		else
 			avm1variables[nameId] = v;
@@ -1864,7 +1864,7 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 	{
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
-		if (v.type == T_UNDEFINED)
+		if (v.isUndefined())
 			avm1variables.erase(nameId);
 		else
 			avm1variables[nameId] = v;
@@ -1914,12 +1914,12 @@ asAtom MovieClip::AVM1GetVariable(const tiny_string &name)
 		m.name_s_id=getSystemState()->getUniqueStringId(name);
 		m.isAttribute = false;
 		getVariableByMultiname(ret,m);
-		if (ret.type == T_INVALID)// get Variable from root movie
+		if (ret.isInvalid())// get Variable from root movie
 			getSystemState()->mainClip->getVariableByMultiname(ret,m);
-		if (ret.type == T_INVALID)// get Variable from global object
+		if (ret.isInvalid())// get Variable from global object
 			getSystemState()->avm1global->getVariableByMultiname(ret,m);
 	}
-	if (ret.type == T_INVALID)
+	if (ret.isInvalid())
 		ret.setUndefined();
 	return ret;
 }
@@ -2607,7 +2607,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==2);
-	if(args[0].type == T_CLASS || args[0].type == T_NULL)
+	if(args[0].isClass() || args[0].isNull())
 	{
 		ret.setNull();
 		return;
@@ -2636,7 +2636,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
 	assert_and_throw(argslen==1);
-	if(args[0].type == T_CLASS || args[0].type == T_NULL)
+	if(args[0].isClass() || args[0].isNull())
 	{
 		ret.setNull();
 		return;

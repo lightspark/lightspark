@@ -27,7 +27,6 @@
 #include "memory_support.h"
 #include <map>
 #include <unordered_map>
-#include <boost/intrusive/list.hpp>
 #include <limits>
 
 #define ASFUNCTION_ATOM(name) \
@@ -283,12 +282,12 @@ private:
 		ASObject* closure_this; // used for T_FUNCTION objects
 	};
 	ASObject* objval;
+	SWFOBJECT_TYPE type;
 	inline void decRef();
 	void replaceNumber(ASObject* obj);
 	void replaceBool(ASObject* obj);
 	bool Boolean_concrete_string();
 public:
-	SWFOBJECT_TYPE type;
 	asAtom():intval(0),objval(NULL),type(T_INVALID) {}
 	asAtom(SWFOBJECT_TYPE _t):intval(0),objval(NULL),type(_t) {}
 	asAtom(int32_t val):intval(val),objval(NULL),type(T_INTEGER) {}
@@ -353,6 +352,22 @@ public:
 	FORCE_INLINE bool isConstructed() const;
 	FORCE_INLINE bool isPrimitive() const;
 	FORCE_INLINE bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
+	FORCE_INLINE bool isValid() const { return type != T_INVALID; }
+	FORCE_INLINE bool isInvalid() const { return type == T_INVALID; }
+	FORCE_INLINE bool isFunction() const { return type == T_FUNCTION; }
+	FORCE_INLINE bool isString() const { return type == T_STRING; }
+	FORCE_INLINE bool isInteger() const { return type == T_INTEGER; }
+	FORCE_INLINE bool isUInteger() const { return type == T_UINTEGER; }
+	FORCE_INLINE bool isBool() const { return type == T_BOOLEAN; }
+	FORCE_INLINE bool isQName() const { return type == T_QNAME; }
+	FORCE_INLINE bool isNamespace() const { return type == T_NAMESPACE; }
+	FORCE_INLINE bool isObject() const { return type == T_OBJECT; }
+	FORCE_INLINE bool isArray() const { return type == T_ARRAY; }
+	FORCE_INLINE bool isClass() const { return type == T_CLASS; }
+	FORCE_INLINE bool isTemplate() const { return type == T_TEMPLATE; }
+	FORCE_INLINE bool isNull() const { return type == T_NULL; }
+	FORCE_INLINE bool isUndefined() const { return type == T_UNDEFINED; }
+	FORCE_INLINE SWFOBJECT_TYPE getObjectType() const { return type; }
 	FORCE_INLINE bool checkArgumentConversion(const asAtom& obj) const;
 	FORCE_INLINE ASObject* checkObject();
 	asAtom asTypelate(asAtom& atomtype);
@@ -634,7 +649,7 @@ private:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
+			if(!(ret->getter.isValid() || ret->var.isValid()))
 				ret=NULL;
 		}
 		return ret;
@@ -677,7 +692,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
+			if(!(ret->getter.isValid() || ret->var.isValid()))
 				ret=NULL;
 		}
 		return ret;
@@ -689,7 +704,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(ret->getter.type != T_INVALID || ret->var.type != T_INVALID))
+			if(!(ret->getter.isValid() || ret->var.isValid()))
 				ret=NULL;
 		}
 		return ret;
@@ -1791,7 +1806,7 @@ FORCE_INLINE bool asAtom::checkArgumentConversion(const asAtom& obj) const
 	if (type == obj.type)
 		return true;
 	if ((type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER) &&
-		(obj.type==T_NUMBER || obj.type==T_INTEGER || obj.type==T_UINTEGER))
+		(obj.type==T_NUMBER || obj.isInteger() || obj.type==T_UINTEGER))
 		return true;
 	return false;
 }
@@ -1967,7 +1982,7 @@ FORCE_INLINE void asAtom::bitnot()
 FORCE_INLINE void asAtom::subtract(asAtom &v2)
 {
 	if( (type == T_INTEGER || type == T_UINTEGER) &&
-		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+		(v2.isInteger() || v2.type ==T_UINTEGER))
 	{
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
@@ -1994,7 +2009,7 @@ FORCE_INLINE void asAtom::subtract(asAtom &v2)
 FORCE_INLINE void asAtom::multiply(asAtom &v2)
 {
 	if( (type == T_INTEGER || type == T_UINTEGER) &&
-		(v2.type == T_INTEGER || v2.type ==T_UINTEGER))
+		(v2.isInteger() || v2.type ==T_UINTEGER))
 	{
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
@@ -2043,7 +2058,7 @@ FORCE_INLINE void asAtom::modulo(asAtom &v2)
 {
 	// if both values are Integers the result is also an int
 	if( ((type == T_INTEGER) || (type == T_UINTEGER)) &&
-		((v2.type == T_INTEGER) || (v2.type == T_UINTEGER)))
+		((v2.isInteger()) || (v2.type == T_UINTEGER)))
 	{
 		int32_t num1=toInt();
 		int32_t num2=v2.toInt();

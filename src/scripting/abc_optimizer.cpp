@@ -241,7 +241,7 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
 	asAtom o;
 	f->getSystemState()->systemDomain->getVariableAndTargetByMultiname(o,*name, target);
-	if(o.type != T_INVALID)
+	if(o.isValid())
 	{
 		//Output a special opcode
 		out << (uint8_t)PUSH_EARLY;
@@ -989,7 +989,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 						if(objType)
 						{
 							const variable* var=objType->findBorrowedGettable(*name);
-							if(var && var->var.type==T_FUNCTION)
+							if(var && var->var.isFunction())
 							{
 								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var.getObject());
 								if(calledFunc)

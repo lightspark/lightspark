@@ -354,8 +354,8 @@ ASFUNCTIONBODY_ATOM(XMLList,generator)
 		nodes.push_back(_MR(args[0].as<XML>()));
 		ret = asAtom::fromObject(Class<XMLList>::getInstanceS(getSys(),nodes));
 	}
-	else if(args[0].type ==T_NULL ||
-		args[0].type ==T_UNDEFINED)
+	else if(args[0].isNull() ||
+		args[0].isUndefined())
 	{
 		ret = asAtom::fromObject(Class<XMLList>::getInstanceSNoArgs(getSys()));
 	}
@@ -530,7 +530,7 @@ ASFUNCTIONBODY_ATOM(XMLList,attribute)
 	mname.isAttribute = true;
 
 	th->getVariableByMultiname(ret,mname, NONE);
-	assert(ret.type != T_INVALID);
+	assert(ret.isValid());
 	ASATOM_INCREF(ret);
 }
 
@@ -737,7 +737,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		//If a method is not found on XMLList object and this
 		//is a single element list with simple content,
 		//delegate to ASString
-		if(ret.type == T_INVALID && nodes.size()==1 && nodes[0]->hasSimpleContent())
+		if(ret.isInvalid() && nodes.size()==1 && nodes[0]->hasSimpleContent())
 		{
 			ASObject *contentstr=abstract_s(getSystemState(),nodes[0]->toString_priv());
 			contentstr->getVariableByMultiname(ret,name,opt);

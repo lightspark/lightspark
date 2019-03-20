@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 	if(argslen == 0)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Math", "1", "0");
 	asAtom& a = args[0];
-	switch (a.type)
+	switch (a.getObjectType())
 	{
 		case T_INTEGER:
 		{

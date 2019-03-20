@@ -197,7 +197,7 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 {
 	Video* th=obj.as<Video>();
 	assert_and_throw(argslen==1);
-	if(args[0].type==T_NULL || args[0].type==T_UNDEFINED) //Drop the connection
+	if(args[0].isNull() || args[0].isUndefined()) //Drop the connection
 	{
 		Mutex::Lock l(th->mutex);
 		th->netStream=NullRef;
@@ -683,7 +683,7 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 {
 	StageVideo* th=obj.as<StageVideo>();
 	assert_and_throw(argslen==1);
-	if(args[0].type==T_NULL || args[0].type==T_UNDEFINED) //Drop the connection
+	if(args[0].isNull() || args[0].isUndefined()) //Drop the connection
 	{
 		Mutex::Lock l(th->mutex);
 		th->netStream=NullRef;

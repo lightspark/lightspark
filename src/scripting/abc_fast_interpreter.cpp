@@ -921,7 +921,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getlocal
 				uint32_t i=data->uints[0];
 				instructionPointer+=4;
-				if (context->locals[i].type == T_INVALID)
+				if (context->locals[i].isInvalid())
 				{
 					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
 					RUNTIME_STACK_PUSH(context,asAtom::fromObject(function->getSystemState()->getUndefinedRef()));
@@ -939,7 +939,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				LOG_CALL( _("setLocal ") << i );
 				RUNTIME_STACK_POP_CREATE(context,obj)
-				if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+				if ((int)i != context->argarrayposition || obj->isArray())
 				{
 					ASATOM_DECREF(context->locals[i]);
 					context->locals[i]=*obj;
@@ -1099,14 +1099,14 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//convert_o
 				RUNTIME_STACK_PEEK_CREATE(context,val);
-				if (val->type == T_NULL)
+				if (val->isNull())
 				{
 					RUNTIME_STACK_POP_CREATE(context,ret);
 					(void)ret;
 					LOG(LOG_ERROR,"trying to call convert_o on null");
 					throwError<TypeError>(kConvertNullToObjectError);
 				}
-				if (val->type == T_UNDEFINED)
+				if (val->isUndefined())
 				{
 					RUNTIME_STACK_POP_CREATE(context,ret);
 					(void)ret;
@@ -1586,7 +1586,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//getlocal_n
 				int i=opcode&3;
-				if (context->locals[i].type == T_INVALID)
+				if (context->locals[i].isInvalid())
 				{
 					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
 					RUNTIME_STACK_PUSH(context,asAtom::fromObject(function->getSystemState()->getUndefinedRef()));
@@ -1606,7 +1606,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				int i=opcode&3;
 				LOG_CALL( "setLocal " << i );
 				RUNTIME_STACK_POP_CREATE(context,obj)
-				if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+				if ((int)i != context->argarrayposition || obj->isArray())
 				{
 					ASATOM_DECREF(context->locals[i]);
 					context->locals[i]=*obj;
@@ -1687,7 +1687,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				asAtom obj;
 				ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(obj,*name,target);
 				//The object must exists, since it was found during optimization
-				assert_and_throw(obj.type != T_INVALID);
+				assert_and_throw(obj.isValid());
 				char* rewriteableCode = &(mi->body->code[0]);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
 				//Rewrite this to a pushearly

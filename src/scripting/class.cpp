@@ -194,21 +194,21 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var);
-	if(var->var.type != T_INVALID)
+	if(var->var.isValid())
 	{
-		assert_and_throw(var->var.type==T_FUNCTION);
+		assert_and_throw(var->var.isFunction());
 		ASATOM_INCREF(var->var);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->var,NORMAL_METHOD,true);
 	}
-	if(var->getter.type != T_INVALID)
+	if(var->getter.isValid())
 	{
-		assert_and_throw(var->getter.type==T_FUNCTION);
+		assert_and_throw(var->getter.isFunction());
 		ASATOM_INCREF(var->getter);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->getter,GETTER_METHOD,true);
 	}
-	if(var->setter.type != T_INVALID)
+	if(var->setter.isValid())
 	{
-		assert_and_throw(var->setter.type==T_FUNCTION);
+		assert_and_throw(var->setter.isFunction());
 		ASATOM_INCREF(var->setter);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->setter,SETTER_METHOD,true);
 	}
@@ -219,7 +219,7 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
 		// Construction according to ECMA 15.2.2.1
-		switch(args[0].type)
+		switch(args[0].getObjectType())
 		{
 			case T_BOOLEAN:
 			case T_NUMBER:

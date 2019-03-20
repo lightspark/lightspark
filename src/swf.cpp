@@ -2281,7 +2281,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 		ASObject* target;
 		asAtom o;
 		applicationDomain->getVariableAndTargetByMultiname(o,clsname,target);
-		if (o.type != T_INVALID)
+		if (o.isValid())
 			typeObject=o.getObject();
 	}
 	if (typeObject != NULL)

@@ -388,7 +388,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 
 		asAtom o;
 		ret.getObject()->getVariableByMultiname(o,readExternalName,GET_VARIABLE_OPTION::SKIP_IMPL);
-		assert_and_throw(o.type==T_FUNCTION);
+		assert_and_throw(o.isFunction());
 		asAtom tmpArg[1] = { asAtom::fromObject(input) };
 		asAtom r;
 		o.callFunction(r,ret, tmpArg, 1,false);

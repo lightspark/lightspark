@@ -165,15 +165,15 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ret.type =T_INVALID;
+	ret = asAtom::invalidAtom;
 	ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 
-	if(ret.type == T_INVALID)
+	if(ret.isInvalid())
 	{
 		throwError<ReferenceError>(kClassNotFoundError, tmp);
 	}
 
-	assert_and_throw(ret.type==T_CLASS);
+	assert_and_throw(ret.isClass());
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	ASATOM_INCREF(ret);
@@ -194,7 +194,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2 && args[0].type==T_FUNCTION);
+	assert_and_throw(argslen >= 2 && args[0].isFunction());
 
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);

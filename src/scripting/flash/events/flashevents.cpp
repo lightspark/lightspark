@@ -166,7 +166,7 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		propName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		asAtom value;
 		th->getVariableByMultiname(value,propName);
-		if (value.type != T_INVALID)
+		if (value.isValid())
 			msg += value.toString(sys);
 	}
 	msg += "]";
@@ -393,7 +393,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.type != T_INVALID &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
+	if(th->target.isValid() &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -409,7 +409,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.type != T_INVALID &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
+	if(th->target.isValid() &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
@@ -479,7 +479,7 @@ void MouseEvent::setTarget(asAtom t)
 {
 	target = t;
 	//If t is NULL, it means MouseEvent is being reset
-	if(t.type == T_INVALID)
+	if(t.isInvalid())
 	{
 		localX = 0;
 		localY = 0;
@@ -575,7 +575,7 @@ void EventDispatcher::dumpHandlers()
 ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 {
 	EventDispatcher* th=obj.as<EventDispatcher>();
-	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
+	if(!args[0].isString() || !args[1].isFunction())
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 		return;
 
@@ -621,9 +621,9 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	
-	if (args[1].type == T_NULL) // it seems that null is allowed as function
+	if (args[1].isNull()) // it seems that null is allowed as function
 		return;
-	if(args[0].type !=T_STRING || args[1].type !=T_FUNCTION)
+	if(!args[0].isString() || !args[1].isFunction())
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
 	const tiny_string& eventName=args[0].toString(sys);
@@ -681,7 +681,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	// overridden
 	asAtom target;
 	e->getVariableByMultiname(target,"target", {""});
-	if(target.type != T_INVALID && target.type != T_NULL && target.type != T_UNDEFINED)
+	if(target.isValid() && !target.isNull() && !target.isUndefined())
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
 		asAtom cloned;
@@ -696,7 +696,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 		ASATOM_INCREF(cloned);
 		e = _MR(cloned.getObject()->as<Event>());
 	}
-	if(th->forcedTarget.type != T_INVALID)
+	if(th->forcedTarget.isValid())
 		e->setTarget(th->forcedTarget);
 	ABCVm::publicHandleEvent(th, e);
 	ret.setBool(true);
@@ -707,9 +707,9 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 	EventDispatcher* th=obj.as<EventDispatcher>();
 	asAtom forcedTarget;
 	ARG_UNPACK_ATOM(forcedTarget, asAtom::nullAtom);
-	if(forcedTarget.type != T_INVALID)
+	if(forcedTarget.isValid())
 	{
-		if(forcedTarget.type==T_NULL || forcedTarget.type==T_UNDEFINED)
+		if(forcedTarget.isNull() || forcedTarget.isUndefined())
 			forcedTarget=asAtom::invalidAtom;
 		else if(!forcedTarget.toObject(sys)->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(sys)))
 			throw Class<ArgumentError>::getInstanceS(sys,"Wrong argument for EventDispatcher");
@@ -821,7 +821,7 @@ Event* NetStatusEvent::cloneImpl() const
 
 	asAtom info;
 	const_cast<NetStatusEvent*>(this)->getVariableByMultiname(info,infoName);
-	assert(info.type != T_INVALID);
+	assert(info.isValid());
 	ASATOM_INCREF(info);
 	clone->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 

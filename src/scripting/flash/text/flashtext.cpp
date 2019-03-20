@@ -475,7 +475,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	if(beginIndex!=-1 || endIndex!=-1)
 		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with beginIndex or endIndex");
 
-	if(tf->color.type != T_NULL)
+	if(!tf->color.isNull())
 		th->textColor = tf->color.toUInt();
 	if (tf->font != "")
 	{
@@ -504,7 +504,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 
 	ARG_UNPACK_ATOM(tf);
 
-	if(tf->color.type != T_NULL)
+	if(!tf->color.isNull())
 		th->textColor = tf->color.toUInt();
 	if (tf->font != "")
 	{
@@ -1069,7 +1069,7 @@ void TextField::afterLegacyInsert()
 			{
 				par->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
 				asAtom value = par->as<MovieClip>()->getVariableBindingValue(tagvarname);
-				if (value.type != T_INVALID && value.type != T_UNDEFINED)
+				if (value.isValid() && !value.isUndefined())
 					this->text = value.toString(getSystemState());
 				break;
 			}

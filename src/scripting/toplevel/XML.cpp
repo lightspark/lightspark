@@ -1500,7 +1500,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 
 		//If a method is not found on XML object and the
 		//object is a leaf node, delegate to ASString
-		if(ret.type == T_INVALID && hasSimpleContent())
+		if(ret.isInvalid() && hasSimpleContent())
 		{
 			ASObject *contentstr=abstract_s(getSystemState(),toString_priv());
 			contentstr->getVariableByMultiname(ret,name, opt);

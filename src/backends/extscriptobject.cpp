@@ -222,7 +222,7 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 				asAtom nextValue;
 				other->nextValue(nextValue,index);
 
-				if(nextName.type == T_INTEGER)
+				if(nextName.isInteger())
 					objectValue->setProperty(nextName.toInt(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
 				else
 				{

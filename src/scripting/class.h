@@ -140,7 +140,7 @@ protected:
 		if(realClass==NULL)
 			realClass=this;
 		ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
-		if (ret.type == T_INVALID)
+		if (ret.isInvalid())
 			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
 		ret.getObject()->resetCached();
 		if(construct)
@@ -244,25 +244,17 @@ void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const
 template<>
 inline void Class<Number>::coerce(SystemState* sys,asAtom& o) const
 {
-	switch (o.type)
-	{
-		case T_NUMBER:
-		case T_INTEGER:
-		case T_UINTEGER:
-			return;
-		default:
-		{
-			number_t n = o.toNumber();
-			ASATOM_DECREF(o);
-			o.setNumber(n);
-		}
-	}
+	if (o.isNumeric())
+		return;
+	number_t n = o.toNumber();
+	ASATOM_DECREF(o);
+	o.setNumber(n);
 }
 
 template<>
 inline void Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.type == T_UINTEGER)
+	if (o.isUInteger())
 		return;
 	uint32_t n = o.toUInt();
 	ASATOM_DECREF(o);
@@ -273,7 +265,7 @@ inline void Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 template<>
 inline void Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.type == T_INTEGER)
+	if (o.isInteger())
 		return;
 	int32_t n = o.toInt();
 	ASATOM_DECREF(o);
@@ -283,7 +275,7 @@ inline void Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 template<>
 inline void Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.type == T_BOOLEAN)
+	if (o.isBool())
 		return;
 	bool n = o.Boolean_concrete();
 	ASATOM_DECREF(o);
@@ -444,14 +436,14 @@ public:
 
 	void coerce(SystemState* sys,asAtom& o) const
 	{
-		if (o.type == T_UNDEFINED)
+		if (o.isUndefined())
 		{
 			ASATOM_DECREF(o);
 			o.setNull();
 			return;
 		}
 		else if ((o.getObject() && o.getObject()->is<T>() && o.getObject()->as<T>()->sameType(this)) ||
-				 o.type ==T_NULL)
+				 o.isNull())
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type

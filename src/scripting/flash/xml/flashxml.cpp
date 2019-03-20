@@ -377,7 +377,7 @@ tiny_string XMLDocument::toString()
 ASFUNCTIONBODY_ATOM(XMLDocument,parseXML)
 {
 	XMLDocument* th=obj.as<XMLDocument>();
-	assert_and_throw(argslen==1 && args[0].type==T_STRING);
+	assert_and_throw(argslen==1 && args[0].isString());
 	th->parseXMLImpl(args[0].toString(sys));
 }
 

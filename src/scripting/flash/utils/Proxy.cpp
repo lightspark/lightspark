@@ -67,10 +67,10 @@ multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 	asAtom proxySetter;
 	getVariableByMultiname(proxySetter,setPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 
-	if(proxySetter.type == T_INVALID)
+	if(proxySetter.isInvalid())
 		return ASObject::setVariableByMultiname(name,o,allowConst);
 
-	assert_and_throw(proxySetter.type==T_FUNCTION);
+	assert_and_throw(proxySetter.isFunction());
 
 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
@@ -87,7 +87,7 @@ multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 	ASATOM_INCREF(v);
 	asAtom ret;
 	proxySetter.callFunction(ret,v,args,2,true);
-	assert_and_throw(ret.type == T_UNDEFINED);
+	assert_and_throw(ret.isUndefined());
 	implEnable=true;
 	return nullptr;
 }
@@ -101,7 +101,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	LOG_CALL("Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true));
 	if(ASObject::hasPropertyByMultiname(name, true, true) || !implEnable || (opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0)
 		res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
-	if (ret.type != T_INVALID || !implEnable || (opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0)
+	if (ret.isValid() || !implEnable || (opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0)
 		return res;
 		
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
@@ -111,11 +111,11 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	getPropertyName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	getVariableByMultiname(o,getPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
-	assert_and_throw(o.type==T_FUNCTION);
+	assert_and_throw(o.isFunction());
 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
@@ -149,12 +149,12 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	asAtom proxyHasProperty;
 	getVariableByMultiname(proxyHasProperty, hasPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 
-	if(proxyHasProperty.type == T_INVALID)
+	if(proxyHasProperty.isInvalid())
 	{
 		return false;
 	}
 
-	assert_and_throw(proxyHasProperty.type==T_FUNCTION);
+	assert_and_throw(proxyHasProperty.isFunction());
 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
@@ -186,12 +186,12 @@ bool Proxy::deleteVariableByMultiname(const multiname& name)
 	asAtom proxyDeleter;
 	getVariableByMultiname(proxyDeleter, deletePropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 
-	if(proxyDeleter.type == T_INVALID)
+	if(proxyDeleter.isInvalid())
 	{
 		return ASObject::deleteVariableByMultiname(name);
 	}
 
-	assert_and_throw(proxyDeleter.type==T_FUNCTION);
+	assert_and_throw(proxyDeleter.isFunction());
 
 	ASObject* namearg = abstract_s(getSystemState(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
@@ -219,7 +219,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	nextNameIndexName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o;
 	getVariableByMultiname(o,nextNameIndexName,GET_VARIABLE_OPTION::SKIP_IMPL);
-	assert_and_throw(o.type==T_FUNCTION);
+	assert_and_throw(o.isFunction());
 	asAtom arg=asAtom(cur_index);
 	asAtom v = asAtom::fromObject(this);
 	asAtom ret;
@@ -240,7 +240,7 @@ void Proxy::nextName(asAtom& ret,uint32_t index)
 	nextNameName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o;
 	getVariableByMultiname(o,nextNameName,GET_VARIABLE_OPTION::SKIP_IMPL);
-	assert_and_throw(o.type==T_FUNCTION);
+	assert_and_throw(o.isFunction());
 	asAtom arg=asAtom(index);
 	asAtom v = asAtom::fromObject(this);
 	o.callFunction(ret,v,&arg,1,false);
@@ -257,7 +257,7 @@ void Proxy::nextValue(asAtom& ret,uint32_t index)
 	nextValueName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom o;
 	getVariableByMultiname(o,nextValueName,GET_VARIABLE_OPTION::SKIP_IMPL);
-	assert_and_throw(o.type==T_FUNCTION);
+	assert_and_throw(o.isFunction());
 	asAtom arg=asAtom(index);
 	asAtom v = asAtom::fromObject(this);
 	o.callFunction(ret,v,&arg,1,false);

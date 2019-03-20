@@ -128,12 +128,12 @@ public:
 template<>
 inline void Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.type == T_STRING)
+	if (o.isString())
 		return;
 	//Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
-	if(o.type == T_NULL)
+	if(o.isNull())
 		return;
-	if(o.type == T_UNDEFINED)
+	if(o.isUndefined())
 	{
 		ASATOM_DECREF(o);
 		o.setNull();

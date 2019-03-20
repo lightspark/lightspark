@@ -370,7 +370,7 @@ ASFUNCTIONBODY_ATOM(Number,_constructor)
 		}
 		return;
 	}
-	switch (args[0].type)
+	switch (args[0].getObjectType())
 	{
 		case T_INTEGER:
 		case T_BOOLEAN:

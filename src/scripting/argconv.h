@@ -62,11 +62,11 @@ class ArgumentConversionAtom<asAtom>
 public:
 	static asAtom toConcrete(SystemState* sys,asAtom obj,const asAtom& v)
 	{
-		if(obj.type == T_NULL)
+		if(obj.isNull())
 			return asAtom::nullAtom;
-		if(obj.type == T_UNDEFINED)
+		if(obj.isUndefined())
 			return asAtom::undefinedAtom;
-		if(v.type != T_INVALID && v.type != T_NULL && v.type != T_UNDEFINED && !v.checkArgumentConversion(obj))
+		if(v.isValid() && !v.isNull() && !v.isUndefined() && !v.checkArgumentConversion(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj.toObject(sys)->getClassName(),
                                                   "?"); // TODO
@@ -74,7 +74,7 @@ public:
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,asAtom val)
 	{
-		if(val.type == T_INVALID)
+		if(val.isInvalid())
 			ret.setNull();
 		else
 		{
@@ -111,9 +111,9 @@ class ArgumentConversionAtom<NullableRef<T>>
 public:
 	static NullableRef<T> toConcrete(SystemState* sys,asAtom obj,const NullableRef<T>& v)
 	{
-		if(obj.type == T_NULL)
+		if(obj.isNull())
 			return NullRef;
-		if(obj.type == T_UNDEFINED)
+		if(obj.isUndefined())
 			return NullRef;
 
         if(!obj.is<T>())

@@ -353,7 +353,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	
 	LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << *name << ' ' << m);
 
-	if (obj.type == T_INVALID)
+	if (obj.isInvalid())
 	{
 		RUNTIME_STACK_POP(th,obj);
 	}
@@ -375,23 +375,23 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	{
 		// fast path for primitives to avoid creation of ASObjects
 		obj.getVariableByMultiname(o,th->mi->context->root->getSystemState(),*name);
-		canCache = o.type != T_INVALID;
+		canCache = o.isValid();
 	}
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 	{
 		pobj = obj.toObject(th->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
 		canCache = pobj->getVariableByMultiname(o,*name, SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
-	if(o.type == T_INVALID && obj.is<Class_base>())
+	if(o.isInvalid() && obj.is<Class_base>())
 	{
 		// check super classes
 		_NR<Class_base> tmpcls = obj.as<Class_base>()->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
 			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION::SKIP_IMPL);
-			if(o.type != T_INVALID)
+			if(o.isValid())
 			{
 				canCache = true;
 				break;
@@ -407,7 +407,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		obj = asAtom::fromObject(getGlobalScope(th));
 		ASATOM_INCREF(obj);
 	}
-	if(o.type != T_INVALID && !obj.is<Proxy>())
+	if(o.isValid() && !obj.is<Proxy>())
 	{
 		if (canCache 
 				&& instrptr 
@@ -438,10 +438,10 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			callPropertyName.ns.emplace_back(th->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
 			asAtom oproxy;
 			pobj->getVariableByMultiname(oproxy,callPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
-			if(oproxy.type != T_INVALID)
+			if(oproxy.isValid())
 			{
-				assert_and_throw(oproxy.type==T_FUNCTION);
-				if(o.type != T_INVALID)
+				assert_and_throw(oproxy.isFunction());
+				if(o.isValid())
 				{
 					callImpl(th, o, obj, args, m,keepReturn);
 				}
@@ -471,7 +471,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				LOG_CALL(_("End of calling proxy custom caller ") << *name);
 				return;
 			}
-			else if(o.type != T_INVALID)
+			else if(o.isValid())
 			{
 				callImpl(th, o, obj, args, m, keepReturn);
 				LOG_CALL(_("End of calling proxy ") << *name);
@@ -541,7 +541,7 @@ void ABCVm::callMethod(call_context* th, int n, int m)
 	}
 
 	asAtom o=obj.getObject()->getSlot(n);
-	if(o.type != T_INVALID)
+	if(o.isValid())
 	{
 		ASATOM_INCREF(o);
 		callImpl(th, o, obj, args, m, true);
@@ -578,7 +578,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	obj->getVariableByMultiname(prop,*name);
 	ASObject *ret;
 
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 	{
 		if (obj->getClass() && obj->getClass()->isSealed)
 			throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
@@ -892,7 +892,7 @@ void ABCVm::construct(call_context* th, int m)
 	LOG_CALL(_("Constructing"));
 
 	asAtom ret;
-	switch(obj.type)
+	switch(obj.getObjectType())
 	{
 		case T_CLASS:
 		{
@@ -1584,7 +1584,7 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	asAtom ret;
 	obj->getVariableByMultinameIntern(ret,*name,cls);
-	if (ret.type == T_INVALID)
+	if (ret.isInvalid())
 		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(obj->getSystemState()));
 
 	name->resetNameIfObject();
@@ -1628,13 +1628,13 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 
 		asAtom prop;
 		s->getVariableByMultiname(prop,*name, opt);
-		if(prop.type != T_INVALID)
+		if(prop.isValid())
 		{
 			o=prop;
 			break;
 		}
 	}
-	if(o.type == T_INVALID && !th->parent_scope_stack.isNull()) // check parent scope stack
+	if(o.isInvalid() && !th->parent_scope_stack.isNull()) // check parent scope stack
 	{
 		for(it=th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
@@ -1651,7 +1651,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 	
 			asAtom prop;
 			it->object.toObject(th->mi->context->root->getSystemState())->getVariableByMultiname(prop,*name, opt);
-			if(prop.type != T_INVALID)
+			if(prop.isValid())
 			{
 				o=prop;
 				break;
@@ -1659,11 +1659,11 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		}
 	}
 
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 	{
 		ASObject* target;
 		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
-		if(o.type == T_INVALID)
+		if(o.isInvalid())
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
 			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->mi->context->root->getSystemState()));
@@ -1746,7 +1746,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 		ASObject* target;
 		asAtom o;
 		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
-		if(o.type != T_INVALID)
+		if(o.isValid())
 			ret=target;
 		else //else push the current global object
 		{
@@ -1802,7 +1802,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		ASObject* target;
 		asAtom o;
 		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
-		if(o.type != T_INVALID)
+		if(o.isValid())
 			ret=target;
 		else
 		{
@@ -1892,7 +1892,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		ASObject* target;
 		asAtom o;
 		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
-		if(o.type != T_INVALID)
+		if(o.isValid())
 		{
 			ret=asAtom::fromObject(target);
 		}
@@ -1927,7 +1927,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	}
 	name->resetNameIfObject();
 
-	assert_and_throw(ret.type != T_INVALID);
+	assert_and_throw(ret.isValid());
 	ASATOM_INCREF(ret);
 }
 
@@ -1983,12 +1983,12 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 
 	asAtom obj;
 	RUNTIME_STACK_POP(th,obj);
-	if(obj.type == T_NULL)
+	if(obj.isNull())
 	{
 		LOG(LOG_ERROR,"trying to callStatic on null");
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj.type == T_UNDEFINED)
+	if (obj.isUndefined())
 	{
 		LOG(LOG_ERROR,"trying to callStatic on undefined");
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -2048,7 +2048,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	asAtom f;
 	obj->getVariableByMultinameIntern(f,*name,th->inClass->super.getPtr());
 	name->resetNameIfObject();
-	if(f.type != T_INVALID)
+	if(f.isValid())
 	{
 		asAtom v = asAtom::fromObject(obj);
 		callImpl(th, f, v, args, m, keepReturn);
@@ -2290,7 +2290,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	asAtom o;
 	obj.toObject(th->mi->context->root->getSystemState())->getVariableByMultiname(o,*name);
 
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 	{
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
@@ -2313,16 +2313,16 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	asAtom ret;
 	try
 	{
-		if(o.type==T_CLASS)
+		if(o.isClass())
 		{
 			Class_base* o_class=o.as<Class_base>();
 			o_class->getInstance(ret,true,args,m);
 		}
-		else if(o.type==T_FUNCTION)
+		else if(o.isFunction())
 		{
 			constructFunction(ret,th, o, args, m);
 		}
-		else if (o.type == T_TEMPLATE)
+		else if (o.isTemplate())
 			throwError<TypeError>(kConstructOfNonFunctionError);
 		else
 			throwError<TypeError>(kNotConstructorError);
@@ -2423,9 +2423,9 @@ void ABCVm::getDescendants(call_context* th, int n)
 		asAtom o;
 		obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL);
 		
-		if(o.type != T_INVALID)
+		if(o.isValid())
 		{
-			assert_and_throw(o.type==T_FUNCTION);
+			assert_and_throw(o.isFunction());
 			
 			//Create a new array
 			asAtom* proxyArgs=g_newa(asAtom, 1);
@@ -2595,7 +2595,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ASObject* target;
 		asAtom oldDefinition;
 		domain->getVariableAndTargetByMultiname(oldDefinition,*mname, target);
-		if(oldDefinition.type==T_CLASS)
+		if(oldDefinition.isClass())
 		{
 			LOG_CALL(_("Class ") << className << _(" already defined. Pushing previous definition"));
 			baseClass->decRef();
@@ -2728,7 +2728,7 @@ void ABCVm::newClass(call_context* th, int n)
 		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(obj,*name, target);
 
 		//Named only interfaces seems to be allowed 
-		if(obj.type == T_INVALID)
+		if(obj.isInvalid())
 			continue;
 
 	}
@@ -2775,7 +2775,7 @@ void ABCVm::newClass(call_context* th, int n)
 		th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);
 		throw;
 	}
-	assert_and_throw(ret2.type == T_UNDEFINED);
+	assert_and_throw(ret2.isUndefined());
 	ASATOM_DECREF(ret2);
 	LOG_CALL(_("End of Class init ") << *mname <<" " <<ret);
 	RUNTIME_STACK_PUSH(th,asAtom::fromObject(ret));

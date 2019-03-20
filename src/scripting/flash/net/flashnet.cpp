@@ -728,7 +728,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,_getPreventBackup)
 ASFUNCTIONBODY_ATOM(SharedObject,_setPreventBackup)
 {
 	assert_and_throw(argslen == 1);
-	assert_and_throw(args[0].type==T_BOOLEAN);
+	assert_and_throw(args[0].isBool());
 	bool value = args[0].Boolean_concrete();
 	sys->staticSharedObjectPreventBackup = value;
 }
@@ -959,8 +959,8 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 	//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
 	//I'm following the specification to the letter. Testing showed
 	//that the official player allows connect(null) in localWithFile.
-	if(args[0].type != T_NULL
-	&& sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
+	if(!args[0].isNull()
+		&& sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
 		throw Class<SecurityError>::getInstanceS(sys,"SecurityError: NetConnection::connect "
 				"from LOCAL_WITH_FILE sandbox");
 
@@ -969,8 +969,8 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 	//bool isRPC = false;
 
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
-	if(args[0].type==T_NULL || 
-			args[0].type==T_UNDEFINED)
+	if(args[0].isNull() || 
+			args[0].isUndefined())
 	{
 		th->_connected = false;
 		isNull = true;
@@ -1313,7 +1313,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getClient)
 ASFUNCTIONBODY_ATOM(NetStream,_setClient)
 {
 	assert_and_throw(argslen == 1);
-	if(args[0].type == T_NULL)
+	if(args[0].isNull())
 		throw Class<TypeError>::getInstanceS(sys);
 
 	NetStream* th=obj.as<NetStream>();
@@ -2040,7 +2040,7 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 	asAtom callback;
 	client->getVariableByMultiname(callback,callbackName);
-	if(callback.type == T_FUNCTION)
+	if(callback.isFunction())
 	{
 		asAtom callbackArgs[arglist.size()];
 
@@ -2200,11 +2200,11 @@ void URLVariables::decode(const tiny_string& s)
 			propName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 			asAtom curValue;
 			getVariableByMultiname(curValue,propName);
-			if(curValue.type != T_INVALID)
+			if(curValue.isValid())
 			{
 				//If the variable already exists we have to create an Array of values
 				Array* arr=NULL;
-				if(curValue.type!=T_ARRAY)
+				if(!curValue.isArray())
 				{
 					arr=Class<Array>::getInstanceSNoArgs(getSystemState());
 					arr->push(curValue);
@@ -2280,7 +2280,7 @@ tiny_string URLVariables::toString_priv()
 
 		asAtom val;
 		getValueAt(val,i);
-		if(val.type==T_ARRAY)
+		if(val.isArray())
 		{
 			//Print using multiple properties
 			//Ex. ["foo","bar"] -> prop1=foo&prop1=bar
@@ -2416,10 +2416,10 @@ ASFUNCTIONBODY_ATOM(Responder,_constructor)
 {
 	Responder* th=Class<Responder>::cast(obj.getObject());
 	assert_and_throw(argslen==1 || argslen==2);
-	assert_and_throw(args[0].type==T_FUNCTION);
+	assert_and_throw(args[0].isFunction());
 	ASATOM_INCREF(args[0]);
 	th->result = args[0];
-	if(argslen==2 && args[1].type==T_FUNCTION)
+	if(argslen==2 && args[1].isFunction())
 	{
 		ASATOM_INCREF(args[1]);
 		th->status = args[1];
@@ -2569,7 +2569,7 @@ ASFUNCTIONBODY_GETTER(DRMManager, isSupported);
 
 ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 {
-	assert_and_throw(argslen==2 && args[0].type==T_STRING && args[1].type==T_CLASS);
+	assert_and_throw(argslen==2 && args[0].isString() && args[1].isClass());
 	const tiny_string& arg0 = args[0].toString(sys);
 	ASATOM_INCREF(args[1]);
 	_R<Class_base> c=_MR(args[1].as<Class_base>());
@@ -2578,7 +2578,7 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 {
-	assert_and_throw(argslen==1 && args[0].type==T_STRING);
+	assert_and_throw(argslen==1 && args[0].isString());
 	const tiny_string& arg0 = args[0].toString(sys);
 	auto it=sys->aliasMap.find(arg0);
 	if(it==sys->aliasMap.end())

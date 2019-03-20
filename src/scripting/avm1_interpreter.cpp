@@ -308,7 +308,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom res;
 				if (s=="this")
 				{
-					if(scopestack[curdepth].type != T_INVALID)
+					if(scopestack[curdepth].isValid())
 						res = scopestack[curdepth];
 					else
 						res = asAtom::fromObject(clip);
@@ -323,14 +323,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					if (it != locals.end()) // local variable
 						res = it->second;
 				}
-				if (res.type == T_INVALID)
+				if (res.isInvalid())
 				{
 					if (!s.startsWith("/") && !s.startsWith(":"))
 						res = originalclip->AVM1GetVariable(s);
 					else
 						res = clip->AVM1GetVariable(s);
 				}
-				if (res.type == T_INVALID)
+				if (res.isInvalid())
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetVariable variable not found:"<<name.toDebugString());
 				PushStack(stack,res);
 				break;
@@ -651,7 +651,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom scriptobject = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDelete "<<scriptobject.toDebugString()<<" " <<name.toDebugString());
 				asAtom ret = asAtom::falseAtom;
-				if (scriptobject.type == T_OBJECT)
+				if (scriptobject.isObject())
 				{
 					ASObject* o = scriptobject.getObject();
 					multiname m(nullptr);
@@ -717,7 +717,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCallFunction "<<name.toDebugString()<<" "<<numargs);
 				uint32_t nameID = name.toStringId(clip->getSystemState());
 				AVM1Function* f =nullptr;
-				if (name.type == T_UNDEFINED || name.toStringId(clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
+				if (name.isUndefined()|| name.toStringId(clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCallFunction without name "<<name.toDebugString()<<" "<<numargs);
 				else
 					f =clip->AVM1GetFunction(nameID);
@@ -778,7 +778,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNewObject "<<name.toDebugString()<<" "<<numargs);
 				AVM1Function* f =nullptr;
 				uint32_t nameID = name.toStringId(clip->getSystemState());
-				if (name.type == T_UNDEFINED || name.toStringId(clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
+				if (name.isUndefined() || name.toStringId(clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNewObject without name "<<name.toDebugString()<<" "<<numargs);
 				else
 					f =clip->AVM1GetFunction(nameID);
@@ -885,9 +885,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				if (clip->getSystemState()->mainClip->version <= 5)
 				{
 					// equals works different on SWF5: Objects without valueOf property are treated as undefined
-					if (arg1.getObject() && (arg1.type == T_FUNCTION || !arg1.getObject()->has_valueOf()))
+					if (arg1.getObject() && (arg1.isFunction() || !arg1.getObject()->has_valueOf()))
 						arg1.setUndefined();
-					if (arg2.getObject() && (arg2.type == T_FUNCTION || !arg2.getObject()->has_valueOf()))
+					if (arg2.getObject() && (arg2.isFunction() || !arg2.getObject()->has_valueOf()))
 						arg2.setUndefined();
 				}
 				PushStack(stack,asAtom(arg2.isEqual(clip->getSystemState(),arg1)));
@@ -922,7 +922,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				ASObject* o = scriptobject.getObject();
 				multiname m(nullptr);
 				m.isAttribute = false;
-				switch (name.type)
+				switch (name.getObjectType())
 				{
 					case T_INTEGER:
 						m.name_type=multiname::NAME_INT;
@@ -944,7 +944,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				if(o)
 				{
 					o->getVariableByMultiname(ret,m);
-					if (ret.type == T_INVALID)
+					if (ret.isInvalid())
 					{
 						ASObject* pr =o->getprop_prototype();
 						while (pr)
@@ -962,9 +962,9 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					}
 				}
 				
-				if (ret.type == T_INVALID)
+				if (ret.isInvalid())
 				{
-					switch (scriptobject.type)
+					switch (scriptobject.getObjectType())
 					{
 						case T_FUNCTION:
 							if (nameID == BUILTIN_STRINGS::PROTOTYPE)
@@ -999,7 +999,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 							break;
 					}
 				}
-				if (ret.type == T_INVALID)
+				if (ret.isInvalid())
 					ret.setUndefined();
 				PushStack(stack,ret);
 				break;
@@ -1010,7 +1010,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom name = PopStack(stack);
 				asAtom scriptobject = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetMember "<<scriptobject.toDebugString()<<" " <<name.toDebugString()<<" "<<value.toDebugString());
-				if (scriptobject.type == T_OBJECT || scriptobject.type == T_FUNCTION || scriptobject.type == T_ARRAY)
+				if (scriptobject.isObject() || scriptobject.isFunction() || scriptobject.isArray())
 				{
 					ASObject* o = scriptobject.getObject();
 					multiname m(nullptr);
@@ -1034,7 +1034,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 						o->as<MovieClip>()->AVM1UpdateVariableBindings(m.name_s_id,value);
 				}
 				else
-					LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetMember for scriptobject type "<<scriptobject.toDebugString()<<" "<<(int)scriptobject.type<<" "<<name.toDebugString());
+					LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSetMember for scriptobject type "<<scriptobject.toDebugString()<<" "<<(int)scriptobject.getObjectType()<<" "<<name.toDebugString());
 				break;
 			}
 			case 0x50: // ActionIncrement
@@ -1078,7 +1078,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				m.name_s_id=nameID;
 				m.isAttribute = false;
 				asAtom func;
-				if (scriptobject.type != T_INVALID)
+				if (scriptobject.isValid())
 				{
 					ASObject* scrobj = scriptobject.toObject(clip->getSystemState());
 					scrobj->getVariableByMultiname(func,m);
@@ -1088,7 +1088,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 						while (pr)
 						{
 							pr->getVariableByMultiname(func,m);
-							if (func.type != T_INVALID)
+							if (func.isValid())
 								break;
 							pr = pr->getprop_prototype();
 						}
@@ -1520,7 +1520,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			case 0x9e: // ActionCall
 			{
 				asAtom a = PopStack(stack);
-				if (a.type == T_STRING)
+				if (a.isString())
 				{
 					tiny_string s = a.toString(clip->getSystemState());
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCall label "<<s);
@@ -1537,7 +1537,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			case 0x9f: // ActionGotoFrame2
 			{
 				asAtom a = PopStack(stack);
-				if (a.type == T_STRING)
+				if (a.isString())
 				{
 					tiny_string s = a.toString(clip->getSystemState());
 					if (it->data_uint16)

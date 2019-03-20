@@ -84,13 +84,13 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 	std::vector<ASObject *> path;
 	tiny_string filter;
 	asAtom replacer;
-	if (argslen > 1 && args[1].type != T_NULL && args[1].type != T_UNDEFINED)
+	if (argslen > 1 && !args[1].isNull() && !args[1].isUndefined())
 	{
-		if (args[1].type == T_FUNCTION)
+		if (args[1].isFunction())
 		{
 			replacer = args[1];
 		}
-		else if (args[1].type == T_ARRAY)
+		else if (args[1].isArray())
 		{
 			filter = " ";
 			Array* ar = args[1].as<Array>();
@@ -204,7 +204,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 				throwError<SyntaxError>(kJSONInvalidParseInput);
 		}
 	}
-	if (reviver.type != T_INVALID)
+	if (reviver.isValid())
 	{
 		bool haskey = key.name_type!= multiname::NAME_OBJECT;
 		asAtom params[2];
@@ -229,11 +229,11 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 
 		asAtom funcret;
 		reviver.callFunction(funcret,asAtom::nullAtom, params, 2,true);
-		if(funcret.type != T_INVALID)
+		if(funcret.isValid())
 		{
 			if (haskey)
 			{
-				if (funcret.type == T_UNDEFINED)
+				if (funcret.isUndefined())
 				{
 					(*parent)->deleteVariableByMultiname(key);
 					ASATOM_DECREF(funcret);

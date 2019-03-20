@@ -1395,7 +1395,7 @@ void ABCVm::abc_nextname(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("nextName");
-	if(v1->type!=T_UINTEGER)
+	if(!v1->isUInteger())
 		throw UnsupportedException("Type mismatch in nextName");
 
 	asAtom ret;
@@ -1439,7 +1439,7 @@ void ABCVm::abc_nextvalue(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("nextvalue:"<<v1->toDebugString()<<" "<< pval->toDebugString());
-	if(v1->type!=T_UINTEGER)
+	if(!v1->isUInteger())
 		throw UnsupportedException("Type mismatch in nextValue");
 
 	asAtom ret;
@@ -1812,23 +1812,23 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 	{
 		// fast path for primitives to avoid creation of ASObjects
 		obj.getVariableByMultiname(o,context->mi->context->root->getSystemState(),*name);
-		canCache = o.type != T_INVALID;
+		canCache = o.isValid();
 	}
-	if(o.type == T_INVALID)
+	if(o.isInvalid())
 	{
 		pobj = obj.toObject(context->mi->context->root->getSystemState());
 		//We should skip the special implementation of get
 		canCache = pobj->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF)) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
-	if(o.type == T_INVALID && obj.is<Class_base>())
+	if(o.isInvalid() && obj.is<Class_base>())
 	{
 		// check super classes
 		_NR<Class_base> tmpcls = obj.as<Class_base>()->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
 			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF));
-			if(o.type != T_INVALID)
+			if(o.isValid())
 			{
 				canCache = true;
 				break;
@@ -1836,7 +1836,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			tmpcls = tmpcls->super;
 		}
 	}
-	if(o.type != T_INVALID && !obj.is<Proxy>())
+	if(o.isValid() && !obj.is<Proxy>())
 	{
 		if(o.is<IFunction>())
 		{
@@ -1881,10 +1881,10 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			callPropertyName.ns.emplace_back(context->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
 			asAtom oproxy;
 			pobj->getVariableByMultiname(oproxy,callPropertyName,SKIP_IMPL);
-			if(oproxy.type != T_INVALID)
+			if(oproxy.isValid())
 			{
-				assert_and_throw(oproxy.type==T_FUNCTION);
-				if(o.type != T_INVALID)
+				assert_and_throw(oproxy.isFunction());
+				if(o.isValid())
 				{
 					if(o.is<IFunction>())
 						o.callFunction(ret,obj,args,argsnum,false);
@@ -1916,7 +1916,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 				}
 				LOG_CALL(_("End of calling proxy custom caller ") << *name);
 			}
-			else if(o.type != T_INVALID)
+			else if(o.isValid())
 			{
 				if(o.is<IFunction>())
 					o.callFunction(ret,obj,args,argsnum,false);
@@ -1932,7 +1932,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 				LOG_CALL(_("End of calling proxy ") << *name);
 			}
 		}
-		if (ret.type == T_INVALID)
+		if (ret.isInvalid())
 		{
 			if (pobj->hasPropertyByMultiname(*name,true,true))
 			{
@@ -2539,14 +2539,14 @@ void ABCVm::abc_setproperty(call_context* context)
 
 	LOG_CALL(_("setProperty ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
 
-	if(obj->type == T_NULL)
+	if(obj->isNull())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		ASATOM_DECREF_POINTER(obj);
 		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj->type == T_UNDEFINED)
+	if (obj->isUndefined())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		ASATOM_DECREF_POINTER(obj);
@@ -2571,12 +2571,12 @@ void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
 
 	LOG_CALL(_("setProperty_scc ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
 
-	if(obj->type == T_NULL)
+	if(obj->isNull())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj->type == T_UNDEFINED)
+	if (obj->isUndefined())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -2602,12 +2602,12 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 
 	LOG_CALL(_("setProperty_slc ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
 
-	if(obj->type == T_NULL)
+	if(obj->isNull())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj->type == T_UNDEFINED)
+	if (obj->isUndefined())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -2632,12 +2632,12 @@ void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
 
 	LOG_CALL(_("setProperty_scl ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
 
-	if(obj->type == T_NULL)
+	if(obj->isNull())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj->type == T_UNDEFINED)
+	if (obj->isUndefined())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -2663,12 +2663,12 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 
 	LOG_CALL(_("setProperty_sll ") << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
 
-	if(obj->type == T_NULL)
+	if(obj->isNull())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (obj->type == T_UNDEFINED)
+	if (obj->isUndefined())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value->toDebugString());
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -2705,7 +2705,7 @@ void ABCVm::abc_setlocal(call_context* context)
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
 	}
-	if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+	if ((int)i != context->argarrayposition || obj->isArray())
 	{
 		if (context->locals[i].getObject() != obj->getObject())
 		{
@@ -2752,7 +2752,7 @@ void ABCVm::abc_getProperty(call_context* context)
 			IFunction* f = instrptr->cacheobj2->as<IFunction>();
 			f->callGetter(prop,instrptr->cacheobj3 ? instrptr->cacheobj3 : obj);
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
-			if(prop.type == T_INVALID)
+			if(prop.isInvalid())
 			{
 				multiname* name=context->mi->context->getMultiname(t,context);
 				checkPropertyException(obj,name,prop);
@@ -2778,12 +2778,12 @@ void ABCVm::abc_getProperty(call_context* context)
 	{
 		//Call the getter
 		LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-		assert(prop.type == T_FUNCTION);
+		assert(prop.isFunction());
 		IFunction* f = prop.as<IFunction>();
 		ASObject* closure = prop.getClosure();
 		f->callGetter(prop,closure ? closure : obj);
 		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
-		if(prop.type != T_INVALID)
+		if(prop.isValid())
 		{
 			// cache getter if multiname is static and it is a getter of a sealed class
 			instrptr->data |= ABC_OP_CACHED;
@@ -2792,7 +2792,7 @@ void ABCVm::abc_getProperty(call_context* context)
 			instrptr->cacheobj3 = closure;
 		}
 	}
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	obj->decRef();
 	name->resetNameIfObject();
@@ -2809,7 +2809,7 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	LOG_CALL( _("getProperty_cc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2824,7 +2824,7 @@ void ABCVm::abc_getProperty_local_constant(call_context* context)
 	LOG_CALL( _("getProperty_lc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2839,7 +2839,7 @@ void ABCVm::abc_getProperty_constant_local(call_context* context)
 	LOG_CALL( _("getProperty_cl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2854,7 +2854,7 @@ void ABCVm::abc_getProperty_local_local(call_context* context)
 	LOG_CALL( _("getProperty_ll ") << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2869,7 +2869,7 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	LOG_CALL( _("getProperty_ccl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
@@ -2882,7 +2882,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	asAtom prop;
-	if (instrptr->arg2_constant->type == T_INTEGER 
+	if (instrptr->arg2_constant->isInteger()
 			&& context->locals[instrptr->local_pos1].is<Array>()
 			&& instrptr->arg2_constant->getInt() > 0 
 			&& (uint32_t)instrptr->arg2_constant->getInt() < context->locals[instrptr->local_pos1].as<Array>()->currentsize)
@@ -2896,7 +2896,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lcl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
 	}
@@ -2914,7 +2914,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
 	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
@@ -2927,7 +2927,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
 	asAtom prop;
-	if (context->locals[instrptr->local_pos2].type == T_INTEGER 
+	if (context->locals[instrptr->local_pos2].isInteger()
 			&& context->locals[instrptr->local_pos1].is<Array>()
 			&& context->locals[instrptr->local_pos2].getInt() > 0 
 			&& (uint32_t)context->locals[instrptr->local_pos2].getInt() < context->locals[instrptr->local_pos1].as<Array>()->currentsize)
@@ -2941,7 +2941,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
 	}
@@ -2960,14 +2960,14 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_sc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 	{
 		bool isgetter = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
 			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-			assert(prop.type == T_FUNCTION);
+			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
@@ -2979,7 +2979,7 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 		}
 	}
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
@@ -3003,14 +3003,14 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 	{
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_sl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 		{
 			bool isgetter = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 			if (isgetter)
 			{
 				//Call the getter
 				LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-				assert(prop.type == T_FUNCTION);
+				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
 				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
@@ -3022,7 +3022,7 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 			}
 		}
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 	}
 	RUNTIME_STACK_PUSH(context,prop);
@@ -3037,14 +3037,14 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_scl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 	{
 		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
 			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-			assert(prop.type == T_FUNCTION);
+			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
@@ -3056,7 +3056,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 		}
 	}
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
@@ -3079,12 +3079,12 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			LOG_CALL( _("getProperty_sll_c ") << *name << ' ' << obj->toDebugString());
 
 			variable* v = context->exec_pos->cachedvar2;
-			if (v->getter.type != T_INVALID)
+			if (v->getter.isValid())
 			{
 				prop.set(v->getter);
 				//Call the getter
 				LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-				assert(prop.type == T_FUNCTION);
+				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
 				f->callGetter(prop,closure ? closure : obj);
@@ -3096,11 +3096,11 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 				ASATOM_INCREF(prop);
 			}
 			
-			if(prop.type == T_INVALID)
+			if(prop.isInvalid())
 			{
 				checkPropertyException(obj,name,prop);
 			}
-			if(prop.type == T_INVALID)
+			if(prop.isInvalid())
 				checkPropertyException(obj,name,prop);
 			context->locals[instrptr->local_pos3-1].set(prop);
 			if (instrptr->local_pos3 <= context->locals_size)
@@ -3139,12 +3139,12 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //				context->exec_pos->data |= ABC_OP_CACHED;
 //				context->exec_pos->cachedvar2=v;
 //				context->exec_pos->cacheobj1=obj;
-//				if (v->getter.type != T_INVALID)
+//				if (v->getter.isValid())
 //				{
 //					prop.set(v->getter);
 //					//Call the getter
 //					LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-//					assert(prop.type == T_FUNCTION);
+//					assert(prop.isFunction());
 //					IFunction* f = prop.as<IFunction>();
 //					ASObject* closure = prop.getClosure();
 //					f->callGetter(prop,closure ? closure : obj);
@@ -3157,14 +3157,14 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //				}
 //			}
 //		}
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 		{
 			bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 			if (isgetter)
 			{
 				//Call the getter
 				LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-				assert(prop.type == T_FUNCTION);
+				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
 				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
@@ -3176,7 +3176,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 			}
 		}
-		if(prop.type == T_INVALID)
+		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 		context->locals[instrptr->local_pos3-1].set(prop);
 		if (instrptr->local_pos3 <= context->locals_size)
@@ -3193,14 +3193,14 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getProperty_scl_l ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 	{
 		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
 			LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
-			assert(prop.type == T_FUNCTION);
+			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
@@ -3212,7 +3212,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 		}
 	}
-	if(prop.type == T_INVALID)
+	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
 	context->locals[instrptr->local_pos3-1].set(prop);
@@ -3339,7 +3339,7 @@ void ABCVm::abc_convert_s(call_context* context)
 	//convert_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL( _("convert_s") );
-	if(pval->type != T_STRING)
+	if(!pval->isString())
 	{
 		tiny_string s = pval->toString(context->mi->context->root->getSystemState());
 		ASATOM_DECREF_POINTER(pval);
@@ -3430,12 +3430,12 @@ void ABCVm::abc_convert_o(call_context* context)
 	//convert_o
 	LOG_CALL("convert_o");
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	if (pval->type == T_NULL)
+	if (pval->isNull())
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on null");
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
-	if (pval->type == T_UNDEFINED)
+	if (pval->isUndefined())
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on undefined");
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -3467,7 +3467,7 @@ void ABCVm::abc_coerce_s(call_context* context)
 	//coerce_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<pval->toDebugString());
-	if (pval->type != T_STRING)
+	if (!pval->isString())
 		Class<ASString>::getClass(context->mi->context->root->getSystemState())->coerce(context->mi->context->root->getSystemState(),*pval);
 	++(context->exec_pos);
 }
@@ -5113,7 +5113,7 @@ void ABCVm::abc_setlocal_0(call_context* context)
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
 	}
-	if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+	if ((int)i != context->argarrayposition || obj->isArray())
 	{
 		if (context->locals[i].getObject() != obj->getObject())
 		{
@@ -5136,7 +5136,7 @@ void ABCVm::abc_setlocal_1(call_context* context)
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
 	}
-	if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+	if ((int)i != context->argarrayposition || obj->isArray())
 	{
 		if (context->locals[i].getObject() != obj->getObject())
 		{
@@ -5157,7 +5157,7 @@ void ABCVm::abc_setlocal_2(call_context* context)
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
 	}
-	if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+	if ((int)i != context->argarrayposition || obj->isArray())
 	{
 		if (context->locals[i].getObject() != obj->getObject())
 		{
@@ -5178,7 +5178,7 @@ void ABCVm::abc_setlocal_3(call_context* context)
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
 	}
-	if ((int)i != context->argarrayposition || obj->type == T_ARRAY)
+	if ((int)i != context->argarrayposition || obj->isArray())
 	{
 		if (context->locals[i].getObject() != obj->getObject())
 		{
@@ -6095,7 +6095,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						//LOG(LOG_ERROR,"findpropstrict preload inclass not found:"<<*name<<"|"<<function->isStatic<<"|"<<function->inClass->isInitialized()<<"|"<<function->inClass->toDebugString());
 					}
 				}
-				if(o.type == T_INVALID)
+				if(o.isInvalid())
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
@@ -6135,12 +6135,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							else
 								break;
 							it->object.toObject(mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
-							if(o.type != T_INVALID)
+							if(o.isValid())
 								break;
 							++it;
 						}
 					}
-					if(o.type == T_INVALID)
+					if(o.isInvalid())
 					{
 						ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
 						if (var)
@@ -6256,7 +6256,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						if (o->toObject(function->getSystemState())->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
 						{
 							asAtom cval = o->getObject()->getSlot(t);
-							if (cval.type != T_NULL && cval.type != T_UNDEFINED)
+							if (!cval.isNull() && !cval.isUndefined())
 							{
 								it->removeArg(mi);
 								operandlist.pop_back();

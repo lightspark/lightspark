@@ -156,7 +156,7 @@ public:
 			if (it != data_second.end())
 				ret.set(it->second);
 		}
-		if (ret.type == T_INVALID)
+		if (ret.isInvalid())
 			ret.setUndefined();
 		ASATOM_INCREF(ret);
 	}

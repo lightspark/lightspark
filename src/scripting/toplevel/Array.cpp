@@ -189,7 +189,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	Array* res=Class<Array>::getInstanceSNoArgs(sys);
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL || th->currentsize == 0)
+	if (f.isNull() || th->currentsize == 0)
 	{
 		ret = asAtom::fromObject(res);
 		return;
@@ -209,7 +209,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.type == T_INVALID)
+			if (a.isInvalid())
 				continue;
 			params[0] = a;
 		}
@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		{
 			f.callFunction(funcRet,args[1], params, 3,false);
 		}
-		if(funcRet.type != T_INVALID)
+		if(funcRet.isValid())
 		{
 			if(funcRet.Boolean_concrete())
 				res->push(origval);
@@ -253,7 +253,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 	Array* th=obj.as<Array>();
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL || th->currentsize == 0)
+	if (f.isNull() || th->currentsize == 0)
 	{
 		ret.setBool(false);
 		return;
@@ -272,7 +272,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.type == T_INVALID)
+			if (a.isInvalid())
 				continue;
 			params[0] = a;
 		}
@@ -294,7 +294,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 		{
 			f.callFunction(ret,args[1], params, 3,false);
 		}
-		if(ret.type != T_INVALID)
+		if(ret.isValid())
 		{
 			if(ret.Boolean_concrete())
 			{
@@ -313,7 +313,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	Array* th=obj.as<Array>();
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
-	if (f.type == T_NULL || th->currentsize == 0)
+	if (f.isNull() || th->currentsize == 0)
 	{
 		ret.setBool(true);
 		return;
@@ -332,7 +332,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.type == T_INVALID)
+			if (a.isInvalid())
 				continue;
 			params[0] = a;
 		}
@@ -354,7 +354,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		{
 			f.callFunction(ret,args[1], params, 3,false);
 		}
-		if(ret.type != T_INVALID)
+		if(ret.isValid())
 		{
 			if(!ret.Boolean_concrete())
 			{
@@ -393,7 +393,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	asAtom f(T_FUNCTION);
 	ARG_UNPACK_ATOM(f);
 	ret.setUndefined();
-	if (f.type == T_NULL || th->currentsize == 0)
+	if (f.isNull() || th->currentsize == 0)
 		return;
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
@@ -409,7 +409,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.type == T_INVALID)
+			if (a.isInvalid())
 				continue;
 			else
 				params[0] = a;
@@ -521,7 +521,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 		else
 		{
 			a = th->data_first[i];
-			if (a.type == T_INVALID)
+			if (a.isInvalid())
 				continue;
 		}
 		if(a.isEqualStrict(th->getSystemState(),arg0))
@@ -574,7 +574,7 @@ ASFUNCTIONBODY_ATOM(Array,shift)
 	}
 	if (th->data_first.size() > 0)
 		ret = th->data_first[0];
-	if (ret.type == T_INVALID)
+	if (ret.isInvalid())
 		ret = asAtom::undefinedAtom;
 	if (th->data_first.size() > 0)
 		th->data_first.erase(th->data_first.begin());
@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++) 
 	{
 		asAtom a = th->at((uint32_t)i);
-		if (a.type != T_INVALID)
+		if (a.isValid())
 			res->push(a);
 		j++;
 	}
@@ -664,7 +664,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 		for(int i=0;i<deleteCount;i++)
 		{
 			asAtom a = th->at((uint32_t)startIndex+i);
-			if (a.type != T_INVALID)
+			if (a.isValid())
 				res->set(i,a,false);
 		}
 		// delete items from current array
@@ -719,7 +719,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
 	for(uint32_t i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
-		if (tmp[i].type != T_INVALID)
+		if (tmp[i].isValid())
 			th->set(startIndex+i+(argslen > 2 ? argslen-2 : 0),tmp[i],false);
 	}
 	ret =asAtom::fromObject(res);
@@ -830,7 +830,7 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 		{
 			ret = *th->data_first.rbegin();
 			th->data_first.pop_back();
-			if (ret.type == T_INVALID)
+			if (ret.isInvalid())
 				ret.setUndefined();
 		}
 	}
@@ -949,11 +949,11 @@ number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d
 	objs[0]=d1;
 	objs[1]=d2;
 
-	assert(comparator.type == T_FUNCTION);
+	assert(comparator.isFunction());
 	asAtom ret;
 	// don't coerce the result, as it may be an int that would loose it's sign through coercion
 	comparator.callFunction(ret,asAtom::nullAtom, objs, 2,false,false);
-	assert_and_throw(ret.type != T_INVALID);
+	assert_and_throw(ret.isValid());
 	return ret.toNumber();
 }
 
@@ -969,9 +969,9 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	bool isDescending=false;
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		if(args[i].type==T_FUNCTION) //Comparison func
+		if(args[i].isFunction()) //Comparison func
 		{
-			assert_and_throw(comp.type == T_INVALID);
+			assert_and_throw(comp.isInvalid());
 			comp=args[i];
 		}
 		else
@@ -991,19 +991,19 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
-		if (it1->type==T_INVALID || it1->type==T_UNDEFINED)
+		if (it1->isInvalid() || it1->isUndefined())
 			continue;
 		tmp.push_back(*it1);
 	}
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
 	{
-		if (it2->second.type==T_INVALID || it2->second.type==T_UNDEFINED)
+		if (it2->second.isInvalid() || it2->second.isUndefined())
 			continue;
 		tmp.push_back(it2->second);
 	}
 	
-	if(comp.type != T_INVALID)
+	if(comp.isValid())
 	{
 		sortComparatorWrapper c(comp);
 		simplequicksortArray(tmp,c,0,tmp.size()-1);
@@ -1143,7 +1143,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
-		if (it1->type==T_INVALID || it1->type==T_UNDEFINED)
+		if (it1->isInvalid() || it1->isUndefined())
 			continue;
 		// ensure ASObjects are created
 		it1->toObject(sys);
@@ -1160,7 +1160,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
 	{
-		if (it2->second.type==T_INVALID || it2->second.type==T_UNDEFINED)
+		if (it2->second.isInvalid() || it2->second.isUndefined())
 			continue;
 		// ensure ASObjects are created
 		it2->second.toObject(sys);
@@ -1345,7 +1345,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 	asAtom func;
 	if (!args[0].is<RegExp>())
 	{
-		assert_and_throw(args[0].type==T_FUNCTION);
+		assert_and_throw(args[0].isFunction());
 		func=args[0];
 	}
 	Array* arrayRet=Class<Array>::getInstanceSNoArgs(th->getSystemState());
@@ -1359,7 +1359,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if(a.type!=T_INVALID)
+			if(a.isValid())
 				params[0] = a;
 			else
 				params[0]=asAtom::undefinedAtom;
@@ -1367,7 +1367,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		else
 		{
 			auto it=th->data_second.find(index);
-			if(it->second.type!=T_INVALID)
+			if(it->second.isValid())
 				params[0]=it->second;
 			else
 				params[0]=asAtom::undefinedAtom;
@@ -1375,7 +1375,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		params[1] = asAtom(index-1);
 		params[2] = asAtom::fromObject(th);
 		asAtom funcRet;
-		if (func.type != T_INVALID)
+		if (func.isValid())
 		{
 			func.callFunction(funcRet,argslen > 1? args[1] : asAtom::nullAtom, params, 3,false);
 		}
@@ -1383,7 +1383,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		{
 			RegExp::exec(funcRet,sys,args[0],args,1);
 		}
-		assert_and_throw(funcRet.type != T_INVALID);
+		assert_and_throw(funcRet.isValid());
 		arrayRet->push(funcRet);
 	}
 
@@ -1489,7 +1489,7 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 		if ((uint32_t)index < th->data_first.size())
 		{
 			ret = th->data_first[index];
-			if (ret.type == T_INVALID)
+			if (ret.isInvalid())
 				ret.setUndefined();
 			th->data_first.erase(th->data_first.begin()+index);
 		}
@@ -1500,7 +1500,7 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 		if(it != th->data_second.end())
 		{
 			ret = it->second;
-			if (ret.type == T_INVALID)
+			if (ret.isInvalid())
 				ret.setUndefined();
 			th->data_second.erase(it);
 		}
@@ -1568,7 +1568,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		{
 			ret = data_first.at(index);
 			ASATOM_INCREF(ret);
-			if (ret.type != T_INVALID)
+			if (ret.isValid())
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		}
 	}
@@ -1586,7 +1586,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		while(proto)
 		{
 			GET_VARIABLE_RESULT res = proto->getObj()->getVariableByMultiname(ret,name, opt);
-			if(ret.type != T_INVALID)
+			if(ret.isValid())
 				return res;
 			proto = proto->prevPrototype.getPtr();
 		}
@@ -1628,7 +1628,7 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 		return false;
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
-		return data_first.size() > index ? (data_first.at(index).type != T_INVALID) : false;
+		return data_first.size() > index ? (data_first.at(index).isValid()) : false;
 	}
 	
 	return (data_second.find(index) != data_second.end());
@@ -1774,7 +1774,7 @@ tiny_string Array::toString_priv(bool localized)
 			if(it != data_second.end())
 				sl = it->second;
 		}
-		if(sl.type != T_UNDEFINED && sl.type != T_NULL && sl.type != T_INVALID)
+		if(sl.isValid() && !sl.isNull() && !sl.isUndefined())
 		{
 			if (localized)
 				ret += sl.toLocaleString().raw_buf();
@@ -1803,7 +1803,7 @@ void Array::nextValue(asAtom& ret,uint32_t index)
 			else
 				ret = it->second;
 		}
-		if(ret.type == T_INVALID)
+		if(ret.isInvalid())
 			ret.setUndefined();
 		else
 		{
@@ -1824,7 +1824,7 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 	if(cur_index<s)
 	{
 		uint32_t firstsize = data_first.size();
-		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<s && cur_index < firstsize && data_first.at(cur_index).type == T_INVALID)
+		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<s && cur_index < firstsize && data_first.at(cur_index).isInvalid())
 		{
 			cur_index++;
 		}
@@ -1876,7 +1876,7 @@ asAtom Array::at(unsigned int index)
 		if (it != data_second.end())
 			ret = it->second;
 	}
-	if(ret.type != T_INVALID)
+	if(ret.isValid())
 	{
 		return ret;
 	}
@@ -1950,7 +1950,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		{
 			if (i < ARRAY_SIZE_THRESHOLD)
 			{
-				if (data_first.at(i).type == T_INVALID)
+				if (data_first.at(i).isInvalid())
 					out->writeByte(null_marker);
 				else
 					data_first.at(i).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
@@ -1993,7 +1993,7 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 				a = it->second;
 		}
 		tiny_string subres;
-		if (replacer.type != T_INVALID && a.type != T_INVALID)
+		if (replacer.isValid() && a.isValid())
 		{
 			asAtom params[2];
 			
@@ -2001,12 +2001,12 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 			params[1] = a;
 			asAtom funcret;
 			replacer.callFunction(funcret,asAtom::nullAtom, params, 2,false);
-			if (funcret.type != T_INVALID)
+			if (funcret.isValid())
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}
 		else
 		{
-			ASObject* o = a.type == T_INVALID ? getSystemState()->getNullRef() : a.toObject(getSystemState());
+			ASObject* o = a.isInvalid() ? getSystemState()->getNullRef() : a.toObject(getSystemState());
 			if (o)
 				subres = o->toJSON(path,replacer,spaces,filter);
 			else

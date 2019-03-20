@@ -510,7 +510,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTF)
 	ByteArray* th=obj.as<ByteArray>();
 	//Validate parameters
 	assert_and_throw(argslen==1);
-	assert_and_throw(args[0].type==T_STRING);
+	assert_and_throw(args[0].isString());
 	th->lock();
 	th->writeUTF(args[0].toString(sys));
 	th->unlock();
@@ -521,7 +521,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 	ByteArray* th=obj.as<ByteArray>();
 	//Validate parameters
 	assert_and_throw(argslen==1);
-	assert_and_throw(args[0].type==T_STRING);
+	assert_and_throw(args[0].isString());
 	tiny_string str=args[0].toString(sys);
 	th->lock();
 	th->getBuffer(th->position+str.numBytes(),true);
@@ -983,7 +983,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 		//TODO: throw AS exception
 	}
 
-	if(ret.type == T_INVALID)
+	if(ret.isInvalid())
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
 		ret.setUndefined();

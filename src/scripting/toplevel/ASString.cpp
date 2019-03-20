@@ -73,7 +73,7 @@ ASFUNCTIONBODY_ATOM(ASString,_constructor)
 ASFUNCTIONBODY_ATOM(ASString,_getLength)
 {
 	// fast path if obj is ASString
-	if (obj.type == T_STRING && obj.getObject())
+	if (obj.isString() && obj.getObject())
 	{
 		ASString* th = obj.getObject()->as<ASString>();
 		ret.setInt((int32_t)th->getData().numChars());
@@ -141,7 +141,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 {
 	tiny_string data = obj.toString(sys);
 	int res = -1;
-	if(argslen == 0 || args[0].type == T_UNDEFINED)
+	if(argslen == 0 || args[0].isUndefined())
 	{
 		ret.setInt(res);
 		return;
@@ -207,7 +207,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 ASFUNCTIONBODY_ATOM(ASString,match)
 {
 	tiny_string data = obj.toString(sys);
-	if(argslen == 0 || args[0].type==T_NULL || args[0].type==T_UNDEFINED)
+	if(argslen == 0 || args[0].isNull() || args[0].isUndefined())
 	{
 		ret.setNull();
 		return;
@@ -610,7 +610,7 @@ TRISTATE ASString::isLess(ASObject* r)
 	assert_and_throw(implEnable);
 	asAtom rprim;
 	r->toPrimitive(rprim);
-	if(getObjectType()==T_STRING && rprim.type==T_STRING)
+	if(getObjectType()==T_STRING && rprim.isString())
 	{
 		ASString* rstr=static_cast<ASString*>(rprim.toObject(getSystemState()));
 		return (getData()<rstr->getData())?TTRUE:TFALSE;
@@ -724,7 +724,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	ARG_UNPACK_ATOM (index, 0);
 
 	// fast path if obj is ASString
-	if (obj.type == T_STRING && obj.getStringId() != UINT32_MAX)
+	if (obj.isString() && obj.getStringId() != UINT32_MAX)
 	{
 		tiny_string s = sys->getStringFromUniqueId(obj.getStringId());
 		if(index<0 || index>=(int64_t)s.numChars())
@@ -732,7 +732,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 		else
 			ret.setInt((int32_t)s.charAt(index));
 	}
-	else if (obj.type == T_STRING && obj.getObject())
+	else if (obj.isString() && obj.getObject())
 	{
 		ASString* th = obj.as<ASString>();
 		if(index<0 || index>=(int64_t)th->getData().numChars())
@@ -801,7 +801,7 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 	tiny_string data = obj.toString(sys);
 	tiny_string val=args[0].toString(sys);
 	size_t startIndex=data.npos;
-	if(argslen > 1 && args[1].type != T_UNDEFINED && !std::isnan(args[1].toNumber()) && !(args[1].toNumber() > 0 && std::isinf(args[1].toNumber())))
+	if(argslen > 1 && !args[1].isUndefined() && !std::isnan(args[1].toNumber()) && !(args[1].toNumber() > 0 && std::isinf(args[1].toNumber())))
 	{
 		int32_t i = args[1].toInt();
 		if(i<0)
@@ -906,7 +906,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		type = STRING;
 		replaceWith="";
 	}
-	else if(args[1].type!=T_FUNCTION)
+	else if(!args[1].isFunction())
 	{
 		type = STRING;
 		replaceWith=args[1].toString(sys);

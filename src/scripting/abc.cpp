@@ -1081,11 +1081,11 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		case 0x1b: //MultinameL
 		case 0x1c: //MultinameLA
 		{
-			assert(n.type != T_INVALID && !n2);
+			assert(n.isValid() && !n2);
 
 			//Testing shows that the namespace from a
 			//QName is used even in MultinameL
-			if (n.type == T_INTEGER)
+			if (n.isInteger())
 			{
 				ret->name_i=n.intval;
 				ret->name_type = multiname::NAME_INT;
@@ -1098,7 +1098,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				n.applyProxyProperty(root->getSystemState(),*ret);
 				break;
 			}
-			else if (n.type == T_QNAME)
+			else if (n.isQName())
 			{
 				ASQName *qname = n.objval->as<ASQName>();
 				// don't overwrite any static parts
@@ -1125,8 +1125,8 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		case 0x0f: //RTQName
 		case 0x10: //RTQNameA
 		{
-			assert(n.type != T_INVALID && !n2);
-			assert_and_throw(n.type== T_NAMESPACE);
+			assert(n.isValid() && !n2);
+			assert_and_throw(n.isNamespace());
 			Namespace* tmpns=static_cast<Namespace*>(n.objval);
 			ret->ns.clear();
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
@@ -1142,7 +1142,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		case 0x11: //RTQNameL
 		case 0x12: //RTQNameLA
 		{
-			assert(n.type != T_INVALID && n2);
+			assert(n.isValid() && n2);
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass(n2->getSystemState()));
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
@@ -1373,7 +1373,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
-	if(event->target.type == T_INVALID)
+	if(event->target.isInvalid())
 		event->setTarget(asAtom::fromObject(dispatcher));
 	/** rollOver/Out are special: according to spec 
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
@@ -1873,7 +1873,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	ASObject* target;
 	asAtom ret;
 	root->applicationDomain->getVariableAndTargetByMultiname(ret,*name, target);
-	if(ret.type == T_INVALID) //Could not retrieve type
+	if(ret.isInvalid()) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"isInstance: Cannot retrieve type:"<<*name);
 		return false;
@@ -2196,13 +2196,13 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			client->getVariableByMultiname(callback,headerName);
 
 		//If mustUnderstand is set there must be a suitable callback on the client
-		if(mustUnderstand && (client.isNull() || callback.type!=T_FUNCTION))
+		if(mustUnderstand && (client.isNull() || !callback.isFunction()))
 		{
 			//TODO: use onStatus
 			throw UnsupportedException("Unsupported header with mustUnderstand");
 		}
 
-		if(callback.type == T_FUNCTION)
+		if(callback.isFunction())
 		{
 			ASATOM_INCREF(obj);
 			asAtom callbackArgs[1] { obj };
@@ -2248,7 +2248,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			onResultName.ns.emplace_back(m_sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			asAtom callback;
 			responder->getVariableByMultiname(callback,onResultName);
-			if(callback.type == T_FUNCTION)
+			if(callback.isFunction())
 			{
 				ASATOM_INCREF(ret);
 				asAtom callbackArgs[1] { ret };
@@ -2329,9 +2329,9 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && var->var.type != T_INVALID)
+			if(var && var->var.isValid())
 			{
-				assert_and_throw(var->var.type == T_FUNCTION);
+				assert_and_throw(var->var.isFunction());
 
 				ASATOM_INCREF(var->var);
 				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->var,NORMAL_METHOD,true);
@@ -2353,7 +2353,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && var->getter.type != T_INVALID)
+			if(var && var->getter.isValid())
 			{
 				ASATOM_INCREF(var->getter);
 				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->getter,GETTER_METHOD,true);
@@ -2375,7 +2375,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && var->setter.type != T_INVALID)
+			if(var && var->setter.isValid())
 			{
 				ASATOM_INCREF(var->setter);
 				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->setter,SETTER_METHOD,true);
@@ -2562,7 +2562,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			ASObject* target;
 			asAtom oldDefinition;
 			root->applicationDomain->getVariableAndTargetByMultiname(oldDefinition,*mname, target);
-			if(oldDefinition.type==T_CLASS)
+			if(oldDefinition.isClass())
 			{
 				return;
 			}

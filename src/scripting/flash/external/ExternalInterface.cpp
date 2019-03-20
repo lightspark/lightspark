@@ -86,7 +86,7 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 
 	assert_and_throw(argslen == 2);
 
-	if(args[1].type == T_NULL)
+	if(args[1].isNull())
 		sys->extScriptObject->removeMethod(args[0].toString(sys).raw_buf());
 	else
 	{

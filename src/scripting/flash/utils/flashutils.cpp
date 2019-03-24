@@ -206,17 +206,19 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		ASATOM_INCREF(args[i+2]);
 	}
 
+	asAtom o = args[0].getClosureAtom();
+
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add interval through manager
 	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
-			asAtom::nullAtom, args[1].toInt());
+			o, args[1].toInt());
 	ret.setInt((int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 {
-	assert_and_throw(argslen >= 2);
+	assert_and_throw(argslen >= 2 && args[0].isFunction());
 
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
@@ -228,11 +230,15 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 		ASATOM_INCREF(args[i+2]);
 	}
 
+	asAtom o = asAtom::nullAtom;
+	if (args[0].as<IFunction>()->closure_this)
+		o = asAtom::fromObject(args[0].as<IFunction>()->closure_this.getPtr());
+
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
 	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
-			asAtom::nullAtom, args[1].toInt());
+			o, args[1].toInt());
 	ret.setInt((int32_t)id);
 }
 

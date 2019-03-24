@@ -172,22 +172,27 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	asAtom newObj;
 	asAtom* newArgs=NULL;
 	int newArgsLen=0;
-	//Validate parameters
-	if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
-	{
-		//get the current global object
-		call_context* cc = getVm(th->getSystemState())->currentCallContext;
-		if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
-			newObj = cc->parent_scope_stack->scope[0].object;
-		else
-		{
-			assert_and_throw(cc->curr_scope_stack > 0);
-			newObj = cc->scope_stack[0];
-		}
-	}
+	if(th->closure_this)
+		newObj = asAtom::fromObject(th->closure_this.getPtr());
 	else
 	{
-		newObj=args[0];
+		//Validate parameters
+		if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
+		{
+			//get the current global object
+			call_context* cc = getVm(th->getSystemState())->currentCallContext;
+			if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+				newObj = cc->parent_scope_stack->scope[0].object;
+			else
+			{
+				assert_and_throw(cc->curr_scope_stack > 0);
+				newObj = cc->scope_stack[0];
+			}
+		}
+		else
+		{
+			newObj=args[0];
+		}
 	}
 	if(argslen == 2 && args[1].isArray())
 	{
@@ -212,21 +217,26 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	asAtom newObj;
 	asAtom* newArgs=NULL;
 	uint32_t newArgsLen=0;
-	if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
-	{
-		//get the current global object
-		call_context* cc = getVm(th->getSystemState())->currentCallContext;
-		if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
-			newObj = cc->parent_scope_stack->scope[0].object;
-		else
-		{
-			assert_and_throw(cc->curr_scope_stack > 0);
-			newObj = cc->scope_stack[0];
-		}
-	}
+	if(th->closure_this)
+		newObj = asAtom::fromObject(th->closure_this.getPtr());
 	else
 	{
-		newObj=args[0];
+		if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
+		{
+			//get the current global object
+			call_context* cc = getVm(th->getSystemState())->currentCallContext;
+			if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+				newObj = cc->parent_scope_stack->scope[0].object;
+			else
+			{
+				assert_and_throw(cc->curr_scope_stack > 0);
+				newObj = cc->scope_stack[0];
+			}
+		}
+		else
+		{
+			newObj=args[0];
+		}
 	}
 	if(argslen > 1)
 	{
@@ -272,6 +282,11 @@ ASObject *IFunction::describeType() const
 	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
 
 	return XML::createFromNode(root);
+}
+
+std::string IFunction::toDebugString()
+{
+	return ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"");
 }
 
 SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),func_scope(NullRef)
@@ -601,6 +616,14 @@ bool SyntheticFunction::destruct()
 	val = NULL;
 	mi = NULL;
 	return IFunction::destruct();
+}
+
+bool SyntheticFunction::isEqual(ASObject *r)
+{
+	return r == this || 
+			(this->inClass && r->is<SyntheticFunction>() && 
+			 this->val == r->as<SyntheticFunction>()->val &&
+			 this->inClass == r->as<SyntheticFunction>()->inClass);
 }
 
 bool Function::isEqual(ASObject* r)
@@ -1686,15 +1709,15 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 		ASATOM_INCREF(obj->var);
 		if(obj->var.isFunction() && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
-			if (obj->var.isBound())
+			if (obj->var.as<IFunction>()->closure_this)
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
 				ret = obj->var;
 			}
 			else
 			{
-				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				ret.setFunction(obj->var.getObject(),NULL);
+				LOG_CALL("Attaching this class " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
+				ret.setFunction(obj->var.getObject(),nullptr);
 			}
 		}
 		else

@@ -1857,6 +1857,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 				cacheptr->data |= ABC_OP_NOTCACHEABLE;
 				cacheptr->data &= ~ABC_OP_CACHED;
 			}
+			obj = o.getClosureAtom(obj);
 			o.callFunction(ret,obj,args,argsnum,false);
 		}
 		else if(o.is<Class_base>())
@@ -2489,7 +2490,7 @@ void ABCVm::abc_getlex(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
-		RUNTIME_STACK_PUSH(context,asAtom::fromFunction(instrptr->cacheobj1,instrptr->cacheobj2));
+		RUNTIME_STACK_PUSH(context,asAtom::fromObject(instrptr->cacheobj1));
 		instrptr->cacheobj1->incRef();
 		LOG_CALL( "getLex from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
@@ -2513,7 +2514,7 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 	{
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
-		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
+		context->locals[instrptr->local_pos3-1].setFunction(instrptr->cacheobj1,nullptr);//,instrptr->cacheobj2);
 		if (instrptr->local_pos3 <= context->locals_size)
 			ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
@@ -3228,7 +3229,7 @@ void ABCVm::abc_initproperty(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,value);
 	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
-	LOG_CALL("initProperty "<<*name<<" on "<< obj->toDebugString());
+	LOG_CALL("initProperty "<<*name<<" on "<< obj->toDebugString()<<" to "<<value->toDebugString());
 	obj->toObject(context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
 	ASATOM_DECREF_POINTER(obj);
 	name->resetNameIfObject();

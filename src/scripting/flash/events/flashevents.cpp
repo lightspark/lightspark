@@ -738,9 +738,9 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			continue;
 		//tmpListener is now also owned by the vector
 		ASATOM_INCREF(tmpListener[i].f);
-		//If the f is a class method, the 'this' is ignored
 		asAtom arg0= asAtom::fromObject(e.getPtr());
-		asAtom v = asAtom::fromObject(this);
+		IFunction* func = tmpListener[i].f.as<IFunction>();
+		asAtom v = asAtom::fromObject(func->closure_this ? func->closure_this.getPtr() : this);
 		asAtom ret;
 		tmpListener[i].f.callFunction(ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);

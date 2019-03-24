@@ -810,8 +810,9 @@ number_t Vector::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& 
 	else
 		objs[1] = asAtom::nullAtom;
 	asAtom ret;
+	asAtom obj = comparator.getClosureAtom();
 	// don't coerce the result, as it may be an int that would loose it's sign through coercion
-	comparator.callFunction(ret,asAtom::nullAtom, objs, 2,false,false);
+	comparator.callFunction(ret,obj, objs, 2,false,false);
 	assert_and_throw(ret.isValid());
 	return ret.toNumber();
 }

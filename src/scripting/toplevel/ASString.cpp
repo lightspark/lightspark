@@ -966,7 +966,10 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 				
 				subargs[capturingGroups+2]=asAtom::fromObject(abstract_s(sys,data));
 				asAtom ret;
-				args[1].callFunction(ret,asAtom::nullAtom, subargs, 3+capturingGroups,true);
+				asAtom obj = asAtom::nullAtom;
+				if (args[1].as<IFunction>()->closure_this) // use closure as "this" in function call
+					obj = asAtom::fromObject(args[1].as<IFunction>()->closure_this.getPtr());
+				args[1].callFunction(ret,obj, subargs, 3+capturingGroups,true);
 				replaceWithTmp=ret.toString(sys).raw_buf();
 				ASATOM_DECREF(ret);
 			} else {

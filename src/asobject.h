@@ -279,7 +279,6 @@ private:
 		uint32_t stringID;
 		number_t numberval;
 		bool boolval;
-		ASObject* closure_this; // used for T_FUNCTION objects
 	};
 	ASObject* objval;
 	SWFOBJECT_TYPE type;
@@ -306,7 +305,6 @@ public:
 		return a;
 	}
 	
-	static FORCE_INLINE asAtom fromFunction(ASObject *f, ASObject *closure);
 	static FORCE_INLINE asAtom fromStringID(uint32_t sID)
 	{
 		asAtom a;
@@ -317,8 +315,8 @@ public:
 	}
 	// only use this for strings that should get an internal stringID
 	static asAtom fromString(SystemState *sys, const tiny_string& s);
-	FORCE_INLINE  bool isBound() const { return type == T_FUNCTION && closure_this; }
-	FORCE_INLINE  ASObject* getClosure() const  { return type == T_FUNCTION ? closure_this : NULL; }
+	ASObject* getClosure() const;
+	asAtom getClosureAtom(asAtom defaultAtom=asAtom::nullAtom) const;
 	static asAtom undefinedAtom;
 	static asAtom nullAtom;
 	static asAtom invalidAtom;
@@ -330,7 +328,7 @@ public:
 	 * Return the asAtom the function returned.
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
-	void callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true);
+	void callFunction(asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true);
 	// returns invalidAtom for not-primitive values
 	void getVariableByMultiname(asAtom &ret, SystemState *sys, const multiname& name);
 	Class_base* getClass(SystemState *sys);
@@ -344,6 +342,7 @@ public:
 		objval = a.objval;
 	}
 	bool stringcompare(SystemState* sys, uint32_t stringID);
+	bool functioncompare(SystemState* sys,asAtom& v2);
 	std::string toDebugString();
 	FORCE_INLINE void applyProxyProperty(SystemState *sys, multiname& name);
 	FORCE_INLINE TRISTATE isLess(SystemState *sys, asAtom& v2);
@@ -396,7 +395,7 @@ public:
 	FORCE_INLINE void setBool(bool val);
 	FORCE_INLINE void setNull();
 	FORCE_INLINE void setUndefined();
-	FORCE_INLINE void setFunction(ASObject* obj, ASObject* closure);
+	void setFunction(ASObject* obj, ASObject* closure);
 	FORCE_INLINE void increment();
 	FORCE_INLINE void decrement();
 	FORCE_INLINE void increment_i();
@@ -1688,9 +1687,7 @@ FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 			switch (v2.type)
 			{
 				case T_FUNCTION:
-					if (closure_this != NULL && v2.closure_this != NULL && closure_this != v2.closure_this)
-						return false;
-					return v2.toObject(sys)->isEqual(this->toObject(sys));
+					return functioncompare(sys,v2);
 				default:
 					return false;
 			}
@@ -1848,12 +1845,6 @@ FORCE_INLINE void asAtom::setUndefined()
 {
 	type = T_UNDEFINED;
 	objval = NULL;
-}
-FORCE_INLINE void asAtom::setFunction(ASObject* obj, ASObject* closure)
-{
-	type = obj->getObjectType(); // type may be T_CLASS or T_FUNCTION
-	objval = obj;
-	closure_this = closure;
 }
 FORCE_INLINE void asAtom::increment()
 {
@@ -2215,9 +2206,6 @@ FORCE_INLINE void asAtom::replace(ASObject *obj)
 		case T_BOOLEAN:
 			replaceBool(obj);
 			break;
-		case T_FUNCTION:
-			closure_this = NULL;
-			break;
 		case T_STRING:
 			stringID = obj->stringId;
 			break;
@@ -2225,14 +2213,6 @@ FORCE_INLINE void asAtom::replace(ASObject *obj)
 			break;
 	}
 	objval = obj;
-}
-FORCE_INLINE asAtom asAtom::fromFunction(ASObject *f, ASObject *closure)
-{
-	asAtom a;
-	a.type = f->getObjectType();
-	a.objval = f;
-	a.closure_this = closure;
-	return a;
 }
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
 FORCE_INLINE bool asAtom::Boolean_concrete()
@@ -2270,7 +2250,7 @@ FORCE_INLINE bool asAtom::Boolean_concrete()
 	}
 }
 FORCE_INLINE ASObject* asAtom::getObject() const 
-{ 
+{
 	assert(!objval || objval->getRefCount() >= 1);
 	return objval; 
 }

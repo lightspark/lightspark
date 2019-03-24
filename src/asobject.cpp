@@ -1423,7 +1423,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			ASATOM_INCREF(obj->var);
 		if(obj->var.isFunction() && obj->var.getObject()->as<IFunction>()->isMethod())
 		{
-			if (obj->var.isBound())
+			if (obj->var.getClosure())
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
 				ret.set(obj->var);
@@ -2338,7 +2338,23 @@ bool asAtom::stringcompare(SystemState* sys,uint32_t stringID)
 {
 	return this->toObject(sys)->toString() == sys->getStringFromUniqueId(stringID);
 }
-
+bool asAtom::functioncompare(SystemState* sys,asAtom& v2)
+{
+	if (objval && objval->as<IFunction>()->closure_this 
+			&& v2.objval && v2.objval->as<IFunction>()->closure_this
+			&& objval->as<IFunction>()->closure_this != v2.objval->as<IFunction>()->closure_this)
+		return false;
+	return v2.toObject(sys)->isEqual(this->toObject(sys));
+}
+ASObject* asAtom::getClosure() const
+{
+	return (type == T_FUNCTION && objval) ? objval->as<IFunction>()->closure_this.getPtr() : nullptr;
+}
+asAtom asAtom::getClosureAtom(asAtom defaultAtom) const
+{
+	ASObject* o = getClosure();
+	return o ? asAtom::fromObject(o) : defaultAtom;
+}
 asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
 {
 	asAtom a;
@@ -2351,21 +2367,8 @@ asAtom asAtom::fromString(SystemState* sys, const tiny_string& s)
 void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult)
 {
 	assert_and_throw(type == T_FUNCTION);
-		
-	ASObject* closure = closure_this;
-	if ((obj.isFunction() && obj.closure_this) || obj.is<XML>() || obj.is<XMLList>())
-		closure = NULL; // force use of function closure in call
+
 	asAtom c = obj;
-	if(closure && closure != obj.getObject())
-	{ /* closure_this can never been overriden */
-		LOG_CALL(_("Calling with closure ") << toDebugString());
-		c=asAtom::fromObject(closure);
-		if (args_refcounted)
-		{
-			ASATOM_INCREF(c);
-			ASATOM_DECREF(obj);
-		}
-	}
 	if (objval->is<SyntheticFunction>())
 	{
 		if (!args_refcounted)
@@ -2385,8 +2388,6 @@ void asAtom::callFunction(asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_ar
 	{
 		for (uint32_t i = 0; i < num_args; i++)
 			ASATOM_DECREF(args[i]);
-		if (closure_this && c.getObject() && c.getObject()->isLastRef() && c.getObject()==closure_this)
-			closure_this = NULL;
 		ASATOM_DECREF(c);
 	}
 }
@@ -2559,11 +2560,6 @@ std::string asAtom::toDebugString()
 #endif
 			return ret;
 		}
-		case T_FUNCTION:
-			assert(objval);
-			if (closure_this)
-				return objval->toDebugString()+"(closure:"+closure_this->toDebugString()+")";
-			return objval->toDebugString();
 		default:
 			assert(objval);
 			return objval->toDebugString();
@@ -2861,5 +2857,20 @@ void asAtom::add(asAtom &v2, SystemState* sys,bool isrefcounted)
 				setNumber(result);
 			}
 		}
+	}
+}
+
+void asAtom::setFunction(ASObject *obj, ASObject *closure)
+{
+	type = obj->getObjectType(); // type may be T_CLASS or T_FUNCTION
+	if (closure &&obj->is<IFunction>())
+	{
+		closure->incRef();
+		objval=obj->as<IFunction>()->bind(_MR(closure));
+	}
+	else
+	{
+		obj->incRef();
+		objval = obj;
 	}
 }

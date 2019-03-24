@@ -419,7 +419,9 @@ public:
 	ASFUNCTION_ATOM(_length);
 protected:
 	IFunction(Class_base *c,CLASS_SUBTYPE st);
+	virtual IFunction* clone()=0;
 public:
+	_NR<ASObject> closure_this;
 	static void sinit(Class_base* c);
 	/* If this is a method, inClass is the class this is defined in.
 	 * If this is a function, inClass == NULL
@@ -436,7 +438,18 @@ public:
 		isStatic=false;
 		functionname=0;
 		length=0;
+		closure_this.reset();
 		return ASObject::destruct();
+	}
+	IFunction* bind(_NR<ASObject> c)
+	{
+		IFunction* ret=NULL;
+		ret=clone();
+		ret->setClass(getClass());
+		ret->closure_this=c;
+		ret->constructIndicator = true;
+		ret->constructorCallComplete = true;
+		return ret;
 	}
 	ASFUNCTION_ATOM(apply);
 	ASFUNCTION_ATOM(_call);
@@ -446,6 +459,7 @@ public:
 	virtual ASObject *describeType() const;
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
+	std::string toDebugString();
 };
 
 /*
@@ -468,6 +482,21 @@ protected:
 	Class_base* returnType;
 	Function(Class_base* c,as_atom_function v = NULL):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const { return NULL; }
+	IFunction* clone()
+	{
+		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
+		if (!ret)
+			ret=new (getClass()->memoryAccount) Function(*this);
+		else
+		{
+			ret->val_atom = val_atom;
+			ret->length = length;
+			ret->inClass = inClass;
+			ret->functionname = functionname;
+			ret->objfreelist = objfreelist;
+		}
+		return ret;
+	}
 public:
 	/**
 	 * This executes a C++ function.
@@ -528,18 +557,34 @@ private:
 	/* Pointer to multiname, if this function is a simple getter or setter */
 	multiname* simpleGetterOrSetterName;
 	SyntheticFunction(Class_base* c,method_info* m);
-	
+protected:
 	method_info* getMethodInfo() const { return mi; }
+	IFunction* clone()
+	{
+		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
+		if (!ret)
+		{
+			ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
+		}
+		else
+		{
+			ret->mi = mi;
+			ret->val = val;
+			ret->length = length;
+			ret->inClass = inClass;
+			ret->func_scope = func_scope;
+			ret->functionname = functionname;
+		}
+		ret->objfreelist = &getClass()->freelist[1];
+		return ret;
+	}
 public:
 	~SyntheticFunction() {}
 	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult);
 	bool destruct();
 	
 	_NR<scope_entry_list> func_scope;
-	bool isEqual(ASObject* r)
-	{
-		return this == r;
-	}
+	bool isEqual(ASObject* r);
 	void acquireScope(const std::vector<scope_entry>& scope)
 	{
 		if (func_scope.isNull())
@@ -609,6 +654,11 @@ protected:
 		context.keepLocals=true;
 	}
 	method_info* getMethodInfo() const { return NULL; }
+	IFunction* clone()
+	{
+		// no cloning needed in AVM1
+		return nullptr;
+	}
 public:
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args)
 	{
@@ -646,6 +696,7 @@ public:
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (c->memoryAccount) Function(c);
+		ret->objfreelist = &c->freelist[0];
 		ret->resetCached();
 		ret->val_atom = v;
 		ret->returnType = returnType;

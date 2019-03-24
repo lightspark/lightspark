@@ -420,10 +420,12 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			instrptr->data |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = obj.getClass(th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = o.getObject();
+			instrptr->cacheobj2->incRef();
 			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
 		}
 //		else
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<obj.toDebugString());
+		obj = o.getClosureAtom(obj);
 		callImpl(th, o, obj, args, m, keepReturn);
 	}
 	else
@@ -2856,6 +2858,7 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	asAtom f;
 	RUNTIME_STACK_POP(th,f);
 	LOG_CALL(_("call ") << m << ' ' << f.toDebugString());
+	obj = f.getClosureAtom(obj);
 	callImpl(th, f, obj, args, m, true);
 }
 // this consumes one reference of f, obj and of each arg

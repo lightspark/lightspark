@@ -4473,7 +4473,8 @@ void MovieClip::executeFrameScript()
 		uint32_t f = frameScriptToExecute;
 		frameScriptToExecute = UINT32_MAX;
 		asAtom v;
-		frameScripts[f].callFunction(v,asAtom::invalidAtom,NULL,0,false);
+		asAtom obj = frameScripts[f].getClosureAtom();
+		frameScripts[f].callFunction(v,obj,NULL,0,false);
 		ASATOM_DECREF(v);
 	}
 	Sprite::executeFrameScript();

@@ -805,7 +805,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 
 	double *doubleptr=reinterpret_cast<double*>(&res);
 	th->unlock();
-	ret.setNumber(*doubleptr);
+	ret.setNumber(sys,*doubleptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
@@ -827,7 +827,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 
 	float *floatptr=reinterpret_cast<float*>(&res);
 	th->unlock();
-	ret.setNumber(*floatptr);
+	ret.setNumber(sys,*floatptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)

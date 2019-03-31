@@ -784,7 +784,7 @@ void ABCVm::incLocal(call_context* th, int n)
 	LOG_CALL( _("incLocal ") << n );
 	number_t tmp=th->locals[n].toNumber();
 	ASATOM_DECREF(th->locals[n]);
-	th->locals[n].setNumber(tmp+1);
+	th->locals[n].setNumber(th->mi->context->root->getSystemState(),tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
@@ -800,7 +800,7 @@ void ABCVm::decLocal(call_context* th, int n)
 	LOG_CALL( _("decLocal ") << n );
 	number_t tmp=th->locals[n].toNumber();
 	ASATOM_DECREF(th->locals[n]);
-	th->locals[n].setNumber(tmp-1);
+	th->locals[n].setNumber(th->mi->context->root->getSystemState(),tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)

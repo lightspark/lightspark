@@ -2081,7 +2081,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getTime)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		ret.setNumber(th->getStreamTime()/1000.);
+		ret.setNumber(sys,th->getStreamTime()/1000.);
 	else
 		ret.setUInt(0);
 }
@@ -2091,7 +2091,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
 	//TODO: provide real FPS (what really is displayed)
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady() && !th->paused)
-		ret.setNumber(th->getFrameRate());
+		ret.setNumber(sys,th->getFrameRate());
 	else
 		ret.setUInt(0);
 }

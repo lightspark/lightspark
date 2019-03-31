@@ -569,7 +569,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->alpha);
+	ret.setNumber(sys,th->alpha);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
@@ -603,7 +603,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->sx);
+	ret.setNumber(sys,th->sx);
 }
 
 void DisplayObject::setScaleX(number_t val)
@@ -632,7 +632,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->sy);
+	ret.setNumber(sys,th->sy);
 }
 
 void DisplayObject::setScaleY(number_t val)
@@ -661,7 +661,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleZ)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->sz);
+	ret.setNumber(sys,th->sz);
 }
 
 void DisplayObject::setScaleZ(number_t val)
@@ -691,7 +691,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getX)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->tx);
+	ret.setNumber(sys,th->tx);
 }
 
 void DisplayObject::setX(number_t val)
@@ -752,7 +752,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getY)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->ty);
+	ret.setNumber(sys,th->ty);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
@@ -766,7 +766,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getZ)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->tz);
+	ret.setNumber(sys,th->tz);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setZ)
@@ -1023,7 +1023,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRotation)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->rotation);
+	ret.setNumber(sys,th->rotation);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setVisible)
@@ -1074,7 +1074,7 @@ _NR<Stage> DisplayObject::getStage()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getWidth)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->computeWidth());
+	ret.setNumber(sys,th->computeWidth());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
@@ -1101,7 +1101,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getHeight)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->computeHeight());
+	ret.setNumber(sys,th->computeHeight());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
@@ -1133,13 +1133,13 @@ Vector2f DisplayObject::getLocalMousePos()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->getLocalMousePos().x);
+	ret.setNumber(sys,th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->getLocalMousePos().y);
+	ret.setNumber(sys,th->getLocalMousePos().y);
 }
 
 _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
@@ -1513,7 +1513,7 @@ bool DisplayObject::AVM1HandleMouseEventStandard(DisplayObject *dispobj,MouseEve
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->sx*100.0);
+	ret.setNumber(sys,th->sx*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
@@ -1529,7 +1529,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleY)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->sy*100.0);
+	ret.setNumber(sys,th->sy*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleY)
@@ -1610,8 +1610,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	number_t tempx, tempy;
 
 	th->localToGlobal(x.toNumber(), y.toNumber(), tempx, tempy);
-	x.setNumber(tempx);
-	y.setNumber(tempy);
+	x.setNumber(sys,tempx);
+	y.setNumber(sys,tempy);
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
 	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
 }
@@ -1641,7 +1641,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
 {
 	DisplayObject* th=obj.as<DisplayObject>();
-	ret.setNumber(th->alpha*100.0);
+	ret.setNumber(sys,th->alpha*100.0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
@@ -1695,16 +1695,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=sys->getUniqueStringId("xMin");
-	v = asAtom(x1);
+	v = asAtom(sys,x1);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("xMax");
-	v = asAtom(x2);
+	v = asAtom(sys,x2);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("yMin");
-	v = asAtom(y1);
+	v = asAtom(sys,y1);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("yMax");
-	v = asAtom(y2);
+	v = asAtom(sys,y2);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 }
 void DisplayObject::AVM1SetupMethods(Class_base* c)

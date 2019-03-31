@@ -203,7 +203,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				number_t a = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				number_t b = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionAdd "<<b<<"+"<<a);
-				PushStack(stack,asAtom(a+b));
+				PushStack(stack,asAtom(clip->getSystemState(),a+b));
 				break;
 			}
 			case 0x0b: // ActionSubtract
@@ -211,7 +211,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				number_t a = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				number_t b = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionSubtract "<<b<<"-"<<a);
-				PushStack(stack,asAtom(b-a));
+				PushStack(stack,asAtom(clip->getSystemState(),b-a));
 				break;
 			}
 			case 0x0c: // ActionMultiply
@@ -219,7 +219,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				number_t a = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				number_t b = PopStack(stack).AVM1toNumber(clip->getSystemState()->mainClip->version);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionMultiply "<<b<<"*"<<a);
-				PushStack(stack,asAtom(b*a));
+				PushStack(stack,asAtom(clip->getSystemState(),b*a));
 				break;
 			}
 			case 0x0d: // ActionDivide
@@ -233,10 +233,10 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					if (clip->getSystemState()->mainClip->version == 4)
 						ret = asAtom::fromString(clip->getSystemState(),"#ERROR#");
 					else
-						ret = asAtom(Number::NaN);
+						ret = asAtom(clip->getSystemState(),Number::NaN);
 				}
 				else
-					ret = asAtom(b/a);
+					ret = asAtom(clip->getSystemState(),b/a);
 				PushStack(stack,ret);
 				break;
 			}
@@ -640,7 +640,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			case 0x34: // ActionGetTime
 			{
 				gint64 runtime = compat_msectiming()-clip->getSystemState()->startTime;
-				asAtom ret((number_t)runtime);
+				asAtom ret(clip->getSystemState(),(number_t)runtime);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetTime "<<ret.toDebugString());
 				PushStack(stack,asAtom(ret));
 				break;
@@ -764,7 +764,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom y = PopStack(stack);
 				asAtom x = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionModulo "<<x.toDebugString()<<" % "<<y.toDebugString());
-				x.modulo(y);
+				x.modulo(clip->getSystemState(),y);
 				PushStack(stack,x);
 				break;
 			}
@@ -896,7 +896,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			case 0x4a: // ActionToNumber
 			{
 				asAtom arg = PopStack(stack);
-				PushStack(stack,asAtom(arg.toNumber()));
+				PushStack(stack,asAtom(clip->getSystemState(),arg.toNumber()));
 				break;
 			}
 			case 0x4b: // ActionToString
@@ -1041,14 +1041,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			{
 				asAtom num = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionIncrement "<<num.toDebugString());
-				PushStack(stack,asAtom(num.AVM1toNumber(clip->getSystemState()->mainClip->version)+1));
+				PushStack(stack,asAtom(clip->getSystemState(),num.AVM1toNumber(clip->getSystemState()->mainClip->version)+1));
 				break;
 			}
 			case 0x51: // ActionDecrement
 			{
 				asAtom num = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDecrement "<<num.toDebugString());
-				PushStack(stack,asAtom(num.AVM1toNumber(clip->getSystemState()->mainClip->version)-1));
+				PushStack(stack,asAtom(clip->getSystemState(),num.AVM1toNumber(clip->getSystemState()->mainClip->version)-1));
 				break;
 			}
 			case 0x52: // ActionCallMethod
@@ -1373,7 +1373,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 						}
 						case 1:
 						{
-							asAtom a(it2->data_float);
+							asAtom a(clip->getSystemState(),it2->data_float);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPush 1 "<<a.toDebugString());
 							break;
@@ -1404,7 +1404,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 						}
 						case 6:
 						{
-							asAtom a(it2->data_double);
+							asAtom a(clip->getSystemState(),it2->data_double);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPush 6 "<<a.toDebugString());
 							break;

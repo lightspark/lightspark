@@ -488,7 +488,7 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 		*parent = abstract_d(getSys(),num);
 	else 
 	{
-		asAtom v(num);
+		asAtom v(getSys(),num);
 		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
 	}
 	return pos;

@@ -543,7 +543,7 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 	if (winding != "evenOdd")
 		LOG(LOG_NOT_IMPLEMENTED, "Only event-odd winding implemented in Graphics.drawPath");
 
-	asAtom zero((number_t)0);
+	asAtom zero(0);
 
 	int k = 0;
 	for (unsigned int i=0; i<commands->size(); i++)

@@ -2438,7 +2438,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 
 	if(radix != 0 && (radix < 2 || radix > 36))
 	{
-		ret.setNumber(numeric_limits<double>::quiet_NaN());
+		ret.setNumber(sys,numeric_limits<double>::quiet_NaN());
 		return;
 	}
 
@@ -2447,11 +2447,11 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	bool valid=Integer::fromStringFlashCompatible(cur,res,radix);
 
 	if(valid==false)
-		ret.setNumber(numeric_limits<double>::quiet_NaN());
+		ret.setNumber(sys,numeric_limits<double>::quiet_NaN());
 	else if (res < INT32_MAX && res > INT32_MIN)
 		ret.setInt((int32_t)res);
 	else
-		ret.setNumber(res);
+		ret.setNumber(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
@@ -2459,7 +2459,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "");
 
-	ret.setNumber(parseNumber(str,sys->getSwfVersion()<11));
+	ret.setNumber(sys,parseNumber(str,sys->getSwfVersion()<11));
 }
 number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 {

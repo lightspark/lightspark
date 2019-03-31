@@ -2131,7 +2131,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtom::fromObject(g);
 	if(argslen>=2)
-		args[1]=asAtom(args[1].toNumber()/100.0);
+		args[1]=asAtom(sys,args[1].toNumber()/100.0);
 	
 	Graphics::beginFill(ret,sys,o,args,argslen);
 }
@@ -3434,9 +3434,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 	Stage* th=obj.as<Stage>();
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		ret.setNumber(sys->mainClip->getFrameRate());
+		ret.setNumber(sys,sys->mainClip->getFrameRate());
 	else
-		ret.setNumber(root->getFrameRate());
+		ret.setNumber(sys,root->getFrameRate());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)

@@ -119,7 +119,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
 ASFUNCTIONBODY_ATOM(Rectangle,_getLeft)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->x);
+	ret.setNumber(sys,th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
@@ -132,7 +132,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
 ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->x + th->width);
+	ret.setNumber(sys,th->x + th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
@@ -145,7 +145,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
 ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->width);
+	ret.setNumber(sys,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
@@ -158,7 +158,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
 ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->y);
+	ret.setNumber(sys,th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
@@ -171,7 +171,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->y + th->height);
+	ret.setNumber(sys,th->y + th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
 {
 	Rectangle* th=obj.as<Rectangle>();
-	ret.setNumber(th->height);
+	ret.setNumber(sys,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)
@@ -617,13 +617,13 @@ ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 
 	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
 
-	ret.setNumber(color);
+	ret.setNumber(sys,color);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->redMultiplier);
+	ret.setNumber(sys,th->redMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
@@ -636,7 +636,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->greenMultiplier);
+	ret.setNumber(sys,th->greenMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
@@ -649,7 +649,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->blueMultiplier);
+	ret.setNumber(sys,th->blueMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
@@ -662,7 +662,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaMultiplier)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->alphaMultiplier);
+	ret.setNumber(sys,th->alphaMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
@@ -675,7 +675,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->redOffset);
+	ret.setNumber(sys,th->redOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
@@ -688,7 +688,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->greenOffset);
+	ret.setNumber(sys,th->greenOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
@@ -701,7 +701,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->blueOffset);
+	ret.setNumber(sys,th->blueOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
@@ -714,7 +714,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaOffset)
 {
 	ColorTransform* th=obj.as<ColorTransform>();
-	ret.setNumber(th->alphaOffset);
+	ret.setNumber(sys,th->alphaOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
@@ -806,13 +806,13 @@ ASFUNCTIONBODY_ATOM(Point,_constructor)
 ASFUNCTIONBODY_ATOM(Point,_getX)
 {
 	Point* th=obj.as<Point>();
-	ret.setNumber(th->x);
+	ret.setNumber(sys,th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_getY)
 {
 	Point* th=obj.as<Point>();
-	ret.setNumber(th->y);
+	ret.setNumber(sys,th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_setX)
@@ -833,7 +833,7 @@ ASFUNCTIONBODY_ATOM(Point,_getlength)
 {
 	Point* th=obj.as<Point>();
 	assert_and_throw(argslen==0);
-	ret.setNumber(th->len());
+	ret.setNumber(sys,th->len());
 }
 
 ASFUNCTIONBODY_ATOM(Point,interpolate)
@@ -854,7 +854,7 @@ ASFUNCTIONBODY_ATOM(Point,distance)
 	Point* pt1=args[0].as<Point>();
 	Point* pt2=args[1].as<Point>();
 	number_t res=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
-	ret.setNumber(res);
+	ret.setNumber(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,add)
@@ -1125,7 +1125,7 @@ bool Matrix::destruct()
 ASFUNCTIONBODY_ATOM(Matrix,_get_a)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.xx);
+	ret.setNumber(sys,th->matrix.xx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_a)
@@ -1138,7 +1138,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_a)
 ASFUNCTIONBODY_ATOM(Matrix,_get_b)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.yx);
+	ret.setNumber(sys,th->matrix.yx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_b)
@@ -1151,7 +1151,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_b)
 ASFUNCTIONBODY_ATOM(Matrix,_get_c)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.xy);
+	ret.setNumber(sys,th->matrix.xy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_c)
@@ -1164,7 +1164,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_c)
 ASFUNCTIONBODY_ATOM(Matrix,_get_d)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.yy);
+	ret.setNumber(sys,th->matrix.yy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_d)
@@ -1177,7 +1177,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_d)
 ASFUNCTIONBODY_ATOM(Matrix,_get_tx)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.x0);
+	ret.setNumber(sys,th->matrix.x0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
@@ -1190,7 +1190,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
 ASFUNCTIONBODY_ATOM(Matrix,_get_ty)
 {
 	Matrix* th=obj.as<Matrix>();
-	ret.setNumber(th->matrix.y0);
+	ret.setNumber(sys,th->matrix.y0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_ty)
@@ -1468,7 +1468,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_w)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(th->w);
+	ret.setNumber(sys,th->w);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_w)
@@ -1483,7 +1483,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_x)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(th->x);
+	ret.setNumber(sys,th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_x)
@@ -1498,7 +1498,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_y)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(th->y);
+	ret.setNumber(sys,th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_y)
@@ -1513,7 +1513,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_z)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(th->z);
+	ret.setNumber(sys,th->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_set_z)
@@ -1528,7 +1528,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_length)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+	ret.setNumber(sys,sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
@@ -1536,7 +1536,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=obj.as<Vector3D>();
-	ret.setNumber(th->x * th->x + th->y * th->y + th->z * th->z);
+	ret.setNumber(sys,th->x * th->x + th->y * th->y + th->z * th->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,clone)
@@ -1581,7 +1581,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
 	angle = acos(angle);
 
-	ret.setNumber(angle);
+	ret.setNumber(sys,angle);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
@@ -1624,7 +1624,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,distance)
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-	ret.setNumber(dist);
+	ret.setNumber(sys,dist);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
@@ -1634,7 +1634,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
 	Vector3D* th=obj.as<Vector3D>();
 	Vector3D* vc=args[0].as<Vector3D>();
 
-	ret.setNumber(th->x * vc->x + th->y * vc->y + th->z * vc->z);
+	ret.setNumber(sys,th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,equals)
@@ -2172,7 +2172,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
 		LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom ignores parameter 'transpose'");
 	for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
 	{
-		vector->set(index+i,asAtom(th->data[i]));
+		vector->set(index+i,asAtom(sys,th->data[i]));
 	}
 }
 
@@ -2263,7 +2263,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
 {
 	Matrix3D * th=obj.as<Matrix3D>();
-	ret.setNumber(th->getDeterminant());
+	ret.setNumber(sys,th->getDeterminant());
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {
@@ -2273,7 +2273,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 	Vector *result = v.as<Vector>();
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
-		asAtom o = asAtom(th->data[i]);
+		asAtom o = asAtom(sys,th->data[i]);
 		result->append(o);
 	}
 	ret =asAtom::fromObject(result);

@@ -201,7 +201,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
 	number_t dpi = sys->getEngineData()->getScreenDPI();
-	ret.setNumber(dpi);
+	ret.setNumber(sys,dpi);
 }
 
 ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)

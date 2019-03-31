@@ -71,7 +71,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 {
 	AVM1Sound* th=obj.as<AVM1Sound>();
 	if (th->soundChannel)
-		ret.setNumber(th->soundChannel->soundTransform->volume*100);
+		ret.setNumber(sys,th->soundChannel->soundTransform->volume*100);
 	else
 		ret.setInt(0);
 }

@@ -187,13 +187,15 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 {
 	Array* th=obj.as<Array>();
 	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	asAtom f(T_FUNCTION);
-	ARG_UNPACK_ATOM(f);
-	if (f.isNull() || th->currentsize == 0)
+	_NR<IFunction> func;
+	asAtom f;
+	ARG_UNPACK_ATOM(func);
+	if (func.isNull() || th->currentsize == 0)
 	{
 		ret = asAtom::fromObject(res);
 		return;
 	}
+	f = asAtom::fromObject(func.getPtr());
 	
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
@@ -251,13 +253,15 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 ASFUNCTIONBODY_ATOM(Array, some)
 {
 	Array* th=obj.as<Array>();
-	asAtom f(T_FUNCTION);
-	ARG_UNPACK_ATOM(f);
-	if (f.isNull() || th->currentsize == 0)
+	_NR<IFunction> func;
+	asAtom f;
+	ARG_UNPACK_ATOM(func);
+	if (func.isNull() || th->currentsize == 0)
 	{
 		ret.setBool(false);
 		return;
 	}
+	f = asAtom::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"some",th->getClass()->getQualifiedClassName());
@@ -311,13 +315,15 @@ ASFUNCTIONBODY_ATOM(Array, some)
 ASFUNCTIONBODY_ATOM(Array, every)
 {
 	Array* th=obj.as<Array>();
-	asAtom f(T_FUNCTION);
-	ARG_UNPACK_ATOM(f);
-	if (f.isNull() || th->currentsize == 0)
+	_NR<IFunction> func;
+	asAtom f;
+	ARG_UNPACK_ATOM(func);
+	if (func.isNull() || th->currentsize == 0)
 	{
 		ret.setBool(true);
 		return;
 	}
+	f = asAtom::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"every",th->getClass()->getQualifiedClassName());
@@ -390,11 +396,13 @@ ASFUNCTIONBODY_ATOM(Array,_setLength)
 ASFUNCTIONBODY_ATOM(Array,forEach)
 {
 	Array* th=obj.as<Array>();
-	asAtom f(T_FUNCTION);
-	ARG_UNPACK_ATOM(f);
+	_NR<IFunction> func;
+	asAtom f;
+	ARG_UNPACK_ATOM(func);
 	ret.setUndefined();
-	if (f.isNull() || th->currentsize == 0)
+	if (func.isNull() || th->currentsize == 0)
 		return;
+	f = asAtom::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"foreach",th->getClass()->getQualifiedClassName());
@@ -503,7 +511,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	}
 	else //Positive offset, use it directly
 	{
-		if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
+		if((size_t)j >= th->size()) //If the passed offset is bigger than the array, cap the offset
 			i = th->size()-1;
 		else
 			i = j;

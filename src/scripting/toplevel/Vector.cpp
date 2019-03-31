@@ -558,7 +558,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 		}
 		else //Positive offset, use it directly
 		{
-			if((size_t)j > th->size()) //If the passed offset is bigger than the array, cap the offset
+			if((size_t)j >= th->size()) //If the passed offset is bigger than the array, cap the offset
 				i = th->size()-1;
 			else
 				i = j;
@@ -939,11 +939,11 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 ASFUNCTIONBODY_ATOM(Vector,_map)
 {
 	Vector* th=obj.as<Vector>();
-	asAtom func(T_FUNCTION);
 	asAtom thisObject;
 	
 	if (argslen >= 1 && !args[0].is<IFunction>())
 		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(th->getSystemState())->getClassName(), "Function");
+	asAtom func;
 
 	ARG_UNPACK_ATOM(func)(thisObject,asAtom::nullAtom);
 	th->getClass()->getInstance(ret,true,NULL,0);

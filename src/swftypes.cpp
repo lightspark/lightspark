@@ -136,7 +136,7 @@ void multiname::setName(asAtom& n,SystemState* sys)
 		name_o = NULL;
 	}
 
-	switch(n.type)
+	switch(n.getObjectType())
 	{
 	case T_INTEGER:
 		name_i=n.intval;
@@ -151,20 +151,20 @@ void multiname::setName(asAtom& n,SystemState* sys)
 		isInteger=true;
 		break;
 	case T_NUMBER:
-		name_d=n.numberval;
+		name_d=n.toNumber();
 		name_type = NAME_NUMBER;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
 		break;
 	case T_BOOLEAN:
-		name_i=n.boolval ? 1 : 0;
+		name_i=n.toInt();
 		name_type = NAME_INT;
 		name_s_id = UINT32_MAX;
 		isInteger=true;
 		break;
 	case T_QNAME:
 		{
-			ASQName* qname=static_cast<ASQName*>(n.objval);
+			ASQName* qname=n.as<ASQName>();
 			name_s_id=qname->local_name;
 			name_type = NAME_STRING;
 			isInteger=Array::isIntegerWithoutLeadingZeros(sys->getStringFromUniqueId(name_s_id));
@@ -172,13 +172,7 @@ void multiname::setName(asAtom& n,SystemState* sys)
 		break;
 	case T_STRING:
 		{
-			if (n.stringID != UINT32_MAX)
-				name_s_id=n.stringID;
-			else
-			{
-				ASString* o=static_cast<ASString*>(n.objval);
-				name_s_id=o->hasId ? o->toStringId() : o->getSystemState()->getUniqueStringId(o->getData());
-			}
+			name_s_id=n.toStringId(sys);
 			name_type = NAME_STRING;
 			isInteger=Array::isIntegerWithoutLeadingZeros(sys->getStringFromUniqueId(name_s_id));
 		}
@@ -197,7 +191,7 @@ void multiname::setName(asAtom& n,SystemState* sys)
 		break;
 	default:
 		ASATOM_INCREF(n);
-		name_o=n.objval;
+		name_o=n.getObject();
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;

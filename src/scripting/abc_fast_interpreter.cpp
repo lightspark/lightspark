@@ -462,7 +462,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x28:
 			{
 				//pushnan
-				RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
+				RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(), Number::NaN));
 				break;
 			}
 			case 0x29:
@@ -1085,7 +1085,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//convert_d
 				RUNTIME_STACK_POP_CREATE(context,val);
-				val->convert_d();
+				val->convert_d(context->mi->context->root->getSystemState());
 				break;
 			}
 			case 0x76:

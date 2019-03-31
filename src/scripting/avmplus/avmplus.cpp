@@ -207,11 +207,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			ret.setNumber(o->toNumber());
+			ret.setNumber(sys,o->toNumber());
 			break;
 		case T_QNAME:
 		case T_NAMESPACE:
-			ret.setNumber(Number::NaN);
+			ret.setNumber(sys,Number::NaN);
 			break;
 		default:
 			o->incRef();

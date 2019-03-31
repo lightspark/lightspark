@@ -215,7 +215,7 @@ inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret
 template<>
 inline void lightspark::ArgumentConversionAtom<number_t>::toAbstract(asAtom& ret, SystemState* sys,const number_t& val)
 {
-	ret.setNumber(val);
+	ret.setNumber(sys,val);
 }
 
 template<>

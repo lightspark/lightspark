@@ -248,7 +248,7 @@ inline void Class<Number>::coerce(SystemState* sys,asAtom& o) const
 		return;
 	number_t n = o.toNumber();
 	ASATOM_DECREF(o);
-	o.setNumber(n);
+	o.setNumber(sys,n);
 }
 
 template<>

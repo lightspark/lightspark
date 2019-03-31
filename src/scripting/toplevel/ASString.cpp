@@ -724,11 +724,11 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	ARG_UNPACK_ATOM (index, 0);
 
 	// fast path if obj is ASString
-	if (obj.isString() && obj.getStringId() != UINT32_MAX)
+	if (obj.isStringID())
 	{
 		tiny_string s = sys->getStringFromUniqueId(obj.getStringId());
 		if(index<0 || index>=(int64_t)s.numChars())
-			ret.setNumber(Number::NaN);
+			ret.setNumber(sys,Number::NaN);
 		else
 			ret.setInt((int32_t)s.charAt(index));
 	}
@@ -736,7 +736,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		ASString* th = obj.as<ASString>();
 		if(index<0 || index>=(int64_t)th->getData().numChars())
-			ret.setNumber(Number::NaN);
+			ret.setNumber(sys,Number::NaN);
 		else
 		{
 			uint32_t c;
@@ -765,7 +765,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		tiny_string data = obj.toString(sys);
 		if(index<0 || index>=(int64_t)data.numChars())
-			ret.setNumber(Number::NaN);
+			ret.setNumber(sys,Number::NaN);
 		else
 		{
 			//Character codes are expected to be positive
@@ -824,7 +824,7 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
 {
 	tiny_string data = obj.toString(sys);
-	if (obj.is<ASString>() && obj.getStringId() != UINT32_MAX)
+	if (obj.is<ASString>() && obj.toStringId(sys) != UINT32_MAX)
 		ret = asAtom::fromStringID(sys->getUniqueStringId(data.lowercase()));
 	else
 		ret = asAtom::fromObject(abstract_s(sys,data.lowercase()));
@@ -833,7 +833,7 @@ ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
 ASFUNCTIONBODY_ATOM(ASString,toUpperCase)
 {
 	tiny_string data = obj.toString(sys);
-	if (obj.is<ASString>() && obj.getStringId() != UINT32_MAX)
+	if (obj.is<ASString>() && obj.toStringId(sys) != UINT32_MAX)
 		ret = asAtom::fromStringID(sys->getUniqueStringId(data.uppercase()));
 	else
 		ret = asAtom::fromObject(abstract_s(sys,data.uppercase()));

@@ -1486,7 +1486,7 @@ void ABCVm::abc_pushnan(call_context* context)
 {
 	//pushnan
 	LOG_CALL("pushNaN");
-	RUNTIME_STACK_PUSH(context,asAtom(Number::NaN));
+	RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(), Number::NaN));
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushcachedconstant(call_context* context)
@@ -1588,7 +1588,7 @@ void ABCVm::abc_pushdouble(call_context* context)
 	d64 val=context->mi->context->constant_pool.doubles[t];
 	LOG_CALL( "pushDouble " << val);
 
-	RUNTIME_STACK_PUSH(context,asAtom(val));
+	RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(),val));
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushScope(call_context* context)
@@ -3381,7 +3381,7 @@ void ABCVm::abc_convert_d(call_context* context)
 	//convert_d
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_d");
-	pval->convert_d();
+	pval->convert_d(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_d_constant(call_context* context)
@@ -3389,7 +3389,7 @@ void ABCVm::abc_convert_d_constant(call_context* context)
 	//convert_d
 	LOG_CALL("convert_d_c");
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.convert_d();
+	res.convert_d(context->mi->context->root->getSystemState());
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3398,7 +3398,7 @@ void ABCVm::abc_convert_d_local(call_context* context)
 	//convert_d
 	LOG_CALL("convert_d_l:"<<context->exec_pos->local_pos1<<" "<<context->locals_size<<" "<<context->locals[context->exec_pos->local_pos1].toDebugString());
 	asAtom res =context->locals[context->exec_pos->local_pos1];
-	res.convert_d();
+	res.convert_d(context->mi->context->root->getSystemState());
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3407,7 +3407,7 @@ void ABCVm::abc_convert_d_constant_localresult(call_context* context)
 	//convert_d
 	LOG_CALL("convert_d_cl");
 	context->locals[context->exec_pos->local_pos3-1].set(*context->exec_pos->arg1_constant);
-	context->locals[context->exec_pos->local_pos3-1].convert_d();
+	context->locals[context->exec_pos->local_pos3-1].convert_d(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_d_local_localresult(call_context* context)
@@ -3415,7 +3415,7 @@ void ABCVm::abc_convert_d_local_localresult(call_context* context)
 	//convert_d
 	LOG_CALL("convert_d_ll");
 	context->locals[context->exec_pos->local_pos3-1].set(context->locals[context->exec_pos->local_pos1]);
-	context->locals[context->exec_pos->local_pos3-1].convert_d();
+	context->locals[context->exec_pos->local_pos3-1].convert_d(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_b(call_context* context)
@@ -3496,7 +3496,7 @@ void ABCVm::abc_negate(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	number_t ret=-(pval->toNumber());
 	ASATOM_DECREF_POINTER(pval);
-	pval->setNumber(ret);
+	pval->setNumber(context->mi->context->root->getSystemState(), ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_increment(call_context* context)
@@ -3504,7 +3504,7 @@ void ABCVm::abc_increment(call_context* context)
 	//increment
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment "<<pval->toDebugString());
-	pval->increment();
+	pval->increment(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_increment_local(call_context* context)
@@ -3512,7 +3512,7 @@ void ABCVm::abc_increment_local(call_context* context)
 	//increment
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	LOG_CALL("increment_l "<<context->exec_pos->local_pos1<<" "<<res.toDebugString());
-	res.increment();
+	res.increment(context->mi->context->root->getSystemState());
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3521,7 +3521,7 @@ void ABCVm::abc_increment_local_localresult(call_context* context)
 	//increment
 	context->locals[context->exec_pos->local_pos3-1]= context->locals[context->exec_pos->local_pos1];
 	LOG_CALL("increment_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<context->locals[context->exec_pos->local_pos3-1].toDebugString());
-	context->locals[context->exec_pos->local_pos3-1].increment();
+	context->locals[context->exec_pos->local_pos3-1].increment(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal(call_context* context)
@@ -3535,14 +3535,14 @@ void ABCVm::abc_decrement(call_context* context)
 {
 	//decrement
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->decrement();
+	pval->decrement(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_decrement_local(call_context* context)
 {
 	//decrement
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.decrement();
+	res.decrement(context->mi->context->root->getSystemState());
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3550,7 +3550,7 @@ void ABCVm::abc_decrement_local_localresult(call_context* context)
 {
 	//decrement
 	context->locals[context->exec_pos->local_pos3-1]= context->locals[context->exec_pos->local_pos1];
-	context->locals[context->exec_pos->local_pos3-1].decrement();
+	context->locals[context->exec_pos->local_pos3-1].decrement(context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
 void ABCVm::abc_declocal(call_context* context)
@@ -3718,14 +3718,14 @@ void ABCVm::abc_subtract(call_context* context)
 	//Be careful, operands in subtract implementation are swapped
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->subtract(*v2);
+	pval->subtract(context->mi->context->root->getSystemState(),*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_constant_constant(call_context* context)
 {
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.subtract(*context->exec_pos->arg2_constant);
+	res.subtract(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3733,7 +3733,7 @@ void ABCVm::abc_subtract_local_constant(call_context* context)
 {
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.subtract(*context->exec_pos->arg2_constant);
+	res.subtract(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3741,7 +3741,7 @@ void ABCVm::abc_subtract_constant_local(call_context* context)
 {
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	res.subtract(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3749,7 +3749,7 @@ void ABCVm::abc_subtract_local_local(call_context* context)
 {
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	res.subtract(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3757,7 +3757,7 @@ void ABCVm::abc_subtract_constant_constant_localresult(call_context* context)
 {
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.subtract(*context->exec_pos->arg2_constant);
+	res.subtract(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3767,7 +3767,7 @@ void ABCVm::abc_subtract_local_constant_localresult(call_context* context)
 {
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.subtract(*context->exec_pos->arg2_constant);
+	res.subtract(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3777,7 +3777,7 @@ void ABCVm::abc_subtract_constant_local_localresult(call_context* context)
 {
 	//subtract
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	res.subtract(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3787,7 +3787,7 @@ void ABCVm::abc_subtract_local_local_localresult(call_context* context)
 {
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.subtract(context->locals[context->exec_pos->local_pos2]);
+	res.subtract(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3799,14 +3799,14 @@ void ABCVm::abc_multiply(call_context* context)
 	//multiply
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->multiply(*v2);
+	pval->multiply(context->mi->context->root->getSystemState(),*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_constant_constant(call_context* context)
 {
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.multiply(*context->exec_pos->arg2_constant);
+	res.multiply(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3814,7 +3814,7 @@ void ABCVm::abc_multiply_local_constant(call_context* context)
 {
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.multiply(*context->exec_pos->arg2_constant);
+	res.multiply(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3822,7 +3822,7 @@ void ABCVm::abc_multiply_constant_local(call_context* context)
 {
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	res.multiply(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3830,7 +3830,7 @@ void ABCVm::abc_multiply_local_local(call_context* context)
 {
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	res.multiply(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3838,7 +3838,7 @@ void ABCVm::abc_multiply_constant_constant_localresult(call_context* context)
 {
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.multiply(*context->exec_pos->arg2_constant);
+	res.multiply(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3848,7 +3848,7 @@ void ABCVm::abc_multiply_local_constant_localresult(call_context* context)
 {
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.multiply(*context->exec_pos->arg2_constant);
+	res.multiply(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3858,7 +3858,7 @@ void ABCVm::abc_multiply_constant_local_localresult(call_context* context)
 {
 	//multiply
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	res.multiply(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3868,7 +3868,7 @@ void ABCVm::abc_multiply_local_local_localresult(call_context* context)
 {
 	//multiply
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.multiply(context->locals[context->exec_pos->local_pos2]);
+	res.multiply(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3880,14 +3880,14 @@ void ABCVm::abc_divide(call_context* context)
 	//divide
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	pval->divide(*v2);
+	pval->divide(context->mi->context->root->getSystemState(),*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_constant_constant(call_context* context)
 {
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.divide(*context->exec_pos->arg2_constant);
+	res.divide(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3895,7 +3895,7 @@ void ABCVm::abc_divide_local_constant(call_context* context)
 {
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.divide(*context->exec_pos->arg2_constant);
+	res.divide(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3903,7 +3903,7 @@ void ABCVm::abc_divide_constant_local(call_context* context)
 {
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.divide(context->locals[context->exec_pos->local_pos2]);
+	res.divide(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3911,7 +3911,7 @@ void ABCVm::abc_divide_local_local(call_context* context)
 {
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.divide(context->locals[context->exec_pos->local_pos2]);
+	res.divide(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3919,7 +3919,7 @@ void ABCVm::abc_divide_constant_constant_localresult(call_context* context)
 {
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.divide(*context->exec_pos->arg2_constant);
+	res.divide(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3929,7 +3929,7 @@ void ABCVm::abc_divide_local_constant_localresult(call_context* context)
 {
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.divide(*context->exec_pos->arg2_constant);
+	res.divide(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3939,7 +3939,7 @@ void ABCVm::abc_divide_constant_local_localresult(call_context* context)
 {
 	//divide
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.divide(context->locals[context->exec_pos->local_pos2]);
+	res.divide(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3949,7 +3949,7 @@ void ABCVm::abc_divide_local_local_localresult(call_context* context)
 {
 	//divide
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.divide(context->locals[context->exec_pos->local_pos2]);
+	res.divide(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -3961,14 +3961,14 @@ void ABCVm::abc_modulo(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	pval->modulo(*v2);
+	pval->modulo(context->mi->context->root->getSystemState(),*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_modulo_constant_constant(call_context* context)
 {
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.modulo(*context->exec_pos->arg2_constant);
+	res.modulo(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3976,7 +3976,7 @@ void ABCVm::abc_modulo_local_constant(call_context* context)
 {
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.modulo(*context->exec_pos->arg2_constant);
+	res.modulo(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3984,7 +3984,7 @@ void ABCVm::abc_modulo_constant_local(call_context* context)
 {
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	res.modulo(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3992,7 +3992,7 @@ void ABCVm::abc_modulo_local_local(call_context* context)
 {
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	res.modulo(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4000,7 +4000,7 @@ void ABCVm::abc_modulo_constant_constant_localresult(call_context* context)
 {
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.modulo(*context->exec_pos->arg2_constant);
+	res.modulo(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -4010,7 +4010,7 @@ void ABCVm::abc_modulo_local_constant_localresult(call_context* context)
 {
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.modulo(*context->exec_pos->arg2_constant);
+	res.modulo(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -4020,7 +4020,7 @@ void ABCVm::abc_modulo_constant_local_localresult(call_context* context)
 {
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
-	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	res.modulo(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -4030,7 +4030,7 @@ void ABCVm::abc_modulo_local_local_localresult(call_context* context)
 {
 	//modulo
 	asAtom res = context->locals[context->exec_pos->local_pos1];
-	res.modulo(context->locals[context->exec_pos->local_pos2]);
+	res.modulo(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	if (context->exec_pos->local_pos3 <= context->locals_size)
 		ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
@@ -5709,16 +5709,16 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 			switch (operator_start)
 			{
 				case ABC_OP_OPTIMZED_SUBTRACT:
-					res.subtract(*op2);
+					res.subtract(mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_MULTIPLY:
-					res.multiply(*op2);
+					res.multiply(mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_DIVIDE:
-					res.divide(*op2);
+					res.divide(mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_MODULO:
-					res.modulo(*op2);
+					res.modulo(mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_LSHIFT:
 					res.lshift(*op2);

@@ -272,31 +272,59 @@ friend class multiname;
 friend class ABCContext;
 
 private:
+	enum ATOM_TYPE { ATOM_INVALID=0, ATOM_OBJECT=1, ATOM_STRINGID=2, ATOM_UNDEFINED_NULL_BOOL=3,ATOM_INTEGER=4, ATOM_UINTEGER=5, ATOM_NUMBER=6 };
 	union
 	{
 		int32_t intval;
 		uint32_t uintval;
 		uint32_t stringID;
-		number_t numberval;
-		bool boolval;
+		ASObject* objval;
 	};
-	ASObject* objval;
-	SWFOBJECT_TYPE type;
+	ATOM_TYPE type;
 	inline void decRef();
-	void replaceNumber(ASObject* obj);
 	void replaceBool(ASObject* obj);
 	bool Boolean_concrete_string();
 public:
-	asAtom():intval(0),objval(NULL),type(T_INVALID) {}
-	asAtom(SWFOBJECT_TYPE _t):intval(0),objval(NULL),type(_t) {}
-	asAtom(int32_t val):intval(val),objval(NULL),type(T_INTEGER) {}
-	asAtom(uint32_t val):uintval(val),objval(NULL),type(T_UINTEGER) {}
-	asAtom(number_t val):numberval(val),objval(NULL),type(T_NUMBER) {}
-	asAtom(bool val):boolval(val),objval(NULL),type(T_BOOLEAN) {}
+	asAtom():objval(nullptr),type(ATOM_INVALID) {}
+	asAtom(SWFOBJECT_TYPE _t):objval(nullptr)
+	{
+		switch (_t)
+		{
+			case T_INVALID:
+				type=ATOM_INVALID;
+				break;
+			case T_UNDEFINED:
+				type=ATOM_UNDEFINED_NULL_BOOL;
+				uintval = 0x40;
+				break;
+			case T_NULL:
+				type=ATOM_UNDEFINED_NULL_BOOL;
+				uintval = 0x80;
+				break;
+			case T_BOOLEAN:
+				type=ATOM_UNDEFINED_NULL_BOOL;
+				break;
+			case T_NUMBER:
+				type=ATOM_NUMBER;
+				break;
+			case T_INTEGER:
+				type=ATOM_INTEGER;
+				break;
+			case T_UINTEGER:
+				type=ATOM_UINTEGER;
+				break;
+			default:
+				type=ATOM_OBJECT;
+				break;
+		}
+	}
+	asAtom(int32_t val):intval(val),type(ATOM_INTEGER) {}
+	asAtom(uint32_t val):uintval(val),type(ATOM_UINTEGER) {}
+	asAtom(SystemState* sys, number_t val);
+	asAtom(bool val):uintval(val ? 0x100 : 0),type(ATOM_UNDEFINED_NULL_BOOL) {}
 	ASObject* toObject(SystemState* sys);
 	// returns NULL if this atom is a primitive;
 	FORCE_INLINE ASObject* getObject() const; 
-	FORCE_INLINE number_t getNumber() const { return numberval; }
 	static FORCE_INLINE asAtom fromObject(ASObject* obj)
 	{
 		asAtom a;
@@ -308,9 +336,8 @@ public:
 	static FORCE_INLINE asAtom fromStringID(uint32_t sID)
 	{
 		asAtom a;
-		a.type = T_STRING;
+		a.type = ATOM_STRINGID;
 		a.stringID = sID;
-		a.objval = NULL;
 		return a;
 	}
 	// only use this for strings that should get an internal stringID
@@ -334,11 +361,14 @@ public:
 	Class_base* getClass(SystemState *sys);
 	bool canCacheMethod(const multiname* name);
 	void fillMultiname(SystemState *sys, multiname& name);
-	void replace(ASObject* obj);
+	void replace(ASObject* obj)
+	{
+		type = ATOM_OBJECT;
+		objval = obj;
+	}
 	FORCE_INLINE void set(const asAtom& a)
 	{
 		type = a.type;
-		numberval = a.numberval;
 		objval = a.objval;
 	}
 	bool stringcompare(SystemState* sys, uint32_t stringID);
@@ -350,23 +380,25 @@ public:
 	FORCE_INLINE bool isEqualStrict(SystemState *sys, asAtom& v2);
 	FORCE_INLINE bool isConstructed() const;
 	FORCE_INLINE bool isPrimitive() const;
-	FORCE_INLINE bool isNumeric() const { return (type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER); }
-	FORCE_INLINE bool isValid() const { return type != T_INVALID; }
-	FORCE_INLINE bool isInvalid() const { return type == T_INVALID; }
-	FORCE_INLINE bool isFunction() const { return type == T_FUNCTION; }
-	FORCE_INLINE bool isString() const { return type == T_STRING; }
-	FORCE_INLINE bool isInteger() const { return type == T_INTEGER; }
-	FORCE_INLINE bool isUInteger() const { return type == T_UINTEGER; }
-	FORCE_INLINE bool isBool() const { return type == T_BOOLEAN; }
-	FORCE_INLINE bool isQName() const { return type == T_QNAME; }
-	FORCE_INLINE bool isNamespace() const { return type == T_NAMESPACE; }
-	FORCE_INLINE bool isObject() const { return type == T_OBJECT; }
-	FORCE_INLINE bool isArray() const { return type == T_ARRAY; }
-	FORCE_INLINE bool isClass() const { return type == T_CLASS; }
-	FORCE_INLINE bool isTemplate() const { return type == T_TEMPLATE; }
-	FORCE_INLINE bool isNull() const { return type == T_NULL; }
-	FORCE_INLINE bool isUndefined() const { return type == T_UNDEFINED; }
-	FORCE_INLINE SWFOBJECT_TYPE getObjectType() const { return type; }
+	FORCE_INLINE bool isNumeric() const; 
+	FORCE_INLINE bool isNumber() const; 
+	FORCE_INLINE bool isValid() const { return type != ATOM_INVALID; }
+	FORCE_INLINE bool isInvalid() const { return type == ATOM_INVALID; }
+	FORCE_INLINE bool isInteger() const;
+	FORCE_INLINE bool isUInteger() const;
+	FORCE_INLINE bool isBool() const;
+	FORCE_INLINE bool isObject() const { return type == ATOM_OBJECT; }
+	FORCE_INLINE bool isFunction() const;
+	FORCE_INLINE bool isString() const;
+	FORCE_INLINE bool isStringID() const { return type == ATOM_STRINGID; }
+	FORCE_INLINE bool isQName() const;
+	FORCE_INLINE bool isNamespace() const;
+	FORCE_INLINE bool isArray() const;
+	FORCE_INLINE bool isClass() const;
+	FORCE_INLINE bool isTemplate() const;
+	FORCE_INLINE bool isNull() const;
+	FORCE_INLINE bool isUndefined() const;
+	FORCE_INLINE SWFOBJECT_TYPE getObjectType() const;
 	FORCE_INLINE bool checkArgumentConversion(const asAtom& obj) const;
 	FORCE_INLINE ASObject* checkObject();
 	asAtom asTypelate(asAtom& atomtype);
@@ -381,31 +413,31 @@ public:
 	tiny_string toLocaleString();
 	uint32_t toStringId(SystemState *sys);
 	asAtom typeOf(SystemState *sys);
-	FORCE_INLINE bool Boolean_concrete();
+	bool Boolean_concrete();
 	FORCE_INLINE void convert_i();
 	FORCE_INLINE void convert_u();
-	FORCE_INLINE void convert_d();
+	FORCE_INLINE void convert_d(SystemState* sys);
 	void convert_b();
-	FORCE_INLINE int32_t getInt() const { assert(type == T_INTEGER); return intval; }
-	FORCE_INLINE uint32_t getUInt() const{ assert(type == T_UINTEGER); return uintval; }
-	FORCE_INLINE uint32_t getStringId() const{ assert(type == T_STRING); return stringID; }
+	FORCE_INLINE int32_t getInt() const { assert(type == ATOM_INTEGER); return intval; }
+	FORCE_INLINE uint32_t getUInt() const{ assert(type == ATOM_UINTEGER); return uintval; }
+	FORCE_INLINE uint32_t getStringId() const{ assert(type == ATOM_STRINGID); return stringID; }
 	FORCE_INLINE void setInt(int32_t val);
 	FORCE_INLINE void setUInt(uint32_t val);
-	FORCE_INLINE void setNumber(number_t val);
+	void setNumber(SystemState* sys,number_t val);
 	FORCE_INLINE void setBool(bool val);
 	FORCE_INLINE void setNull();
 	FORCE_INLINE void setUndefined();
 	void setFunction(ASObject* obj, ASObject* closure);
-	FORCE_INLINE void increment();
-	FORCE_INLINE void decrement();
+	FORCE_INLINE void increment(SystemState* sys);
+	FORCE_INLINE void decrement(SystemState* sys);
 	FORCE_INLINE void increment_i();
 	FORCE_INLINE void decrement_i();
 	void add(asAtom& v2, SystemState *sys, bool isrefcounted);
 	FORCE_INLINE void bitnot();
-	FORCE_INLINE void subtract(asAtom& v2);
-	FORCE_INLINE void multiply(asAtom& v2);
-	FORCE_INLINE void divide(asAtom& v2);
-	FORCE_INLINE void modulo(asAtom& v2);
+	FORCE_INLINE void subtract(SystemState* sys,asAtom& v2);
+	FORCE_INLINE void multiply(SystemState* sys,asAtom& v2);
+	FORCE_INLINE void divide(SystemState* sys,asAtom& v2);
+	FORCE_INLINE void modulo(SystemState* sys,asAtom& v2);
 	FORCE_INLINE void lshift(asAtom& v1);
 	FORCE_INLINE void rshift(asAtom& v1);
 	FORCE_INLINE void urshift(asAtom& v1);
@@ -1165,57 +1197,27 @@ template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_X
 
 
 template<class T> inline bool asAtom::is() const {
-	return objval ? objval->is<T>() : false;
+	return type == ATOM_OBJECT && objval ? objval->is<T>() : false;
 }
-template<> inline bool asAtom::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool asAtom::is<asAtom>() const { return true; }
 template<> inline bool asAtom::is<ASObject>() const { return true; }
-template<> inline bool asAtom::is<ASQName>() const { return type==T_QNAME; }
-template<> inline bool asAtom::is<ASString>() const { return type==T_STRING; }
-template<> inline bool asAtom::is<Boolean>() const { return type==T_BOOLEAN; }
-template<> inline bool asAtom::is<Class_base>() const { return type==T_CLASS; }
-template<> inline bool asAtom::is<IFunction>() const { return type==T_FUNCTION; }
-template<> inline bool asAtom::is<Integer>() const { return type==T_INTEGER; }
-template<> inline bool asAtom::is<Namespace>() const { return type==T_NAMESPACE; }
-template<> inline bool asAtom::is<Null>() const { return type==T_NULL; }
-template<> inline bool asAtom::is<Number>() const { return type==T_NUMBER; }
-template<> inline bool asAtom::is<Type>() const { return type==T_CLASS; }
-template<> inline bool asAtom::is<UInteger>() const { return type==T_UINTEGER; }
-template<> inline bool asAtom::is<Undefined>() const { return type==T_UNDEFINED; }
+template<> inline bool asAtom::is<ASString>() const { return type==ATOM_STRINGID || (type==ATOM_OBJECT && objval && objval->is<ASString>()); }
+template<> inline bool asAtom::is<Boolean>() const { return (type==ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xff) == 0)) || (type==ATOM_OBJECT && objval && objval->is<Boolean>()); }
+template<> inline bool asAtom::is<Integer>() const { return type==ATOM_INTEGER || (type==ATOM_OBJECT && objval && objval->is<Integer>()); }
+template<> inline bool asAtom::is<Null>() const { return (type==ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xff) == 0x80))|| (type==ATOM_OBJECT && objval && objval->is<Null>()); }
+template<> inline bool asAtom::is<Number>() const { return type==ATOM_NUMBER || (type==ATOM_OBJECT && objval && objval->is<Number>()); }
+template<> inline bool asAtom::is<UInteger>() const { return type==ATOM_UINTEGER || (type==ATOM_OBJECT && objval && objval->is<UInteger>()); }
+template<> inline bool asAtom::is<Undefined>() const { return (type==ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xff) == 0x40))|| (type==ATOM_OBJECT && objval && objval->is<Undefined>()); }
 
 
 void asAtom::decRef()
 {
-	if (objval && objval->decRef())
-		objval = NULL;
+	if ((type==ATOM_NUMBER || type==ATOM_OBJECT) && objval)
+		objval->decRef();
 }
 
-static int32_t NumbertoInt(number_t val)
-{
-	double posInt;
-
-	/* step 2 */
-	if(std::isnan(val) || std::isinf(val) || val == 0.0)
-		return 0;
-	/* step 3 */
-	posInt = std::floor(std::abs(val));
-	/* step 4 */
-	if (posInt > 4294967295.0)
-		posInt = fmod(posInt, 4294967296.0);
-	/* step 5 */
-	if (posInt >= 2147483648.0) {
-		// follow tamarin
-		if(val < 0.0)
-			return 0x80000000 - (int32_t)(posInt - 2147483648.0);
-		else
-			return 0x80000000 + (int32_t)(posInt - 2147483648.0);
-	}
-	return (int32_t)(val < 0.0 ? -posInt : posInt);
-}
 ASObject* asAtom::checkObject()
 {
-	if (type == T_STRING && stringID != UINT32_MAX && !objval)
-		objval = (ASObject*)abstract_s(getSys(),stringID);
 	assert(objval);
 	return objval;
 }
@@ -1224,18 +1226,21 @@ FORCE_INLINE int32_t asAtom::toInt()
 {
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return NumbertoInt(numberval);
-		case T_BOOLEAN:
-			return boolval;
-		case T_UNDEFINED:
-		case T_NULL:
-		case T_INVALID:
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			int32_t ret = s->toInt();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toInt();
 	}
@@ -1244,18 +1249,21 @@ FORCE_INLINE int32_t asAtom::toIntStrict()
 {
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return NumbertoInt(numberval);
-		case T_BOOLEAN:
-			return boolval;
-		case T_UNDEFINED:
-		case T_NULL:
-		case T_INVALID:
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			int32_t ret = s->toIntStrict();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toIntStrict();
 	}
@@ -1264,20 +1272,23 @@ FORCE_INLINE number_t asAtom::toNumber()
 {
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return numberval;
-		case T_BOOLEAN:
-			return boolval;
-		case T_NULL:
+		case ATOM_NUMBER:
+			return checkObject()->toNumber();
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return uintval&0x40 ? numeric_limits<double>::quiet_NaN() : (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
-		case T_UNDEFINED:
-			return numeric_limits<double>::quiet_NaN();
-		case T_INVALID:
-			return 0;
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			number_t ret = s->toNumber();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toNumber();
 	}
@@ -1286,20 +1297,21 @@ FORCE_INLINE number_t asAtom::AVM1toNumber(int swfversion)
 {
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return numberval;
-		case T_BOOLEAN:
-			return boolval;
-		case T_NULL:
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return uintval&0x40 && swfversion >= 7 ? numeric_limits<double>::quiet_NaN() : (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
-		case T_UNDEFINED:
-			return swfversion >= 7 ? numeric_limits<double>::quiet_NaN() : 0;
-		case T_INVALID:
-			return 0;
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			number_t ret = s->toNumber();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toNumber();
 	}
@@ -1308,18 +1320,14 @@ FORCE_INLINE bool asAtom::AVM1toBool()
 {
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return numberval;
-		case T_BOOLEAN:
-			return boolval;
-		case T_NULL:
-		case T_UNDEFINED:
-		case T_INVALID:
-			return false;
+		case ATOM_NUMBER:
+			return toNumber();
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return (uintval&0x100)>>8;
 		default:
 			return true;
 	}
@@ -1329,20 +1337,21 @@ FORCE_INLINE int64_t asAtom::toInt64()
 {
 	switch(type)
 	{
-		case T_UNDEFINED:
-			return 0;
-		case T_NULL:
-			return 0;
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return numberval;
-		case T_BOOLEAN:
-			return boolval;
-		case T_INVALID:
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			int64_t ret = s->toInt64();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toInt64();
 	}
@@ -1351,20 +1360,21 @@ FORCE_INLINE uint32_t asAtom::toUInt()
 {
 	switch(type)
 	{
-		case T_UNDEFINED:
-			return 0;
-		case T_NULL:
-			return 0;
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			return intval;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			return uintval;
-		case T_NUMBER:
-			return numberval;
-		case T_BOOLEAN:
-			return boolval;
-		case T_INVALID:
+		case ATOM_UNDEFINED_NULL_BOOL:
+			return (uintval&0x100)>>8;
+		case ATOM_INVALID:
 			return 0;
+		case ATOM_STRINGID:	
+		{
+			ASObject* s = abstract_s(getSys(),stringID);
+			uint32_t ret = s->toUInt();
+			s->decRef();
+			return ret;
+		}
 		default:
 			return checkObject()->toUInt();
 	}
@@ -1374,20 +1384,14 @@ FORCE_INLINE void asAtom::applyProxyProperty(SystemState* sys,multiname &name)
 {
 	switch(type)
 	{
-		case T_INTEGER:
-		case T_UINTEGER:
-		case T_NUMBER:
-		case T_BOOLEAN:
-		case T_NULL:
-		case T_UNDEFINED:
-		case T_INVALID:
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_NUMBER:
+		case ATOM_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID:
 			break;
-		case T_STRING:
-			if (!objval && stringID != UINT32_MAX)
-				break; // no need to create string, as it won't have a proxyMultiName
-			assert(objval);
-			objval->applyProxyProperty(name);
-			break;
+		case ATOM_STRINGID:
+			break; // no need to create string, as it won't have a proxyMultiName
 		default:
 			assert(objval);
 			objval->applyProxyProperty(name);
@@ -1398,134 +1402,167 @@ FORCE_INLINE TRISTATE asAtom::isLess(SystemState* sys,asAtom &v2)
 {
 	switch (type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 		{
 			switch (v2.type)
 			{
-				case T_INTEGER:
+				case ATOM_INTEGER:
 					return (intval < v2.intval)?TTRUE:TFALSE;
-				case T_UINTEGER:
+				case ATOM_UINTEGER:
 					return (intval < 0 || ((uint32_t)intval)  < v2.uintval)?TTRUE:TFALSE;
-				case T_NUMBER:
-					if(std::isnan(v2.numberval))
+				case ATOM_NUMBER:
+					if(std::isnan(v2.toNumber()))
 						return TUNDEFINED;
-					return (intval < v2.numberval)?TTRUE:TFALSE;
-				case T_BOOLEAN:
-					return (intval < v2.toInt())?TTRUE:TFALSE;
-				case T_UNDEFINED:
-					return TUNDEFINED;
-				case T_NULL:
-					return (intval < 0)?TTRUE:TFALSE;
+					return (intval < v2.toNumber())?TTRUE:TFALSE;
+				case ATOM_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return (intval < 0)?TTRUE:TFALSE;
+						case 0x40: // UNDEFINED
+							return TUNDEFINED;
+						default: // BOOL
+							return (intval < (int32_t)((v2.uintval&0x100)>>8))?TTRUE:TFALSE;
+					}
+				}
 				default:
 					break;
 			}
 			break;
 		}
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 		{
 			switch (v2.type)
 			{
-				case T_INTEGER:
+				case ATOM_INTEGER:
 					return (v2.intval > 0 && (uintval < (uint32_t)v2.intval))?TTRUE:TFALSE;
-				case T_UINTEGER:
+				case ATOM_UINTEGER:
 					return (uintval < v2.uintval)?TTRUE:TFALSE;
-				case T_NUMBER:
-					if(std::isnan(v2.numberval))
+				case ATOM_NUMBER:
+					if(std::isnan(v2.toNumber()))
 						return TUNDEFINED;
-					return (uintval < v2.numberval)?TTRUE:TFALSE;
-				case T_BOOLEAN:
-					return (uintval < v2.toUInt())?TTRUE:TFALSE;
-				case T_UNDEFINED:
-					return TUNDEFINED;
-				case T_NULL:
-					return TFALSE;
+					return (uintval < v2.toNumber())?TTRUE:TFALSE;
+				case ATOM_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return TFALSE;
+						case 0x40: // UNDEFINED
+							return TUNDEFINED;
+						default: // BOOL
+							return (uintval < (v2.uintval&0x100)>>8)?TTRUE:TFALSE;
+					}
+				}
 				default:
 					break;
 			}
 			break;
 		}
-		case T_NUMBER:
+		case ATOM_NUMBER:
 		{
-			if(std::isnan(numberval))
+			if(std::isnan(toNumber()))
 				return TUNDEFINED;
 			switch (v2.type)
 			{
-				case T_INTEGER:
-					return (numberval  < v2.intval)?TTRUE:TFALSE;
-				case T_UINTEGER:
-					return (numberval < v2.uintval)?TTRUE:TFALSE;
-				case T_NUMBER:
-					if(std::isnan(v2.numberval))
+				case ATOM_INTEGER:
+					return (toNumber()  < v2.intval)?TTRUE:TFALSE;
+				case ATOM_UINTEGER:
+					return (toNumber() < v2.uintval)?TTRUE:TFALSE;
+				case ATOM_NUMBER:
+					if(std::isnan(v2.toNumber()))
 						return TUNDEFINED;
-					return (numberval < v2.numberval)?TTRUE:TFALSE;
-				case T_BOOLEAN:
-					return (numberval < v2.toInt())?TTRUE:TFALSE;
-				case T_UNDEFINED:
-					return TUNDEFINED;
-				case T_NULL:
-					return (numberval < 0)?TTRUE:TFALSE;
+					return (toNumber() < v2.toNumber())?TTRUE:TFALSE;
+				case ATOM_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return (toNumber() < 0)?TTRUE:TFALSE;
+						case 0x40: // UNDEFINED
+							return TUNDEFINED;
+						default: // BOOL
+							return (toNumber() < v2.toInt())?TTRUE:TFALSE;
+					}
+				}
 				default:
 					break;
 			}
 			break;
 		}
-		case T_BOOLEAN:
+		case ATOM_UNDEFINED_NULL_BOOL:
 		{
-			switch (v2.type)
+			switch (uintval&0xf0)
 			{
-				case T_INTEGER:
-					return (boolval < v2.intval)?TTRUE:TFALSE;
-				case T_UINTEGER:
-					return (boolval < v2.uintval)?TTRUE:TFALSE;
-				case T_NUMBER:
-					if(std::isnan(v2.numberval))
-						return TUNDEFINED;
-					return (boolval < v2.numberval)?TTRUE:TFALSE;
-				case T_BOOLEAN:
-					return (boolval < v2.boolval)?TTRUE:TFALSE;
-				case T_UNDEFINED:
-					return TUNDEFINED;
-				case T_NULL:
-					return (boolval)?TTRUE:TFALSE;
-				default:
+				case 0x80: // NULL
+				{
+					switch (v2.type)
+					{
+						case ATOM_INTEGER:
+							return (0 < v2.intval)?TTRUE:TFALSE;
+						case ATOM_UINTEGER:
+							return (0 < v2.uintval)?TTRUE:TFALSE;
+						case ATOM_NUMBER:
+							if(std::isnan(v2.toNumber()))
+								return TUNDEFINED;
+							return (0 < v2.toNumber())?TTRUE:TFALSE;
+						case ATOM_UNDEFINED_NULL_BOOL:
+							switch (v2.uintval&0xf0)
+							{
+								case 0x80: // NULL
+									return TFALSE;
+								case 0x40: // UNDEFINED
+									return TUNDEFINED;
+								default: // BOOL
+									return (0 < (v2.uintval&0x100)>>8)?TTRUE:TFALSE;
+							}
+						default:
+							break;
+					}
 					break;
+				}
+				case 0x40: // UNDEFINED
+					return TUNDEFINED;
+				default: // BOOL
+				{
+					switch (v2.type)
+					{
+						case ATOM_INTEGER:
+							return ((int32_t)(uintval&0x100)>>8 < v2.intval)?TTRUE:TFALSE;
+						case ATOM_UINTEGER:
+							return ((uintval&0x100)>>8 < v2.uintval)?TTRUE:TFALSE;
+						case ATOM_NUMBER:
+							if(std::isnan(v2.toNumber()))
+								return TUNDEFINED;
+							return ((uintval&0x100)>>8 < v2.toNumber())?TTRUE:TFALSE;
+						case ATOM_UNDEFINED_NULL_BOOL:
+							switch (v2.uintval&0xf0)
+							{
+								case 0x80: // NULL
+									return ((uintval&0x100)>>8)?TTRUE:TFALSE;
+								case 0x40: // UNDEFINED
+									return TUNDEFINED;
+								default: // BOOL
+									return ((uintval&0x100)>>8 < (v2.uintval&0x100)>>8)?TTRUE:TFALSE;
+							}
+						default:
+							break;
+					}
+					break;
+				}
 			}
 			break;
 		}
-		case T_NULL:
-		{
-			switch (v2.type)
-			{
-				case T_INTEGER:
-					return (0 < v2.intval)?TTRUE:TFALSE;
-				case T_UINTEGER:
-					return (0 < v2.uintval)?TTRUE:TFALSE;
-				case T_NUMBER:
-					if(std::isnan(v2.numberval))
-						return TUNDEFINED;
-					return (0 < v2.numberval)?TTRUE:TFALSE;
-				case T_BOOLEAN:
-					return (0 < v2.boolval)?TTRUE:TFALSE;
-				case T_UNDEFINED:
-					return TUNDEFINED;
-				case T_NULL:
-					return TFALSE;
-				default:
-					break;
-			}
-			break;
-		}
-		case T_UNDEFINED:
+		case ATOM_INVALID:
 			return TUNDEFINED;
-		case T_INVALID:
-			return TUNDEFINED;
-		case T_STRING:
+		case ATOM_STRINGID:
 		{
 			if (stringID < BUILTIN_STRINGS_CHAR_MAX)
 			{
 				switch (v2.type)
 				{
-					case T_STRING:
+					case ATOM_STRINGID:
 						if (v2.stringID < BUILTIN_STRINGS_CHAR_MAX)
 							return (stringID < v2.stringID)?TTRUE:TFALSE;
 						break;
@@ -1544,186 +1581,178 @@ FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 {
 	switch (type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 		{
 			switch (v2.type)
 			{
-				case T_INTEGER:
+				case ATOM_INTEGER:
 					return intval==v2.toInt();
-				case T_UINTEGER:
+				case ATOM_UINTEGER:
 					return intval >= 0 && intval==v2.toInt();
-				case T_NUMBER:
+				case ATOM_NUMBER:
 					return intval==v2.toNumber();
-				case T_BOOLEAN:
-					return intval==v2.toInt();
-				case T_STRING:
+				case ATOM_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return false;
+						case 0x40: // UNDEFINED
+							return false;
+						default: // BOOL
+							return intval==v2.toInt();
+					}
+				}
+				case ATOM_STRINGID:
 					return intval==v2.toNumber();
-				case T_NULL:
-				case T_UNDEFINED:
-					return false;
 				default:
 					return v2.toObject(sys)->isEqual(this->toObject(sys));
 			}
 			break;
 		}
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 		{
 			switch (v2.type)
 			{
-				case T_INTEGER:
+				case ATOM_INTEGER:
 					return v2.intval >= 0 && uintval==v2.toUInt();
-				case T_UINTEGER:
-				case T_NUMBER:
-				case T_STRING:
-				case T_BOOLEAN:
+				case ATOM_UINTEGER:
+				case ATOM_NUMBER:
+				case ATOM_STRINGID:
 					return uintval==v2.toUInt();
-				case T_NULL:
-				case T_UNDEFINED:
-					return false;
+				case ATOM_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return false;
+						case 0x40: // UNDEFINED
+							return false;
+						default: // BOOL
+							return uintval==v2.toUInt();
+					}
+				}
 				default:
 					return v2.toObject(sys)->isEqual(this->toObject(sys));
 			}
 			break;
 		}
-		case T_NUMBER:
+		case ATOM_NUMBER:
 		{
 			switch (v2.type)
 			{
-				case T_INTEGER:
-				case T_UINTEGER:
-				case T_BOOLEAN:
-					return numberval==v2.toNumber();
-				case T_NUMBER:
-					return numberval == v2.numberval;
-				case T_STRING:
-					return numberval==v2.toNumber();
-				case T_NULL:
-				case T_UNDEFINED:
-					return false;
+				case ATOM_INTEGER:
+				case ATOM_UINTEGER:
+					return toNumber()==v2.toNumber();
+				case ATOM_NUMBER:
+					return toNumber() == v2.toNumber();
+				case ATOM_STRINGID:
+					return toNumber()==v2.toNumber();
+				case ATOM_UNDEFINED_NULL_BOOL:
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return false;
+						case 0x40: // UNDEFINED
+							return false;
+						default: // BOOL
+							return toNumber()==v2.toNumber();
+					}
 				default:
 					return v2.toObject(sys)->isEqual(this->toObject(sys));
 			}
 			break;
 		}
-		case T_BOOLEAN:
+		case ATOM_UNDEFINED_NULL_BOOL:
 		{
-			switch (v2.type)
+			switch (uintval&0xf0)
 			{
-				case T_BOOLEAN:
-					return boolval==v2.boolval;
-				case T_STRING:
-					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
-						return false;
-					return boolval==v2.toNumber();
-				case T_INTEGER:
-				case T_UINTEGER:
-				case T_NUMBER:
-					return boolval==v2.toNumber();
-				case T_NULL:
-				case T_UNDEFINED:
-					return false;
-				default:
-					return v2.toObject(sys)->isEqual(this->toObject(sys));
+				case 0x80: // NULL
+				case 0x40: // UNDEFINED
+					switch (v2.type)
+					{
+						case ATOM_UNDEFINED_NULL_BOOL:
+						{
+							switch (v2.uintval&0xf0)
+							{
+								case 0x80: // NULL
+									return true;
+								case 0x40: // UNDEFINED
+									return true;
+								default: // BOOL
+									return false;
+							}
+						}
+						case ATOM_INTEGER:
+						case ATOM_UINTEGER:
+						case ATOM_NUMBER:
+							return false;
+						case ATOM_STRINGID:
+							return false;
+						default:
+							return v2.toObject(sys)->isEqual(this->toObject(sys));
+					}
+				default: // BOOL
+					switch (v2.type)
+					{
+						case ATOM_STRINGID:
+							return (bool)((uintval&0x100)>>8)==v2.toNumber();
+						case ATOM_INTEGER:
+						case ATOM_UINTEGER:
+						case ATOM_NUMBER:
+							return (bool)((uintval&0x100)>>8)==v2.toNumber();
+						case ATOM_UNDEFINED_NULL_BOOL:
+						{
+							switch (v2.uintval&0xf0)
+							{
+								case 0x80: // NULL
+									return false;
+								case 0x40: // UNDEFINED
+									return false;
+								default: // BOOL
+									return (uintval&0x100)>>8==(v2.uintval&0x100)>>8;
+							}
+						}
+						default:
+							return v2.toObject(sys)->isEqual(this->toObject(sys));
+					}
 			}
 			break;
 		}
-		case T_NULL:
-		{
-			switch (v2.type)
-			{
-				case T_NULL:
-				case T_UNDEFINED:
-					return true;
-				case T_INTEGER:
-				case T_UINTEGER:
-				case T_NUMBER:
-				case T_BOOLEAN:
-					return false;
-				case T_FUNCTION:
-					if (v2.stringID != UINT32_MAX)
-						return false;
-					if (!v2.objval->isConstructed())
-						return true;
-					return false;
-				case T_STRING:
-					if (v2.stringID != UINT32_MAX)
-						return false;
-					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
-						return true;
-					return false;
-				default:
-					return v2.toObject(sys)->isEqual(this->toObject(sys));
-			}
-			break;
-		}
-		case T_UNDEFINED:
-		{
-			switch (v2.type)
-			{
-				case T_UNDEFINED:
-				case T_NULL:
-					return true;
-				case T_NUMBER:
-				case T_INTEGER:
-				case T_UINTEGER:
-				case T_BOOLEAN:
-					return false;
-				case T_FUNCTION:
-					if (!v2.objval->isConstructed())
-						return true;
-					return false;
-				case T_STRING:
-					if (v2.stringID != UINT32_MAX)
-						return false;
-					if ((!v2.objval && v2.stringID == UINT32_MAX) || (v2.objval && !v2.objval->isConstructed()))
-						return true;
-					return false;
-				default:
-					return v2.toObject(sys)->isEqual(this->toObject(sys));
-			}
-		}
-		case T_FUNCTION:
-		{
-			switch (v2.type)
-			{
-				case T_FUNCTION:
-					return functioncompare(sys,v2);
-				default:
-					return false;
-			}
-		}
-		case T_INVALID:
+		case ATOM_INVALID:
 			return false;
-		case T_STRING:
+		case ATOM_STRINGID:
 		{
-			if (stringID != UINT32_MAX)
+			switch (v2.type)
 			{
-				switch (v2.type)
+				case ATOM_UNDEFINED_NULL_BOOL:
 				{
-					case T_NULL:
-					case T_UNDEFINED:
-						return false;
-					case T_STRING:
-						if (v2.stringID != UINT32_MAX)
-							return v2.stringID == stringID;
-						else
-							return v2.stringcompare(sys,stringID);
-						break;
-					default:
-						break;
+					switch (v2.uintval&0xf0)
+					{
+						case 0x80: // NULL
+							return false;
+						case 0x40: // UNDEFINED
+							return false;
+						default: // BOOL
+							break;
+					}
+					break;
 				}
+				case ATOM_STRINGID:
+					return v2.stringID == stringID;
+				default:
+					return v2.toObject(sys)->isEqual(this->toObject(sys));
 			}
-			else
+			break;
+		}
+		case ATOM_OBJECT:
+		{
+			if (this->is<IFunction>())
 			{
-				switch (v2.type)
-				{
-					case T_STRING:
-						if (v2.stringID != UINT32_MAX)
-							return stringcompare(sys,v2.stringID);
-						break;
-					default:
-						break;
-				}
+				if (v2.is<IFunction>())
+					return functioncompare(sys,v2);
+				else
+					return false;
 			}
 			break;
 		}
@@ -1735,31 +1764,59 @@ FORCE_INLINE bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 
 FORCE_INLINE bool asAtom::isEqualStrict(SystemState *sys, asAtom &v2)
 {
-	if(type!=v2.type)
+	if(getObjectType()!=v2.getObjectType())
 	{
 		//Type conversions are ok only for numeric types
 		switch(type)
 		{
-			case T_NUMBER:
-			case T_INTEGER:
-			case T_UINTEGER:
+			case ATOM_NUMBER:
+			case ATOM_INTEGER:
+			case ATOM_UINTEGER:
 				break;
-			case T_NULL:
-				if (!v2.isConstructed() && v2.type!=T_CLASS)
-					return true;
+			case ATOM_UNDEFINED_NULL_BOOL:
+			{
+				switch (uintval&0xf0)
+				{
+					case 0x80: // NULL
+						if (!v2.isConstructed() && v2.getObjectType()!=T_CLASS)
+							return true;
+						return false;
+					case 0x40: // UNDEFINED
+					default: // BOOL
+						return false;
+				}
+				break;
+			}
+			case ATOM_OBJECT:
+				if (isNumber())
+					break;
 				return false;
 			default:
 				return false;
 		}
 		switch(v2.type)
 		{
-			case T_NUMBER:
-			case T_INTEGER:
-			case T_UINTEGER:
+			case ATOM_NUMBER:
+			case ATOM_INTEGER:
+			case ATOM_UINTEGER:
 				break;
-			case T_NULL:
-				if (!isConstructed() && type!=T_CLASS)
-					return true;
+			case ATOM_UNDEFINED_NULL_BOOL:
+			{
+				switch (v2.uintval&0xf0)
+				{
+					case 0x80: // NULL
+						if (!isConstructed() && getObjectType()!=T_CLASS)
+							return true;
+						return false;
+					case 0x40: // UNDEFINED
+					default: // BOOL
+						return false;
+				}
+				break;
+			}
+			case ATOM_OBJECT:
+				if (v2.isNumber())
+					break;
 				return false;
 			default:
 				return false;
@@ -1773,17 +1830,15 @@ FORCE_INLINE bool asAtom::isConstructed() const
 {
 	switch(type)
 	{
-		case T_INTEGER:
-		case T_UINTEGER:
-		case T_NUMBER:
-		case T_BOOLEAN:
-		case T_NULL:
-		case T_UNDEFINED:
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_NUMBER:
+		case ATOM_UNDEFINED_NULL_BOOL:
 			return true;
-		case T_INVALID:
+		case ATOM_INVALID:
 			return false;
-		case T_STRING:
-			return stringID != UINT32_MAX || objval->isConstructed();
+		case ATOM_STRINGID:
+			return true;
 		default:
 			assert(objval);
 			return objval->isConstructed();
@@ -1794,125 +1849,143 @@ FORCE_INLINE bool asAtom::isPrimitive() const
 {
 	// ECMA 3, section 4.3.2, T_INTEGER and T_UINTEGER are added
 	// because they are special cases of Number
-	return type==T_NUMBER || type ==T_UNDEFINED || type == T_NULL ||
-		type==T_STRING || type==T_BOOLEAN || type==T_INTEGER ||
-			type==T_UINTEGER;
+	return isUndefined() || isNull() || isNumber() || isString() || isInteger()|| isUInteger() || isBool();
 }
 FORCE_INLINE bool asAtom::checkArgumentConversion(const asAtom& obj) const
 {
 	if (type == obj.type)
+	{
+		if (type == ATOM_OBJECT)
+			return objval->getObjectType() == obj.objval->getObjectType();
 		return true;
-	if ((type==T_NUMBER || type==T_INTEGER || type==T_UINTEGER) &&
-		(obj.type==T_NUMBER || obj.isInteger() || obj.type==T_UINTEGER))
+	}
+	if ((type==ATOM_NUMBER || type==ATOM_INTEGER || type==ATOM_UINTEGER) &&
+		(obj.type==ATOM_NUMBER || obj.isInteger() || obj.type==ATOM_UINTEGER))
 		return true;
 	return false;
 }
 
 FORCE_INLINE void asAtom::setInt(int32_t val)
 {
-	type = T_INTEGER;
+	type = ATOM_INTEGER;
 	intval = val;
-	objval = NULL;
 }
 
 FORCE_INLINE void asAtom::setUInt(uint32_t val)
 {
-	type = T_UINTEGER;
+	type = ATOM_UINTEGER;
 	uintval = val;
-	objval = NULL;
-}
-
-FORCE_INLINE void asAtom::setNumber(number_t val)
-{
-	type = T_NUMBER;
-	numberval = val;
-	objval = NULL;
 }
 
 FORCE_INLINE void asAtom::setBool(bool val)
 {
-	type = T_BOOLEAN;
-	boolval = val;
-	objval = NULL;
+	type = ATOM_UNDEFINED_NULL_BOOL;
+	uintval = val ? 0x100 : 0;
 }
 
 FORCE_INLINE void asAtom::setNull()
 {
-	type = T_NULL;
-	objval = NULL;
+	type = ATOM_UNDEFINED_NULL_BOOL;
+	uintval = 0x80;
 }
 FORCE_INLINE void asAtom::setUndefined()
 {
-	type = T_UNDEFINED;
-	objval = NULL;
+	type = ATOM_UNDEFINED_NULL_BOOL;
+	uintval = 0x40;
 }
-FORCE_INLINE void asAtom::increment()
+FORCE_INLINE void asAtom::increment(SystemState* sys)
 {
 	switch(type)
 	{
-		case T_UNDEFINED:
-			setNumber(numeric_limits<double>::quiet_NaN());
+		case ATOM_UNDEFINED_NULL_BOOL:
+			switch (uintval&0xf0)
+			{
+				case 0x80: // NULL
+					setInt(1);
+					break;
+				case 0x40: // UNDEFINED
+					setNumber(sys,numeric_limits<double>::quiet_NaN());
+					break;
+				default: // BOOL
+					setInt((uintval & 0x100 ? 1 : 0)+1);
+					break;
+			}
 			break;
-		case T_NULL:
-			setInt(1);
-			break;
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			setInt(intval+1);
 			break;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			setUInt(uintval+1);
 			break;
-		case T_NUMBER:
-			setNumber(numberval+1);
+		case ATOM_NUMBER:
+			setNumber(sys,checkObject()->toNumber()+1);
 			break;
-		case T_BOOLEAN:
-			setInt((boolval ? 1 : 0)+1);
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(sys,stringID);
+			number_t n = s->toNumber();
+			setNumber(sys,n+1);
+			s->decRef();
 			break;
+		}
 		default:
 		{
 			number_t n=checkObject()->toNumber();
 			objval->decRef();
-			setNumber(n+1);
+			setNumber(sys,n+1);
 			break;
 		}
 	}
 }
 
-FORCE_INLINE void asAtom::decrement()
+FORCE_INLINE void asAtom::decrement(SystemState* sys)
 {
 	switch(type)
 	{
-		case T_UNDEFINED:
-			setNumber(numeric_limits<double>::quiet_NaN());
+		case ATOM_UNDEFINED_NULL_BOOL:
+			switch (uintval&0xf0)
+			{
+				case 0x80: // NULL
+					setInt(-1);
+					break;
+				case 0x40: // UNDEFINED
+					setNumber(sys,numeric_limits<double>::quiet_NaN());
+					break;
+				default: // BOOL
+					setInt((uintval & 0x100 ? 1 : 0)-1);
+					break;
+			}
 			break;
-		case T_NULL:
-			setInt(-1);
-			break;
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			setInt(intval-1);
 			break;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 		{
 			if (uintval > 0)
 				setUInt(uintval-1);
 			else
 			{
 				number_t val = uintval;
-				setNumber(val-1);
+				setNumber(sys,val-1);
 			}
 			break;
 		}
-		case T_NUMBER:
-			setNumber(numberval-1);
+		case ATOM_NUMBER:
+			setNumber(sys,checkObject()->toNumber()-1);
 			break;
-		case T_BOOLEAN:
-			setInt((boolval ? 1 : 0)-1);
+		case ATOM_STRINGID:
+		{
+			ASObject* s = abstract_s(sys,stringID);
+			number_t n = s->toNumber();
+			setNumber(sys,n-1);
+			s->decRef();
 			break;
+		}
 		default:
 		{
 			number_t n=checkObject()->toNumber();
 			objval->decRef();
-			setNumber(n-1);
+			setNumber(sys,n-1);
 			break;
 		}
 	}
@@ -1930,7 +2003,7 @@ FORCE_INLINE void asAtom::decrement_i()
 
 FORCE_INLINE void asAtom::convert_i()
 {
-	if (type == T_INTEGER)
+	if (type == ATOM_INTEGER)
 		return;
 	int32_t v = toIntStrict();
 	decRef();
@@ -1939,20 +2012,20 @@ FORCE_INLINE void asAtom::convert_i()
 
 FORCE_INLINE void asAtom::convert_u()
 {
-	if (type == T_UINTEGER)
+	if (type == ATOM_UINTEGER)
 		return;
 	uint32_t v = toUInt();
 	decRef();
 	setUInt(v);
 }
 
-FORCE_INLINE void asAtom::convert_d()
+FORCE_INLINE void asAtom::convert_d(SystemState* sys)
 {
-	if (type == T_NUMBER || type == T_INTEGER || type == T_UINTEGER)
+	if (type == ATOM_NUMBER || type == ATOM_INTEGER || type == ATOM_UINTEGER)
 		return;
 	number_t v = toNumber();
 	decRef();
-	setNumber(v);
+	setNumber(sys,v);
 }
 
 FORCE_INLINE void asAtom::bit_xor(asAtom &v1)
@@ -1970,10 +2043,10 @@ FORCE_INLINE void asAtom::bitnot()
 	setInt(~i1);
 }
 
-FORCE_INLINE void asAtom::subtract(asAtom &v2)
+FORCE_INLINE void asAtom::subtract(SystemState* sys,asAtom &v2)
 {
-	if( (type == T_INTEGER || type == T_UINTEGER) &&
-		(v2.isInteger() || v2.type ==T_UINTEGER))
+	if( (type == ATOM_INTEGER || type == ATOM_UINTEGER) &&
+		(v2.isInteger() || v2.type ==ATOM_UINTEGER))
 	{
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
@@ -1985,7 +2058,7 @@ FORCE_INLINE void asAtom::subtract(asAtom &v2)
 		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(res);
 		else
-			setNumber(res);
+			setNumber(sys,res);
 	}
 	else
 	{
@@ -1993,14 +2066,14 @@ FORCE_INLINE void asAtom::subtract(asAtom &v2)
 		number_t num1=toNumber();
 	
 		LOG_CALL(_("subtract ") << num1 << '-' << num2);
-		setNumber(num1-num2);
+		setNumber(sys,num1-num2);
 	}
 }
 
-FORCE_INLINE void asAtom::multiply(asAtom &v2)
+FORCE_INLINE void asAtom::multiply(SystemState* sys,asAtom &v2)
 {
-	if( (type == T_INTEGER || type == T_UINTEGER) &&
-		(v2.isInteger() || v2.type ==T_UINTEGER))
+	if( (type == ATOM_INTEGER || type == ATOM_UINTEGER) &&
+		(v2.isInteger() || v2.type ==ATOM_UINTEGER))
 	{
 		int64_t num1=toInt64();
 		int64_t num2=v2.toInt64();
@@ -2012,7 +2085,7 @@ FORCE_INLINE void asAtom::multiply(asAtom &v2)
 		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(res);
 		else
-			setNumber(res);
+			setNumber(sys,res);
 	}
 	else
 	{
@@ -2020,11 +2093,11 @@ FORCE_INLINE void asAtom::multiply(asAtom &v2)
 		double num2=toNumber();
 		LOG_CALL(_("multiply ")  << num1 << '*' << num2);
 	
-		setNumber(num1*num2);
+		setNumber(sys,num1*num2);
 	}
 }
 
-FORCE_INLINE void asAtom::divide(asAtom &v2)
+FORCE_INLINE void asAtom::divide(SystemState* sys,asAtom &v2)
 {
 	double num1=toNumber();
 	double num2=v2.toNumber();
@@ -2034,28 +2107,28 @@ FORCE_INLINE void asAtom::divide(asAtom &v2)
 	if (std::isinf(num1))
 	{
 		if (std::isinf(num2) || std::isnan(num2))
-			setNumber(numeric_limits<double>::quiet_NaN());
+			setNumber(sys,numeric_limits<double>::quiet_NaN());
 		else
 		{
 			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
-			setNumber( needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
+			setNumber(sys, needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
 		}
 	}
 	else
-		setNumber(num1/num2);
+		setNumber(sys,num1/num2);
 }
 
-FORCE_INLINE void asAtom::modulo(asAtom &v2)
+FORCE_INLINE void asAtom::modulo(SystemState* sys,asAtom &v2)
 {
 	// if both values are Integers the result is also an int
-	if( ((type == T_INTEGER) || (type == T_UINTEGER)) &&
-		((v2.isInteger()) || (v2.type == T_UINTEGER)))
+	if( (type == ATOM_INTEGER || type == ATOM_UINTEGER) &&
+		(v2.isInteger() || v2.type ==ATOM_UINTEGER))
 	{
 		int32_t num1=toInt();
 		int32_t num2=v2.toInt();
 		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
 		if (num2 == 0)
-			setNumber(numeric_limits<double>::quiet_NaN());
+			setNumber(sys,numeric_limits<double>::quiet_NaN());
 		else
 			setInt(num1%num2);
 	}
@@ -2066,7 +2139,7 @@ FORCE_INLINE void asAtom::modulo(asAtom &v2)
 
 		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
-		setNumber(::fmod(num1,num2));
+		setNumber(sys,::fmod(num1,num2));
 	}
 }
 
@@ -2152,107 +2225,108 @@ FORCE_INLINE void asAtom::multiply_i(asAtom &v2)
 }
 FORCE_INLINE ASObject *asAtom::toObject(SystemState *sys)
 {
-	if (objval)
+	if (type == ATOM_OBJECT || type == ATOM_NUMBER)
 	{
-		assert(objval->getRefCount() >= 1);
+		assert(objval && objval->getRefCount() >= 1);
 		return objval;
 	}
 	switch(type)
 	{
-		case T_INTEGER:
+		case ATOM_INTEGER:
 			// ints are internally treated as numbers, so create a Number instance
 			objval = abstract_di(sys,intval);
 			break;
-		case T_UINTEGER:
+		case ATOM_UINTEGER:
 			// uints are internally treated as numbers, so create a Number instance
 			objval = abstract_di(sys,uintval);
 			break;
-		case T_NUMBER:
-			objval = abstract_d(sys,numberval);
+		case ATOM_UNDEFINED_NULL_BOOL:
+		{
+			switch (uintval&0xf0)
+			{
+				case 0x80: // NULL
+					objval = abstract_null(sys);
+					break;
+				case 0x40: // UNDEFINED
+					objval = abstract_undefined(sys);
+					break;
+				default: // BOOL
+					objval = abstract_b(sys,(uintval & 0x100)>>8);
+					break;
+			}
 			break;
-		case T_BOOLEAN:
-			return abstract_b(sys,boolval);
-		case T_NULL:
-			return abstract_null(sys);
-		case T_UNDEFINED:
-			return abstract_undefined(sys);
-		case T_STRING:
-			if (stringID != UINT32_MAX)
-				objval = abstract_s(sys,stringID);
+		}
+		case ATOM_STRINGID:
+			objval = abstract_s(sys,stringID);
 			break;
-		case T_INVALID:
+		default:
 			throw RunTimeException("calling toObject on invalid asAtom, should not happen");
 			break;
-		default:
-			break;
 	}
+	type = ATOM_OBJECT;
 	return objval;
 }
-FORCE_INLINE void asAtom::replace(ASObject *obj)
-{
-	assert(obj);
-	type = obj->getObjectType();
-	switch(type)
-	{
-		case T_INTEGER:
-			intval = obj->toInt();
-			break;
-		case T_UINTEGER:
-			uintval = obj->toUInt();
-			break;
-		case T_NUMBER:
-			replaceNumber(obj);
-			break;
-		case T_BOOLEAN:
-			replaceBool(obj);
-			break;
-		case T_STRING:
-			stringID = obj->stringId;
-			break;
-		default:
-			break;
-	}
-	objval = obj;
-}
-/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
-FORCE_INLINE bool asAtom::Boolean_concrete()
-{
-	switch(type)
-	{
-		case T_UNDEFINED:
-		case T_NULL:
-			return false;
-		case T_BOOLEAN:
-			return boolval;
-		case T_NUMBER:
-			return numberval != 0.0 && !std::isnan(numberval);
-		case T_INTEGER:
-			return intval != 0;
-		case T_UINTEGER:
-			return uintval != 0;
-		case T_STRING:
-			if (stringID != UINT32_MAX)
-				return stringID != BUILTIN_STRINGS::EMPTY;
-			if (!objval->isConstructed())
-				return false;
-			return Boolean_concrete_string();
-		case T_FUNCTION:
-		case T_ARRAY:
-		case T_OBJECT:
-			assert(objval);
-			// not constructed objects return false
-			if (!objval->isConstructed())
-				return false;
-			return true;
-		default:
-			//everything else is an Object regarding to the spec
-			return true;
-	}
-}
+
 FORCE_INLINE ASObject* asAtom::getObject() const 
 {
-	assert(!objval || objval->getRefCount() >= 1);
-	return objval; 
+	return type == ATOM_OBJECT || type == ATOM_NUMBER ? objval : nullptr;
 }
+
+FORCE_INLINE bool asAtom::isNumeric() const
+{
+	return (type==ATOM_INTEGER || type==ATOM_UINTEGER || isNumber());
+}
+FORCE_INLINE bool asAtom::isNumber() const
+{
+	return (type==ATOM_NUMBER ||
+			(type==ATOM_OBJECT 
+				&& objval
+				&& (
+					objval->is<Integer>() ||
+					objval->is<UInteger>() ||
+					objval->is<Number>()
+				))); 
+}
+FORCE_INLINE SWFOBJECT_TYPE asAtom::getObjectType() const
+{
+	switch (type)
+	{
+		case ATOM_INTEGER:
+			return T_INTEGER;
+		case ATOM_UINTEGER:
+			return T_UINTEGER;
+		case ATOM_UNDEFINED_NULL_BOOL:
+			switch (uintval&0xf0)
+			{
+				case 0x80: // NULL
+					return T_NULL;
+				case 0x40: // UNDEFINED
+					return T_UNDEFINED;
+				default: // BOOL
+					return T_BOOLEAN;
+			}
+		case ATOM_NUMBER:
+			return T_NUMBER;
+		case ATOM_STRINGID:
+			return T_STRING;
+		case ATOM_OBJECT:
+			return objval->getObjectType();
+		default:
+			return T_INVALID;
+	}
+}
+FORCE_INLINE bool asAtom::isFunction() const { return type == ATOM_OBJECT && objval && objval->is<IFunction>(); }
+FORCE_INLINE bool asAtom::isString() const { return type == ATOM_STRINGID || (type == ATOM_OBJECT && objval && objval->is<ASString>()); }
+FORCE_INLINE bool asAtom::isQName() const { return type == ATOM_OBJECT && objval->is<ASQName>(); }
+FORCE_INLINE bool asAtom::isNamespace() const { return type == ATOM_OBJECT && objval && objval->is<Namespace>(); }
+FORCE_INLINE bool asAtom::isArray() const { return type == ATOM_OBJECT && objval && objval->is<Array>(); }
+FORCE_INLINE bool asAtom::isClass() const { return type == ATOM_OBJECT && objval && objval->is<Class_base>(); }
+FORCE_INLINE bool asAtom::isTemplate() const { return type == ATOM_OBJECT && objval && objval->getObjectType() == T_TEMPLATE; }
+FORCE_INLINE bool asAtom::isNull() const { return (type == ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xf0) == 0x80)) || (type == ATOM_OBJECT && objval && objval->getObjectType() == T_NULL); }
+FORCE_INLINE bool asAtom::isUndefined() const { return (type == ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xf0) == 0x40)) || (type == ATOM_OBJECT && objval && objval->getObjectType() == T_UNDEFINED); }
+FORCE_INLINE bool asAtom::isInteger() const { return type == ATOM_INTEGER || (type == ATOM_OBJECT && objval && objval->getObjectType() == T_INTEGER); }
+FORCE_INLINE bool asAtom::isUInteger() const { return type == ATOM_UINTEGER || (type == ATOM_OBJECT && objval && objval->getObjectType() == T_UINTEGER); }
+FORCE_INLINE bool asAtom::isBool() const { return (type == ATOM_UNDEFINED_NULL_BOOL && ((uintval & 0xff) == 0)) || (type == ATOM_OBJECT && objval && objval->getObjectType() == T_BOOLEAN); }
+
 }
 #endif /* ASOBJECT_H */

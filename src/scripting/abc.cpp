@@ -288,8 +288,8 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
 	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
-	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
-	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtom(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
 	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));
@@ -718,7 +718,7 @@ void ABCVm::loadFloat(call_context *th)
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<float>(addr);
 	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtom(ret));
+	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret));
 }
 
 void ABCVm::loadDouble(call_context *th)
@@ -728,7 +728,7 @@ void ABCVm::loadDouble(call_context *th)
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<double>(addr);
 	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtom(ret));
+	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret));
 }
 
 void ABCVm::storeFloat(call_context *th)
@@ -1100,7 +1100,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			}
 			else if (n.isQName())
 			{
-				ASQName *qname = n.objval->as<ASQName>();
+				ASQName *qname = n.as<ASQName>();
 				// don't overwrite any static parts
 				if (!m->dynamic)
 					m->dynamic=new (getVm(root->getSystemState())->vmDataMemory) multiname(getVm(root->getSystemState())->vmDataMemory);
@@ -1127,7 +1127,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		{
 			assert(n.isValid() && !n2);
 			assert_and_throw(n.isNamespace());
-			Namespace* tmpns=static_cast<Namespace*>(n.objval);
+			Namespace* tmpns=n.as<Namespace>();
 			ret->ns.clear();
 			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
@@ -1185,7 +1185,10 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 		constantAtoms_uinteger[i] = asAtom(constant_pool.uinteger[i]);
 	constantAtoms_doubles.resize(constant_pool.doubles.size());
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
-		constantAtoms_doubles[i] = asAtom(constant_pool.doubles[i]);
+	{
+		constantAtoms_doubles[i] = asAtom(root->getSystemState(),constant_pool.doubles[i]);
+		constantAtoms_doubles[i].getObject()->setConstant();
+	}
 	constantAtoms_strings.resize(constant_pool.strings.size());
 	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)
 	{
@@ -2414,7 +2417,7 @@ void ABCContext::getConstant(asAtom &ret, int kind, int index)
 			ret.setUInt(constant_pool.uinteger[index]);
 			break;
 		case 0x06: //Double
-			ret.setNumber(constant_pool.doubles[index]);
+			ret.setNumber(root->getSystemState(),constant_pool.doubles[index]);
 			break;
 		case 0x08: //Namespace
 		{

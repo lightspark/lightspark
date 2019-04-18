@@ -228,7 +228,9 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 		}
 
 		asAtom funcret;
-		reviver.callFunction(funcret,asAtom::nullAtom, params, 2,true);
+		asAtom closure = reviver.getClosure() ? asAtom::fromObject(reviver.getClosure()) : asAtom::nullAtom;
+		
+		reviver.callFunction(funcret,closure, params, 2,true);
 		if(funcret.isValid())
 		{
 			if (haskey)
@@ -488,7 +490,7 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 		*parent = abstract_d(getSys(),num);
 	else 
 	{
-		asAtom v(getSys(),num);
+		asAtom v(getSys(),num,false);
 		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
 	}
 	return pos;

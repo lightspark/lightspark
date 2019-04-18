@@ -76,10 +76,10 @@ ASFUNCTIONBODY_ATOM(ASString,_getLength)
 	if (obj.isString() && obj.getObject())
 	{
 		ASString* th = obj.getObject()->as<ASString>();
-		ret.setInt((int32_t)th->getData().numChars());
+		ret.setInt(sys,(int32_t)th->getData().numChars());
 	}
 	else
-		ret.setInt((int32_t)obj.toString(sys).numChars());
+		ret.setInt(sys,(int32_t)obj.toString(sys).numChars());
 }
 
 void ASString::sinit(Class_base* c)
@@ -143,7 +143,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	int res = -1;
 	if(argslen == 0 || args[0].isUndefined())
 	{
-		ret.setInt(res);
+		ret.setInt(sys,res);
 		return;
 	}
 
@@ -172,7 +172,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
 	if(error)
 	{
-		ret.setInt(res);
+		ret.setInt(sys,res);
 		return;
 	}
 	int capturingGroups;
@@ -180,7 +180,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		ret.setInt(res);
+		ret.setInt(sys,res);
 		return;
 	}
 	pcre_extra extra;
@@ -194,14 +194,14 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	{
 		//No matches or error
 		pcre_free(pcreRE);
-		ret.setInt(res);
+		ret.setInt(sys,res);
 		return;
 	}
 	res=ovector[0];
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = data.substr_bytes(0, res);
 	res = tmp.numChars();
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,match)
@@ -622,6 +622,25 @@ TRISTATE ASString::isLess(ASObject* r)
 	return (a<b)?TTRUE:TFALSE;
 }
 
+TRISTATE ASString::isLessAtom(asAtom& r)
+{
+	//ECMA-262 11.8.5 algorithm
+	assert_and_throw(implEnable);
+	asAtom rprim = r;
+	if (r.getObject())
+		r.getObject()->toPrimitive(rprim);
+	if(getObjectType()==T_STRING && rprim.isString())
+	{
+		ASString* rstr=static_cast<ASString*>(rprim.toObject(getSystemState()));
+		return (getData()<rstr->getData())?TTRUE:TFALSE;
+	}
+	number_t a=toNumber();
+	number_t b=rprim.toNumber();
+	if(std::isnan(a) || std::isnan(b))
+		return TUNDEFINED;
+	return (a<b)?TTRUE:TFALSE;
+}
+
 void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
@@ -730,7 +749,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 		if(index<0 || index>=(int64_t)s.numChars())
 			ret.setNumber(sys,Number::NaN);
 		else
-			ret.setInt((int32_t)s.charAt(index));
+			ret.setInt(sys,(int32_t)s.charAt(index));
 	}
 	else if (obj.isString() && obj.getObject())
 	{
@@ -758,7 +777,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 				else
 					c = th->getData().charAt(index);
 			}
-			ret.setInt((int32_t)c);
+			ret.setInt(sys,(int32_t)c);
 		}
 	}
 	else
@@ -769,7 +788,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 		else
 		{
 			//Character codes are expected to be positive
-			ret.setInt((int32_t)data.charAt(index));
+			ret.setInt(sys,(int32_t)data.charAt(index));
 		}
 	}
 }
@@ -778,7 +797,7 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 {
 	if (argslen == 0)
 	{
-		ret.setInt(-1);
+		ret.setInt(sys,-1);
 		return;
 	}
 	tiny_string data = obj.toString(sys);
@@ -790,9 +809,9 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 
 	size_t pos = data.find(arg0.raw_buf(), startIndex);
 	if(pos == data.npos)
-		ret.setInt(-1);
+		ret.setInt(sys,-1);
 	else
-		ret.setInt((int32_t)pos);
+		ret.setInt(sys,(int32_t)pos);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
@@ -806,7 +825,7 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 		int32_t i = args[1].toInt();
 		if(i<0)
 		{
-			ret.setInt(-1);
+			ret.setInt(sys,-1);
 			return;
 		}
 		startIndex = i;
@@ -816,9 +835,9 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 
 	size_t pos=data.rfind(val.raw_buf(), startIndex);
 	if(pos==data.npos)
-		ret.setInt(-1);
+		ret.setInt(sys,-1);
 	else
-		ret.setInt((int32_t)pos);
+		ret.setInt(sys,(int32_t)pos);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
@@ -849,12 +868,12 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 	{
 		if (args[0].is<Null>() || args[0].is<Undefined>())
 		{
-			ret.setInt(data == "" ? 1 : 0);
+			ret.setInt(sys,data == "" ? 1 : 0);
 			return;
 		}
 	}
 	int res = data.compare(other);
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 {
@@ -868,12 +887,12 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 	{
 		if (args[0].is<Null>() || args[0].is<Undefined>())
 		{
-			ret.setInt(data == "" ? 1 : 0);
+			ret.setInt(sys,data == "" ? 1 : 0);
 			return;
 		}
 	}
 	int res = data.compare(other);
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,fromCharCode)

@@ -87,6 +87,54 @@ TRISTATE UInteger::isLess(ASObject* o)
 		return (val<val2)?TTRUE:TFALSE;
 	}
 }
+TRISTATE UInteger::isLessAtom(asAtom& r)
+{
+	if(r.getObjectType()==T_UINTEGER)
+	{
+		uint32_t val1=val;
+		uint32_t val2=r.toUInt();
+		return (val1<val2)?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_INTEGER ||
+	   r.getObjectType()==T_BOOLEAN)
+	{
+		uint32_t val1=val;
+		int32_t val2=r.toInt();
+		if(val2<0)
+			return TFALSE;
+		else
+			return (val1<(uint32_t)val2)?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_NUMBER)
+	{
+		number_t val2=r.toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (number_t(val) < val2)?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_NULL)
+	{
+		// UInteger is never less than int(null) == 0
+		return TFALSE;
+	}
+	else if(r.getObjectType()==T_UNDEFINED)
+	{
+		return TUNDEFINED;
+	}
+	else if(r.getObjectType()==T_STRING)
+	{
+		double val2=r.toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
+	}
+	else
+	{
+		asAtom val2p;
+		r.getObject()->toPrimitive(val2p,NUMBER_HINT);
+		double val2=val2p.toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (val<val2)?TTRUE:TFALSE;
+	}
+}
 
 ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 {
@@ -102,23 +150,23 @@ ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		ret.setUInt((uint32_t)0);
+		ret.setUInt(sys,(uint32_t)0);
 	else
-		ret.setUInt(args[0].toUInt());
+		ret.setUInt(sys,args[0].toUInt());
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 {
 	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
 	{
-		ret.setUInt((uint32_t)0);
+		ret.setUInt(sys,(uint32_t)0);
 		return;
 	}
 
 	if(!obj.is<UInteger>())
 			throw Class<TypeError>::getInstanceS(sys,"");
 
-	ret.setUInt(obj.toUInt());
+	ret.setUInt(sys,obj.toUInt());
 }
 
 void UInteger::sinit(Class_base* c)

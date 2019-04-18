@@ -358,9 +358,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 	TextField* th=obj.as<TextField>();
 	// it seems that Adobe returns the textwidth if in autoSize mode
 	if ((th->autoSize == AS_NONE)||(th->wordWrap == true))
-		ret.setUInt(th->width);
+		ret.setUInt(sys,th->width);
 	else
-		ret.setUInt(th->textWidth);
+		ret.setUInt(sys,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setWidth)
@@ -383,7 +383,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 ASFUNCTIONBODY_ATOM(TextField,_getHeight)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setUInt(th->height);
+	ret.setUInt(sys,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setHeight)
@@ -406,13 +406,13 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 ASFUNCTIONBODY_ATOM(TextField,_getTextWidth)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setUInt(th->textWidth);
+	ret.setUInt(sys,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getTextHeight)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setUInt(th->textHeight);
+	ret.setUInt(sys,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getHtmlText)
@@ -554,12 +554,12 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexAtPoint)
 		if (x > it->extents.Xmin && x <= it->extents.Xmax &&
 		    y > it->extents.Ymin && y <= it->extents.Ymax)
 		{
-			ret.setInt(i);
+			ret.setInt(sys,i);
 			return;
 		}
 	}
 
-	ret.setInt(-1);
+	ret.setInt(sys,-1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
@@ -570,7 +570,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
 
 	if (charIndex < 0)
 	{
-		ret.setInt(-1);
+		ret.setInt(sys,-1);
 		return;
 	}
 
@@ -582,14 +582,14 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
 		if (charIndex >= it->firstCharOffset &&
 		    charIndex < it->firstCharOffset + it->length)
 		{
-			ret.setInt(i);
+			ret.setInt(sys,i);
 			return;
 		}
 	}
 
 	// testing shows that returns -1 on invalid index instead of
 	// throwing RangeError
-	ret.setInt(-1);
+	ret.setInt(sys,-1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineLength)
@@ -602,7 +602,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineLength)
 	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
 		throwError<RangeError>(kParamRangeError);
 
-	ret.setInt(lines[lineIndex].length);
+	ret.setInt(sys,lines[lineIndex].length);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineMetrics)
@@ -634,7 +634,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineOffset)
 	if (lineIndex < 0 || lineIndex >= (int32_t)lines.size())
 		throwError<RangeError>(kParamRangeError);
 
-	ret.setInt(lines[lineIndex].firstCharOffset);
+	ret.setInt(sys,lines[lineIndex].firstCharOffset);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineText)
@@ -707,25 +707,25 @@ ASFUNCTIONBODY_ATOM(TextField,_setGridFitType)
 ASFUNCTIONBODY_ATOM(TextField,_getLength)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setUInt(th->text.numChars());
+	ret.setUInt(sys,th->text.numChars());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getNumLines)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setInt((int32_t)CairoPangoRenderer::getLineData(*th).size());
+	ret.setInt(sys,(int32_t)CairoPangoRenderer::getLineData(*th).size());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getMaxScrollH)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setInt(th->getMaxScrollH());
+	ret.setInt(sys,th->getMaxScrollH());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getMaxScrollV)
 {
 	TextField* th=obj.as<TextField>();
-	ret.setInt(th->getMaxScrollV());
+	ret.setInt(sys,th->getMaxScrollV());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
@@ -736,12 +736,12 @@ ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
 	{
 		if (lines[k+1].extents.Ymin >= (int)th->height)
 		{
-			ret.setInt((int32_t)k + 1);
+			ret.setInt(sys,(int32_t)k + 1);
 			return;
 		}
 	}
 
-	ret.setInt((int32_t)lines.size() + 1);
+	ret.setInt(sys,(int32_t)lines.size() + 1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getRestrict)
@@ -1042,7 +1042,7 @@ void TextField::avm1SyncTagVar()
 				asAtom value;
 				number_t n;
 				if (Integer::fromStringFlashCompatible(text.raw_buf(),n,10,true))
-					value = asAtom(getSystemState(),n);
+					value = asAtom(getSystemState(),n,false);
 				else
 					value = asAtom::fromString(getSystemState(),text);
 				par->as<MovieClip>()->AVM1SetVariable(tagvarname,value);

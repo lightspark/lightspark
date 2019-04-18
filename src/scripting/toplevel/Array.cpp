@@ -205,6 +205,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	asAtom funcRet;
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 	while (index < th->currentsize)
 	{
 		index++;
@@ -231,7 +232,8 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		ASATOM_INCREF(origval);
 		if(argslen==1)
 		{
-			f.callFunction(funcRet,asAtom::nullAtom, params, 3,false);
+			ASATOM_INCREF(closure);
+			f.callFunction(funcRet,closure, params, 3,false);
 		}
 		else
 		{
@@ -270,6 +272,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 	while (index < th->currentsize)
 	{
 		index++;
@@ -292,7 +295,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(ret,closure, params, 3,false);
 		}
 		else
 		{
@@ -330,6 +333,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 
 	asAtom params[3];
 	ASATOM_INCREF(f);
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 
 	uint32_t index = 0;
 	while (index < th->currentsize)
@@ -354,7 +358,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(ret,closure, params, 3,false);
 		}
 		else
 		{
@@ -377,7 +381,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 ASFUNCTIONBODY_ATOM(Array,_getLength)
 {
 	Array* th=obj.as<Array>();
-	ret.setUInt(th->currentsize);
+	ret.setUInt(sys,th->currentsize);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_setLength)
@@ -409,6 +413,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 	uint32_t index = 0;
 	uint32_t s = th->size(); // remember current size, as it may change inside the called function
 	while (index < s)
@@ -434,9 +439,9 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 		params[2] = asAtom::fromObject(th);
 
 		asAtom funcret;
-		if( argslen == 1 )
+		if(argslen == 1 )
 		{
-			f.callFunction(funcret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(funcret,closure, params, 3,false);
 		}
 		else
 		{
@@ -486,7 +491,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 
 	if(argslen == 1 && th->currentsize == 0)
 	{
-		ret.setInt((int32_t)-1);
+		ret.setInt(sys,(int32_t)-1);
 		return;
 	}
 
@@ -494,7 +499,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 
 	if(std::isnan(index))
 	{
-		ret.setInt((int32_t)0);
+		ret.setInt(sys,(int32_t)0);
 		return;
 	}
 
@@ -503,7 +508,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	{
 		if((size_t)-j > th->size())
 		{
-			ret.setInt((int32_t)-1);
+			ret.setInt(sys,(int32_t)-1);
 			return;
 		}
 		else
@@ -540,7 +545,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	}
 	while(i--);
 
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,shift)
@@ -791,7 +796,7 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 			}
 		}
 	}
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 
@@ -1258,7 +1263,7 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 			th->set(it->first,it->second,false);
 		}
 	}
-	ret.setUInt((int32_t)th->size());
+	ret.setUInt(sys,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_push)
@@ -1299,7 +1304,7 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 	}
 	// currentsize is set even if push fails
 	th->currentsize = s+argslen;
-	ret.setInt((int32_t)th->size());
+	ret.setInt(sys,(int32_t)th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
 ASFUNCTIONBODY_ATOM(Array,_push_as3)
@@ -1339,7 +1344,7 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 			break;
 		th->push(args[i]);
 	}
-	ret.setInt((int32_t)th->size());
+	ret.setInt(sys,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_map)
@@ -1357,6 +1362,8 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		assert_and_throw(args[0].isFunction());
 		func=args[0];
 	}
+	asAtom closure = func.isValid() && func.getClosure() ? asAtom::fromObject(func.getClosure()) : asAtom::nullAtom;
+	
 	Array* arrayRet=Class<Array>::getInstanceSNoArgs(th->getSystemState());
 
 	asAtom params[3];
@@ -1386,7 +1393,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		asAtom funcRet;
 		if (func.isValid())
 		{
-			func.callFunction(funcRet,argslen > 1? args[1] : asAtom::nullAtom, params, 3,false);
+			func.callFunction(funcRet,argslen > 1? args[1] : closure, params, 3,false);
 		}
 		else
 		{
@@ -1860,7 +1867,7 @@ void Array::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		ret.setUInt(index-1);
+		ret.setUInt(this->getSystemState(),index-1);
 	else
 	{
 		//Fall back on object properties
@@ -1990,6 +1997,8 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	uint32_t denseCount = currentsize;
+	asAtom closure = replacer.isValid() && replacer.getClosure() ? asAtom::fromObject(replacer.getClosure()) : asAtom::nullAtom;
+	
 	for (uint32_t i=0 ; i < denseCount; i++)
 	{
 		asAtom a;
@@ -2009,7 +2018,7 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 			params[0] = asAtom(i);
 			params[1] = a;
 			asAtom funcret;
-			replacer.callFunction(funcret,asAtom::nullAtom, params, 2,false);
+			replacer.callFunction(funcret,closure, params, 2,false);
 			if (funcret.isValid())
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}

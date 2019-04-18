@@ -156,19 +156,19 @@ ASFUNCTIONBODY_ATOM(Video,_constructor)
 ASFUNCTIONBODY_ATOM(Video,_getVideoWidth)
 {
 	Video* th=obj.as<Video>();
-	ret.setUInt(th->videoWidth);
+	ret.setUInt(sys,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
 {
 	Video* th=obj.as<Video>();
-	ret.setUInt(th->videoHeight);
+	ret.setUInt(sys,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getWidth)
 {
 	Video* th=obj.as<Video>();
-	ret.setUInt(th->width);
+	ret.setUInt(sys,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setWidth)
@@ -182,7 +182,7 @@ ASFUNCTIONBODY_ATOM(Video,_setWidth)
 ASFUNCTIONBODY_ATOM(Video,_getHeight)
 {
 	Video* th=obj.as<Video>();
-	ret.setUInt(th->height);
+	ret.setUInt(sys,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setHeight)
@@ -670,13 +670,13 @@ void StageVideo::finalize()
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoWidth)
 {
 	StageVideo* th=obj.as<StageVideo>();
-	ret.setUInt(th->videoWidth);
+	ret.setUInt(sys,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoHeight)
 {
 	StageVideo* th=obj.as<StageVideo>();
-	ret.setUInt(th->videoHeight);
+	ret.setUInt(sys,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)

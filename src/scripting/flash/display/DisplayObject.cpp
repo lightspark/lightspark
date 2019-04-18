@@ -1619,14 +1619,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {
 	if (sys->mainClip->loaderInfo)
 	{
-		ret.setUInt(sys->mainClip->loaderInfo->getBytesLoaded());
+		ret.setUInt(sys,sys->mainClip->loaderInfo->getBytesLoaded());
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
 {
 	if (sys->mainClip->loaderInfo)
 	{
-		ret.setUInt(sys->mainClip->loaderInfo->getBytesTotal());
+		ret.setUInt(sys,sys->mainClip->loaderInfo->getBytesTotal());
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getQuality)
@@ -1695,16 +1695,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=sys->getUniqueStringId("xMin");
-	v = asAtom(sys,x1);
+	v = asAtom(sys,x1,false);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("xMax");
-	v = asAtom(sys,x2);
+	v = asAtom(sys,x2,false);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("yMin");
-	v = asAtom(sys,y1);
+	v = asAtom(sys,y1,false);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 	name.name_s_id=sys->getUniqueStringId("yMax");
-	v = asAtom(sys,y2);
+	v = asAtom(sys,y2,false);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 }
 void DisplayObject::AVM1SetupMethods(Class_base* c)

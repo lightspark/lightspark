@@ -67,7 +67,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getInvocationCount)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getInvocationCount not implemented");
-	ret.setInt(0);
+	ret.setInt(sys,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getLexicalScopes)
 {
@@ -95,7 +95,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getMemberNames)
 ASFUNCTIONBODY_ATOM(lightspark,getSampleCount)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSampleCount not implemented");
-	ret.setInt(-1);
+	ret.setInt(sys,-1);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSamples)
 {
@@ -108,7 +108,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getSize)
 	_NR<ASObject> o;
 	ARG_UNPACK_ATOM (o);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSize not implemented");
-	ret.setInt(0);
+	ret.setInt(sys,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,isGetterSetter)
 {

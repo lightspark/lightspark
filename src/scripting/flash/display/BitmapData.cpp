@@ -269,7 +269,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	ARG_UNPACK_ATOM(x)(y);
 
 	uint32_t pix=th->pixels->getPixel(x, y,false);
-	ret.setUInt(pix & 0xffffff);
+	ret.setUInt(sys,pix & 0xffffff);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
@@ -282,7 +282,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	ARG_UNPACK_ATOM(x)(y);
 
 	uint32_t pix=th->pixels->getPixel(x, y,false);
-	ret.setUInt(pix);
+	ret.setUInt(sys,pix);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
@@ -329,7 +329,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getHeight)
 	BitmapData* th = obj.as<BitmapData>();
 	if(th->pixels.isNull())
 		throw Class<ArgumentError>::getInstanceS(sys,"Disposed BitmapData", 2015);
-	ret.setInt(th->getHeight());
+	ret.setInt(sys,th->getHeight());
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
@@ -337,7 +337,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
 	BitmapData* th = obj.as<BitmapData>();
 	if(th->pixels.isNull())
 		throw Class<ArgumentError>::getInstanceS(sys,"Disposed BitmapData", 2015);
-	ret.setInt(th->getWidth());
+	ret.setInt(sys,th->getWidth());
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
@@ -860,12 +860,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 
 	if (th->getWidth() != otherBitmapData->getWidth())
 	{
-		ret.setInt(-3);
+		ret.setInt(sys,-3);
 		return;
 	}
 	if (th->getHeight() != otherBitmapData->getHeight())
 	{
-		ret.setInt(-4);
+		ret.setInt(sys,-4);
 		return;
 	}
 	RECT rect;
@@ -903,7 +903,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 		}
 	}
 	if (!different)
-		ret.setInt(0);
+		ret.setInt(sys,0);
 	else
 		ret = asAtom::fromObject(res);
 }

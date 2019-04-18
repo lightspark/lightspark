@@ -66,7 +66,8 @@ asAtom Amf3Deserializer::parseDouble() const
 			throw ParseException("Not enough data to parse double");
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
-	return asAtom(input->getSystemState(),tmp.val);
+	
+	return asAtom(input->getSystemState(),tmp.val,false);
 }
 
 asAtom Amf3Deserializer::parseDate() const

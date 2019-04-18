@@ -55,7 +55,7 @@ ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
 	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 
@@ -80,9 +80,9 @@ ASFUNCTIONBODY_ATOM(Integer,_constructor)
 ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		ret = asAtom((int32_t)0);
+		ret.setInt(sys,(int32_t)0);
 	else
-		ret = asAtom(args[0].toInt());
+		ret.setInt(sys,args[0].toInt());
 }
 
 TRISTATE Integer::isLess(ASObject* o)
@@ -144,6 +144,39 @@ TRISTATE Integer::isLess(ASObject* o)
 	
 	asAtom val2p;
 	o->toPrimitive(val2p);
+	double val2=val2p.toNumber();
+	if(std::isnan(val2)) return TUNDEFINED;
+	return (val<val2)?TTRUE:TFALSE;
+}
+
+TRISTATE Integer::isLessAtom(asAtom& r)
+{
+	switch(r.getObjectType())
+	{
+		case T_INTEGER:
+			return (val < r.toInt())?TTRUE:TFALSE;
+		case T_UINTEGER:
+			return (val < 0 || ((uint32_t)val)  < r.toUInt())?TTRUE:TFALSE;
+		
+		case T_NUMBER:
+			if(std::isnan(r.toNumber())) return TUNDEFINED;
+			return (val < r.toNumber())?TTRUE:TFALSE;
+		case T_STRING:
+			if(std::isnan(r.toNumber())) return TUNDEFINED;
+			return (val<r.toNumber())?TTRUE:TFALSE;
+			break;
+		case T_BOOLEAN:
+			return (val < r.toInt())?TTRUE:TFALSE;
+		case T_UNDEFINED:
+			return TUNDEFINED;
+		case T_NULL:
+			return (val < 0)?TTRUE:TFALSE;
+		default:
+			break;
+	}
+	
+	asAtom val2p;
+	r.getObject()->toPrimitive(val2p);
 	double val2=val2p.toNumber();
 	if(std::isnan(val2)) return TUNDEFINED;
 	return (val<val2)?TTRUE:TFALSE;

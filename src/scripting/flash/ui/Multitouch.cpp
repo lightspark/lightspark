@@ -43,7 +43,7 @@ ASFUNCTIONBODY_GETTER_SETTER(Multitouch, inputMode);
 ASFUNCTIONBODY_ATOM(Multitouch, getMaxTouchPoints)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	ret.setInt(1);
+	ret.setInt(sys,1);
 }
 
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportedGestures)

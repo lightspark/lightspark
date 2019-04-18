@@ -737,7 +737,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 {
 	/* Get the size of the objects in the sharedobjectmap */
 	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.size not implemented");
-	ret.setInt(0);
+	ret.setInt(sys,0);
 }
 
 void IDynamicPropertyWriter::linkTraits(Class_base* c)
@@ -2063,18 +2063,18 @@ ASFUNCTIONBODY_ATOM(NetStream,_getBytesLoaded)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		ret.setUInt(th->getReceivedLength());
+		ret.setUInt(sys,th->getReceivedLength());
 	else
-		ret.setUInt(0);
+		ret.setUInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getBytesTotal)
 {
 	NetStream* th=obj.as<NetStream>();
 	if(th->isReady())
-		ret.setUInt(th->getTotalLength());
+		ret.setUInt(sys,th->getTotalLength());
 	else
-		ret.setUInt(0);
+		ret.setUInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getTime)
@@ -2083,7 +2083,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getTime)
 	if(th->isReady())
 		ret.setNumber(sys,th->getStreamTime()/1000.);
 	else
-		ret.setUInt(0);
+		ret.setUInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
@@ -2093,7 +2093,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
 	if(th->isReady() && !th->paused)
 		ret.setNumber(sys,th->getFrameRate());
 	else
-		ret.setUInt(0);
+		ret.setUInt(sys,0);
 }
 
 uint32_t NetStream::getVideoWidth() const

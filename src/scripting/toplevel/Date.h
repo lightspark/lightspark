@@ -120,6 +120,8 @@ public:
 	void MakeDateFromMilliseconds(int64_t ms);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
+	
 	tiny_string toString();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

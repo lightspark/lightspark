@@ -304,7 +304,7 @@ ASFUNCTIONBODY_ATOM(Date,getTimezoneOffset)
 		return;
 	}
 	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
-	ret.setInt((int32_t)(-diff/G_TIME_SPAN_MINUTE));
+	ret.setInt(sys,(int32_t)(-diff/G_TIME_SPAN_MINUTE));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCFullYear)
@@ -314,7 +314,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCFullYear)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(th->extrayears + g_date_time_get_year(th->datetimeUTC));
+	ret.setInt(sys,th->extrayears + g_date_time_get_year(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMonth)
@@ -324,7 +324,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMonth)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_month(th->datetimeUTC)-1);
+	ret.setInt(sys,g_date_time_get_month(th->datetimeUTC)-1);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDate)
@@ -334,7 +334,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCDate)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_day_of_month(th->datetimeUTC));
+	ret.setInt(sys,g_date_time_get_day_of_month(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDay)
@@ -344,7 +344,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCDay)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_day_of_week(th->datetimeUTC)%7);
+	ret.setInt(sys,g_date_time_get_day_of_week(th->datetimeUTC)%7);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCHours)
@@ -354,7 +354,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCHours)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_hour(th->datetimeUTC));
+	ret.setInt(sys,g_date_time_get_hour(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMinutes)
@@ -364,7 +364,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMinutes)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_minute(th->datetimeUTC));
+	ret.setInt(sys,g_date_time_get_minute(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCSeconds)
@@ -374,7 +374,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCSeconds)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_second(th->datetimeUTC));
+	ret.setInt(sys,g_date_time_get_second(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMilliseconds)
@@ -384,7 +384,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMilliseconds)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt((int32_t)(th->milliseconds % 1000));
+	ret.setInt(sys,(int32_t)(th->milliseconds % 1000));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getFullYear)
@@ -394,7 +394,7 @@ ASFUNCTIONBODY_ATOM(Date,getFullYear)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(th->extrayears + g_date_time_get_year(th->datetime));
+	ret.setInt(sys,th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMonth)
@@ -404,7 +404,7 @@ ASFUNCTIONBODY_ATOM(Date,getMonth)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_month(th->datetime)-1);
+	ret.setInt(sys,g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDate)
@@ -414,7 +414,7 @@ ASFUNCTIONBODY_ATOM(Date,getDate)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_day_of_month(th->datetime));
+	ret.setInt(sys,g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDay)
@@ -424,7 +424,7 @@ ASFUNCTIONBODY_ATOM(Date,getDay)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_day_of_week(th->datetime)%7);
+	ret.setInt(sys,g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getHours)
@@ -434,7 +434,7 @@ ASFUNCTIONBODY_ATOM(Date,getHours)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_hour(th->datetime));
+	ret.setInt(sys,g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMinutes)
@@ -444,7 +444,7 @@ ASFUNCTIONBODY_ATOM(Date,getMinutes)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_minute(th->datetime));
+	ret.setInt(sys,g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getSeconds)
@@ -454,7 +454,7 @@ ASFUNCTIONBODY_ATOM(Date,getSeconds)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt(g_date_time_get_second(th->datetime));
+	ret.setInt(sys,g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMilliseconds)
@@ -464,7 +464,7 @@ ASFUNCTIONBODY_ATOM(Date,getMilliseconds)
 		ret.setNumber(sys,Number::NaN);
 		return;
 	}
-	ret.setInt((int32_t)(th->milliseconds % 1000));
+	ret.setInt(sys,(int32_t)(th->milliseconds % 1000));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getTime)
@@ -815,7 +815,7 @@ ASFUNCTIONBODY_ATOM(Date,setTime)
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute = true;
-		asAtom v = asAtom(sys,ms);
+		asAtom v = asAtom(sys,ms,false);
 		obj.toObject(sys)->setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 		ret.setNumber(sys,ms);
 		return;
@@ -858,7 +858,7 @@ ASFUNCTIONBODY_ATOM(Date,valueOf)
 
 asAtom Date::msSinceEpoch()
 {
-	return asAtom(getSystemState(),(number_t)getMsSinceEpoch());
+	return asAtom(getSystemState(),(number_t)getMsSinceEpoch(),false);
 }
 int64_t Date::getMsSinceEpoch()
 {
@@ -1163,11 +1163,17 @@ bool Date::isEqual(ASObject* r)
 	return ASObject::isEqual(r);
 }
 
-TRISTATE Date::isLess(ASObject* o)
+TRISTATE Date::isLess(ASObject* r)
 {
-	if (o->is<Date>())
-		return (getMsSinceEpoch() < o->as<Date>()->getMsSinceEpoch())?TTRUE:TFALSE;
-	return ASObject::isLess(o);
+	if (r->is<Date>())
+		return (getMsSinceEpoch() < r->as<Date>()->getMsSinceEpoch())?TTRUE:TFALSE;
+	return ASObject::isLess(r);
+}
+TRISTATE Date::isLessAtom(asAtom& r)
+{
+	if (r.is<Date>())
+		return (getMsSinceEpoch() < r.as<Date>()->getMsSinceEpoch())?TTRUE:TFALSE;
+	return ASObject::isLessAtom(r);
 }
 
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

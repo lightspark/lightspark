@@ -51,6 +51,7 @@ public:
 		return val;
 	}
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);

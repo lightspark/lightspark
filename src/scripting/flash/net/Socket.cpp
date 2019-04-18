@@ -322,11 +322,11 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 	if (th->job)
 	{
 		th->job->datareceive->lock();
-		ret.setUInt(th->job->datareceive->getLength());
+		ret.setUInt(sys,th->job->datareceive->getLength());
 		th->job->datareceive->unlock();
 	}
 	else
-		ret.setUInt(0);
+		ret.setUInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)

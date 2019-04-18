@@ -46,6 +46,7 @@ public:
 	}
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(_valueOf);

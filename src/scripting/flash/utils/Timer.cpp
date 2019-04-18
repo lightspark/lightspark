@@ -82,13 +82,13 @@ ASFUNCTIONBODY_ATOM(Timer,_constructor)
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
 	Timer* th=obj.as<Timer>();
-	ret.setUInt(th->currentCount);
+	ret.setUInt(sys,th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
 	Timer* th=obj.as<Timer>();
-	ret.setUInt(th->repeatCount);
+	ret.setUInt(sys,th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
@@ -114,7 +114,7 @@ ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=obj.as<Timer>();
-	ret.setUInt(th->delay);
+	ret.setUInt(sys,th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)

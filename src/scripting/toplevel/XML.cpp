@@ -283,7 +283,7 @@ const char *XML::nodekindString()
 
 ASFUNCTIONBODY_ATOM(XML,length)
 {
-	ret.setInt(1);
+	ret.setInt(sys,1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,localName)
@@ -818,12 +818,12 @@ ASFUNCTIONBODY_ATOM(XML,childIndex)
 			ASObject* o= parent->childrenlist->nodes[i].getPtr();
 			if (o == th)
 			{
-				ret.setUInt(i);
+				ret.setUInt(sys,i);
 				return;
 			}
 		}
 	}
-	ret.setInt(-1);
+	ret.setInt(sys,-1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_hasSimpleContent)
@@ -2026,7 +2026,7 @@ ASFUNCTIONBODY_ATOM(XML,_setIgnoreWhitespace)
 }
 ASFUNCTIONBODY_ATOM(XML,_getPrettyIndent)
 {
-	ret.setInt(prettyIndent);
+	ret.setInt(sys,prettyIndent);
 }
 ASFUNCTIONBODY_ATOM(XML,_setPrettyIndent)
 {
@@ -2666,7 +2666,7 @@ uint32_t XML::nextNameIndex(uint32_t cur_index)
 void XML::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=1)
-		ret.setUInt(index-1);
+		ret.setUInt(this->getSystemState(),index-1);
 	else
 		throw RunTimeException("XML::nextName out of bounds");
 }

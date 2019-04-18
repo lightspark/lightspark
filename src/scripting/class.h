@@ -258,7 +258,7 @@ inline void Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 		return;
 	uint32_t n = o.toUInt();
 	ASATOM_DECREF(o);
-	o.setUInt(n);
+	o.setUInt(sys,n);
 ;
 }
 
@@ -269,7 +269,7 @@ inline void Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 		return;
 	int32_t n = o.toInt();
 	ASATOM_DECREF(o);
-	o.setInt(n);
+	o.setInt(sys,n);
 }
 
 template<>
@@ -280,6 +280,14 @@ inline void Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
 	bool n = o.Boolean_concrete();
 	ASATOM_DECREF(o);
 	o.setBool(n);
+}
+template<>
+inline void Class<Boolean>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+{
+	if (argslen> 0)
+		ret = asAtom::fromObject(abstract_b(getSys(),args[0].Boolean_concrete()));
+	else
+		ret = asAtom::fromObject(abstract_b(getSys(),false));
 }
 
 template<>

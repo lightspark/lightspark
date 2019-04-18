@@ -747,14 +747,14 @@ void SystemState::addWorker(ASWorker *w)
 	asAtom a = asAtom::fromObject(w);
 	w->incRef();
 	workerDomain->workerlist->append(a);
-	singleworker=workerDomain->workerlist->size() > 1;
+	singleworker=workerDomain->workerlist->size() <= 1;
 }
 
 void SystemState::removeWorker(ASWorker *w)
 {
 	Locker l(workerMutex);
 	workerDomain->workerlist->remove(w);
-	singleworker=workerDomain->workerlist->size() > 1;
+	singleworker=workerDomain->workerlist->size() <= 1;
 
 }
 

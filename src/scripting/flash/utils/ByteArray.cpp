@@ -238,7 +238,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(th->getPosition());
+	ret.setUInt(sys,th->getPosition());
 }
 
 void ByteArray::setPosition(uint32_t p)
@@ -278,7 +278,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 ASFUNCTIONBODY_ATOM(ByteArray,_getObjectEncoding)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(th->objectEncoding);
+	ret.setUInt(sys,th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
@@ -295,7 +295,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getDefaultObjectEncoding)
 {
-	ret.setUInt(sys->staticNetConnectionDefaultObjectEncoding);
+	ret.setUInt(sys,sys->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
@@ -347,13 +347,13 @@ void ByteArray::setLength(uint32_t newLen)
 ASFUNCTIONBODY_ATOM(ByteArray,_getLength)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(th->len);
+	ret.setUInt(sys,th->len);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getBytesAvailable)
 {
 	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(th->len-th->position);
+	ret.setUInt(sys,th->len-th->position);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
@@ -783,7 +783,7 @@ ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret.setInt((int8_t)res);
+	ret.setInt(sys,(int8_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
@@ -846,7 +846,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
 	th->unlock();
-	ret.setInt((int32_t)th->endianOut(res));
+	ret.setInt(sys,(int32_t)th->endianOut(res));
 }
 
 bool ByteArray::readShort(uint16_t& ret)
@@ -875,7 +875,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	}
 
 	th->unlock();
-	ret.setInt((int16_t)res);
+	ret.setInt(sys,(int16_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
@@ -890,7 +890,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-	ret.setUInt((uint32_t)res);
+	ret.setUInt(sys,(uint32_t)res);
 }
 
 bool ByteArray::readUnsignedInt(uint32_t& ret)
@@ -918,7 +918,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret.setUInt(res);
+	ret.setUInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
@@ -934,7 +934,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 		throwError<EOFError>(kEOFError);
 	}
 
-	ret.setUInt((uint32_t)res);
+	ret.setUInt(sys,(uint32_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
@@ -1095,7 +1095,6 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 	if (!isConstructed())
 		return false;
-
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
@@ -1114,7 +1113,7 @@ GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multina
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
-		ret.setUInt(static_cast<uint32_t>(value));
+		ret.setUInt(this->getSystemState(),static_cast<uint32_t>(value));
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	ret.setUndefined();
@@ -1450,7 +1449,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	ret.setUInt((uint32_t)res);
+	ret.setUInt(sys,(uint32_t)res);
 	
 }
 
@@ -1466,7 +1465,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,push)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	ret.setUInt(res);
+	ret.setUInt(sys,res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
@@ -1481,7 +1480,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	ret.setUInt((uint32_t)res);
+	ret.setUInt(sys,(uint32_t)res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
@@ -1497,7 +1496,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	ret.setUInt(res);
+	ret.setUInt(sys,res);
 }
 ASFUNCTIONBODY_GETTER(ByteArray,shareable);
 ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
@@ -1533,7 +1532,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 		memcpy(th->bytes+byteindex,&newvalue,4);
 	}
 	th->unlock();
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 {
@@ -1548,7 +1547,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 		th->setLength(newLength);
 	}
 	th->unlock();
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toJSON)

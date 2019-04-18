@@ -188,7 +188,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeType)
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
 	uint64_t res=compat_msectiming() - sys->startTime;
-	ret.setInt((int32_t)res);
+	ret.setInt(sys,(int32_t)res);
 }
 
 
@@ -213,7 +213,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	//Add interval through manager
 	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
 			o, args[1].toInt());
-	ret.setInt((int32_t)id);
+	ret.setInt(sys,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
@@ -239,7 +239,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	//Add timeout through manager
 	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
 			o, args[1].toInt());
-	ret.setInt((int32_t)id);
+	ret.setInt(sys,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearInterval)

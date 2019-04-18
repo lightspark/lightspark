@@ -2172,7 +2172,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
 		LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom ignores parameter 'transpose'");
 	for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
 	{
-		vector->set(index+i,asAtom(sys,th->data[i]));
+		vector->set(index+i,asAtom(sys,th->data[i],false));
 	}
 }
 
@@ -2273,7 +2273,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 	Vector *result = v.as<Vector>();
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
-		asAtom o = asAtom(sys,th->data[i]);
+		asAtom o = asAtom(sys,th->data[i],false);
 		result->append(o);
 	}
 	ret =asAtom::fromObject(result);

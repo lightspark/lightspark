@@ -224,7 +224,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
 			break;
 	}
-	ret.setInt(t);
+	ret.setInt(sys,t);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)

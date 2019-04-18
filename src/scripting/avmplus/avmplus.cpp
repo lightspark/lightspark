@@ -153,21 +153,21 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.freeMemory is unimplemented."));
-	ret.setUInt(1024);
+	ret.setUInt(sys,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.totalMemory is unimplemented."));
-	ret.setUInt(1024);
+	ret.setUInt(sys,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));
-	ret.setUInt(1024);
+	ret.setUInt(sys,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_swfVersion)
 {
-	ret.setUInt(sys->getSwfVersion());
+	ret.setUInt(sys,sys->getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
@@ -255,7 +255,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 {
-	ret.setUInt(MIN_DOMAIN_MEMORY_LIMIT);
+	ret.setUInt(sys,MIN_DOMAIN_MEMORY_LIMIT);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
@@ -349,5 +349,5 @@ ASFUNCTIONBODY_ATOM(lightspark,casi32)
 		ByteArray::atomicCompareAndSwapIntAt(ret,sys,a,args,argslen);
 	}
 	else
-		ret.setInt(0);
+		ret.setInt(sys,0);
 }

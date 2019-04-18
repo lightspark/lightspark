@@ -462,7 +462,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x28:
 			{
 				//pushnan
-				RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(), Number::NaN));
+				RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(), Number::NaN,false));
 				break;
 			}
 			case 0x29:
@@ -1070,22 +1070,37 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			}case 0x73:
 			{
 				//convert_i
-				RUNTIME_STACK_POP_CREATE(context,val);
-				val->convert_i();
+				RUNTIME_STACK_POP_CREATE(context,pval);
+				if(!pval->isInteger())
+				{
+					int32_t v= pval->toIntStrict();
+					ASATOM_DECREF_POINTER(pval);
+					pval->setInt(function->getSystemState(),v);
+				}
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
-				RUNTIME_STACK_POP_CREATE(context,val);
-				val->convert_u();
+				RUNTIME_STACK_POP_CREATE(context,pval);
+				if(!pval->isUInteger())
+				{
+					uint32_t v= pval->toUInt();
+					ASATOM_DECREF_POINTER(pval);
+					pval->setUInt(function->getSystemState(),v);
+				}
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
-				RUNTIME_STACK_POP_CREATE(context,val);
-				val->convert_d(context->mi->context->root->getSystemState());
+				RUNTIME_STACK_POP_CREATE(context,pval);
+				if(!pval->isNumeric())
+				{
+					number_t v= pval->toNumber();
+					ASATOM_DECREF_POINTER(pval);
+					pval->setNumber(function->getSystemState(),v);
+				}
 				break;
 			}
 			case 0x76:

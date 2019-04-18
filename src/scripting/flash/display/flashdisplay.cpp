@@ -293,14 +293,14 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesLoaded)
 {
 	LoaderInfo* th=obj.as<LoaderInfo>();
 
-	ret.setUInt(th->bytesLoaded);
+	ret.setUInt(sys,th->bytesLoaded);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=obj.as<LoaderInfo>();
 
-	ret.setUInt(th->bytesTotal);
+	ret.setUInt(sys,th->bytesTotal);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
@@ -336,17 +336,17 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 
-	ret.setInt(o->getNominalWidth());
+	ret.setInt(sys,o->getNominalWidth());
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
@@ -356,17 +356,17 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 
-	ret.setInt(o->getNominalHeight());
+	ret.setInt(sys,o->getNominalHeight());
 }
 
 LoaderThread::LoaderThread(_R<URLRequest> request, _R<Loader> ldr)
@@ -1101,7 +1101,7 @@ void FrameLabel::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
 {
 	FrameLabel* th=obj.as<FrameLabel>();
-	ret.setUInt(th->frame);
+	ret.setUInt(sys,th->frame);
 }
 
 ASFUNCTIONBODY_ATOM(FrameLabel,_getName)
@@ -1298,6 +1298,7 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpri
 bool MovieClip::destruct()
 {
 	frames.clear();
+	setFramesLoaded(0);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
@@ -1521,13 +1522,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=obj.as<MovieClip>();
-	ret.setUInt(th->getFramesLoaded());
+	ret.setUInt(sys,th->getFramesLoaded());
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=obj.as<MovieClip>();
-	ret.setUInt(th->totalFrames_unreliable);
+	ret.setUInt(sys,th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
@@ -1577,9 +1578,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 	//currentFrame is 1-based and relative to current scene
 	if (th->state.explicit_FP)
 		// if frame is set explicitly, the currentframe property should be set to next_FP, even if it is not displayed yet
-		ret.setInt(th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
+		ret.setInt(sys,th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
 	else
-		ret.setInt(th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
+		ret.setInt(sys,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
@@ -2131,7 +2132,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtom::fromObject(g);
 	if(argslen>=2)
-		args[1]=asAtom(sys,args[1].toNumber()/100.0);
+		args[1]=asAtom(sys,args[1].toNumber()/100.0,false);
 	
 	Graphics::beginFill(ret,sys,o,args,argslen);
 }
@@ -2486,7 +2487,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=obj.as<DisplayObjectContainer>();
-	ret.setInt((int32_t)th->dynamicDisplayList.size());
+	ret.setInt(sys,(int32_t)th->dynamicDisplayList.size());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getMouseChildren)
@@ -2879,7 +2880,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 	_R<DisplayObject> d= _MR(args[0].as<DisplayObject>());
 	d->incRef();
 
-	ret.setInt(th->getChildIndex(d));
+	ret.setInt(sys,th->getChildIndex(d));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
@@ -3177,7 +3178,7 @@ uint32_t Stage::internalGetHeight() const
 ASFUNCTIONBODY_ATOM(Stage,_getStageWidth)
 {
 	Stage* th=obj.as<Stage>();
-	ret.setUInt(th->internalGetWidth());
+	ret.setUInt(sys,th->internalGetWidth());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
@@ -3189,7 +3190,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
 ASFUNCTIONBODY_ATOM(Stage,_getStageHeight)
 {
 	Stage* th=obj.as<Stage>();
-	ret.setUInt(th->internalGetHeight());
+	ret.setUInt(sys,th->internalGetHeight());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
@@ -3484,7 +3485,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getColor)
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
 		rgb = root->getBackground();
-	ret.setUInt(rgb.toUInt());
+	ret.setUInt(sys,rgb.toUInt());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setColor)

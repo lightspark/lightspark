@@ -79,6 +79,12 @@ TRISTATE Undefined::isLess(ASObject* r)
 	//As undefined became NaN when converted to number the operation is undefined
 	return TUNDEFINED;
 }
+TRISTATE Undefined::isLessAtom(asAtom& r)
+{
+	//ECMA-262 complaiant
+	//As undefined became NaN when converted to number the operation is undefined
+	return TUNDEFINED;
+}
 
 bool Undefined::isEqual(ASObject* r)
 {
@@ -157,10 +163,10 @@ ASFUNCTIONBODY_ATOM(IFunction,_length)
 	if (obj.is<IFunction>())
 	{
 		IFunction* th=obj.as<IFunction>();
-		ret.setUInt(th->length);
+		ret.setUInt(sys,th->length);
 	}
 	else
-		ret.setUInt(1);
+		ret.setUInt(sys,1);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,apply)
@@ -578,7 +584,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			ASATOM_DECREF_POINTER((--cc.stackp));
 		}
 	}
-	for(asAtom* i=cc.locals;i< cc.locals+cc.locals_size;++i)
+	for(asAtom* i=cc.locals;i< cc.locals+cc.locals_size+2;++i)
 	{
 		ASATOM_DECREF_POINTER(i);
 	}
@@ -697,6 +703,49 @@ TRISTATE Null::isLess(ASObject* r)
 	{
 		asAtom val2p;
 		r->toPrimitive(val2p,NUMBER_HINT);
+		double val2=val2p.toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (0<val2)?TTRUE:TFALSE;
+	}
+}
+
+TRISTATE Null::isLessAtom(asAtom& r)
+{
+	if(r.getObjectType()==T_INTEGER)
+	{
+		return (0<r.toInt())?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_UINTEGER)
+	{
+		return (0<r.toUInt())?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_NUMBER)
+	{
+		if(std::isnan(r.toNumber())) return TUNDEFINED;
+		return (0<r.toNumber())?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_BOOLEAN)
+	{
+		return (0<r.toInt())?TTRUE:TFALSE;
+	}
+	else if(r.getObjectType()==T_NULL)
+	{
+		return TFALSE;
+	}
+	else if(r.getObjectType()==T_UNDEFINED)
+	{
+		return TUNDEFINED;
+	}
+	else if(r.getObjectType()==T_STRING)
+	{
+		double val2=r.toNumber();
+		if(std::isnan(val2)) return TUNDEFINED;
+		return (0<val2)?TTRUE:TFALSE;
+	}
+	else
+	{
+		asAtom val2p;
+		r.getObject()->toPrimitive(val2p,NUMBER_HINT);
 		double val2=val2p.toNumber();
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (0<val2)?TTRUE:TFALSE;
@@ -2449,7 +2498,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	if(valid==false)
 		ret.setNumber(sys,numeric_limits<double>::quiet_NaN());
 	else if (res < INT32_MAX && res > INT32_MIN)
-		ret.setInt((int32_t)res);
+		ret.setInt(sys,(int32_t)res);
 	else
 		ret.setNumber(sys,res);
 }
@@ -2894,7 +2943,7 @@ GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const
 		ret = asAtom::fromObject(prototype->getObj());
 	}
 	else if (name.normalizedName(getSystemState()) == "length")
-		ret.setUInt(_length);
+		ret.setUInt(getSystemState(),_length);
 	else
 		return getClass()->getVariableByMultiname(ret,name, opt);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
@@ -2986,3 +3035,4 @@ asAtom AVM1context::AVM1GetConstant(uint16_t index)
 	LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
 	return asAtom::undefinedAtom;
 }
+

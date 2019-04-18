@@ -288,8 +288,8 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
 	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
-	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
-	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtom(m_sys,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
 	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));
@@ -718,7 +718,7 @@ void ABCVm::loadFloat(call_context *th)
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<float>(addr);
 	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret));
+	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret,false));
 }
 
 void ABCVm::loadDouble(call_context *th)
@@ -728,7 +728,7 @@ void ABCVm::loadDouble(call_context *th)
 	_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 	number_t ret=appDomain->readFromDomainMemory<double>(addr);
 	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret));
+	RUNTIME_STACK_PUSH(th,asAtom(appDomain->getSystemState(),ret,false));
 }
 
 void ABCVm::storeFloat(call_context *th)
@@ -1087,7 +1087,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			//QName is used even in MultinameL
 			if (n.isInteger())
 			{
-				ret->name_i=n.intval;
+				ret->name_i=n.getInt();
 				ret->name_type = multiname::NAME_INT;
 				ret->name_s_id = UINT32_MAX;
 				ret->isInteger=true;
@@ -1164,7 +1164,6 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	}
 	return ret;
 }
-
 ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),constant_pool(vm->vmDataMemory),
 	methods(reporter_allocator<method_info>(vm->vmDataMemory)),
 	metadata(reporter_allocator<metadata_info>(vm->vmDataMemory)),
@@ -1179,22 +1178,28 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 
 	constantAtoms_integer.resize(constant_pool.integer.size());
 	for (uint32_t i = 0; i < constant_pool.integer.size(); i++)
+	{
 		constantAtoms_integer[i] = asAtom(constant_pool.integer[i]);
+		if (constantAtoms_integer[i].getObject())
+			constantAtoms_integer[i].getObject()->setConstant();
+	}
 	constantAtoms_uinteger.resize(constant_pool.uinteger.size());
 	for (uint32_t i = 0; i < constant_pool.uinteger.size(); i++)
+	{
 		constantAtoms_uinteger[i] = asAtom(constant_pool.uinteger[i]);
+		if (constantAtoms_uinteger[i].getObject())
+			constantAtoms_uinteger[i].getObject()->setConstant();
+	}
 	constantAtoms_doubles.resize(constant_pool.doubles.size());
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
 	{
-		constantAtoms_doubles[i] = asAtom(root->getSystemState(),constant_pool.doubles[i]);
-		constantAtoms_doubles[i].getObject()->setConstant();
+		ASObject* res = abstract_d_constant(root->getSystemState(),constant_pool.doubles[i]);
+		constantAtoms_doubles[i] = asAtom::fromObject(res);
 	}
 	constantAtoms_strings.resize(constant_pool.strings.size());
 	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)
 	{
-		ASObject* res = abstract_s(root->getSystemState(),constant_pool.strings[i]);
-		res->setConstant();
-		constantAtoms_strings[i] = asAtom::fromObject(res);
+		constantAtoms_strings[i] = asAtom::fromStringID(constant_pool.strings[i]);
 	}
 	constantAtoms_namespaces.resize(constant_pool.namespaces.size());
 	for (uint32_t i = 0; i < constant_pool.namespaces.size(); i++)
@@ -2411,10 +2416,10 @@ void ABCContext::getConstant(asAtom &ret, int kind, int index)
 			ret = asAtom::fromStringID(constant_pool.strings[index]);
 			break;
 		case 0x03: //Int
-			ret.setInt(constant_pool.integer[index]);
+			ret.setInt(root->getSystemState(),constant_pool.integer[index]);
 			break;
 		case 0x04: //UInt
-			ret.setUInt(constant_pool.uinteger[index]);
+			ret.setUInt(root->getSystemState(),constant_pool.uinteger[index]);
 			break;
 		case 0x06: //Double
 			ret.setNumber(root->getSystemState(),constant_pool.doubles[index]);

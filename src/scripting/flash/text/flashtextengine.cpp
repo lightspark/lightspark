@@ -638,38 +638,38 @@ ASFUNCTIONBODY_ATOM(TextLine,_constructor)
 ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
-	ret.setInt(0);
+	ret.setInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getDescent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent");
-	ret.setInt(0);
+	ret.setInt(sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getAscent)
 {
 	TextLine* th=obj.as<TextLine>();
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent");
-	ret.setInt(th->textHeight);
+	ret.setInt(sys,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextWidth)
 {
 	TextLine* th=obj.as<TextLine>();
-	ret.setInt(th->textWidth);
+	ret.setInt(sys,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 {
 	TextLine* th=obj.as<TextLine>();
-	ret.setInt(th->textHeight);
+	ret.setInt(sys,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 {
 	TextLine* th=obj.as<TextLine>();
-	ret.setInt(th->width);
+	ret.setInt(sys,th->width);
 }
 
 void TextLine::updateSizes()

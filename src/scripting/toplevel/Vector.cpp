@@ -246,6 +246,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 	th->getClass()->getInstance(ret,true,NULL,0);
 	Vector* res= ret.as<Vector>();
 	asAtom funcRet;
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 
 	for(unsigned int i=0;i<th->size();i++)
 	{
@@ -257,7 +258,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 
 		if(argslen==1)
 		{
-			f.callFunction(funcRet,asAtom::nullAtom, params, 3,false);
+			f.callFunction(funcRet,closure, params, 3,false);
 		}
 		else
 		{
@@ -284,6 +285,7 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 	Vector* th=static_cast<Vector*>(obj.getObject());
 	asAtom f = args[0];
 	asAtom params[3];
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -295,7 +297,7 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(ret,closure, params, 3,false);
 		}
 		else
 		{
@@ -322,6 +324,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(th->getSystemState())->getClassName(), "Function");
 	asAtom f = args[0];
 	asAtom params[3];
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -334,7 +337,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(ret,closure, params, 3,false);
 		}
 		else
 		{
@@ -418,7 +421,7 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		th->vec_type->coerce(th->getSystemState(),args[i]);
 		th->vec.push_back(args[i]);
 	}
-	ret.setUInt((uint32_t)th->vec.size());
+	ret.setUInt(sys,(uint32_t)th->vec.size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_pop)
@@ -444,7 +447,7 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 
 ASFUNCTIONBODY_ATOM(Vector,getLength)
 {
-	ret.setUInt((uint32_t)obj.as<Vector>()->vec.size());
+	ret.setUInt(sys,(uint32_t)obj.as<Vector>()->vec.size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,setLength)
@@ -484,6 +487,7 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 		throwError<TypeError>(kCheckTypeFailedError, args[0].toObject(th->getSystemState())->getClassName(), "Function");
 	asAtom f = args[0];
 	asAtom params[3];
+	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -496,7 +500,7 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 		asAtom funcret;
 		if( argslen == 1 )
 		{
-			f.callFunction(funcret,asAtom::nullAtom, params, 3,false);
+			f.callFunction(funcret,closure, params, 3,false);
 		}
 		else
 		{
@@ -534,7 +538,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 
 	if(th->vec.size() == 0)
 	{
-		ret.setInt((int32_t)-1);
+		ret.setInt(sys,(int32_t)-1);
 		return;
 	}
 
@@ -542,7 +546,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 
 	if(argslen == 2 && std::isnan(args[1].toNumber()))
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 
@@ -576,7 +580,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 	}
 	while(i--);
 
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(Vector,shift)
@@ -755,7 +759,7 @@ ASFUNCTIONBODY_ATOM(Vector,indexOf)
 			break;
 		}
 	}
-	ret.setInt(res);
+	ret.setInt(sys,res);
 }
 bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
 {
@@ -933,7 +937,7 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 			th->vec_type->coerce(th->getSystemState(),th->vec[i]);
 		}
 	}
-	ret.setInt((int32_t)th->size());
+	ret.setInt(sys,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_map)
@@ -1140,14 +1144,14 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		{
 			case multiname::NAME_NUMBER:
 				if (getSystemState()->getSwfVersion() >= 11 
-						|| (int32_t(name.name_d) == name.name_d && name.name_d < UINT32_MAX))
+						|| (this->fixed && ((int32_t(name.name_d) != name.name_d) || name.name_d >= (int32_t)vec.size() || name.name_d < 0)))
 					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
 					throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
 				break;
 			case multiname::NAME_INT:
 				if (getSystemState()->getSwfVersion() >= 11
-						|| name.name_i >= (int32_t)vec.size())
+						|| (this->fixed && (name.name_i >= (int32_t)vec.size() || name.name_i < 0)))
 					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
 					throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
@@ -1216,7 +1220,7 @@ uint32_t Vector::nextNameIndex(uint32_t cur_index)
 void Vector::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=vec.size())
-		ret.setUInt(index-1);
+		ret.setUInt(this->getSystemState(),index-1);
 	else
 		throw RunTimeException("Vector::nextName out of bounds");
 }
@@ -1267,6 +1271,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 	res += "[";
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
+	asAtom closure = replacer.isValid() && replacer.getClosure() ? asAtom::fromObject(replacer.getClosure()) : asAtom::nullAtom;
 	for (unsigned int i =0;  i < vec.size(); i++)
 	{
 		tiny_string subres;
@@ -1280,7 +1285,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 			params[0] = asAtom(i);
 			params[1] = o;
 			asAtom funcret;
-			replacer.callFunction(funcret,asAtom::nullAtom, params, 2,false);
+			replacer.callFunction(funcret,closure, params, 2,false);
 			if (funcret.isValid())
 				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
 		}

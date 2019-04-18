@@ -311,7 +311,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_getLength)
 {
 	XMLList* th=obj.as<XMLList>();
 	assert_and_throw(argslen==0);
-	ret.setInt((int32_t)th->nodes.size());
+	ret.setInt(sys,(int32_t)th->nodes.size());
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,_hasSimpleContent)
@@ -1298,7 +1298,7 @@ uint32_t XMLList::nextNameIndex(uint32_t cur_index)
 void XMLList::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=nodes.size())
-		ret.setUInt(index-1);
+		ret.setUInt(this->getSystemState(),index-1);
 	else
 		throw RunTimeException("XMLList::nextName out of bounds");
 }

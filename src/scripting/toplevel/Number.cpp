@@ -307,11 +307,11 @@ void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtom(c->getSystemState(),-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::infinity()),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::max()),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::min()),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtom(c->getSystemState(),-numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::max(),true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::min(),true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtom(c->getSystemState(),numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),toExponential,1),NORMAL_METHOD,true);
@@ -327,14 +327,14 @@ void Number::sinit(Class_base* c)
 	// if needed add AVMPLUS definitions
 	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
 	{
-		c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(c->getSystemState(),2.71828182845905),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(c->getSystemState(),2.302585092994046),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(c->getSystemState(),0.6931471805599453),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(c->getSystemState(),0.4342944819032518),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(c->getSystemState(),1.442695040888963387),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(c->getSystemState(),3.141592653589793),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(c->getSystemState(),0.7071067811865476),CONSTANT_TRAIT,false);
-		c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(c->getSystemState(),1.4142135623730951),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(c->getSystemState(),2.71828182845905,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(c->getSystemState(),2.302585092994046,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(c->getSystemState(),0.6931471805599453,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(c->getSystemState(),0.4342944819032518,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(c->getSystemState(),1.442695040888963387,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(c->getSystemState(),3.141592653589793,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(c->getSystemState(),0.7071067811865476,true),CONSTANT_TRAIT,false);
+		c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(c->getSystemState(),1.4142135623730951,true),CONSTANT_TRAIT,false);
 		
 		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),Math::abs,1),NORMAL_METHOD,false,false);
 		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),Math::acos,1),NORMAL_METHOD,false,false);
@@ -579,7 +579,7 @@ ASFUNCTIONBODY_ATOM(Number,_valueOf)
 {
 	if(Class<Number>::getClass(sys)->prototype->getObj() == obj.getObject())
 	{
-		ret.setInt(0);
+		ret.setInt(sys,0);
 		return;
 	}
 

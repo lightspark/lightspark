@@ -144,7 +144,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 	th->ensureValid();
 	asAtom v((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
-	asAtom n(sys,0.0);
+	asAtom n(sys,0.0,false);
 	th->data->append(n);
 	th->data->append(n);
 	th->data->append(x);
@@ -161,7 +161,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	th->ensureValid();
 	asAtom v((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
-	asAtom n(sys,0.0);
+	asAtom n(sys,0.0,false);
 	th->data->append(n);
 	th->data->append(n);
 	th->data->append(x);

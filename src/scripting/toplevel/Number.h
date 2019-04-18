@@ -30,6 +30,7 @@ namespace lightspark
 class Number : public ASObject
 {
 friend ASObject* abstract_d(SystemState* sys,number_t i);
+friend ASObject* abstract_d_constant(SystemState* sys,number_t i);
 friend ASObject* abstract_di(SystemState* sys,int32_t i);
 friend class ABCContext;
 friend class ABCVm;

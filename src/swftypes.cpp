@@ -139,13 +139,13 @@ void multiname::setName(asAtom& n,SystemState* sys)
 	switch(n.getObjectType())
 	{
 	case T_INTEGER:
-		name_i=n.intval;
+		name_i=n.getInt();
 		name_type = NAME_INT;
 		name_s_id = UINT32_MAX;
 		isInteger=true;
 		break;
 	case T_UINTEGER:
-		name_ui=n.uintval;
+		name_ui=n.getUInt();
 		name_type = NAME_UINT;
 		name_s_id = UINT32_MAX;
 		isInteger=true;
@@ -1560,6 +1560,14 @@ ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
 	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
 	ret->dval = i;
 	ret->isfloat = true;
+	return ret;
+}
+ASObject* lightspark::abstract_d_constant(SystemState* sys,number_t i)
+{
+	Number* ret=new (sys->unaccountedMemory) Number(Class<Number>::getRef(sys).getPtr());
+	ret->dval = i;
+	ret->isfloat = true;
+	ret->setConstant();
 	return ret;
 }
 ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)

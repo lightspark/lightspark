@@ -792,7 +792,7 @@ void ABCVm::incLocal_i(call_context* th, int n)
 	LOG_CALL( _("incLocal_i ") << n );
 	int32_t tmp=th->locals[n].toInt();
 	ASATOM_DECREF(th->locals[n]);
-	th->locals[n].setInt(tmp+1);
+	th->locals[n].setInt(th->mi->context->root->getSystemState(),tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
@@ -808,7 +808,7 @@ void ABCVm::decLocal_i(call_context* th, int n)
 	LOG_CALL( _("decLocal_i ") << n );
 	int32_t tmp=th->locals[n].toInt();
 	ASATOM_DECREF(th->locals[n]);
-	th->locals[n].setInt(tmp-1);
+	th->locals[n].setInt(th->mi->context->root->getSystemState(),tmp-1);
 }
 
 /* This is called for expressions like
@@ -1673,12 +1673,12 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			name->resetNameIfObject();
 			return false;
 		}
-		ASATOM_INCREF(o);
 	}
 	else
 		// TODO can we cache objects found in the scope_stack? 
 		canCache = false;
 	name->resetNameIfObject();
+	ASATOM_INCREF(o);
 	if (localresult)
 		th->locals[localresult-1].set(o);
 	else
@@ -2358,7 +2358,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
 	ASATOM_DECREF(th->locals[m]);
-	th->locals[m].setUInt(newIndex);
+	th->locals[m].setUInt(obj->getSystemState(),newIndex);
 	if(newIndex==0)
 	{
 		ASATOM_DECREF(th->locals[n]);
@@ -2859,6 +2859,7 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	RUNTIME_STACK_POP(th,f);
 	LOG_CALL(_("call ") << m << ' ' << f.toDebugString());
 	obj = f.getClosureAtom(obj);
+	ASATOM_INCREF(obj);
 	callImpl(th, f, obj, args, m, true);
 }
 // this consumes one reference of f, obj and of each arg

@@ -197,3 +197,43 @@ TRISTATE Boolean::isLess(ASObject* r)
 		}
 	}
 }
+
+TRISTATE Boolean::isLessAtom(asAtom& r)
+{
+	switch (r.getObjectType())
+	{
+		case T_BOOLEAN:
+		{
+			return (val<r.toInt())?TTRUE:TFALSE;
+		}
+		case T_INTEGER:
+		{
+			int32_t d=r.toInt();
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_UINTEGER:
+		{
+			uint32_t d=r.toUInt();
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_NUMBER:
+		case T_STRING:
+		{
+			double d=r.toNumber();
+			if(std::isnan(d)) return TUNDEFINED;
+			return (val<d)?TTRUE:TFALSE;
+		}
+		case T_NULL:
+			return (val)?TFALSE:TTRUE;
+		case T_UNDEFINED:
+			return TUNDEFINED;
+		default:
+		{
+			asAtom val2p;
+			r.getObject()->toPrimitive(val2p);
+			double val2=val2p.toNumber();
+			if(std::isnan(val2)) return TUNDEFINED;
+			return (val<val2)?TTRUE:TFALSE;
+		}
+	}
+}

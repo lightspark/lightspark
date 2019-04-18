@@ -181,17 +181,17 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
 	if (!sys->getEngineData()->getScreenData(&screen))
-		ret.setInt(0);
+		ret.setInt(sys,0);
 	else
-		ret.setInt(screen.w);
+		ret.setInt(sys,screen.w);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionY)
 {
 	SDL_DisplayMode screen;
 	if (!sys->getEngineData()->getScreenData(&screen))
-		ret.setInt(0);
+		ret.setInt(sys,0);
 	else
-		ret.setInt(screen.h);
+		ret.setInt(sys,screen.h);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 {
@@ -258,7 +258,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	ret.setUInt((uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
+	ret.setUInt(sys,(uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
@@ -645,7 +645,7 @@ void System::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	ret.setUInt(1024);
+	ret.setUInt(sys,1024);
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {

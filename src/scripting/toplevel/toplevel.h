@@ -752,6 +752,7 @@ public:
 	int64_t toInt64();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	ASObject *describeType() const;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -766,6 +767,7 @@ public:
 	Null();
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	int32_t toInt();
 	int64_t toInt64();
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);

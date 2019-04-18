@@ -27,7 +27,7 @@ namespace lightspark
 
 class UInteger: public ASObject
 {
-friend ASObject* abstract_ui(uint32_t i);
+friend ASObject* abstract_ui(SystemState* sys, uint32_t i);
 public:
 	uint32_t val;
 	UInteger(Class_base* c,uint32_t v=0):ASObject(c,T_UINTEGER),val(v){}
@@ -41,6 +41,7 @@ public:
 	inline int64_t toInt64() { return val; }
 	inline uint32_t toUInt() { return val; }
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	bool isEqual(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);

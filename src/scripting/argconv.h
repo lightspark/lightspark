@@ -94,7 +94,7 @@ public:
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   obj.toObject(sys)->getClassName(),
                                                   Class<T>::getClass(sys)->getQualifiedClassName());
-        T* o = obj.as<T>();
+        T* o = obj.toObject(sys)->as<T>();
 		o->incRef();
 		return _MR(o);
 	}
@@ -120,8 +120,8 @@ public:
                         throwError<ArgumentError>(kCheckTypeFailedError,
 												  obj.toObject(sys)->getClassName(),
                                                   Class<T>::getClass(sys)->getQualifiedClassName());
-		ASATOM_INCREF(obj);
-		T* o = obj.as<T>();
+		T* o = obj.toObject(sys)->as<T>();
+		o->incRef();
 		return _MNR(o);
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,const NullableRef<T>& val)
@@ -203,13 +203,13 @@ inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(SystemState* sys,
 template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, SystemState* sys,const int32_t& val)
 {
-	ret.setInt(val);
+	ret.setInt(sys,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret, SystemState* sys,const uint32_t& val)
 {
-	ret.setUInt(val);
+	ret.setUInt(sys,val);
 }
 
 template<>
@@ -233,7 +233,7 @@ inline void lightspark::ArgumentConversionAtom<tiny_string>::toAbstract(asAtom& 
 template<>
 inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, SystemState* sys,const RGB& val)
 {
-	ret.setUInt(val.toUInt());
+	ret.setUInt(sys,val.toUInt());
 }
 
 #define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen,false)

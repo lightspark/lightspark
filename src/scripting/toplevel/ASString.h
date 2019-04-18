@@ -94,6 +94,7 @@ public:
 	ASFUNCTION_ATOM(localeCompare_prototype);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
+	TRISTATE isLessAtom(asAtom& r);
 	number_t toNumber();
 	int32_t toInt();
 	int32_t toIntStrict();

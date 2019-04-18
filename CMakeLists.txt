@@ -102,13 +102,15 @@ ELSE(GNASH_EXE_PATH)
 ENDIF(GNASH_EXE_PATH)
 
 # Find out CPU architecture ...
-# we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
 #
 # Setting the value of LIB_SUFFIX if not specified (We could build 32bit version on 64bit)
 # However, some distro don't implement FHS the same way
 # Suse, Redhat put 64bit libs in /lib64; Debian use /lib for 64bit, but specifies /lib32 for 32bit libs
 # See FHS 2.3 for Lib directories under each architecture 
 
+IF(CMAKE_SIZEOF_VOID_P STREQUAL "8")
+    ADD_DEFINITIONS(-DLIGHTSPARK_64)
+endif(CMAKE_SIZEOF_VOID_P STREQUAL "8")
 # Some directory shortcuts
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 INCLUDE(Pack)

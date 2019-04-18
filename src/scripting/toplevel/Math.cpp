@@ -28,14 +28,14 @@ void Math::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	// public constants
-	c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(c->getSystemState(),2.71828182845904523536),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(c->getSystemState(),2.30258509299404568402),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(c->getSystemState(),0.693147180559945309417),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(c->getSystemState(),0.434294481903251827651),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(c->getSystemState(),1.44269504088896340736),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(c->getSystemState(),3.14159265358979323846),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(c->getSystemState(),0.707106781186547524401),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(c->getSystemState(),1.41421356237309504880),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(c->getSystemState(),2.71828182845904523536,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(c->getSystemState(),2.30258509299404568402,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(c->getSystemState(),0.693147180559945309417,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(c->getSystemState(),0.434294481903251827651,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(c->getSystemState(),1.44269504088896340736,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(c->getSystemState(),3.14159265358979323846,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(c->getSystemState(),0.707106781186547524401,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(c->getSystemState(),1.41421356237309504880,true),CONSTANT_TRAIT);
 
 	// public methods
 	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),abs,1),NORMAL_METHOD,false);
@@ -182,9 +182,9 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 		{
 			int32_t n = a.toInt();
 			if (n == INT32_MIN)
-				ret.setUInt((uint32_t)n);
+				ret.setUInt(sys,(uint32_t)n);
 			else
-				ret.setInt(n < 0 ? -n : n);
+				ret.setInt(sys,n < 0 ? -n : n);
 			break;
 		}
 		case T_UINTEGER:
@@ -194,13 +194,13 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 			ret.setNumber(sys,Number::NaN);
 			break;
 		case T_NULL:
-			ret.setInt((int32_t)0);
+			ret.setInt(sys,(int32_t)0);
 			break;
 		case T_NUMBER:
 		{
 			number_t n = a.toNumber();
 			if (n  == 0.)
-				ret.setInt((int32_t)0);
+				ret.setInt(sys,(int32_t)0);
 			else
 				ret.setNumber(sys,(number_t)::fabs(n));
 			break;
@@ -209,7 +209,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 		{
 			number_t n = a.toNumber();
 			if (n  == 0.)
-				ret.setInt((int32_t)0);
+				ret.setInt(sys,(int32_t)0);
 			else
 				ret.setNumber(sys,(number_t)::fabs(n));
 			break;
@@ -231,7 +231,7 @@ ASFUNCTIONBODY_ATOM(Math,ceil)
 		if (n2 == 0.)
 			ret.setNumber(sys,std::signbit(n2) ? -0. : 0.);
 		else
-			ret.setInt((int32_t)n2);
+			ret.setInt(sys,(int32_t)n2);
 	}
 	else
 		ret.setNumber(sys,::ceil(n));
@@ -256,7 +256,7 @@ ASFUNCTIONBODY_ATOM(Math,floor)
 		if (n2 == 0.)
 			ret.setNumber(sys,std::signbit(n2) ? -0. : 0.);
 		else
-			ret.setInt((int32_t)n2);
+			ret.setInt(sys,(int32_t)n2);
 	}
 	else
 		ret.setNumber(sys,(number_t)::floor(n));
@@ -275,7 +275,7 @@ ASFUNCTIONBODY_ATOM(Math,round)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
 		ret.setNumber(sys,obj.getObject() == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
-		ret.setInt((int32_t)::floor(n+0.5));
+		ret.setInt(sys,(int32_t)::floor(n+0.5));
 	else
 		ret.setNumber(sys,(number_t)::floor(n+0.5));
 }

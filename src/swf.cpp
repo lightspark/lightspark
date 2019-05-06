@@ -1462,7 +1462,7 @@ void ParseThread::parseSWF(UI8 ver)
 			li->swfVersion = root->version;
 		}
 		
-		int usegnash = 1;
+		int usegnash = 0;
 		char *envvar = getenv("LIGHTSPARK_USE_GNASH");
 		if (envvar)
 			usegnash= atoi(envvar);

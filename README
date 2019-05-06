@@ -2,9 +2,8 @@ Lightspark is an open source Flash player implementation for playing
 files in SWF format. Lightspark can run as a web browser plugin or as
 a standalone application.
 
-Lightspark supports SWF files written on the newest version of the
-ActionScript language, ActionScript 3.0, which was introduced at the
-same time as Flash player 9.
+Lightspark supports SWF files written on all versions of the
+ActionScript language.
 
 INSTALLATION
 ============
@@ -77,7 +76,7 @@ Ctrl+C Copy an error to the clipboard (when Lightspark fails)
 Environment variables
 ---------------------
 
-LIGHTSPARK_USE_GNASH: if set to 0, lightspark will not fall back to gnash for older swf files, but use the (experimental) lightspark implementation
+LIGHTSPARK_USE_GNASH: if set to 1, lightspark will fall back to gnash for older swf files
 LIGHTSPARK_PLUGIN_LOGLEVEL: sets the log level (0-4) (browser plugins only)
 LIGHTSPARK_PLUGIN_LOGFILE: sets the file the log will be written to (browser plugins only)
 LIGHTSPARK_PLUGIN_PARAMFILE: if set, the flash variables set by the website will be written to this file (browser plugins only)

@@ -4,7 +4,7 @@ Version NEXT:
 
 	* implement support for text input
 	* implement support for sound streaming (SoundStreamHead/SoundStreamHeadBlock tags)
-	* experimental support for older swf (instead of calling gnash), activated by setting environment variable LIGHTSPARK_USE_GNASH=0
+	* direct support for older swf, no need for gnash any more (fallback to gnash ist still available by setting environment variable LIGHTSPARK_USE_GNASH=1)
 	* PPAPI plugin works again
 	* make llvm dependency optional (disabled by default)
 	* implement flash.system.Worker/WorkerDomain

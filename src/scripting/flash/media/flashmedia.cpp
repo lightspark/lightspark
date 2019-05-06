@@ -256,6 +256,7 @@ void Sound::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),loadCompressedDataFromByteArray),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
 	REGISTER_GETTER(c,length);
@@ -332,13 +333,8 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(th->getSystemState()));
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
-		// it seems that SampleData is always expected as 44kHz stereo
-		th->format.channels=2;
-		th->format.sampleRate=44100;
-		th->format.codec=LINEAR_PCM_LE;
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(CODEC_NONE,0,0),false));
 		th->soundChannel->incRef();
-		LOG(LOG_ERROR,"sound.play:"<<data.getPtr()<<" "<<th->soundChannel.getPtr());
 		ret = asAtom::fromObject(th->soundChannel.getPtr());
 	}
 	else
@@ -355,6 +351,26 @@ ASFUNCTIONBODY_ATOM(Sound,close)
 	}
 }
 
+
+ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
+{
+	Sound* th=obj.as<Sound>();
+	_NR<ByteArray> bytes;
+	uint32_t bytesLength;
+
+	ARG_UNPACK_ATOM(bytes)(bytesLength);
+	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
+	th->soundData = c;
+	if (bytes)
+	{
+		uint8_t* buf = new uint8_t[bytesLength];
+		if (bytes->readBytes(bytes->getPosition(),bytesLength,buf))
+		{
+			th->soundData->append(buf,bytesLength);
+		}
+		delete[] buf;
+	}
+}
 void Sound::afterExecution(_R<Event> e)
 {
 	if (e->type == "sampleData")

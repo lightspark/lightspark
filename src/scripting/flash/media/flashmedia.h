@@ -66,6 +66,7 @@ public:
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);
 	ASFUNCTION_ATOM(close);
+	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
 	void afterExecution(_R<Event> e);
 };
 

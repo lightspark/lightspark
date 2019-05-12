@@ -1764,7 +1764,7 @@ void ABCVm::abc_callproperty(call_context* context)
 	++(context->exec_pos);
 }
 
-void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args, uint32_t argsnum,multiname* name,preloadedcodedata* cacheptr)
+void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args, uint32_t argsnum,multiname* name,preloadedcodedata* cacheptr,bool refcounted)
 {
 	if ((cacheptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
@@ -1775,9 +1775,17 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			asAtom o = asAtom::fromObject(cacheptr->cacheobj3);
 			LOG_CALL( "callProperty from cache:"<<*name<<" "<<obj.toDebugString()<<" "<<o.toDebugString());
 			if(o.is<IFunction>())
-				o.callFunction(ret,obj,args,argsnum,false);
+				o.callFunction(ret,obj,args,argsnum,refcounted);
 			else if(o.is<Class_base>())
+			{
 				o.as<Class_base>()->generator(ret,args,argsnum);
+				if (refcounted)
+				{
+					for(uint32_t i=0;i<argsnum;i++)
+						ASATOM_DECREF(args[i]);
+					ASATOM_DECREF(obj);
+				}
+			}
 			else if(o.is<RegExp>())
 				RegExp::exec(ret,context->mi->context->root->getSystemState(),o,args,argsnum);
 			else
@@ -1859,12 +1867,20 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 				cacheptr->data &= ~ABC_OP_CACHED;
 			}
 			obj = o.getClosureAtom(obj);
-			o.callFunction(ret,obj,args,argsnum,false);
-			if (!(cacheptr->data & ABC_OP_CACHED) && o.is<Function>() && o.as<Function>()->isMethod())
+			o.callFunction(ret,obj,args,argsnum,refcounted);
+			if (!(cacheptr->data & ABC_OP_CACHED) && o.as<IFunction>()->isMethod())
 				o.getObject()->decRef();
 		}
 		else if(o.is<Class_base>())
+		{
 			o.as<Class_base>()->generator(ret,args,argsnum);
+			if (refcounted)
+			{
+				for(uint32_t i=0;i<argsnum;i++)
+					ASATOM_DECREF(args[i]);
+				ASATOM_DECREF(obj);
+			}
+		}
 		else if(o.is<RegExp>())
 			RegExp::exec(ret,context->mi->context->root->getSystemState(),o,args,argsnum);
 		else
@@ -1891,9 +1907,17 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 				if(o.isValid())
 				{
 					if(o.is<IFunction>())
-						o.callFunction(ret,obj,args,argsnum,false);
+						o.callFunction(ret,obj,args,argsnum,refcounted);
 					else if(o.is<Class_base>())
+					{
 						o.as<Class_base>()->generator(ret,args,argsnum);
+						if (refcounted)
+						{
+							for(uint32_t i=0;i<argsnum;i++)
+								ASATOM_DECREF(args[i]);
+							ASATOM_DECREF(obj);
+						}
+					}
 					else if(o.is<RegExp>())
 						RegExp::exec(ret,context->mi->context->root->getSystemState(),o,args,argsnum);
 					else
@@ -1923,9 +1947,17 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			else if(o.isValid())
 			{
 				if(o.is<IFunction>())
-					o.callFunction(ret,obj,args,argsnum,false);
+					o.callFunction(ret,obj,args,argsnum,refcounted);
 				else if(o.is<Class_base>())
+				{
 					o.as<Class_base>()->generator(ret,args,argsnum);
+					if (refcounted)
+					{
+						for(uint32_t i=0;i<argsnum;i++)
+							ASATOM_DECREF(args[i]);
+						ASATOM_DECREF(obj);
+					}
+				}
 				else if(o.is<RegExp>())
 					RegExp::exec(ret,context->mi->context->root->getSystemState(),o,args,argsnum);
 				else
@@ -1951,7 +1983,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			if (obj.is<Class_base>())
 			{
 				tiny_string clsname = obj.as<Class_base>()->class_name.getQualifiedName(context->mi->context->root->getSystemState());
-				throwError<TypeError>(kCallNotFoundError, name->qualifiedString(context->mi->context->root->getSystemState()), clsname);
+				throwError<TypeError>(kCallOfNonFunctionError, name->qualifiedString(context->mi->context->root->getSystemState()), clsname);
 			}
 			else
 			{
@@ -1975,8 +2007,7 @@ void ABCVm::abc_callpropertyStaticName(call_context* context)
 		RUNTIME_STACK_POP(context,args[argcount-i-1]);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret;
-	callprop_intern(context,ret,*obj,args,argcount,name,instrptr);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,true);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -1991,10 +2022,9 @@ void ABCVm::abc_callpropertyStaticName_localresult(call_context* context)
 	LOG_CALL( "callProperty_l " << *name);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom res;
-	callprop_intern(context,res,*obj,args,1,name,context->exec_pos);
+	callprop_intern(context,res,*obj,args,1,name,context->exec_pos,true);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2010,7 +2040,7 @@ void ABCVm::abc_callpropertyStaticName_constant_constant(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cc " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
@@ -2027,8 +2057,7 @@ void ABCVm::abc_callpropertyStaticName_local_constant(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lc " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2044,8 +2073,7 @@ void ABCVm::abc_callpropertyStaticName_constant_local(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cl " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2061,8 +2089,7 @@ void ABCVm::abc_callpropertyStaticName_local_local(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_ll " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2078,10 +2105,9 @@ void ABCVm::abc_callpropertyStaticName_constant_constant_localresult(call_contex
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_ccl " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,&args,1,name,context->exec_pos);
+	callprop_intern(context,res,obj,&args,1,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* context)
@@ -2095,10 +2121,9 @@ void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* 
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lcl " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,&args,1,name,context->exec_pos);
+	callprop_intern(context,res,obj,&args,1,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2113,10 +2138,9 @@ void ABCVm::abc_callpropertyStaticName_constant_local_localresult(call_context* 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_cll " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,args,1,name,context->exec_pos);
+	callprop_intern(context,res,obj,args,1,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2131,10 +2155,9 @@ void ABCVm::abc_callpropertyStaticName_local_local_localresult(call_context* con
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_lll " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,args,1,name,context->exec_pos);
+	callprop_intern(context,res,obj,args,1,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2149,8 +2172,7 @@ void ABCVm::abc_callpropertyStaticName_constant(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_noargs_c " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2165,8 +2187,7 @@ void ABCVm::abc_callpropertyStaticName_local(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_noargs_l " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos);
-	ASATOM_INCREF(ret);
+	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2181,10 +2202,9 @@ void ABCVm::abc_callpropertyStaticName_constant_localresult(call_context* contex
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callProperty_noargs_c_lr " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos);
+	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2198,10 +2218,9 @@ void ABCVm::abc_callpropertyStaticName_local_localresult(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callProperty_noargs_l_lr " << *name);
 	asAtom res;
-	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos);
+	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos,false);
 	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
 	context->locals[instrptr->local_pos3-1].set(res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 
 	++(context->exec_pos);
 }
@@ -2292,7 +2311,7 @@ void ABCVm::abc_callpropvoidStaticName(call_context* context)
 		RUNTIME_STACK_POP(context,args[argcount-i-1]);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret;
-	callprop_intern(context,ret,*obj,args,argcount,name,instrptr);
+	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,true);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropvoidStaticName_constant_constant(call_context* context)
@@ -2306,7 +2325,7 @@ void ABCVm::abc_callpropvoidStaticName_constant_constant(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropvoid_cc " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
 
 	++(context->exec_pos);
 }
@@ -2321,7 +2340,7 @@ void ABCVm::abc_callpropvoidStaticName_local_constant(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callPropvoid_lc " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
 
 	++(context->exec_pos);
 }
@@ -2336,7 +2355,7 @@ void ABCVm::abc_callpropvoidStaticName_constant_local(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropvoid_cl " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos);
+	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropvoidStaticName_local_local(call_context* context)
@@ -2350,7 +2369,7 @@ void ABCVm::abc_callpropvoidStaticName_local_local(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callPropvoid_ll " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos);
+	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
 
 	++(context->exec_pos);
 }
@@ -2364,7 +2383,7 @@ void ABCVm::abc_callpropvoidStaticName_constant(call_context* context)
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropvoid_noargs_c " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos);
+	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
 
 	++(context->exec_pos);
 }
@@ -2378,7 +2397,7 @@ void ABCVm::abc_callpropvoidStaticName_local(call_context* context)
 	asAtom obj= context->locals[instrptr->local_pos1];
 	LOG_CALL( "callPropvoid_noargs_l " << *name);
 	asAtom ret;
-	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos);
+	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
 
 	++(context->exec_pos);
 }
@@ -2725,10 +2744,7 @@ void ABCVm::abc_setlocal(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || obj->isArray())
 	{
-		if (context->locals[i].getObject() != obj->getObject())
-		{
-			ASATOM_DECREF(context->locals[i]);
-		}
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
 }
@@ -2913,7 +2929,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lcl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
+		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2931,7 +2947,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	ASObject* obj= instrptr->arg1_constant->toObject(context->mi->context->root->getSystemState(),true);
 	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop;
-	obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
+	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 	if(prop.isInvalid())
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2958,7 +2974,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(context->locals[instrptr->local_pos2],NULL,t,false);
 		ASObject* obj= context->locals[instrptr->local_pos1].toObject(context->mi->context->root->getSystemState());
 		LOG_CALL( _("getProperty_lll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		obj->getVariableByMultiname(prop,*name,instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF : GET_VARIABLE_OPTION::NONE);
+		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 		if(prop.isInvalid())
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -3057,7 +3073,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	asAtom prop;
 	if(prop.isInvalid())
 	{
-		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
@@ -3177,7 +3193,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //		}
 		if(prop.isInvalid())
 		{
-			bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+			bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 			if (isgetter)
 			{
 				//Call the getter
@@ -3213,7 +3229,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	asAtom prop;
 	if(prop.isInvalid())
 	{
-		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)((instrptr->local_pos3 > context->locals_size ? GET_VARIABLE_OPTION::NO_INCREF:GET_VARIABLE_OPTION::NONE)| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
@@ -3421,7 +3437,6 @@ void ABCVm::abc_convert_d_constant(call_context* context)
 	asAtom res = *context->exec_pos->arg1_constant;
 	if(!res.isNumeric())
 		res.setNumber(context->mi->context->root->getSystemState(),res.toNumber());
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3431,7 +3446,8 @@ void ABCVm::abc_convert_d_local(call_context* context)
 	asAtom res =context->locals[context->exec_pos->local_pos1];
 	if(!res.isNumeric())
 		res.setNumber(context->mi->context->root->getSystemState(),res.toNumber());
-	ASATOM_INCREF(res);
+	else
+		ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3441,7 +3457,8 @@ void ABCVm::abc_convert_d_constant_localresult(call_context* context)
 	asAtom res = *context->exec_pos->arg1_constant;
 	if(!res.isNumeric())
 		res.setNumber(context->mi->context->root->getSystemState(),res.toNumber());
-	ASATOM_INCREF(res);
+	else
+		ASATOM_INCREF(res);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3452,7 +3469,8 @@ void ABCVm::abc_convert_d_local_localresult(call_context* context)
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	if(!res.isNumeric())
 		res.setNumber(context->mi->context->root->getSystemState(),res.toNumber());
-	ASATOM_INCREF(res);
+	else
+		ASATOM_INCREF(res);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	context->locals[context->exec_pos->local_pos3-1].set(res);
 	++(context->exec_pos);
@@ -3532,6 +3550,7 @@ void ABCVm::abc_negate(call_context* context)
 {
 	//negate
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	LOG_CALL("negate "<<pval->toDebugString());
 	number_t ret=-(pval->toNumber());
 	ASATOM_DECREF_POINTER(pval);
 	pval->setNumber(context->mi->context->root->getSystemState(), ret);
@@ -3784,7 +3803,6 @@ void ABCVm::abc_subtract_local_local(call_context* context)
 	//subtract
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.subtract(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4006,7 +4024,6 @@ void ABCVm::abc_modulo_constant_constant(call_context* context)
 	//modulo
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.modulo(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4111,7 +4128,6 @@ void ABCVm::abc_lshift_local_local(call_context* context)
 	//lshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.lshift(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4256,7 +4272,6 @@ void ABCVm::abc_urshift_local_constant(call_context* context)
 	//urshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.urshift(context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4273,7 +4288,6 @@ void ABCVm::abc_urshift_local_local(call_context* context)
 	//urshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	res.urshift(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4426,7 +4440,6 @@ void ABCVm::abc_bitor_constant_local(call_context* context)
 	//bitor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_or(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4508,7 +4521,6 @@ void ABCVm::abc_bitxor_constant_local(call_context* context)
 	//bitxor
 	asAtom res = *context->exec_pos->arg1_constant;
 	res.bit_xor(context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
-	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -5141,10 +5153,7 @@ void ABCVm::abc_setlocal_0(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || obj->isArray())
 	{
-		if (context->locals[i].getObject() != obj->getObject())
-		{
-			ASATOM_DECREF(context->locals[i]);
-		}
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
 	++(context->exec_pos);
@@ -5164,10 +5173,7 @@ void ABCVm::abc_setlocal_1(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || obj->isArray())
 	{
-		if (context->locals[i].getObject() != obj->getObject())
-		{
-			ASATOM_DECREF(context->locals[i]);
-		}
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
 }
@@ -5185,10 +5191,7 @@ void ABCVm::abc_setlocal_2(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || obj->isArray())
 	{
-		if (context->locals[i].getObject() != obj->getObject())
-		{
-			ASATOM_DECREF(context->locals[i]);
-		}
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
 }
@@ -5206,10 +5209,7 @@ void ABCVm::abc_setlocal_3(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || obj->isArray())
 	{
-		if (context->locals[i].getObject() != obj->getObject())
-		{
-			ASATOM_DECREF(context->locals[i]);
-		}
+		ASATOM_DECREF(context->locals[i]);
 		context->locals[i]=*obj;
 	}
 }

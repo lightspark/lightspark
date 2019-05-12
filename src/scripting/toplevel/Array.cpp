@@ -1583,7 +1583,8 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		if (data_first.size() > index)
 		{
 			ret = data_first.at(index);
-			ASATOM_INCREF(ret);
+			if (!(opt & NO_INCREF))
+				ASATOM_INCREF(ret);
 			if (ret.isValid())
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		}
@@ -1591,8 +1592,9 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 	auto it = data_second.find(index);
 	if(it != data_second.end())
 	{
-		ASATOM_INCREF(it->second);
 		ret = it->second;
+		if (!(opt & NO_INCREF))
+			ASATOM_INCREF(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	if (name.hasEmptyNS)

@@ -107,6 +107,17 @@ Vector::~Vector()
 {
 }
 
+bool Vector::destruct()
+{
+	for(unsigned int i=0;i<size();i++)
+	{
+		ASATOM_DECREF(vec[i]);
+	}
+	vec.clear();
+	vec_type=nullptr;
+	return ASObject::destruct();
+}
+
 void Vector::setTypes(const std::vector<const Type *> &types)
 {
 	assert(vec_type == NULL);
@@ -1113,8 +1124,9 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	{
 		if (vec[index].isValid())
 		{
-			ASATOM_INCREF(vec[index]);
 			ret = vec[index];
+			if (!(opt & NO_INCREF))
+				ASATOM_INCREF(ret);
 		}
 		else
 		{
@@ -1168,7 +1180,6 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		return ASObject::setVariableByMultiname(name, o, allowConst);
 	}
 	this->vec_type->coerce(getSystemState(), o);
-	  
 	if(index < vec.size())
 	{
 		ASATOM_DECREF(vec[index]);

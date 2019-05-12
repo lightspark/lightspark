@@ -1622,7 +1622,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
 		// And this ensures dynamic properties are also searched
-		GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(localresult > th->locals_size ? FROM_GETLEX | NO_INCREF : FROM_GETLEX);
+		GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX | NO_INCREF);
 		if(!th->scope_stack_dynamic[i-1])
 			opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 		else
@@ -1645,7 +1645,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			// (normally it would return an empty XMLList if the
 			// property does not exist).
 			// And this ensures dynamic properties are also searched
-			GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(localresult > th->locals_size ? FROM_GETLEX | NO_INCREF : FROM_GETLEX);
+			GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX | NO_INCREF);
 			if(!it->considerDynamic)
 				opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 			else
@@ -1705,8 +1705,7 @@ void ABCVm::constructSuper(call_context* th, int m)
 	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
-	if (!th->inClass->super->super.isNull()) // only decref if super class is not ASObject
-		ASATOM_DECREF(obj);
+	ASATOM_DECREF(obj);
 	LOG_CALL(_("End super construct ")<<obj.toDebugString());
 }
 
@@ -1837,13 +1836,15 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 
 	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
-		instrptr->cacheobj1->incRef();
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
 		if (instrptr->cacheobj1->is<IFunction>())
 			ret.setFunction(instrptr->cacheobj1,instrptr->cacheobj2);
 		else
+		{
+			instrptr->cacheobj1->incRef();
 			ret = asAtom::fromObject(instrptr->cacheobj1);
+		}
 		return;
 	}
 	multiname* name=th->mi->context->getMultiname(t,th);
@@ -3033,6 +3034,7 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
  */
 bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 {
+	LOG_CALL("instanceOf "<<value->toDebugString()<<" "<<type->toDebugString());
 	if(type->is<IFunction>())
 	{
 		IFunction* t=static_cast<IFunction*>(type);

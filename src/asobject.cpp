@@ -588,7 +588,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		case NORMAL_METHOD:
 		{
 			asAtom v = asAtom::fromObject(o);
-			obj->setVar(v,getSystemState());
+			obj->setVar(v,this);
 			break;
 		}
 		case GETTER_METHOD:
@@ -655,7 +655,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 	{
 		case NORMAL_METHOD:
 		{
-			obj->setVar(f,getSystemState());
+			obj->setVar(f,this);
 			break;
 		}
 		case GETTER_METHOD:
@@ -836,10 +836,15 @@ multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CO
 	else
 	{
 		assert_and_throw(obj->getter.isInvalid());
-		obj->setVar(o,getSystemState());
+		obj->setVar(o,this);
 	}
 	if (o.is<SyntheticFunction>())
-		checkFunctionScope(o.getObject()->as<SyntheticFunction>());
+	{
+		if (obj->kind == CONSTANT_TRAIT)
+			o.getObject()->setConstant();
+		else
+			checkFunctionScope(o.getObject()->as<SyntheticFunction>());
+	}
 	return retval;
 }
 
@@ -867,7 +872,7 @@ void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, 
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
-	obj->setVar(o,getSystemState(),isRefcounted);
+	obj->setVar(o,this,isRefcounted);
 	obj->isenumerable=isEnumerable;
 	++varcount;
 }
@@ -895,21 +900,25 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 	}
 }
 
-void variable::setVar(asAtom& v, SystemState* sys, bool _isrefcounted)
+void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
 	//children, which is done outisde any ABC context
-	if(!isResolved && traitTypemname && getVm(sys)->currentCallContext)
+	if(!isResolved && traitTypemname && getVm(obj->getSystemState())->currentCallContext)
 	{
-		type = Type::getTypeFromMultiname(traitTypemname, getVm(sys)->currentCallContext->mi->context);
+		type = Type::getTypeFromMultiname(traitTypemname, getVm(obj->getSystemState())->currentCallContext->mi->context);
 		assert(type);
 		isResolved=true;
 	}
 	if(isResolved && type)
-		type->coerce(sys,v);
+		type->coerce(obj->getSystemState(),v);
 	if(isrefcounted)
+	{
+		if (obj->is<Activation_object>() && var.is<SyntheticFunction>())
+			var.getObject()->decActivationCount();
 		ASATOM_DECREF(var);
+	}
 	var=v;
 	isrefcounted = _isrefcounted;
 }
@@ -1249,19 +1258,16 @@ bool ASObject::cloneInstance(ASObject *target)
 void ASObject::checkFunctionScope(ASObject* o)
 {
 	SyntheticFunction* f = o->as<SyntheticFunction>();
-	if (f->inClass)
+	if (!getVm(getSystemState())->currentCallContext->mi->needsActivation() || this->is<Global>() || this->is<Function_object>())
 		return;
 	for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
 	{
-		if ((it->considerDynamic)
-				&& it->object.getObject() == this
-				&& !it->object.is<Global>())
-		{
-			f->incActivationCount();
-			if (!it->object.is<Activation_object>())
-				f->addDynamicReferenceObject(this);
-			break;
-		}
+		if (it->object.getObject() != this)
+			continue;
+		f->incActivationCount();
+		if (!it->object.is<Activation_object>())
+			f->addDynamicReferenceObject(this);
+		break;
 	}
 }
 
@@ -1436,8 +1442,6 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->var.toDebugString());
-				if (!(opt & FROM_GETLEX) && !(opt & SKIP_IMPL))
-					this->incRef();
 				ret.setFunction(obj->var.getObject(),this);
 			}
 		}
@@ -1729,7 +1733,7 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name)
 	}
 	return UINT32_MAX;
 }
-void variables_map::setSlot(unsigned int n,asAtom o,SystemState* sys)
+void variables_map::setSlot(unsigned int n, asAtom o, ASObject *obj)
 {
 	validateSlotId(n);
 	var_iterator it = Variables.find(slots_vars[n-1].nameId);
@@ -1737,7 +1741,7 @@ void variables_map::setSlot(unsigned int n,asAtom o,SystemState* sys)
 	{
 		if (it->second.ns == slots_vars[n-1].ns)
 		{
-			it->second.setVar(o,sys);
+			it->second.setVar(o,obj);
 			return;
 		}
 		it++;
@@ -2322,7 +2326,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	{
 		obj->incRef();
 		asAtom v = asAtom::fromObject(obj);
-		ret->setVar(v,getSystemState());
+		ret->setVar(v,this);
 	}
 }
 
@@ -2958,7 +2962,6 @@ void asAtom::setFunction(ASObject *obj, ASObject *closure)
 	}
 	else
 	{
-		obj->incRef();
 		uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj)|ATOM_OBJECTPTR;
 	}
 }
@@ -3526,8 +3529,11 @@ bool asAtom::isEqual(SystemState *sys, asAtom &v2)
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 					return getObject()->isEqual(v2.toObject(sys));
 				case ATOM_STRINGID:
-					// TODO avoid creating of string object here
-					return getObject()->isEqual(v2.toObject(sys));
+				{
+					asAtom primitive;
+					getObject()->toPrimitive(primitive);
+					return primitive.toString(sys) == v2.toString(sys);
+				}
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
 					return v2.isEqual(sys,*this);

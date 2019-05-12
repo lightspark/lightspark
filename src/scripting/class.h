@@ -413,7 +413,10 @@ public:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
+		ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		if (ret.isInvalid())
+			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
+		ret.getObject()->resetCached();
 		ret.as<T>()->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);

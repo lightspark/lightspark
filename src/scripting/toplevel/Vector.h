@@ -53,15 +53,7 @@ public:
 	};
 	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
-	bool destruct()
-	{
-		for(unsigned int i=0;i<size();i++)
-		{
-			ASATOM_DECREF(vec[i]);
-		}
-		vec.clear();
-		return ASObject::destruct();
-	}
+	bool destruct();
 	
 	
 	static void sinit(Class_base* c);

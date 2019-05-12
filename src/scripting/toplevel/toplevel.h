@@ -30,7 +30,6 @@
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"
 #include "memory_support.h"
-#include <boost/intrusive/list.hpp>
 
 namespace pugi
 {
@@ -439,6 +438,7 @@ public:
 		functionname=0;
 		length=0;
 		closure_this.reset();
+		prototype.reset();
 		return ASObject::destruct();
 	}
 	IFunction* bind(_NR<ASObject> c)
@@ -558,7 +558,6 @@ private:
 	multiname* simpleGetterOrSetterName;
 	SyntheticFunction(Class_base* c,method_info* m);
 protected:
-	method_info* getMethodInfo() const { return mi; }
 	IFunction* clone()
 	{
 		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
@@ -568,6 +567,7 @@ protected:
 		}
 		else
 		{
+			ret->resetCached();
 			ret->mi = mi;
 			ret->val = val;
 			ret->length = length;
@@ -582,6 +582,7 @@ public:
 	~SyntheticFunction() {}
 	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult);
 	bool destruct();
+	method_info* getMethodInfo() const { return mi; }
 	
 	_NR<scope_entry_list> func_scope;
 	bool isEqual(ASObject* r);

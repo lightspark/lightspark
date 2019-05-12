@@ -363,7 +363,7 @@ public:
 #else
 	asAtom(int32_t val):intval((val<<3)|ATOM_INTEGER)
 	{
-		if (val <-(1<<28)  && val > (1<<28));
+		if (val <-(1<<28)  && val > (1<<28))
 			uintval =((LIGHTSPARK_ATOM_VALTYPE)(abstract_d(getSys(),val))|ATOM_NUMBERPTR);
 	}
 #endif
@@ -538,7 +538,7 @@ struct variable
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: typeUnion(NULL),ns(_ns),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(asAtom& v, SystemState* sys, bool _isrefcounted = true);
+	void setVar(asAtom& v, ASObject* obj, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
@@ -689,7 +689,7 @@ public:
 	 * This method does throw if the slot id is not valid
 	 */
 	void validateSlotId(unsigned int n) const;
-	void setSlot(unsigned int n,asAtom o,SystemState* sys);
+	void setSlot(unsigned int n,asAtom o,ASObject* obj);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
@@ -728,6 +728,7 @@ friend void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_str
 friend class IFunction; //Needed for clone
 friend struct asfreelist;
 friend class asAtom;
+friend class SystemState;
 public:
 	asfreelist* objfreelist;
 private:
@@ -936,7 +937,7 @@ public:
 	}
 	void setSlot(unsigned int n,asAtom o)
 	{
-		Variables.setSlot(n,o,getSystemState());
+		Variables.setSlot(n,o,this);
 		if (o.is<SyntheticFunction>())
 			checkFunctionScope(o.getObject());
 	}

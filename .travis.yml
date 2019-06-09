@@ -1,0 +1,61 @@
+dist: xenial
+language: c++
+addons:
+  apt:
+    packages:
+      - curl
+      - cmake
+      - nasm
+      - libcurl4-gnutls-dev
+      - libedit-dev
+      - zlib1g-dev
+      - libgl1-mesa-dev
+      - libpcre3-dev
+      - libavutil-dev
+      - libx11-dev
+      - libglu1-mesa-dev
+      - libglew-dev
+      - libboost-filesystem-dev
+      - libboost-system-dev
+      - libboost-regex-dev
+      - libpulse-dev
+      - libavcodec-dev
+      - libavformat-dev
+      - libgtk2.0-dev
+      - libpng-dev
+      - libjpeg-dev
+      - librtmp-dev
+      - libsdl2-dev
+      - libsdl2-mixer-dev
+      - libgnutls28-dev
+      - libxml++2.6-dev
+      - liblzma-dev
+script: cmake . && make
+
+matrix:
+  include:
+    - name: Windows 64-bit
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://pkg.mxe.cc/repos/apt xenial main'
+              key_url: 'https://keyserver.ubuntu.com/pks/lookup?search=0xC6BF758A33A3A276&op=get'
+          packages:
+            - curl
+            - cmake
+            - nasm
+            - mxe-x86-64-w64-mingw32.static-cc
+            - mxe-x86-64-w64-mingw32.static-glibmm
+            - mxe-x86-64-w64-mingw32.static-gtk2
+            - mxe-x86-64-w64-mingw32.static-cairo
+            - mxe-x86-64-w64-mingw32.static-pango
+            - mxe-x86-64-w64-mingw32.static-boost
+            - mxe-x86-64-w64-mingw32.static-glew
+            - mxe-x86-64-w64-mingw32.static-freetype
+            - mxe-x86-64-w64-mingw32.static-curl
+            - mxe-x86-64-w64-mingw32.static-librtmp
+            - mxe-x86-64-w64-mingw32.static-ffmpeg
+            - mxe-x86-64-w64-mingw32.static-sdl2-mixer
+      script: /usr/lib/mxe/usr/x86_64-pc-linux-gnu/bin/cmake . -DCMAKE_TOOLCHAIN_FILE=/usr/lib/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake && make
+    - name: Ubuntu Xenial

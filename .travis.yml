@@ -17,18 +17,14 @@ addons:
       - libglew-dev
       - libboost-filesystem-dev
       - libboost-system-dev
-      - libboost-regex-dev
-      - libpulse-dev
       - libavcodec-dev
       - libavformat-dev
-      - libgtk2.0-dev
       - libpng-dev
       - libjpeg-dev
       - librtmp-dev
       - libsdl2-dev
       - libsdl2-mixer-dev
       - libgnutls28-dev
-      - libxml++2.6-dev
       - liblzma-dev
 script: cmake . && make
 
@@ -46,6 +42,7 @@ matrix:
             - cmake
             - nasm
             - mxe-x86-64-w64-mingw32.static-cc
+            - mxe-x86-64-w64-mingw32.static-g++
             - mxe-x86-64-w64-mingw32.static-glibmm
             - mxe-x86-64-w64-mingw32.static-gtk2
             - mxe-x86-64-w64-mingw32.static-cairo

@@ -1680,7 +1680,10 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 	name->resetNameIfObject();
 	ASATOM_INCREF(o);
 	if (localresult)
+	{
+		ASATOM_DECREF(th->locals[localresult-1]);
 		th->locals[localresult-1].set(o);
+	}
 	else
 		RUNTIME_STACK_PUSH(th,o);
 	return canCache && !o.isPrimitive(); // don't cache primitive values as they may change

@@ -398,7 +398,6 @@ void ASObject::call_valueOf(asAtom& ret)
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	ASATOM_INCREF(v);
 	o.callFunction(ret,v,NULL,0,false);
 }
 
@@ -432,7 +431,6 @@ void ASObject::call_toString(asAtom &ret)
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtom::fromObject(this);
-	ASATOM_INCREF(v);
 	o.callFunction(ret,v,NULL,0,false);
 }
 
@@ -574,7 +572,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		assert(this->is<Class_base>());
 		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
-		if (!this->is<Class_inherit>())
+		if (!this->is<Class_inherit>() || this->as<Class_base>()->isSealed || this->as<Class_base>()->isFinal)
 			o->setConstant();
 	}
 	else
@@ -899,7 +897,9 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 		traitTypemname=_t;
 	}
 }
-
+#ifndef NDEBUG
+std::map<Class_base*, std::set<ASObject*>> lostrefmap;
+#endif
 void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
@@ -913,13 +913,33 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 	}
 	if(isResolved && type)
 		type->coerce(obj->getSystemState(),v);
-	if(isrefcounted)
+	if(isrefcounted && var.getObject())
 	{
+		LOG_CALL("replacing:"<<var.toDebugString());
 		if (obj->is<Activation_object>() && var.is<SyntheticFunction>())
 			var.getObject()->decActivationCount();
+#ifndef NDEBUG
+		if (var.getObject()->objectreferencecount>1)
+			var.getObject()->objectreferencecount--;
+		else if (var.getObject()->getRefCount() > 1 && !var.getObject()->getConstant())
+		{
+			std::set<ASObject*> lostrefset = lostrefmap[var.getObject()->getClass()];
+			lostrefset.insert(var.getObject());
+			lostrefmap[var.getObject()->getClass()] = lostrefset;
+		}
+#endif
 		ASATOM_DECREF(var);
 	}
 	var=v;
+#ifndef NDEBUG
+	if (v.getObject() && !v.getObject()->getConstant())
+	{
+		v.getObject()->objectreferencecount++;
+		std::set<ASObject*> lostrefset = lostrefmap[v.getObject()->getClass()];
+		lostrefset.erase(v.getObject());
+		lostrefmap[v.getObject()->getClass()] = lostrefset;
+	}
+#endif
 	isrefcounted = _isrefcounted;
 }
 
@@ -1582,6 +1602,14 @@ void variables_map::destroyContents()
 	{
 		if (it->second.isrefcounted)
 		{
+#ifndef NDEBUG
+			if (it->second.var.getObject() && !it->second.var.getObject()->getConstant() && it->second.var.getObject()->getRefCount() == 1 && it->second.var.getObject()->objectreferencecount==1)
+			{
+				std::set<ASObject*> lostrefset = lostrefmap[it->second.var.getObject()->getClass()];
+				lostrefset.erase(it->second.var.getObject());
+				lostrefmap[it->second.var.getObject()->getClass()] = lostrefset;
+			}
+#endif
 			ASATOM_DECREF(it->second.var);
 			ASATOM_DECREF(it->second.setter);
 			ASATOM_DECREF(it->second.getter);
@@ -1616,12 +1644,47 @@ void variables_map::removeAllDeclaredProperties()
 	}
 }
 
+#ifndef NDEBUG
+std::map<Class_base*,uint32_t> objectcounter;
+void ASObject::dumpObjectCounters(uint32_t threshhold)
+{
+	uint64_t c = 0;
+	auto it = objectcounter.begin();
+	while (it != objectcounter.end())
+	{
+		if (it->second > threshhold)
+			LOG(LOG_INFO,"counter:"<<it->first->toDebugString()<<":"<<it->second<<"-"<<it->first->freelist->freelistsize<<"="<<(it->second-it->first->freelist->freelistsize));
+		c += it->second;
+		it++;
+	}
+	LOG(LOG_INFO,"countall:"<<c);
+	bool haslostreferences=false;
+	auto it2 = lostrefmap.begin();
+	while (it2 != lostrefmap.end())
+	{
+		auto it3 = it2->second.begin();
+		while (it3 != it2->second.end())
+		{
+			LOG(LOG_INFO,"lostrefset:"<<it2->first->toDebugString()<<" "<< (*it3));
+			haslostreferences=true;
+			it3++;
+		}
+		it2++;
+	}
+}
+#endif
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
 	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	if (c)
+	{
+		uint32_t x = objectcounter[c];
+		x++;
+		objectcounter[c] = x;
+	}
 #endif
 }
 
@@ -1631,6 +1694,7 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->getS
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	objectreferencecount=0;
 #endif
 	assert(o.Variables.size()==0);
 }
@@ -1658,6 +1722,13 @@ bool ASObject::destruct()
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	objectreferencecount=0;
+	if (this->objectreferencecount==0 && !getConstant())
+	{
+		std::set<ASObject*> lostrefset = lostrefmap[getClass()];
+		lostrefset.erase(this);
+		lostrefmap[getClass()] = lostrefset;
+	}
 #endif
 	bool dodestruct = true;
 	if (objfreelist)
@@ -1669,6 +1740,14 @@ bool ASObject::destruct()
 	}
 	if (dodestruct)
 	{
+#ifndef NDEBUG
+		if (classdef)
+		{
+			uint32_t x = objectcounter[classdef];
+			x--;
+			objectcounter[classdef] = x;
+		}
+#endif
 		finalize();
 	}
 	return dodestruct;
@@ -2958,6 +3037,12 @@ void asAtom::setFunction(ASObject *obj, ASObject *closure)
 	if (closure &&obj->is<IFunction>())
 	{
 		closure->incRef();
+#ifndef NDEBUG
+		closure->objectreferencecount++;
+		std::set<ASObject*> lostrefset = lostrefmap[closure->getClass()];
+		lostrefset.erase(closure);
+		lostrefmap[closure->getClass()] = lostrefset;
+#endif
 		uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure)))|ATOM_OBJECTPTR;
 	}
 	else

@@ -292,7 +292,16 @@ ASObject *IFunction::describeType() const
 
 std::string IFunction::toDebugString()
 {
-	return ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"");
+	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"");
+#ifndef _NDEBUG
+	if (this->getActivationCount() > 1)
+	{
+		char buf[300];
+		sprintf(buf," (activationcount:%d)",this->getActivationCount());
+		ret += buf;
+	}
+#endif
+	return ret;
 }
 
 SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),func_scope(NullRef)
@@ -586,6 +595,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 	for(asAtom* i=cc.locals;i< cc.locals+cc.locals_size+2;++i)
 	{
+		LOG_CALL("locals:"<<i->toDebugString());
 		ASATOM_DECREF_POINTER(i);
 	}
 	for(asAtom* i=cc.scope_stack;i< cc.scope_stack+cc.curr_scope_stack;++i)
@@ -595,6 +605,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	cc.curr_scope_stack=0;
 	for (auto it = cc.dynamicfunctions.begin(); it != cc.dynamicfunctions.end(); it++)
 	{
+		LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
 		(*it)->decRef();
 	}
 }
@@ -1116,11 +1127,13 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 
 	if(constructor)
 	{
+		LOG_CALL("handleConstruction for "<<target.toDebugString());
 		ASATOM_INCREF(target);
 		asAtom ret;
 		asAtom::fromObject(constructor).callFunction(ret,target,args,argslen,true);
 		target.getObject()->constructIndicator = true;
 		target = asAtom::fromObject(target.getObject());
+		LOG_CALL("handleConstruction done for "<<target.toDebugString());
 	}
 	else
 	{
@@ -2447,7 +2460,7 @@ void Global::sinit(Class_base* c)
 
 void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name)
 {
-	ASObject::getVariableByMultinameIntern(ret,name,this->getClass());
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass(),NO_INCREF);
 	//Do not attempt to define the variable now in any case
 }
 

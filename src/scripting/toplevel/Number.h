@@ -110,7 +110,7 @@ public:
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(generator);
-	std::string toDebugString() { return toString()+(isfloat ? "d" : "di"); }
+	std::string toDebugString();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

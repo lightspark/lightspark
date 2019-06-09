@@ -91,21 +91,7 @@ public:
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);
-	bool destruct()
-	{
-		for (auto it=data_first.begin() ; it != data_first.end(); ++it)
-		{
-			ASATOM_DECREF_POINTER(it);
-		}
-		for (auto it=data_second.begin() ; it != data_second.end(); ++it)
-		{
-			ASATOM_DECREF(it->second);
-		}
-		data_first.clear();
-		data_second.clear();
-		currentsize=0;
-		return ASObject::destruct();
-	}
+	bool destruct();
 	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);

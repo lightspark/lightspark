@@ -392,7 +392,7 @@ void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multi
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		globalScopes[i]->getVariableByMultiname(ret,name);
+		globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF);
 		if(ret.isValid())
 		{
 			target=globalScopes[i];

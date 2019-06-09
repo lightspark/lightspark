@@ -287,6 +287,7 @@ public:
 	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
 	const FLASH_MODE flashMode;
 	uint32_t swffilesize;
+	asAtom nanAtom;
 	// the global object for AVM1
 	Global* avm1global;
 	// Error types used to decide when to exit, extend as a bitmap

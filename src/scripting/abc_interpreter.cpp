@@ -1486,7 +1486,7 @@ void ABCVm::abc_pushnan(call_context* context)
 {
 	//pushnan
 	LOG_CALL("pushNaN");
-	RUNTIME_STACK_PUSH(context,asAtom(context->mi->context->root->getSystemState(), Number::NaN,false));
+	RUNTIME_STACK_PUSH(context,context->mi->context->root->getSystemState()->nanAtom);
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushcachedconstant(call_context* context)
@@ -2041,7 +2041,6 @@ void ABCVm::abc_callpropertyStaticName_constant_constant(call_context* context)
 	LOG_CALL( "callProperty_cc " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
-	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -2815,6 +2814,7 @@ void ABCVm::abc_getProperty(call_context* context)
 		assert(prop.isFunction());
 		IFunction* f = prop.as<IFunction>();
 		ASObject* closure = prop.getClosure();
+		prop = asAtom();
 		f->callGetter(prop,closure ? closure : obj);
 		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 		if(prop.isValid())
@@ -3004,6 +3004,7 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
+			prop = asAtom();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
 			if (simplegetter)
 			{
@@ -3047,6 +3048,7 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
+				prop = asAtom();
 				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
 				if (simplegetter)
 				{
@@ -3081,6 +3083,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
+			prop = asAtom();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
 			if (simplegetter)
 			{
@@ -3121,13 +3124,13 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
+				prop = asAtom();
 				f->callGetter(prop,closure ? closure : obj);
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<prop.toDebugString());
 			}
 			else
 			{
 				prop.set(v->var);
-				ASATOM_INCREF(prop);
 			}
 			
 			if(prop.isInvalid())
@@ -3201,6 +3204,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 				assert(prop.isFunction());
 				IFunction* f = prop.as<IFunction>();
 				ASObject* closure = prop.getClosure();
+				prop = asAtom();
 				multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
 				if (simplegetter)
 				{
@@ -3237,6 +3241,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 			assert(prop.isFunction());
 			IFunction* f = prop.as<IFunction>();
 			ASObject* closure = prop.getClosure();
+			prop = asAtom();
 			multiname* simplegetter = f->callGetter(prop,closure ? closure : obj);
 			if (simplegetter)
 			{
@@ -5008,8 +5013,9 @@ void ABCVm::abc_istype(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-
-	pval->setBool(isType(context->mi->context,pval->toObject(context->mi->context->root->getSystemState()),name));
+	ASObject* o = pval->toObject(context->mi->context->root->getSystemState());
+	pval->setBool(isType(context->mi->context,o,name));
+	o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_istypelate(call_context* context)
@@ -6154,7 +6160,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						auto it=function->func_scope->scope.rbegin();
 						while(it!=function->func_scope->scope.rend())
 						{
-							GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER);
+							GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
 							if(!it->considerDynamic)
 								opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 							else
@@ -6768,7 +6774,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								if (a->getObject())
 								{
 									asAtom ret;
-									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX));
+									GET_VARIABLE_RESULT r = a->getObject()->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtom::nullAtom,NULL,t,false),GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
 									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
 										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{

@@ -270,6 +270,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	trueRef->setConstant();
 	falseRef=_MR(Class<Boolean>::getInstanceS(this,false));
 	falseRef->setConstant();
+	
+	nanAtom = asAtom(this,Number::NaN,true);
 
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS(this));
 	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
@@ -570,6 +572,7 @@ SystemState::~SystemState()
 	falseRef.forceDestruct();
 	workerDomain.forceDestruct();
 	worker.forceDestruct();
+	delete nanAtom.getObject();
 }
 
 void SystemState::destroy()

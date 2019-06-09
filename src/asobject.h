@@ -729,11 +729,18 @@ friend class IFunction; //Needed for clone
 friend struct asfreelist;
 friend class asAtom;
 friend class SystemState;
+friend class variable;
+friend class variables_map;
 public:
 	asfreelist* objfreelist;
 private:
 	variables_map Variables;
 	unsigned int varcount;
+#ifndef NDEBUG
+public:
+	unsigned int objectreferencecount;
+private:
+#endif
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
 	{
@@ -758,6 +765,7 @@ protected:
 #ifndef NDEBUG
 		//Stuff only used in debugging
 		initialized=false;
+		objectreferencecount=0;
 #endif
 	}
 	
@@ -821,6 +829,7 @@ public:
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;
+	static void dumpObjectCounters(uint32_t threshhold);
 #endif
 	bool implEnable:1;
 
@@ -967,7 +976,7 @@ public:
 		assert(sys);
 		return sys;
 	}
-	void setSystemState(SystemState* s)
+	inline void setSystemState(SystemState* s)
 	{
 		sys = s;
 	}

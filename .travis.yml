@@ -36,6 +36,7 @@ matrix:
   include:
     - name: Windows 64-bit
       sudo: required
+      env: PATH=/usr/lib/mxe/usr/bin:$PATH
       addons:
         apt:
           sources:
@@ -56,5 +57,5 @@ matrix:
             - mxe-x86-64-w64-mingw32.static-librtmp
             - mxe-x86-64-w64-mingw32.static-ffmpeg
             - mxe-x86-64-w64-mingw32.static-sdl2-mixer
-      script: /usr/lib/mxe/usr/x86_64-pc-linux-gnu/bin/cmake . -DCMAKE_TOOLCHAIN_FILE=/usr/lib/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake && make
+      script: x86_64-w64-mingw32.static-cmake . && make
     - name: Ubuntu Xenial

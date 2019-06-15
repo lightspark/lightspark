@@ -27,9 +27,6 @@
 
 using namespace std;
 using namespace lightspark;
-#ifndef NDEBUG
-extern std::map<Class_base*, std::set<ASObject*>> lostrefmap;
-#endif
 
 void Vector::sinit(Class_base* c)
 {
@@ -117,9 +114,7 @@ bool Vector::destruct()
 #ifndef NDEBUG
 		if (vec[i].getObject() && !vec[i].getObject()->getConstant() && vec[i].getObject()->getRefCount() == 1 && vec[i].getObject()->objectreferencecount==1)
 		{
-			std::set<ASObject*> lostrefset = lostrefmap[vec[i].getObject()->getClass()];
-			lostrefset.erase(vec[i].getObject());
-			lostrefmap[vec[i].getObject()->getClass()] = lostrefset;
+			ASObject::removeSetRef(vec[i].getObject());
 		}
 #endif
 		ASATOM_DECREF(vec[i]);
@@ -1199,11 +1194,7 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 			if (vec[index].getObject()->objectreferencecount>1)
 				vec[index].getObject()->objectreferencecount--;
 			else if (vec[index].getObject()->getRefCount() > 1 && !vec[index].getObject()->getConstant())
-			{
-				std::set<ASObject*> lostrefset = lostrefmap[vec[index].getObject()->getClass()];
-				lostrefset.insert(vec[index].getObject());
-				lostrefmap[vec[index].getObject()->getClass()] = lostrefset;
-			}
+				ASObject::removeSetRef(vec[index].getObject());
 		}
 #endif
 		ASATOM_DECREF(vec[index]);
@@ -1211,9 +1202,7 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		if (o.getObject() && !o.getObject()->getConstant())
 		{
 			o.getObject()->objectreferencecount++;
-			std::set<ASObject*> lostrefset = lostrefmap[o.getObject()->getClass()];
-			lostrefset.erase(o.getObject());
-			lostrefmap[o.getObject()->getClass()] = lostrefset;
+			ASObject::insertSetRef(o.getObject());
 		}
 #endif
 		vec[index] = o;
@@ -1224,9 +1213,7 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		if (o.getObject() && !o.getObject()->getConstant())
 		{
 			o.getObject()->objectreferencecount++;
-			std::set<ASObject*> lostrefset = lostrefmap[o.getObject()->getClass()];
-			lostrefset.erase(o.getObject());
-			lostrefmap[o.getObject()->getClass()] = lostrefset;
+			ASObject::insertSetRef(o.getObject());
 		}
 #endif
 		vec.push_back( o );

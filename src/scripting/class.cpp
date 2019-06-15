@@ -83,7 +83,12 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	{
 		ret=asAtom::fromObject(tag->instance(realClass));
 		if (instancefactory.isNull())
+		{
 			instancefactory = _MR(tag->instance(realClass));
+#ifndef NDEBUG
+			ASObject::insertSetRef(instancefactory.getPtr());
+#endif
+		}
 	}
 	else
 	{
@@ -95,6 +100,9 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 			asAtom instance;
 			super->getInstance(instance,false,NULL,0,realClass);
 			instancefactory = _MR(instance.getObject());
+#ifndef NDEBUG
+			ASObject::insertSetRef(instancefactory.getPtr());
+#endif
 		}
 	}
 	if(construct)

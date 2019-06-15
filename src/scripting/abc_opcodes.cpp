@@ -2721,6 +2721,9 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->constructor->length));
 	else
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,0));
+#ifndef NDEBUG
+	ASObject::insertSetRef(ret->constructorprop.getPtr());
+#endif
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->mi->context->instances[n].interface_count;i++)

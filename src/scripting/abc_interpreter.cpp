@@ -2311,6 +2311,7 @@ void ABCVm::abc_callpropvoidStaticName(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret;
 	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,true);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropvoidStaticName_constant_constant(call_context* context)
@@ -2325,6 +2326,7 @@ void ABCVm::abc_callpropvoidStaticName_constant_constant(call_context* context)
 	LOG_CALL( "callPropvoid_cc " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
 }
@@ -2340,6 +2342,7 @@ void ABCVm::abc_callpropvoidStaticName_local_constant(call_context* context)
 	LOG_CALL( "callPropvoid_lc " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
 }
@@ -2355,6 +2358,7 @@ void ABCVm::abc_callpropvoidStaticName_constant_local(call_context* context)
 	LOG_CALL( "callPropvoid_cl " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropvoidStaticName_local_local(call_context* context)
@@ -2369,6 +2373,7 @@ void ABCVm::abc_callpropvoidStaticName_local_local(call_context* context)
 	LOG_CALL( "callPropvoid_ll " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
 }
@@ -2383,6 +2388,7 @@ void ABCVm::abc_callpropvoidStaticName_constant(call_context* context)
 	LOG_CALL( "callPropvoid_noargs_c " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
 }
@@ -2397,6 +2403,7 @@ void ABCVm::abc_callpropvoidStaticName_local(call_context* context)
 	LOG_CALL( "callPropvoid_noargs_l " << *name);
 	asAtom ret;
 	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false);
+	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
 }
@@ -5774,6 +5781,8 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 			}
 			operandlist.pop_back();
 			operandlist.pop_back();
+			if (res.getObject())
+				res.getObject()->setConstant();
 			uint32_t value = mi->context->addCachedConstantAtom(res);
 			mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 			oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();

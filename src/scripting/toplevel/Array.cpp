@@ -28,10 +28,6 @@
 using namespace std;
 using namespace lightspark;
 
-#ifndef NDEBUG
-extern std::map<Class_base*, std::set<ASObject*>> lostrefmap;
-#endif
-
 Array::Array(Class_base* c):ASObject(c,T_ARRAY),currentsize(0)
 {
 }
@@ -42,11 +38,7 @@ bool Array::destruct()
 	{
 #ifndef NDEBUG
 		if (it->getObject() && !it->getObject()->getConstant() && it->getObject()->getRefCount() == 1 && it->getObject()->objectreferencecount==1)
-		{
-			std::set<ASObject*> lostrefset = lostrefmap[it->getObject()->getClass()];
-			lostrefset.erase(it->getObject());
-			lostrefmap[it->getObject()->getClass()] = lostrefset;
-		}
+			ASObject::removeSetRef(it->getObject());
 #endif
 		ASATOM_DECREF_POINTER(it);
 	}
@@ -54,11 +46,7 @@ bool Array::destruct()
 	{
 #ifndef NDEBUG
 		if (it->second.getObject() && !it->second.getObject()->getConstant() && it->second.getObject()->getRefCount() == 1 && it->second.getObject()->objectreferencecount==1)
-		{
-			std::set<ASObject*> lostrefset = lostrefmap[it->second.getObject()->getClass()];
-			lostrefset.erase(it->second.getObject());
-			lostrefmap[it->second.getObject()->getClass()] = lostrefset;
-		}
+			ASObject::removeSetRef(it->second.getObject());
 #endif
 		ASATOM_DECREF(it->second);
 	}
@@ -2104,11 +2092,7 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 					if (data_first.at(index).getObject()->objectreferencecount>1)
 						data_first.at(index).getObject()->objectreferencecount--;
 					else if (data_first.at(index).getObject()->getRefCount() > 1 && !data_first.at(index).getObject()->getConstant())
-					{
-						std::set<ASObject*> lostrefset = lostrefmap[data_first.at(index).getObject()->getClass()];
-						lostrefset.insert(data_first.at(index).getObject());
-						lostrefmap[data_first.at(index).getObject()->getClass()] = lostrefset;
-					}
+						ASObject::removeSetRef(data_first.at(index).getObject());
 				}
 #endif
 				ASATOM_DECREF(data_first.at(index));
@@ -2122,9 +2106,7 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 			if (o.getObject() && !o.getObject()->getConstant())
 			{
 				o.getObject()->objectreferencecount++;
-				std::set<ASObject*> lostrefset = lostrefmap[o.getObject()->getClass()];
-				lostrefset.erase(o.getObject());
-				lostrefmap[o.getObject()->getClass()] = lostrefset;
+				ASObject::insertSetRef(o.getObject());
 			}
 #endif
 			data_first[index]=o;
@@ -2139,11 +2121,7 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 					if (data_second[index].getObject()->objectreferencecount>1)
 						data_second[index].getObject()->objectreferencecount--;
 					else if (data_second[index].getObject()->getRefCount() > 1 && !data_second[index].getObject()->getConstant())
-					{
-						std::set<ASObject*> lostrefset = lostrefmap[data_second[index].getObject()->getClass()];
-						lostrefset.insert(data_second[index].getObject());
-						lostrefmap[data_second[index].getObject()->getClass()] = lostrefset;
-					}
+						ASObject::removeSetRef(data_second[index].getObject());
 				}
 #endif
 				ASATOM_DECREF(data_second[index]);
@@ -2154,9 +2132,7 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 			if (o.getObject() && !o.getObject()->getConstant())
 			{
 				o.getObject()->objectreferencecount++;
-				std::set<ASObject*> lostrefset = lostrefmap[o.getObject()->getClass()];
-				lostrefset.erase(o.getObject());
-				lostrefmap[o.getObject()->getClass()] = lostrefset;
+				ASObject::insertSetRef(o.getObject());
 			}
 #endif
 			data_second[index]=o;

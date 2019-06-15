@@ -830,6 +830,10 @@ public:
 	//Stuff only used in debugging
 	bool initialized:1;
 	static void dumpObjectCounters(uint32_t threshhold);
+	static std::set<ASObject*> refobjectset;
+	static std::set<ASObject*> objectset;
+	static void insertSetRef(ASObject* o);
+	static void removeSetRef(ASObject* o);
 #endif
 	bool implEnable:1;
 

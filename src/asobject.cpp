@@ -339,7 +339,6 @@ void ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 
 	if(isPrimitive())
 	{
-		this->incRef();
 		ret = asAtom::fromObject(this);
 		return;
 	}
@@ -897,9 +896,6 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 		traitTypemname=_t;
 	}
 }
-#ifndef NDEBUG
-std::map<Class_base*, std::set<ASObject*>> lostrefmap;
-#endif
 void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
@@ -922,11 +918,7 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 		if (var.getObject()->objectreferencecount>1)
 			var.getObject()->objectreferencecount--;
 		else if (var.getObject()->getRefCount() > 1 && !var.getObject()->getConstant())
-		{
-			std::set<ASObject*> lostrefset = lostrefmap[var.getObject()->getClass()];
-			lostrefset.insert(var.getObject());
-			lostrefmap[var.getObject()->getClass()] = lostrefset;
-		}
+			ASObject::removeSetRef(var.getObject());
 #endif
 		ASATOM_DECREF(var);
 	}
@@ -935,9 +927,9 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 	if (v.getObject() && !v.getObject()->getConstant())
 	{
 		v.getObject()->objectreferencecount++;
-		std::set<ASObject*> lostrefset = lostrefmap[v.getObject()->getClass()];
-		lostrefset.erase(v.getObject());
-		lostrefmap[v.getObject()->getClass()] = lostrefset;
+		if (v.getObject()->toDebugString().find("[object General::FpsCounter]")==0)
+			LOG(LOG_ERROR,"insertref:"<<v.getObject()->toDebugString());
+		ASObject::insertSetRef(v.getObject());
 	}
 #endif
 	isrefcounted = _isrefcounted;
@@ -1605,9 +1597,7 @@ void variables_map::destroyContents()
 #ifndef NDEBUG
 			if (it->second.var.getObject() && !it->second.var.getObject()->getConstant() && it->second.var.getObject()->getRefCount() == 1 && it->second.var.getObject()->objectreferencecount==1)
 			{
-				std::set<ASObject*> lostrefset = lostrefmap[it->second.var.getObject()->getClass()];
-				lostrefset.erase(it->second.var.getObject());
-				lostrefmap[it->second.var.getObject()->getClass()] = lostrefset;
+				ASObject::removeSetRef(it->second.var.getObject());
 			}
 #endif
 			ASATOM_DECREF(it->second.var);
@@ -1659,18 +1649,33 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 	}
 	LOG(LOG_INFO,"countall:"<<c);
 	bool haslostreferences=false;
-	auto it2 = lostrefmap.begin();
-	while (it2 != lostrefmap.end())
+	auto it2 = objectset.begin();
+	while (it2 != objectset.end())
 	{
-		auto it3 = it2->second.begin();
-		while (it3 != it2->second.end())
+		if (!(*it2)->getCached() && !(*it2)->getConstant())
 		{
-			LOG(LOG_INFO,"lostrefset:"<<it2->first->toDebugString()<<" "<< (*it3));
-			haslostreferences=true;
-			it3++;
+			if (refobjectset.find(*it2) == refobjectset.end())
+			{
+				LOG(LOG_INFO,"lostref:"<<(*it2)->getClass()->toDebugString()<<" "<< (*it2));
+				haslostreferences=true;
+			}
 		}
 		it2++;
 	}
+}
+
+std::set<ASObject*> ASObject::refobjectset;
+std::set<ASObject*> ASObject::objectset;
+void ASObject::insertSetRef(ASObject *o)
+{
+	if (o->getClass())
+		refobjectset.insert(o);
+}
+
+void ASObject::removeSetRef(ASObject *o)
+{
+	if (o->getClass())
+		refobjectset.erase(o);
 }
 #endif
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
@@ -1684,6 +1689,8 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(
 		uint32_t x = objectcounter[c];
 		x++;
 		objectcounter[c] = x;
+		if  (c->is<Class_inherit>())
+			objectset.insert(this);
 	}
 #endif
 }
@@ -1723,12 +1730,6 @@ bool ASObject::destruct()
 	//Stuff only used in debugging
 	initialized=false;
 	objectreferencecount=0;
-	if (this->objectreferencecount==0 && !getConstant())
-	{
-		std::set<ASObject*> lostrefset = lostrefmap[getClass()];
-		lostrefset.erase(this);
-		lostrefmap[getClass()] = lostrefset;
-	}
 #endif
 	bool dodestruct = true;
 	if (objfreelist)
@@ -1747,6 +1748,8 @@ bool ASObject::destruct()
 			x--;
 			objectcounter[classdef] = x;
 		}
+		removeSetRef(this);
+		objectset.erase(this);
 #endif
 		finalize();
 	}
@@ -3039,9 +3042,7 @@ void asAtom::setFunction(ASObject *obj, ASObject *closure)
 		closure->incRef();
 #ifndef NDEBUG
 		closure->objectreferencecount++;
-		std::set<ASObject*> lostrefset = lostrefmap[closure->getClass()];
-		lostrefset.erase(closure);
-		lostrefmap[closure->getClass()] = lostrefset;
+		ASObject::insertSetRef(closure);
 #endif
 		uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure)))|ATOM_OBJECTPTR;
 	}
@@ -3085,7 +3086,10 @@ bool asAtom::Boolean_concrete()
 
 void lightspark::asAtom::setNumber(SystemState* sys,number_t val)
 {
-	uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(sys,val))|ATOM_NUMBERPTR;
+	if (std::isnan(val))
+		uintval = sys->nanAtom.uintval;
+	else
+		uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(sys,val))|ATOM_NUMBERPTR;
 }
 
 void lightspark::asAtom::replace(ASObject *obj)

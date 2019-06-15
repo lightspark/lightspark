@@ -938,6 +938,9 @@ void Class_base::copyBorrowedTraitsFromSuper()
 void Class_base::initStandardProps()
 {
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
+#ifndef NDEBUG
+	ASObject::insertSetRef(constructorprop.getPtr());
+#endif
 	addConstructorGetter();
 
 	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);

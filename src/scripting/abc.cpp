@@ -1632,6 +1632,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				m_sys->stage->advanceFrame();
 				//ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
+#ifndef NDEBUG
+//				if (getEventQueueSize() == 0)
+//					ASObject::dumpObjectCounters(100);
+#endif
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:
@@ -2413,26 +2417,20 @@ void ABCContext::getConstant(asAtom &ret, int kind, int index)
 			ret.setUndefined();
 			break;
 		case 0x01: //String
-			ret = asAtom::fromStringID(constant_pool.strings[index]);
+			ret = constantAtoms_strings[index];
 			break;
 		case 0x03: //Int
-			ret.setInt(root->getSystemState(),constant_pool.integer[index]);
+			ret = constantAtoms_integer[index];
 			break;
 		case 0x04: //UInt
-			ret.setUInt(root->getSystemState(),constant_pool.uinteger[index]);
+			ret = constantAtoms_uinteger[index];
 			break;
 		case 0x06: //Double
-			ret.setNumber(root->getSystemState(),constant_pool.doubles[index]);
+			ret = constantAtoms_doubles[index];
 			break;
 		case 0x08: //Namespace
-		{
-			assert_and_throw(constant_pool.namespaces[index].name);
-			Namespace* res = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[index].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[index].kind);
-			if (constant_pool.namespaces[index].kind != 0)
-				res->nskind =(NS_KIND)(int)(constant_pool.namespaces[index].kind);
-			ret = asAtom::fromObject(res);
+			ret = constantAtoms_namespaces[index];
 			break;
-		}
 		case 0x0a: //False
 			ret.setBool(false);
 			break;

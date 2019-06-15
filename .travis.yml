@@ -43,13 +43,13 @@ matrix:
             - sourceline: 'deb http://pkg.mxe.cc/repos/apt xenial main'
               key_url: 'https://keyserver.ubuntu.com/pks/lookup?search=0xC6BF758A33A3A276&op=get'
           packages:
-            - curl
             - cmake
             - nasm
             - mxe-x86-64-w64-mingw32.static-gcc
             - mxe-x86-64-w64-mingw32.static-glibmm
             - mxe-x86-64-w64-mingw32.static-cairo
             - mxe-x86-64-w64-mingw32.static-pango
+            - mxe-x86-64-w64-mingw32.static-jpeg
             - mxe-x86-64-w64-mingw32.static-boost
             - mxe-x86-64-w64-mingw32.static-glew
             - mxe-x86-64-w64-mingw32.static-freetype

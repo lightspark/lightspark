@@ -36,19 +36,20 @@ matrix:
   include:
     - name: Windows 64-bit
       sudo: required
+      env: PATH=/usr/lib/mxe/usr/bin:$PATH
       addons:
         apt:
           sources:
             - sourceline: 'deb http://pkg.mxe.cc/repos/apt xenial main'
               key_url: 'https://keyserver.ubuntu.com/pks/lookup?search=0xC6BF758A33A3A276&op=get'
           packages:
-            - curl
             - cmake
             - nasm
             - mxe-x86-64-w64-mingw32.static-gcc
             - mxe-x86-64-w64-mingw32.static-glibmm
             - mxe-x86-64-w64-mingw32.static-cairo
             - mxe-x86-64-w64-mingw32.static-pango
+            - mxe-x86-64-w64-mingw32.static-jpeg
             - mxe-x86-64-w64-mingw32.static-boost
             - mxe-x86-64-w64-mingw32.static-glew
             - mxe-x86-64-w64-mingw32.static-freetype
@@ -56,5 +57,5 @@ matrix:
             - mxe-x86-64-w64-mingw32.static-librtmp
             - mxe-x86-64-w64-mingw32.static-ffmpeg
             - mxe-x86-64-w64-mingw32.static-sdl2-mixer
-      script: /usr/lib/mxe/usr/x86_64-pc-linux-gnu/bin/cmake . -DCMAKE_TOOLCHAIN_FILE=/usr/lib/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake && make
+      script: x86_64-w64-mingw32.static-cmake . && make
     - name: Ubuntu Xenial

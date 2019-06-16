@@ -454,7 +454,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				delete tag;
 				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case ACTION_TAG:
-				LOG(LOG_NOT_IMPLEMENTED,"ActionTag inside sprite");
+				LOG(LOG_NOT_IMPLEMENTED,"ActionTag inside sprite "<< SpriteID);
 				delete tag;
 				break;
 			case FRAMELABEL_TAG:
@@ -501,6 +501,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	setFramesLoaded(frames.size());
 	if (soundheadtag)
 		soundheadtag->SoundData->markFinished(true);
+	LOG(LOG_TRACE,"DefineSprite done for ID: " << SpriteID);
 }
 
 DefineSpriteTag::~DefineSpriteTag()
@@ -1053,6 +1054,11 @@ void BitmapTag::loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesD
 		bitmap->fromJPEG(inData,datasize,tablesData,tablesLen);
 	else if(inData[0]=='G' && inData[1]=='I' && inData[2]=='F' && inData[3]=='8')
 		LOG(LOG_ERROR,"GIF image found, not yet supported, ID :"<<getId());
+	else if(inData[0]==0xff && inData[1]==0xd9)
+		// I've found swf files with broken jpegs that start with the jpeg "end of file" magic bytes and two times the "begin of file" magic bytes
+		// so we just ignore the first 4 bytes
+		// TODO check if libjpeg has a better common way to deal with invalid headers
+		loadBitmap(inData+4, datasize-4, tablesData, tablesLen);
 	else
 		LOG(LOG_ERROR,"unknown image format for ID "<<getId());
 }

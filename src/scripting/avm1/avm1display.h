@@ -38,6 +38,7 @@ public:
 	{
 		name=nameID;
 	}
+	void afterConstruction();
 	static void sinit(Class_base* c);
 };
 

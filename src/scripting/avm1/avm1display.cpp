@@ -21,9 +21,20 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
+#include "scripting/abc.h"
 
 using namespace std;
 using namespace lightspark;
+
+void AVM1MovieClip::afterConstruction()
+{
+	MovieClip::afterConstruction();
+	if (getSystemState()->getSwfVersion() >= 6)
+	{
+		this->incRef();
+		getVm(getSystemState())->prependEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"load")));
+	}
+}
 
 void AVM1MovieClip::sinit(Class_base* c)
 {

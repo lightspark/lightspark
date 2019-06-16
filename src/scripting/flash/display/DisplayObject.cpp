@@ -1403,7 +1403,8 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst);
 	if (getSystemState()->getSwfVersion() < 9)
 	{
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME)
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
 			this->incRef();
 			getSystemState()->registerFrameListener(_MR(this));
@@ -1427,7 +1428,8 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 	bool res = EventDispatcher::deleteVariableByMultiname(name);
 	if (getSystemState()->getSwfVersion() < 9)
 	{
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME)
+		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
 			this->incRef();
 			getSystemState()->unregisterFrameListener(_MR(this));

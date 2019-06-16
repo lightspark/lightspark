@@ -1727,6 +1727,10 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 		{
 			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 		}
+		if (e->type == "load" && it->EventFlags.ClipEventLoad)
+		{
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+		}
 	}
 	if (dispatcher == this)
 	{
@@ -1738,6 +1742,22 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 			m.isAttribute = false;
 		
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONENTERFRAME;
+			getVariableByMultiname(func,m);
+			if (func.is<AVM1Function>())
+			{
+				asAtom ret;
+				asAtom obj = asAtom::fromObject(this);
+				func.as<AVM1Function>()->call(&ret,&obj,nullptr,0);
+			}
+		}
+		else if (e->type == "load")
+		{
+			asAtom func;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
 			getVariableByMultiname(func,m);
 			if (func.is<AVM1Function>())
 			{

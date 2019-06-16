@@ -1857,9 +1857,9 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		{
 			STRING s;
 			stream>>s;
-			v.data_string.push_back((const char*)s);
+			v.data_string.push_back((tiny_string&)s);
 			stream>>s;
-			v.data_string.push_back((const char*)s);
+			v.data_string.push_back((tiny_string&)s);
 			break;
 		}
 		case 0x8a: // ActionWaitForFrame
@@ -1917,7 +1917,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 					{
 						STRING s;
 						stream>>s;
-						r.data_string.push_back((const char*)s);
+						r.data_string.push_back((tiny_string&)s);
 						break;
 					}
 					case 1:
@@ -2049,7 +2049,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 			{
 				STRING s;
 				stream>>s;
-				v.data_string.push_back((const char*)s);
+				v.data_string.push_back((tiny_string&)s);
 			}
 			break;
 		}
@@ -2060,12 +2060,12 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		{
 			STRING s;
 			stream>>s;
-			v.data_string.push_back((const char*)s);
+			v.data_string.push_back((tiny_string&)s);
 			stream>>v.data_uint16;
 			for (uint16_t i=0; i < v.data_uint16; i++)
 			{
 				stream>>s;
-				v.data_string.push_back((const char*)s);
+				v.data_string.push_back((tiny_string&)s);
 			}
 			stream>>v.data_uint16;
 			uint32_t pos = stream.tellg();
@@ -2096,7 +2096,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		{
 			STRING s;
 			stream>>s;
-			v.data_string.push_back((const char*)s);
+			v.data_string.push_back((tiny_string&)s);
 			stream>>v.data_uint16;
 			stream>>v.data_byte;
 			BitStream bs(stream);
@@ -2114,7 +2114,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 			{
 				stream>>v.data_byte;
 				stream>>s;
-				v.data_string.push_back((const char*)s);
+				v.data_string.push_back((tiny_string&)s);
 				v.data_registernumber.push_back(v.data_byte);
 			}
 			stream>>v.data_uint16;

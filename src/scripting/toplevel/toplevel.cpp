@@ -139,7 +139,7 @@ multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, C
 	return nullptr;
 }
 
-IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),isStatic(false),functionname(0)
+IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),isStatic(false),isCloned(false),functionname(0)
 {
 }
 
@@ -292,7 +292,7 @@ ASObject *IFunction::describeType() const
 
 std::string IFunction::toDebugString()
 {
-	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"");
+	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(isCloned ?" cloned":"");
 #ifndef _NDEBUG
 	if (this->getActivationCount() > 1)
 	{
@@ -938,9 +938,6 @@ void Class_base::copyBorrowedTraitsFromSuper()
 void Class_base::initStandardProps()
 {
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
-#ifndef NDEBUG
-	ASObject::insertSetRef(constructorprop.getPtr());
-#endif
 	addConstructorGetter();
 
 	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
@@ -2418,7 +2415,8 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 	if(*retAddr==NULL)
 	{
 		//Create the class
-		ret=new (s->unaccountedMemory) Class<IFunction>(s->unaccountedMemory);
+		MemoryAccount* m = s->allocateMemoryAccount(ClassName<IFunction>::name);
+		ret=new (m) Class<IFunction>(m);
 		ret->setSystemState(s);
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any

@@ -431,6 +431,7 @@ public:
 	Class_base* inClass;
 	// if this is a class method, this indicates if it is a static or instance method
 	bool isStatic;
+	bool isCloned;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != NULL; }
 	bool isConstructed() const { return constructIndicator; }
@@ -438,6 +439,7 @@ public:
 	{
 		inClass=NULL;
 		isStatic=false;
+		isCloned=false;
 		functionname=0;
 		length=0;
 		closure_this.reset();
@@ -450,8 +452,10 @@ public:
 		ret=clone();
 		ret->setClass(getClass());
 		ret->closure_this=c;
+		ret->isCloned=true;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
+		ret->setActivationCount(this->getActivationCount());
 		return ret;
 	}
 	ASFUNCTION_ATOM(apply);
@@ -497,6 +501,7 @@ protected:
 			ret->inClass = inClass;
 			ret->functionname = functionname;
 			ret->objfreelist = objfreelist;
+			ret->resetCached();
 		}
 		return ret;
 	}

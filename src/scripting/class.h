@@ -196,7 +196,8 @@ public:
 		{
 			//Create the class
 			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
-			ret=new (sys->unaccountedMemory) Class<T>(name, sys->unaccountedMemory);
+			MemoryAccount* m = sys->allocateMemoryAccount(ClassName<T>::name);
+			ret=new (m) Class<T>(name, m);
 			ret->setSystemState(sys);
 			ret->incRef();
 			*retAddr=ret;
@@ -373,7 +374,8 @@ public:
 		{
 			//Create the class
 			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
-			ret=new (sys->unaccountedMemory) InterfaceClass<T>(name, sys->unaccountedMemory);
+			MemoryAccount* m = sys->allocateMemoryAccount(name.getQualifiedName(sys));
+			ret=new (m) InterfaceClass<T>(name, m);
 			ret->isInterface = true;
 			ret->incRef();
 			*retAddr=ret;
@@ -504,7 +506,8 @@ public:
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(instantiatedQName,types,this,appdomain->getSystemState()->unaccountedMemory);
+			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.getQualifiedName(appdomain->getSystemState()));
+			ret=new (m) TemplatedClass<T>(instantiatedQName,types,this,m);
 			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
 			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
@@ -531,7 +534,8 @@ public:
 		Class<T>* ret=NULL;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
-			ret=new (appdomain->getSystemState()->unaccountedMemory) TemplatedClass<T>(qname,types,this,appdomain->getSystemState()->unaccountedMemory);
+			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(qname.getQualifiedName(appdomain->getSystemState()));
+			ret=new (m) TemplatedClass<T>(qname,types,this,m);
 			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
 			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
 			T::sinit(ret);
@@ -574,7 +578,8 @@ public:
 		Template<T>* ret=NULL;
 		if(it==sys->templates.end()) //This class is not yet in the map, create it
 		{
-			ret=new (sys->unaccountedMemory) Template<T>(name);
+			MemoryAccount* m = sys->allocateMemoryAccount(name.getQualifiedName(sys));
+			ret=new (m) Template<T>(name);
 			ret->prototype = _MNR(new_objectPrototype(sys));
 			ret->addPrototypeGetter(sys);
 			sys->templates.insert(std::make_pair(name,ret));

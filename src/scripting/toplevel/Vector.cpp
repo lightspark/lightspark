@@ -111,12 +111,6 @@ bool Vector::destruct()
 {
 	for(unsigned int i=0;i<size();i++)
 	{
-#ifndef NDEBUG
-		if (vec[i].getObject() && !vec[i].getObject()->getConstant() && vec[i].getObject()->getRefCount() == 1 && vec[i].getObject()->objectreferencecount==1)
-		{
-			ASObject::removeSetRef(vec[i].getObject());
-		}
-#endif
 		ASATOM_DECREF(vec[i]);
 	}
 	vec.clear();
@@ -1188,34 +1182,11 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 	this->vec_type->coerce(getSystemState(), o);
 	if(index < vec.size())
 	{
-#ifndef NDEBUG
-		if (vec[index].getObject())
-		{
-			if (vec[index].getObject()->objectreferencecount>1)
-				vec[index].getObject()->objectreferencecount--;
-			else if (vec[index].getObject()->getRefCount() > 1 && !vec[index].getObject()->getConstant())
-				ASObject::removeSetRef(vec[index].getObject());
-		}
-#endif
 		ASATOM_DECREF(vec[index]);
-#ifndef NDEBUG
-		if (o.getObject() && !o.getObject()->getConstant())
-		{
-			o.getObject()->objectreferencecount++;
-			ASObject::insertSetRef(o.getObject());
-		}
-#endif
 		vec[index] = o;
 	}
 	else if(!fixed && index == vec.size())
 	{
-#ifndef NDEBUG
-		if (o.getObject() && !o.getObject()->getConstant())
-		{
-			o.getObject()->objectreferencecount++;
-			ASObject::insertSetRef(o.getObject());
-		}
-#endif
 		vec.push_back( o );
 	}
 	else

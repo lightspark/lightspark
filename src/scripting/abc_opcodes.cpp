@@ -347,6 +347,13 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			LOG_CALL("End of calling cached property "<<*th->mi->context->getMultiname(n,th));
 			return;
 		}
+		else
+		{
+			if (instrptr->cacheobj2 && instrptr->cacheobj2->is<Function>() && instrptr->cacheobj2->as<IFunction>()->isCloned)
+				instrptr->cacheobj2->decRef();
+			instrptr->data |= ABC_OP_NOTCACHEABLE;
+			instrptr->data &= ~ABC_OP_CACHED;
+		}
 	}
 	
 	multiname* name=th->mi->context->getMultiname(n,th);
@@ -412,6 +419,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		if (canCache 
 				&& instrptr 
 				&& name->isStatic 
+				&& (instrptr->data & ABC_OP_NOTCACHEABLE)==0 
 				&& obj.canCacheMethod(name)
 				&& o.getObject() 
 				&& (obj.is<Class_base>() || o.as<IFunction>()->inClass == obj.getClass(th->mi->context->root->getSystemState())))
@@ -427,6 +435,8 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<obj.toDebugString());
 		obj = o.getClosureAtom(obj);
 		callImpl(th, o, obj, args, m, keepReturn);
+		if (!(instrptr->data & ABC_OP_CACHED) && o.as<IFunction>()->isCloned)
+			o.as<IFunction>()->decRef();
 	}
 	else
 	{
@@ -1874,6 +1884,8 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 				instrptr->data |= ABC_OP_CACHED;
 				instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
 				instrptr->cacheobj2 = ret.getClosure();
+				if (instrptr->cacheobj1->is<IFunction>())
+					instrptr->cacheobj1->as<IFunction>()->isCloned=false;
 			}
 			break;
 		}
@@ -1929,6 +1941,8 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			instrptr->data |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = ret.toObject(th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = ret.getClosure();
+			if (instrptr->cacheobj1->is<IFunction>())
+				instrptr->cacheobj1->as<IFunction>()->isCloned=false;
 		}
 	}
 	name->resetNameIfObject();
@@ -2612,8 +2626,8 @@ void ABCVm::newClass(call_context* th, int n)
 				ABCVm::SetAllClassLinks();
 			return;
 		}
-		
-		ret=new (th->mi->context->root->getSystemState()->unaccountedMemory) Class_inherit(className, th->mi->context->root->getSystemState()->unaccountedMemory,NULL);
+		MemoryAccount* m = th->mi->context->root->getSystemState()->allocateMemoryAccount(className.getQualifiedName(th->mi->context->root->getSystemState()));
+		ret=new (m) Class_inherit(className, m,NULL);
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
@@ -2721,9 +2735,6 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->constructor->length));
 	else
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,0));
-#ifndef NDEBUG
-	ASObject::insertSetRef(ret->constructorprop.getPtr());
-#endif
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->mi->context->instances[n].interface_count;i++)

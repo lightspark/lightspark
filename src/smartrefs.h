@@ -52,6 +52,7 @@ public:
 	inline void resetCached() { cached=false; }
 	inline void incActivationCount() { activation_refcount++; }
 	inline void decActivationCount() { activation_refcount--; }
+	inline void setActivationCount(int32_t c) { activation_refcount=c; }
 	inline int32_t getActivationCount() const { return activation_refcount; }
 	inline void incRef()
 	{

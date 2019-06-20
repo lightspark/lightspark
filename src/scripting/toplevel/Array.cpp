@@ -36,18 +36,10 @@ bool Array::destruct()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
 	{
-#ifndef NDEBUG
-		if (it->getObject() && !it->getObject()->getConstant() && it->getObject()->getRefCount() == 1 && it->getObject()->objectreferencecount==1)
-			ASObject::removeSetRef(it->getObject());
-#endif
 		ASATOM_DECREF_POINTER(it);
 	}
 	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 	{
-#ifndef NDEBUG
-		if (it->second.getObject() && !it->second.getObject()->getConstant() && it->second.getObject()->getRefCount() == 1 && it->second.getObject()->objectreferencecount==1)
-			ASObject::removeSetRef(it->second.getObject());
-#endif
 		ASATOM_DECREF(it->second);
 	}
 	data_first.clear();
@@ -2086,55 +2078,22 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 		{
 			if (index < data_first.size())
 			{
-#ifndef NDEBUG
-				if (data_first.at(index).getObject())
-				{
-					if (data_first.at(index).getObject()->objectreferencecount>1)
-						data_first.at(index).getObject()->objectreferencecount--;
-					else if (data_first.at(index).getObject()->getRefCount() > 1 && !data_first.at(index).getObject()->getConstant())
-						ASObject::removeSetRef(data_first.at(index).getObject());
-				}
-#endif
 				ASATOM_DECREF(data_first.at(index));
 			}
 			else
 				data_first.resize(index+1);
 			if (addref)
 				ASATOM_INCREF(o);
-			
-#ifndef NDEBUG
-			if (o.getObject() && !o.getObject()->getConstant())
-			{
-				o.getObject()->objectreferencecount++;
-				ASObject::insertSetRef(o.getObject());
-			}
-#endif
 			data_first[index]=o;
 		}
 		else
 		{
 			if(data_second.find(index) != data_second.end())
 			{
-#ifndef NDEBUG
-				if (data_second[index].getObject())
-				{
-					if (data_second[index].getObject()->objectreferencecount>1)
-						data_second[index].getObject()->objectreferencecount--;
-					else if (data_second[index].getObject()->getRefCount() > 1 && !data_second[index].getObject()->getConstant())
-						ASObject::removeSetRef(data_second[index].getObject());
-				}
-#endif
 				ASATOM_DECREF(data_second[index]);
 			}
 			if (addref)
 				ASATOM_INCREF(o);
-#ifndef NDEBUG
-			if (o.getObject() && !o.getObject()->getConstant())
-			{
-				o.getObject()->objectreferencecount++;
-				ASObject::insertSetRef(o.getObject());
-			}
-#endif
 			data_second[index]=o;
 		}
 	}

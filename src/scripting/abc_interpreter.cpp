@@ -1798,7 +1798,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 		}
 		else
 		{
-			if (cacheptr->cacheobj3 && cacheptr->cacheobj3->is<Function>() && cacheptr->cacheobj3->as<Function>()->isMethod())
+			if (cacheptr->cacheobj3 && cacheptr->cacheobj3->is<Function>() && cacheptr->cacheobj3->as<IFunction>()->isCloned)
 				cacheptr->cacheobj3->decRef();
 			cacheptr->data |= ABC_OP_NOTCACHEABLE;
 			cacheptr->data &= ~ABC_OP_CACHED;
@@ -1868,8 +1868,8 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 			}
 			obj = o.getClosureAtom(obj);
 			o.callFunction(ret,obj,args,argsnum,refcounted);
-			if (!(cacheptr->data & ABC_OP_CACHED) && o.as<IFunction>()->isMethod())
-				o.getObject()->decRef();
+			if (!(cacheptr->data & ABC_OP_CACHED) && o.as<IFunction>()->isCloned)
+				o.as<IFunction>()->decRef();
 		}
 		else if(o.is<Class_base>())
 		{

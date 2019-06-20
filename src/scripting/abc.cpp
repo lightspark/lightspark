@@ -2090,7 +2090,6 @@ void ABCVm::Run(ABCVm* th)
 	}
 	th->registerClasses();
 	th->registerClassesAVM1();
-	
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");
@@ -2580,7 +2579,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if((instances[t->classi].flags)&0x04)
 			{
 
-				Class_inherit* ci=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, obj->getSystemState()->unaccountedMemory,t);
+				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
+				Class_inherit* ci=new (m) Class_inherit(className, m,t);
 				ci->isInterface = true;
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
@@ -2634,7 +2634,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			}
 			else
 			{
-				Class_inherit* c=new (obj->getSystemState()->unaccountedMemory) Class_inherit(className, obj->getSystemState()->unaccountedMemory,t);
+				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
+				Class_inherit* c=new (m) Class_inherit(className, m,t);
 				c->context = this;
 
 				if(instances[t->classi].supername)

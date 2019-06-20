@@ -83,12 +83,7 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	{
 		ret=asAtom::fromObject(tag->instance(realClass));
 		if (instancefactory.isNull())
-		{
 			instancefactory = _MR(tag->instance(realClass));
-#ifndef NDEBUG
-			ASObject::insertSetRef(instancefactory.getPtr());
-#endif
-		}
 	}
 	else
 	{
@@ -100,9 +95,6 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 			asAtom instance;
 			super->getInstance(instance,false,NULL,0,realClass);
 			instancefactory = _MR(instance.getObject());
-#ifndef NDEBUG
-			ASObject::insertSetRef(instancefactory.getPtr());
-#endif
 		}
 	}
 	if(construct)
@@ -258,7 +250,8 @@ Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 	{
 		//Create the class
 		QName name(s->getUniqueStringId(ClassName<ASObject>::name),s->getUniqueStringId(ClassName<ASObject>::ns));
-		ret=new (s->unaccountedMemory) Class<ASObject>(name, s->unaccountedMemory);
+		MemoryAccount* m = s->allocateMemoryAccount(ClassName<ASObject>::name);
+		ret=new (m) Class<ASObject>(name, m);
 		ret->setSystemState(s);
 		ret->incRef();
 		*retAddr=ret;

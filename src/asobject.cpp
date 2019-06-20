@@ -914,24 +914,9 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 		LOG_CALL("replacing:"<<var.toDebugString());
 		if (obj->is<Activation_object>() && var.is<SyntheticFunction>())
 			var.getObject()->decActivationCount();
-#ifndef NDEBUG
-		if (var.getObject()->objectreferencecount>1)
-			var.getObject()->objectreferencecount--;
-		else if (var.getObject()->getRefCount() > 1 && !var.getObject()->getConstant())
-			ASObject::removeSetRef(var.getObject());
-#endif
 		ASATOM_DECREF(var);
 	}
 	var=v;
-#ifndef NDEBUG
-	if (v.getObject() && !v.getObject()->getConstant())
-	{
-		v.getObject()->objectreferencecount++;
-		if (v.getObject()->toDebugString().find("[object General::FpsCounter]")==0)
-			LOG(LOG_ERROR,"insertref:"<<v.getObject()->toDebugString());
-		ASObject::insertSetRef(v.getObject());
-	}
-#endif
 	isrefcounted = _isrefcounted;
 }
 
@@ -1449,6 +1434,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			if (obj->var.getClosure())
 			{
 				LOG_CALL("function " << name << " is already bound to "<<obj->var.toDebugString() );
+				if (obj->var.getObject()->as<IFunction>()->isCloned)
+					ASATOM_INCREF(obj->var);
 				ret.set(obj->var);
 			}
 			else
@@ -1594,12 +1581,6 @@ void variables_map::destroyContents()
 	{
 		if (it->second.isrefcounted)
 		{
-#ifndef NDEBUG
-			if (it->second.var.getObject() && !it->second.var.getObject()->getConstant() && it->second.var.getObject()->getRefCount() == 1 && it->second.var.getObject()->objectreferencecount==1)
-			{
-				ASObject::removeSetRef(it->second.var.getObject());
-			}
-#endif
 			ASATOM_DECREF(it->second.var);
 			ASATOM_DECREF(it->second.setter);
 			ASATOM_DECREF(it->second.getter);
@@ -1648,34 +1629,6 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 		it++;
 	}
 	LOG(LOG_INFO,"countall:"<<c);
-	bool haslostreferences=false;
-	auto it2 = objectset.begin();
-	while (it2 != objectset.end())
-	{
-		if (!(*it2)->getCached() && !(*it2)->getConstant())
-		{
-			if (refobjectset.find(*it2) == refobjectset.end())
-			{
-				LOG(LOG_INFO,"lostref:"<<(*it2)->getClass()->toDebugString()<<" "<< (*it2));
-				haslostreferences=true;
-			}
-		}
-		it2++;
-	}
-}
-
-std::set<ASObject*> ASObject::refobjectset;
-std::set<ASObject*> ASObject::objectset;
-void ASObject::insertSetRef(ASObject *o)
-{
-	if (o->getClass())
-		refobjectset.insert(o);
-}
-
-void ASObject::removeSetRef(ASObject *o)
-{
-	if (o->getClass())
-		refobjectset.erase(o);
 }
 #endif
 ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
@@ -1689,8 +1642,6 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(
 		uint32_t x = objectcounter[c];
 		x++;
 		objectcounter[c] = x;
-		if  (c->is<Class_inherit>())
-			objectset.insert(this);
 	}
 #endif
 }
@@ -1701,7 +1652,6 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->getS
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
-	objectreferencecount=0;
 #endif
 	assert(o.Variables.size()==0);
 }
@@ -1729,7 +1679,6 @@ bool ASObject::destruct()
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
-	objectreferencecount=0;
 #endif
 	bool dodestruct = true;
 	if (objfreelist)
@@ -1748,8 +1697,6 @@ bool ASObject::destruct()
 			x--;
 			objectcounter[classdef] = x;
 		}
-		removeSetRef(this);
-		objectset.erase(this);
 #endif
 		finalize();
 	}
@@ -3040,10 +2987,6 @@ void asAtom::setFunction(ASObject *obj, ASObject *closure)
 	if (closure &&obj->is<IFunction>())
 	{
 		closure->incRef();
-#ifndef NDEBUG
-		closure->objectreferencecount++;
-		ASObject::insertSetRef(closure);
-#endif
 		uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure)))|ATOM_OBJECTPTR;
 	}
 	else

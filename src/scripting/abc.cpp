@@ -1323,8 +1323,8 @@ void ABCContext::dumpProfilingData(ostream& f) const
 /*
  * nextNamespaceBase is set to 2 since 0 is the empty namespace and 1 is the AS3 namespace
  */
-ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),currentCallContext(NULL),
+ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),shuttingdown(false),
+	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),currentCallContext(NULL),
 	vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;
@@ -1631,11 +1631,21 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				//AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				m_sys->stage->advanceFrame();
-				//ev->done.signal(); // Won't this signal twice, wrt to the signal() below?
 #ifndef NDEBUG
 //				if (getEventQueueSize() == 0)
 //					ASObject::dumpObjectCounters(100);
 #endif
+				break;
+			}
+			case IDLE_EVENT:
+			{
+				Mutex::Lock l(event_queue_mutex);
+				while (!idleevents_queue.empty())
+				{
+					events_queue.push_back(idleevents_queue.front());
+					idleevents_queue.pop_front();
+				}
+				isIdle = true;
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:
@@ -1698,7 +1708,11 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 
 	if (!obj.isNull())
 		obj->onNewEvent();
-	events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+
+	if (isIdle)
+		events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	else
+		events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_event_cond.signal();
 	return true;
 }
@@ -1729,6 +1743,14 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	sem_event_cond.signal();
 	return true;
+}
+void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+{
+	Mutex::Lock l(event_queue_mutex);
+	//If the system should terminate new events are not accepted
+	if(shuttingdown)
+		return;
+	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 }
 
 Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)

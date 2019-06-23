@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -483,7 +483,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	InitFrameEvent(_NR<DisplayObject> m) : Event(NULL, "InitFrameEvent"),clip(m) {}
+	InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return INIT_FRAME; }
 };
 
@@ -493,16 +493,22 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(NULL, "ExecuteFrameScriptEvent"),clip(m) {}
+	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr, "ExecuteFrameScriptEvent"),clip(m) {}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return EXECUTE_FRAMESCRIPT; }
 };
 
-class AdvanceFrameEvent: public WaitableEvent
+class AdvanceFrameEvent: public Event
 {
 public:
-	AdvanceFrameEvent(): WaitableEvent("AdvanceFrameEvent") {}
+	AdvanceFrameEvent(): Event(nullptr,"AdvanceFrameEvent") {}
 	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
+};
+class IdleEvent: public WaitableEvent
+{
+public:
+	IdleEvent(): WaitableEvent("IdleEvent") {}
+	EVENT_TYPE getEventType() const { return IDLE_EVENT; }
 };
 
 //Event to flush the invalidation queue
@@ -530,7 +536,7 @@ private:
 	_NR<InteractiveObject> target;
 	tiny_string text;
 public:
-	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(NULL, "TextInputEvent"),target(m),text(s) {}
+	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr, "TextInputEvent"),target(m),text(s) {}
 	EVENT_TYPE getEventType() const { return TEXTINPUT_EVENT; }
 };
 

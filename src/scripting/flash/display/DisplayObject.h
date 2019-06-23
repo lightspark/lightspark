@@ -154,6 +154,7 @@ public:
 	*/
 	DisplayObject(Class_base* c);
 	void finalize();
+	bool destruct();
 	MATRIX getMatrix() const;
 	bool isConstructed() const { return ACQUIRE_READ(constructed); }
 	/**
@@ -205,6 +206,7 @@ public:
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	virtual void advanceFrame() {}
+	virtual void declareFrame() {}
 	virtual void initFrame();
 	virtual void executeFrameScript();
 	Vector2f getLocalMousePos();

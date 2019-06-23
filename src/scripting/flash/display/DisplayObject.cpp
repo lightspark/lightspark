@@ -120,6 +120,21 @@ void DisplayObject::finalize()
 	hasChanged = true;
 }
 
+bool DisplayObject::destruct()
+{
+	// TODO make all DisplayObject derived classes reusable
+	maskOf.reset();
+	parent=nullptr;
+	eventparent =nullptr;
+	mask.reset();
+	matrix.reset();
+	loaderInfo.reset();
+	invalidateQueueNext.reset();
+	accessibilityProperties.reset();
+	hasChanged = true;
+	return EventDispatcher::destruct();
+}
+
 void DisplayObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);

@@ -179,7 +179,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			}
 			case 0x06: // ActionPlay
 			{
-				uint32_t frame = clip->state.next_FP;
+				uint32_t frame = clip->state.FP == clip->state.next_FP ? clip->state.FP+1 : clip->state.next_FP;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPlay ");
 				clip->AVM1gotoFrame(frame,false,true);
 				break;

@@ -282,6 +282,7 @@ private:
 	Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
+	bool isIdle;
 
 	void registerClassesAVM1();
 	void registerClassesToplevel(Global* builtin);
@@ -501,6 +502,7 @@ private:
 	volatile bool shuttingdown;
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
+	std::deque<eventType, reporter_allocator<eventType>> idleevents_queue;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void handleFrontEvent();
 	void signalEventWaiters();
@@ -972,6 +974,7 @@ public:
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	bool prependEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
+	void addIdleEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }
@@ -1001,6 +1004,7 @@ public:
 
 	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t);
 	void checkExternalCallEvent() DLL_PUBLIC;
+	void setIdle(bool isidle) { isIdle = isidle; }
 };
 
 class DoABCTag: public ControlTag

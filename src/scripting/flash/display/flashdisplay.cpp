@@ -1286,11 +1286,13 @@ void MovieClip::buildTraits(ASObject* o)
 MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),actions(0),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
+	currentframeIterator=frames.end();
 }
 
 MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
+	currentframeIterator=frames.end();
 	//For sprites totalFrames_unreliable is the actual frame count
 	//For the root movie, it's the frame count from the header
 }
@@ -1298,6 +1300,7 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpri
 bool MovieClip::destruct()
 {
 	frames.clear();
+	currentframeIterator=frames.end();
 	setFramesLoaded(0);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
@@ -1456,7 +1459,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (getSystemState()->getSwfVersion() >= 9)
+	if (getSystemState()->getSwfVersion() >= 9 && !this->isOnStage())
 	{
 		advanceFrame();
 		initFrame();
@@ -1501,10 +1504,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP+1;
 	th->state.explicit_FP=true;
-	th->advanceFrame();
-	th->initFrame();
-	th->incRef();
-	sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+	if (!th->isOnStage())
+	{
+		th->advanceFrame();
+		th->initFrame();
+		th->incRef();
+		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+	}
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -1513,10 +1519,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP-1;
 	th->state.explicit_FP=true;
-	th->advanceFrame();
-	th->initFrame();
-	th->incRef();
-	sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+	if (!th->isOnStage())
+	{
+		th->advanceFrame();
+		th->initFrame();
+		th->incRef();
+		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+	}
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
@@ -1717,6 +1726,8 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 {
+	if (!this->isOnStage())
+		return;
 	for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
 	{
 		if (e->type == "complete" && it->EventFlags.ClipEventLoad)
@@ -2362,6 +2373,8 @@ void DisplayObjectContainer::checkClipDepth()
 bool DisplayObjectContainer::destruct()
 {
 	//Release every child
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+		(*it)->setParent(nullptr);
 	dynamicDisplayList.clear();
 	mouseChildren = true;
 	tabChildren = true;
@@ -2375,8 +2388,6 @@ InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnable
 
 InteractiveObject::~InteractiveObject()
 {
-	if(getSystemState()->getInputThread())
-		getSystemState()->getInputThread()->removeListener(this);
 }
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
@@ -2416,6 +2427,8 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,_getDoubleClickEnabled)
 
 bool InteractiveObject::destruct()
 {
+	if(getSystemState()->getInputThread())
+		getSystemState()->getInputThread()->removeListener(this);
 	contextMenu.reset();
 	mouseEnabled = true;
 	doubleClickEnabled =false;
@@ -4363,6 +4376,14 @@ void JointStyle::sinit(Class_base* c)
 	c->setVariableAtomByQName("ROUND",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"round"),CONSTANT_TRAIT);
 }
 
+void DisplayObjectContainer::declareFrame()
+{
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->declareFrame();
+	DisplayObject::declareFrame();
+}
+
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
  * frame top-down. At the same time, call their
@@ -4406,7 +4427,7 @@ void DisplayObjectContainer::executeFrameScript()
  * frame top-down. At the same time, call their
  * constructors in reverse order (bottom-up).
  * This is called in vm's thread context */
-void MovieClip::initFrame()
+void MovieClip::declareFrame()
 {
 	/* Go through the list of frames.
 	 * If our next_FP is after our current,
@@ -4447,7 +4468,10 @@ void MovieClip::initFrame()
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();
-
+	DisplayObjectContainer::declareFrame();
+}
+void MovieClip::initFrame()
+{
 	/* Now the new legacy display objects are there, so we can also init their
 	 * first frame (top-down) and call their constructors (bottom-up) */
 	auto it=dynamicDisplayList.begin();
@@ -4515,9 +4539,6 @@ void DisplayObjectContainer::advanceFrame()
  */
 void MovieClip::advanceFrame()
 {
-	//TODO check order: child or parent first?
-	DisplayObjectContainer::advanceFrame();
-
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag
@@ -4526,7 +4547,11 @@ void MovieClip::advanceFrame()
 	if((!this->is<RootMovieClip>() && fromDefineSpriteTag==UINT32_MAX)
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
 		   && !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))
+	{
+		DisplayObjectContainer::advanceFrame();
+		declareFrame();
 		return;
+	}
 
 	//If we have not yet loaded enough frames delay advancement
 	if(state.next_FP>=(uint32_t)getFramesLoaded())
@@ -4550,6 +4575,9 @@ void MovieClip::advanceFrame()
 		if(hasFinishedLoading() && state.FP == getFramesLoaded()-1)
 			state.next_FP = 0;
 	}
+	// ensure the legacy objects of the current frame are created
+	DisplayObjectContainer::advanceFrame();
+	declareFrame();
 }
 
 void MovieClip::constructionComplete()
@@ -4560,7 +4588,10 @@ void MovieClip::constructionComplete()
 	 * frame has not been initalized yet, so init the frame
 	 * now */
 	if(state.last_FP == -1)
+	{
+		advanceFrame();
 		initFrame();
+	}
 }
 
 void MovieClip::afterConstruction()

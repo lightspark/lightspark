@@ -1285,7 +1285,7 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 	}
 	tokensVector tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory));
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
-	Shape* ret= loadedFrom->version < 9 ?
+	Shape* ret= loadedFrom->version >= 9 ?
 				new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f):
 				new (c->memoryAccount) AVM1Shape(c, tokens, 1.0f/20.0f);
 	return ret;

@@ -134,9 +134,10 @@ public:
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
 	void purgeLegacyChildren();
 	void checkClipDepth();
-	void advanceFrame();
-	void initFrame();
-	void executeFrameScript();
+	void advanceFrame() override;
+	void declareFrame() override;
+	void initFrame() override;
+	void executeFrameScript() override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -588,12 +589,13 @@ public:
 	ASFUNCTION_ATOM(_getScenes);
 	ASFUNCTION_ATOM(_getCurrentScene);
 
-	void advanceFrame();
-	void initFrame();
-	void executeFrameScript();
+	void advanceFrame() override;
+	void declareFrame() override;
+	void initFrame() override;
+	void executeFrameScript() override;
 
-	void afterLegacyInsert();
-	void afterLegacyDelete(DisplayObjectContainer* par);
+	void afterLegacyInsert() override;
+	void afterLegacyDelete(DisplayObjectContainer* par) override;
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	uint32_t getTagID() const { return fromDefineSpriteTag; }
@@ -602,9 +604,9 @@ public:
 	asAtom getVariableBindingValue(const tiny_string &name);
 	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
 	
-	bool AVM1HandleKeyboardEvent(KeyboardEvent *e);
-	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e);
-	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e);
+	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
+	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
 	
 	void AVM1gotoFrameLabel(const tiny_string &label);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);

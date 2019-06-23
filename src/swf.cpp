@@ -1892,7 +1892,12 @@ void SystemState::tick()
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.
 	 */
-	/* TODO: Step 1: declare new objects */
+
+	currentVm->setIdle(false);
+	/* Step 0: Set current frame number to the next frame 
+	 * Step 1: declare new objects */
+	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
+	currentVm->addEvent(NullRef, advFrame);
 
 	/* Step 2: Send enterFrame events, if needed */
 	{
@@ -1948,10 +1953,10 @@ void SystemState::tick()
 	}
 	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 
-	/* Step 0: Set current frame number to the next frame */
-	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-	if(currentVm->addEvent(NullRef, advFrame))
-		advFrame->wait();
+	/* Step 9: we are idle now, so we can handle all input events */
+	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent());
+	if (currentVm->addEvent(NullRef, idle))
+		idle->wait();
 }
 
 void SystemState::tickFence()

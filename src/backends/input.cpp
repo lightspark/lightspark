@@ -88,7 +88,7 @@ bool InputThread::worker(SDL_Event *event)
 		
 			tiny_string s = event->text.text;
 			target->incRef();
-			m_sys->currentVm->addEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
+			m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
 			break;
 		}
 		case SDL_MOUSEBUTTONDOWN:
@@ -182,7 +182,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
-	m_sys->currentVm->addEvent(selected,
+	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseDown",localX,localY,true,buttonState,pressed)));
 	lastMouseDownTarget=selected;
 }
@@ -198,7 +198,7 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
-	m_sys->currentVm->addEvent(selected,
+	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"doubleClick",localX,localY,true,buttonState,pressed)));
 }
 
@@ -213,19 +213,19 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
-	m_sys->currentVm->addEvent(selected,
+	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseUp",localX,localY,true,buttonState,pressed)));
 	if(lastMouseDownTarget==selected)
 	{
 		//Also send the click event
 		selected->incRef();
-		m_sys->currentVm->addEvent(selected,
+		m_sys->currentVm->addIdleEvent(selected,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys,"click",localX,localY,true,buttonState,pressed)));
 	}
 	else if (lastMouseDownTarget)
 	{
 		lastMouseDownTarget->incRef();
-		m_sys->currentVm->addEvent(lastMouseDownTarget,
+		m_sys->currentVm->addIdleEvent(lastMouseDownTarget,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys,"releaseOutside",localX,localY,true,buttonState,pressed)));
 	}
 	lastMouseDownTarget=NullRef;
@@ -236,7 +236,8 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	if(m_sys->currentVm == NULL)
 		return;
 	SpinlockLocker locker(inputDataSpinlock);
-	mousePos = Vector2(x,y);
+	mousePos.x=x;
+	mousePos.y=y;
 	mutexDragged.lock();
 	// Handle current drag operation
 	if(curDragged)
@@ -271,7 +272,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		if(currentMouseOver == selected)
 		{
 			selected->incRef();
-			m_sys->currentVm->addEvent(selected,
+			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseMove",localX,localY,true,buttonState,pressed)));
 		}
 		else
@@ -281,17 +282,17 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 				number_t clocalX, clocalY;
 				currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 				currentMouseOver->incRef();
-				m_sys->currentVm->addEvent(currentMouseOver,
+				m_sys->currentVm->addIdleEvent(currentMouseOver,
 					_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 				currentMouseOver->incRef();
-				m_sys->currentVm->addEvent(currentMouseOver,
+				m_sys->currentVm->addIdleEvent(currentMouseOver,
 					_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 			}
 			selected->incRef();
-			m_sys->currentVm->addEvent(selected,
+			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			selected->incRef();
-			m_sys->currentVm->addEvent(selected,
+			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys,"rollOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
 		}
@@ -320,7 +321,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
-	m_sys->currentVm->addEvent(selected,
+	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseWheel",localX,localY,true,buttonState,pressed,NullRef,delta)));
 }
 
@@ -331,7 +332,7 @@ void InputThread::handleMouseLeave()
 
 	_NR<Stage> stage = _MR(m_sys->stage);
 	stage->incRef();
-	m_sys->currentVm->addEvent(stage,
+	m_sys->currentVm->addIdleEvent(stage,
 		_MR(Class<Event>::getInstanceS(m_sys,"mouseLeave")));
 }
 
@@ -565,7 +566,7 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 		type = "keyUp";
 
 	target->incRef();
-	m_sys->currentVm->addEvent(target,
+	m_sys->currentVm->addIdleEvent(target,
 	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,c, (SDL_Keymod)keyevent->keysym.mod)));
 }
 

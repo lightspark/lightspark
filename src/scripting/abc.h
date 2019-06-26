@@ -646,6 +646,8 @@ private:
 	static void abc_returnvalue_constant(call_context* context);
 	static void abc_returnvalue_local(call_context* context);
 	static void abc_constructsuper(call_context* context);
+	static void abc_constructsuper_constant(call_context* context);
+	static void abc_constructsuper_local(call_context* context);
 	static void abc_constructprop(call_context* context);
 	static void abc_callproplex(call_context* context);
 	static void abc_callsupervoid(call_context* context);

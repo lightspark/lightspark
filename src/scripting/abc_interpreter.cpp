@@ -605,8 +605,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_callpropvoidStaticName_local_local,
 	abc_callpropvoidStaticName_constant,// 0x1e8 ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS
 	abc_callpropvoidStaticName_local,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_constructsuper_constant,// 0x1ea ABC_OP_OPTIMZED_CONSTRUCTSUPER
+	abc_constructsuper_local,
 	abc_getslot_constant,// 0x1ec ABC_OP_OPTIMZED_GETSLOT
 	abc_getslot_local,
 	abc_getslot_constant_localresult,
@@ -2264,6 +2264,22 @@ void ABCVm::abc_constructsuper(call_context* context)
 	constructSuper(context,t);
 	++(context->exec_pos);
 }
+void ABCVm::abc_constructsuper_constant(call_context* context)
+{
+	LOG_CALL( _("constructSuper_c "));
+	asAtom obj=*context->exec_pos->arg1_constant;
+	context->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	LOG_CALL(_("End super construct ")<<obj.toDebugString());
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructsuper_local(call_context* context)
+{
+	LOG_CALL( _("constructSuper_l "));
+	asAtom obj= context->locals[context->exec_pos->local_pos1];
+	context->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	LOG_CALL(_("End super construct ")<<obj.toDebugString());
+	++(context->exec_pos);
+}
 void ABCVm::abc_constructprop(call_context* context)
 {
 	//constructprop
@@ -3563,9 +3579,18 @@ void ABCVm::abc_negate(call_context* context)
 	//negate
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("negate "<<pval->toDebugString());
-	number_t ret=-(pval->toNumber());
-	ASATOM_DECREF_POINTER(pval);
-	pval->setNumber(context->mi->context->root->getSystemState(), ret);
+	if (pval->isInteger() && pval->toInt() != 0)
+	{
+		int32_t ret=-(pval->toInt());
+		ASATOM_DECREF_POINTER(pval);
+		pval->setInt(context->mi->context->root->getSystemState(), ret);
+	}
+	else
+	{
+		number_t ret=-(pval->toNumber());
+		ASATOM_DECREF_POINTER(pval);
+		pval->setNumber(context->mi->context->root->getSystemState(), ret);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_increment(call_context* context)
@@ -5359,6 +5384,7 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS 0x000001e0
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME 0x000001e4
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS 0x000001e8
+#define ABC_OP_OPTIMZED_CONSTRUCTSUPER 0x000001ea 
 #define ABC_OP_OPTIMZED_GETSLOT 0x000001ec
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
@@ -6035,7 +6061,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x40://newfunction
 			case 0x41://call
 			case 0x42://construct
-			case 0x49://constructsuper
 			case 0x53://constructgenerictype
 			case 0x55://newobject
 			case 0x56://newarray
@@ -6074,6 +6099,31 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				operandlist.clear();
 				break;
+			case 0x49://constructsuper
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					operandlist.clear();
+				uint32_t t =code.readu30();
+				if (function->inClass && t==0) // class method with 0 params
+				{
+					if (function->inClass->super.getPtr() == Class<ASObject>::getClass(function->getSystemState()) // super class is ASObject, so constructsuper can be skipped
+							&& !operandlist.empty())
+					{
+						mi->body->preloadedcode.pop_back();
+						operandlist.pop_back();
+					}
+					else
+						setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CONSTRUCTSUPER,opcode,code,oldnewpositions, jumptargets);
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					mi->body->preloadedcode.push_back(t);
+					operandlist.clear();
+				}
+				break;
+			}
 			case 0x5e://findproperty
 			case 0x5d://findpropstrict
 			{

@@ -94,6 +94,7 @@ public:
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;
+	bool usesActionScript3;
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);

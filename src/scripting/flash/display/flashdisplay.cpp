@@ -4461,7 +4461,7 @@ void MovieClip::declareFrame()
 			{
 				iter->execute(this);
 			}
-			if (getSystemState()->getSwfVersion() < 9 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
+			if (getSystemState()->getSwfVersion() <= 9 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
 				currentframeIterator= iter;
 			++iter;
 		}

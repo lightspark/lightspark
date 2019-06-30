@@ -93,6 +93,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
 	hasSymbolClass=false;
+	usesActionScript3=false;
 }
 
 RootMovieClip::~RootMovieClip()
@@ -1494,6 +1495,7 @@ void ParseThread::parseSWF(UI8 ver)
 			//Check if this clip is the main clip then honour its FileAttributesTag
 			if(root == root->getSystemState()->mainClip)
 			{
+				root->usesActionScript3 = fat->ActionScript3;
 				root->getSystemState()->needsAVM2(!usegnash || fat->ActionScript3);
 				if(usegnash && !fat->ActionScript3)
 				{

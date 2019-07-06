@@ -173,8 +173,10 @@ void SystemState::staticInit()
 	curl_global_init(CURL_GLOBAL_ALL);
 #endif
 #ifdef ENABLE_LIBAVCODEC
+#if ( LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58,10,100) )
 	avcodec_register_all();
 	av_register_all();
+#endif
 #endif
 
 	// seed the random number generator

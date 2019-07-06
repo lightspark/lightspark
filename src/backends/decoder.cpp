@@ -818,7 +818,11 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		{
 			FrameSamples& curTail=samplesBuffer.acquireLast();
 			int len = resampleFrameToS16(curTail);
+#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
 			maxLen = pkt.size - av_frame_get_pkt_size (frameIn);
+#else
+			maxLen = pkt.size - frameIn->pkt_size;
+#endif
 			curTail.len=len;
 			assert(!(curTail.len&0x80000000));
 			assert(len%2==0);
@@ -928,7 +932,11 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		{
 			FrameSamples& curTail=samplesBuffer.acquireLast();
 			int len = resampleFrameToS16(curTail);
+#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
 			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
+#else
+			maxLen = pkt->size - frameIn->pkt_size;
+#endif
 			curTail.len=len;
 			assert(!(curTail.len&0x80000000));
 			assert(len%2==0);
@@ -992,7 +1000,11 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 	int sample_rate = engine->audio_getSampleRate();
 	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
 #ifdef HAVE_AV_FRAME_GET_SAMPLE_RATE
+#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
  	int framesamplerate = av_frame_get_sample_rate(frameIn);
+#else
+	int framesamplerate = frameIn->sample_rate;
+#endif
 #else
 	int framesamplerate = frameIn->sample_rate;
 #endif

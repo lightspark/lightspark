@@ -53,7 +53,7 @@ void StackFrame::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(StackFrame,_toString)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.stackFrame.toString not implemented");
-	ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+	ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 }
 
 
@@ -67,7 +67,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getInvocationCount)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getInvocationCount not implemented");
-	ret.setInt(sys,0);
+	asAtomHandler::setInt(ret,sys,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getLexicalScopes)
 {
@@ -75,14 +75,14 @@ ASFUNCTIONBODY_ATOM(lightspark,getLexicalScopes)
 	ARG_UNPACK_ATOM (func);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getLexicalScopes not implemented");
 	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	ret = asAtom::fromObject(res);
+	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getMasterString)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getMasterString not implemented");
-	ret.setNull();
+	asAtomHandler::setNull(ret);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getMemberNames)
 {
@@ -90,17 +90,17 @@ ASFUNCTIONBODY_ATOM(lightspark,getMemberNames)
 	_NR<ASObject> o;
 	ARG_UNPACK_ATOM (o)(instanceNames, false);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getMemberNames not implemented");
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSampleCount)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSampleCount not implemented");
-	ret.setInt(sys,-1);
+	asAtomHandler::setInt(ret,sys,-1);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSamples)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSamples not implemented");
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getSize)
@@ -108,7 +108,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getSize)
 	_NR<ASObject> o;
 	ARG_UNPACK_ATOM (o);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSize not implemented");
-	ret.setInt(sys,0);
+	asAtomHandler::setInt(ret,sys,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,isGetterSetter)
 {
@@ -116,7 +116,7 @@ ASFUNCTIONBODY_ATOM(lightspark,isGetterSetter)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.isGetterSetter not implemented");
-	ret.setBool(false);
+	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(lightspark,pauseSampling)
 {

@@ -274,7 +274,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	falseRef=_MR(Class<Boolean>::getInstanceS(this,false));
 	falseRef->setConstant();
 	
-	nanAtom = asAtom(this,Number::NaN,true);
+	nanAtom = asAtomHandler::fromNumber(this,Number::NaN,true);
 
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS(this));
 	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
@@ -575,7 +575,7 @@ SystemState::~SystemState()
 	falseRef.forceDestruct();
 	workerDomain.forceDestruct();
 	worker.forceDestruct();
-	delete nanAtom.getObject();
+	delete asAtomHandler::getObject(nanAtom);
 }
 
 void SystemState::destroy()
@@ -750,7 +750,7 @@ float SystemState::getRenderRate()
 void SystemState::addWorker(ASWorker *w)
 {
 	Locker l(workerMutex);
-	asAtom a = asAtom::fromObject(w);
+	asAtom a = asAtomHandler::fromObject(w);
 	w->incRef();
 	workerDomain->workerlist->append(a);
 	singleworker=workerDomain->workerlist->size() <= 1;
@@ -2170,7 +2170,7 @@ void SystemState::dumpStacktrace()
 	for (auto it = getVm(this)->stacktrace.rbegin(); it != getVm(this)->stacktrace.rend(); it++)
 	{
 		stacktrace += "    at ";
-		stacktrace += (*it).second.toObject(this)->getClassName();
+		stacktrace += asAtomHandler::toObject((*it).second,this)->getClassName();
 		stacktrace += "/";
 		stacktrace += this->getStringFromUniqueId((*it).first);
 		stacktrace += "()\n";
@@ -2291,10 +2291,10 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	if (typeObject == NULL)
 	{
 		ASObject* target;
-		asAtom o;
+		asAtom o=asAtomHandler::invalidAtom;
 		applicationDomain->getVariableAndTargetByMultiname(o,clsname,target);
-		if (o.isValid())
-			typeObject=o.getObject();
+		if (asAtomHandler::isValid(o))
+			typeObject=asAtomHandler::getObject(o);
 	}
 	if (typeObject != NULL)
 	{

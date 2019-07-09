@@ -193,7 +193,7 @@ class DLL_PUBLIC ExtASCallback : public ExtCallback
 {
 private:
 	bool funcWasCalled;
-	asAtom func;
+	asAtom func=asAtomHandler::invalidAtom;
 	_NR<ExternalCallEvent> funcEvent;
 	ASObject* result;
         ASObject** asArgs;

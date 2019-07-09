@@ -237,8 +237,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(sys,th->getPosition());
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	asAtomHandler::setUInt(ret,sys,th->getPosition());
 }
 
 void ByteArray::setPosition(uint32_t p)
@@ -250,26 +250,26 @@ void ByteArray::setPosition(uint32_t p)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setPosition)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	uint32_t pos=args[0].toUInt();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	uint32_t pos=asAtomHandler::toUInt(args[0]);
 	th->setPosition(pos);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getEndian)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	if(th->littleEndian)
-		ret = asAtom::fromString(sys,Endian::littleEndian);
+		ret = asAtomHandler::fromString(sys,Endian::littleEndian);
 	else
-		ret = asAtom::fromString(sys,Endian::bigEndian);
+		ret = asAtomHandler::fromString(sys,Endian::bigEndian);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	if(args[0].toString(sys) == Endian::littleEndian)
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	if(asAtomHandler::toString(args[0],sys) == Endian::littleEndian)
 		th->littleEndian = true;
-	else if(args[0].toString(sys) == Endian::bigEndian)
+	else if(asAtomHandler::toString(args[0],sys) == Endian::bigEndian)
 		th->littleEndian = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
@@ -277,13 +277,13 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getObjectEncoding)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(sys,th->objectEncoding);
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	asAtomHandler::setUInt(ret,sys,th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t value;
 	ARG_UNPACK_ATOM(value);
 	if(value!=ObjectEncoding::AMF0 && value!=ObjectEncoding::AMF3)
@@ -295,13 +295,13 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getDefaultObjectEncoding)
 {
-	ret.setUInt(sys,sys->staticNetConnectionDefaultObjectEncoding);
+	asAtomHandler::setUInt(ret,sys,sys->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
 {
 	assert_and_throw(argslen == 1);
-	int32_t value = args[0].toInt();
+	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
 		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
 	else if(value == 3)
@@ -312,10 +312,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setLength)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	uint32_t newLen=args[0].toInt();
+	uint32_t newLen=asAtomHandler::toInt(args[0]);
 	th->lock();
 	if(newLen==th->len) //Nothing to do
 		return;
@@ -346,19 +346,19 @@ void ByteArray::setLength(uint32_t newLen)
 }
 ASFUNCTIONBODY_ATOM(ByteArray,_getLength)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(sys,th->len);
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	asAtomHandler::setUInt(ret,sys,th->len);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getBytesAvailable)
 {
-	ByteArray* th=obj.as<ByteArray>();
-	ret.setUInt(sys,th->len-th->position);
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	asAtomHandler::setUInt(ret,sys,th->len-th->position);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 
 	th->lock();
 	uint8_t res;
@@ -369,12 +369,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
 	}
 
 	th->unlock();
-	ret.setBool(res!=0);
+	asAtomHandler::setBool(ret,res!=0);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	_NR<ByteArray> out;
 	uint32_t offset;
 	uint32_t length;
@@ -433,7 +433,7 @@ bool ByteArray::readUTF(tiny_string& ret)
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUTF)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 
 	tiny_string res;
 	th->lock();
@@ -443,12 +443,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTF)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret = asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t length;
 
 	ARG_UNPACK_ATOM (length);
@@ -460,7 +460,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 	}
 	tiny_string res;
 	th->readUTFBytes(length,res);
-	ret = asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
 
 bool ByteArray::readUTFBytes(uint32_t length,tiny_string& ret)
@@ -507,22 +507,22 @@ void ByteArray::writeUTF(const tiny_string& str)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeUTF)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
-	assert_and_throw(args[0].isString());
+	assert_and_throw(asAtomHandler::isString(args[0]));
 	th->lock();
-	th->writeUTF(args[0].toString(sys));
+	th->writeUTF(asAtomHandler::toString(args[0],sys));
 	th->unlock();
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
-	assert_and_throw(args[0].isString());
-	tiny_string str=args[0].toString(sys);
+	assert_and_throw(asAtomHandler::isString(args[0]));
+	tiny_string str=asAtomHandler::toString(args[0],sys);
 	th->lock();
 	th->getBuffer(th->position+str.numBytes(),true);
 	memcpy(th->bytes+th->position,str.raw_buf(),str.numBytes());
@@ -532,7 +532,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	tiny_string value;
 	tiny_string charset;
 	ARG_UNPACK_ATOM(value)(charset);
@@ -562,11 +562,11 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeObject)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	th->lock();
-	th->writeObject(args[0].toObject(sys));
+	th->writeObject(asAtomHandler::toObject(args[0],sys));
 	th->unlock();
 }
 
@@ -580,7 +580,7 @@ void ByteArray::writeShort(uint16_t val)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeShort)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	int32_t value;
 	ARG_UNPACK_ATOM(value);
 
@@ -591,17 +591,17 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeShort)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeBytes)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	//Validate parameters
 	assert_and_throw(argslen>=1 && argslen<=3);
-	assert_and_throw(args[0].is<ByteArray>());
-	ByteArray* out=args[0].as<ByteArray>();
+	assert_and_throw(asAtomHandler::is<ByteArray>(args[0]));
+	ByteArray* out=asAtomHandler::as<ByteArray>(args[0]);
 	uint32_t offset=0;
 	uint32_t length=0;
 	if(argslen>=2)
-		offset=args[1].toUInt();
+		offset=asAtomHandler::toUInt(args[1]);
 	if(argslen==3)
-		length=args[2].toUInt();
+		length=asAtomHandler::toUInt(args[2]);
 
 	// We need to clamp offset to the beginning of the bytes array
 	if(offset > out->getLength()-1)
@@ -636,10 +636,10 @@ void ByteArray::writeBytes(uint8_t *data, int length)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeByte)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	int32_t value=args[0].toInt();
+	int32_t value=asAtomHandler::toInt(args[0]);
 
 	th->lock();
 	th->writeByte(value&0xff);
@@ -648,7 +648,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeByte)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeBoolean)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	bool b;
 	ARG_UNPACK_ATOM (b);
 
@@ -662,10 +662,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeBoolean)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeDouble)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	double value = args[0].toNumber();
+	double value = asAtomHandler::toNumber(args[0]);
 	uint64_t *intptr=reinterpret_cast<uint64_t*>(&value);
 	uint64_t value2=th->endianIn(*intptr);
 
@@ -678,10 +678,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeDouble)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeFloat)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	float value = args[0].toNumber();
+	float value = asAtomHandler::toNumber(args[0]);
 	uint32_t *intptr=reinterpret_cast<uint32_t*>(&value);
 	uint32_t value2=th->endianIn(*intptr);
 
@@ -694,10 +694,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeFloat)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeInt)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	uint32_t value=th->endianIn(static_cast<uint32_t>(args[0].toInt()));
+	uint32_t value=th->endianIn(static_cast<uint32_t>(asAtomHandler::toInt(args[0])));
 
 	th->lock();
 	th->getBuffer(th->position+4,true);
@@ -715,11 +715,11 @@ void ByteArray::writeUnsignedInt(uint32_t val)
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeUnsignedInt)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
 	th->lock();
-	uint32_t value=th->endianIn(args[0].toUInt());
+	uint32_t value=th->endianIn(asAtomHandler::toUInt(args[0]));
 	th->writeUnsignedInt(value);
 	th->unlock();
 }
@@ -772,7 +772,7 @@ bool ByteArray::readU29(uint32_t& ret)
 
 ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	th->lock();
@@ -783,12 +783,12 @@ ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret.setInt(sys,(int8_t)res);
+	asAtomHandler::setInt(ret,sys,(int8_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	th->lock();
@@ -805,12 +805,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 
 	double *doubleptr=reinterpret_cast<double*>(&res);
 	th->unlock();
-	ret.setNumber(sys,*doubleptr);
+	asAtomHandler::setNumber(ret,sys,*doubleptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	th->lock();
@@ -827,12 +827,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 
 	float *floatptr=reinterpret_cast<float*>(&res);
 	th->unlock();
-	ret.setNumber(sys,*floatptr);
+	asAtomHandler::setNumber(ret,sys,*floatptr);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	th->lock();
@@ -846,7 +846,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
 	th->unlock();
-	ret.setInt(sys,(int32_t)th->endianOut(res));
+	asAtomHandler::setInt(ret,sys,(int32_t)th->endianOut(res));
 }
 
 bool ByteArray::readShort(uint16_t& ret)
@@ -863,7 +863,7 @@ bool ByteArray::readShort(uint16_t& ret)
 
 ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	uint16_t res;
@@ -875,12 +875,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	}
 
 	th->unlock();
-	ret.setInt(sys,(int16_t)res);
+	asAtomHandler::setInt(ret,sys,(int16_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	uint8_t res;
@@ -890,7 +890,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-	ret.setUInt(sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 }
 
 bool ByteArray::readUnsignedInt(uint32_t& ret)
@@ -907,7 +907,7 @@ bool ByteArray::readUnsignedInt(uint32_t& ret)
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	uint32_t res;
@@ -918,12 +918,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret.setUInt(sys,res);
+	asAtomHandler::setUInt(ret,sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 
 	uint16_t res;
@@ -934,12 +934,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 		throwError<EOFError>(kEOFError);
 	}
 
-	ret.setUInt(sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t strlen;
 	tiny_string charset;
 	ARG_UNPACK_ATOM(strlen)(charset);
@@ -953,19 +953,19 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 
 	// TODO: should convert from charset to UTF-8
 	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset");
-	ret = asAtom::fromObject(abstract_s(sys,(char*)th->bytes+th->position,strlen));
+	ret = asAtomHandler::fromObject(abstract_s(sys,(char*)th->bytes+th->position,strlen));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 	th->lock();
 	if(th->bytes==NULL)
 	{
 		th->unlock();
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
-		ret.setUndefined();
+		asAtomHandler::setUndefined(ret);
 		return;
 		//throwError<EOFError>(kEOFError);
 	}
@@ -983,10 +983,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 		//TODO: throw AS exception
 	}
 
-	if(ret.isInvalid())
+	if(asAtomHandler::isInvalid(ret))
 	{
 		LOG(LOG_ERROR,"No objects in the AMF3 data. Returning Undefined");
-		ret.setUndefined();
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
 	ASATOM_INCREF(ret);
@@ -1076,7 +1076,7 @@ tiny_string parseUtf8(uint8_t* bytes, int32_t len)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	//check for Byte Order Mark
 	int start = 0;
 	if (th->len > 3)
@@ -1086,7 +1086,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	ret = asAtom::fromObject(abstract_s(sys,parseUtf8((uint8_t*)th->bytes+start,th->len-start)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,parseUtf8((uint8_t*)th->bytes+start,th->len-start)));
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
@@ -1113,10 +1113,10 @@ GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multina
 	if(index<len)
 	{
 		uint8_t value = bytes[index];
-		ret.setUInt(this->getSystemState(),static_cast<uint32_t>(value));
+		asAtomHandler::setUInt(ret,this->getSystemState(),static_cast<uint32_t>(value));
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
@@ -1154,7 +1154,7 @@ multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, C
 	}
 
 	// Fill the byte pointed to by index with the truncated uint value of the object.
-	uint8_t value = static_cast<uint8_t>(o.toUInt() & 0xff);
+	uint8_t value = static_cast<uint8_t>(asAtomHandler::toUInt(o) & 0xff);
 	bytes[index] = value;
 
 	ASATOM_DECREF(o);
@@ -1163,7 +1163,7 @@ multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, C
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
-	asAtom v = asAtom(value);
+	asAtom v = asAtomHandler::fromInt(value);
 	setVariableByMultiname(name, v,ASObject::CONST_NOT_ALLOWED);
 }
 
@@ -1383,7 +1383,7 @@ void ByteArray::uncompress_zlib()
 
 ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	// flash throws an error if compress is called with a compression algorithm,
 	// and always uses the zlib algorithm
 	// but tamarin tests do not catch it, so we simply ignore any parameters provided
@@ -1394,7 +1394,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	// flash throws an error if uncompress is called with a compression algorithm,
 	// and always uses the zlib algorithm
 	// but tamarin tests do not catch it, so we simply ignore any parameters provided
@@ -1405,7 +1405,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_deflate)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	th->lock();
 	th->compress_zlib();
 	th->unlock();
@@ -1413,7 +1413,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_deflate)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_inflate)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	th->lock();
 	th->uncompress_zlib();
 	th->unlock();
@@ -1421,7 +1421,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_inflate)
 
 ASFUNCTIONBODY_ATOM(ByteArray,clear)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	th->lock();
 	if(th->bytes)
 	{
@@ -1440,7 +1440,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,clear)
 // this seems to be how AS3 handles generic pop calls in Array class
 ASFUNCTIONBODY_ATOM(ByteArray,pop)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint8_t res = 0;
 	th->lock();
 	if (th->readByte(res))
@@ -1449,29 +1449,29 @@ ASFUNCTIONBODY_ATOM(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	ret.setUInt(sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 	
 }
 
 // this seems to be how AS3 handles generic push calls in Array class
 ASFUNCTIONBODY_ATOM(ByteArray,push)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj.getObject());
+	ByteArray* th=static_cast<ByteArray*>(asAtomHandler::getObject(obj));
 	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
-		th->bytes[th->len+i] = (uint8_t)args[i].toInt();
+		th->bytes[th->len+i] = (uint8_t)asAtomHandler::toInt(args[i]);
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	ret.setUInt(sys,res);
+	asAtomHandler::setUInt(ret,sys,res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
 ASFUNCTIONBODY_ATOM(ByteArray,shift)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint8_t res = 0;
 	th->lock();
 	if (th->readByte(res))
@@ -1480,28 +1480,28 @@ ASFUNCTIONBODY_ATOM(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	ret.setUInt(sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
 ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	th->lock();
 	th->getBuffer(th->len+argslen,true);
 	for (unsigned int i = 0; i < argslen; i++)
 	{
 		memmove((th->bytes+argslen),(th->bytes),th->len);
-		th->bytes[i] = (uint8_t)args[i].toInt();
+		th->bytes[i] = (uint8_t)asAtomHandler::toInt(args[i]);
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	ret.setUInt(sys,res);
+	asAtomHandler::setUInt(ret,sys,res);
 }
 ASFUNCTIONBODY_GETTER(ByteArray,shareable);
 ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	bool value;
 	ARG_UNPACK_ATOM(value);
 	if (!th->shareable)
@@ -1509,7 +1509,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
 }
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 
 	int32_t byteindex,expectedValue,newvalue;
 	ARG_UNPACK_ATOM(byteindex)(expectedValue)(newvalue);
@@ -1532,11 +1532,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 		memcpy(th->bytes+byteindex,&newvalue,4);
 	}
 	th->unlock();
-	ret.setInt(sys,res);
+	asAtomHandler::setInt(ret,sys,res);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 {
-	ByteArray* th=obj.as<ByteArray>();
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	int32_t expectedLength,newLength;
 	ARG_UNPACK_ATOM(expectedLength)(newLength);
 
@@ -1547,12 +1547,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 		th->setLength(newLength);
 	}
 	th->unlock();
-	ret.setInt(sys,res);
+	asAtomHandler::setInt(ret,sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toJSON)
 {
-	ret = asAtom::fromString(sys,"ByteArray");
+	ret = asAtomHandler::fromString(sys,"ByteArray");
 }
 
 void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -53,7 +53,7 @@ ASFUNCTIONBODY_ATOM(Mouse, show)
 
 ASFUNCTIONBODY_ATOM(Mouse, getCursor)
 {
-	ret = asAtom::fromString(sys,"auto");
+	ret = asAtomHandler::fromString(sys,"auto");
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, setCursor)
@@ -66,12 +66,12 @@ ASFUNCTIONBODY_ATOM(Mouse, setCursor)
 
 ASFUNCTIONBODY_ATOM(Mouse, getSupportsCursor)
 {
-	ret.setBool(true);
+	asAtomHandler::setBool(ret,true);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getSupportsNativeCursor)
 {
-	ret.setBool(false); // until registerCursor() is implemented
+	asAtomHandler::setBool(ret,false); // until registerCursor() is implemented
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
@@ -84,11 +84,11 @@ ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
 void MouseCursor::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableAtomByQName("ARROW",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"arrow"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("AUTO",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"auto"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BUTTON",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"button"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("HAND",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"hand"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("IBEAM",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ibeam"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ARROW",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"arrow"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("AUTO",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BUTTON",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"button"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("HAND",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"hand"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("IBEAM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ibeam"),CONSTANT_TRAIT);
 }
 MouseCursorData::MouseCursorData(Class_base *c):ASObject(c),frameRate(0)
 {

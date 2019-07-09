@@ -52,11 +52,11 @@ void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setVariableAtomByQName("CASEINSENSITIVE",nsNameAndKind(),asAtom(CASEINSENSITIVE),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("DESCENDING",nsNameAndKind(),asAtom(DESCENDING),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NUMERIC",nsNameAndKind(),asAtom(NUMERIC),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RETURNINDEXEDARRAY",nsNameAndKind(),asAtom(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("UNIQUESORT",nsNameAndKind(),asAtom(UNIQUESORT),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CASEINSENSITIVE",nsNameAndKind(),asAtomHandler::fromUInt(CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DESCENDING",nsNameAndKind(),asAtomHandler::fromUInt(DESCENDING),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NUMERIC",nsNameAndKind(),asAtomHandler::fromUInt(NUMERIC),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RETURNINDEXEDARRAY",nsNameAndKind(),asAtomHandler::fromUInt(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("UNIQUESORT",nsNameAndKind(),asAtomHandler::fromUInt(UNIQUESORT),CONSTANT_TRAIT);
 
 	// properties
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,true);
@@ -85,7 +85,7 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("insertAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertAt,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),removeAt,1),NORMAL_METHOD,true);
 
-	c->prototype->setVariableAtomByQName("length",nsNameAndKind(),asAtom(0),CONSTANT_TRAIT);
+	c->prototype->setVariableAtomByQName("length",nsNameAndKind(),asAtomHandler::fromUInt(0),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("filter","",Class<IFunction>::getFunction(c->getSystemState(),filter,1),DYNAMIC_TRAIT);
@@ -116,7 +116,7 @@ void Array::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(Array,_constructor)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	th->constructorImpl(args, argslen);
 }
 
@@ -124,16 +124,16 @@ ASFUNCTIONBODY_ATOM(Array,generator)
 {
 	Array* th=Class<Array>::getInstanceSNoArgs(sys);
 	th->constructorImpl(args, argslen);
-	ret = asAtom::fromObject(th);
+	ret = asAtomHandler::fromObject(th);
 }
 
 void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 {
-	if(argslen==1 && (args[0].is<Integer>() || args[0].is<UInteger>() || args[0].is<Number>()))
+	if(argslen==1 && (asAtomHandler::is<Integer>(args[0]) || asAtomHandler::is<UInteger>(args[0]) || asAtomHandler::is<Number>(args[0])))
 	{
-		uint32_t size = args[0].toUInt();
-		if ((number_t)size != args[0].toNumber())
-			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(args[0].toNumber()));
+		uint32_t size = asAtomHandler::toUInt(args[0]);
+		if ((number_t)size != asAtomHandler::toNumber(args[0]))
+			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(asAtomHandler::toNumber(args[0])));
 		LOG_CALL(_("Creating array of length ") << size);
 		resize(size);
 	}
@@ -150,7 +150,7 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 
 ASFUNCTIONBODY_ATOM(Array,_concat)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	Array* res=Class<Array>::getInstanceSNoArgs(sys);
 	
 	// copy values into new array
@@ -170,12 +170,12 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 
 	for(unsigned int i=0;i<argslen;i++)
 	{
-		if (args[i].is<Array>())
+		if (asAtomHandler::is<Array>(args[i]))
 		{
 			// Insert the contents of the array argument
 			uint64_t oldSize=res->currentsize;
 			uint64_t newSize=oldSize;
-			Array* otherArray=args[i].as<Array>();
+			Array* otherArray=asAtomHandler::as<Array>(args[i]);
 			auto itother1=otherArray->data_first.begin();
 			for(;itother1!=otherArray->data_first.end(); ++itother1)
 			{
@@ -196,39 +196,39 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 			res->push(args[i]);
 		}
 	}
-	ret = asAtom::fromObject(res);
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,filter)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	Array* res=Class<Array>::getInstanceSNoArgs(sys);
 	_NR<IFunction> func;
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(func);
 	if (func.isNull() || th->currentsize == 0)
 	{
-		ret = asAtom::fromObject(res);
+		ret = asAtomHandler::fromObject(res);
 		return;
 	}
-	f = asAtom::fromObject(func.getPtr());
+	f = asAtomHandler::fromObject(func.getPtr());
 	
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"filter",th->getClass()->getQualifiedClassName());
 
 	asAtom params[3];
-	asAtom funcRet;
+	asAtom funcRet=asAtomHandler::invalidAtom;
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
-	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
 	while (index < th->currentsize)
 	{
 		index++;
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.isInvalid())
+			if (asAtomHandler::isInvalid(a))
 				continue;
 			params[0] = a;
 		}
@@ -240,8 +240,8 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 			params[0] = it->second;
 		}
 
-		params[1] = asAtom(index-1);
-		params[2] = asAtom::fromObject(th);
+		params[1] = asAtomHandler::fromUInt(index-1);
+		params[2] = asAtomHandler::fromObject(th);
 
 		// ensure that return values are the original values
 		asAtom origval = params[0];
@@ -249,15 +249,15 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		if(argslen==1)
 		{
 			ASATOM_INCREF(closure);
-			f.callFunction(funcRet,closure, params, 3,false);
+			asAtomHandler::callFunction(f,funcRet,closure, params, 3,false);
 		}
 		else
 		{
-			f.callFunction(funcRet,args[1], params, 3,false);
+			asAtomHandler::callFunction(f,funcRet,args[1], params, 3,false);
 		}
-		if(funcRet.isValid())
+		if(asAtomHandler::isValid(funcRet))
 		{
-			if(funcRet.Boolean_concrete())
+			if(asAtomHandler::Boolean_concrete(funcRet))
 				res->push(origval);
 			ASATOM_DECREF(funcRet);
 		}
@@ -265,21 +265,21 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	}
 	ASATOM_DECREF(f);
 
-	ret = asAtom::fromObject(res);
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Array, some)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(func);
 	if (func.isNull() || th->currentsize == 0)
 	{
-		ret.setBool(false);
+		asAtomHandler::setBool(ret,false);
 		return;
 	}
-	f = asAtom::fromObject(func.getPtr());
+	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"some",th->getClass()->getQualifiedClassName());
@@ -288,14 +288,14 @@ ASFUNCTIONBODY_ATOM(Array, some)
 
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
-	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
 	while (index < th->currentsize)
 	{
 		index++;
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.isInvalid())
+			if (asAtomHandler::isInvalid(a))
 				continue;
 			params[0] = a;
 		}
@@ -306,20 +306,20 @@ ASFUNCTIONBODY_ATOM(Array, some)
 				continue;
 			params[0] = it->second;
 		}
-		params[1] = asAtom(index-1);
-		params[2] = asAtom::fromObject(th);
+		params[1] = asAtomHandler::fromUInt(index-1);
+		params[2] = asAtomHandler::fromObject(th);
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,closure, params, 3,false);
+			asAtomHandler::callFunction(f,ret,closure, params, 3,false);
 		}
 		else
 		{
-			f.callFunction(ret,args[1], params, 3,false);
+			asAtomHandler::callFunction(f,ret,args[1], params, 3,false);
 		}
-		if(ret.isValid())
+		if(asAtomHandler::isValid(ret))
 		{
-			if(ret.Boolean_concrete())
+			if(asAtomHandler::Boolean_concrete(ret))
 			{
 				ASATOM_DECREF(f);
 				return;
@@ -328,28 +328,28 @@ ASFUNCTIONBODY_ATOM(Array, some)
 		}
 	}
 	ASATOM_DECREF(f);
-	ret.setBool(false);
+	asAtomHandler::setBool(ret,false);
 }
 
 ASFUNCTIONBODY_ATOM(Array, every)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(func);
 	if (func.isNull() || th->currentsize == 0)
 	{
-		ret.setBool(true);
+		asAtomHandler::setBool(ret,true);
 		return;
 	}
-	f = asAtom::fromObject(func.getPtr());
+	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"every",th->getClass()->getQualifiedClassName());
 
 	asAtom params[3];
 	ASATOM_INCREF(f);
-	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
 
 	uint32_t index = 0;
 	while (index < th->currentsize)
@@ -358,7 +358,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.isInvalid())
+			if (asAtomHandler::isInvalid(a))
 				continue;
 			params[0] = a;
 		}
@@ -369,20 +369,20 @@ ASFUNCTIONBODY_ATOM(Array, every)
 				continue;
 			params[0] = it->second;
 		}
-		params[1] = asAtom(index-1);
-		params[2] = asAtom::fromObject(th);
+		params[1] = asAtomHandler::fromUInt(index-1);
+		params[2] = asAtomHandler::fromObject(th);
 
 		if(argslen==1)
 		{
-			f.callFunction(ret,closure, params, 3,false);
+			asAtomHandler::callFunction(f,ret,closure, params, 3,false);
 		}
 		else
 		{
-			f.callFunction(ret,args[1], params, 3,false);
+			asAtomHandler::callFunction(f,ret,args[1], params, 3,false);
 		}
-		if(ret.isValid())
+		if(asAtomHandler::isValid(ret))
 		{
-			if(!ret.Boolean_concrete())
+			if(!asAtomHandler::Boolean_concrete(ret))
 			{
 				ASATOM_DECREF(f);
 				return;
@@ -391,20 +391,20 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		}
 	}
 	ASATOM_DECREF(f);
-	ret.setBool(true);
+	asAtomHandler::setBool(ret,true);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_getLength)
 {
-	Array* th=obj.as<Array>();
-	ret.setUInt(sys,th->currentsize);
+	Array* th=asAtomHandler::as<Array>(obj);
+	asAtomHandler::setUInt(ret,sys,th->currentsize);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_setLength)
 {
 	uint32_t newLen;
 	ARG_UNPACK_ATOM(newLen);
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	if (th->getClass() && th->getClass()->isSealed)
 		return;
 	//If newLen is equal to size do nothing
@@ -415,21 +415,21 @@ ASFUNCTIONBODY_ATOM(Array,_setLength)
 
 ASFUNCTIONBODY_ATOM(Array,forEach)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(func);
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 	if (func.isNull() || th->currentsize == 0)
 		return;
-	f = asAtom::fromObject(func.getPtr());
+	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"foreach",th->getClass()->getQualifiedClassName());
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
-	asAtom closure = f.getClosure() ? asAtom::fromObject(f.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
 	uint32_t index = 0;
 	uint32_t s = th->size(); // remember current size, as it may change inside the called function
 	while (index < s)
@@ -438,7 +438,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if (a.isInvalid())
+			if (asAtomHandler::isInvalid(a))
 				continue;
 			else
 				params[0] = a;
@@ -451,17 +451,17 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 			else
 				params[0]=it->second;
 		}
-		params[1] = asAtom(index-1);
-		params[2] = asAtom::fromObject(th);
+		params[1] = asAtomHandler::fromUInt(index-1);
+		params[2] = asAtomHandler::fromObject(th);
 
-		asAtom funcret;
+		asAtom funcret=asAtomHandler::invalidAtom;
 		if(argslen == 1 )
 		{
-			f.callFunction(funcret,closure, params, 3,false);
+			asAtomHandler::callFunction(f,funcret,closure, params, 3,false);
 		}
 		else
 		{
-			f.callFunction(funcret,args[1], params, 3,false);
+			asAtomHandler::callFunction(f,funcret,args[1], params, 3,false);
 		}
 		ASATOM_DECREF(funcret);
 	}
@@ -470,7 +470,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 
 ASFUNCTIONBODY_ATOM(Array, _reverse)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 
 	if (th->data_second.empty())
 		std::reverse(th->data_first.begin(),th->data_first.end());
@@ -491,23 +491,23 @@ ASFUNCTIONBODY_ATOM(Array, _reverse)
 		}
 	}
 	th->incRef();
-	ret = asAtom::fromObject(th);
+	ret = asAtomHandler::fromObject(th);
 }
 
 ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"lastIndexOf",th->getClass()->getQualifiedClassName());
 	number_t index;
-	asAtom arg0;
+	asAtom arg0=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(arg0) (index, 0x7fffffff);
 	int32_t res=-1;
 
 	if(argslen == 1 && th->currentsize == 0)
 	{
-		ret.setInt(sys,(int32_t)-1);
+		asAtomHandler::setInt(ret,sys,(int32_t)-1);
 		return;
 	}
 
@@ -515,7 +515,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 
 	if(std::isnan(index))
 	{
-		ret.setInt(sys,(int32_t)0);
+		asAtomHandler::setInt(ret,sys,(int32_t)0);
 		return;
 	}
 
@@ -524,7 +524,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	{
 		if((size_t)-j > th->size())
 		{
-			ret.setInt(sys,(int32_t)-1);
+			asAtomHandler::setInt(ret,sys,(int32_t)-1);
 			return;
 		}
 		else
@@ -539,7 +539,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	}
 	do
 	{
-		asAtom a;
+		asAtom a=asAtomHandler::invalidAtom;
 		if ( i >= ARRAY_SIZE_THRESHOLD)
 		{
 			auto it = th->data_second.find(i);
@@ -550,10 +550,10 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 		else
 		{
 			a = th->data_first[i];
-			if (a.isInvalid())
+			if (asAtomHandler::isInvalid(a))
 				continue;
 		}
-		if(a.isEqualStrict(th->getSystemState(),arg0))
+		if(asAtomHandler::isEqualStrict(a,th->getSystemState(),arg0))
 		{
 			res=i;
 			break;
@@ -561,20 +561,20 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	}
 	while(i--);
 
-	ret.setInt(sys,res);
+	asAtomHandler::setInt(ret,sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,shift)
 {
-	if (!obj.is<Array>())
+	if (!asAtomHandler::is<Array>(obj))
 	{
 		// this seems to be how Flash handles the generic shift calls
-		if (obj.is<Vector>())
+		if (asAtomHandler::is<Vector>(obj))
 		{
 			Vector::shift(ret,sys,obj,args,argslen);
 			return;
 		}
-		if (obj.is<ByteArray>())
+		if (asAtomHandler::is<ByteArray>(obj))
 		{
 			ByteArray::shift(ret,sys,obj,args,argslen);
 			return;
@@ -586,25 +586,25 @@ ASFUNCTIONBODY_ATOM(Array,shift)
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(sys,AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		asAtom o;
-		obj.getObject()->getVariableByMultiname(o,lengthName,SKIP_IMPL);
-		uint32_t res = o.toUInt();
-		asAtom v = asAtom(res-1);
+		asAtom o=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL);
+		uint32_t res = asAtomHandler::toUInt(o);
+		asAtom v = asAtomHandler::fromUInt(res-1);
 		if (res > 0)
-			obj.getObject()->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
-		ret.setUndefined();
+			asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	if(!th->size())
 	{
-		ret.setUndefined();
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
 	if (th->data_first.size() > 0)
 		ret = th->data_first[0];
-	if (ret.isInvalid())
-		ret = asAtom::undefinedAtom;
+	if (asAtomHandler::isInvalid(ret))
+		ret = asAtomHandler::undefinedAtom;
 	if (th->data_first.size() > 0)
 		th->data_first.erase(th->data_first.begin());
 
@@ -646,7 +646,7 @@ int Array::capIndex(int i)
 
 ASFUNCTIONBODY_ATOM(Array,slice)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	uint32_t startIndex;
 	uint32_t endIndex;
 
@@ -659,16 +659,16 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++) 
 	{
 		asAtom a = th->at((uint32_t)i);
-		if (a.isValid())
+		if (asAtomHandler::isValid(a))
 			res->push(a);
 		j++;
 	}
-	ret = asAtom::fromObject(res);
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,splice)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	int startIndex;
 	int deleteCount;
 	//By default, delete all the element up to the end
@@ -693,7 +693,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 		for(int i=0;i<deleteCount;i++)
 		{
 			asAtom a = th->at((uint32_t)startIndex+i);
-			if (a.isValid())
+			if (asAtomHandler::isValid(a))
 				res->set(i,a,false);
 		}
 		// delete items from current array
@@ -748,15 +748,15 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	th->resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0));
 	for(uint32_t i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
-		if (tmp[i].isValid())
+		if (asAtomHandler::isValid(tmp[i]))
 			th->set(startIndex+i+(argslen > 2 ? argslen-2 : 0),tmp[i],false);
 	}
-	ret =asAtom::fromObject(res);
+	ret =asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,join)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	string res;
 	tiny_string del;
 	ARG_UNPACK_ATOM(del, ",");
@@ -767,23 +767,23 @@ ASFUNCTIONBODY_ATOM(Array,join)
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		asAtom o = th->at(i);
-		if (!o.is<Undefined>() && !o.is<Null>())
-			res+= o.toString(sys).raw_buf();
+		if (!asAtomHandler::is<Undefined>(o) && !asAtomHandler::is<Null>(o))
+			res+= asAtomHandler::toString(o,sys).raw_buf();
 		if(i!=th->size()-1)
 			res+=del.raw_buf();
 	}
-	ret = asAtom::fromObject(abstract_s(th->getSystemState(),res));
+	ret = asAtomHandler::fromObject(abstract_s(th->getSystemState(),res));
 }
 
 ASFUNCTIONBODY_ATOM(Array,indexOf)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"indexOf",th->getClass()->getQualifiedClassName());
 	int32_t res=-1;
 	int32_t index;
-	asAtom arg0;
+	asAtom arg0=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(arg0) (index, 0);
 	if (index < 0) index = th->size()+ index;
 	if (index < 0) index = 0;
@@ -792,7 +792,7 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 	{
 		for (auto it=th->data_first.begin()+index ; it != th->data_first.end(); ++it )
 		{
-			if(it->isEqualStrict(sys,arg0))
+			if(asAtomHandler::isEqualStrict(*it,sys,arg0))
 			{
 				res=it - th->data_first.begin();
 				break;
@@ -805,28 +805,28 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 		{
 			if (it->first < (uint32_t)index)
 				continue;
-			if(it->second.isEqualStrict(sys,arg0))
+			if(asAtomHandler::isEqualStrict(it->second,sys,arg0))
 			{
 				res=it->first;
 				break;
 			}
 		}
 	}
-	ret.setInt(sys,res);
+	asAtomHandler::setInt(ret,sys,res);
 }
 
 
 ASFUNCTIONBODY_ATOM(Array,_pop)
 {
-	if (!obj.is<Array>())
+	if (!asAtomHandler::is<Array>(obj))
 	{
 		// this seems to be how Flash handles the generic pop calls
-		if (obj.is<Vector>())
+		if (asAtomHandler::is<Vector>(obj))
 		{
 			Vector::_pop(ret,sys,obj,args,argslen);
 			return;
 		}
-		if (obj.is<ByteArray>())
+		if (asAtomHandler::is<ByteArray>(obj))
 		{
 			ByteArray::pop(ret, sys,obj,args,argslen);
 			return;
@@ -838,18 +838,18 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(sys,AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		asAtom o;
-		obj.getObject()->getVariableByMultiname(o,lengthName,SKIP_IMPL);
-		uint32_t res = o.toUInt();
-		asAtom v = asAtom(res-1);
+		asAtom o=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL);
+		uint32_t res = asAtomHandler::toUInt(o);
+		asAtom v = asAtomHandler::fromUInt(res-1);
 		if (res > 0)
-			obj.getObject()->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
-		ret.setUndefined();
+			asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	uint32_t size =th->size();
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 	if (size == 0)
 		return;
 	
@@ -859,8 +859,8 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 		{
 			ret = *th->data_first.rbegin();
 			th->data_first.pop_back();
-			if (ret.isInvalid())
-				ret.setUndefined();
+			if (asAtomHandler::isInvalid(ret))
+				asAtomHandler::setUndefined(ret);
 		}
 	}
 	else
@@ -872,7 +872,7 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 			th->data_second.erase(it);
 		}
 		else
-			ret.setUndefined();
+			asAtomHandler::setUndefined(ret);
 	}
 	th->currentsize--;
 }
@@ -888,15 +888,15 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 		number_t b=numeric_limits<double>::quiet_NaN();
 		if (useoldversion)
 		{
-			a=o1.toInt() & 0x1fffffff;
-			b=o2.toInt() & 0x1fffffff;
+			a=asAtomHandler::toInt(o1) & 0x1fffffff;
+			b=asAtomHandler::toInt(o2) & 0x1fffffff;
 		}
 		else
 		{
-			a=o1.toNumber();
-			b=o2.toNumber();
+			a=asAtomHandler::toNumber(o1);
+			b=asAtomHandler::toNumber(o2);
 		}
-		if((!o1.isNumeric() && std::isnan(a)) || (!o2.isNumeric() && std::isnan(b)))
+		if((!asAtomHandler::isNumeric(o1) && std::isnan(a)) || (!asAtomHandler::isNumeric(o2) && std::isnan(b)))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
 			return b>a;
@@ -908,8 +908,8 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 		//Comparison is always in lexicographic order
 		tiny_string s1;
 		tiny_string s2;
-		s1=o1.toString(getSys());
-		s2=o2.toString(getSys());
+		s1=asAtomHandler::toString(o1,getSys());
+		s2=asAtomHandler::toString(o2,getSys());
 
 		if(isDescending)
 		{
@@ -978,35 +978,35 @@ number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d
 	objs[0]=d1;
 	objs[1]=d2;
 
-	assert(comparator.isFunction());
-	asAtom ret;
-	asAtom obj = comparator.getClosureAtom();
+	assert(asAtomHandler::isFunction(comparator));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::getClosureAtom(comparator);
 	// don't coerce the result, as it may be an int that would loose it's sign through coercion
-	comparator.callFunction(ret,obj, objs, 2,false,false);
-	assert_and_throw(ret.isValid());
-	return ret.toNumber();
+	asAtomHandler::callFunction(comparator,ret,obj, objs, 2,false,false);
+	assert_and_throw(asAtomHandler::isValid(ret));
+	return asAtomHandler::toNumber(ret);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_sort)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"sort",th->getClass()->getQualifiedClassName());
-	asAtom comp;
+	asAtom comp=asAtomHandler::invalidAtom;
 	bool isNumeric=false;
 	bool isCaseInsensitive=false;
 	bool isDescending=false;
 	for(uint32_t i=0;i<argslen;i++)
 	{
-		if(args[i].isFunction()) //Comparison func
+		if(asAtomHandler::isFunction(args[i])) //Comparison func
 		{
-			assert_and_throw(comp.isInvalid());
+			assert_and_throw(asAtomHandler::isInvalid(comp));
 			comp=args[i];
 		}
 		else
 		{
-			uint32_t options=args[i].toInt();
+			uint32_t options=asAtomHandler::toInt(args[i]);
 			if(options&NUMERIC)
 				isNumeric=true;
 			if(options&CASEINSENSITIVE)
@@ -1021,19 +1021,19 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
-		if (it1->isInvalid() || it1->isUndefined())
+		if (asAtomHandler::isInvalid(*it1) || asAtomHandler::isUndefined(*it1))
 			continue;
 		tmp.push_back(*it1);
 	}
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
 	{
-		if (it2->second.isInvalid() || it2->second.isUndefined())
+		if (asAtomHandler::isInvalid(it2->second) || asAtomHandler::isUndefined(it2->second))
 			continue;
 		tmp.push_back(it2->second);
 	}
 	
-	if(comp.isValid())
+	if(asAtomHandler::isValid(comp))
 	{
 		sortComparatorWrapper c(comp);
 		simplequicksortArray(tmp,c,0,tmp.size()-1);
@@ -1066,11 +1066,11 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
-			a=obj1.toNumber();
+			a=asAtomHandler::toNumber(obj1);
 			
-			b=obj2.toNumber();
+			b=asAtomHandler::toNumber(obj2);
 			
-			if((!obj1.isNumeric() && std::isnan(a)) || (!obj2.isNumeric() && std::isnan(b)))
+			if((!asAtomHandler::isNumeric(obj1) && std::isnan(a)) || (!asAtomHandler::isNumeric(obj2) && std::isnan(b)))
 				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 			if(it->isDescending)
 				return b>a;
@@ -1082,8 +1082,8 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1.toString(sys);
-			s2=obj2.toString(sys);
+			s1=asAtomHandler::toString(obj1,sys);
+			s2=asAtomHandler::toString(obj2,sys);
 			if (s1 != s2)
 			{
 				if(it->isDescending)
@@ -1111,11 +1111,11 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	if (argslen != 1 && argslen != 2)
 		throwError<ArgumentError>(kWrongArgumentCountError, "1",
 					  Integer::toString(argslen));
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	std::vector<sorton_field> sortfields;
-	if(args[0].is<Array>())
+	if(asAtomHandler::is<Array>(args[0]))
 	{
-		Array* obj=args[0].as<Array>();
+		Array* obj=asAtomHandler::as<Array>(args[0]);
 		int n = 0;
 		for(uint32_t i = 0;i<obj->size();i++)
 		{
@@ -1126,15 +1126,15 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 			sorton_field sf(sortfieldname);
 			sortfields.push_back(sf);
 		}
-		if (argslen == 2 && args[1].is<Array>())
+		if (argslen == 2 && asAtomHandler::is<Array>(args[1]))
 		{
-			Array* opts=args[1].as<Array>();
+			Array* opts=asAtomHandler::as<Array>(args[1]);
 			auto itopt=opts->data_first.begin();
 			int nopt = 0;
 			for(;itopt != opts->data_first.end() && nopt < n;++itopt)
 			{
 				uint32_t options=0;
-				options = itopt->toInt();
+				options = asAtomHandler::toInt(*itopt);
 				if(options&NUMERIC)
 					sortfields[nopt].isNumeric=true;
 				if(options&CASEINSENSITIVE)
@@ -1156,7 +1156,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 		sorton_field sf(sortfieldname);
 		if (argslen == 2)
 		{
-			uint32_t options = args[1].toInt();
+			uint32_t options = asAtomHandler::toInt(args[1]);
 			if(options&NUMERIC)
 				sf.isNumeric=true;
 			if(options&CASEINSENSITIVE)
@@ -1173,16 +1173,16 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
-		if (it1->isInvalid() || it1->isUndefined())
+		if (asAtomHandler::isInvalid(*it1) || asAtomHandler::isUndefined(*it1))
 			continue;
 		// ensure ASObjects are created
-		it1->toObject(sys);
+		asAtomHandler::toObject(*it1,sys);
 		
 		sorton_value v(*it1);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtom tmpval;
-			it1->getObject()->getVariableByMultiname(tmpval,itsf->fieldname);
+			asAtom tmpval=asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(*it1)->getVariableByMultiname(tmpval,itsf->fieldname);
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
@@ -1190,16 +1190,16 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
 	{
-		if (it2->second.isInvalid() || it2->second.isUndefined())
+		if (asAtomHandler::isInvalid(it2->second) || asAtomHandler::isUndefined(it2->second))
 			continue;
 		// ensure ASObjects are created
-		it2->second.toObject(sys);
+		asAtomHandler::toObject(it2->second,sys);
 		
 		sorton_value v(it2->second);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtom tmpval;
-			it2->second.getObject()->getVariableByMultiname(tmpval,itsf->fieldname);
+			asAtom tmpval=asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(it2->second)->getVariableByMultiname(tmpval,itsf->fieldname);
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
@@ -1222,15 +1222,15 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 
 ASFUNCTIONBODY_ATOM(Array,unshift)
 {
-	if (!obj.is<Array>())
+	if (!asAtomHandler::is<Array>(obj))
 	{
 		// this seems to be how Flash handles the generic unshift calls
-		if (obj.is<Vector>())
+		if (asAtomHandler::is<Vector>(obj))
 		{
 			Vector::unshift(ret,sys,obj,args,argslen);
 			return;
 		}
-		if (obj.is<ByteArray>())
+		if (asAtomHandler::is<ByteArray>(obj))
 		{
 			ByteArray::unshift(ret,sys,obj,args,argslen);
 			return;
@@ -1242,15 +1242,15 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(sys,AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		asAtom o;
-		obj.getObject()->getVariableByMultiname(o,lengthName,SKIP_IMPL);
-		uint32_t res = o.toUInt();
-		asAtom v = asAtom(res+argslen);
-		obj.getObject()->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
-		ret.setUndefined();
+		asAtom o=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL);
+		uint32_t res = asAtomHandler::toUInt(o);
+		asAtom v = asAtomHandler::fromUInt(res+argslen);
+		asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() > 12 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,"unshift",th->getClass()->getQualifiedClassName());
@@ -1279,20 +1279,20 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 			th->set(it->first,it->second,false);
 		}
 	}
-	ret.setUInt(sys,(int32_t)th->size());
+	asAtomHandler::setUInt(ret,sys,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_push)
 {
-	if (!obj.is<Array>())
+	if (!asAtomHandler::is<Array>(obj))
 	{
 		// this seems to be how Flash handles the generic push calls
-		if (obj.is<Vector>())
+		if (asAtomHandler::is<Vector>(obj))
 		{
 			Vector::push(ret,sys,obj,args,argslen);
 			return;
 		}
-		if (obj.is<ByteArray>())
+		if (asAtomHandler::is<ByteArray>(obj))
 		{
 			ByteArray::push(ret,sys,obj,args,argslen);
 			return;
@@ -1304,15 +1304,15 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(sys,AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		asAtom o;
-		obj.getObject()->getVariableByMultiname(o,lengthName,SKIP_IMPL);
-		uint32_t res = o.toUInt();
-		asAtom v = asAtom(res+argslen);
-		obj.getObject()->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
-		ret.setUndefined();
+		asAtom o=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL);
+		uint32_t res = asAtomHandler::toUInt(o);
+		asAtom v = asAtomHandler::fromUInt(res+argslen);
+		asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	uint64_t s = th->currentsize;
 	for(unsigned int i=0;i<argslen;i++)
 	{
@@ -1320,20 +1320,20 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 	}
 	// currentsize is set even if push fails
 	th->currentsize = s+argslen;
-	ret.setInt(sys,(int32_t)th->size());
+	asAtomHandler::setInt(ret,sys,(int32_t)th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
 ASFUNCTIONBODY_ATOM(Array,_push_as3)
 {
-	if (!obj.is<Array>())
+	if (!asAtomHandler::is<Array>(obj))
 	{
 		// this seems to be how Flash handles the generic push calls
-		if (obj.is<Vector>())
+		if (asAtomHandler::is<Vector>(obj))
 		{
 			Vector::push(ret,sys,obj,args,argslen);
 			return;
 		}
-		if (obj.is<ByteArray>())
+		if (asAtomHandler::is<ByteArray>(obj))
 		{
 			ByteArray::push(ret,sys,obj,args,argslen);
 			return;
@@ -1345,40 +1345,40 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 		lengthName.ns.push_back(nsNameAndKind(sys,AS3,NAMESPACE));
 		lengthName.isAttribute = true;
-		asAtom o;
-		obj.getObject()->getVariableByMultiname(o,lengthName,SKIP_IMPL);
-		uint32_t res = o.toUInt();
-		asAtom v = asAtom(res+argslen);
-		obj.getObject()->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
-		ret.setUndefined();
+		asAtom o=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL);
+		uint32_t res = asAtomHandler::toUInt(o);
+		asAtom v = asAtomHandler::fromUInt(res+argslen);
+		asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED);
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		if (th->size() >= UINT32_MAX)
 			break;
 		th->push(args[i]);
 	}
-	ret.setInt(sys,(int32_t)th->size());
+	asAtomHandler::setInt(ret,sys,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_map)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 
 	if(argslen < 1)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Array.map", "1", Integer::toString(argslen));
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"map",th->getClass()->getQualifiedClassName());
-	asAtom func;
-	if (!args[0].is<RegExp>())
+	asAtom func=asAtomHandler::invalidAtom;
+	if (!asAtomHandler::is<RegExp>(args[0]))
 	{
-		assert_and_throw(args[0].isFunction());
+		assert_and_throw(asAtomHandler::isFunction(args[0]));
 		func=args[0];
 	}
-	asAtom closure = func.isValid() && func.getClosure() ? asAtom::fromObject(func.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::isValid(func) && asAtomHandler::getClosure(func) ? asAtomHandler::fromObject(asAtomHandler::getClosure(func)) : asAtomHandler::nullAtom;
 	
 	Array* arrayRet=Class<Array>::getInstanceSNoArgs(th->getSystemState());
 
@@ -1391,84 +1391,84 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		if (index <= ARRAY_SIZE_THRESHOLD)
 		{
 			asAtom& a =th->data_first.at(index-1);
-			if(a.isValid())
+			if(asAtomHandler::isValid(a))
 				params[0] = a;
 			else
-				params[0]=asAtom::undefinedAtom;
+				params[0]=asAtomHandler::undefinedAtom;
 		}
 		else
 		{
 			auto it=th->data_second.find(index);
-			if(it->second.isValid())
+			if(asAtomHandler::isValid(it->second))
 				params[0]=it->second;
 			else
-				params[0]=asAtom::undefinedAtom;
+				params[0]=asAtomHandler::undefinedAtom;
 		}
-		params[1] = asAtom(index-1);
-		params[2] = asAtom::fromObject(th);
-		asAtom funcRet;
-		if (func.isValid())
+		params[1] = asAtomHandler::fromUInt(index-1);
+		params[2] = asAtomHandler::fromObject(th);
+		asAtom funcRet=asAtomHandler::invalidAtom;
+		if (asAtomHandler::isValid(func))
 		{
-			func.callFunction(funcRet,argslen > 1? args[1] : closure, params, 3,false);
+			asAtomHandler::callFunction(func,funcRet,argslen > 1? args[1] : closure, params, 3,false);
 		}
 		else
 		{
 			RegExp::exec(funcRet,sys,args[0],args,1);
 		}
-		assert_and_throw(funcRet.isValid());
+		assert_and_throw(asAtomHandler::isValid(funcRet));
 		arrayRet->push(funcRet);
 	}
 
-	ret = asAtom::fromObject(arrayRet);
+	ret = asAtomHandler::fromObject(arrayRet);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_toString)
 {
-	if(obj.getObject() == Class<Number>::getClass(sys)->prototype->getObj())
+	if(asAtomHandler::getObject(obj) == Class<Number>::getClass(sys)->prototype->getObj())
 	{
-		ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
-	if(!obj.is<Array>())
+	if(!asAtomHandler::is<Array>(obj))
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toString");
-		ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
 	
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"toString",th->getClass()->getQualifiedClassName());
-	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv()));
+	ret = asAtomHandler::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
 ASFUNCTIONBODY_ATOM(Array,_toLocaleString)
 {
-	if(obj.getObject() == Class<Number>::getClass(sys)->prototype->getObj())
+	if(asAtomHandler::getObject(obj) == Class<Number>::getClass(sys)->prototype->getObj())
 	{
-		ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
-	if(!obj.is<Array>())
+	if(!asAtomHandler::is<Array>(obj))
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toLocaleString");
-		ret = asAtom::fromStringID(BUILTIN_STRINGS::EMPTY);
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
 	
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError,"toLocaleString",th->getClass()->getQualifiedClassName());
-	ret = asAtom::fromObject(abstract_s(sys,th->toString_priv(true)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,th->toString_priv(true)));
 }
 
 ASFUNCTIONBODY_ATOM(Array,insertAt)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	int32_t index;
-	asAtom o;
+	asAtom o=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(index)(o);
 	if (index < 0 && th->currentsize >= (uint32_t)(-index))
 		index = th->currentsize+(index);
@@ -1508,21 +1508,21 @@ ASFUNCTIONBODY_ATOM(Array,insertAt)
 
 ASFUNCTIONBODY_ATOM(Array,removeAt)
 {
-	Array* th=obj.as<Array>();
+	Array* th=asAtomHandler::as<Array>(obj);
 	int32_t index;
 	ARG_UNPACK_ATOM(index);
 	if (index < 0)
 		index = th->currentsize+index;
 	if (index < 0)
 		index = 0;
-	ret.setUndefined();
+	asAtomHandler::setUndefined(ret);
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		if ((uint32_t)index < th->data_first.size())
 		{
 			ret = th->data_first[index];
-			if (ret.isInvalid())
-				ret.setUndefined();
+			if (asAtomHandler::isInvalid(ret))
+				asAtomHandler::setUndefined(ret);
 			th->data_first.erase(th->data_first.begin()+index);
 		}
 	}
@@ -1532,8 +1532,8 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 		if(it != th->data_second.end())
 		{
 			ret = it->second;
-			if (ret.isInvalid())
-				ret.setUndefined();
+			if (asAtomHandler::isInvalid(ret))
+				asAtomHandler::setUndefined(ret);
 			th->data_second.erase(it);
 		}
 	}
@@ -1562,12 +1562,12 @@ int32_t Array::getVariableByMultiname_i(const multiname& name)
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)
 		{
-			return data_first.size() > index ? data_first.at(index).toInt() : 0;
+			return data_first.size() > index ? asAtomHandler::toInt(data_first.at(index)) : 0;
 		}
 		auto it = data_second.find(index);
 		if (it == data_second.end())
 			return 0;
-		return it->second.toInt();
+		return asAtomHandler::toInt(it->second);
 	}
 
 	return ASObject::getVariableByMultiname_i(name);
@@ -1601,7 +1601,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 			ret = data_first.at(index);
 			if (!(opt & NO_INCREF))
 				ASATOM_INCREF(ret);
-			if (ret.isValid())
+			if (asAtomHandler::isValid(ret))
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		}
 	}
@@ -1620,13 +1620,13 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		while(proto)
 		{
 			GET_VARIABLE_RESULT res = proto->getObj()->getVariableByMultiname(ret,name, opt);
-			if(ret.isValid())
+			if(asAtomHandler::isValid(ret))
 				return res;
 			proto = proto->prevPrototype.getPtr();
 		}
 	}
 	if(index<size())
-		ret.setUndefined();
+		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
@@ -1641,7 +1641,7 @@ void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 	}
 	if(index>=size())
 		resize(index+1);
-	asAtom v(value);
+	asAtom v = asAtomHandler::fromInt(value);
 	set(index,v,false);
 }
 
@@ -1662,7 +1662,7 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 		return false;
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
-		return data_first.size() > index ? (data_first.at(index).isValid()) : false;
+		return data_first.size() > index ? (asAtomHandler::isValid(data_first.at(index))) : false;
 	}
 	
 	return (data_second.find(index) != data_second.end());
@@ -1754,7 +1754,7 @@ bool Array::deleteVariableByMultiname(const multiname& name)
 	if (index < data_first.size())
 	{
 		ASATOM_DECREF(data_first.at(index));
-		data_first[index]=asAtom::invalidAtom;
+		data_first[index]=asAtomHandler::invalidAtom;
 		return true;
 	}
 	
@@ -1796,7 +1796,7 @@ tiny_string Array::toString_priv(bool localized)
 	string ret;
 	for(uint32_t i=0;i<size();i++)
 	{
-		asAtom sl;
+		asAtom sl=asAtomHandler::invalidAtom;
 		if (i < ARRAY_SIZE_THRESHOLD)
 		{
 			if (i < data_first.size())
@@ -1808,12 +1808,12 @@ tiny_string Array::toString_priv(bool localized)
 			if(it != data_second.end())
 				sl = it->second;
 		}
-		if(sl.isValid() && !sl.isNull() && !sl.isUndefined())
+		if(asAtomHandler::isValid(sl) && !asAtomHandler::isNull(sl) && !asAtomHandler::isUndefined(sl))
 		{
 			if (localized)
-				ret += sl.toLocaleString().raw_buf();
+				ret += asAtomHandler::toLocaleString(sl).raw_buf();
 			else
-				ret += sl.toString(getSystemState()).raw_buf();
+				ret += asAtomHandler::toString(sl,getSystemState()).raw_buf();
 		}
 		if(i!=size()-1)
 			ret+=',';
@@ -1833,12 +1833,12 @@ void Array::nextValue(asAtom& ret,uint32_t index)
 		{
 			auto it = data_second.find(index);
 			if(it == data_second.end() || it->first != index)
-				ret.setUndefined();
+				asAtomHandler::setUndefined(ret);
 			else
 				ret = it->second;
 		}
-		if(ret.isInvalid())
-			ret.setUndefined();
+		if(asAtomHandler::isInvalid(ret))
+			asAtomHandler::setUndefined(ret);
 		else
 		{
 			ASATOM_INCREF(ret);
@@ -1858,7 +1858,7 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 	if(cur_index<s)
 	{
 		uint32_t firstsize = data_first.size();
-		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<s && cur_index < firstsize && data_first.at(cur_index).isInvalid())
+		while (cur_index < ARRAY_SIZE_THRESHOLD && cur_index<s && cur_index < firstsize && asAtomHandler::isInvalid(data_first.at(cur_index)))
 		{
 			cur_index++;
 		}
@@ -1885,7 +1885,7 @@ void Array::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		ret.setUInt(this->getSystemState(),index-1);
+		asAtomHandler::setUInt(ret,this->getSystemState(),index-1);
 	else
 	{
 		//Fall back on object properties
@@ -1898,7 +1898,7 @@ asAtom Array::at(unsigned int index)
 	if(size()<=index)
 		outofbounds(index);
 	
-	asAtom ret;
+	asAtom ret=asAtomHandler::invalidAtom;
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		if (index < data_first.size())
@@ -1910,11 +1910,11 @@ asAtom Array::at(unsigned int index)
 		if (it != data_second.end())
 			ret = it->second;
 	}
-	if(ret.isValid())
+	if(asAtomHandler::isValid(ret))
 	{
 		return ret;
 	}
-	return asAtom::undefinedAtom;
+	return asAtomHandler::undefinedAtom;
 }
 
 void Array::outofbounds(unsigned int index) const
@@ -1984,17 +1984,17 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		{
 			if (i < ARRAY_SIZE_THRESHOLD)
 			{
-				if (data_first.at(i).isInvalid())
+				if (asAtomHandler::isInvalid(data_first.at(i)))
 					out->writeByte(null_marker);
 				else
-					data_first.at(i).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+					asAtomHandler::toObject(data_first.at(i),getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 			}
 			else
 			{
 				if (data_second.find(i) == data_second.end())
 					out->writeByte(null_marker);
 				else
-					data_second.at(i).toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+					asAtomHandler::toObject(data_second.at(i),getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 			}
 		}
 	}
@@ -2015,11 +2015,11 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	uint32_t denseCount = currentsize;
-	asAtom closure = replacer.isValid() && replacer.getClosure() ? asAtom::fromObject(replacer.getClosure()) : asAtom::nullAtom;
+	asAtom closure = asAtomHandler::isValid(replacer) && asAtomHandler::getClosure(replacer) ? asAtomHandler::fromObject(asAtomHandler::getClosure(replacer)) : asAtomHandler::nullAtom;
 	
 	for (uint32_t i=0 ; i < denseCount; i++)
 	{
-		asAtom a;
+		asAtom a=asAtomHandler::invalidAtom;
 		if ( i < ARRAY_SIZE_THRESHOLD)
 			a = data_first.at(i);
 		else
@@ -2029,20 +2029,20 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 				a = it->second;
 		}
 		tiny_string subres;
-		if (replacer.isValid() && a.isValid())
+		if (asAtomHandler::isValid(replacer) && asAtomHandler::isValid(a))
 		{
 			asAtom params[2];
 			
-			params[0] = asAtom(i);
+			params[0] = asAtomHandler::fromUInt(i);
 			params[1] = a;
-			asAtom funcret;
-			replacer.callFunction(funcret,closure, params, 2,false);
-			if (funcret.isValid())
-				subres = funcret.toObject(getSystemState())->toJSON(path,asAtom::invalidAtom,spaces,filter);
+			asAtom funcret=asAtomHandler::invalidAtom;
+			asAtomHandler::callFunction(replacer,funcret,closure, params, 2,false);
+			if (asAtomHandler::isValid(funcret))
+				subres = asAtomHandler::toObject(funcret,getSystemState())->toJSON(path,asAtomHandler::invalidAtom,spaces,filter);
 		}
 		else
 		{
-			ASObject* o = a.isInvalid() ? getSystemState()->getNullRef() : a.toObject(getSystemState());
+			ASObject* o = asAtomHandler::isInvalid(a) ? getSystemState()->getNullRef() : asAtomHandler::toObject(a,getSystemState());
 			if (o)
 				subres = o->toJSON(path,replacer,spaces,filter);
 			else
@@ -2113,9 +2113,9 @@ uint64_t Array::size()
 		lengthName.isAttribute = false;
 		if (hasPropertyByMultiname(lengthName, true, true))
 		{
-			asAtom o;
+			asAtom o=asAtomHandler::invalidAtom;
 			getVariableByMultiname(o,lengthName,SKIP_IMPL);
-			return o.toUInt();
+			return asAtomHandler::toUInt(o);
 		}
 	}
 	return currentsize;

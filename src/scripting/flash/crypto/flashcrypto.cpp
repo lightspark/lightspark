@@ -32,5 +32,5 @@ ASFUNCTIONBODY_ATOM(lightspark,generateRandomBytes)
 
     for (uint32_t i = 0; i < numbytes; i++)
         res->writeByte((uint8_t)engine());
-    ret = asAtom::fromObject(res);
+    ret = asAtomHandler::fromObject(res);
 }

@@ -179,11 +179,11 @@ EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFun
 				return CANNOT_BIND;
 			}
 
-			const variable* var=it->object.toObject(f->getSystemState())->findVariableByMultiname(*name, FROM_GETLEX, it->object.toObject(f->getSystemState())->getClass());
+			const variable* var=asAtomHandler::toObject(it->object,f->getSystemState())->findVariableByMultiname(*name, FROM_GETLEX, asAtomHandler::toObject(it->object,f->getSystemState())->getClass());
 			if(var)
 			{
 				found=true;
-				inferredData.obj=it->object.toObject(f->getSystemState());
+				inferredData.obj=asAtomHandler::toObject(it->object,f->getSystemState());
 				break;
 			}
 		}
@@ -239,14 +239,14 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	ASObject* target;
 	//Now we should serach in the applicationDomain. The system domain is the first one searched. We can safely
 	//early bind for it, but not for custom domains, since we may change the expected order of evaluation
-	asAtom o;
+	asAtom o=asAtomHandler::invalidAtom;
 	f->getSystemState()->systemDomain->getVariableAndTargetByMultiname(o,*name, target);
-	if(o.isValid())
+	if(asAtomHandler::isValid(o))
 	{
 		//Output a special opcode
 		out << (uint8_t)PUSH_EARLY;
-		writePtr(out, o.toObject(f->getSystemState()));
-		ret.obj=o.getObject();
+		writePtr(out, asAtomHandler::toObject(o,f->getSystemState()));
+		ret.obj=asAtomHandler::getObject(o);
 		return ret;
 	}
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
@@ -989,9 +989,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 						if(objType)
 						{
 							const variable* var=objType->findBorrowedGettable(*name);
-							if(var && var->var.isFunction())
+							if(var && asAtomHandler::isFunction(var->var))
 							{
-								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->var.getObject());
+								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(asAtomHandler::getObject(var->var));
 								if(calledFunc)
 									inferredData.type=calledFunc->mi->returnType;
 							}

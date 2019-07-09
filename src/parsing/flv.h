@@ -28,7 +28,7 @@
 
 namespace lightspark
 {
-class asAtom;
+union asAtom;
 
 class FLV_HEADER
 {

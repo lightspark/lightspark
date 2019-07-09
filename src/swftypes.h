@@ -427,7 +427,7 @@ struct multiname: public memory_reporter
 
 	const tiny_string qualifiedString(SystemState *sys, bool forDescribeType=false) const;
 	/* sets name_type, name_s/name_d based on the object n */
-	void setName(class asAtom &n, SystemState *sys);
+	void setName(union asAtom &n, SystemState *sys);
 	void resetNameIfObject();
 	inline bool isQName() const { return ns.size() == 1; }
 	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=NULL) const;

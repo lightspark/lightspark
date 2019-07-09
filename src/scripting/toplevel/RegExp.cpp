@@ -61,12 +61,12 @@ void RegExp::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 {
-	RegExp* th=obj.as<RegExp>();
-	if(argslen > 0 && args[0].is<RegExp>())
+	RegExp* th=asAtomHandler::as<RegExp>(obj);
+	if(argslen > 0 && asAtomHandler::is<RegExp>(args[0]))
 	{
-		if(argslen > 1 && !args[1].is<Undefined>())
+		if(argslen > 1 && !asAtomHandler::is<Undefined>(args[1]))
 			throwError<TypeError>(kRegExpFlagsArgumentError);
-		RegExp *src=args[0].as<RegExp>();
+		RegExp *src=asAtomHandler::as<RegExp>(args[0]);
 		th->source=src->source;
 		th->dotall=src->dotall;
 		th->global=src->global;
@@ -76,10 +76,10 @@ ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 		return;
 	}
 	else if(argslen > 0)
-		th->source=args[0].toString(sys).raw_buf();
-	if(argslen>1 && !args[1].is<Undefined>())
+		th->source=asAtomHandler::toString(args[0],sys).raw_buf();
+	if(argslen>1 && !asAtomHandler::is<Undefined>(args[1]))
 	{
-		const tiny_string& flags=args[1].toString(sys);
+		const tiny_string& flags=asAtomHandler::toString(args[1],sys);
 		for(auto i=flags.begin();i!=flags.end();++i)
 		{
 			switch(*i)
@@ -113,9 +113,9 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 {
 	if(argslen == 0)
 	{
-		ret = asAtom::fromObject(Class<RegExp>::getInstanceS(getSys(),""));
+		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(getSys(),""));
 	}
-	else if(args[0].is<RegExp>())
+	else if(asAtomHandler::is<RegExp>(args[0]))
 	{
 		ASATOM_INCREF(args[0]);
 		ret = args[0];
@@ -124,7 +124,7 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 	{
 		if (argslen > 1)
 			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		ret = asAtom::fromObject(Class<RegExp>::getInstanceS(sys,args[0].toString(sys)));
+		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(sys,asAtomHandler::toString(args[0],sys)));
 	}
 }
 
@@ -138,10 +138,10 @@ ASFUNCTIONBODY_GETTER(RegExp, source);
 
 ASFUNCTIONBODY_ATOM(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj.getObject());
+	RegExp* th=static_cast<RegExp*>(asAtomHandler::getObject(obj));
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=args[0].toString(sys);
-	ret = asAtom::fromObject(th->match(arg0));
+	const tiny_string& arg0=asAtomHandler::toString(args[0],sys);
+	ret = asAtomHandler::fromObject(th->match(arg0));
 }
 
 ASObject *RegExp::match(const tiny_string& str)
@@ -203,9 +203,9 @@ ASObject *RegExp::match(const tiny_string& str)
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] >= 0)
-			a->push(asAtom::fromObject(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
+			a->push(asAtomHandler::fromObject(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
-			a->push(asAtom::fromObject(getSystemState()->getUndefinedRef()));
+			a->push(asAtomHandler::fromObject(getSystemState()->getUndefinedRef()));
 	}
 	a->setVariableByQName("input","",abstract_s(getSystemState(),str),DYNAMIC_TRAIT);
 
@@ -230,18 +230,18 @@ ASObject *RegExp::match(const tiny_string& str)
 
 ASFUNCTIONBODY_ATOM(RegExp,test)
 {
-	if (!obj.is<RegExp>())
+	if (!asAtomHandler::is<RegExp>(obj))
 	{
-		ret.setBool(true);
+		asAtomHandler::setBool(ret,true);
 		return;
 	}
-	RegExp* th=obj.as<RegExp>();
+	RegExp* th=asAtomHandler::as<RegExp>(obj);
 
-	const tiny_string& arg0 = args[0].toString(sys);
+	const tiny_string& arg0 = asAtomHandler::toString(args[0],sys);
 	pcre* pcreRE = th->compile();
 	if (!pcreRE)
 	{
-		ret.setNull();
+		asAtomHandler::setNull(ret);
 		return;
 	}
 	int capturingGroups;
@@ -249,7 +249,7 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		ret.setNull();
+		asAtomHandler::setNull(ret);
 		return;
 	}
 	int ovector[(capturingGroups+1)*3];
@@ -261,20 +261,20 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	int rc = pcre_exec(pcreRE, &extra, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	bool res = (rc >= 0);
 	pcre_free(pcreRE);
-	ret.setBool(res);
+	asAtomHandler::setBool(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(RegExp,_toString)
 {
-	if(Class<RegExp>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<RegExp>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtom::fromString(sys,"/(?:)/");
+		ret = asAtomHandler::fromString(sys,"/(?:)/");
 		return;
 	}
-	if(!obj.is<RegExp>())
+	if(!asAtomHandler::is<RegExp>(obj))
 		throw Class<TypeError>::getInstanceS(sys,"RegExp.toString is not generic");
 
-	RegExp* th=obj.as<RegExp>();
+	RegExp* th=asAtomHandler::as<RegExp>(obj);
 	tiny_string res;
 	res = "/";
 	res += th->source;
@@ -287,7 +287,7 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 		res += "m";
 	if(th->dotall)
 		res += "s";
-	ret = asAtom::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
 
 pcre* RegExp::compile()

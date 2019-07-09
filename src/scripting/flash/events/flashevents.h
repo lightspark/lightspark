@@ -62,7 +62,7 @@ public:
 	ASPROPERTY_GETTER(tiny_string,type);
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
 	//and the handling is serialized
-	ASPROPERTY_GETTER(asAtom,target);
+	ASPROPERTY_GETTER_ATOM(target);
 	ASPROPERTY_GETTER(_NR<ASObject>,currentTarget);
 	ASFUNCTION_ATOM(stopPropagation);
 	ASFUNCTION_ATOM(stopImmediatePropagation);
@@ -323,7 +323,7 @@ class listener
 {
 friend class EventDispatcher;
 private:
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	int32_t priority;
 	/* true: get events in the capture phase
 	 * false: get events in the bubble phase
@@ -337,7 +337,7 @@ public:
 		/* One can register the same handle for the same event with
 		 * different values of use_capture
 		 */
-		return (use_capture == r.second) && f.isEqual(getSys(),r.first);
+		return (use_capture == r.second) && asAtomHandler::isEqual(f,getSys(),r.first);
 	}
 	bool operator<(const listener& r) const
 	{
@@ -433,12 +433,12 @@ class FunctionEvent: public WaitableEvent
 {
 friend class ABCVm;
 private:
-	asAtom f;
-	asAtom obj;
+	asAtom f=asAtomHandler::invalidAtom;
+	asAtom obj=asAtomHandler::invalidAtom;
 	asAtom* args;
 	unsigned int numArgs;
 public:
-	FunctionEvent(asAtom _f, asAtom _obj=asAtom::invalidAtom, asAtom* _args=NULL, uint32_t _numArgs=0);
+	FunctionEvent(asAtom _f, asAtom _obj=asAtomHandler::invalidAtom, asAtom* _args=NULL, uint32_t _numArgs=0);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const { return FUNCTION; }
@@ -448,7 +448,7 @@ class ExternalCallEvent: public WaitableEvent
 {
 friend class ABCVm;
 private:
-	asAtom f;
+	asAtom f=asAtomHandler::invalidAtom;
 	ASObject* const* args;
 	ASObject** result;
 	bool* thrown;

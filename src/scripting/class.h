@@ -139,10 +139,10 @@ protected:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
-		if (ret.isInvalid())
-			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
-		ret.getObject()->resetCached();
+		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		if (asAtomHandler::isInvalid(ret))
+			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
+		asAtomHandler::getObject(ret)->resetCached();
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 	}
@@ -231,7 +231,7 @@ public:
 	}
 	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
-		T::generator(ret,getSystemState(), asAtom::invalidAtom, args, argslen);
+		T::generator(ret,getSystemState(), asAtomHandler::invalidAtom, args, argslen);
 	}
 	void coerce(SystemState* sys,asAtom& o) const
 	{
@@ -245,50 +245,50 @@ void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const
 template<>
 inline void Class<Number>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.isNumeric())
+	if (asAtomHandler::isNumeric(o))
 		return;
-	number_t n = o.toNumber();
+	number_t n = asAtomHandler::toNumber(o);
 	ASATOM_DECREF(o);
-	o.setNumber(sys,n);
+	asAtomHandler::setNumber(o,sys,n);
 }
 
 template<>
 inline void Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.isUInteger())
+	if (asAtomHandler::isUInteger(o))
 		return;
-	uint32_t n = o.toUInt();
+	uint32_t n = asAtomHandler::toUInt(o);
 	ASATOM_DECREF(o);
-	o.setUInt(sys,n);
+	asAtomHandler::setUInt(o,sys,n);
 ;
 }
 
 template<>
 inline void Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.isInteger())
+	if (asAtomHandler::isInteger(o))
 		return;
-	int32_t n = o.toInt();
+	int32_t n = asAtomHandler::toInt(o);
 	ASATOM_DECREF(o);
-	o.setInt(sys,n);
+	asAtomHandler::setInt(o,sys,n);
 }
 
 template<>
 inline void Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.isBool())
+	if (asAtomHandler::isBool(o))
 		return;
-	bool n = o.Boolean_concrete();
+	bool n = asAtomHandler::Boolean_concrete(o);
 	ASATOM_DECREF(o);
-	o.setBool(n);
+	asAtomHandler::setBool(o,n);
 }
 template<>
 inline void Class<Boolean>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (argslen> 0)
-		ret = asAtom::fromObject(abstract_b(getSys(),args[0].Boolean_concrete()));
+		ret = asAtomHandler::fromObject(abstract_b(getSys(),asAtomHandler::Boolean_concrete(args[0])));
 	else
-		ret = asAtom::fromObject(abstract_b(getSys(),false));
+		ret = asAtomHandler::fromObject(abstract_b(getSys(),false));
 }
 
 template<>
@@ -330,8 +330,8 @@ public:
 	}
 	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
-		if(argslen==0 || args[0].is<Null>() || args[0].is<Undefined>())
-			ret=asAtom::fromObject(Class<ASObject>::getInstanceS(getSys()));
+		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
+			ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(getSys()));
 		else
 		{
 			ASATOM_INCREF(args[0]);
@@ -415,11 +415,11 @@ public:
 	{
 		if(realClass==NULL)
 			realClass=this;
-		ret = asAtom::fromObject(realClass->freelist[0].getObjectFromFreeList());
-		if (ret.isInvalid())
-			ret=asAtom::fromObject(new (realClass->memoryAccount) T(realClass));
-		ret.getObject()->resetCached();
-		ret.as<T>()->setTypes(types);
+		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		if (asAtomHandler::isInvalid(ret))
+			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
+		asAtomHandler::getObject(ret)->resetCached();
+		asAtomHandler::as<T>(ret)->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);
 	}
@@ -429,7 +429,7 @@ public:
 	 */
 	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
-		asAtom th = asAtom::fromObject(this);
+		asAtom th = asAtomHandler::fromObject(this);
 		T::generator(ret,this->getSystemState(),th,args,argslen);
 	}
 
@@ -449,14 +449,14 @@ public:
 
 	void coerce(SystemState* sys,asAtom& o) const
 	{
-		if (o.isUndefined())
+		if (asAtomHandler::isUndefined(o))
 		{
 			ASATOM_DECREF(o);
-			o.setNull();
+			asAtomHandler::setNull(o);
 			return;
 		}
-		else if ((o.getObject() && o.getObject()->is<T>() && o.getObject()->as<T>()->sameType(this)) ||
-				 o.isNull())
+		else if ((asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<T>() && asAtomHandler::getObject(o)->as<T>()->sameType(this)) ||
+				 asAtomHandler::isNull(o))
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type
@@ -464,7 +464,7 @@ public:
 		}
 		else
 		{
-			tiny_string clsname = o.getObject() ? o.getObject()->getClassName() : "";
+			tiny_string clsname = asAtomHandler::getObject(o) ? asAtomHandler::getObject(o)->getClassName() : "";
 			ASATOM_DECREF(o);
 			throwError<TypeError>(kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
@@ -477,7 +477,7 @@ template<class T>
 class Template : public Template_base
 {
 public:
-	Template(QName name) : Template_base(name) {};
+	Template(QName name) : Template_base(name) {}
 
 	QName getQName(SystemState* sys, const std::vector<const Type*>& types)
 	{
@@ -597,5 +597,5 @@ public:
 	}
 };
 
-};
+}
 #endif /* SCRIPTING_CLASS_H */

@@ -28,7 +28,7 @@ using namespace lightspark;
 void AVM1Key::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtom(32),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtomHandler::fromUInt(32),CONSTANT_TRAIT);
 
 	c->setDeclaredMethodByQName("isDown","",Class<IFunction>::getFunction(c->getSystemState(),isDown),NORMAL_METHOD,false);
 }
@@ -47,6 +47,6 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 		default:	
 			LOG(LOG_NOT_IMPLEMENTED,"AVM1: Key.isDown handling of key "<<key);
 	}
-	ret.setBool(b);
+	asAtomHandler::setBool(ret,b);
 }
 

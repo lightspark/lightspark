@@ -524,7 +524,7 @@ public:
 	bool isEqual(ASObject* r);
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
-		asAtom c = asAtom::fromObject(target);
+		asAtom c = asAtomHandler::fromObject(target);
 		val_atom(ret,getSystemState(),c,NULL,0);
 		return nullptr;
 	}
@@ -618,7 +618,7 @@ public:
 			target->getVariableByMultiname(ret,*simpleGetterOrSetterName);
 			return simpleGetterOrSetterName;
 		}
-		asAtom c = asAtom::fromObject(target);
+		asAtom c = asAtomHandler::fromObject(target);
 		call(ret,c,NULL,0,true);
 		return nullptr;
 	}
@@ -675,7 +675,7 @@ public:
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
-		asAtom obj = asAtom::fromObject(target);
+		asAtom obj = asAtomHandler::fromObject(target);
 		ACTIONRECORD::executeActions(clip,&context,this->actionlist,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		return nullptr;
 	}
@@ -734,7 +734,7 @@ public:
 
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
-		asAtom obj = asAtom::fromObject(ret);
+		asAtom obj = asAtomHandler::fromObject(ret);
 		c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}

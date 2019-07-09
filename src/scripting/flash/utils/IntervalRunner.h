@@ -37,9 +37,9 @@ private:
 	~IntervalRunner();
 	INTERVALTYPE type;
 	uint32_t id;
-	asAtom callback;
+	asAtom callback=asAtomHandler::invalidAtom;
 	asAtom* args;
-	asAtom obj;
+	asAtom obj=asAtomHandler::invalidAtom;
 	const unsigned int argslen;
 	uint32_t interval;
 public:

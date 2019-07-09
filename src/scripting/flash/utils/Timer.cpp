@@ -72,30 +72,30 @@ void Timer::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
 	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
-	Timer* th=obj.as<Timer>();
+	Timer* th=asAtomHandler::as<Timer>(obj);
 
-	th->delay=args[0].toInt();
+	th->delay=asAtomHandler::toInt(args[0]);
 	if(argslen>=2)
-		th->repeatCount=args[1].toInt();
+		th->repeatCount=asAtomHandler::toInt(args[1]);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
-	Timer* th=obj.as<Timer>();
-	ret.setUInt(sys,th->currentCount);
+	Timer* th=asAtomHandler::as<Timer>(obj);
+	asAtomHandler::setUInt(ret,sys,th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
-	Timer* th=obj.as<Timer>();
-	ret.setUInt(sys,th->repeatCount);
+	Timer* th=asAtomHandler::as<Timer>(obj);
+	asAtomHandler::setUInt(ret,sys,th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 {
 	assert_and_throw(argslen==1);
-	int32_t count=args[0].toInt();
-	Timer* th=obj.as<Timer>();
+	int32_t count=asAtomHandler::toInt(args[0]);
+	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->repeatCount=count;
 	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
 	{
@@ -107,30 +107,30 @@ ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 
 ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 {
-	Timer* th=obj.as<Timer>();
-	ret.setBool(th->running);
+	Timer* th=asAtomHandler::as<Timer>(obj);
+	asAtomHandler::setBool(ret,th->running);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
-	Timer* th=obj.as<Timer>();
-	ret.setUInt(sys,th->delay);
+	Timer* th=asAtomHandler::as<Timer>(obj);
+	asAtomHandler::setUInt(ret,sys,th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 {
 	assert_and_throw(argslen==1);
-	int32_t newdelay = args[0].toInt();
+	int32_t newdelay = asAtomHandler::toInt(args[0]);
 	if (newdelay<=0)
 		throw Class<RangeError>::getInstanceS(sys,"delay must be positive", 2066);
 
-	Timer* th=obj.as<Timer>();
+	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->delay=newdelay;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,start)
 {
-	Timer* th=obj.as<Timer>();
+	Timer* th=asAtomHandler::as<Timer>(obj);
 	if(th->running)
 		return;
 	th->running=true;
@@ -146,7 +146,7 @@ ASFUNCTIONBODY_ATOM(Timer,start)
 
 ASFUNCTIONBODY_ATOM(Timer,reset)
 {
-	Timer* th=obj.as<Timer>();
+	Timer* th=asAtomHandler::as<Timer>(obj);
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
@@ -162,7 +162,7 @@ ASFUNCTIONBODY_ATOM(Timer,reset)
 
 ASFUNCTIONBODY_ATOM(Timer,stop)
 {
-	Timer* th=obj.as<Timer>();
+	Timer* th=asAtomHandler::as<Timer>(obj);
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now

@@ -81,7 +81,7 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 
 	if(tag)
 	{
-		ret=asAtom::fromObject(tag->instance(realClass));
+		ret=asAtomHandler::fromObject(tag->instance(realClass));
 		if (instancefactory.isNull())
 			instancefactory = _MR(tag->instance(realClass));
 	}
@@ -92,9 +92,9 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 		super->getInstance(ret,false,NULL,0,realClass);
 		if (instancefactory.isNull())
 		{
-			asAtom instance;
+			asAtom instance=asAtomHandler::invalidAtom;
 			super->getInstance(instance,false,NULL,0,realClass);
-			instancefactory = _MR(instance.getObject());
+			instancefactory = _MR(asAtomHandler::getObject(instance));
 		}
 	}
 	if(construct)
@@ -194,21 +194,21 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var);
-	if(var->var.isValid())
+	if(asAtomHandler::isValid(var->var))
 	{
-		assert_and_throw(var->var.isFunction());
+		assert_and_throw(asAtomHandler::isFunction(var->var));
 		ASATOM_INCREF(var->var);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->var,NORMAL_METHOD,true);
 	}
-	if(var->getter.isValid())
+	if(asAtomHandler::isValid(var->getter))
 	{
-		assert_and_throw(var->getter.isFunction());
+		assert_and_throw(asAtomHandler::isFunction(var->getter));
 		ASATOM_INCREF(var->getter);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->getter,GETTER_METHOD,true);
 	}
-	if(var->setter.isValid())
+	if(asAtomHandler::isValid(var->setter))
 	{
-		assert_and_throw(var->setter.isFunction());
+		assert_and_throw(asAtomHandler::isFunction(var->setter));
 		ASATOM_INCREF(var->setter);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->setter,SETTER_METHOD,true);
 	}
@@ -219,7 +219,7 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
 		// Construction according to ECMA 15.2.2.1
-		switch(args[0].getObjectType())
+		switch(asAtomHandler::getObjectType(args[0]))
 		{
 			case T_BOOLEAN:
 			case T_NUMBER:
@@ -236,7 +236,7 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 	}
 	if(realClass==NULL)
 		realClass=this;
-	ret=asAtom::fromObject(new (realClass->memoryAccount) ASObject(realClass));
+	ret=asAtomHandler::fromObject(new (realClass->memoryAccount) ASObject(realClass));
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 }

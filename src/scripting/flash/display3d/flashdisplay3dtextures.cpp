@@ -33,7 +33,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 {
-	Texture* th = obj.as<Texture>();
+	Texture* th = asAtomHandler::as<Texture>(obj);
 	uint32_t miplevel;
 	_NR<BitmapData> source;
 	ARG_UNPACK_ATOM(source)(miplevel,0);

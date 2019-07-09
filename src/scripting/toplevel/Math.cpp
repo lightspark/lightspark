@@ -28,14 +28,14 @@ void Math::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	// public constants
-	c->setVariableAtomByQName("E",nsNameAndKind(),asAtom(c->getSystemState(),2.71828182845904523536,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtom(c->getSystemState(),2.30258509299404568402,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtom(c->getSystemState(),0.693147180559945309417,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtom(c->getSystemState(),0.434294481903251827651,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtom(c->getSystemState(),1.44269504088896340736,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtom(c->getSystemState(),3.14159265358979323846,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtom(c->getSystemState(),0.707106781186547524401,true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtom(c->getSystemState(),1.41421356237309504880,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("E",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),2.71828182845904523536,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),2.30258509299404568402,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),0.693147180559945309417,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),0.434294481903251827651,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),1.44269504088896340736,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),3.14159265358979323846,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),0.707106781186547524401,true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),1.41421356237309504880,true),CONSTANT_TRAIT);
 
 	// public methods
 	c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),abs,1),NORMAL_METHOD,false);
@@ -72,7 +72,7 @@ ASFUNCTIONBODY_ATOM(Math,atan2)
 {
 	number_t n1, n2;
 	ARG_UNPACK_ATOM (n1) (n2);
-	ret.setNumber(sys,::atan2(n1,n2));
+	asAtomHandler::setNumber(ret,sys,::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY_ATOM(Math,_max)
@@ -81,7 +81,7 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		double arg = args[i].toNumber();
+		double arg = asAtomHandler::toNumber(args[i]);
 		if (std::isnan(arg))
 		{
 			largest = numeric_limits<double>::quiet_NaN();
@@ -92,7 +92,7 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 		else
 			largest = (arg>largest) ? arg : largest;
 	}
-	ret.setNumber(sys,largest);
+	asAtomHandler::setNumber(ret,sys,largest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,_min)
@@ -101,7 +101,7 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 
 	for(unsigned int i = 0; i < argslen; i++)
 	{
-		double arg = args[i].toNumber();
+		double arg = asAtomHandler::toNumber(args[i]);
 		if (std::isnan(arg))
 		{
 			smallest = numeric_limits<double>::quiet_NaN();
@@ -113,14 +113,14 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 			smallest = (arg<smallest)? arg : smallest;
 	}
 
-	ret.setNumber(sys,smallest);
+	asAtomHandler::setNumber(ret,sys,smallest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,exp)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::exp(n));
+	asAtomHandler::setNumber(ret,sys,::exp(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,acos)
@@ -128,7 +128,7 @@ ASFUNCTIONBODY_ATOM(Math,acos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::acos(n));
+	asAtomHandler::setNumber(ret,sys,::acos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,asin)
@@ -136,7 +136,7 @@ ASFUNCTIONBODY_ATOM(Math,asin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::asin(n));
+	asAtomHandler::setNumber(ret,sys,::asin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,atan)
@@ -144,7 +144,7 @@ ASFUNCTIONBODY_ATOM(Math,atan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::atan(n));
+	asAtomHandler::setNumber(ret,sys,::atan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,cos)
@@ -152,7 +152,7 @@ ASFUNCTIONBODY_ATOM(Math,cos)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::cos(n));
+	asAtomHandler::setNumber(ret,sys,::cos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sin)
@@ -160,7 +160,7 @@ ASFUNCTIONBODY_ATOM(Math,sin)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::sin(n));
+	asAtomHandler::setNumber(ret,sys,::sin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,tan)
@@ -168,7 +168,7 @@ ASFUNCTIONBODY_ATOM(Math,tan)
 	//Angle is in radians
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::tan(n));
+	asAtomHandler::setNumber(ret,sys,::tan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,abs)
@@ -176,42 +176,42 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 	if(argslen == 0)
 		throwError<ArgumentError>(kWrongArgumentCountError, "Math", "1", "0");
 	asAtom& a = args[0];
-	switch (a.getObjectType())
+	switch (asAtomHandler::getObjectType(a))
 	{
 		case T_INTEGER:
 		{
-			int32_t n = a.toInt();
+			int32_t n = asAtomHandler::toInt(a);
 			if (n == INT32_MIN)
-				ret.setUInt(sys,(uint32_t)n);
+				asAtomHandler::setUInt(ret,sys,(uint32_t)n);
 			else
-				ret.setInt(sys,n < 0 ? -n : n);
+				asAtomHandler::setInt(ret,sys,n < 0 ? -n : n);
 			break;
 		}
 		case T_UINTEGER:
-			ret.set(a);
+			asAtomHandler::set(ret,a);
 			break;
 		case T_UNDEFINED:
-			ret.setNumber(sys,Number::NaN);
+			asAtomHandler::setNumber(ret,sys,Number::NaN);
 			break;
 		case T_NULL:
-			ret.setInt(sys,(int32_t)0);
+			asAtomHandler::setInt(ret,sys,(int32_t)0);
 			break;
 		case T_NUMBER:
 		{
-			number_t n = a.toNumber();
+			number_t n = asAtomHandler::toNumber(a);
 			if (n  == 0.)
-				ret.setInt(sys,(int32_t)0);
+				asAtomHandler::setInt(ret,sys,(int32_t)0);
 			else
-				ret.setNumber(sys,(number_t)::fabs(n));
+				asAtomHandler::setNumber(ret,sys,(number_t)::fabs(n));
 			break;
 		}
 		default:
 		{
-			number_t n = a.toNumber();
+			number_t n = asAtomHandler::toNumber(a);
 			if (n  == 0.)
-				ret.setInt(sys,(int32_t)0);
+				asAtomHandler::setInt(ret,sys,(int32_t)0);
 			else
-				ret.setNumber(sys,(number_t)::fabs(n));
+				asAtomHandler::setNumber(ret,sys,(number_t)::fabs(n));
 			break;
 		}
 	}
@@ -222,26 +222,26 @@ ASFUNCTIONBODY_ATOM(Math,ceil)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (std::isnan(n))
-		ret.setNumber(sys,Number::NaN);
+		asAtomHandler::setNumber(ret,sys,Number::NaN);
 	else if (n == 0.)
-		ret.setNumber(sys,std::signbit(n) ? -0. : 0.);
+		asAtomHandler::setNumber(ret,sys,std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::ceil(n);
 		if (n2 == 0.)
-			ret.setNumber(sys,std::signbit(n2) ? -0. : 0.);
+			asAtomHandler::setNumber(ret,sys,std::signbit(n2) ? -0. : 0.);
 		else
-			ret.setInt(sys,(int32_t)n2);
+			asAtomHandler::setInt(ret,sys,(int32_t)n2);
 	}
 	else
-		ret.setNumber(sys,::ceil(n));
+		asAtomHandler::setNumber(ret,sys,::ceil(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,log)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::log(n));
+	asAtomHandler::setNumber(ret,sys,::log(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,floor)
@@ -249,17 +249,17 @@ ASFUNCTIONBODY_ATOM(Math,floor)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (n == 0.)
-		ret.setNumber(sys,std::signbit(n) ? -0. : 0.);
+		asAtomHandler::setNumber(ret,sys,std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::floor(n);
 		if (n2 == 0.)
-			ret.setNumber(sys,std::signbit(n2) ? -0. : 0.);
+			asAtomHandler::setNumber(ret,sys,std::signbit(n2) ? -0. : 0.);
 		else
-			ret.setInt(sys,(int32_t)n2);
+			asAtomHandler::setInt(ret,sys,(int32_t)n2);
 	}
 	else
-		ret.setNumber(sys,(number_t)::floor(n));
+		asAtomHandler::setNumber(ret,sys,(number_t)::floor(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,round)
@@ -267,24 +267,24 @@ ASFUNCTIONBODY_ATOM(Math,round)
 	number_t n;
 	ARG_UNPACK_ATOM (n);
 	if (std::isnan(n))
-		ret.setNumber(sys,Number::NaN);
+		asAtomHandler::setNumber(ret,sys,Number::NaN);
 	else if (n < 0 && n >= -0.5)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		ret.setNumber(sys,obj.getObject() == Class<Number>::getClass(sys) ? -0. : 0.);
+		asAtomHandler::setNumber(ret,sys,asAtomHandler::getObject(obj) == Class<Number>::getClass(sys) ? -0. : 0.);
 	else if (n == 0.)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		ret.setNumber(sys,obj.getObject() == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
+		asAtomHandler::setNumber(ret,sys,asAtomHandler::getObject(obj) == Class<Number>::getClass(sys) ? (std::signbit(n) ? -0. : 0.) : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
-		ret.setInt(sys,(int32_t)::floor(n+0.5));
+		asAtomHandler::setInt(ret,sys,(int32_t)::floor(n+0.5));
 	else
-		ret.setNumber(sys,(number_t)::floor(n+0.5));
+		asAtomHandler::setNumber(ret,sys,(number_t)::floor(n+0.5));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sqrt)
 {
 	number_t n;
 	ARG_UNPACK_ATOM (n);
-	ret.setNumber(sys,::sqrt(n));
+	asAtomHandler::setNumber(ret,sys,::sqrt(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,pow)
@@ -292,9 +292,9 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 	number_t x, y;
 	ARG_UNPACK_ATOM (x) (y);
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
-		ret.setNumber(sys,Number::NaN);
+		asAtomHandler::setNumber(ret,sys,Number::NaN);
 	else
-		ret.setNumber(sys,::pow(x,y));
+		asAtomHandler::setNumber(ret,sys,::pow(x,y));
 }
 
 ASFUNCTIONBODY_ATOM(Math,random)
@@ -304,7 +304,7 @@ ASFUNCTIONBODY_ATOM(Math,random)
 
 	number_t res=rand();
 	res/=(number_t(1.)+RAND_MAX);
-	ret.setNumber(sys,res);
+	asAtomHandler::setNumber(ret,sys,res);
 }
 
 

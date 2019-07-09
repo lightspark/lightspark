@@ -39,8 +39,8 @@ BitmapFilter* BitmapFilter::cloneImpl() const
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
 {
-	BitmapFilter* th=obj.as<BitmapFilter>();
-	ret = asAtom::fromObject(th->cloneImpl());
+	BitmapFilter* th=asAtomHandler::as<BitmapFilter>(obj);
+	ret = asAtomHandler::fromObject(th->cloneImpl());
 }
 
 GlowFilter::GlowFilter(Class_base* c):
@@ -73,7 +73,7 @@ ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, strength);
 
 ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 {
-	GlowFilter *th = obj.as<GlowFilter>();
+	GlowFilter *th = asAtomHandler::as<GlowFilter>(obj);
 	ARG_UNPACK_ATOM (th->color, 0xFF0000)
 		(th->alpha, 1.0)
 		(th->blurX, 6.0)
@@ -135,7 +135,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, strength);
 
 ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 {
-	DropShadowFilter *th = obj.as<DropShadowFilter>();
+	DropShadowFilter *th = asAtomHandler::as<DropShadowFilter>(obj);
 	ARG_UNPACK_ATOM (th->distance, 4.0)
 		(th->angle, 45)
 		(th->color, 0)
@@ -246,7 +246,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix);
 
 ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 {
-	ColorMatrixFilter *th = obj.as<ColorMatrixFilter>();
+	ColorMatrixFilter *th = asAtomHandler::as<ColorMatrixFilter>(obj);
 	ARG_UNPACK_ATOM(th->matrix,NullRef);
 }
 
@@ -278,7 +278,7 @@ ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality);
 
 ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 {
-	BlurFilter *th = obj.as<BlurFilter>();
+	BlurFilter *th = asAtomHandler::as<BlurFilter>(obj);
 	ARG_UNPACK_ATOM(th->blurX,4.0)(th->blurY,4.0)(th->quality,1);
 	LOG(LOG_NOT_IMPLEMENTED,"BlurFilter is not implemented");
 }
@@ -397,16 +397,16 @@ BitmapFilter* ShaderFilter::cloneImpl() const
 void BitmapFilterQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtom(3),DECLARED_TRAIT);
-	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtom(1),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtom(3),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtomHandler::fromUInt(3),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtomHandler::fromUInt(1),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtomHandler::fromUInt(2),DECLARED_TRAIT);
 }
 
 void DisplacementMapFilterMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"clamp"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"color"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ignore"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"wrap"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clamp"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"color"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ignore"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"wrap"),DECLARED_TRAIT);
 }

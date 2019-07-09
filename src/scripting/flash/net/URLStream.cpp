@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(URLStream,_constructor)
 
 ASFUNCTIONBODY_ATOM(URLStream,load)
 {
-	URLStream* th=obj.as<URLStream>();
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
 	_NR<URLRequest> urlRequest;
 	ARG_UNPACK_ATOM (urlRequest);
 
@@ -209,7 +209,7 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 
 ASFUNCTIONBODY_ATOM(URLStream,close)
 {
-	URLStream* th=obj.as<URLStream>();
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
  	SpinlockLocker l(th->spinlock);
 	if(th->job)
 		th->job->threadAbort();
@@ -227,115 +227,115 @@ URLStream::URLStream(Class_base *c):EventDispatcher(c),data(_MNR(Class<ByteArray
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,bytesAvailable) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::_getBytesAvailable(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,_getEndian) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::_getEndian(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,_setEndian) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::_setEndian(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,_getObjectEncoding) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::_getObjectEncoding(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,_setObjectEncoding) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::_setObjectEncoding(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readBoolean) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readBoolean(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readByte) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readByte(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readBytes) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readBytes(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readDouble) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readDouble(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readFloat) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readFloat(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readInt) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readInt(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readMultiByte) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readMultiByte(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readObject) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readObject(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readShort) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readShort(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readUnsignedByte) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readUnsignedByte(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readUnsignedInt) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readUnsignedInt(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readUnsignedShort) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readUnsignedShort(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readUTF) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readUTF(ret,sys,v, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,readUTFBytes) {
-	URLStream* th=obj.as<URLStream>();
-	asAtom v = asAtom::fromObject(th->data.getPtr());
+	URLStream* th=asAtomHandler::as<URLStream>(obj);
+	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
 	ByteArray::readUTFBytes(ret,sys,v, args, argslen);
 }

@@ -210,12 +210,12 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				auto it = tag.dataobjectlist.begin();
 				while (it != tag.dataobjectlist.end())
 				{
-					ASObject* o = (*it).getObject();
+					ASObject* o = asAtomHandler::getObject((*it));
 					if(o && o->hasPropertyByMultiname(m,true,false))
 					{
-						asAtom v;
+						asAtom v=asAtomHandler::invalidAtom;
 						o->getVariableByMultiname(v,m);
-						frameRate = v.toNumber();
+						frameRate = asAtomHandler::toNumber(v);
 						break;
 					}
 					it++;

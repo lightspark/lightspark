@@ -25,7 +25,7 @@ using namespace lightspark;
 
 ASFUNCTIONBODY_ATOM(IOError,_constructor)
 {
-	IOError* th=obj.as<IOError>();
+	IOError* th=asAtomHandler::as<IOError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 
@@ -40,7 +40,7 @@ void IOError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(EOFError,_constructor)
 {
-	EOFError* th=obj.as<EOFError>();
+	EOFError* th=asAtomHandler::as<EOFError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 
@@ -55,7 +55,7 @@ void EOFError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(IllegalOperationError,_constructor)
 {
-	IllegalOperationError* th=obj.as<IllegalOperationError>();
+	IllegalOperationError* th=asAtomHandler::as<IllegalOperationError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 
@@ -70,7 +70,7 @@ void IllegalOperationError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(InvalidSWFError,_constructor)
 {
-	InvalidSWFError* th=obj.as<InvalidSWFError>();
+	InvalidSWFError* th=asAtomHandler::as<InvalidSWFError>(obj);
 	int32_t errorID;
 	ARG_UNPACK_ATOM(th->message, "") (errorID, 0);
 	th->setErrorID(errorID);
@@ -87,7 +87,7 @@ void InvalidSWFError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(MemoryError,_constructor)
 {
-	MemoryError* th=obj.as<MemoryError>();
+	MemoryError* th=asAtomHandler::as<MemoryError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 
@@ -102,7 +102,7 @@ void MemoryError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(ScriptTimeoutError,_constructor)
 {
-	ScriptTimeoutError* th=obj.as<ScriptTimeoutError>();
+	ScriptTimeoutError* th=asAtomHandler::as<ScriptTimeoutError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 
@@ -117,7 +117,7 @@ void ScriptTimeoutError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(StackOverflowError,_constructor)
 {
-	StackOverflowError* th=obj.as<StackOverflowError>();
+	StackOverflowError* th=asAtomHandler::as<StackOverflowError>(obj);
 	ARG_UNPACK_ATOM(th->message, "");
 }
 

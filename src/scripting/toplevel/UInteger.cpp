@@ -80,57 +80,57 @@ TRISTATE UInteger::isLess(ASObject* o)
 	}
 	else
 	{
-		asAtom val2p;
+		asAtom val2p=asAtomHandler::invalidAtom;
 		o->toPrimitive(val2p,NUMBER_HINT);
-		double val2=val2p.toNumber();
+		double val2=asAtomHandler::toNumber(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
 }
 TRISTATE UInteger::isLessAtom(asAtom& r)
 {
-	if(r.getObjectType()==T_UINTEGER)
+	if(asAtomHandler::getObjectType(r)==T_UINTEGER)
 	{
 		uint32_t val1=val;
-		uint32_t val2=r.toUInt();
+		uint32_t val2=asAtomHandler::toUInt(r);
 		return (val1<val2)?TTRUE:TFALSE;
 	}
-	else if(r.getObjectType()==T_INTEGER ||
-	   r.getObjectType()==T_BOOLEAN)
+	else if(asAtomHandler::getObjectType(r)==T_INTEGER ||
+	   asAtomHandler::getObjectType(r)==T_BOOLEAN)
 	{
 		uint32_t val1=val;
-		int32_t val2=r.toInt();
+		int32_t val2=asAtomHandler::toInt(r);
 		if(val2<0)
 			return TFALSE;
 		else
 			return (val1<(uint32_t)val2)?TTRUE:TFALSE;
 	}
-	else if(r.getObjectType()==T_NUMBER)
+	else if(asAtomHandler::getObjectType(r)==T_NUMBER)
 	{
-		number_t val2=r.toNumber();
+		number_t val2=asAtomHandler::toNumber(r);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (number_t(val) < val2)?TTRUE:TFALSE;
 	}
-	else if(r.getObjectType()==T_NULL)
+	else if(asAtomHandler::getObjectType(r)==T_NULL)
 	{
 		// UInteger is never less than int(null) == 0
 		return TFALSE;
 	}
-	else if(r.getObjectType()==T_UNDEFINED)
+	else if(asAtomHandler::getObjectType(r)==T_UNDEFINED)
 	{
 		return TUNDEFINED;
 	}
-	else if(r.getObjectType()==T_STRING)
+	else if(asAtomHandler::getObjectType(r)==T_STRING)
 	{
-		double val2=r.toNumber();
+		double val2=asAtomHandler::toNumber(r);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
 	else
 	{
-		asAtom val2p;
-		r.getObject()->toPrimitive(val2p,NUMBER_HINT);
-		double val2=val2p.toNumber();
+		asAtom val2p=asAtomHandler::invalidAtom;
+		asAtomHandler::getObject(r)->toPrimitive(val2p,NUMBER_HINT);
+		double val2=asAtomHandler::toNumber(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
@@ -138,43 +138,43 @@ TRISTATE UInteger::isLessAtom(asAtom& r)
 
 ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 {
-	UInteger* th=obj.as<UInteger>();
+	UInteger* th=asAtomHandler::as<UInteger>(obj);
 	if(argslen==0)
 	{
 		//The uint is already initialized to 0
 		return;
 	}
-	th->val=args[0].toUInt();
+	th->val=asAtomHandler::toUInt(args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		ret.setUInt(sys,(uint32_t)0);
+		asAtomHandler::setUInt(ret,sys,(uint32_t)0);
 	else
-		ret.setUInt(sys,args[0].toUInt());
+		asAtomHandler::setUInt(ret,sys,asAtomHandler::toUInt(args[0]));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 {
-	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<UInteger>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret.setUInt(sys,(uint32_t)0);
+		asAtomHandler::setUInt(ret,sys,(uint32_t)0);
 		return;
 	}
 
-	if(!obj.is<UInteger>())
+	if(!asAtomHandler::is<UInteger>(obj))
 			throw Class<TypeError>::getInstanceS(sys,"");
 
-	ret.setUInt(sys,obj.toUInt());
+	asAtomHandler::setUInt(ret,sys,asAtomHandler::toUInt(obj));
 }
 
 void UInteger::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom((uint32_t)0xFFFFFFFF),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom((uint32_t)0),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFFFFFFFF),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toExponential,1),NORMAL_METHOD,true);
@@ -189,9 +189,9 @@ void UInteger::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(UInteger,_toString)
 {
-	if(Class<UInteger>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<UInteger>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtom::fromString(sys,"0");
+		ret = asAtomHandler::fromString(sys,"0");
 		return;
 	}
 
@@ -201,13 +201,13 @@ ASFUNCTIONBODY_ATOM(UInteger,_toString)
 	if (radix == 10)
 	{
 		char buf[20];
-		snprintf(buf,20,"%u",obj.toUInt());
-		ret = asAtom::fromObject(abstract_s(sys,buf));
+		snprintf(buf,20,"%u",asAtomHandler::toUInt(obj));
+		ret = asAtomHandler::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
-		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
-		ret = asAtom::fromObject(abstract_s(sys,s));
+		tiny_string s=Number::toStringRadix(asAtomHandler::toNumber(obj), radix);
+		ret = asAtomHandler::fromObject(abstract_s(sys,s));
 	}
 }
 
@@ -231,36 +231,36 @@ bool UInteger::isEqual(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 {
-	double v = obj.toNumber();
+	double v = asAtomHandler::toNumber(obj);
 	int32_t fractionDigits;
 	ARG_UNPACK_ATOM(fractionDigits, 0);
-	if (argslen == 0 || args[0].is<Undefined>())
+	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
 		if (v == 0)
 			fractionDigits = 1;
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
 	}
-	ret = asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	ret = asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toPrecision)
 {
-	if (argslen == 0 || args[0].is<Undefined>())
+	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
-		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		ret = asAtomHandler::fromObject(abstract_s(sys,asAtomHandler::toString(obj,sys)));
 		return;
 	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	ret = asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

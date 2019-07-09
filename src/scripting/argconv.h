@@ -62,20 +62,20 @@ class ArgumentConversionAtom<asAtom>
 public:
 	static asAtom toConcrete(SystemState* sys,asAtom obj,const asAtom& v)
 	{
-		if(obj.isNull())
-			return asAtom::nullAtom;
-		if(obj.isUndefined())
-			return asAtom::undefinedAtom;
-		if(v.isValid() && !v.isNull() && !v.isUndefined() && !v.checkArgumentConversion(obj))
+		if(asAtomHandler::isNull(obj))
+			return asAtomHandler::nullAtom;
+		if(asAtomHandler::isUndefined(obj))
+			return asAtomHandler::undefinedAtom;
+		if(asAtomHandler::isValid(v) && !asAtomHandler::isNull(v) && !asAtomHandler::isUndefined(v) && !asAtomHandler::checkArgumentConversion(v,obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
-                                                  obj.toObject(sys)->getClassName(),
+                                                  asAtomHandler::toObject(obj,sys)->getClassName(),
                                                   "?"); // TODO
 		return obj;
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,asAtom val)
 	{
-		if(val.isInvalid())
-			ret.setNull();
+		if(asAtomHandler::isInvalid(val))
+			asAtomHandler::setNull(ret);
 		else
 		{
 			ASATOM_INCREF(val);
@@ -90,18 +90,18 @@ class ArgumentConversionAtom<Ref<T>>
 public:
 	static Ref<T> toConcrete(SystemState* sys,asAtom obj,const Ref<T> v)
 	{
-		if(!obj.is<T>())
+		if(!asAtomHandler::is<T>(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
-                                                  obj.toObject(sys)->getClassName(),
+                                                  asAtomHandler::toObject(obj,sys)->getClassName(),
                                                   Class<T>::getClass(sys)->getQualifiedClassName());
-        T* o = obj.toObject(sys)->as<T>();
+        T* o = asAtomHandler::toObject(obj,sys)->as<T>();
 		o->incRef();
 		return _MR(o);
 	}
 	static void toAbstract(asAtom& ret, SystemState* /*sys*/,const Ref<T>& val)
 	{
 		val->incRef();
-		ret = asAtom::fromObject(val.getPtr());
+		ret = asAtomHandler::fromObject(val.getPtr());
 	}
 };
 
@@ -111,27 +111,27 @@ class ArgumentConversionAtom<NullableRef<T>>
 public:
 	static NullableRef<T> toConcrete(SystemState* sys,asAtom obj,const NullableRef<T>& v)
 	{
-		if(obj.isNull())
+		if(asAtomHandler::isNull(obj))
 			return NullRef;
-		if(obj.isUndefined())
+		if(asAtomHandler::isUndefined(obj))
 			return NullRef;
 
-        if(!obj.is<T>())
+        if(!asAtomHandler::is<T>(obj))
                         throwError<ArgumentError>(kCheckTypeFailedError,
-												  obj.toObject(sys)->getClassName(),
+												  asAtomHandler::toObject(obj,sys)->getClassName(),
                                                   Class<T>::getClass(sys)->getQualifiedClassName());
-		T* o = obj.toObject(sys)->as<T>();
+		T* o = asAtomHandler::toObject(obj,sys)->as<T>();
 		o->incRef();
 		return _MNR(o);
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,const NullableRef<T>& val)
 	{
 		if(val.isNull())
-			ret.setNull();
+			asAtomHandler::setNull(ret);
 		else
 		{
 			val->incRef();
-			ret = asAtom::fromObject(val.getPtr());
+			ret = asAtomHandler::fromObject(val.getPtr());
 		}
 	}
 };
@@ -142,18 +142,18 @@ class ArgumentConversionAtom<NullableRef<ASObject>>
 public:
 	static NullableRef<ASObject> toConcrete(SystemState* sys,asAtom obj,const NullableRef<ASObject>& v)
 	{
-		ASObject* o = obj.toObject(sys);
+		ASObject* o = asAtomHandler::toObject(obj,sys);
 		o->incRef();
 		return _MNR(o);
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,const NullableRef<ASObject>& val)
 	{
 		if(val.isNull())
-			ret.setNull();
+			asAtomHandler::setNull(ret);
 		else
 		{
 			val->incRef();
-			ret = asAtom::fromObject(val.getPtr());
+			ret = asAtomHandler::fromObject(val.getPtr());
 		}
 	}
 };
@@ -161,79 +161,79 @@ public:
 template<>
 inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(SystemState* sys,asAtom obj,const number_t& v)
 {
-	return obj.toNumber();
+	return asAtomHandler::toNumber(obj);
 }
 
 template<>
 inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(SystemState* sys,asAtom obj,const bool& v)
 {
-	return obj.Boolean_concrete();
+	return asAtomHandler::Boolean_concrete(obj);
 }
 
 template<>
 inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(SystemState* sys,asAtom obj,const uint32_t& v)
 {
-	return obj.toUInt();
+	return asAtomHandler::toUInt(obj);
 }
 
 template<>
 inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(SystemState* sys,asAtom obj,const int32_t& v)
 {
-	return obj.toInt();
+	return asAtomHandler::toInt(obj);
 }
 
 template<>
 inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(SystemState* sys,asAtom obj,const int64_t& v)
 {
-	return obj.toInt64();
+	return asAtomHandler::toInt64(obj);
 }
 
 template<>
 inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(SystemState* sys,asAtom obj,const tiny_string& v)
 {
-	return obj.toString(sys);
+	return asAtomHandler::toString(obj,sys);
 }
 
 template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(SystemState* sys,asAtom obj,const RGB& v)
 {
-	return RGB(obj.toUInt());
+	return RGB(asAtomHandler::toUInt(obj));
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, SystemState* sys,const int32_t& val)
 {
-	ret.setInt(sys,val);
+	asAtomHandler::setInt(ret,sys,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret, SystemState* sys,const uint32_t& val)
 {
-	ret.setUInt(sys,val);
+	asAtomHandler::setUInt(ret,sys,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<number_t>::toAbstract(asAtom& ret, SystemState* sys,const number_t& val)
 {
-	ret.setNumber(sys,val);
+	asAtomHandler::setNumber(ret,sys,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<bool>::toAbstract(asAtom& ret, SystemState* sys,const bool& val)
 {
-	ret.setBool(val);
+	asAtomHandler::setBool(ret,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<tiny_string>::toAbstract(asAtom& ret, SystemState* sys,const tiny_string& val)
 {
-	ret = asAtom::fromObject(abstract_s(sys,val));
+	ret = asAtomHandler::fromObject(abstract_s(sys,val));
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, SystemState* sys,const RGB& val)
 {
-	ret.setUInt(sys,val.toUInt());
+	asAtomHandler::setUInt(ret,sys,val.toUInt());
 }
 
 #define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen,false)

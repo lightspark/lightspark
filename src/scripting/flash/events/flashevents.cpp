@@ -49,55 +49,55 @@ void Event::finalize()
 void Event::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("ACTIVATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"activate"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ADDED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"added"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ADDED_TO_STAGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"addedToStage"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CANCEL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"cancel"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"change"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CLEAR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"clear"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CLOSE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"close"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CLOSING",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"closing"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("COMPLETE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"complete"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CONNECT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"connect"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CONTEXT3D_CREATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"context3DCreate"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("COPY",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"copy"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("CUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"cut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("DEACTIVATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"deactivate"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("DISPLAYING",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"displaying"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ENTER_FRAME",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"enterFrame"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("EXIT_FRAME",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"exitFrame"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("EXITING",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"exiting"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("FRAME_CONSTRUCTED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"frameConstructed"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("FULLSCREEN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("HTML_BOUNDS_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"htmlBoundsChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("HTML_DOM_INITIALIZE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"htmlDOMInitialize"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("HTML_RENDER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"htmlRender"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ID3",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"id3"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("INIT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"init"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("LOCATION_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"locationChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_LEAVE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseLeave"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("NETWORK_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"networkChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("OPEN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"open"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("PASTE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"paste"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("REMOVED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"removed"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("REMOVED_FROM_STAGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"removedFromStage"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("RENDER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"render"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("RESIZE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"resize"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("SCROLL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"scroll"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("SELECT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"select"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("SELECT_ALL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"selectAll"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("SOUND_COMPLETE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"soundComplete"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_ERROR_CLOSE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardErrorClose"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_INPUT_CLOSE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardInputClose"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_OUTPUT_CLOSE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardOutputClose"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TAB_CHILDREN_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"tabChildrenChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TAB_ENABLED_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"tabEnabledChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TAB_INDEX_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"tabIndexChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TEXT_INTERACTION_MODE_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"textInteractionModeChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TEXTURE_READY",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"textureReady"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("UNLOAD",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"unload"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("USER_IDLE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"userIdle"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("USER_PRESENT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"userPresent"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ACTIVATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"activate"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ADDED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"added"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ADDED_TO_STAGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"addedToStage"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CANCEL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"cancel"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"change"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLEAR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clear"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLOSE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"close"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLOSING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"closing"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("COMPLETE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"complete"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CONNECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"connect"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CONTEXT3D_CREATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"context3DCreate"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("COPY",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"copy"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"cut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DEACTIVATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"deactivate"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DISPLAYING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"displaying"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ENTER_FRAME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"enterFrame"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("EXIT_FRAME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"exitFrame"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("EXITING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"exiting"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FRAME_CONSTRUCTED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"frameConstructed"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FULLSCREEN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HTML_BOUNDS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"htmlBoundsChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HTML_DOM_INITIALIZE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"htmlDOMInitialize"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HTML_RENDER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"htmlRender"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ID3",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"id3"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("INIT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"init"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LOCATION_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"locationChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_LEAVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseLeave"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("NETWORK_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"networkChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("OPEN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"open"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("PASTE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"paste"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("REMOVED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"removed"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("REMOVED_FROM_STAGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"removedFromStage"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RENDER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"render"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RESIZE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resize"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SCROLL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"scroll"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SELECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"select"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SELECT_ALL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"selectAll"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SOUND_COMPLETE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"soundComplete"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_ERROR_CLOSE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardErrorClose"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_INPUT_CLOSE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardInputClose"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_OUTPUT_CLOSE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputClose"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TAB_CHILDREN_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"tabChildrenChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TAB_ENABLED_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"tabEnabledChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TAB_INDEX_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"tabIndexChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TEXT_INTERACTION_MODE_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"textInteractionModeChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TEXTURE_READY",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"textureReady"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("UNLOAD",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"unload"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("USER_IDLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"userIdle"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("USER_PRESENT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"userPresent"),DECLARED_TRAIT);
 
 	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(c->getSystemState(),formatToString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(c->getSystemState(),_isDefaultPrevented),NORMAL_METHOD,true);
@@ -123,7 +123,7 @@ ASFUNCTIONBODY_ATOM(Event,_constructor)
 	if(argslen==0)
 		return;
 
-	Event* th=obj.as<Event>();
+	Event* th=asAtomHandler::as<Event>(obj);
 	ARG_UNPACK_ATOM(th->type)(th->bubbles, false)(th->cancelable, false);
 }
 
@@ -136,26 +136,26 @@ ASFUNCTIONBODY_GETTER(Event,cancelable)
 
 ASFUNCTIONBODY_ATOM(Event,_isDefaultPrevented)
 {
-	Event* th=obj.as<Event>();
-	ret.setBool(th->defaultPrevented);
+	Event* th=asAtomHandler::as<Event>(obj);
+	asAtomHandler::setBool(ret,th->defaultPrevented);
 }
 
 ASFUNCTIONBODY_ATOM(Event,_preventDefault)
 {
-	Event* th=obj.as<Event>();
+	Event* th=asAtomHandler::as<Event>(obj);
 	th->defaultPrevented = true;
 }
 
 ASFUNCTIONBODY_ATOM(Event,formatToString)
 {
 	assert_and_throw(argslen>=1);
-	Event* th=obj.as<Event>();
+	Event* th=asAtomHandler::as<Event>(obj);
 	tiny_string msg = "[";
-	msg += args[0].toString(sys);
+	msg += asAtomHandler::toString(args[0],sys);
 
 	for(unsigned int i=1; i<argslen; i++)
 	{
-		tiny_string prop(args[i].toString(sys));
+		tiny_string prop(asAtomHandler::toString(args[i],sys));
 		msg += " ";
 		msg += prop;
 		msg += "=";
@@ -164,14 +164,14 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s_id=sys->getUniqueStringId(prop);
 		propName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
-		asAtom value;
+		asAtom value=asAtomHandler::invalidAtom;
 		th->getVariableByMultiname(value,propName);
-		if (value.isValid())
-			msg += value.toString(sys);
+		if (asAtomHandler::isValid(value))
+			msg += asAtomHandler::toString(value,sys);
 	}
 	msg += "]";
 
-	ret = asAtom::fromObject(abstract_s(sys,msg));
+	ret = asAtomHandler::fromObject(abstract_s(sys,msg));
 }
 
 Event* Event::cloneImpl() const
@@ -181,18 +181,18 @@ Event* Event::cloneImpl() const
 
 ASFUNCTIONBODY_ATOM(Event,clone)
 {
-	Event* th=obj.as<Event>();
-	ret = asAtom::fromObject(th->cloneImpl());
+	Event* th=asAtomHandler::as<Event>(obj);
+	ret = asAtomHandler::fromObject(th->cloneImpl());
 }
 
 ASFUNCTIONBODY_ATOM(Event,stopPropagation)
 {
-	Event* th=obj.as<Event>();
+	Event* th=asAtomHandler::as<Event>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented:"<<th->toDebugString());
 }
 ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 {
-	Event* th=obj.as<Event>();
+	Event* th=asAtomHandler::as<Event>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented:"<<th->toDebugString());
 }
 
@@ -217,9 +217,9 @@ void WaitableEvent::finalize()
 void EventPhase::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("CAPTURING_PHASE",nsNameAndKind(),asAtom(CAPTURING_PHASE),DECLARED_TRAIT);
-	c->setVariableAtomByQName("BUBBLING_PHASE",nsNameAndKind(),asAtom(BUBBLING_PHASE),DECLARED_TRAIT);
-	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtom(AT_TARGET),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CAPTURING_PHASE",nsNameAndKind(),asAtomHandler::fromUInt(CAPTURING_PHASE),DECLARED_TRAIT);
+	c->setVariableAtomByQName("BUBBLING_PHASE",nsNameAndKind(),asAtomHandler::fromUInt(BUBBLING_PHASE),DECLARED_TRAIT);
+	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtomHandler::fromUInt(AT_TARGET),DECLARED_TRAIT);
 }
 
 FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
@@ -229,10 +229,10 @@ FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
 void FocusEvent::sinit(Class_base* c)
 {	
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("FOCUS_IN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"focusIn"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("FOCUS_OUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"focusOut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_FOCUS_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("KEY_FOCUS_CHANGE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FOCUS_IN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"focusIn"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FOCUS_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"focusOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("KEY_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(FocusEvent,_constructor)
@@ -273,11 +273,11 @@ Event* ProgressEvent::cloneImpl() const
 void ProgressEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("PROGRESS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"progress"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("SOCKET_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"socketData"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_ERROR_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardErrorData"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_INPUT_PROGRESS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardInputProgress"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("PROGRESS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"progress"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SOCKET_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"socketData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_ERROR_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardErrorData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_INPUT_PROGRESS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardInputProgress"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,bytesLoaded);
 	REGISTER_GETTER_SETTER(c,bytesTotal);
 }
@@ -291,20 +291,20 @@ void ProgressEvent::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(ProgressEvent,_constructor)
 {
-	ProgressEvent* th=obj.as<ProgressEvent>();
+	ProgressEvent* th=asAtomHandler::as<ProgressEvent>(obj);
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
-		th->bytesLoaded=args[3].toInt();
+		th->bytesLoaded=asAtomHandler::toInt(args[3]);
 	if(argslen>=5)
-		th->bytesTotal=args[4].toInt();
+		th->bytesTotal=asAtomHandler::toInt(args[4]);
 }
 
 void TimerEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("TIMER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"timer"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TIMER_COMPLETE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"timerComplete"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TIMER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"timer"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TIMER_COMPLETE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"timerComplete"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(TimerEvent,updateAfterEvent)
@@ -315,17 +315,17 @@ ASFUNCTIONBODY_ATOM(TimerEvent,updateAfterEvent)
 void MouseEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("CLICK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"click"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("DOUBLE_CLICK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"doubleClick"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_DOWN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseDown"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_OUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseOut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_OVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseOver"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_UP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseUp"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_WHEEL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseWheel"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_MOVE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mouseMove"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("RIGHT_CLICK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"rightClick"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ROLL_OVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"rollOver"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("ROLL_OUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"rollOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLICK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"click"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DOUBLE_CLICK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"doubleClick"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseDown"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_OVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseOver"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseUp"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_WHEEL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseWheel"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MOUSE_MOVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseMove"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RIGHT_CLICK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rightClick"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ROLL_OVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rollOver"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ROLL_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rollOut"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,relatedObject);
@@ -342,13 +342,13 @@ void MouseEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
-		th->localX=args[3].toNumber();
+		th->localX=asAtomHandler::toNumber(args[3]);
 	if(argslen>=5)
-		th->localY=args[4].toNumber();
+		th->localY=asAtomHandler::toNumber(args[4]);
 	if(argslen>=6)
 		th->relatedObject=ArgumentConversionAtom< _NR<InteractiveObject> >::toConcrete(sys,args[5],NullRef);
 	if(argslen>=7)
@@ -364,7 +364,7 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 		if (ArgumentConversionAtom<bool>::toConcrete(sys,args[9],false))
 			th->buttonDown = true;
 	if(argslen>=11)
-		th->delta=args[10].toInt();
+		th->delta=asAtomHandler::toInt(args[10]);
 	if(argslen>=12)
 		if (ArgumentConversionAtom<bool>::toConcrete(sys,args[11],false))
 			th->modifiers |= KMOD_GUI;
@@ -386,81 +386,81 @@ ASFUNCTIONBODY_GETTER_SETTER(MouseEvent,buttonDown);
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	if(argslen != 1) 
 		throw Class<ArgumentError>::getInstanceS(sys,"Wrong number of arguments in setter"); 
-	number_t val=args[0].toNumber();
+	number_t val=asAtomHandler::toNumber(args[0]);
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.isValid() &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
+	if(asAtomHandler::isValid(th->target) &&(asAtomHandler::toObject(th->target,sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
+		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(th->target));
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	if(argslen != 1) 
 		throw Class<ArgumentError>::getInstanceS(sys,"Wrong number of arguments in setter"); 
-	number_t val=args[0].toNumber();
+	number_t val=asAtomHandler::toNumber(args[0]);
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
 	//At this point, the target should be an InteractiveObject but check anyway
-	if(th->target.isValid() &&(th->target.toObject(sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
+	if(asAtomHandler::isValid(th->target) &&(asAtomHandler::toObject(th->target,sys)->getClass()->isSubClass(Class<InteractiveObject>::getClass(sys))))
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>((th->target).getObject());
+		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(th->target));
 		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
 	}
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_altKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
-	ret.setBool((bool)(th->modifiers & KMOD_ALT));
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_ALT));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_altKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	th->modifiers |= KMOD_ALT;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_controlKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
-	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_controlKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	th->modifiers |= KMOD_CTRL;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_ctrlKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
-	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_ctrlKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	th->modifiers |= KMOD_CTRL;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_shiftKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
-	ret.setBool((bool)(th->modifiers & KMOD_SHIFT));
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_SHIFT));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_shiftKey)
 {
-	MouseEvent* th=obj.as<MouseEvent>();
+	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	th->modifiers |= KMOD_SHIFT;
 }
 ASFUNCTIONBODY_ATOM(MouseEvent,updateAfterEvent)
@@ -479,7 +479,7 @@ void MouseEvent::setTarget(asAtom t)
 {
 	target = t;
 	//If t is NULL, it means MouseEvent is being reset
-	if(t.isInvalid())
+	if(asAtomHandler::isInvalid(t))
 	{
 		localX = 0;
 		localY = 0;
@@ -488,9 +488,9 @@ void MouseEvent::setTarget(asAtom t)
 		relatedObject = NullRef;
 	}
 	//If t is non null, it should be an InteractiveObject
-	else if(t.toObject(getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
+	else if(asAtomHandler::toObject(t,getSystemState())->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
 	{		
-		InteractiveObject* tar = static_cast<InteractiveObject*>(t.getObject());
+		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(t));
 		tar->localToGlobal(localX, localY, stageX, stageY);
 	}
 }
@@ -526,13 +526,13 @@ Event *IOErrorEvent::cloneImpl() const
 void IOErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("IO_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"ioError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("DISK_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"diskError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NETWORK_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"networkError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("VERIFY_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"verifyError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STANDARD_ERROR_IO_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardErrorIoError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STANDARD_INPUT_IO_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardInputIoError"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STANDARD_OUTPUT_IO_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ioError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DISK_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"diskError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NETWORK_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"networkError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("VERIFY_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"verifyError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STANDARD_ERROR_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardErrorIoError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STANDARD_INPUT_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardInputIoError"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STANDARD_OUTPUT_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
 }
 
 EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)
@@ -568,14 +568,14 @@ void EventDispatcher::dumpHandlers()
 	for(;it!=handlers.end();++it)
 	{
 		for (auto it2 = it->second.begin();it2 != it->second.end(); it2++)
-			LOG(LOG_INFO, it->first<<":"<<it2->f.toDebugString());
+			LOG(LOG_INFO, it->first<<":"<<asAtomHandler::toDebugString(it2->f));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=obj.as<EventDispatcher>();
-	if(!args[0].isString() || !args[1].isFunction())
+	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
+	if(!asAtomHandler::isString(args[0]) || !asAtomHandler::isFunction(args[1]))
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 		return;
 
@@ -583,11 +583,11 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 	int32_t priority=0;
 
 	if(argslen>=3)
-		useCapture=args[2].Boolean_concrete();
+		useCapture=asAtomHandler::Boolean_concrete(args[2]);
 	if(argslen>=4)
-		priority=args[3].toInt();
+		priority=asAtomHandler::toInt(args[3]);
 
-	const tiny_string& eventName=args[0].toString(sys);
+	const tiny_string& eventName=asAtomHandler::toString(args[0],sys);
 
 	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
@@ -612,25 +612,25 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 {
-	EventDispatcher* th=obj.as<EventDispatcher>();
-	const tiny_string& eventName=args[0].toString(sys);
-	ret.setBool(th->hasEventListener(eventName));
+	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
+	const tiny_string& eventName=asAtomHandler::toString(args[0],sys);
+	asAtomHandler::setBool(ret,th->hasEventListener(eventName));
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 {
-	EventDispatcher* th=obj.as<EventDispatcher>();
+	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	
-	if (args[1].isNull()) // it seems that null is allowed as function
+	if (asAtomHandler::isNull(args[1])) // it seems that null is allowed as function
 		return;
-	if(!args[0].isString() || !args[1].isFunction())
+	if(!asAtomHandler::isString(args[0]) || !asAtomHandler::isFunction(args[1]))
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
-	const tiny_string& eventName=args[0].toString(sys);
+	const tiny_string& eventName=asAtomHandler::toString(args[0],sys);
 
 	bool useCapture=false;
 	if(argslen>=3)
-		useCapture=args[2].Boolean_concrete();
+		useCapture=asAtomHandler::Boolean_concrete(args[2]);
 
 	{
 		Locker l(th->handlersMutex);
@@ -667,51 +667,51 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=obj.as<EventDispatcher>();
-	if(!args[0].is<Event>())
+	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
+	if(!asAtomHandler::is<Event>(args[0]))
 	{
-		ret.setBool(false);
+		asAtomHandler::setBool(ret,false);
 		return;
 	}
 
 	ASATOM_INCREF(args[0]);
-	_R<Event> e=_MR(Class<Event>::cast(args[0].getObject()));
+	_R<Event> e=_MR(Class<Event>::cast(asAtomHandler::getObject(args[0])));
 
 	// Must call the AS getter, because the getter may have been
 	// overridden
-	asAtom target;
+	asAtom target=asAtomHandler::invalidAtom;
 	e->getVariableByMultiname(target,"target", {""});
-	if(target.isValid() && !target.isNull() && !target.isUndefined())
+	if(asAtomHandler::isValid(target) && !asAtomHandler::isNull(target) && !asAtomHandler::isUndefined(target))
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
-		asAtom cloned;
+		asAtom cloned=asAtomHandler::invalidAtom;
 		e->executeASMethod(cloned,"clone", {""}, NULL, 0);
 		//Clone always exists since it's implemented in Event itself
-		if(!cloned.getObject() || !cloned.getObject()->is<Event>())
+		if(!asAtomHandler::getObject(cloned) || !asAtomHandler::getObject(cloned)->is<Event>())
 		{
-			ret.setBool(false);
+			asAtomHandler::setBool(ret,false);
 			return;
 		}
 
 		ASATOM_INCREF(cloned);
-		e = _MR(cloned.getObject()->as<Event>());
+		e = _MR(asAtomHandler::getObject(cloned)->as<Event>());
 	}
-	if(th->forcedTarget.isValid())
+	if(asAtomHandler::isValid(th->forcedTarget))
 		e->setTarget(th->forcedTarget);
 	ABCVm::publicHandleEvent(th, e);
-	ret.setBool(true);
+	asAtomHandler::setBool(ret,true);
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 {
-	EventDispatcher* th=obj.as<EventDispatcher>();
-	asAtom forcedTarget;
-	ARG_UNPACK_ATOM(forcedTarget, asAtom::nullAtom);
-	if(forcedTarget.isValid())
+	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
+	asAtom forcedTarget=asAtomHandler::invalidAtom;
+	ARG_UNPACK_ATOM(forcedTarget, asAtomHandler::nullAtom);
+	if(asAtomHandler::isValid(forcedTarget))
 	{
-		if(forcedTarget.isNull() || forcedTarget.isUndefined())
-			forcedTarget=asAtom::invalidAtom;
-		else if(!forcedTarget.toObject(sys)->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(sys)))
+		if(asAtomHandler::isNull(forcedTarget) || asAtomHandler::isUndefined(forcedTarget))
+			forcedTarget=asAtomHandler::invalidAtom;
+		else if(!asAtomHandler::toObject(forcedTarget,sys)->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(sys)))
 			throw Class<ArgumentError>::getInstanceS(sys,"Wrong argument for EventDispatcher");
 	}
 	th->forcedTarget=forcedTarget;
@@ -738,11 +738,11 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			continue;
 		//tmpListener is now also owned by the vector
 		ASATOM_INCREF(tmpListener[i].f);
-		asAtom arg0= asAtom::fromObject(e.getPtr());
-		IFunction* func = tmpListener[i].f.as<IFunction>();
-		asAtom v = asAtom::fromObject(func->closure_this ? func->closure_this.getPtr() : this);
-		asAtom ret;
-		tmpListener[i].f.callFunction(ret,v,&arg0,1,false);
+		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
+		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
+		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this.getPtr() : this);
+		asAtom ret=asAtomHandler::invalidAtom;
+		asAtomHandler::callFunction(tmpListener[i].f,ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
@@ -764,15 +764,15 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 NetStatusEvent::NetStatusEvent(Class_base* c, const tiny_string& level, const tiny_string& code):Event(c, "netStatus")
 {
 	ASObject* info=Class<ASObject>::getInstanceS(c->getSystemState());
-	info->setVariableAtomByQName("level",nsNameAndKind(),asAtom::fromString(c->getSystemState(),level),DECLARED_TRAIT);
-	info->setVariableAtomByQName("code",nsNameAndKind(),asAtom::fromString(c->getSystemState(),code),DECLARED_TRAIT);
+	info->setVariableAtomByQName("level",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),level),DECLARED_TRAIT);
+	info->setVariableAtomByQName("code",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),code),DECLARED_TRAIT);
 	setVariableByQName("info","",info, DECLARED_TRAIT);
 }
 
 void NetStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("NET_STATUS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"netStatus"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("NET_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"netStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(NetStatusEvent,_constructor)
@@ -780,7 +780,7 @@ ASFUNCTIONBODY_ATOM(NetStatusEvent,_constructor)
 	//Also call the base class constructor, using only the first arguments
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
-	asAtom info;
+	asAtom info=asAtomHandler::invalidAtom;
 	if(argslen==0)
 	{
 		//Called from C++ code, info was set in the C++
@@ -796,14 +796,14 @@ ASFUNCTIONBODY_ATOM(NetStatusEvent,_constructor)
 	else
 	{
 		//Uninitialized info
-		info=asAtom::nullAtom;
+		info=asAtomHandler::nullAtom;
 	}
 	multiname infoName(NULL);
 	infoName.name_type=multiname::NAME_STRING;
 	infoName.name_s_id=sys->getUniqueStringId("info");
 	infoName.ns.push_back(nsNameAndKind());
 	infoName.isAttribute = false;
-	obj.getObject()->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
+	asAtomHandler::getObject(obj)->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 }
 
 Event* NetStatusEvent::cloneImpl() const
@@ -819,9 +819,9 @@ Event* NetStatusEvent::cloneImpl() const
 	infoName.ns.push_back(nsNameAndKind());
 	infoName.isAttribute = false;
 
-	asAtom info;
+	asAtom info=asAtomHandler::invalidAtom;
 	const_cast<NetStatusEvent*>(this)->getVariableByMultiname(info,infoName);
-	assert(info.isValid());
+	assert(asAtomHandler::isValid(info));
 	ASATOM_INCREF(info);
 	clone->setVariableByMultiname(infoName, info, CONST_NOT_ALLOWED);
 
@@ -835,7 +835,7 @@ FullScreenEvent::FullScreenEvent(Class_base* c):Event(c, "fullScreenEvent")
 void FullScreenEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("FULL_SCREEN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FULL_SCREEN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
@@ -860,25 +860,25 @@ void KeyboardEvent::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, keyCode);
 	REGISTER_GETTER_SETTER(c, keyLocation);
 	REGISTER_GETTER_SETTER(c, shiftKey);
-	c->setVariableAtomByQName("KEY_DOWN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"keyDown"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("KEY_UP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"keyUp"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("KEY_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyDown"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("KEY_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyUp"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
 {
-	KeyboardEvent* th=obj.as<KeyboardEvent>();
+	KeyboardEvent* th=asAtomHandler::as<KeyboardEvent>(obj);
 
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
 	if(argslen > 3) {
-		th->charCode = args[3].toUInt();
+		th->charCode = asAtomHandler::toUInt(args[3]);
 	}
 	if(argslen > 4) {
-		th->keyCode = args[4].toUInt();
+		th->keyCode = asAtomHandler::toUInt(args[4]);
 	}
 	if(argslen > 5) {
-		th->keyLocation = args[5].toUInt();
+		th->keyLocation = asAtomHandler::toUInt(args[5]);
 	}
 	if(argslen > 6) {
 		if (ArgumentConversionAtom<bool>::toConcrete(sys,args[6],false))
@@ -909,20 +909,20 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation);
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_altKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	ret.setBool((bool)(th->modifiers & KMOD_ALT));
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_ALT));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_altKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
 	th->modifiers |= KMOD_ALT;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_commandKey)
 {
 	// Supported only on OSX
-	ret.setBool(false);
+	asAtomHandler::setBool(ret,false);
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
@@ -932,37 +932,37 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_controlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_controlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
 	th->modifiers |= KMOD_CTRL;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_ctrlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	ret.setBool((bool)(th->modifiers & KMOD_CTRL));
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_ctrlKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
 	th->modifiers |= KMOD_CTRL;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_shiftKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
-	ret.setBool((bool)(th->modifiers & KMOD_SHIFT));
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_SHIFT));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
-	KeyboardEvent* th=static_cast<KeyboardEvent*>(obj.getObject());
+	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
 	th->modifiers |= KMOD_SHIFT;
 }
 
@@ -986,7 +986,7 @@ TextEvent::TextEvent(Class_base* c,const tiny_string& t):Event(c,t)
 void TextEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("TEXT_INPUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"textInput"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TEXT_INPUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"textInput"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,text);
 }
 
@@ -994,11 +994,11 @@ ASFUNCTIONBODY_GETTER_SETTER(TextEvent,text);
 
 ASFUNCTIONBODY_ATOM(TextEvent,_constructor)
 {
-	TextEvent* th=obj.as<TextEvent>();
+	TextEvent* th=asAtomHandler::as<TextEvent>(obj);
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=4)
-		th->text=args[3].toString(sys);
+		th->text=asAtomHandler::toString(args[3],sys);
 }
 
 ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e, int id): TextEvent(c,t), errorMsg(e),errorID(id)
@@ -1008,7 +1008,7 @@ ErrorEvent::ErrorEvent(Class_base* c, const tiny_string& t, const std::string& e
 void ErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"error"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"error"),DECLARED_TRAIT);
 	REGISTER_GETTER(c,errorID);
 }
 ASFUNCTIONBODY_GETTER(ErrorEvent,errorID);
@@ -1020,11 +1020,11 @@ Event* ErrorEvent::cloneImpl() const
 
 ASFUNCTIONBODY_ATOM(ErrorEvent,_constructor)
 {
-	ErrorEvent* th=obj.as<ErrorEvent>();
+	ErrorEvent* th=asAtomHandler::as<ErrorEvent>(obj);
 	uint32_t baseClassArgs=imin(argslen,4);
 	TextEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 	if(argslen>=5)
-		th->errorID=args[4].toInt();
+		th->errorID=asAtomHandler::toInt(args[4]);
 }
 
 SecurityErrorEvent::SecurityErrorEvent(Class_base* c, const std::string& e):ErrorEvent(c, "securityError",e)
@@ -1034,7 +1034,7 @@ SecurityErrorEvent::SecurityErrorEvent(Class_base* c, const std::string& e):Erro
 void SecurityErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("SECURITY_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"securityError"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SECURITY_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"securityError"),DECLARED_TRAIT);
 }
 
 AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
@@ -1044,7 +1044,7 @@ AsyncErrorEvent::AsyncErrorEvent(Class_base* c):ErrorEvent(c, "asyncError")
 void AsyncErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("ASYNC_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"asyncError"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("ASYNC_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"asyncError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(AsyncErrorEvent,_constructor)
@@ -1061,7 +1061,7 @@ UncaughtErrorEvent::UncaughtErrorEvent(Class_base* c):ErrorEvent(c, "uncaughtErr
 void UncaughtErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("UNCAUGHT_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"uncaughtError"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("UNCAUGHT_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"uncaughtError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(UncaughtErrorEvent,_constructor)
@@ -1081,7 +1081,7 @@ ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")
 void HTTPStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("HTTP_STATUS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HTTP_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)
@@ -1145,16 +1145,16 @@ void StatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	/* TODO: dispatch this event */
-	c->setVariableAtomByQName("STATUS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"status"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"status"),DECLARED_TRAIT);
 }
 
 void DataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, TextEvent, _constructor, CLASS_SEALED);
 	/* TODO: dispatch this event */
-	c->setVariableAtomByQName("DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"data"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"data"),DECLARED_TRAIT);
 	/* TODO: dispatch this event */
-	c->setVariableAtomByQName("UPLOAD_COMPLETE_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"uploadCompleteData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("UPLOAD_COMPLETE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"uploadCompleteData"),DECLARED_TRAIT);
 
 	REGISTER_GETTER_SETTER(c, data);
 }
@@ -1166,10 +1166,10 @@ ASFUNCTIONBODY_ATOM(DataEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	TextEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 
-	DataEvent* th=obj.as<DataEvent>();
+	DataEvent* th=asAtomHandler::as<DataEvent>(obj);
 	if (argslen >= 4)
 	{
-		th->data = args[3].toString(sys);
+		th->data = asAtomHandler::toString(args[3],sys);
 	}
 }
 
@@ -1189,7 +1189,7 @@ Event* DataEvent::cloneImpl() const
 void InvokeEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("INVOKE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"invoke"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("INVOKE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"invoke"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(InvokeEvent,_constructor)
@@ -1205,8 +1205,8 @@ DRMErrorEvent::DRMErrorEvent(Class_base* c) : ErrorEvent(c, "drmAuthenticate")
 void DRMErrorEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("DRM_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"drmError"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("DRM_LOAD_DEVICEID_ERROR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"drmLoadDeviceIdError"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DRM_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"drmError"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DRM_LOAD_DEVICEID_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"drmLoadDeviceIdError"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(DRMErrorEvent,_constructor)
@@ -1224,7 +1224,7 @@ DRMStatusEvent::DRMStatusEvent(Class_base* c) : Event(c, "drmAuthenticate")
 void DRMStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("DRM_STATUS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"drmStatus"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DRM_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"drmStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(DRMStatusEvent,_constructor)
@@ -1243,10 +1243,10 @@ VideoEvent::VideoEvent(Class_base* c)
 void VideoEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("RENDER_STATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RENDER_STATUS_ACCELERATED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"accelerated"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RENDER_STATUS_SOFTWARE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"software"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RENDER_STATUS_UNAVAILABLE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"unavailable"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RENDER_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RENDER_STATUS_ACCELERATED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"accelerated"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RENDER_STATUS_SOFTWARE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"software"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RENDER_STATUS_UNAVAILABLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"unavailable"),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,status);
 }
 
@@ -1255,10 +1255,10 @@ ASFUNCTIONBODY_ATOM(VideoEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
-	VideoEvent* th=obj.as<VideoEvent>();
+	VideoEvent* th=asAtomHandler::as<VideoEvent>(obj);
 	if(argslen>=4)
 	{
-		th->status=args[3].toString(sys);
+		th->status=asAtomHandler::toString(args[3],sys);
 	}
 }
 
@@ -1285,7 +1285,7 @@ StageVideoEvent::StageVideoEvent(Class_base* c)
 void StageVideoEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("RENDER_STATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RENDER_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"renderState"),CONSTANT_TRAIT);
 	REGISTER_GETTER(c,colorSpace);
 	REGISTER_GETTER(c,status);
 }
@@ -1295,14 +1295,14 @@ ASFUNCTIONBODY_ATOM(StageVideoEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
-	StageVideoEvent* th=obj.as<StageVideoEvent>();
+	StageVideoEvent* th=asAtomHandler::as<StageVideoEvent>(obj);
 	if(argslen>=4)
 	{
-		th->status=args[3].toString(sys);
+		th->status=asAtomHandler::toString(args[3],sys);
 	}
 	if(argslen>=5)
 	{
-		th->colorSpace=args[4].toString(sys);
+		th->colorSpace=asAtomHandler::toString(args[4],sys);
 	}
 }
 
@@ -1330,7 +1330,7 @@ StageVideoAvailabilityEvent::StageVideoAvailabilityEvent(Class_base* c)
 void StageVideoAvailabilityEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
-	c->setVariableAtomByQName("STAGE_VIDEO_AVAILABILITY",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"stageVideoAvailability"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("STAGE_VIDEO_AVAILABILITY",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"stageVideoAvailability"),DECLARED_TRAIT);
 	REGISTER_GETTER(c, availability);
 }
 
@@ -1339,10 +1339,10 @@ ASFUNCTIONBODY_ATOM(StageVideoAvailabilityEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
-	StageVideoAvailabilityEvent* th=obj.as<StageVideoAvailabilityEvent>();
+	StageVideoAvailabilityEvent* th=asAtomHandler::as<StageVideoAvailabilityEvent>(obj);
 	if(argslen>=4)
 	{
-		th->availability = args[3].toString(sys);
+		th->availability = asAtomHandler::toString(args[3],sys);
 	}
 }
 
@@ -1363,43 +1363,43 @@ ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability)
 void ContextMenuEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("MENU_ITEM_SELECT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"menuItemSelect"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MENU_SELECT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"menuSelect"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MENU_ITEM_SELECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"menuItemSelect"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MENU_SELECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"menuSelect"),DECLARED_TRAIT);
 }
 
 
 void TouchEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("TOUCH_BEGIN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchBegin"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_END",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchEnd"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_MOVE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchMove"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_OUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchOut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_OVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchOver"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_ROLL_OUT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchRollOut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_ROLL_OVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchRollOver"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("TOUCH_TAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"touchTap"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_BEGIN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchBegin"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_END",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchEnd"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_MOVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchMove"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_OVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchOver"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_ROLL_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchRollOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_ROLL_OVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchRollOver"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("TOUCH_TAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"touchTap"),DECLARED_TRAIT);
 }
 
 void GestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("GESTURE_TWO_FINGER_TAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gestureTwoFingerTap"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_TWO_FINGER_TAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gestureTwoFingerTap"),DECLARED_TRAIT);
 }
 
 void PressAndTapGestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("GESTURE_PRESS_AND_TAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gesturePressAndTap"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_PRESS_AND_TAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gesturePressAndTap"),DECLARED_TRAIT);
 }
 
 void TransformGestureEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, GestureEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("GESTURE_PAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gesturePan"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("GESTURE_ROTATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gestureRotate"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("GESTURE_SWIPE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gestureSwipe"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("GESTURE_ZOOM",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"gestureZoom"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_PAN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gesturePan"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_ROTATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gestureRotate"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_SWIPE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gestureSwipe"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("GESTURE_ZOOM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"gestureZoom"),DECLARED_TRAIT);
 }
 
 UncaughtErrorEvents::UncaughtErrorEvents(Class_base* c):
@@ -1422,7 +1422,7 @@ ASFUNCTIONBODY_ATOM(UncaughtErrorEvents,_constructor)
 void SampleDataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
-	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
 	
 	REGISTER_GETTER_SETTER(c, data);
@@ -1436,19 +1436,19 @@ ASFUNCTIONBODY_ATOM(SampleDataEvent,_constructor)
 	uint32_t baseClassArgs=imin(argslen,3);
 	Event::_constructor(ret,sys,obj,args,baseClassArgs);
 
-	SampleDataEvent* th=obj.as<SampleDataEvent>();
+	SampleDataEvent* th=asAtomHandler::as<SampleDataEvent>(obj);
 	if(argslen>=4)
 	{
-		th->position = args[3].toNumber();
-		if (argslen>4 && args[4].is<ByteArray>())
-			th->data = _MR(args[4].as<ByteArray>());
+		th->position = asAtomHandler::toNumber(args[3]);
+		if (argslen>4 && asAtomHandler::is<ByteArray>(args[4]))
+			th->data = _MR(asAtomHandler::as<ByteArray>(args[4]));
 		else
 			th->data.reset();
 	}
 }
 ASFUNCTIONBODY_ATOM(SampleDataEvent,_toString)
 {
-	SampleDataEvent* th=obj.as<SampleDataEvent>();
+	SampleDataEvent* th=asAtomHandler::as<SampleDataEvent>(obj);
 	tiny_string res = "[SampleDataEvent type=";
 	res += th->type;
 	res += " bubbles=";
@@ -1460,7 +1460,7 @@ ASFUNCTIONBODY_ATOM(SampleDataEvent,_toString)
 	res += " thedata=";
 	res += th->data.isNull() ? "null" : th->data->toString();
 	res += "]";
-	ret = asAtom::fromString(sys,res);
+	ret = asAtomHandler::fromString(sys,res);
 }
 
 Event* SampleDataEvent::cloneImpl() const

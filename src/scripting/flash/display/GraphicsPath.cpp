@@ -56,7 +56,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath,_constructor)
 {
 	_NR<Vector> commands;
 	_NR<Vector> data;
-	GraphicsPath* th = obj.as<GraphicsPath>();
+	GraphicsPath* th = asAtomHandler::as<GraphicsPath>(obj);
 	ARG_UNPACK_ATOM(commands, NullRef)(data, NullRef)(th->winding, "evenOdd");
 
 	if (!commands.isNull())
@@ -76,29 +76,29 @@ void GraphicsPath::ensureValid()
 {
 	if (commands.isNull())
 	{
-		asAtom v;
+		asAtom v=asAtomHandler::invalidAtom;
 		Template<Vector>::getInstanceS(v,getSystemState(),Class<Integer>::getClass(getSystemState()),NullRef);
-		commands = _MNR(v.as<Vector>());
+		commands = _MNR(asAtomHandler::as<Vector>(v));
 	}
 	if (data.isNull())
 	{
-		asAtom v;
+		asAtom v=asAtomHandler::invalidAtom;
 		Template<Vector>::getInstanceS(v,getSystemState(),Class<Number>::getClass(getSystemState()),NullRef);
-		data = _MNR(v.as<Vector>());
+		data = _MNR(asAtomHandler::as<Vector>(v));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(GraphicsPath, curveTo)
 {
-	GraphicsPath* th=obj.as<GraphicsPath>();
-	asAtom cx(T_NUMBER);
-	asAtom cy(T_NUMBER);
-	asAtom ax(T_NUMBER);
-	asAtom ay(T_NUMBER);
+	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
+	asAtom cx = asAtomHandler::fromType(T_NUMBER);
+	asAtom cy = asAtomHandler::fromType(T_NUMBER);
+	asAtom ax = asAtomHandler::fromType(T_NUMBER);
+	asAtom ay = asAtomHandler::fromType(T_NUMBER);
 	ARG_UNPACK_ATOM (cx) (cy) (ax) (ay);
 
 	th->ensureValid();
-	asAtom v((int32_t)GraphicsPathCommand::CURVE_TO);
+	asAtom v = asAtomHandler::fromInt((int32_t)GraphicsPathCommand::CURVE_TO);
 	th->commands->append(v);
 	th->data->append(ax);
 	th->data->append(ay);
@@ -108,13 +108,13 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, curveTo)
 
 ASFUNCTIONBODY_ATOM(GraphicsPath, lineTo)
 {
-	GraphicsPath* th=obj.as<GraphicsPath>();
-	asAtom x(T_NUMBER);
-	asAtom y(T_NUMBER);
+	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
+	asAtom x = asAtomHandler::fromType(T_NUMBER);
+	asAtom y = asAtomHandler::fromType(T_NUMBER);
 	ARG_UNPACK_ATOM (x) (y);
 
 	th->ensureValid();
-	asAtom v((int32_t)(GraphicsPathCommand::LINE_TO));
+	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
 	th->data->append(x);
 	th->data->append(y);
@@ -122,13 +122,13 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, lineTo)
 
 ASFUNCTIONBODY_ATOM(GraphicsPath, moveTo)
 {
-	GraphicsPath* th=obj.as<GraphicsPath>();
-	asAtom x(T_NUMBER);
-	asAtom y(T_NUMBER);
+	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
+	asAtom x = asAtomHandler::fromType(T_NUMBER);
+	asAtom y = asAtomHandler::fromType(T_NUMBER);
 	ARG_UNPACK_ATOM (x) (y);
 
 	th->ensureValid();
-	asAtom v((int32_t)(GraphicsPathCommand::MOVE_TO));
+	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
 	th->data->append(x);
 	th->data->append(y);
@@ -136,15 +136,15 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, moveTo)
 
 ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 {
-	GraphicsPath* th=obj.as<GraphicsPath>();
-	asAtom x(T_NUMBER);
-	asAtom y(T_NUMBER);
+	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
+	asAtom x = asAtomHandler::fromType(T_NUMBER);
+	asAtom y = asAtomHandler::fromType(T_NUMBER);
 	ARG_UNPACK_ATOM (x) (y);
 
 	th->ensureValid();
-	asAtom v((int32_t)(GraphicsPathCommand::LINE_TO));
+	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
-	asAtom n(sys,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
 	th->data->append(n);
 	th->data->append(n);
 	th->data->append(x);
@@ -153,15 +153,15 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 
 ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 {
-	GraphicsPath* th=obj.as<GraphicsPath>();
-	asAtom x(T_NUMBER);
-	asAtom y(T_NUMBER);
+	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
+	asAtom x = asAtomHandler::fromType(T_NUMBER);
+	asAtom y = asAtomHandler::fromType(T_NUMBER);
 	ARG_UNPACK_ATOM (x) (y);
 
 	th->ensureValid();
-	asAtom v((int32_t)(GraphicsPathCommand::MOVE_TO));
+	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
-	asAtom n(sys,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
 	th->data->append(n);
 	th->data->append(n);
 	th->data->append(x);

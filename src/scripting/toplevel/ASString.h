@@ -129,22 +129,22 @@ public:
 template<>
 inline void Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 {
-	if (o.isString())
+	if (asAtomHandler::isString(o))
 		return;
 	//Special handling for Null and Undefined follows avm2overview's description of 'coerce_s' opcode
-	if(o.isNull())
+	if(asAtomHandler::isNull(o))
 		return;
-	if(o.isUndefined())
+	if(asAtomHandler::isUndefined(o))
 	{
 		ASATOM_DECREF(o);
-		o.setNull();
+		asAtomHandler::setNull(o);
 		return;
 	}
-	if(!o.isConstructed())
+	if(!asAtomHandler::isConstructed(o))
 		return;
-	uint32_t stringID =o.toStringId(sys);
+	uint32_t stringID =asAtomHandler::toStringId(o,sys);
 	ASATOM_DECREF(o);
-	o = asAtom::fromStringID(stringID);
+	o = asAtomHandler::fromStringID(stringID);
 }
 
 }

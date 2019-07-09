@@ -21,7 +21,7 @@ void URLRequestHeader::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(URLRequestHeader,_constructor)
 {
-	URLRequestHeader* th=obj.as<URLRequestHeader>();
+	URLRequestHeader* th=asAtomHandler::as<URLRequestHeader>(obj);
 	ARG_UNPACK_ATOM (th->name, "") (th->value, "");
 }
 

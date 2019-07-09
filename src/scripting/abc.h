@@ -275,7 +275,7 @@ class ABCVm
 {
 friend class ABCContext;
 friend class method_info;
-friend class asAtom;
+friend union asAtom;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
@@ -297,20 +297,20 @@ private:
 	static void loadIntN(call_context* th)
 	{
 		RUNTIME_STACK_POP_CREATE(th,arg1);
-		uint32_t addr=arg1->toUInt();
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		T ret=appDomain->readFromDomainMemory<T>(addr);
 		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtom(ret));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromInt(ret));
 	}
 	template<class T>
 	static void storeIntN(call_context* th)
 	{
 		RUNTIME_STACK_POP_CREATE(th,arg1);
 		RUNTIME_STACK_POP_CREATE(th,arg2);
-		uint32_t addr=arg1->toUInt();
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		ASATOM_DECREF_POINTER(arg1);
-		int32_t val=arg2->toInt();
+		int32_t val=asAtomHandler::toInt(*arg2);
 		ASATOM_DECREF_POINTER(arg2);
 		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
 		appDomain->writeToDomainMemory<T>(addr, val);

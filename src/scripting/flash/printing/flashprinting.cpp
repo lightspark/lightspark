@@ -62,6 +62,6 @@ ASFUNCTIONBODY_ATOM(PrintJobOptions,_constructor)
 void PrintJobOrientation::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED| CLASS_FINAL);
-	c->setVariableAtomByQName("LANDSCAPE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"landscape"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("PORTRAIT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"portrait"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LANDSCAPE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"landscape"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PORTRAIT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"portrait"),CONSTANT_TRAIT);
 }

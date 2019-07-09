@@ -28,38 +28,38 @@ using namespace lightspark;
 
 ASFUNCTIONBODY_ATOM(Integer,_toString)
 {
-	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<Integer>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtom::fromString(sys,"0");
+		ret = asAtomHandler::fromString(sys,"0");
 		return;
 	}
 
 	int radix=10;
 	if(argslen==1)
-		radix=args[0].toUInt();
+		radix=asAtomHandler::toUInt(args[0]);
 
 	if(radix==10)
 	{
 		char buf[20];
-		snprintf(buf,20,"%i",obj.toInt());
-		ret = asAtom::fromObject(abstract_s(sys,buf));
+		snprintf(buf,20,"%i",asAtomHandler::toInt(obj));
+		ret = asAtomHandler::fromObject(abstract_s(sys,buf));
 	}
 	else
 	{
-		tiny_string s=Number::toStringRadix(obj.toNumber(), radix);
-		ret = asAtom::fromObject(abstract_s(sys,s));
+		tiny_string s=Number::toStringRadix(asAtomHandler::toNumber(obj), radix);
+		ret = asAtomHandler::fromObject(abstract_s(sys,s));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
-	if(Class<Integer>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<Integer>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret.setInt(sys,0);
+		asAtomHandler::setInt(ret,sys,0);
 		return;
 	}
 
-	if(!obj.is<Integer>())
+	if(!asAtomHandler::is<Integer>(obj))
 			throw Class<TypeError>::getInstanceS(sys,"");
 
 	ASATOM_INCREF(obj);
@@ -68,21 +68,21 @@ ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 
 ASFUNCTIONBODY_ATOM(Integer,_constructor)
 {
-	Integer* th=obj.as<Integer>();
+	Integer* th=asAtomHandler::as<Integer>(obj);
 	if(argslen==0)
 	{
 		//The int is already initialized to 0
 		return;
 	}
-	th->val=args[0].toInt();
+	th->val=asAtomHandler::toInt(args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		ret.setInt(sys,(int32_t)0);
+		asAtomHandler::setInt(ret,sys,(int32_t)0);
 	else
-		ret.setInt(sys,args[0].toInt());
+		asAtomHandler::setInt(ret,sys,asAtomHandler::toInt(args[0]));
 }
 
 TRISTATE Integer::isLess(ASObject* o)
@@ -142,31 +142,31 @@ TRISTATE Integer::isLess(ASObject* o)
 			break;
 	}
 	
-	asAtom val2p;
+	asAtom val2p=asAtomHandler::invalidAtom;
 	o->toPrimitive(val2p);
-	double val2=val2p.toNumber();
+	double val2=asAtomHandler::toNumber(val2p);
 	if(std::isnan(val2)) return TUNDEFINED;
 	return (val<val2)?TTRUE:TFALSE;
 }
 
 TRISTATE Integer::isLessAtom(asAtom& r)
 {
-	switch(r.getObjectType())
+	switch(asAtomHandler::getObjectType(r))
 	{
 		case T_INTEGER:
-			return (val < r.toInt())?TTRUE:TFALSE;
+			return (val < asAtomHandler::toInt(r))?TTRUE:TFALSE;
 		case T_UINTEGER:
-			return (val < 0 || ((uint32_t)val)  < r.toUInt())?TTRUE:TFALSE;
+			return (val < 0 || ((uint32_t)val)  < asAtomHandler::toUInt(r))?TTRUE:TFALSE;
 		
 		case T_NUMBER:
-			if(std::isnan(r.toNumber())) return TUNDEFINED;
-			return (val < r.toNumber())?TTRUE:TFALSE;
+			if(std::isnan(asAtomHandler::toNumber(r))) return TUNDEFINED;
+			return (val < asAtomHandler::toNumber(r))?TTRUE:TFALSE;
 		case T_STRING:
-			if(std::isnan(r.toNumber())) return TUNDEFINED;
-			return (val<r.toNumber())?TTRUE:TFALSE;
+			if(std::isnan(asAtomHandler::toNumber(r))) return TUNDEFINED;
+			return (val<asAtomHandler::toNumber(r))?TTRUE:TFALSE;
 			break;
 		case T_BOOLEAN:
-			return (val < r.toInt())?TTRUE:TFALSE;
+			return (val < asAtomHandler::toInt(r))?TTRUE:TFALSE;
 		case T_UNDEFINED:
 			return TUNDEFINED;
 		case T_NULL:
@@ -175,9 +175,9 @@ TRISTATE Integer::isLessAtom(asAtom& r)
 			break;
 	}
 	
-	asAtom val2p;
-	r.getObject()->toPrimitive(val2p);
-	double val2=val2p.toNumber();
+	asAtom val2p=asAtomHandler::invalidAtom;
+	asAtomHandler::getObject(r)->toPrimitive(val2p);
+	double val2=asAtomHandler::toNumber(val2p);
 	if(std::isnan(val2)) return TUNDEFINED;
 	return (val<val2)?TTRUE:TFALSE;
 }
@@ -237,8 +237,8 @@ void Integer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtom(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtom(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromInt(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromInt(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toFixed,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toExponential,1),NORMAL_METHOD,true);
@@ -507,34 +507,34 @@ int32_t Integer::stringToASInteger(const char* cur, int radix,bool strict)
 
 ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 {
-	double v = obj.toNumber();
+	double v = asAtomHandler::toNumber(obj);
 	int32_t fractionDigits;
 	ARG_UNPACK_ATOM(fractionDigits, 0);
-	if (argslen == 0 || args[0].is<Undefined>())
+	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
 		if (v == 0)
 			fractionDigits = 1;
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
 	}
-	ret = asAtom::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	ret = asAtom::fromObject(abstract_s(sys,Number::toFixedString(obj.toNumber(), fractiondigits)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toPrecision)
 {
-	if (argslen == 0 || args[0].is<Undefined>())
+	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
-		ret = asAtom::fromObject(abstract_s(sys,obj.toString(sys)));
+		ret = asAtomHandler::fromObject(abstract_s(sys,asAtomHandler::toString(obj,sys)));
 		return;
 	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	ret = asAtom::fromObject(abstract_s(sys,Number::toPrecisionString(obj.toNumber(), precision)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
 }

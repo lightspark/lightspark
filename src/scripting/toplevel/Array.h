@@ -134,16 +134,16 @@ public:
 		if (index < ARRAY_SIZE_THRESHOLD)
 		{
 			if (index < data_first.size())
-				ret.set(data_first.at(index));
+				asAtomHandler::set(ret,data_first.at(index));
 		}
 		else
 		{
 			auto it = data_second.find(index);
 			if (it != data_second.end())
-				ret.set(it->second);
+				asAtomHandler::set(ret,it->second);
 		}
-		if (ret.isInvalid())
-			ret.setUndefined();
+		if (asAtomHandler::isInvalid(ret))
+			asAtomHandler::setUndefined(ret);
 		ASATOM_INCREF(ret);
 	}
 	

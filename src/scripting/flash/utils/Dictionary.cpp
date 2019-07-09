@@ -46,13 +46,13 @@ void Dictionary::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(Dictionary,_constructor)
 {
-	Dictionary* th=obj.as<Dictionary>();
+	Dictionary* th=asAtomHandler::as<Dictionary>(obj);
 	ARG_UNPACK_ATOM(th->weakkeys, false);
 }
 
 ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)
 {
-	ret = asAtom::fromString(sys,"Dictionary");
+	ret = asAtomHandler::fromString(sys,"Dictionary");
 }
 
 Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
@@ -70,7 +70,7 @@ Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
 void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
-	asAtom v(value);
+	asAtom v = asAtomHandler::fromInt(value);
 	Dictionary::setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 }
 
@@ -330,7 +330,7 @@ void Dictionary::nextName(asAtom& ret,uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 		it->first->incRef();
-		ret = asAtom::fromObject(it->first.getPtr());
+		ret = asAtomHandler::fromObject(it->first.getPtr());
 	}
 	else
 	{
@@ -367,7 +367,7 @@ tiny_string Dictionary::toString()
 	{
 		if(it != data.begin())
 			retstr << ", ";
-		retstr << "{" << it->first->toString() << ", " << it->second.toString(getSystemState()) << "}";
+		retstr << "{" << it->first->toString() << ", " << asAtomHandler::toString(it->second,getSystemState()) << "}";
 		++it;
 	}
 	retstr << "}";
@@ -413,11 +413,11 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 		tmp = 0;
 		while ((tmp = nextNameIndex(tmp)) != 0)
 		{
-			asAtom v;
+			asAtom v=asAtomHandler::invalidAtom;
 			nextName(v,tmp);
-			v.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+			asAtomHandler::toObject(v,getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 			nextValue(v,tmp);
-			v.toObject(getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+			asAtomHandler::toObject(v,getSystemState())->serialize(out, stringMap, objMap, traitsMap);
 		}
 	}
 }

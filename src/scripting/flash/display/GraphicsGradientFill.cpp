@@ -62,7 +62,7 @@ void GraphicsGradientFill::finalize()
 
 ASFUNCTIONBODY_ATOM(GraphicsGradientFill,_constructor)
 {
-	GraphicsGradientFill* th = obj.as<GraphicsGradientFill>();
+	GraphicsGradientFill* th = asAtomHandler::as<GraphicsGradientFill>(obj);
 	ARG_UNPACK_ATOM (th->type, "linear")
 		(th->colors, NullRef)
 		(th->alphas, NullRef)

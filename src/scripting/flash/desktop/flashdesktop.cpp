@@ -45,14 +45,14 @@ ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
 //  Should actually be a Singleton
 ASFUNCTIONBODY_ATOM(NativeApplication, _getNativeApplication)
 {
-	ret = asAtom::fromObject(Class<NativeApplication>::getInstanceS(sys));
+	ret = asAtomHandler::fromObject(Class<NativeApplication>::getInstanceS(sys));
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)
 {
-	EventDispatcher* th = obj.as<EventDispatcher>();
+	EventDispatcher* th = asAtomHandler::as<EventDispatcher>(obj);
 	EventDispatcher::addEventListener(ret,sys,obj, args, argslen);
-	if (args[0].toString(sys) == "invoke")
+	if (asAtomHandler::toString(args[0],sys) == "invoke")
 	{
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(sys)));

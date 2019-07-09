@@ -46,6 +46,11 @@ public:
 		int64_t ival;
 	};
 	bool isfloat:1;
+	inline void setNumber(number_t v)
+	{
+		isfloat = true;
+		dval=v;
+	}
 	inline number_t toNumber() { return isfloat ? dval : ival; }
 	inline bool destruct() { dval=Number::NaN; isfloat = true; return ASObject::destruct(); }
 	ASFUNCTION_ATOM(_constructor);

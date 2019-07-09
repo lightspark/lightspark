@@ -707,11 +707,11 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,profile);
 ASFUNCTIONBODY_ATOM(Context3D,supportsVideoTexture)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.supportsVideoTexture");
-	ret.setBool(false);
+	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(Context3D,dispose)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.dispose does nothing");
 	bool recreate;
 	ARG_UNPACK_ATOM(recreate,true);
@@ -719,7 +719,7 @@ ASFUNCTIONBODY_ATOM(Context3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	int antiAlias;
 	bool wantsBestResolution;
 	bool wantsBestResolutionOnBrowserZoom;
@@ -733,18 +733,18 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 }
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture does nothing");
 	int32_t size;
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
-	ret = asAtom::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
+	ret = asAtomHandler::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture does nothing");
 	int width;
 	int height;
@@ -752,11 +752,11 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	ARG_UNPACK_ATOM(width)(height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	ret = asAtom::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
+	ret = asAtomHandler::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
@@ -764,41 +764,41 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	if (format != "bgra" || optimizeForRenderToTexture || streamingLevels != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
-	ret = asAtom::fromObject(res);
+	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createVideoTexture does nothing");
-	ret = asAtom::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
+	ret = asAtomHandler::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createProgram)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	th->incRef();
-	ret = asAtom::fromObject(Class<Program3D>::getInstanceS(sys,_MR(th)));
+	ret = asAtomHandler::fromObject(Class<Program3D>::getInstanceS(sys,_MR(th)));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	int32_t numVertices;
 	int32_t data32PerVertex;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(data32PerVertex)(bufferUsage,"staticDraw");
-	ret = asAtom::fromObject(Class<VertexBuffer3D>::getInstanceS(sys,th, numVertices,data32PerVertex,bufferUsage));
+	ret = asAtomHandler::fromObject(Class<VertexBuffer3D>::getInstanceS(sys,th, numVertices,data32PerVertex,bufferUsage));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	int32_t numVertices;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(bufferUsage,"staticDraw");
-	ret = asAtom::fromObject(Class<IndexBuffer3D>::getInstanceS(sys,th,numVertices,bufferUsage));
+	ret = asAtomHandler::fromObject(Class<IndexBuffer3D>::getInstanceS(sys,th,numVertices,bufferUsage));
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,clear)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	number_t red,green,blue,alpha,depth;
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CLEAR;
@@ -816,7 +816,7 @@ ASFUNCTIONBODY_ATOM(Context3D,drawToBitmapData)
 
 ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<IndexBuffer3D> indexBuffer;
 	uint32_t firstIndex;
 	int32_t numTriangles;
@@ -831,7 +831,7 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 
 ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string sourceFactor;
 	tiny_string destinationFactor;
 	ARG_UNPACK_ATOM(sourceFactor)(destinationFactor);
@@ -897,7 +897,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string triangleFaceToCull;
 	ARG_UNPACK_ATOM(triangleFaceToCull);
 	
@@ -916,7 +916,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	bool depthMask;
 	tiny_string passCompareMode;
 	ARG_UNPACK_ATOM(depthMask)(passCompareMode);
@@ -945,7 +945,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<Program3D> program;
 	ARG_UNPACK_ATOM(program);
 	if (!program.isNull())
@@ -963,7 +963,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string programType;
 	uint32_t firstRegister;
 	_NR<Matrix3D> matrix;
@@ -985,7 +985,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string programType;
 	int32_t firstRegister;
 	_NR<Vector> data;
@@ -1003,7 +1003,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 		action.fdata= new float[action.udata3*4];
 		for (uint32_t i = 0; i < action.udata3*4; i++)
 		{
-			action.fdata[i] = data->at(i).toNumber();
+			asAtom a = data->at(i);
+			action.fdata[i] = asAtomHandler::toNumber(a);
 		}
 		th->addAction(action);
 	}
@@ -1019,14 +1020,14 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_RENDERTOBACKBUFFER;
 	th->addAction(action);
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	bool enableDepthAndStencil;
 	int32_t antiAlias;
 	int32_t surfaceSelector;
@@ -1058,7 +1059,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 }
 ASFUNCTIONBODY_ATOM(Context3D,present)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	Locker l(th->rendermutex);
 	if (th->swapbuffers)
 	{
@@ -1092,7 +1093,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 
 ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	uint32_t sampler;
 	_NR<TextureBase> texture;
 	ARG_UNPACK_ATOM(sampler)(texture);
@@ -1109,7 +1110,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 
 ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 {
-	Context3D* th = obj.as<Context3D>();
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	uint32_t index;
 	_NR<VertexBuffer3D> buffer;
 	uint32_t bufferOffset;
@@ -1139,140 +1140,140 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 void Context3DBlendFactor::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("DESTINATION_ALPHA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"destinationAlpha"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("DESTINATION_COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"destinationColor"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ONE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"one"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ONE_MINUS_DESTINATION_ALPHA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"oneMinusDestinationAlpha"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ONE_MINUS_DESTINATION_COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"oneMinusDestinationColor"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ONE_MINUS_SOURCE_ALPHA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"oneMinusSourceAlpha"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ONE_MINUS_SOURCE_COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"oneMinusSourceColor"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SOURCE_ALPHA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"sourceAlpha"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SOURCE_COLOR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"sourceColor"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ZERO",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"zero"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DESTINATION_ALPHA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"destinationAlpha"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DESTINATION_COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"destinationColor"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ONE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"one"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ONE_MINUS_DESTINATION_ALPHA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"oneMinusDestinationAlpha"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ONE_MINUS_DESTINATION_COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"oneMinusDestinationColor"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ONE_MINUS_SOURCE_ALPHA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"oneMinusSourceAlpha"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ONE_MINUS_SOURCE_COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"oneMinusSourceColor"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SOURCE_ALPHA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sourceAlpha"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SOURCE_COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sourceColor"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ZERO",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"zero"),CONSTANT_TRAIT);
 }
 
 void Context3DBufferUsage::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("DYNAMIC_DRAW",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"dynamicDraw"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STATIC_DRAW",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"staticDraw"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DYNAMIC_DRAW",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"dynamicDraw"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STATIC_DRAW",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"staticDraw"),CONSTANT_TRAIT);
 }
 
 void Context3DClearMask::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("ALL",nsNameAndKind(),asAtom(CLEARMASK::COLOR | CLEARMASK::DEPTH | CLEARMASK::STENCIL),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtom(CLEARMASK::COLOR),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("DEPTH",nsNameAndKind(),asAtom(CLEARMASK::DEPTH),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STENCIL",nsNameAndKind(),asAtom(CLEARMASK::STENCIL),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ALL",nsNameAndKind(),asAtomHandler::fromUInt(CLEARMASK::COLOR | CLEARMASK::DEPTH | CLEARMASK::STENCIL),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtomHandler::fromUInt(CLEARMASK::COLOR),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DEPTH",nsNameAndKind(),asAtomHandler::fromUInt(CLEARMASK::DEPTH),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STENCIL",nsNameAndKind(),asAtomHandler::fromUInt(CLEARMASK::STENCIL),CONSTANT_TRAIT);
 }
 
 void Context3DCompareMode::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("ALWAYS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"always"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("EQUAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"equal"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("GREATER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"greater"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("GREATER_EQUAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"greaterEqual"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LESS",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"less"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LESS_EQUAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"lessEqual"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NEVER",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"never"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NOT_EQUAL",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"notEqual"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ALWAYS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"always"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("EQUAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"equal"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("GREATER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"greater"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("GREATER_EQUAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"greaterEqual"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LESS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"less"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LESS_EQUAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"lessEqual"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NEVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"never"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NOT_EQUAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"notEqual"),CONSTANT_TRAIT);
 }
 
 void Context3DMipFilter::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("MIPLINEAR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"miplinear"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIPNEAREST",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mipnearest"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIPNONE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"mipnone"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIPLINEAR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"miplinear"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIPNEAREST",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mipnearest"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIPNONE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mipnone"),CONSTANT_TRAIT);
 }
 
 void Context3DProfile::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BASELINE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"baseline"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BASELINE_CONSTRAINED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"baselineConstrained"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BASELINE_EXTENDED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"baselineExtended"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STANDARD",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standard"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("STANDARD_CONSTRAINED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"standardConstrained"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BASELINE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"baseline"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BASELINE_CONSTRAINED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"baselineConstrained"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BASELINE_EXTENDED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"baselineExtended"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STANDARD",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standard"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("STANDARD_CONSTRAINED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardConstrained"),CONSTANT_TRAIT);
 }
 
 void Context3DProgramType::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("FRAGMENT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"fragment"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("VERTEX",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"vertex"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FRAGMENT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fragment"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("VERTEX",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"vertex"),CONSTANT_TRAIT);
 }
 
 void Context3DRenderMode::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("AUTO",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"auto"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SOFTWARE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"software"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("AUTO",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"auto"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SOFTWARE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"software"),CONSTANT_TRAIT);
 }
 
 void Context3DStencilAction::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("DECREMENT_SATURATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"decrementSaturate"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("DECREMENT_WRAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"decrementWrap"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("INCREMENT_SATURATE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"incrementSaturate"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("INCREMENT_WRAP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"incrementWrap"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("INVERT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"invert"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("KEEP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"keep"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SET",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"set"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ZERO",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"zero"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DECREMENT_SATURATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"decrementSaturate"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DECREMENT_WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"decrementWrap"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("INCREMENT_SATURATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"incrementSaturate"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("INCREMENT_WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"incrementWrap"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("INVERT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"invert"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("KEEP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keep"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SET",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"set"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ZERO",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"zero"),CONSTANT_TRAIT);
 }
 
 void Context3DTextureFilter::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("ANISOTROPIC16X",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"anisotropic16x"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ANISOTROPIC2X",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"anisotropic2x"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ANISOTROPIC4X",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"anisotropic4x"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("ANISOTROPIC8X",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"anisotropic8x"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LINEAR",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"linear"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NEAREST",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"nearest"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ANISOTROPIC16X",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"anisotropic16x"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ANISOTROPIC2X",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"anisotropic2x"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ANISOTROPIC4X",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"anisotropic4x"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ANISOTROPIC8X",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"anisotropic8x"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LINEAR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"linear"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NEAREST",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"nearest"),CONSTANT_TRAIT);
 }
 
 void Context3DTextureFormat::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BGRA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"bgra"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BGRA_PACKED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"bgraPacked4444"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BGR_PACKED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"bgrPacked565"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("COMPRESSED",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"compressed"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("COMPRESSED_ALPHA",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"compressedAlpha"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RGBA_HALF_FLOAT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"rgbaHalfFloat"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BGRA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"bgra"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BGRA_PACKED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"bgraPacked4444"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BGR_PACKED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"bgrPacked565"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("COMPRESSED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"compressed"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("COMPRESSED_ALPHA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"compressedAlpha"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RGBA_HALF_FLOAT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rgbaHalfFloat"),CONSTANT_TRAIT);
 }
 
 void Context3DTriangleFace::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BACK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"back"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FRONT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"front"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FRONT_AND_BACK",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"frontAndBack"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NONE",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"none"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BACK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"back"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FRONT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"front"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FRONT_AND_BACK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"frontAndBack"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NONE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"none"),CONSTANT_TRAIT);
 }
 
 void Context3DVertexBufferFormat::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BYTES_4",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"bytes4"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FLOAT_1",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"float1"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FLOAT_2",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"float2"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FLOAT_3",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"float3"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FLOAT_4",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"float4"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BYTES_4",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"bytes4"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FLOAT_1",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"float1"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FLOAT_2",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"float2"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FLOAT_3",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"float3"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("FLOAT_4",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"float4"),CONSTANT_TRAIT);
 }
 
 void Context3DWrapMode::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"clamp"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("CLAMP_U_REPEAT_V",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"clamp_u_repeat_v"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("REPEAT",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"repeat"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("REPEAT_U_CLAMP_V",nsNameAndKind(),asAtom::fromString(c->getSystemState(),"repeat_u_clamp_v"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clamp"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CLAMP_U_REPEAT_V",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clamp_u_repeat_v"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("REPEAT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"repeat"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("REPEAT_U_CLAMP_V",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"repeat_u_clamp_v"),CONSTANT_TRAIT);
 }
 
 IndexBuffer3D::IndexBuffer3D(Class_base *c, Context3D* ctx,int numVertices, tiny_string _bufferUsage)
@@ -1302,7 +1303,7 @@ void IndexBuffer3D::sinit(Class_base *c)
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 {
-	IndexBuffer3D* th = obj.as<IndexBuffer3D>();
+	IndexBuffer3D* th = asAtomHandler::as<IndexBuffer3D>(obj);
 	if (th->context && th->bufferID != UINT32_MAX)
 	{
 		renderaction action;
@@ -1314,7 +1315,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 {
-	IndexBuffer3D* th = obj.as<IndexBuffer3D>();
+	IndexBuffer3D* th = asAtomHandler::as<IndexBuffer3D>(obj);
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
 	uint32_t startOffset;
@@ -1338,7 +1339,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 {
-	IndexBuffer3D* th = obj.as<IndexBuffer3D>();
+	IndexBuffer3D* th = asAtomHandler::as<IndexBuffer3D>(obj);
 	_NR<Vector> data;
 	uint32_t startOffset;
 	uint32_t count;
@@ -1347,7 +1348,8 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 		th->data.resize(count+startOffset);
 	for (uint32_t i = 0; i< count; i++)
 	{
-		th->data[startOffset+i] = data->at(i).toUInt();
+		asAtom a = data->at(i);
+		th->data[startOffset+i] = asAtomHandler::toUInt(a);
 	}
 }
 
@@ -1360,12 +1362,12 @@ void Program3D::sinit(Class_base *c)
 
 ASFUNCTIONBODY_ATOM(Program3D,dispose)
 {
-	Program3D* th = obj.as<Program3D>();
+	Program3D* th = asAtomHandler::as<Program3D>(obj);
 	th->context3D->addAction(RENDER_DELETEPROGRAM,th);
 }
 ASFUNCTIONBODY_ATOM(Program3D,upload)
 {
-	Program3D* th = obj.as<Program3D>();
+	Program3D* th = asAtomHandler::as<Program3D>(obj);
 	_NR<ByteArray> vertexProgram;
 	_NR<ByteArray> fragmentProgram;
 	ARG_UNPACK_ATOM(vertexProgram)(fragmentProgram);
@@ -1403,7 +1405,7 @@ void VertexBuffer3D::sinit(Class_base *c)
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 {
-	VertexBuffer3D* th = obj.as<VertexBuffer3D>();
+	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
 	if (th->context && th->bufferID != UINT32_MAX)
 	{
 		renderaction action;
@@ -1415,7 +1417,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 {
-	VertexBuffer3D* th = obj.as<VertexBuffer3D>();
+	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
 	uint32_t startVertex;
@@ -1443,7 +1445,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 {
-	VertexBuffer3D* th = obj.as<VertexBuffer3D>();
+	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
 	_NR<Vector> data;
 	uint32_t startVertex;
 	uint32_t numVertices;
@@ -1453,7 +1455,8 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	for (uint32_t i = 0; i< numVertices* th->data32PerVertex; i++)
 	{
-		th->data[startVertex*th->data32PerVertex+i] = data->at(i).toNumber();
+		asAtom a = data->at(i);
+		th->data[startVertex*th->data32PerVertex+i] = asAtomHandler::toNumber(a);
 	}
 }
 

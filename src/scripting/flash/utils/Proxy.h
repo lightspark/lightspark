@@ -46,7 +46,7 @@ public:
 	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
 	void setVariableByMultiname_i(const multiname& name, int32_t value)
 	{
-		asAtom v(value);
+		asAtom v = asAtomHandler::fromInt(value);
 		setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 	}
 	

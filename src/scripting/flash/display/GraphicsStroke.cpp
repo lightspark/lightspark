@@ -58,7 +58,7 @@ void GraphicsStroke::finalize()
 
 ASFUNCTIONBODY_ATOM(GraphicsStroke,_constructor)
 {
-	GraphicsStroke* th = obj.as<GraphicsStroke>();
+	GraphicsStroke* th = asAtomHandler::as<GraphicsStroke>(obj);
 	_NR<ASObject> fill;
 	ARG_UNPACK_ATOM (th->thickness, std::numeric_limits<double>::quiet_NaN())
 		(th->pixelHinting, false)

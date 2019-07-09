@@ -43,7 +43,7 @@ void GraphicsSolidFill::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(GraphicsSolidFill,_constructor)
 {
-	GraphicsSolidFill* th = obj.as<GraphicsSolidFill>();
+	GraphicsSolidFill* th = asAtomHandler::as<GraphicsSolidFill>(obj);
 	ARG_UNPACK_ATOM (th->color, 0) (th->alpha, 1.0);
 }
 

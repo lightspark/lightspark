@@ -35,7 +35,7 @@ void AVM1Sound::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
-	AVM1Sound* th=obj.as<AVM1Sound>();
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 
 	ARG_UNPACK_ATOM(th->clip,NullRef);
@@ -43,16 +43,16 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 
 ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 {
-	AVM1Sound* th=obj.as<AVM1Sound>();
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (argslen == 0)
 	{
 		LOG(LOG_ERROR,"AVM1:Sound.attachSound called without argument");
 		return;
 	}
-	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(th->getSystemState()->mainClip->dictionaryLookupByName(args[0].toStringId(th->getSystemState())));
+	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(th->getSystemState()->mainClip->dictionaryLookupByName(asAtomHandler::toStringId(args[0],th->getSystemState())));
 	if (!soundTag)
 	{
-		LOG(LOG_ERROR,"AVM1:Sound.attachSound called for wrong tag:"<<args[0].toDebugString());
+		LOG(LOG_ERROR,"AVM1:Sound.attachSound called for wrong tag:"<<asAtomHandler::toDebugString(args[0]));
 		return;
 	}
 	
@@ -69,15 +69,15 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 {
-	AVM1Sound* th=obj.as<AVM1Sound>();
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
-		ret.setNumber(sys,th->soundChannel->soundTransform->volume*100);
+		asAtomHandler::setNumber(ret,sys,th->soundChannel->soundTransform->volume*100);
 	else
-		ret.setInt(sys,0);
+		asAtomHandler::setInt(ret,sys,0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
-	AVM1Sound* th=obj.as<AVM1Sound>();
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	number_t volume;
 	ARG_UNPACK_ATOM(volume);
 	if (th->soundChannel)

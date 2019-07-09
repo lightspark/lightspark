@@ -37,41 +37,41 @@ void ExternalInterface::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,_getAvailable)
 {
-	ret.setBool(sys->extScriptObject != NULL);
+	asAtomHandler::setBool(ret,sys->extScriptObject != NULL);
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,_getObjectID)
 {
 	if(sys->extScriptObject == NULL)
 	{
-		ret = asAtom::fromString(sys,"");
+		ret = asAtomHandler::fromString(sys,"");
 		return;
 	}
 
 	ExtScriptObject* so=sys->extScriptObject;
 	if(so->hasProperty("name")==false)
 	{
-		ret = asAtom::fromString(sys,"");
+		ret = asAtomHandler::fromString(sys,"");
 		return;
 	}
 
 	const ExtVariant& object = so->getProperty("name");
 	std::string result = object.getString();
-	ret = asAtom::fromObject(abstract_s(sys,result));
+	ret = asAtomHandler::fromObject(abstract_s(sys,result));
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface, _getMarshallExceptions)
 {
 	if(sys->extScriptObject == NULL)
-		ret.setBool(false);
+		asAtomHandler::setBool(ret,false);
 	else
-		ret.setBool(sys->extScriptObject->getMarshallExceptions());
+		asAtomHandler::setBool(ret,sys->extScriptObject->getMarshallExceptions());
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface, _setMarshallExceptions)
 {
 	if(sys->extScriptObject != NULL)
-		sys->extScriptObject->setMarshallExceptions(args[0].Boolean_concrete());
+		sys->extScriptObject->setMarshallExceptions(asAtomHandler::Boolean_concrete(args[0]));
 }
 
 
@@ -79,33 +79,33 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 {
 	if(sys->extScriptObject == NULL)
 	{
-		ret.setBool(false);
+		asAtomHandler::setBool(ret,false);
 		return;
 	}
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
-	if(args[1].isNull())
-		sys->extScriptObject->removeMethod(args[0].toString(sys).raw_buf());
+	if(asAtomHandler::isNull(args[1]))
+		sys->extScriptObject->removeMethod(asAtomHandler::toString(args[0],sys).raw_buf());
 	else
 	{
-		sys->extScriptObject->setMethod(args[0].toString(sys).raw_buf(), new ExtASCallback(args[1]));
+		sys->extScriptObject->setMethod(asAtomHandler::toString(args[0],sys).raw_buf(), new ExtASCallback(args[1]));
 	}
-	ret.setBool(true);
+	asAtomHandler::setBool(ret,true);
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 {
 	if(sys->extScriptObject == NULL)
 	{
-		ret.setNull();
+		asAtomHandler::setNull(ret);
 		return;
 	}
 //		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
-	const tiny_string& arg0=args[0].toString(sys);
+	const tiny_string& arg0=asAtomHandler::toString(args[0],sys);
 
 	// TODO: Check security constraints & throw SecurityException
 
@@ -115,7 +115,7 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 	for(uint32_t i = 0; i < argslen-1; i++)
 	{
 		ASATOM_INCREF(args[i+1]);
-		callArgs[i] = new ExtVariant(objectsMap,_MR(args[i+1].toObject(sys)));
+		callArgs[i] = new ExtVariant(objectsMap,_MR(asAtomHandler::toObject(args[i+1],sys)));
 	}
 
 	ASObject* asobjResult = NULL;
@@ -131,8 +131,8 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 		assert(asobjResult==NULL);
 		LOG(LOG_INFO, "External function failed, returning null: " << arg0);
 		// If the call fails, return null
-		ret.setNull();
+		asAtomHandler::setNull(ret);
 		return;
 	}
-	ret = asAtom::fromObject(asobjResult);
+	ret = asAtomHandler::fromObject(asobjResult);
 }

@@ -1575,7 +1575,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=currchar->name;
 		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom v = asAtom::fromObject(currchar);
+		asAtom v = asAtomHandler::fromObject(currchar);
 		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
 	}
 	if (PlaceFlagHasClipAction)

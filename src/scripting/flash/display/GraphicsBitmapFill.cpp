@@ -47,7 +47,7 @@ void GraphicsBitmapFill::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(GraphicsBitmapFill,_constructor)
 {
-	GraphicsBitmapFill* th = obj.as<GraphicsBitmapFill>();
+	GraphicsBitmapFill* th = asAtomHandler::as<GraphicsBitmapFill>(obj);
 	ARG_UNPACK_ATOM (th->bitmapData, NullRef) (th->matrix, NullRef) (th->repeat, true) (th->smooth, false);
 }
 

@@ -40,8 +40,8 @@ const char* Endian::bigEndian = "bigEndian";
 void Endian::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("LITTLE_ENDIAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),littleEndian),DECLARED_TRAIT);
-	c->setVariableAtomByQName("BIG_ENDIAN",nsNameAndKind(),asAtom::fromString(c->getSystemState(),bigEndian),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LITTLE_ENDIAN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),littleEndian),DECLARED_TRAIT);
+	c->setVariableAtomByQName("BIG_ENDIAN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),bigEndian),DECLARED_TRAIT);
 }
 
 void IExternalizable::linkTraits(Class_base* c)
@@ -94,16 +94,16 @@ void IDataOutput::linkTraits(Class_base* c)
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 {
 	//CHECK: what to do if ns is empty
-	ASObject* target=args[0].toObject(sys);
+	ASObject* target=asAtomHandler::toObject(args[0],sys);
 	Class_base* c;
 	switch(target->getObjectType())
 	{
 		case T_NULL:
-			ret = asAtom::fromString(sys,"null");
+			ret = asAtomHandler::fromString(sys,"null");
 			return;
 		case T_UNDEFINED:
 			// Testing shows that this really returns "void"!
-			ret = asAtom::fromString(sys,"void");
+			ret = asAtomHandler::fromString(sys,"void");
 			return;
 		case T_CLASS:
 			c=static_cast<Class_base*>(target);
@@ -119,7 +119,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 				c=target->getClass();
 			break;
 		case T_TEMPLATE:
-			ret = asAtom::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
+			ret = asAtomHandler::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
 			return;
 		default:
 			assert_and_throw(target->getClass());
@@ -127,13 +127,13 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 			break;
 	}
 
-	ret = asAtom::fromString(sys,c->getQualifiedClassName());
+	ret = asAtomHandler::fromString(sys,c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 {
 	//CHECK: what to do is ns is empty
-	ASObject* target=args[0].toObject(sys);
+	ASObject* target=asAtomHandler::toObject(args[0],sys);
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
@@ -144,15 +144,15 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 		c=static_cast<Class_base*>(target)->super.getPtr();
 
 	if (!c)
-		ret.setNull();
+		asAtomHandler::setNull(ret);
 	else
-		ret = asAtom::fromString(sys,c->getQualifiedClassName());
+		ret = asAtomHandler::fromString(sys,c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
-	const tiny_string& tmp=args[0].toString(sys);
+	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
 
@@ -165,15 +165,15 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
-	ret = asAtom::invalidAtom;
+	ret = asAtomHandler::invalidAtom;
 	ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 
-	if(ret.isInvalid())
+	if(asAtomHandler::isInvalid(ret))
 	{
 		throwError<ReferenceError>(kClassNotFoundError, tmp);
 	}
 
-	assert_and_throw(ret.isClass());
+	assert_and_throw(asAtomHandler::isClass(ret));
 
 	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	ASATOM_INCREF(ret);
@@ -182,19 +182,19 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	ret = asAtom::fromObject(args[0].toObject(sys)->describeType());
+	ret = asAtomHandler::fromObject(asAtomHandler::toObject(args[0],sys)->describeType());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
 	uint64_t res=compat_msectiming() - sys->startTime;
-	ret.setInt(sys,(int32_t)res);
+	asAtomHandler::setInt(ret,sys,(int32_t)res);
 }
 
 
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2 && args[0].isFunction());
+	assert_and_throw(argslen >= 2 && asAtomHandler::isFunction(args[0]));
 
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
@@ -206,19 +206,19 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		ASATOM_INCREF(args[i+2]);
 	}
 
-	asAtom o = args[0].getClosureAtom();
+	asAtom o = asAtomHandler::getClosureAtom(args[0]);
 
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add interval through manager
 	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
-			o, args[1].toInt());
-	ret.setInt(sys,(int32_t)id);
+			o, asAtomHandler::toInt(args[1]));
+	asAtomHandler::setInt(ret,sys,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 {
-	assert_and_throw(argslen >= 2 && args[0].isFunction());
+	assert_and_throw(argslen >= 2 && asAtomHandler::isFunction(args[0]));
 
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
@@ -230,39 +230,39 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 		ASATOM_INCREF(args[i+2]);
 	}
 
-	asAtom o = asAtom::nullAtom;
-	if (args[0].as<IFunction>()->closure_this)
-		o = asAtom::fromObject(args[0].as<IFunction>()->closure_this.getPtr());
+	asAtom o = asAtomHandler::nullAtom;
+	if (asAtomHandler::as<IFunction>(args[0])->closure_this)
+		o = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[0])->closure_this.getPtr());
 
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
 	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
-			o, args[1].toInt());
-	ret.setInt(sys,(int32_t)id);
+			o, asAtomHandler::toInt(args[1]));
+	asAtomHandler::setInt(ret,sys,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::INTERVAL, true);
+	sys->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::INTERVAL, true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(args[0].toInt(), IntervalRunner::TIMEOUT, true);
+	sys->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::TIMEOUT, true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtom::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtomHandler::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 ASFUNCTIONBODY_ATOM(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtom::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtomHandler::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }

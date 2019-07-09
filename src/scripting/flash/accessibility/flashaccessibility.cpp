@@ -69,7 +69,7 @@ void Accessibility::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Accessibility,updateProperties)
 {
-	Accessibility* th=obj.as<Accessibility>();
+	Accessibility* th=asAtomHandler::as<Accessibility>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "Accessibility is not supported.");
 	ARG_UNPACK_ATOM (th->properties);
 }

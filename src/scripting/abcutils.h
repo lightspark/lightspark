@@ -30,7 +30,7 @@ class method_info;
 class ABCContext;
 class ASObject;
 class Class_base;
-class asAtom;
+union asAtom;
 class SyntheticFunction;
 
 struct scope_entry
@@ -90,10 +90,10 @@ struct call_context
 #define RUNTIME_STACK_PUSH(context,val) \
 if(USUALLY_FALSE(context->stackp==context->max_stackp)) \
 	context->handleError(kStackOverflowError); \
-else (context->stackp++)->set(val)
+else asAtomHandler::set(*(context->stackp++),val)
 
 #define RUNTIME_STACK_POP(context,ret) \
-	if(USUALLY_TRUE(context->stackp!=context->stack)) ret.set(*(--context->stackp)); \
+	if(USUALLY_TRUE(context->stackp!=context->stack)) asAtomHandler::set(ret,*(--context->stackp)); \
 	else context->handleError(kStackUnderflowError);
 
 
@@ -105,19 +105,19 @@ else (context->stackp++)->set(val)
 	asAtom* ret= --context->stackp; 
 
 #define RUNTIME_STACK_POP_ASOBJECT(context,ret, sys) \
-	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=(--context->stackp)->toObject(sys); \
+	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=asAtomHandler::toObject(*(--context->stackp),sys); \
 	else context->handleError(kStackUnderflowError);
 
 #define RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret, sys) \
 	if(USUALLY_FALSE(context->stackp==context->stack)) \
 		context->handleError(kStackUnderflowError); \
-	ASObject* ret = (--context->stackp)->toObject(sys);
+	ASObject* ret = asAtomHandler::toObject(*(--context->stackp),sys);
 
 #define RUNTIME_STACK_PEEK(context,ret) \
 	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 
 
 #define RUNTIME_STACK_PEEK_ASOBJECT(context,ret, sys) \
-	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1)->toObject(sys) : NULL; 
+	ret= USUALLY_TRUE(context->stackp != context->stack) ? asAtomHandler::toObject(*(context->stackp-1),sys) : NULL; 
 
 #define RUNTIME_STACK_PEEK_CREATE(context,ret) \
 	asAtom* ret = USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 

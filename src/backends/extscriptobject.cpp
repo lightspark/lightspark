@@ -217,17 +217,17 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)
 			{
-				asAtom nextName;
+				asAtom nextName=asAtomHandler::invalidAtom;
 				other->nextName(nextName,index);
-				asAtom nextValue;
+				asAtom nextValue=asAtomHandler::invalidAtom;
 				other->nextValue(nextValue,index);
 
-				if(nextName.isInteger())
-					objectValue->setProperty(nextName.toInt(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
+				if(asAtomHandler::isInteger(nextName))
+					objectValue->setProperty(asAtomHandler::toInt(nextName), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,getSys()))));
 				else
 				{
 					allNumericProperties = false;
-					objectValue->setProperty(nextName.toString(other->getSystemState()).raw_buf(), ExtVariant(objectsMap, _MR(nextValue.toObject(getSys()))));
+					objectValue->setProperty(asAtomHandler::toString(nextName,other->getSystemState()).raw_buf(), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,getSys()))));
 				}
 			}
 
@@ -290,7 +290,7 @@ ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::E
 				for(uint32_t i = 0; i < count; i++)
 				{
 					const ExtVariant& property = objValue->getProperty(i);
-					asAtom v = asAtom::fromObject(property.getASObject(sys,objectsMap));
+					asAtom v = asAtomHandler::fromObject(property.getASObject(sys,objectsMap));
 					static_cast<Array*>(asobj)->set(i, v);
 				}
 			}
@@ -375,21 +375,21 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	asArgs = new ASObject*[argc];
 	std::map<const ExtObject*, ASObject*> objectsMap;
 	for(uint32_t i = 0; i < argc; i++)
-		asArgs[i] = args[i]->getASObject(func.getObject()->getSystemState(),objectsMap);
+		asArgs[i] = args[i]->getASObject(asAtomHandler::getObject(func)->getSystemState(),objectsMap);
 
 	if(!synchronous)
 	{
 		ASATOM_INCREF(func);
-		funcEvent = _MR(new (func.getObject()->getSystemState()->unaccountedMemory) ExternalCallEvent(func, asArgs, argc, &result, &exceptionThrown, &exception));
+		funcEvent = _MR(new (asAtomHandler::getObject(func)->getSystemState()->unaccountedMemory) ExternalCallEvent(func, asArgs, argc, &result, &exceptionThrown, &exception));
 		// Add the callback function event to the top of the VM event queue
-		funcWasCalled=getVm(func.getObject()->getSystemState())->prependEvent(NullRef,funcEvent);
+		funcWasCalled=getVm(asAtomHandler::getObject(func)->getSystemState())->prependEvent(NullRef,funcEvent);
 		if(!funcWasCalled)
 		{
 			LOG(LOG_ERROR,"funcEvent not called");
 			funcEvent = NullRef;
 		}
 		else
-			func.getObject()->getSystemState()->sendMainSignal();
+			asAtomHandler::getObject(func)->getSystemState()->sendMainSignal();
 	}
 	// The caller indicated the VM is currently suspended, so call synchronously.
 	else
@@ -402,14 +402,14 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 				newArgs=g_newa(asAtom, argc);
 				for (uint32_t i = 0; i < argc; i++)
 				{
-					newArgs[i] = asAtom::fromObject(asArgs[i]);
+					newArgs[i] = asAtomHandler::fromObject(asArgs[i]);
 				}
 			}
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
-			asAtom res;
-			func.callFunction(res,asAtom::nullAtom, newArgs, argc,false);
-			result = res.toObject(func.getObject()->getSystemState());
+			asAtom res=asAtomHandler::invalidAtom;
+			asAtomHandler::callFunction(func,res,asAtomHandler::nullAtom, newArgs, argc,false);
+			result = asAtomHandler::toObject(res,asAtomHandler::getObject(func)->getSystemState());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

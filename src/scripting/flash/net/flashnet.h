@@ -204,7 +204,7 @@ private:
 	asAtom result;
 	asAtom status;
 public:
-	Responder(Class_base* c):ASObject(c){}
+	Responder(Class_base* c):ASObject(c),result(asAtomHandler::invalidAtom),status(asAtomHandler::invalidAtom){}
 	static void sinit(Class_base*);
 	void finalize();
 	ASFUNCTION_ATOM(_constructor);

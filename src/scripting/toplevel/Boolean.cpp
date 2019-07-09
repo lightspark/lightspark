@@ -64,9 +64,9 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 ASFUNCTIONBODY_ATOM(Boolean,generator)
 {
 	if(argslen==1)
-		ret = asAtom(args[0].Boolean_concrete());
+		ret = asAtomHandler::fromBool(asAtomHandler::Boolean_concrete(args[0]));
 	else
-		ret = asAtom::falseAtom;
+		ret = asAtomHandler::falseAtom;
 }
 
 void Boolean::sinit(Class_base* c)
@@ -80,43 +80,43 @@ void Boolean::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 {
-	Boolean* th=obj.as<Boolean>();
+	Boolean* th=asAtomHandler::as<Boolean>(obj);
 	if(argslen==0)
 	{
 		//No need to handle default argument. The object is initialized to false anyway
 		return;
 	}
-	th->val=args[0].Boolean_concrete();
+	th->val=asAtomHandler::Boolean_concrete(args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_toString)
 {
-	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject()) //See ECMA 15.6.4
+	if(Class<Boolean>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj)) //See ECMA 15.6.4
 	{
-		ret = asAtom::fromString(sys,"false");
+		ret = asAtomHandler::fromString(sys,"false");
 		return;
 	}
 
-	if(!obj.is<Boolean>())
+	if(!asAtomHandler::is<Boolean>(obj))
 		throw Class<TypeError>::getInstanceS(sys,"");
 
-	ret = asAtom::fromString(sys,obj.toString(sys));
+	ret = asAtomHandler::fromString(sys,asAtomHandler::toString(obj,sys));
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 {
-	if(Class<Boolean>::getClass(sys)->prototype->getObj() == obj.getObject())
+	if(Class<Boolean>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret.setBool(false);
+		asAtomHandler::setBool(ret,false);
 		return;
 	}
 
-	if(!obj.is<Boolean>())
+	if(!asAtomHandler::is<Boolean>(obj))
 			throw Class<TypeError>::getInstanceS(sys,"");
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object
-	ret.setBool(obj.Boolean_concrete());
+	asAtomHandler::setBool(ret,asAtomHandler::Boolean_concrete(obj));
 }
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -189,9 +189,9 @@ TRISTATE Boolean::isLess(ASObject* r)
 			return TUNDEFINED;
 		default:
 		{
-			asAtom val2p;
+			asAtom val2p=asAtomHandler::invalidAtom;
 			r->toPrimitive(val2p);
-			double val2=val2p.toNumber();
+			double val2=asAtomHandler::toNumber(val2p);
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}
@@ -200,26 +200,26 @@ TRISTATE Boolean::isLess(ASObject* r)
 
 TRISTATE Boolean::isLessAtom(asAtom& r)
 {
-	switch (r.getObjectType())
+	switch (asAtomHandler::getObjectType(r))
 	{
 		case T_BOOLEAN:
 		{
-			return (val<r.toInt())?TTRUE:TFALSE;
+			return (val<asAtomHandler::toInt(r))?TTRUE:TFALSE;
 		}
 		case T_INTEGER:
 		{
-			int32_t d=r.toInt();
+			int32_t d=asAtomHandler::toInt(r);
 			return (val<d)?TTRUE:TFALSE;
 		}
 		case T_UINTEGER:
 		{
-			uint32_t d=r.toUInt();
+			uint32_t d=asAtomHandler::toUInt(r);
 			return (val<d)?TTRUE:TFALSE;
 		}
 		case T_NUMBER:
 		case T_STRING:
 		{
-			double d=r.toNumber();
+			double d=asAtomHandler::toNumber(r);
 			if(std::isnan(d)) return TUNDEFINED;
 			return (val<d)?TTRUE:TFALSE;
 		}
@@ -229,9 +229,9 @@ TRISTATE Boolean::isLessAtom(asAtom& r)
 			return TUNDEFINED;
 		default:
 		{
-			asAtom val2p;
-			r.getObject()->toPrimitive(val2p);
-			double val2=val2p.toNumber();
+			asAtom val2p=asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(r)->toPrimitive(val2p);
+			double val2=asAtomHandler::toNumber(val2p);
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}

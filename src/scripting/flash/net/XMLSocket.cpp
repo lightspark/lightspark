@@ -85,8 +85,8 @@ ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 
 	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 
-	XMLSocket* th=obj.as<XMLSocket>();
-	host_is_null = argslen > 0 && args[0].is<Null>();
+	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
+	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 	if (port != 0)
 	{
 		if (host_is_null)
@@ -98,7 +98,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 {
-	XMLSocket* th=obj.as<XMLSocket>();
+	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
 	SpinlockLocker l(th->joblock);
 
 	if (th->job)
@@ -150,12 +150,12 @@ void XMLSocket::connect(tiny_string host, int port)
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
 {
-	XMLSocket* th=obj.as<XMLSocket>();
+	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
 	tiny_string host;
 	bool host_is_null;
 	int port;
 	ARG_UNPACK_ATOM (host) (port);
-	host_is_null = argslen > 0 && args[0].is<Null>();
+	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 
 	if (host_is_null)
 		th->connect("", port);
@@ -165,7 +165,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 {
-	XMLSocket* th=obj.as<XMLSocket>();
+	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
 	tiny_string data;
 	ARG_UNPACK_ATOM (data);
 
@@ -188,8 +188,8 @@ bool XMLSocket::isConnected()
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
 {
-	XMLSocket* th=obj.as<XMLSocket>();
-	ret.setBool(th->isConnected());
+	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
+	asAtomHandler::setBool(ret,th->isConnected());
 }
 
 void XMLSocket::threadFinished()

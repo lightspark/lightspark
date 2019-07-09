@@ -236,8 +236,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 
 	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 
-	ASSocket* th=obj.as<ASSocket>();
-	host_is_null = argslen > 0 && args[0].is<Null>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 	if (port != 0)
 	{
 		if (host_is_null)
@@ -249,7 +249,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 
 ASFUNCTIONBODY_ATOM(ASSocket, _close)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	SpinlockLocker l(th->joblock);
 
 	if (th->job)
@@ -302,12 +302,12 @@ void ASSocket::connect(tiny_string host, int port)
 
 ASFUNCTIONBODY_ATOM(ASSocket, _connect)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	tiny_string host;
 	bool host_is_null;
 	int port;
 	ARG_UNPACK_ATOM (host) (port);
-	host_is_null = argslen > 0 && args[0].is<Null>();
+	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 
 	if (host_is_null)
 		th->connect("", port);
@@ -316,41 +316,41 @@ ASFUNCTIONBODY_ATOM(ASSocket, _connect)
 }
 ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	SpinlockLocker l(th->joblock);
 
 	if (th->job)
 	{
 		th->job->datareceive->lock();
-		ret.setUInt(sys,th->job->datareceive->getLength());
+		asAtomHandler::setUInt(ret,sys,th->job->datareceive->getLength());
 		th->job->datareceive->unlock();
 	}
 	else
-		ret.setUInt(sys,0);
+		asAtomHandler::setUInt(ret,sys,0);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	SpinlockLocker l(th->joblock);
 	if (th->job)
 	{
 		if(th->job->datasend->getLittleEndian())
-			ret = asAtom::fromString(sys,Endian::littleEndian);
+			ret = asAtomHandler::fromString(sys,Endian::littleEndian);
 		else
-			ret = asAtom::fromString(sys,Endian::bigEndian);
+			ret = asAtomHandler::fromString(sys,Endian::bigEndian);
 	}
 	else
-		ret = asAtom::fromString(sys,Endian::bigEndian);
+		ret = asAtomHandler::fromString(sys,Endian::bigEndian);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	bool v = false;
-	if(args[0].toString(sys) == Endian::littleEndian)
+	if(asAtomHandler::toString(args[0],sys) == Endian::littleEndian)
 		v = true;
-	else if(args[0].toString(sys) == Endian::bigEndian)
+	else if(asAtomHandler::toString(args[0],sys) == Endian::bigEndian)
 		v = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
@@ -364,7 +364,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
 
 ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	_NR<ByteArray> data;
 	uint32_t offset;
 	uint32_t length;
@@ -393,7 +393,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 
 ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	tiny_string data;
 	ARG_UNPACK_ATOM (data);
 	SpinlockLocker l(th->joblock);
@@ -410,7 +410,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	_NR<ByteArray> data;
 	uint32_t offset;
 	uint32_t length;
@@ -440,7 +440,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 
 ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	uint32_t length;
 	ARG_UNPACK_ATOM (length);
 	tiny_string data;
@@ -451,7 +451,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 		th->job->datareceive->readUTFBytes(length,data);
 		th->job->datareceive->removeFrontBytes(length);
 		th->job->datareceive->unlock();
-		ret.set(asAtom::fromString(sys,data));
+		asAtomHandler::set(ret,asAtomHandler::fromString(sys,data));
 	}
 	else
 	{
@@ -460,7 +460,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 }
 ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 {
-	ASSocket* th=obj.as<ASSocket>();
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	SpinlockLocker l(th->joblock);
 	if (th->job)
 	{
@@ -480,8 +480,8 @@ bool ASSocket::isConnected()
 
 ASFUNCTIONBODY_ATOM(ASSocket, _connected)
 {
-	ASSocket* th=obj.as<ASSocket>();
-	ret.setBool(th->isConnected());
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	asAtomHandler::setBool(ret,th->isConnected());
 }
 
 void ASSocket::threadFinished()

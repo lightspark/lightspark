@@ -484,25 +484,26 @@ public:
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
 	static asAtom asTypelate(asAtom& a, asAtom& b);
 	static bool isTypelate(asAtom& a,ASObject* type);
-	static FORCE_INLINE number_t toNumber(asAtom& a);
+	static FORCE_INLINE number_t toNumber(const asAtom& a);
 	static FORCE_INLINE number_t AVM1toNumber(asAtom& a,int swfversion);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a);
-	static FORCE_INLINE int32_t toInt(asAtom& a);
-	static FORCE_INLINE int32_t toIntStrict(asAtom& a);
-	static FORCE_INLINE int64_t toInt64(asAtom& a);
+	static FORCE_INLINE int32_t toInt(const asAtom& a);
+	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
+	static FORCE_INLINE int64_t toInt64(const asAtom& a);
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
-	static tiny_string toString(asAtom& a,SystemState *sys);
-	static tiny_string toLocaleString(asAtom& a);
-	static uint32_t toStringId(asAtom& a,SystemState *sys);
+	static tiny_string toString(const asAtom &a, SystemState *sys);
+	static tiny_string toLocaleString(const asAtom &a);
+	static uint32_t toStringId(asAtom &a, SystemState *sys);
 	static asAtom typeOf(asAtom& a,SystemState *sys);
 	static bool Boolean_concrete(asAtom& a);
 	static void convert_b(asAtom& a);
-	static FORCE_INLINE int32_t getInt(asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
-	static FORCE_INLINE uint32_t getUInt(asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
-	static FORCE_INLINE uint32_t getStringId(asAtom& a) { assert((a.uintval&0x3) == ATOM_STRINGID); return a.uintval>>3; }
+	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
+	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
+	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x3) == ATOM_STRINGID); return a.uintval>>3; }
 	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int32_t val);
 	static FORCE_INLINE void setUInt(asAtom& a,SystemState* sys, uint32_t val);
 	static void setNumber(asAtom& a,SystemState* sys,number_t val);
+	static bool replaceNumber(asAtom& a,SystemState* sys,number_t val);
 	static FORCE_INLINE void setBool(asAtom& a,bool val);
 	static FORCE_INLINE void setNull(asAtom& a);
 	static FORCE_INLINE void setUndefined(asAtom& a);
@@ -512,11 +513,16 @@ public:
 	static FORCE_INLINE void increment_i(asAtom& a,SystemState* sys);
 	static FORCE_INLINE void decrement_i(asAtom& a,SystemState* sys);
 	static bool add(asAtom& a,asAtom& v2, SystemState *sys);
+	static void addreplace(asAtom& ret, SystemState* sys, asAtom &v1, asAtom &v2);
 	static FORCE_INLINE void bitnot(asAtom& a,SystemState* sys);
 	static FORCE_INLINE void subtract(asAtom& a,SystemState* sys,asAtom& v2);
+	static FORCE_INLINE void subtractreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2);
 	static FORCE_INLINE void multiply(asAtom& a,SystemState* sys,asAtom& v2);
+	static FORCE_INLINE void multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2);
 	static FORCE_INLINE void divide(asAtom& a,SystemState* sys,asAtom& v2);
+	static FORCE_INLINE void dividereplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2);
 	static FORCE_INLINE void modulo(asAtom& a,SystemState* sys,asAtom& v2);
+	static FORCE_INLINE void moduloreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2);
 	static FORCE_INLINE void lshift(asAtom& a,SystemState* sys,asAtom& v1);
 	static FORCE_INLINE void rshift(asAtom& a,SystemState* sys,asAtom& v1);
 	static FORCE_INLINE void urshift(asAtom& a,SystemState* sys,asAtom& v1);
@@ -1296,7 +1302,7 @@ template<> inline bool asAtomHandler::is<UInteger>(asAtom& a) { return isUIntege
 template<> inline bool asAtomHandler::is<Undefined>(asAtom& a) { return isUndefined(a); }
 
 
-FORCE_INLINE int32_t asAtomHandler::toInt(asAtom& a)
+FORCE_INLINE int32_t asAtomHandler::toInt(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1318,7 +1324,7 @@ FORCE_INLINE int32_t asAtomHandler::toInt(asAtom& a)
 			return getObject(a)->toInt();
 	}
 }
-FORCE_INLINE int32_t asAtomHandler::toIntStrict(asAtom& a)
+FORCE_INLINE int32_t asAtomHandler::toIntStrict(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1340,7 +1346,7 @@ FORCE_INLINE int32_t asAtomHandler::toIntStrict(asAtom& a)
 			return getObject(a)->toIntStrict();
 	}
 }
-FORCE_INLINE number_t asAtomHandler::toNumber(asAtom& a)
+FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1401,7 +1407,7 @@ FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a)
 	}
 }
 
-FORCE_INLINE int64_t asAtomHandler::toInt64(asAtom& a)
+FORCE_INLINE int64_t asAtomHandler::toInt64(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1753,6 +1759,35 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2)
 		setNumber(a,sys,num1-num2);
 	}
 }
+FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,const asAtom &v1, const asAtom &v2)
+{
+	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
+		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
+	{
+		int64_t num1=toInt64(v1);
+		int64_t num2=toInt64(v2);
+	
+		LOG_CALL(_("subtractreplaceI ") << num1 << '-' << num2);
+		ASATOM_DECREF(ret);
+		int64_t res = num1-num2;
+		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+			setInt(ret,sys,res);
+		else if (res >= 0 && res < UINT32_MAX>>3)
+			setUInt(ret,sys,res);
+		else
+			setNumber(ret,sys,res);
+	}
+	else
+	{
+		number_t num2=toNumber(v2);
+		number_t num1=toNumber(v1);
+	
+		ASObject* o = getObject(ret);
+		LOG_CALL(_("subtractreplace ")  << num1 << '-' << num2);
+		if (replaceNumber(ret,sys,num1-num2) && o)
+			o->decRef();
+	}
+}
 
 FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2)
 {
@@ -1780,6 +1815,35 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2)
 	}
 }
 
+FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2)
+{
+	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
+		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
+	{
+		int64_t num1=toInt64(v1);
+		int64_t num2=toInt64(v2);
+	
+		LOG_CALL(_("multiplyreplaceI ") << num1 << '*' << num2);
+		ASATOM_DECREF(ret);
+		int64_t res = num1*num2;
+		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+			setInt(ret,sys,res);
+		else if (res >= 0 && res < UINT32_MAX>>3)
+			setUInt(ret,sys,res);
+		else
+			setNumber(ret,sys,res);
+	}
+	else
+	{
+		double num1=toNumber(v2);
+		double num2=toNumber(v1);
+		ASObject* o = getObject(ret);
+		LOG_CALL(_("multiplyreplace ")  << num1 << '*' << num2);
+		if (replaceNumber(ret,sys,num1*num2) && o)
+			o->decRef();
+	}
+}
+
 FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2)
 {
 	double num1=toNumber(a);
@@ -1799,6 +1863,33 @@ FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2)
 	}
 	else
 		setNumber(a,sys,num1/num2);
+}
+FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,const asAtom& v1, const asAtom &v2)
+{
+	double num1=toNumber(v1);
+	double num2=toNumber(v2);
+
+	number_t res=0;
+	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	// handling of infinity according to ECMA-262, chapter 11.5.2
+	if (std::isinf(num1))
+	{
+		if (std::isinf(num2) || std::isnan(num2))
+			res = numeric_limits<double>::quiet_NaN();
+		else
+		{
+			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
+			res = needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity();
+		}
+	}
+	else
+		res = num1/num2;
+	
+	ASObject* o = getObject(ret);
+	LOG_CALL(_("dividereplace ")  << num1 << '/' << num2);
+	if (replaceNumber(ret,sys,res) && o)
+		o->decRef();
+	
 }
 
 FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
@@ -1822,6 +1913,32 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
 		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		setNumber(a,sys,::fmod(num1,num2));
+	}
+}
+FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2)
+{
+	// if both values are Integers the result is also an int
+	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
+		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
+	{
+		int32_t num1=toInt(v1);
+		int32_t num2=toInt(v2);
+		ASATOM_DECREF(ret);
+		LOG_CALL(_("moduloreplaceI ")  << num1 << '%' << num2);
+		if (num2 == 0)
+			setNumber(ret,sys,numeric_limits<double>::quiet_NaN());
+		else
+			setInt(ret,sys,num1%num2);
+	}
+	else
+	{
+		number_t num1=toNumber(v1);
+		number_t num2=toNumber(v2);
+		LOG_CALL(_("moduloreplace ")  << num1 << '%' << num2);
+		/* fmod returns NaN if num2 == 0 as the spec mandates */
+		ASObject* o = getObject(ret);
+		if (replaceNumber(ret,sys,::fmod(num1,num2)) && o)
+			o->decRef();
 	}
 }
 

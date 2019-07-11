@@ -2723,7 +2723,7 @@ bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 }
 
 
-tiny_string asAtomHandler::toString(asAtom& a,SystemState* sys)
+tiny_string asAtomHandler::toString(const asAtom& a,SystemState* sys)
 {
 	switch(a.uintval&0x7)
 	{
@@ -2758,7 +2758,7 @@ tiny_string asAtomHandler::toString(asAtom& a,SystemState* sys)
 			return getObject(a)->toString();
 	}
 }
-tiny_string asAtomHandler::toLocaleString(asAtom& a)
+tiny_string asAtomHandler::toLocaleString(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{
@@ -2983,7 +2983,95 @@ bool asAtomHandler::add(asAtom& a,asAtom &v2, SystemState* sys)
 	}
 	return true;
 }
+void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom &v2)
+{
+	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 
+	// if both values are Integers or UIntegers the result is also an int Number
+	if( (isInteger(v1) || isUInteger(v1)) &&
+		(isInteger(v2) || isUInteger(v2)))
+	{
+		int64_t num1=toInt64(v1);
+		int64_t num2=toInt64(v2);
+		int64_t res = num1+num2;
+		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
+		if (res >= -(1<<28) && res < (1<<28))
+			setInt(ret,sys,res);
+		else if (res >= 0 && res < (1<<29))
+			setUInt(ret,sys,res);
+		else
+			setNumber(ret,sys,res);
+	}
+	else if((isInteger(v1) || isUInteger(v1) || isNumber(v1)) &&
+			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
+	{
+		double num1=toNumber(v1);
+		double num2=toNumber(v2);
+		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(v1)<<" "<<toDebugString(v2));
+		ASObject* o = getObject(ret);
+		if (replaceNumber(ret,sys,num1+num2) && o)
+			o->decRef();
+	}
+	else if(isString(v1) || isString(v2))
+	{
+		tiny_string sa = toString(v1,sys);
+		sa += toString(v2,sys);
+		LOG_CALL("add " << toString(v1,sys) << '+' << toString(v2,sys));
+		ASATOM_DECREF(ret);
+		ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(sys,sa))|ATOM_STRINGPTR;
+	}
+	else
+	{
+		ASObject* val1 = toObject(v1,sys);
+		ASObject* val2 = toObject(v2,sys);
+		if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
+		{
+			//Check if the objects are both XML or XMLLists
+			Class_base* xmlClass=Class<XML>::getClass(val1->getSystemState());
+
+			XMLList* newList=Class<XMLList>::getInstanceS(val1->getSystemState(),true);
+			val1->incRef();
+			if(val1->getClass()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val1)));
+			else //if(val1->getClass()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val1)));
+
+			val2->incRef();
+			if(val2->getClass()==xmlClass)
+				newList->append(_MR(static_cast<XML*>(val2)));
+			else //if(val2->getClass()==xmlListClass)
+				newList->append(_MR(static_cast<XMLList*>(val2)));
+
+			ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(newList)|ATOM_OBJECTPTR;
+			//The references of val1 and val2 have been passed to the smart references
+			//no decRef is needed
+		}
+		else
+		{//If none of the above apply, convert both to primitives with no hint
+			asAtom val1p=asAtomHandler::invalidAtom;
+			val1->toPrimitive(val1p,NO_HINT);
+			asAtom val2p=asAtomHandler::invalidAtom;
+			val2->toPrimitive(val2p,NO_HINT);
+			if(is<ASString>(val1p) || is<ASString>(val2p))
+			{//If one is String, convert both to strings and concat
+				string as(toString(val1p,sys).raw_buf());
+				string bs(toString(val2p,sys).raw_buf());
+				LOG_CALL("add " << as << '+' << bs);
+				ASATOM_DECREF(ret);
+				ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(sys,as+bs))|ATOM_STRINGPTR;
+			}
+			else
+			{//Convert both to numbers and add
+				number_t num1=AVM1toNumber(val1p,sys->mainClip->version);
+				number_t num2=AVM1toNumber(val2p,sys->mainClip->version);
+				LOG_CALL("addN " << num1 << '+' << num2);
+				ASObject* o = getObject(ret);
+				if (replaceNumber(ret,sys,num1+num2) && o)
+					o->decRef();
+			}
+		}
+	}
+}
 void asAtomHandler::setFunction(asAtom& a,ASObject *obj, ASObject *closure)
 {
 	// type may be T_CLASS or T_FUNCTION
@@ -3030,12 +3118,25 @@ bool asAtomHandler::Boolean_concrete(asAtom& a)
 	}
 }
 
-void asAtomHandler::setNumber(asAtom& a,SystemState* sys,number_t val)
+void asAtomHandler::setNumber(asAtom& a, SystemState* sys, number_t val)
 {
 	if (std::isnan(val))
 		a.uintval = sys->nanAtom.uintval;
 	else
 		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(sys,val))|ATOM_NUMBERPTR;
+}
+bool asAtomHandler::replaceNumber(asAtom& a, SystemState* sys, number_t val)
+{
+	if (isNumber(a) && getObject(a)->isLastRef())
+	{
+		as<Number>(a)->setNumber(val);
+		return false;
+	}
+	if (std::isnan(val))
+		a.uintval = sys->nanAtom.uintval;
+	else
+		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(sys,val))|ATOM_NUMBERPTR;
+	return true;
 }
 
 void asAtomHandler::replace(asAtom& a, ASObject *obj)

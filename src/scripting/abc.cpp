@@ -2311,11 +2311,11 @@ uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
 
 tiny_string ABCVm::getDefaultXMLNamespace()
 {
-	return m_sys->getStringFromUniqueId(currentCallContext->defaultNamespaceUri);
+	return m_sys->getStringFromUniqueId(currentCallContext ? currentCallContext->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY);
 }
 uint32_t ABCVm::getDefaultXMLNamespaceID()
 {
-	return currentCallContext->defaultNamespaceUri;
+	return currentCallContext ? currentCallContext->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 }
 
 uint32_t ABCContext::getString(unsigned int s) const

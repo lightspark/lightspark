@@ -86,8 +86,6 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 	}
 	if (!suppressArguments)
 	{
-		if (paramnames.size() != num_args)
-			LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" num_args and paramnames do not match "<<num_args<<" "<<paramnames.size());
 		if (preloadArguments)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" placing arguments in register "<<num_args);
@@ -95,17 +93,17 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			for (uint32_t i = 0; i < num_args; i++)
 			{
 				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" parameter "<<i<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				regargs->push(args[i]);
 			}
 			registers[currRegister++] = asAtomHandler::fromObject(regargs);
 		}
 		else
 		{
-			for (uint32_t i = 0; i < num_args; i++)
+			for (uint32_t i = 0; i < paramnames.size() && i < num_args; i++)
 			{
 				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" parameter "<<i<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				locals[paramnames[i]] = args[i];
 			}
 		}

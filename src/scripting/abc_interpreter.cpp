@@ -6311,7 +6311,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
-				int32_t value =code.readu30();
+				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->local_count);
 				uint32_t num = value<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
@@ -6323,7 +6323,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x63://setlocal
 			{
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
-				int32_t value =code.readu30();
+				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->local_count);
 				uint32_t num = value<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);

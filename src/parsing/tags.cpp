@@ -2399,8 +2399,8 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 
 AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
 {
-	// ActionTags are ignored if swf > 9 or FileAttributes.actionScript3 is set
-	if (root->version > 9 || root->usesActionScript3)
+	// ActionTags are ignored if FileAttributes.actionScript3 is set
+	if (root->usesActionScript3)
 	{
 		skip(s);
 		return; 

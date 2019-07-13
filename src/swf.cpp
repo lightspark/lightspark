@@ -1454,7 +1454,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root=getRootMovie();
 		parsedObject->loaderInfo->setWaitedObject(parsedObject);
 	}
-	root->setupAVM1RootMovie(ver);
+	root->setupAVM1RootMovie();
 	objectSpinlock.unlock();
 
 	TAGTYPE lasttagtype = TAG;
@@ -2337,8 +2337,8 @@ FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 	return NULL;
 }
 
-void RootMovieClip::setupAVM1RootMovie(UI8 ver)
+void RootMovieClip::setupAVM1RootMovie()
 {
-	if (ver < 9)
+	if (!usesActionScript3)
 		MovieClip::AVM1SetupMethods(getClass());
 }

@@ -266,7 +266,7 @@ void ABCVm::registerClassesAVM1()
 
 	registerClassesToplevel(builtin);
 
-	if (m_sys->getSwfVersion() < 9)
+	if (!m_sys->mainClip->usesActionScript3)
 		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
 
 	builtin->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));

@@ -66,6 +66,20 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class AVM1MovieClipLoader: public Loader
+{
+private:
+	mutable Spinlock spinlock;
+	std::list<IThreadJob *> jobs;
+	URLInfo url;
+public:
+	AVM1MovieClipLoader(Class_base* c):Loader(c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(loadClip);
+	
+};
+
 }
 
 #endif // SCRIPTING_AVM1_AVM1DISPLAY_H

@@ -275,6 +275,7 @@ void ABCVm::registerClassesAVM1()
 	builtin->registerBuiltin("Mouse","",Class<Mouse>::getRef(m_sys));
 	builtin->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
 	builtin->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
+	builtin->registerBuiltin("MovieClipLoader","",Class<AVM1MovieClipLoader>::getRef(m_sys));
 	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 	builtin->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));

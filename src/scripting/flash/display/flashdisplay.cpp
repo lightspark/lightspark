@@ -502,83 +502,87 @@ ASFUNCTIONBODY_ATOM(Loader,load)
 	_NR<URLRequest> r;
 	_NR<LoaderContext> context;
 	ARG_UNPACK_ATOM (r)(context, NullRef);
-	th->url=r->getRequestURL();
-	th->contentLoaderInfo->setURL(th->url.getParsedURL());
-	th->contentLoaderInfo->resetState();
+	th->loadIntern(r.getPtr(),context.getPtr());
+}
+void Loader::loadIntern(URLRequest* r, LoaderContext* context)
+{
+	this->url=r->getRequestURL();
+	this->contentLoaderInfo->setURL(this->url.getParsedURL());
+	this->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
 	_NR<SecurityDomain> secDomain;
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(th->getSystemState())->currentCallContext);
-	if(!context.isNull())
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext);
+	if(context)
 	{
 		if (!context->securityDomain.isNull())
 		{
 			//The passed domain must be the current one. See Loader::load specs.
 			if(context->securityDomain!=curSecDomain)
-				throw Class<SecurityError>::getInstanceS(sys,"SecurityError: securityDomain must be current one");
+				throw Class<SecurityError>::getInstanceS(this->getSystemState(),"SecurityError: securityDomain must be current one");
 			secDomain=curSecDomain;
 		}
 
 		bool sameDomain = (secDomain == curSecDomain);
-		th->allowCodeImport = !sameDomain || context->getAllowCodeImport();
+		this->allowCodeImport = !sameDomain || context->getAllowCodeImport();
 
 		if (!context->parameters.isNull())
-			th->contentLoaderInfo->setParameters(context->parameters);
+			this->contentLoaderInfo->setParameters(context->parameters);
 	}
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	_R<RootMovieClip> currentRoot=getVm(th->getSystemState())->currentCallContext->mi->context->root;
+	_R<RootMovieClip> currentRoot=getVm(this->getSystemState())->currentCallContext->mi->context->root;
 	// empty origin is possible if swf is loaded by loadBytes()
-	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==th->url.getHostname() || !secDomain.isNull())
+	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || !secDomain.isNull())
 	{
 		//Same domain
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
 		//Support for LoaderContext
-		if(context.isNull() || context->applicationDomain.isNull())
-			th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(sys,parentDomain));
+		if(!context || context->applicationDomain.isNull())
+			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
 		else
-			th->contentLoaderInfo->applicationDomain = context->applicationDomain;
-		th->contentLoaderInfo->securityDomain = curSecDomain;
+			this->contentLoaderInfo->applicationDomain = context->applicationDomain;
+		this->contentLoaderInfo->securityDomain = curSecDomain;
 	}
 	else
 	{
 		//Different domain
-		_NR<ApplicationDomain> parentDomain =  sys->systemDomain;
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(sys,parentDomain));
-		th->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(sys));
+		_NR<ApplicationDomain> parentDomain =  this->getSystemState()->systemDomain;
+		this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
+		this->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->getSystemState()));
 	}
 
-	if(!th->url.isValid())
+	if(!this->url.isValid())
 	{
 		//Notify an error during loading
-		th->incRef();
-		sys->currentVm->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(sys)));
+		this->incRef();
+		this->getSystemState()->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(this->getSystemState())));
 		return;
 	}
 
-	SecurityManager::checkURLStaticAndThrow(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
+	SecurityManager::checkURLStaticAndThrow(this->url, ~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
 
-	if (!context.isNull() && context->getCheckPolicyFile())
+	if (context && context->getCheckPolicyFile())
 	{
 		//TODO: this should be async as it could block if invoked from ExternalInterface
 		SecurityManager::EVALUATIONRESULT evaluationResult;
-		evaluationResult = sys->securityManager->evaluatePoliciesURL(th->url, true);
+		evaluationResult = this->getSystemState()->securityManager->evaluatePoliciesURL(this->url, true);
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			// should this dispatch SecurityErrorEvent instead of throwing?
-			throw Class<SecurityError>::getInstanceS(sys,
+			throw Class<SecurityError>::getInstanceS(this->getSystemState(),
 				"SecurityError: connection to domain not allowed by securityManager");
 		}
 	}
 
-	th->incRef();
+	this->incRef();
 	r->incRef();
-	LoaderThread *thread=new LoaderThread(_MR(r), _MR(th));
+	LoaderThread *thread=new LoaderThread(_MR(r), _MR(this));
 
-	SpinlockLocker l(th->spinlock);
-	th->jobs.push_back(thread);
-	sys->addJob(thread);
+	SpinlockLocker l(this->spinlock);
+	this->jobs.push_back(thread);
+	this->getSystemState()->addJob(thread);
 }
 
 ASFUNCTIONBODY_ATOM(Loader,loadBytes)

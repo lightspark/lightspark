@@ -37,7 +37,7 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(Class_base* c):ASObject(c),method(GET),contentType("application/x-www-form-urlencoded"),
+URLRequest::URLRequest(Class_base* c, const tiny_string u):ASObject(c),method(GET),url(u),contentType("application/x-www-form-urlencoded"),
 	requestHeaders(Class<Array>::getInstanceSNoArgs(c->getSystemState()))
 {
 }

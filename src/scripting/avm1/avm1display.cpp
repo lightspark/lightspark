@@ -22,6 +22,7 @@
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
 #include "scripting/abc.h"
+#include "backends/security.h"
 
 using namespace std;
 using namespace lightspark;
@@ -62,4 +63,36 @@ void AVM1Stage::sinit(Class_base* c)
 {
 	Stage::sinit(c);
 	DisplayObject::AVM1SetupMethods(c);
+}
+
+
+void AVM1MovieClipLoader::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Loader, _constructor, CLASS_FINAL);
+	c->isReusable = true;
+	c->setDeclaredMethodByQName("loadClip","",Class<IFunction>::getFunction(c->getSystemState(),loadClip),NORMAL_METHOD,true);
+}
+ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
+{
+}
+ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
+{
+	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
+
+	tiny_string strurl;
+	asAtom target = asAtomHandler::invalidAtom;
+	ARG_UNPACK_ATOM (strurl)(target);
+	URLRequest* r = Class<URLRequest>::getInstanceS(sys,strurl);
+	DisplayObject* t = nullptr;
+	if (asAtomHandler::isNumeric(target))
+	{
+		int depth = asAtomHandler::toInt(target);
+		if (sys->mainClip->hasLegacyChildAt(depth))
+			t = sys->mainClip->getLegacyChildAt(depth);
+	}
+	else
+		t = asAtomHandler::getObject(target)->as<DisplayObject>();
+	if (t)
+		t->loaderInfo = th->getContentLoaderInfo();
+	th->loadIntern(r,nullptr);
 }

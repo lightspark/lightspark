@@ -360,6 +360,7 @@ class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
 private:
 	mutable Spinlock spinlock;
 	_NR<DisplayObject> content;
+	_NR<DisplayObject> avm1target;
 	// There can be multiple jobs, one active and aborted ones
 	// that have not yet terminated
 	std::list<IThreadJob *> jobs;
@@ -368,6 +369,8 @@ private:
 	void unload();
 	bool loaded;
 	bool allowCodeImport;
+protected:
+	void loadIntern(URLRequest* r, LoaderContext* context);
 public:
 	Loader(Class_base* c);
 	~Loader();

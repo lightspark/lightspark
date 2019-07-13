@@ -182,7 +182,6 @@ public:
 	virtual void afterHandleEvent();
 	
 	virtual void UpdateVariableBinding(asAtom v) {}
-	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e) { return false; }
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e) { return false; }
 	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) { }
 	

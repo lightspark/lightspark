@@ -1702,6 +1702,31 @@ bool ASObject::destruct()
 	return dodestruct;
 }
 
+bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e) 
+{ 
+	if (e->type =="keyDown")
+	{
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = getSystemState()->getUniqueStringId("onKeyDown");
+		asAtom f;
+		getVariableByMultiname(f,m);
+		if (asAtomHandler::isFunction(f))
+			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+	}
+	if (e->type =="keyUp")
+	{
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = getSystemState()->getUniqueStringId("onKeyUp");
+		asAtom f;
+		getVariableByMultiname(f,m);
+		if (asAtomHandler::isFunction(f))
+			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+	}
+	return false; 
+}
+
 void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
 {
 	if (n>slots_vars.capacity())

@@ -31,6 +31,9 @@ void AVM1Key::sinit(Class_base* c)
 	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtomHandler::fromUInt(32),CONSTANT_TRAIT);
 
 	c->setDeclaredMethodByQName("isDown","",Class<IFunction>::getFunction(c->getSystemState(),isDown),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getCode","",Class<IFunction>::getFunction(c->getSystemState(),getCode),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
@@ -48,5 +51,25 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 			LOG(LOG_NOT_IMPLEMENTED,"AVM1: Key.isDown handling of key "<<key);
 	}
 	asAtomHandler::setBool(ret,b);
+}
+ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM (listener);
+	if (listener)
+		sys->stage->AVM1AddKeyboardListener(listener.getPtr());
+}
+ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM (listener);
+	if (listener)
+		sys->stage->AVM1RemoveKeyboardListener(listener.getPtr());
+}
+ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
+{
+	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
+	LOG(LOG_NOT_IMPLEMENTED,"AVM1Key.getCode doesn't correctly map AVM2 key codes to AVM1 key codes:"<<c);
+	asAtomHandler::setInt(ret,sys,c);
 }
 

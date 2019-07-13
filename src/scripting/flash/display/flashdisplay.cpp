@@ -1693,6 +1693,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 		}
 	}
+	Sprite::AVM1HandleKeyboardEvent(e);
 	return false;
 }
 bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
@@ -3367,7 +3368,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 	}
 }
 
-void Stage::AVM1AddKeyboardListener(DisplayObject *o)
+void Stage::AVM1AddKeyboardListener(ASObject *o)
 {
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
@@ -3378,7 +3379,7 @@ void Stage::AVM1AddKeyboardListener(DisplayObject *o)
 	avm1KeyboardListeners.push_back(_MR(o));
 }
 
-void Stage::AVM1RemoveKeyboardListener(DisplayObject *o)
+void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 {
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
@@ -4007,6 +4008,8 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			handled=true;
 		}
 	}
+	if (!handled)
+		DisplayObjectContainer::AVM1HandleKeyboardEvent(e);
 	return handled;
 }
 
@@ -4462,7 +4465,7 @@ void MovieClip::declareFrame()
 			{
 				iter->execute(this);
 			}
-			if (getSystemState()->getSwfVersion() <= 9 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
+			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
 				currentframeIterator= iter;
 			++iter;
 		}

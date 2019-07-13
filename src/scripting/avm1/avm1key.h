@@ -31,6 +31,9 @@ public:
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(isDown);
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
+	ASFUNCTION_ATOM(getCode);
 };
 
 }

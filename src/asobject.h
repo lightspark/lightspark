@@ -269,6 +269,7 @@ class SystemState;
 struct asfreelist;
 class SyntheticFunction;
 class SoundTransform;
+class KeyboardEvent;
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
@@ -1121,6 +1122,7 @@ public:
 	void checkFunctionScope(ASObject *o);
 	
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
+	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 };
 
 class AVM1Function;

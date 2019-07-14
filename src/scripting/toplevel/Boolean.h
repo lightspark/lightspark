@@ -35,7 +35,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o){}
 	bool val;
-	inline bool destruct() { val=false; return ASObject::destruct(); }
+	inline bool destruct() { val=false; return destructIntern(); }
 	int32_t toInt()
 	{
 		return val ? 1 : 0;

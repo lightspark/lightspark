@@ -45,7 +45,7 @@ bool Array::destruct()
 	data_first.clear();
 	data_second.clear();
 	currentsize=0;
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void Array::sinit(Class_base* c)

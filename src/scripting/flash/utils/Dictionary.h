@@ -47,7 +47,7 @@ public:
 			it++;
 		}
 		data.clear();
-		return ASObject::destruct();
+		return destructIntern();
 	}
 	
 	static void sinit(Class_base*);

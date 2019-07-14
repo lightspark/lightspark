@@ -36,7 +36,7 @@ public:
 	tiny_string toString();
 	static tiny_string toString(uint32_t val);
 	inline number_t toNumber() { return val; }
-	inline bool destruct() { val=0; return ASObject::destruct();}
+	inline bool destruct() { val=0; return destructIntern();}
 	inline int32_t toInt() { return val; }
 	inline int64_t toInt64() { return val; }
 	inline uint32_t toUInt() { return val; }

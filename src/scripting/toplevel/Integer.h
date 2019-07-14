@@ -31,14 +31,14 @@ friend class Number;
 friend class Array;
 friend class ABCVm;
 friend class ABCContext;
-friend ASObject* abstract_i(int32_t i);
+friend ASObject* abstract_i(SystemState* sys, int32_t i);
 public:
 	Integer(Class_base* c,int32_t v=0):ASObject(c,T_INTEGER),val(v){}
 	int32_t val;
-	static void buildTraits(ASObject* o){};
+	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	inline number_t toNumber() { return val; }
-	inline bool destruct() { val=0; return ASObject::destruct(); }
+	inline bool destruct() { val=0; return destructIntern(); }
 	ASFUNCTION_ATOM(_toString);
 	tiny_string toString();
 	static tiny_string toString(int32_t val);

@@ -170,7 +170,7 @@ bool FontDescription::destruct()
 	fontWeight = "normal";
 	locked = false;
 	renderingMode = "cff";
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_constructor)

@@ -151,47 +151,6 @@ public:
 class Prototype;
 class ObjectConstructor;
 
-#define FREELIST_SIZE 16
-struct asfreelist
-{
-	ASObject* freelist[FREELIST_SIZE];
-	int freelistsize;
-	asfreelist():freelistsize(0) {}
-	~asfreelist() 
-	{
-		for (int i = 0; i < freelistsize; i++)
-			delete freelist[i];
-		freelistsize = 0;
-	}
-
-	inline ASObject* getObjectFromFreeList()
-	{
-#ifndef NDEBUG
-		// all ASObjects must be created in the VM thread
-		//assert_and_throw(isVmThread());
-#endif
-		ASObject* o = freelistsize ? freelist[--freelistsize] :nullptr;
-		LOG_CALL("getfromfreelist:"<<freelistsize<<" "<<o);
-		return o;
-	}
-	inline bool pushObjectToFreeList(ASObject *obj)
-	{
-#ifndef NDEBUG
-		// all ASObjects must be created in the VM thread
-		//assert_and_throw(isVmThread());
-#endif
-		assert(obj->isLastRef());
-		if (freelistsize < FREELIST_SIZE)
-		{
-			LOG_CALL("pushtofreelist:"<<freelistsize<<" "<<obj);
-			obj->setCached();
-			freelist[freelistsize++]=obj;
-			return true;
-		}
-		return false;
-	}
-};
-
 class Class_base: public ASObject, public Type
 {
 friend class ABCVm;
@@ -444,7 +403,7 @@ public:
 		length=0;
 		closure_this.reset();
 		prototype.reset();
-		return ASObject::destruct();
+		return destructIntern();
 	}
 	IFunction* bind(_NR<ASObject> c)
 	{

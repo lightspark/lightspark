@@ -107,7 +107,7 @@ bool XMLList::destruct()
 	constructed = false;
 	targetobject = NULL;
 	targetproperty = multiname(this->getClass()->memoryAccount);
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void XMLList::sinit(Class_base* c)

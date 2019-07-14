@@ -35,6 +35,13 @@
 using namespace lightspark;
 using namespace std;
 
+asfreelist::~asfreelist()
+{
+	for (int i = 0; i < freelistsize; i++)
+		delete freelist[i];
+	freelistsize = 0;
+}
+
 string ASObject::toDebugString()
 {
 	check();
@@ -1615,7 +1622,7 @@ void variables_map::removeAllDeclaredProperties()
 }
 
 #ifndef NDEBUG
-std::map<Class_base*,uint32_t> objectcounter;
+std::map<Class_base*,uint32_t> ASObject::objectcounter;
 void ASObject::dumpObjectCounters(uint32_t threshhold)
 {
 	uint64_t c = 0;
@@ -1666,40 +1673,7 @@ void ASObject::setClass(Class_base* c)
 
 bool ASObject::destruct()
 {
-	destroyContents();
-	if (proxyMultiName)
-		delete proxyMultiName;
-	stringId = UINT32_MAX;
-	proxyMultiName = NULL;
-	traitsInitialized =false;
-	constructIndicator = false;
-	constructorCallComplete =false;
-	implEnable = true;
-#ifndef NDEBUG
-	//Stuff only used in debugging
-	initialized=false;
-#endif
-	bool dodestruct = true;
-	if (objfreelist)
-	{
-		if (!getCached())
-			dodestruct = !objfreelist->pushObjectToFreeList(this);
-		else
-			dodestruct = false;
-	}
-	if (dodestruct)
-	{
-#ifndef NDEBUG
-		if (classdef)
-		{
-			uint32_t x = objectcounter[classdef];
-			x--;
-			objectcounter[classdef] = x;
-		}
-#endif
-		finalize();
-	}
-	return dodestruct;
+	return destructIntern();
 }
 
 bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e) 

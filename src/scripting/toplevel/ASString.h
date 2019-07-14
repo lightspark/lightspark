@@ -114,7 +114,7 @@ public:
 		data.clear(); 
 		hasId = false;
 		datafilled=false; 
-		if (!ASObject::destruct())
+		if (!destructIntern())
 		{
 			stringId = BUILTIN_STRINGS::EMPTY;
 			hasId = true;

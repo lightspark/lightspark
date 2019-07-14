@@ -52,7 +52,7 @@ public:
 		dval=v;
 	}
 	inline number_t toNumber() { return isfloat ? dval : ival; }
-	inline bool destruct() { dval=Number::NaN; isfloat = true; return ASObject::destruct(); }
+	inline bool destruct() { dval=Number::NaN; isfloat = true; return destructIntern(); }
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(_toLocaleString);

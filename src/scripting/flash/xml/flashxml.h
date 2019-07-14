@@ -44,7 +44,7 @@ public:
 	bool destruct()
 	{
 		root.reset();
-		return ASObject::destruct();
+		return destructIntern();
 	}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

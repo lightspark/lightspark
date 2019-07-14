@@ -1522,7 +1522,7 @@ bool TextFormat::destruct()
 	target="";
 	font="";
 	size=12;
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 ASFUNCTIONBODY_ATOM(TextFormat,_constructor)

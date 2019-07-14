@@ -51,7 +51,7 @@ public:
 		datetimeUTC = NULL;
 		extrayears = 0;
 		nan = false;
-		return ASObject::destruct();
+		return destructIntern();
 	}
 
 	static void sinit(Class_base*);

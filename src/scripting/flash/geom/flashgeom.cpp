@@ -99,7 +99,7 @@ bool Rectangle::destruct()
 	y=0;
 	width=0;
 	height=0;
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
@@ -948,7 +948,7 @@ bool Transform::destruct()
 	owner.reset();
 	perspectiveProjection.reset();
 	matrix3D.reset();
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void Transform::sinit(Class_base* c)
@@ -1119,7 +1119,7 @@ MATRIX Matrix::getMATRIX() const
 bool Matrix::destruct()
 {
 	matrix = MATRIX();
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_a)
@@ -1452,7 +1452,7 @@ bool Vector3D::destruct()
 	x = 0;
 	y = 0;
 	z = 0;
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_toString)
@@ -1926,7 +1926,7 @@ void Matrix3D::sinit(Class_base* c)
 
 bool Matrix3D::destruct()
 {
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void Matrix3D::getRowAsFloat(uint32_t rownum, float *rowdata)
@@ -2349,7 +2349,7 @@ bool PerspectiveProjection::destruct()
 	fieldOfView = 0;
 	focalLength= 0;
 	projectionCenter.reset();
-	return ASObject::destruct();
+	return destructIntern();
 }
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, fieldOfView);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, focalLength);

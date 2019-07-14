@@ -115,7 +115,7 @@ bool Vector::destruct()
 	}
 	vec.clear();
 	vec_type=nullptr;
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void Vector::setTypes(const std::vector<const Type *> &types)

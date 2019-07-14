@@ -266,10 +266,21 @@ class Loader;
 class Type;
 class ABCContext;
 class SystemState;
-struct asfreelist;
 class SyntheticFunction;
 class SoundTransform;
 class KeyboardEvent;
+
+#define FREELIST_SIZE 16
+struct asfreelist
+{
+	ASObject* freelist[FREELIST_SIZE];
+	int freelistsize;
+	asfreelist():freelistsize(0) {}
+	~asfreelist();
+
+	inline ASObject* getObjectFromFreeList();
+	inline bool pushObjectToFreeList(ASObject *obj);
+};
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
@@ -844,12 +855,54 @@ protected:
 	bool destruct();
 	// called when object is really destroyed
 	virtual void destroy(){}
+
+	FORCE_INLINE bool destructIntern()
+	{
+		if (varcount)
+			destroyContents();
+		if (proxyMultiName)
+		{
+			delete proxyMultiName;
+			proxyMultiName = NULL;
+		}
+		stringId = UINT32_MAX;
+		traitsInitialized =false;
+		constructIndicator = false;
+		constructorCallComplete =false;
+		implEnable = true;
+#ifndef NDEBUG
+		//Stuff only used in debugging
+		initialized=false;
+#endif
+		bool dodestruct = true;
+		if (objfreelist)
+		{
+			if (!getCached())
+				dodestruct = !objfreelist->pushObjectToFreeList(this);
+			else
+				dodestruct = false;
+		}
+		if (dodestruct)
+		{
+#ifndef NDEBUG
+			if (classdef)
+			{
+				uint32_t x = objectcounter[classdef];
+				x--;
+				objectcounter[classdef] = x;
+			}
+#endif
+			finalize();
+		}
+		return dodestruct;
+	}
 public:
 	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
 	
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;
+	static std::map<Class_base*,uint32_t> objectcounter;
 	static void dumpObjectCounters(uint32_t threshhold);
 #endif
 	bool implEnable:1;
@@ -2077,6 +2130,33 @@ FORCE_INLINE bool asAtomHandler::isNamespace(const asAtom& a) { return getObject
 FORCE_INLINE bool asAtomHandler::isArray(const asAtom& a) { return getObject(a) && getObject(a)->is<Array>(); }
 FORCE_INLINE bool asAtomHandler::isClass(const asAtom& a) { return getObject(a) && getObject(a)->is<Class_base>(); }
 FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return getObject(a) && getObject(a)->getObjectType() == T_TEMPLATE; }
+
+inline ASObject* asfreelist::getObjectFromFreeList()
+{
+#ifndef NDEBUG
+	// all ASObjects must be created in the VM thread
+	//assert_and_throw(isVmThread());
+#endif
+	ASObject* o = freelistsize ? freelist[--freelistsize] :nullptr;
+	LOG_CALL("getfromfreelist:"<<freelistsize<<" "<<o);
+	return o;
+}
+inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
+{
+#ifndef NDEBUG
+	// all ASObjects must be created in the VM thread
+	//assert_and_throw(isVmThread());
+#endif
+	assert(obj->isLastRef());
+	if (freelistsize < FREELIST_SIZE)
+	{
+		LOG_CALL("pushtofreelist:"<<freelistsize<<" "<<obj);
+		obj->setCached();
+		freelist[freelistsize++]=obj;
+		return true;
+	}
+	return false;
+}
 
 }
 #endif /* ASOBJECT_H */

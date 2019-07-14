@@ -79,7 +79,7 @@ bool XML::destruct()
 	attributelist.reset();
 	procinstlist.reset();
 	namespacedefs.clear();
-	return ASObject::destruct();
+	return destructIntern();
 }
 
 void XML::sinit(Class_base* c)

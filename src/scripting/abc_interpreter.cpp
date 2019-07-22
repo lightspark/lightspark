@@ -611,6 +611,16 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_getslot_local,
 	abc_getslot_constant_localresult,
 	abc_getslot_local_localresult,
+	abc_callFunctionNoArgs_constant, // 0x1f0 ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS
+	abc_callFunctionNoArgs_local,
+	abc_callFunctionNoArgs_constant_localresult,
+	abc_callFunctionNoArgs_local_localresult,
+	abc_callFunctionOneArgVoid_constant_constant, // 0x1f4 ABC_OP_OPTIMZED_CALLFUNCTION_ONEARG_VOID
+	abc_callFunctionOneArgVoid_local_constant,
+	abc_callFunctionOneArgVoid_constant_local,
+	abc_callFunctionOneArgVoid_local_local,
+	abc_callFunctionMultiArgsVoid, // 0x1f8 ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID
+	abc_callFunctionMultiArgs, // 0x1f9 ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS
 
 	abc_invalidinstruction
 };
@@ -2024,8 +2034,10 @@ void ABCVm::abc_callpropertyStaticName_localresult(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,*obj,args,1,name,context->exec_pos,true);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2106,8 +2118,10 @@ void ABCVm::abc_callpropertyStaticName_constant_constant_localresult(call_contex
 	LOG_CALL( "callProperty_ccl " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,&args,1,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* context)
@@ -2122,8 +2136,10 @@ void ABCVm::abc_callpropertyStaticName_local_constant_localresult(call_context* 
 	LOG_CALL( "callProperty_lcl " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,&args,1,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2139,8 +2155,10 @@ void ABCVm::abc_callpropertyStaticName_constant_local_localresult(call_context* 
 	LOG_CALL( "callProperty_cll " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,args,1,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2156,8 +2174,10 @@ void ABCVm::abc_callpropertyStaticName_local_local_localresult(call_context* con
 	LOG_CALL( "callProperty_lll " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,args,1,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2203,8 +2223,10 @@ void ABCVm::abc_callpropertyStaticName_constant_localresult(call_context* contex
 	LOG_CALL( "callProperty_noargs_c_lr " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2219,8 +2241,10 @@ void ABCVm::abc_callpropertyStaticName_local_localresult(call_context* context)
 	LOG_CALL( "callProperty_noargs_l_lr " << *name);
 	asAtom res=asAtomHandler::invalidAtom;
 	callprop_intern(context,res,obj,nullptr,0,name,context->exec_pos,false);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
 
 	++(context->exec_pos);
 }
@@ -2253,8 +2277,8 @@ void ABCVm::abc_returnvalue_local(call_context* context)
 {
 	//returnvalue
 	asAtomHandler::set(context->returnvalue,context->locals[context->exec_pos->local_pos1]);
-	LOG_CALL(_("returnValue_l ") << asAtomHandler::toDebugString(context->returnvalue));
 	ASATOM_INCREF(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL(_("returnValue_l ") << asAtomHandler::toDebugString(context->returnvalue));
 	context->returning = true;
 	++(context->exec_pos);
 }
@@ -2573,9 +2597,11 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 	{
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
-		ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+		ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 		asAtomHandler::setFunction(context->locals[instrptr->local_pos3-1],instrptr->cacheobj1,nullptr);//,instrptr->cacheobj2);
 		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+		if (o)
+			o->decRef();
 		LOG_CALL( "getLex_l from cache: " <<  instrptr->cacheobj1->toDebugString());
 	}
 	else if (getLex_multiname(context,instrptr->cachedmultiname2,instrptr->local_pos3))
@@ -2660,7 +2686,7 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 	asAtom* obj = &context->locals[instrptr->local_pos1];
 	asAtom* value = instrptr->arg2_constant;
 
-	LOG_CALL(_("setProperty_slc ") << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL(_("setProperty_slc ") << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value)<<" "<<instrptr->local_pos1);
 
 	if(asAtomHandler::isNull(*obj))
 	{
@@ -2930,9 +2956,11 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
@@ -2958,9 +2986,11 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
 	}
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
@@ -2975,9 +3005,11 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
@@ -3003,9 +3035,12 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
 	}
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+		LOG_CALL( _("getProperty_lll2 ") << o);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 
@@ -3120,9 +3155,11 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
@@ -3163,9 +3200,11 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			}
 			if(asAtomHandler::isInvalid(prop))
 				checkPropertyException(obj,name,prop);
-			ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+			ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 			asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 			ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+			if (o)
+				o->decRef();
 			++(context->exec_pos);
 			return;
 		}
@@ -3184,7 +3223,6 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 	else
 	{
 		ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
-		LOG_CALL( _("getProperty_sll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		asAtom prop=asAtomHandler::invalidAtom;
 // TODO caching doesn't work until we find a way to detect if obj is a reused object 
 // that has been destroyed since the last call
@@ -3240,9 +3278,11 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 		}
 		if(asAtomHandler::isInvalid(prop))
 			checkPropertyException(obj,name,prop);
-		ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+		ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 		asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 		ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+		if (o)
+			o->decRef();
 	}
 	++(context->exec_pos);
 }
@@ -3253,7 +3293,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	multiname* name=instrptr->cachedmultiname2;
 
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,context->mi->context->root->getSystemState());
-	LOG_CALL( _("getProperty_scl_l ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( _("getProperty_sll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{
@@ -3278,9 +3318,131 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionNoArgs_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	asAtom ret;
+	LOG_CALL("callFunctionNoArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionNoArgs_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = context->locals[instrptr->local_pos1];
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	asAtom ret;
+	LOG_CALL("callFunctionNoArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionNoArgs_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	LOG_CALL("callFunctionNoArgs_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,context->locals[instrptr->local_pos3-1],obj,nullptr,0,false);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionNoArgs_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = context->locals[instrptr->local_pos1];
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	LOG_CALL("callFunctionNoArgs_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,context->locals[instrptr->local_pos3-1],obj,nullptr,0,false);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_callFunctionOneArgVoid_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionOneArgVoid_cc ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret;
+	asAtomHandler::callFunction(func,ret,obj,value,1,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionOneArgVoid_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = context->locals[instrptr->local_pos1];
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionOneArgVoid_lc ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret;
+	asAtomHandler::callFunction(func,ret,obj,value,1,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionOneArgVoid_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = &context->locals[instrptr->local_pos2];
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionOneArgVoid_cl ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret;
+	asAtomHandler::callFunction(func,ret,obj,value,1,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionOneArgVoid_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = context->locals[instrptr->local_pos1];
+	asAtom* value = &context->locals[instrptr->local_pos2];
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionOneArgVoid_ll ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret;
+	asAtomHandler::callFunction(func,ret,obj,value,1,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->data>>8;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionMultiArgVoid ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
+	asAtom* args=g_newa(asAtom, argcount);
+	for(uint32_t i=0;i<argcount;i++)
+		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_CREATE(context,obj);
+	asAtom ret;
+	asAtomHandler::callFunction(func,ret,*obj,args,argcount,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionMultiArgs(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->data>>8;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
+	LOG_CALL(_("callFunctionMultiArg ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
+	asAtom* args=g_newa(asAtom, argcount);
+	for(uint32_t i=0;i<argcount;i++)
+		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_CREATE(context,obj);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::callFunction(func,ret,*obj,args,argcount,false);
+	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
 
@@ -3350,9 +3512,12 @@ void ABCVm::abc_getslot_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
-	asAtom val = asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true)->getSlot(t);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
-	asAtomHandler::set(context->locals[instrptr->local_pos3-1],val);
+	asAtom res = asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true)->getSlot(t);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
 	++(context->exec_pos);
 }
@@ -3360,9 +3525,12 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->data;
-	asAtom val = asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState())->getSlot(t);
-	ASATOM_DECREF(context->locals[instrptr->local_pos3-1]);
-	asAtomHandler::set(context->locals[instrptr->local_pos3-1],val);
+	asAtom res = asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState())->getSlot(t);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
 	LOG_CALL("getSlot_ll " << t << " " << asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
 	++(context->exec_pos);
 }
@@ -5216,11 +5384,11 @@ void ABCVm::abc_invalidinstruction(call_context* context)
 struct operands
 {
 	OPERANDTYPES type;
-	SWFOBJECT_TYPE objtype;
+	Class_base* objtype;
 	int32_t index;
 	uint32_t codecount;
 	uint32_t preloadedcodepos;
-	operands(OPERANDTYPES _t, SWFOBJECT_TYPE _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p) {}
+	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p) {}
 	void removeArg(method_info* mi)
 	{
 		if (codecount)
@@ -5306,6 +5474,12 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS 0x000001e8
 #define ABC_OP_OPTIMZED_CONSTRUCTSUPER 0x000001ea 
 #define ABC_OP_OPTIMZED_GETSLOT 0x000001ec
+#define ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS 0x000001f0 
+#define ABC_OP_OPTIMZED_CALLFUNCTION_ONEARG_VOID 0x000001f4
+#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID 0x000001f8 
+#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS 0x000001f9 
+
+
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -5346,14 +5520,26 @@ void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::m
 		}
 	}
 }
-void clearOperands(method_info* mi,SWFOBJECT_TYPE* localtypes,std::list<operands>& operandlist )
+void clearOperands(method_info* mi,Class_base** localtypes,std::list<operands>& operandlist, Class_base** defaultlocaltypes )
 {
 	for (uint32_t i = 0; i < mi->body->local_count+2; i++)
-		localtypes[i] = SWFOBJECT_TYPE::T_INVALID;
+		localtypes[i] = defaultlocaltypes[i];
 	operandlist.clear();
 }
+bool canCallFunctionDirect(operands& op,multiname* name)
+{
+	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT) &&
+		op.objtype &&
+		!op.objtype->isInterface && // it's not an interface
+		!op.objtype->implementsInterfaces() && // it doesn't implement any interface
+		(
+		!op.objtype->is<Class_inherit>() || // type is builtin class
+		!op.objtype->as<Class_inherit>()->overriddenmethods || // type has no overridden methods
+		op.objtype->as<Class_inherit>()->overriddenmethods->find(name) == op.objtype->as<Class_inherit>()->overriddenmethods->end() // current method is not in overridden methods
+		));
+}
 
-bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,uint32_t opcode_jumpspace, SWFOBJECT_TYPE* localtypes, SWFOBJECT_TYPE restype)
+bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,uint32_t opcode_jumpspace, Class_base** localtypes, Class_base* restype, Class_base** defaultlocaltypes)
 {
 	bool res = false;
 	bool needstwoargs = false;
@@ -5465,7 +5651,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist,defaultlocaltypes);
 			break;
 		}
 		case 0x46://callproperty
@@ -5485,7 +5671,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 		}
 		case 0x61://setproperty
@@ -5504,7 +5690,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 		}
 		case 0x66://getproperty
@@ -5523,7 +5709,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 		}
 		case 0x11://iftrue
@@ -5537,7 +5723,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 		case 0x91://increment
 		case 0x93://decrement
@@ -5552,7 +5738,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				res = true;
 			}
 			else
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 		case 0x13://ifeq
 		case 0x14://ifne
@@ -5600,7 +5786,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			// don't clear operandlist yet, because the jump may be skipped
 			break;
 		default:
-			clearOperands(mi,localtypes,operandlist);
+			clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 			break;
 	}
 	return res;
@@ -5649,10 +5835,10 @@ void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,metho
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	}
 }
-bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed, bool useargument_for_skip, SWFOBJECT_TYPE* localtypes)
+bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed, bool useargument_for_skip, Class_base** localtypes, Class_base** defaultlocaltypes, Class_base* resulttype)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 1 && (constantsallowed || operandlist.back().type == OP_LOCAL);
-	SWFOBJECT_TYPE resulttype = SWFOBJECT_TYPE::T_INVALID;
+	Class_base* skiptype = resulttype;
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
@@ -5661,7 +5847,7 @@ bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		mi->body->preloadedcode.push_back(operator_start);
 		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,constantsallowed);
 		if (useargument_for_skip)
-			resulttype = it->objtype;
+			skiptype = it->objtype;
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		operandlist.pop_back();
 	}
@@ -5672,21 +5858,21 @@ bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		switch (code.peekbyte())
 		{
 			case 0x73://convert_i
-				if (!constantsallowed || resulttype == SWFOBJECT_TYPE::T_INTEGER)
+				if (!constantsallowed || skiptype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 				{
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					code.readbyte();
 				}
 				break;
 			case 0x74://convert_u
-				if (!constantsallowed || resulttype == SWFOBJECT_TYPE::T_UINTEGER)
+				if (!constantsallowed || skiptype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
 				{
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					code.readbyte();
 				}
 				break;
 			case 0x75://convert_d
-				if (!constantsallowed || resulttype == SWFOBJECT_TYPE::T_NUMBER  || resulttype == SWFOBJECT_TYPE::T_INTEGER  || resulttype == SWFOBJECT_TYPE::T_UINTEGER)
+				if (!constantsallowed || skiptype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()  || skiptype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || skiptype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
 				{
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					code.readbyte();
@@ -5699,16 +5885,16 @@ bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 		}
 	}
 	if (hasoperands)
-		checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,constantsallowed ? 2 : 1,localtypes,resulttype);
+		checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,constantsallowed ? 2 : 1,localtypes,resulttype, defaultlocaltypes);
 	else
-		clearOperands(mi,localtypes,operandlist);
+		clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 	return hasoperands;
 }
 
-bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult, SWFOBJECT_TYPE* localtypes)
+bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult, Class_base** localtypes, Class_base** defaultlocaltypes)
 {
 	bool hasoperands = jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() >= 2;
-	SWFOBJECT_TYPE resulttype = SWFOBJECT_TYPE::T_INVALID;
+	Class_base* resulttype = nullptr;
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
@@ -5767,7 +5953,7 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 			mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 			oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 			mi->body->preloadedcode.push_back(value);
-			operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getObjectType(res), value,2,mi->body->preloadedcode.size()-2));
+			operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,mi->context->root->getSystemState()), value,2,mi->body->preloadedcode.size()-2));
 			return true;
 		}
 		
@@ -5778,9 +5964,9 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
 		mi->body->preloadedcode.push_back(operator_start);
 		(--it)->fillCode(1,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
-		SWFOBJECT_TYPE op1type = it->objtype;
+		Class_base* op1type = it->objtype;
 		(--it)->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,true);
-		SWFOBJECT_TYPE op2type = it->objtype;
+		Class_base* op2type = it->objtype;
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		operandlist.pop_back();
 		operandlist.pop_back();
@@ -5789,26 +5975,26 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 			case ABC_OP_OPTIMZED_ADD:
 				// if both operands are numeric, the result is always a number, so we can skip convert_d opcode
 				skip_conversion = 
-						(op1type == T_INTEGER || op1type == T_UINTEGER || op1type == T_NUMBER) &&
-						(op2type == T_INTEGER || op2type == T_UINTEGER || op2type == T_NUMBER);
+						(op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()) &&
+						(op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr());
 				if (skip_conversion)
-					resulttype = T_NUMBER;
+					resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_DIVIDE:
 			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_SUBTRACT:
 			case ABC_OP_OPTIMZED_MODULO:
-				resulttype = T_NUMBER;
+				resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_LSHIFT:
 			case ABC_OP_OPTIMZED_RSHIFT:
 			case ABC_OP_OPTIMZED_BITAND:
 			case ABC_OP_OPTIMZED_BITOR:
 			case ABC_OP_OPTIMZED_BITXOR:
-				resulttype = T_INTEGER;
+				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
-				resulttype = T_UINTEGER;
+				resulttype = Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			default:
 				break;
@@ -5836,9 +6022,9 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 	if (checklocalresult)
 	{
 		if (hasoperands)
-			checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,4,localtypes, resulttype);
+			checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,4,localtypes, resulttype, defaultlocaltypes);
 		else
-			clearOperands(mi,localtypes,operandlist);
+			clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 	}
 	return hasoperands;
 }
@@ -5848,7 +6034,26 @@ void addCachedConstant(method_info* mi, asAtom& val,std::list<operands>& operand
 	mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	mi->body->preloadedcode.push_back(value);
-	operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getObjectType(val),value,2,mi->body->preloadedcode.size()-2));
+	operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->root->getSystemState()),value,2,mi->body->preloadedcode.size()-2));
+}
+void setdefaultlocaltype(uint32_t t,method_info* mi,Class_base* c,Class_base** defaultlocaltypes, bool* defaultlocaltypescacheable)
+{
+	if (c==nullptr)
+	{
+		defaultlocaltypes[t] = nullptr;
+		defaultlocaltypescacheable[t]=false;
+		return;
+	}
+	if (t < mi->body->local_count+2 && defaultlocaltypescacheable[t])
+	{
+		if (defaultlocaltypes[t] == nullptr)
+			defaultlocaltypes[t] = c;
+		if (defaultlocaltypes[t] != c)
+		{
+			defaultlocaltypescacheable[t]=false;
+			defaultlocaltypes[t]=nullptr;
+		}
+	}
 }
 void ABCVm::preloadFunction(SyntheticFunction* function)
 {
@@ -5861,8 +6066,23 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	std::map<int32_t,int32_t> switchpositions;
 	std::map<int32_t,int32_t> switchstartpositions;
 
-	// first pass: store all jump target points
+	// first pass:
+	// - store all jump target points
+	// - compute types of the locals and detect if they don't change during execution
 	std::map<int32_t,int32_t> jumptargets;
+	Class_base* defaultlocaltypes[mi->body->local_count+2];
+	bool defaultlocaltypescacheable[mi->body->local_count+2];
+	defaultlocaltypes[0]= function->inClass;
+	defaultlocaltypescacheable[0]=true;
+	for (uint32_t i = 1; i < mi->body->local_count+2; i++)
+	{
+		defaultlocaltypes[i]=nullptr;
+		defaultlocaltypescacheable[0]=true;
+		if (mi->needsArgs() && i == mi->numArgs()+1) // don't cache argument array
+			defaultlocaltypescacheable[i]=false;
+		if (i > 0 && i <= mi->paramTypes.size() && mi->paramTypes[i] != Type::anyType)
+			defaultlocaltypes[i]= (Class_base*)mi->paramTypes[i-1]; // cache types of arguments
+	}
 
 	auto itex = mi->body->exceptions.begin();
 	while (itex != mi->body->exceptions.end())
@@ -5889,6 +6109,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				0x47, //returnvoid
 				0x00
 			};
+	Class_base* currenttype=nullptr;
 	memorystream codejumps(mi->body->code.data(), code_len);
 	while(!codejumps.atend())
 	{
@@ -5908,11 +6129,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x05://setsuper
 			case 0x06://dxns
 			case 0x08://kill
-			case 0x2c://pushstring
-			case 0x2d://pushint
-			case 0x2e://pushuint
-			case 0x2f://pushdouble
-			case 0x31://pushnamespace
 			case 0x40://newfunction
 			case 0x41://call
 			case 0x42://construct
@@ -5929,7 +6145,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x60://getlex
 			case 0x61://setproperty
 			case 0x62://getlocal
-			case 0x63://setlocal
 			case 0x65://getscopeobject
 			case 0x66://getproperty
 			case 0x68://initproperty
@@ -5940,16 +6155,79 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x6f://setglobalSlot
 			case 0x80://coerce
 			case 0x86://astype
-			case 0x92://inclocal
-			case 0x94://declocal
 			case 0xb2://istype
-			case 0xc2://inclocal_i
-			case 0xc3://declocal_i
+				codejumps.readu30();
+				currenttype=nullptr;
+				break;
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
 				codejumps.readu30();
 				break;
+			case 0x82://coerce_a
+				break;
+			case 0x85://coerce_s
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x73://convert_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x74://convert_u
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x75://convert_d
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2c://pushstring
+				codejumps.readu30();
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2d://pushint
+				codejumps.readu30();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2e://pushuint
+				codejumps.readu30();
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2f://pushdouble
+				codejumps.readu30();
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x31://pushnamespace
+				codejumps.readu30();
+				currenttype=Class<Namespace>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x63://setlocal
+			{
+				uint32_t t = codejumps.readu30();
+				setdefaultlocaltype(t,mi,currenttype,defaultlocaltypes,defaultlocaltypescacheable);
+				currenttype=nullptr;
+				break;
+			}
+			case 0xd4://setlocal_0
+			case 0xd5://setlocal_1
+			case 0xd6://setlocal_2
+			case 0xd7://setlocal_3
+				setdefaultlocaltype(opcode-0xd4,mi,currenttype,defaultlocaltypes,defaultlocaltypescacheable);
+				currenttype=nullptr;
+				break;
+			case 0x92://inclocal
+			case 0x94://declocal
+			{
+				uint32_t t = codejumps.readu30();
+				setdefaultlocaltype(t,mi,Class<Number>::getRef(function->getSystemState()).getPtr(),defaultlocaltypes,defaultlocaltypescacheable);
+				currenttype=nullptr;
+				break;
+			}
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+			{
+				uint32_t t = codejumps.readu30();
+				setdefaultlocaltype(t,mi,Class<Integer>::getRef(function->getSystemState()).getPtr(),defaultlocaltypes,defaultlocaltypescacheable);
+				currenttype=nullptr;
+				break;
+			}
 			case 0x0c://ifnlt
 			case 0x0d://ifnle
 			case 0x0e://ifngt
@@ -5966,6 +6244,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
 				jumptargets[codejumps.reads24()+codejumps.tellg()+1]++;
+				currenttype=nullptr;
 				break;
 			case 0x1b://lookupswitch
 			{
@@ -5976,16 +6255,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					jumptargets[p+codejumps.reads24()]++;
 				}
+				currenttype=nullptr;
 				break;
 			}
 			case 0x24://pushbyte
 			{
 				codejumps.readbyte();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
 				break;
 			}
 			case 0x25://pushshort
 			{
 				codejumps.readu32();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
 				break;
 			}
 			case 0x32://hasnext2
@@ -6000,6 +6282,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				codejumps.readu30();
 				codejumps.readu30();
+				currenttype=nullptr;
 				break;
 			}
 			case 0xef://debug
@@ -6010,13 +6293,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				codejumps.readu30();
 				break;
 			}
+			case 0x09://label
+				break;
+			default:
+				currenttype=nullptr;
+				break;
 		}
 	}
 	
 	// second pass: use optimized opcode version if it doesn't interfere with a jump target
 	std::list<operands> operandlist;
-	SWFOBJECT_TYPE localtypes[mi->body->local_count+2];
-	clearOperands(mi,localtypes,operandlist);
+	Class_base* localtypes[mi->body->local_count+2];
+	clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 	memorystream code(mi->body->code.data(), code_len);
 	std::list<bool> scopelist;
 	int dup_indicator=0;
@@ -6070,26 +6358,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x1c://pushwith
 				scopelist.push_back(true);
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x1d://popscope
 				scopelist.pop_back();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x49://constructsuper
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				uint32_t t =code.readu30();
 				if (function->inClass && t==0) // class method with 0 params
 				{
@@ -6106,7 +6394,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 					mi->body->preloadedcode.push_back(t);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				break;
 			}
@@ -6115,7 +6403,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				uint32_t t =code.readu30();
 				asAtom o=asAtomHandler::invalidAtom;
 				if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
@@ -6133,16 +6421,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								mi->body->preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
 								oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-								SWFOBJECT_TYPE tp = SWFOBJECT_TYPE::T_INVALID;
-								if (v->isResolved)
-								{
-									if (v->type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
-										tp = SWFOBJECT_TYPE::T_INTEGER;
-									if (v->type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
-										tp = SWFOBJECT_TYPE::T_UINTEGER;
-									if (v->type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr())
-										tp = SWFOBJECT_TYPE::T_NUMBER;
-								}
+								Class_base* tp = nullptr;
+								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
+									tp = (Class_base*)v->type;
 								operandlist.push_back(operands(OP_LOCAL,tp, 0,1,mi->body->preloadedcode.size()-1));
 								break;
 							}
@@ -6186,7 +6467,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 					mi->body->preloadedcode.push_back(t);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				break;
 			}
@@ -6194,7 +6475,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				uint32_t t =code.readu30();
 				multiname* name=mi->context->getMultiname(t,NULL);
 				if (!name || !name->isStatic)
@@ -6248,7 +6529,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							uint32_t num = slotid<<9 | ABC_OP_OPTIMZED_GETLEX_FROMSLOT;
 							mi->body->preloadedcode.push_back(num);
 							oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-							checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,1,localtypes,SWFOBJECT_TYPE::T_INVALID);
+							checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,1,localtypes,nullptr, defaultlocaltypes);
 							break;
 						}
 					}
@@ -6256,11 +6537,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].cachedmultiname2=name;
-				if (!checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,SWFOBJECT_TYPE::T_INVALID))
+				if (!checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,nullptr, defaultlocaltypes))
 				{
 					// no local result possible, use standard operation
 					mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data=(uint32_t)opcode;
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				break;
 			}
@@ -6278,6 +6559,21 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						case 0:
 						{
 							multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+							if (operandlist.size() > 1)
+							{
+								auto it = operandlist.rbegin();
+								it++;
+								if (canCallFunctionDirect((*it),name))
+								{
+									variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
+									if (v && asAtomHandler::is<IFunction>(v->setter))
+									{
+										setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_ONEARG_VOID,opcode,code,oldnewpositions, jumptargets);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->setter);
+										break;
+									}
+								}
+							}
 							setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets);
 							mi->body->preloadedcode.push_back(t);
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 =name;
@@ -6295,7 +6591,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
 							mi->body->preloadedcode.push_back(t);
-							clearOperands(mi,localtypes,operandlist);
+							clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 							break;
 					}
 				}
@@ -6303,7 +6599,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 					mi->body->preloadedcode.push_back(t);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				break;
 			}
@@ -6316,7 +6612,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t num = value<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				operandlist.push_back(operands(OP_LOCAL,localtypes[value],value,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
@@ -6327,14 +6623,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				assert_and_throw(value < mi->body->local_count);
 				uint32_t num = value<<9 | opcode;
 				mi->body->preloadedcode.push_back(num);
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x6c://getslot
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				int32_t t =code.readu30();
 				if (!mi->needsActivation() && operandlist.size() > 0)
 				{
@@ -6342,7 +6638,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (it->type != OP_LOCAL)
 					{
 						asAtom* o = mi->context->getConstantAtom(it->type,it->index);
-						if (asAtomHandler::toObject(*o,function->getSystemState())->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
+						if (asAtomHandler::getObject(*o) && asAtomHandler::getObject(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
 						{
 							asAtom cval = asAtomHandler::getObject(*o)->getSlot(t);
 							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval))
@@ -6355,7 +6651,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						}
 					}
 				}
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes);
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,nullptr);
 				mi->body->preloadedcode.push_back(t);
 				break;
 			}
@@ -6369,7 +6665,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				operandlist.push_back(operands(OP_LOCAL,localtypes[((uint32_t)opcode)-0xd0],((uint32_t)opcode)-0xd0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
@@ -6379,7 +6675,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				else if (operandlist.size() > 0)
 				{
 					operands op = operandlist.back();
@@ -6414,7 +6710,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[mi->body->preloadedcode.size()] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x10://jump
@@ -6440,7 +6736,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					jumppositions[mi->body->preloadedcode.size()] = j;
 					jumpstartpositions[mi->body->preloadedcode.size()] = code.tellg();
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				else
 				{
@@ -6470,7 +6766,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x12://iffalse
@@ -6491,56 +6787,56 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x13://ifeq
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFEQ,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x14://ifne
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x15://iflt
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLT,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x16://ifle
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x17://ifgt
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGT,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x18://ifge
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFGE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x19://ifstricteq
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTEQ,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x1a://ifstrictne
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x1b://lookupswitch
 			{
@@ -6560,16 +6856,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					switchstartpositions[mi->body->preloadedcode.size()] = p;
 					mi->body->preloadedcode.push_back(0);
 				}
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x20://pushnull
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (jumptargets.find(code.tellg()) == jumptargets.end())
-					operandlist.push_back(operands(OP_NULL,SWFOBJECT_TYPE::T_NULL,0,1,mi->body->preloadedcode.size()-1));
+					operandlist.push_back(operands(OP_NULL, nullptr,0,1,mi->body->preloadedcode.size()-1));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			case 0x24://pushbyte
 			{
@@ -6580,9 +6876,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint8_t index = value;
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_BYTE,SWFOBJECT_TYPE::T_INTEGER,index,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x25://pushshort
@@ -6594,9 +6890,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint16_t index = value;
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_SHORT,SWFOBJECT_TYPE::T_INTEGER,index,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x2c://pushstring
@@ -6607,9 +6903,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_STRING,SWFOBJECT_TYPE::T_STRING,value,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x2d://pushint
@@ -6620,9 +6916,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_INTEGER,SWFOBJECT_TYPE::T_INTEGER,value,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x2e://pushuint
@@ -6633,9 +6929,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_UINTEGER,SWFOBJECT_TYPE::T_UINTEGER,value,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x2f://pushdouble
@@ -6646,9 +6942,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_DOUBLE,SWFOBJECT_TYPE::T_NUMBER,value,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x30://pushscope
@@ -6663,9 +6959,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
 				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_NAMESPACE,SWFOBJECT_TYPE::T_NAMESPACE,value,2,mi->body->preloadedcode.size()-2));
+					operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				else
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0x32://hasnext2
@@ -6681,7 +6977,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				mi->body->preloadedcode.push_back(code.readu30());
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				mi->body->preloadedcode.push_back(code.readu30());
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 			case 0xef://debug
@@ -6697,7 +6993,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				// skip unreachable code
 				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
 					code.readbyte();
@@ -6707,7 +7003,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions, jumptargets);
 				// skip unreachable code
 				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
@@ -6732,49 +7028,98 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				// TODO optimize non-static multinames
 				if (jumptargets.find(p) == jumptargets.end())
 				{
+					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
 							switch (argcount)
 							{
 								case 0:
+									if (opcode == 0x46 && operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
+									{
+										if (canCallFunctionDirect(operandlist.back(),name))
+										{
+											variable* v = operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
+											if (v && asAtomHandler::is<IFunction>(v->var))
+											{
+												Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+												setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,resulttype);
+												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(v->var);
+												break;
+											}
+										}
+									}
 									if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets)) ||
-									   ((opcode == 0x46 && setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes))))
+									   ((opcode == 0x46 && setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,nullptr))))
 									{
 										mi->body->preloadedcode.push_back(t);
-										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									}
 									else
 									{
-										clearOperands(mi,localtypes,operandlist);
+										clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 										mi->body->preloadedcode.push_back(t);
 										mi->body->preloadedcode.push_back(argcount);
 									}
 									break;
 								case 1:
-									if ((opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false,localtypes)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes))))
+									if (opcode == 0x4f && operandlist.size() > 1)
+									{
+										auto it = operandlist.rbegin();
+										it++;
+										if (canCallFunctionDirect((*it),name))
+										{
+											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
+											if (v && asAtomHandler::is<IFunction>(v->var))
+											{
+												setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_ONEARG_VOID,opcode,code,oldnewpositions, jumptargets);
+												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
+												break;
+											}
+										}
+									}
+									if ((opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false,localtypes, defaultlocaltypes)) ||
+									   ((opcode == 0x46 && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes))))
 									{
 										mi->body->preloadedcode.push_back(t);
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
 									}
-									else if (opcode == 0x46 && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,SWFOBJECT_TYPE::T_INVALID))
+									else if (opcode == 0x46 && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,nullptr, defaultlocaltypes))
 									{
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_LOCALRESULT;
 										mi->body->preloadedcode.push_back(t);
-										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									}
 									else
 									{
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data= opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS;
-										clearOperands(mi,localtypes,operandlist);
+										clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 										mi->body->preloadedcode.push_back(argcount);
-										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									}
 									break;
 								default:
+									if (operandlist.size() > argcount)
+									{
+										auto it = operandlist.rbegin();
+										for (uint32_t i = 0; i < argcount; i++)
+										{
+											it++;
+										}
+										it++;
+										if (canCallFunctionDirect((*it),name))
+										{
+											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
+											if (v && asAtomHandler::is<IFunction>(v->var))
+											{
+												mi->body->preloadedcode.push_back(((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS) | argcount<<8);
+												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
+												break;
+											}
+										}
+									}
 									mi->body->preloadedcode.push_back((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS);
-									clearOperands(mi,localtypes,operandlist);
+									clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 									mi->body->preloadedcode.push_back(argcount);
 									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
 									break;
@@ -6782,7 +7127,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							break;
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
-							clearOperands(mi,localtypes,operandlist);
+							clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 							mi->body->preloadedcode.push_back(t);
 							mi->body->preloadedcode.push_back(argcount);
 							break;
@@ -6791,7 +7136,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				else
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 					mi->body->preloadedcode.push_back(t);
 					mi->body->preloadedcode.push_back(argcount);
 				}
@@ -6801,7 +7146,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
 				{
 					asAtom ret = function->func_scope->scope.front().object;
@@ -6810,7 +7155,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				else
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				break;
 			}
@@ -6827,13 +7172,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						case 0:
 						{
+							multiname* name = mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 							if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
 							{
 								asAtom* a = mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
 								if (asAtomHandler::getObject(*a))
 								{
 									asAtom ret=asAtomHandler::invalidAtom;
-									GET_VARIABLE_RESULT r = asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false),GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
+									GET_VARIABLE_RESULT r = asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
 									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
 										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
 									{
@@ -6843,88 +7189,110 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										addname = false;
 										break;
 									}
+									if (r & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+									{
+										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,nullptr);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(ret);
+										addname = false;
+										break;
+									}
 								}
 							}
-							bool hasoperands = setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true, false,localtypes);
-							if (!hasoperands && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,SWFOBJECT_TYPE::T_INVALID))
+							if (operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
+							{
+								if (canCallFunctionDirect(operandlist.back(),name))
+								{
+									variable* v = operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
+									if (v && asAtomHandler::is<IFunction>(v->getter))
+									{
+										Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,resulttype);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(v->getter);
+										addname = false;
+										break;
+									}
+								}
+							}
+							bool hasoperands = setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,nullptr);
+							if (!hasoperands && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,nullptr, defaultlocaltypes))
 								mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT;
-							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 							break;
 						}
 						case 1:
-							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 							break;
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
-							clearOperands(mi,localtypes,operandlist);
+							clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 							break;
 					}
 				}
 				else
 				{
 					mi->body->preloadedcode.push_back((uint32_t)opcode);
-					clearOperands(mi,localtypes,operandlist);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				}
 				if (addname)
 					mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0x75://convert_d
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTD,opcode,code,oldnewpositions, jumptargets,true,true,localtypes);
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTD,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0x91://increment
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes);
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0x93://decrement
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes);
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0x96: //not
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_NOT,opcode,code,oldnewpositions, jumptargets,true,true,localtypes);
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_NOT,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Boolean>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0xa0://add
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_ADD,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa1://subtract
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa2://multiply
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa3://divide
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa4://modulo
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa5://lshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa6://rshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa7://urshift
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa8://bitand
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xa9://bitor
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xaa://bitxor
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,oldnewpositions, jumptargets,true,true,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xab://equals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xae://lessequals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xaf://greaterthan
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xb0://greaterequals
-				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes);
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			default:
 			{
@@ -6938,7 +7306,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				clearOperands(mi,localtypes,operandlist);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
 		}

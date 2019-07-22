@@ -52,6 +52,7 @@ private:
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
 public:
+	std::set<multiname*>* overriddenmethods;
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait);
 	bool destruct()
 	{
@@ -63,6 +64,8 @@ public:
 			it++;
 		}
 		class_scope.clear();
+		if (overriddenmethods && (!this->super.getPtr() || !this->super->is<Class_inherit>()))
+			delete overriddenmethods;
 		return Class_base::destruct();
 	}
 	void buildInstanceTraits(ASObject* o) const;

@@ -2608,7 +2608,7 @@ void ABCVm::newClass(call_context* th, int n)
 		i++;
 	}
 
-	if (ret == NULL)
+	if (ret == nullptr)
 	{
 		//Check if this class has been already defined
 		_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
@@ -2627,7 +2627,7 @@ void ABCVm::newClass(call_context* th, int n)
 			return;
 		}
 		MemoryAccount* m = th->mi->context->root->getSystemState()->allocateMemoryAccount(className.getQualifiedName(th->mi->context->root->getSystemState()));
-		ret=new (m) Class_inherit(className, m,NULL);
+		ret=new (m) Class_inherit(className, m,nullptr);
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
@@ -2646,6 +2646,8 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		assert_and_throw(baseClass->is<Class_base>());
 		Class_base* base = baseClass->as<Class_base>();
+		if (base->is<Class_inherit>())
+			ret->overriddenmethods = base->as<Class_inherit>()->overriddenmethods;
 		assert(!base->isFinal);
 		if (ret->super.isNull())
 			ret->setSuper(_MR(base));

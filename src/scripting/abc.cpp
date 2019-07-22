@@ -2671,8 +2671,14 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					{
 						superclass->incRef();
 						c->setSuper(_MR(superclass->as<Class_base>()));
+						c->overriddenmethods = new std::set<multiname*>();
 					}
+					if (superclass && superclass->is<Class_inherit>())
+						c->overriddenmethods = superclass->as<Class_inherit>()->overriddenmethods;
+						
 				}
+				else
+					c->overriddenmethods = new std::set<multiname*>();
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 			}
@@ -2712,6 +2718,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(obj->is<Class_inherit>())
 			{
 				Class_inherit* prot = obj->as<Class_inherit>();
+				if(t->kind&traits_info::Override && !prot->isInterface)
+					prot->overriddenmethods->insert(mname);
 				f->inClass = prot;
 				f->isStatic = !isBorrowed;
 

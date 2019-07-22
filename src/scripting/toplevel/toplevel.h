@@ -247,7 +247,12 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
 	bool checkExistingFunction(const multiname& name);
 	void getClassVariableByMultiname(asAtom& ret,const multiname& name);
+	variable* getBorrowedVariableByMultiname(const multiname& name)
+	{
+		return borrowedVariables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DECLARED_TRAIT);
+	}
 	bool isBuiltin() const { return true; }
+	bool implementsInterfaces() const { return interfaces.size() || interfaces_added.size(); }
 	void removeAllDeclaredProperties();
 };
 

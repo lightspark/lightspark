@@ -921,6 +921,19 @@ private:
 
 	static void abc_getlexfromslot(call_context* context);
 	static void abc_getlexfromslot_localresult(call_context* context);
+	
+	static void abc_callFunctionNoArgs_constant(call_context* context);
+	static void abc_callFunctionNoArgs_local(call_context* context);
+	static void abc_callFunctionNoArgs_constant_localresult(call_context* context);
+	static void abc_callFunctionNoArgs_local_localresult(call_context* context);
+
+	static void abc_callFunctionOneArgVoid_constant_constant(call_context* context);
+	static void abc_callFunctionOneArgVoid_local_constant(call_context* context);
+	static void abc_callFunctionOneArgVoid_constant_local(call_context* context);
+	static void abc_callFunctionOneArgVoid_local_local(call_context* context);
+
+	static void abc_callFunctionMultiArgsVoid(call_context* context);
+	static void abc_callFunctionMultiArgs(call_context* context);
 
 	static void abc_invalidinstruction(call_context* context);
 

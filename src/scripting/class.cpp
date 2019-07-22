@@ -61,7 +61,7 @@ Activation_object* lightspark::new_activationObject(SystemState* sys)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait),overriddenmethods(nullptr)
 {
 	this->incRef(); //create on reference for the classes map
 #ifndef NDEBUG

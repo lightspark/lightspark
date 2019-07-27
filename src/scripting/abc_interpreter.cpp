@@ -619,8 +619,12 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_callFunctionOneArgVoid_local_constant,
 	abc_callFunctionOneArgVoid_constant_local,
 	abc_callFunctionOneArgVoid_local_local,
-	abc_callFunctionMultiArgsVoid, // 0x1f8 ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID
-	abc_callFunctionMultiArgs, // 0x1f9 ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS
+	abc_increment_i_local, // 0x1f8 ABC_OP_OPTIMZED_INCREMENT_I
+	abc_increment_i_local_localresult,
+	abc_decrement_i_local, // 0x1fa ABC_OP_OPTIMZED_DECREMENT_I
+	abc_decrement_i_local_localresult,
+	abc_callFunctionMultiArgsVoid, // 0x1fc ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID
+	abc_callFunctionMultiArgs, // 0x1fd ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS
 
 	abc_invalidinstruction
 };
@@ -5176,12 +5180,51 @@ void ABCVm::abc_increment_i(call_context* context)
 	asAtomHandler::increment_i(*pval,context->mi->context->root->getSystemState());
 	++(context->exec_pos);
 }
+void ABCVm::abc_increment_i_local(call_context* context)
+{
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	LOG_CALL("increment_i_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
+	asAtomHandler::increment_i(res,context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_increment_i_local_localresult(call_context* context)
+{
+	LOG_CALL("increment_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos3-1]));
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASObject* o = asAtomHandler::getObject(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	asAtomHandler::increment_i(context->locals[context->exec_pos->local_pos3-1],context->mi->context->root->getSystemState());
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_decrement_i(call_context* context)
 {
 	//decrement_i
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("decrement_i:"<<asAtomHandler::toDebugString(*pval));
 	asAtomHandler::decrement_i(*pval,context->mi->context->root->getSystemState());
+	++(context->exec_pos);
+}
+void ABCVm::abc_decrement_i_local(call_context* context)
+{
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	LOG_CALL("decrement_i_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
+	asAtomHandler::decrement_i(res,context->mi->context->root->getSystemState());
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_decrement_i_local_localresult(call_context* context)
+{
+	LOG_CALL("decrement_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos3-1]));
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	ASObject* o = asAtomHandler::getObject(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	asAtomHandler::decrement_i(context->locals[context->exec_pos->local_pos3-1],context->mi->context->root->getSystemState());
+	if (o)
+		o->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal_i(call_context* context)
@@ -5476,10 +5519,10 @@ struct operands
 #define ABC_OP_OPTIMZED_GETSLOT 0x000001ec
 #define ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS 0x000001f0 
 #define ABC_OP_OPTIMZED_CALLFUNCTION_ONEARG_VOID 0x000001f4
-#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID 0x000001f8 
-#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS 0x000001f9 
-
-
+#define ABC_OP_OPTIMZED_INCREMENT_I 0x000001f8
+#define ABC_OP_OPTIMZED_DECREMENT_I 0x000001fa
+#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID 0x000001fc
+#define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS 0x000001fd
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -5729,6 +5772,8 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x93://decrement
 		case 0x96://not
 		case 0x75://convert_d
+		case 0xc0://increment_i
+		case 0xc1://decrement_i
 			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -6361,6 +6406,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
+			case 0x09://label
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				break;
 			case 0x1c://pushwith
 				scopelist.push_back(true);
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
@@ -7293,6 +7341,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0xb0://greaterequals
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
+				break;
+			case 0xc0://increment_i
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT_I,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0xc1://decrement_i
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT_I,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
 				break;
 			default:
 			{

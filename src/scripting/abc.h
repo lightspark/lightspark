@@ -932,6 +932,11 @@ private:
 	static void abc_callFunctionOneArgVoid_constant_local(call_context* context);
 	static void abc_callFunctionOneArgVoid_local_local(call_context* context);
 
+	static void abc_increment_i_local(call_context* context);
+	static void abc_increment_i_local_localresult(call_context* context);
+	static void abc_decrement_i_local(call_context* context);
+	static void abc_decrement_i_local_localresult(call_context* context);
+
 	static void abc_callFunctionMultiArgsVoid(call_context* context);
 	static void abc_callFunctionMultiArgs(call_context* context);
 

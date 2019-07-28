@@ -7144,7 +7144,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (name && name->isStatic)
 					{
 						bool isborrowed = false;
-						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),function->inClass,nullptr,&isborrowed);
+						variable* v = nullptr;
+						Class_base* cls = function->inClass;
+						do
+						{
+							v = cls->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),cls,nullptr,&isborrowed);
+							cls = cls->super.getPtr();
+						}
+						while (!v && cls && cls->isSealed);
 						if (v)
 						{
 							found =true;
@@ -7152,10 +7159,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								mi->body->preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
 								oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-								Class_base* tp = nullptr;
-								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
-									tp = (Class_base*)v->type;
-								operandlist.push_back(operands(OP_LOCAL,tp, 0,1,mi->body->preloadedcode.size()-1));
+								operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,mi->body->preloadedcode.size()-1));
 								break;
 							}
 						}

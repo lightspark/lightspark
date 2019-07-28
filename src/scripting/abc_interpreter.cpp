@@ -7864,25 +7864,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 									break;
 								default:
-									if (operandlist.size() > argcount)
-									{
-										auto it = operandlist.rbegin();
-										for (uint32_t i = 0; i < argcount; i++)
-										{
-											it++;
-										}
-										it++;
-										if (canCallFunctionDirect((*it),name))
-										{
-											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
-											if (v && asAtomHandler::is<IFunction>(v->var))
-											{
-												mi->body->preloadedcode.push_back(((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS) | argcount<<OPCODE_SIZE);
-												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
-												break;
-											}
-										}
-									}
+									//TODO optimization does not work as the operandlist seems to not always contain the right arguments
+//									if (operandlist.size() > argcount)
+//									{
+//										auto it = operandlist.rbegin();
+//										for (uint32_t i = 0; i < argcount; i++)
+//										{
+//											it++;
+//										}
+//										it++;
+//										if (canCallFunctionDirect((*it),name))
+//										{
+//											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
+//											if (v && asAtomHandler::is<IFunction>(v->var))
+//											{
+//												mi->body->preloadedcode.push_back(((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS) | argcount<<OPCODE_SIZE);
+//												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
+//												break;
+//											}
+//										}
+//									}
 									mi->body->preloadedcode.push_back((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS);
 									clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 									mi->body->preloadedcode.push_back(argcount);

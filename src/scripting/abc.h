@@ -298,7 +298,7 @@ private:
 	{
 		RUNTIME_STACK_POP_CREATE(th,arg1);
 		uint32_t addr=asAtomHandler::toUInt(*arg1);
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 		T ret=appDomain->readFromDomainMemory<T>(addr);
 		ASATOM_DECREF_POINTER(arg1);
 		RUNTIME_STACK_PUSH(th,asAtomHandler::fromInt(ret));
@@ -312,13 +312,36 @@ private:
 		ASATOM_DECREF_POINTER(arg1);
 		int32_t val=asAtomHandler::toInt(*arg2);
 		ASATOM_DECREF_POINTER(arg2);
-		_R<ApplicationDomain> appDomain = getCurrentApplicationDomain(th);
+		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
+		appDomain->writeToDomainMemory<T>(addr, val);
+	}
+	template<class T>
+	static void loadIntN(call_context* th,asAtom& ret, asAtom& arg1)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
+		T res=appDomain->readFromDomainMemory<T>(addr);
+		ASATOM_DECREF(arg1);
+		ret = asAtomHandler::fromInt(res);
+	}
+	template<class T>
+	static void storeIntN(call_context* th, asAtom& arg1, asAtom& arg2)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		ASATOM_DECREF(arg1);
+		int32_t val=asAtomHandler::toInt(arg2);
+		ASATOM_DECREF(arg2);
+		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
 	static void loadFloat(call_context* th);
+	static void loadFloat(call_context* th,asAtom& ret, asAtom& arg1);
 	static void loadDouble(call_context* th);
+	static void loadDouble(call_context* th,asAtom& ret, asAtom& arg1);
 	static void storeFloat(call_context* th);
+	static void storeFloat(call_context* th, asAtom& arg1, asAtom& arg2);
 	static void storeDouble(call_context* th);
+	static void storeDouble(call_context* th, asAtom& arg1, asAtom& arg2);
 
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
@@ -609,15 +632,55 @@ private:
 	static void abc_pushnamespace(call_context* context);
 	static void abc_hasnext2(call_context* context);
 	static void abc_li8(call_context* context);
+	static void abc_li8_constant(call_context* context);
+	static void abc_li8_local(call_context* context);
+	static void abc_li8_constant_localresult(call_context* context);
+	static void abc_li8_local_localresult(call_context* context);
 	static void abc_li16(call_context* context);
+	static void abc_li16_constant(call_context* context);
+	static void abc_li16_local(call_context* context);
+	static void abc_li16_constant_localresult(call_context* context);
+	static void abc_li16_local_localresult(call_context* context);
 	static void abc_li32(call_context* context);
+	static void abc_li32_constant(call_context* context);
+	static void abc_li32_local(call_context* context);
+	static void abc_li32_constant_localresult(call_context* context);
+	static void abc_li32_local_localresult(call_context* context);
 	static void abc_lf32(call_context* context);
+	static void abc_lf32_constant(call_context* context);
+	static void abc_lf32_local(call_context* context);
+	static void abc_lf32_constant_localresult(call_context* context);
+	static void abc_lf32_local_localresult(call_context* context);
 	static void abc_lf64(call_context* context);
+	static void abc_lf64_constant(call_context* context);
+	static void abc_lf64_local(call_context* context);
+	static void abc_lf64_constant_localresult(call_context* context);
+	static void abc_lf64_local_localresult(call_context* context);
 	static void abc_si8(call_context* context);
+	static void abc_si8_constant_constant(call_context* context);
+	static void abc_si8_local_constant(call_context* context);
+	static void abc_si8_constant_local(call_context* context);
+	static void abc_si8_local_local(call_context* context);
 	static void abc_si16(call_context* context);
+	static void abc_si16_constant_constant(call_context* context);
+	static void abc_si16_local_constant(call_context* context);
+	static void abc_si16_constant_local(call_context* context);
+	static void abc_si16_local_local(call_context* context);
 	static void abc_si32(call_context* context);
+	static void abc_si32_constant_constant(call_context* context);
+	static void abc_si32_local_constant(call_context* context);
+	static void abc_si32_constant_local(call_context* context);
+	static void abc_si32_local_local(call_context* context);
 	static void abc_sf32(call_context* context);
+	static void abc_sf32_constant_constant(call_context* context);
+	static void abc_sf32_local_constant(call_context* context);
+	static void abc_sf32_constant_local(call_context* context);
+	static void abc_sf32_local_local(call_context* context);
 	static void abc_sf64(call_context* context);
+	static void abc_sf64_constant_constant(call_context* context);
+	static void abc_sf64_local_constant(call_context* context);
+	static void abc_sf64_constant_local(call_context* context);
+	static void abc_sf64_local_local(call_context* context);
 
 	static void abc_newfunction(call_context* context);// 0x40
 	static void abc_call(call_context* context);

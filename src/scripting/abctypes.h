@@ -260,6 +260,7 @@ struct method_info_simple
 	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 };
+#define OPCODE_SIZE 10 // number of bits used for opcodes
 struct preloadedcodedata
 {
 	union
@@ -268,11 +269,11 @@ struct preloadedcodedata
 		{
 			// this is used to automatically extract the jump position for a branch (24 bit signed integer)
 #if G_BYTE_ORDER == G_BIG_ENDIAN
-			signed int jump:23;
-			uint16_t opcode:9;
+			signed int jump:32-OPCODE_SIZE;
+			uint16_t opcode:OPCODE_SIZE;
 #else
-			uint16_t opcode:9;
-			signed int jump:23;
+			uint16_t opcode:OPCODE_SIZE;
+			signed int jump:32-OPCODE_SIZE;
 #endif
 		} jumpdata;
 		int32_t idata;

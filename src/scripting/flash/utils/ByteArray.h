@@ -151,6 +151,7 @@ public:
 		@pre buf must be allocated using new[]
 	*/
 	void acquireBuffer(uint8_t* buf, int bufLen);
+	uint8_t* getBufferNoCheck() const { return bytes; }
 	uint8_t* getBuffer(unsigned int size, bool enableResize);
 	uint32_t getLength() const { return len; }
 

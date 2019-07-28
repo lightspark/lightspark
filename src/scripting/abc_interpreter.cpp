@@ -72,11 +72,11 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=code.tellg();
 #endif
-		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x1ff));
+		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x3ff));
 
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
-		abcfunctions[(context->exec_pos->data)&0x1ff](context);
+		abcfunctions[(context->exec_pos->data)&0x3ff](context);
 
 		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
@@ -359,7 +359,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 
-	// instructions for optimized opcodes (indicated by 0x01xx)
+	// instructions for optimized opcodes (indicated by 0x03xx)
 	abc_increment_local, // 0x100 ABC_OP_OPTIMZED_INCREMENT
 	abc_increment_local_localresult,
 	abc_decrement_local, // 0x102 ABC_OP_OPTIMZED_DECREMENT
@@ -625,7 +625,310 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_decrement_i_local_localresult,
 	abc_callFunctionMultiArgsVoid, // 0x1fc ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID
 	abc_callFunctionMultiArgs, // 0x1fd ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 
+	abc_li8_constant,// 0x200 ABC_OP_OPTIMZED_LI8
+	abc_li8_local,
+	abc_li8_constant_localresult,
+	abc_li8_local_localresult,
+	abc_li16_constant,// 0x204 ABC_OP_OPTIMZED_LI16
+	abc_li16_local,
+	abc_li16_constant_localresult,
+	abc_li16_local_localresult,
+	abc_li32_constant,// 0x208 ABC_OP_OPTIMZED_LI32
+	abc_li32_local,
+	abc_li32_constant_localresult,
+	abc_li32_local_localresult,
+	abc_ifnlt, //0x20c  jump data may have the 0x200 bit set, so we also add the jump opcodes here
+	abc_ifnle,
+	abc_ifngt,
+	abc_ifnge,
+
+	abc_jump, // 0x210
+	abc_iftrue,
+	abc_iffalse,
+	abc_ifeq,
+	abc_ifne,
+	abc_iflt,
+	abc_ifle,
+	abc_ifgt,
+	abc_ifge,
+	abc_ifstricteq,
+	abc_ifstrictne,
+	abc_lookupswitch,
+	abc_lf32_constant,// 0x21c ABC_OP_OPTIMZED_LF32
+	abc_lf32_local,
+	abc_lf32_constant_localresult,
+	abc_lf32_local_localresult,
+	abc_lf64_constant,// 0x229 ABC_OP_OPTIMZED_LF64
+	abc_lf64_local,
+	abc_lf64_constant_localresult,
+	abc_lf64_local_localresult,
+	abc_si8_constant_constant,// 0x224 ABC_OP_OPTIMZED_SI8
+	abc_si8_local_constant,
+	abc_si8_constant_local,
+	abc_si8_local_local,
+	abc_si16_constant_constant,// 0x228 ABC_OP_OPTIMZED_SI16
+	abc_si16_local_constant,
+	abc_si16_constant_local,
+	abc_si16_local_local,
+	abc_si32_constant_constant,// 0x22c ABC_OP_OPTIMZED_SI32
+	abc_si32_local_constant,
+	abc_si32_constant_local,
+	abc_si32_local_local,
+	abc_sf32_constant_constant,// 0x230 ABC_OP_OPTIMZED_SF32
+	abc_sf32_local_constant,
+	abc_sf32_constant_local,
+	abc_sf32_local_local,
+	abc_sf64_constant_constant,// 0x234 ABC_OP_OPTIMZED_SF64
+	abc_sf64_local_constant,
+	abc_sf64_constant_local,
+	abc_sf64_local_local,
+
+	abc_invalidinstruction, // 0x238
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x240
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x250
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x260
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x270
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x280
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x290
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2a0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2b0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2c0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2d0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2e0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x2f0
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction, // 0x300
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_ifnlt, //0x30c  jump data may have the 0x200 bit set, so we also add the jump opcodes here
+	abc_ifnle,
+	abc_ifngt,
+	abc_ifnge,
+
+	abc_jump, // 0x310
+	abc_iftrue,
+	abc_iffalse,
+	abc_ifeq,
+	abc_ifne,
+	abc_iflt,
+	abc_ifle,
+	abc_ifgt,
+	abc_ifge,
+	abc_ifstricteq,
+	abc_ifstrictne,
+	abc_lookupswitch,
+	
 	abc_invalidinstruction
 };
 
@@ -1516,7 +1819,7 @@ void ABCVm::abc_pushcachedconstant(call_context* context)
 }
 void ABCVm::abc_getlexfromslot(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>9;
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	
 	ASObject* s = asAtomHandler::toObject(*context->locals,context->mi->context->root->getSystemState());
 	asAtom a = s->getSlot(t);
@@ -1527,7 +1830,7 @@ void ABCVm::abc_getlexfromslot(call_context* context)
 }
 void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>9;
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	
 	ASObject* s = asAtomHandler::toObject(*context->locals,context->mi->context->root->getSystemState());
 	asAtom a = s->getSlot(t);
@@ -1661,6 +1964,49 @@ void ABCVm::abc_li8(call_context* context)
 	loadIntN<uint8_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_li8_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li8_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint8_t>(context,ret,*instrptr->arg1_constant);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li8_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li8_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint8_t>(context,ret,context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li8_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li8_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint8_t>(context,ret,*instrptr->arg1_constant);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_li8_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li8_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint8_t>(context,ret,context->locals[instrptr->local_pos1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_li16(call_context* context)
 {
 	//li16
@@ -1668,6 +2014,49 @@ void ABCVm::abc_li16(call_context* context)
 	loadIntN<uint16_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_li16_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li16_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint16_t>(context,ret,*instrptr->arg1_constant);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li16_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li16_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint16_t>(context,ret,context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li16_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li16_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint16_t>(context,ret,*instrptr->arg1_constant);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_li16_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li16_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<uint16_t>(context,ret,context->locals[instrptr->local_pos1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_li32(call_context* context)
 {
 	//li32
@@ -1675,6 +2064,49 @@ void ABCVm::abc_li32(call_context* context)
 	loadIntN<int32_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_li32_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li32_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<int32_t>(context,ret,*instrptr->arg1_constant);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li32_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li32_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<int32_t>(context,ret,context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_li32_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li32_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<int32_t>(context,ret,*instrptr->arg1_constant);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_li32_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "li32_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadIntN<int32_t>(context,ret,context->locals[instrptr->local_pos1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_lf32(call_context* context)
 {
 	//lf32
@@ -1682,6 +2114,49 @@ void ABCVm::abc_lf32(call_context* context)
 	loadFloat(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_lf32_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf32_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadFloat(context,ret,*instrptr->arg1_constant);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf32_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf32_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadFloat(context,ret,context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf32_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf32_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadFloat(context,ret,*instrptr->arg1_constant);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf32_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf32_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadFloat(context,ret,context->locals[instrptr->local_pos1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_lf64(call_context* context)
 {
 	//lf64
@@ -1689,6 +2164,49 @@ void ABCVm::abc_lf64(call_context* context)
 	loadDouble(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_lf64_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf64_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadDouble(context,ret,*instrptr->arg1_constant);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf64_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf64_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadDouble(context,ret,context->locals[instrptr->local_pos1]);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf64_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf64_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadDouble(context,ret,*instrptr->arg1_constant);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_lf64_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "lf64_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	loadDouble(context,ret,context->locals[instrptr->local_pos1]);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],ret);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_si8(call_context* context)
 {
 	//si8
@@ -1696,6 +2214,35 @@ void ABCVm::abc_si8(call_context* context)
 	storeIntN<uint8_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_si8_constant_constant(call_context* context)
+{
+	LOG_CALL( "si8_cc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint8_t>(context,*instrptr->arg2_constant,*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si8_local_constant(call_context* context)
+{
+	LOG_CALL( "si8_lc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint8_t>(context,*instrptr->arg2_constant,context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si8_constant_local(call_context* context)
+{
+	LOG_CALL( "si8_cl");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint8_t>(context,context->locals[instrptr->local_pos2],*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si8_local_local(call_context* context)
+{
+	LOG_CALL( "si8_ll");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint8_t>(context,context->locals[instrptr->local_pos2],context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_si16(call_context* context)
 {
 	//si16
@@ -1703,6 +2250,35 @@ void ABCVm::abc_si16(call_context* context)
 	storeIntN<uint16_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_si16_constant_constant(call_context* context)
+{
+	LOG_CALL( "si16_cc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint16_t>(context,*instrptr->arg2_constant,*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si16_local_constant(call_context* context)
+{
+	LOG_CALL( "si16_lc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint16_t>(context,*instrptr->arg2_constant,context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si16_constant_local(call_context* context)
+{
+	LOG_CALL( "si16_cl");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint16_t>(context,context->locals[instrptr->local_pos2],*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si16_local_local(call_context* context)
+{
+	LOG_CALL( "si16_ll");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint16_t>(context,context->locals[instrptr->local_pos2],context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_si32(call_context* context)
 {
 	//si32
@@ -1710,11 +2286,68 @@ void ABCVm::abc_si32(call_context* context)
 	storeIntN<uint32_t>(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_si32_constant_constant(call_context* context)
+{
+	LOG_CALL( "si32_cc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint32_t>(context,*instrptr->arg2_constant,*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si32_local_constant(call_context* context)
+{
+	LOG_CALL( "si32_lc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint32_t>(context,*instrptr->arg2_constant,context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si32_constant_local(call_context* context)
+{
+	LOG_CALL( "si32_cl");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint32_t>(context,context->locals[instrptr->local_pos2],*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_si32_local_local(call_context* context)
+{
+	LOG_CALL( "si32_ll");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeIntN<uint32_t>(context,context->locals[instrptr->local_pos2],context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_sf32(call_context* context)
 {
 	//sf32
 	LOG_CALL( "sf32");
 	storeFloat(context);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf32_constant_constant(call_context* context)
+{
+	LOG_CALL( "sf32_cc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeFloat(context,*instrptr->arg2_constant,*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf32_local_constant(call_context* context)
+{
+	LOG_CALL( "sf32_lc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeFloat(context,*instrptr->arg2_constant,context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf32_constant_local(call_context* context)
+{
+	LOG_CALL( "sf32_cl");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeFloat(context,context->locals[instrptr->local_pos2],*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf32_local_local(call_context* context)
+{
+	LOG_CALL( "sf32_ll");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeFloat(context,context->locals[instrptr->local_pos2],context->locals[instrptr->local_pos1]);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64(call_context* context)
@@ -1724,6 +2357,35 @@ void ABCVm::abc_sf64(call_context* context)
 	storeDouble(context);
 	++(context->exec_pos);
 }
+void ABCVm::abc_sf64_constant_constant(call_context* context)
+{
+	LOG_CALL( "sf64_cc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeDouble(context,*instrptr->arg2_constant,*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf64_local_constant(call_context* context)
+{
+	LOG_CALL( "sf64_lc");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeDouble(context,*instrptr->arg2_constant,context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf64_constant_local(call_context* context)
+{
+	LOG_CALL( "sf64_cl");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeDouble(context,context->locals[instrptr->local_pos2],*instrptr->arg1_constant);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sf64_local_local(call_context* context)
+{
+	LOG_CALL( "sf64_ll");
+	preloadedcodedata* instrptr = context->exec_pos;
+	storeDouble(context,context->locals[instrptr->local_pos2],context->locals[instrptr->local_pos1]);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_newfunction(call_context* context)
 {
 	//newfunction
@@ -2778,7 +3440,7 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 void ABCVm::abc_getlocal(call_context* context)
 {
 	//getlocal
-	uint32_t i = ((context->exec_pos)++)->data>>9;
+	uint32_t i = ((context->exec_pos)++)->data>>OPCODE_SIZE;
 	LOG_CALL( _("getLocal n ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
@@ -2786,7 +3448,7 @@ void ABCVm::abc_getlocal(call_context* context)
 void ABCVm::abc_setlocal(call_context* context)
 {
 	//setlocal
-	uint32_t i = ((context->exec_pos)++)->data>>9;
+	uint32_t i = ((context->exec_pos)++)->data>>OPCODE_SIZE;
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << asAtomHandler::toDebugString(*obj) );
@@ -3423,7 +4085,7 @@ void ABCVm::abc_callFunctionOneArgVoid_local_local(call_context* context)
 void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t argcount = instrptr->data>>8;
+	uint32_t argcount = instrptr->data>>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArgVoid ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
 	asAtom* args=g_newa(asAtom, argcount);
@@ -3437,7 +4099,7 @@ void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
 void ABCVm::abc_callFunctionMultiArgs(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t argcount = instrptr->data>>8;
+	uint32_t argcount = instrptr->data>>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArg ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
 	asAtom* args=g_newa(asAtom, argcount);
@@ -5524,6 +6186,17 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID 0x000001fc
 #define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS 0x000001fd
 
+#define ABC_OP_OPTIMZED_LI8 0x00000200
+#define ABC_OP_OPTIMZED_LI16 0x00000204
+#define ABC_OP_OPTIMZED_LI32 0x00000208
+#define ABC_OP_OPTIMZED_LF32 0x0000021c
+#define ABC_OP_OPTIMZED_LF64 0x00000220
+#define ABC_OP_OPTIMZED_SI8 0x00000224
+#define ABC_OP_OPTIMZED_SI16 0x00000228
+#define ABC_OP_OPTIMZED_SI32 0x0000022c
+#define ABC_OP_OPTIMZED_SF32 0x00000230
+#define ABC_OP_OPTIMZED_SF64 0x00000234
+
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
 	if (b == 0x10) // jump
@@ -5774,6 +6447,11 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x75://convert_d
 		case 0xc0://increment_i
 		case 0xc1://decrement_i
+		case 0x35://li8
+		case 0x36://li16
+		case 0x37://li32
+		case 0x38://lf32
+		case 0x39://lf64
 			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -5808,6 +6486,11 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0xae://lessequals
 		case 0xaf://greaterthan
 		case 0xb0://greaterequals
+		case 0x3a://si8
+		case 0x3b://si16
+		case 0x3c://si32
+		case 0x3d://sf32
+		case 0x3e://sf64
 			if ((needstwoargs || operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -6574,7 +7257,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						uint32_t slotid = function->inClass->findInstanceSlotByMultiname(name);
 						if (slotid != UINT32_MAX)
 						{
-							uint32_t num = slotid<<9 | ABC_OP_OPTIMZED_GETLEX_FROMSLOT;
+							uint32_t num = slotid<<OPCODE_SIZE | ABC_OP_OPTIMZED_GETLEX_FROMSLOT;
 							mi->body->preloadedcode.push_back(num);
 							oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 							checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,1,localtypes,nullptr, defaultlocaltypes);
@@ -6657,7 +7340,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->local_count);
-				uint32_t num = value<<9 | opcode;
+				uint32_t num = value<<OPCODE_SIZE | opcode;
 				mi->body->preloadedcode.push_back(num);
 				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
@@ -6669,7 +7352,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->local_count);
-				uint32_t num = value<<9 | opcode;
+				uint32_t num = value<<OPCODE_SIZE | opcode;
 				mi->body->preloadedcode.push_back(num);
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
@@ -7028,6 +7711,36 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
+			case 0x35://li8
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_LI8,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x36://li16
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_LI16,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x37://li32
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_LI32,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x38://lf32
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_LF32,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x39://lf64
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_LF64,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x3a://si8
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SI8,opcode,code,oldnewpositions, jumptargets);
+				break;
+			case 0x3b://si16
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SI16,opcode,code,oldnewpositions, jumptargets);
+				break;
+			case 0x3c://si32
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SI32,opcode,code,oldnewpositions, jumptargets);
+				break;
+			case 0x3d://sf32
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SF32,opcode,code,oldnewpositions, jumptargets);
+				break;
+			case 0x3e://sf64
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SF64,opcode,code,oldnewpositions, jumptargets);
+				break;
 			case 0xef://debug
 			{
 				// skip all debug messages
@@ -7160,7 +7873,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 											if (v && asAtomHandler::is<IFunction>(v->var))
 											{
-												mi->body->preloadedcode.push_back(((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS) | argcount<<8);
+												mi->body->preloadedcode.push_back(((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS) | argcount<<OPCODE_SIZE);
 												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
 												break;
 											}

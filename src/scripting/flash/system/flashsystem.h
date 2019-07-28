@@ -95,7 +95,7 @@ public:
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
-		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
+		uint8_t* buf=domainMemory->getBufferNoCheck();
 		return *reinterpret_cast<T*>(buf+addr);
 	}
 	template<class T>
@@ -105,7 +105,7 @@ public:
 		uint32_t bufLen=domainMemory->getLength();
 		if(bufLen < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
-		uint8_t* buf=domainMemory->getBuffer(bufLen, false);
+		uint8_t* buf=domainMemory->getBufferNoCheck();
 		*reinterpret_cast<T*>(buf+addr)=val;
 	}
 	void checkDomainMemory();

@@ -61,7 +61,7 @@ Activation_object* lightspark::new_activationObject(SystemState* sys)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait),overriddenmethods(nullptr)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait):Class_base(name, m),tag(NULL),bindedToRoot(false),classtrait(_classtrait)
 {
 	this->incRef(); //create on reference for the classes map
 #ifndef NDEBUG
@@ -174,6 +174,10 @@ void Class_inherit::describeClassMetadata(pugi::xml_node &root) const
 	}
 }
 
+bool Class_inherit::hasoverriddenmethod(ABCContext* ctx, multiname *name) const
+{
+	return !ctx->instances[this->class_index].overriddenmethods || ctx->instances[this->class_index].overriddenmethods->find(name) != ctx->instances[this->class_index].overriddenmethods->end();
+}
 
 template<>
 void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)

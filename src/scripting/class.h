@@ -52,7 +52,6 @@ private:
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
 public:
-	std::set<multiname*>* overriddenmethods;
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait);
 	bool destruct()
 	{
@@ -64,8 +63,6 @@ public:
 			it++;
 		}
 		class_scope.clear();
-		if (overriddenmethods && (!this->super.getPtr() || !this->super->is<Class_inherit>()))
-			delete overriddenmethods;
 		return Class_base::destruct();
 	}
 	void buildInstanceTraits(ASObject* o) const;
@@ -86,6 +83,7 @@ public:
 	std::vector<scope_entry> class_scope;
 	virtual void describeClassMetadata(pugi::xml_node &root) const;
 	bool isBuiltin() const { return false; }
+	bool hasoverriddenmethod(ABCContext *ctx, multiname* name) const;
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

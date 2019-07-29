@@ -217,6 +217,7 @@ struct instance_info
 	u30 init;
 	u30 trait_count;
 	std::vector<traits_info> traits;
+	std::set<multiname*>* overriddenmethods;
 };
 
 struct class_info

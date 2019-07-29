@@ -260,6 +260,7 @@ public:
 	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
+	~ABCContext();
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);

@@ -1274,7 +1274,29 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	for(unsigned int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
-		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,NULL));
+		if(instances[i].supername)
+		{
+			for (uint32_t j = 0; j < i; j++)
+			{
+				if (instances[j].name == instances[i].supername)
+				{
+					instances[i].overriddenmethods = instances[j].overriddenmethods;
+					break;
+				}
+			}
+		}
+		else
+			instances[i].overriddenmethods = new std::set<multiname*>();
+		if (instances[i].overriddenmethods && !instances[i].isInterface())
+		{
+			for (uint32_t j = 0; j < instances[i].trait_count; j++)
+			{
+				if (instances[i].traits[j].kind&traits_info::Override)
+					instances[i].overriddenmethods->insert(getMultiname(instances[i].traits[j].name,nullptr));
+			}
+		}
+
+		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,nullptr));
 		LOG(LOG_TRACE,_("Flags:"));
 		if(instances[i].isSealed())
 			LOG(LOG_TRACE,_("\tSealed"));
@@ -1322,6 +1344,18 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 #ifdef PROFILING_SUPPORT
 	root->getSystemState()->contextes.push_back(this);
 #endif
+}
+
+ABCContext::~ABCContext()
+{
+	std::set<std::set<multiname*>*> multinamesets;
+	for(unsigned int i=0;i<class_count;i++)
+	{
+		if (instances[i].overriddenmethods)
+			multinamesets.insert(instances[i].overriddenmethods);
+	}
+	for (auto it = multinamesets.begin(); it != multinamesets.end(); it++)
+		delete *it;
 }
 
 #ifdef PROFILING_SUPPORT
@@ -2706,18 +2740,11 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					{
 						superclass->incRef();
 						c->setSuper(_MR(superclass->as<Class_base>()));
-						c->overriddenmethods = new std::set<multiname*>();
 					}
-					if (superclass && superclass->is<Class_inherit>())
-						c->overriddenmethods = superclass->as<Class_inherit>()->overriddenmethods;
-						
 				}
-				else
-					c->overriddenmethods = new std::set<multiname*>();
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 			}
-
 
 			obj->setVariableByQName(mname->name_s_id,mname->ns[0],ret,DECLARED_TRAIT);
 
@@ -2753,8 +2780,6 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(obj->is<Class_inherit>())
 			{
 				Class_inherit* prot = obj->as<Class_inherit>();
-				if(t->kind&traits_info::Override && !prot->isInterface)
-					prot->overriddenmethods->insert(mname);
 				f->inClass = prot;
 				f->isStatic = !isBorrowed;
 

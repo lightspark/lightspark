@@ -348,6 +348,7 @@ istream& lightspark::operator>>(istream& in, instance_info& v)
 	v.traits.resize(v.trait_count);
 	for(unsigned int i=0;i<v.trait_count;i++)
 		in >> v.traits[i];
+	v.overriddenmethods=nullptr;
 	return in;
 }
 

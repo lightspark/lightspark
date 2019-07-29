@@ -417,6 +417,7 @@ public:
 		ret->setClass(getClass());
 		ret->closure_this=c;
 		ret->isCloned=true;
+		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		ret->setActivationCount(this->getActivationCount());

@@ -6242,7 +6242,7 @@ void clearOperands(method_info* mi,Class_base** localtypes,std::list<operands>& 
 		localtypes[i] = defaultlocaltypes[i];
 	operandlist.clear();
 }
-bool canCallFunctionDirect(operands& op,multiname* name)
+bool canCallFunctionDirect(method_info* mi, operands& op,multiname* name)
 {
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT) &&
 		op.objtype &&
@@ -6250,8 +6250,7 @@ bool canCallFunctionDirect(operands& op,multiname* name)
 		!op.objtype->implementsInterfaces() && // it doesn't implement any interface
 		(
 		!op.objtype->is<Class_inherit>() || // type is builtin class
-		!op.objtype->as<Class_inherit>()->overriddenmethods || // type has no overridden methods
-		op.objtype->as<Class_inherit>()->overriddenmethods->find(name) == op.objtype->as<Class_inherit>()->overriddenmethods->end() // current method is not in overridden methods
+		!op.objtype->as<Class_inherit>()->hasoverriddenmethod(mi->context,name) // current method is not in overridden methods
 		));
 }
 
@@ -7298,7 +7297,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								auto it = operandlist.rbegin();
 								it++;
-								if (canCallFunctionDirect((*it),name))
+								if (canCallFunctionDirect(mi,(*it),name))
 								{
 									variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 									if (v && asAtomHandler::is<IFunction>(v->setter))
@@ -7802,7 +7801,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								case 0:
 									if (opcode == 0x46 && operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
 									{
-										if (canCallFunctionDirect(operandlist.back(),name))
+										if (canCallFunctionDirect(mi,operandlist.back(),name))
 										{
 											variable* v = operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 											if (v && asAtomHandler::is<IFunction>(v->var))
@@ -7832,7 +7831,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									{
 										auto it = operandlist.rbegin();
 										it++;
-										if (canCallFunctionDirect((*it),name))
+										if (canCallFunctionDirect(mi,(*it),name))
 										{
 											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 											if (v && asAtomHandler::is<IFunction>(v->var))
@@ -7873,7 +7872,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 //											it++;
 //										}
 //										it++;
-//										if (canCallFunctionDirect((*it),name))
+//										if (canCallFunctionDirect(mi,(*it),name))
 //										{
 //											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 //											if (v && asAtomHandler::is<IFunction>(v->var))
@@ -7966,7 +7965,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							}
 							if (operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
 							{
-								if (canCallFunctionDirect(operandlist.back(),name))
+								if (canCallFunctionDirect(mi,operandlist.back(),name))
 								{
 									variable* v = operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 									if (v && asAtomHandler::is<IFunction>(v->getter))

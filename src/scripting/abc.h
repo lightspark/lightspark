@@ -154,7 +154,7 @@ enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_
 
 enum OPERANDTYPES { 
 	OP_UNDEFINED=0x00, OP_STRING=0x01, OP_INTEGER=0x03, OP_UINTEGER=0x04, OP_DOUBLE=0x06, OP_NAMESPACE=0x08, 
-	OP_FALSE=0x0a, OP_TRUE=0x0b, OP_NULL=0x0c, 
+	OP_FALSE=0x0a, OP_TRUE=0x0b, OP_NULL=0x0c, OP_NAN=0x0d,
 	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30, OP_CACHED_CONSTANT=0x40};
 
 #define ABC_OP_CACHED 0x10000000 
@@ -750,6 +750,7 @@ private:
 	static void abc_setlocal(call_context* context);
 	static void abc_getglobalscope(call_context* context);
 	static void abc_getscopeobject(call_context* context);
+	static void abc_getscopeobject_localresult(call_context* context);
 	static void abc_getProperty(call_context* context);
 	static void abc_getProperty_constant_constant(call_context* context);
 	static void abc_getProperty_local_constant(call_context* context);
@@ -774,6 +775,11 @@ private:
 	static void abc_getslot_local_localresult(call_context* context);
 
 	static void abc_setslot(call_context* context);
+	static void abc_setslot_constant_constant(call_context* context);
+	static void abc_setslot_local_constant(call_context* context);
+	static void abc_setslot_constant_local(call_context* context);
+	static void abc_setslot_local_local(call_context* context);
+	
 	static void abc_getglobalSlot(call_context* context);
 	static void abc_setglobalSlot(call_context* context);
 

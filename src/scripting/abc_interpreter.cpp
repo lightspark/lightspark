@@ -625,7 +625,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_decrement_i_local_localresult,
 	abc_callFunctionMultiArgsVoid, // 0x1fc ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID
 	abc_callFunctionMultiArgs, // 0x1fd ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS
-	abc_invalidinstruction,
+	abc_getscopeobject_localresult, // 0x1fe ABC_OP_OPTIMZED_GETSCOPEOBJECT_LOCALRESULT
 	abc_invalidinstruction,
 
 	abc_li8_constant,// 0x200 ABC_OP_OPTIMZED_LI8
@@ -686,10 +686,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_sf64_constant_local,
 	abc_sf64_local_local,
 
-	abc_invalidinstruction, // 0x238
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_setslot_constant_constant, // 0x238 ABC_OP_OPTIMZED_SETSLOT
+	abc_setslot_local_constant,
+	abc_setslot_constant_local,
+	abc_setslot_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -3483,6 +3483,22 @@ void ABCVm::abc_getscopeobject(call_context* context)
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_getscopeobject_localresult(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
+	asAtom ret=context->scope_stack[t];
+	if (ret.uintval != context->locals[context->exec_pos->local_pos3-1].uintval)
+	{
+		ASObject* o = asAtomHandler::getObject(context->locals[context->exec_pos->local_pos3-1]);
+		asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],ret);
+		ASATOM_INCREF(ret);
+		if (o)
+			o->decRef();
+	}
+	LOG_CALL("getScopeObject_l " << asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos3-1]));
+	++(context->exec_pos);
+}
 
 void ABCVm::abc_getProperty(call_context* context)
 {
@@ -3702,7 +3718,6 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		name->resetNameIfObject();
 	}
 	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
-		LOG_CALL( _("getProperty_lll2 ") << o);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	if (o)
@@ -4212,6 +4227,51 @@ void ABCVm::abc_setslot(call_context* context)
 	v2->decRef();
 	++(context->exec_pos);
 }
+void ABCVm::abc_setslot_constant_constant(call_context* context)
+{
+	//setslot
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = *context->exec_pos->arg1_constant;
+	asAtom v2 = *context->exec_pos->arg2_constant;
+	ASATOM_INCREF(v2);
+	LOG_CALL("setSlot_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslot_local_constant(call_context* context)
+{
+	//setslot
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = context->locals[context->exec_pos->local_pos1];
+	asAtom v2 = *context->exec_pos->arg2_constant;
+	LOG_CALL("setSlot_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslot_constant_local(call_context* context)
+{
+	//setslot
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = *context->exec_pos->arg1_constant;
+	asAtom v2 = context->locals[context->exec_pos->local_pos2];
+	LOG_CALL("setSlot_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslot_local_local(call_context* context)
+{
+	//setslot
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = context->locals[context->exec_pos->local_pos1];
+	asAtom v2 = context->locals[context->exec_pos->local_pos2];
+	LOG_CALL("setSlot_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_getglobalSlot(call_context* context)
 {
 	//getglobalSlot
@@ -6185,6 +6245,7 @@ struct operands
 #define ABC_OP_OPTIMZED_DECREMENT_I 0x000001fa
 #define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS_VOID 0x000001fc
 #define ABC_OP_OPTIMZED_CALLFUNCTION_MULTIARGS 0x000001fd
+#define ABC_OP_OPTIMZED_GETSCOPEOBJECT_LOCALRESULT 0x000001fe
 
 #define ABC_OP_OPTIMZED_LI8 0x00000200
 #define ABC_OP_OPTIMZED_LI16 0x00000204
@@ -6196,6 +6257,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SI32 0x0000022c
 #define ABC_OP_OPTIMZED_SF32 0x00000230
 #define ABC_OP_OPTIMZED_SF64 0x00000234
+#define ABC_OP_OPTIMZED_SETSLOT 0x00000238
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -6294,6 +6356,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				hasdup=true;
 				break;
 			case 0x20://pushnull
+			case 0x28://pushnan
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
@@ -6470,6 +6533,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x18://ifge
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
+		case 0x6d://setslot
 		case 0xa0://add
 		case 0xa1://subtract
 		case 0xa2://multiply
@@ -6539,7 +6603,7 @@ bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method
 	}
 	return hasoperands;
 }
-void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
+bool setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
 {
 	bool hasoperands = operandlist.size() >= 2;
 	if (hasoperands)
@@ -6561,6 +6625,7 @@ void setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,metho
 		mi->body->preloadedcode.push_back((uint32_t)opcode);
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	}
+	return hasoperands;
 }
 bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed, bool useargument_for_skip, Class_base** localtypes, Class_base** defaultlocaltypes, Class_base* resulttype, bool checkforlocalresult=true)
 {
@@ -7069,9 +7134,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x59://getdescendants
 			case 0x5a://newcatch
 			case 0x5f://finddef
-			case 0x65://getscopeobject
 			case 0x6a://deleteproperty
-			case 0x6d://setslot
 			case 0x6e://getglobalSlot
 			case 0x6f://setglobalSlot
 			case 0x80://coerce
@@ -7360,6 +7423,23 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
+			case 0x65://getscopeobject
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				uint32_t t =code.readu30();
+				if (checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,nullptr, defaultlocaltypes))
+				{
+					mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=ABC_OP_OPTIMZED_GETSCOPEOBJECT_LOCALRESULT;
+					mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data|=t<<OPCODE_SIZE;
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back(t);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				}
+				break;
+			}
 			case 0x6c://getslot
 			{
 				int32_t p = code.tellg();
@@ -7387,6 +7467,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,nullptr);
 				mi->body->preloadedcode.push_back(t);
+				break;
+			}
+			case 0x6d://setslot
+			{
+				int32_t p = code.tellg();
+				if (jumptargets.find(p) != jumptargets.end())
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				int32_t t =code.readu30();
+				if (setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETSLOT,opcode,code,oldnewpositions, jumptargets))
+					mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data |=t<<OPCODE_SIZE;
+				else
+					mi->body->preloadedcode.push_back(t);
 				break;
 			}
 			case 0xd0://getlocal_0
@@ -7629,6 +7721,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
+			case 0x28://pushnan
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(code.tellg()) == jumptargets.end())
+					operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
+				else
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				break;
+			}
 			case 0x2c://pushstring
 			{
 				int32_t p = code.tellg();
@@ -7821,9 +7923,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 									else
 									{
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data= opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS;
 										clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
-										mi->body->preloadedcode.push_back(t);
 										mi->body->preloadedcode.push_back(argcount);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									}
 									break;
 								case 1:
@@ -7886,7 +7989,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									mi->body->preloadedcode.push_back((uint32_t)opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS);
 									clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 									mi->body->preloadedcode.push_back(argcount);
-									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									break;
 							}
 							break;

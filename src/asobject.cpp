@@ -881,7 +881,7 @@ void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, 
 	++varcount;
 }
 
-void ASObject::initializeVariableByMultiname(const multiname& name, asAtom &o, multiname* typemname,
+void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multiname* typemname,
 		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable)
 {
 	check();
@@ -1015,7 +1015,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	return &inserted->second;
 }
 
-void variables_map::initializeVar(const multiname& mname, asAtom& obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
+void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
 {
 	const Type* type = NULL;
 	if (typemname->isStatic)
@@ -1078,7 +1078,7 @@ void variables_map::initializeVar(const multiname& mname, asAtom& obj, multiname
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
 	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
 	if (slot_id)
-		initSlot(slot_id,name, mname.ns[0]);
+		initSlot(slot_id,&mname,mainObj->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,generator)
@@ -1295,15 +1295,15 @@ ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 	throwError<ArgumentError>(kCantInstantiateError, asAtomHandler::toObject(obj,sys)->getClassName());
 }
 
-void ASObject::initSlot(unsigned int n, const multiname& name)
+void ASObject::initSlot(unsigned int n, multiname& name)
 {
-	Variables.initSlot(n,name.name_s_id,name.ns[0]);
+	Variables.initSlot(n,&name,getSystemState());
 }
 void ASObject::initAdditionalSlots(std::vector<multiname*> additionalslots)
 {
 	unsigned int n = Variables.slots_vars.size();
 	for (auto it = additionalslots.begin(); it != additionalslots.end(); it++)
-		Variables.initSlot(++n,(*it)->name_s_id,(*it)->ns[0]);
+		Variables.initSlot(++n,*it,getSystemState());
 }
 int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
@@ -1570,8 +1570,7 @@ void variables_map::dumpVariables()
 	while (it2 != slots_vars.end())
 	{
 		LOG(LOG_INFO, "slot:" << (it2-slots_vars.begin() )
-			<<" "<<getSys()->getStringFromUniqueId(it2->nameId) 
-			<<"[" << it2->ns << "]");
+			<<" "<<*(*it2));
 		it2++;
 	}
 }
@@ -1701,13 +1700,14 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	return false; 
 }
 
-void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns)
+void variables_map::initSlot(unsigned int n, multiname *name,SystemState* sys)
 {
 	if (n>slots_vars.capacity())
 		slots_vars.reserve(n+8);
 	if(n>slots_vars.size())
 		slots_vars.resize(n);
 
+	uint32_t nameId = name->normalizedNameId(sys);
 	var_iterator ret=Variables.find(nameId);
 
 	if(ret==Variables.end())
@@ -1715,43 +1715,47 @@ void variables_map::initSlot(unsigned int n, uint32_t nameId, const nsNameAndKin
 		//Name not present, no good
 		throw RunTimeException("initSlot on missing variable");
 	}
-	slots_vars[n-1]=varName(nameId,ns);
+	slots_vars[n-1]=name;
 }
 
-asAtom variables_map::getSlot(unsigned int n)
+asAtom variables_map::getSlot(unsigned int n, SystemState* sys)
 {
 	assert_and_throw(n > 0 && n<=slots_vars.size());
-	var_iterator it = Variables.find(slots_vars[n-1].nameId);
-	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
+	var_iterator it = Variables.find(nameId);
+	while(it!=Variables.end() && it->first == nameId)
 	{
-		if (it->second.ns == slots_vars[n-1].ns)
+		if (it->second.ns == slots_vars[n-1]->ns[0])
 			return it->second.var;
 		it++;
 	}
 	return asAtomHandler::invalidAtom;
 }
-TRAIT_KIND variables_map::getSlotKind(unsigned int n)
+TRAIT_KIND variables_map::getSlotKind(unsigned int n,SystemState* sys)
 {
 	assert_and_throw(n > 0 && n<=slots_vars.size());
-	var_iterator it = Variables.find(slots_vars[n-1].nameId);
-	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
+	var_iterator it = Variables.find(nameId);
+	while(it!=Variables.end() && it->first == nameId)
 	{
-		if (it->second.ns == slots_vars[n-1].ns)
+		if (it->second.ns == slots_vars[n-1]->ns[0])
 			return it->second.kind;
 		it++;
 	}
 	return TRAIT_KIND::NO_CREATE_TRAIT;
 }
-uint32_t variables_map::findInstanceSlotByMultiname(multiname* name)
+
+uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState* sys)
 {
 	for (auto it = slots_vars.begin(); it != slots_vars.end();it++)
 	{
-		if (it->nameId == name->name_s_id && (name->ns.size() == 0 || it->ns == name->ns[0]))
+		if (*it == name)
 		{
-			var_iterator it2 = Variables.find(it->nameId);
-			while(it2!=Variables.end() && it2->first == it->nameId)
+			uint32_t nameId = (*it)->normalizedNameId(sys);
+			var_iterator it2 = Variables.find(nameId);
+			while(it2!=Variables.end() && it2->first == nameId)
 			{
-				if ((name->ns.size() == 0 || it->ns == it2->second.ns)
+				if ((name->ns.size() == 0 || (*it)->ns[0] == it2->second.ns)
 						&& (it2->second.kind == INSTANCE_TRAIT))
 						return it-slots_vars.begin()+1;
 				it2++;
@@ -1760,13 +1764,14 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name)
 	}
 	return UINT32_MAX;
 }
-void variables_map::setSlot(unsigned int n, asAtom o, ASObject *obj)
+void variables_map::setSlot(unsigned int n, asAtom o, ASObject *obj, SystemState* sys)
 {
 	validateSlotId(n);
-	var_iterator it = Variables.find(slots_vars[n-1].nameId);
-	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
+	var_iterator it = Variables.find(nameId);
+	while(it!=Variables.end() && it->first == nameId)
 	{
-		if (it->second.ns == slots_vars[n-1].ns)
+		if (it->second.ns == slots_vars[n-1]->ns[0])
 		{
 			it->second.setVar(o,obj);
 			return;
@@ -1775,13 +1780,14 @@ void variables_map::setSlot(unsigned int n, asAtom o, ASObject *obj)
 	}
 }
 
-void variables_map::setSlotNoCoerce(unsigned int n, asAtom o)
+void variables_map::setSlotNoCoerce(unsigned int n, asAtom o, SystemState* sys)
 {
 	validateSlotId(n);
-	var_iterator it = Variables.find(slots_vars[n-1].nameId);
-	while(it!=Variables.end() && it->first == slots_vars[n-1].nameId)
+	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
+	var_iterator it = Variables.find(nameId);
+	while(it!=Variables.end() && it->first == nameId)
 	{
-		if (it->second.ns == slots_vars[n-1].ns)
+		if (it->second.ns == slots_vars[n-1]->ns[0])
 		{
 			it->second.setVarNoCoerce(o);
 			return;

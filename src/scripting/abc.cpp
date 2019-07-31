@@ -2572,6 +2572,9 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 		case OP_NULL:
 			ret = &asAtomHandler::nullAtom;
 			break;
+		case OP_NAN:
+			ret = &this->root->getSystemState()->nanAtom;
+			break;
 		case OP_BYTE:
 			ret = &constantAtoms_byte[index];
 			break;

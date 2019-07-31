@@ -615,7 +615,7 @@ public:
 	mapType Variables;
 	typedef std::unordered_multimap<uint32_t,variable>::iterator var_iterator;
 	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
-	std::vector<varName> slots_vars;
+	std::vector<multiname*> slots_vars;
 	// indicates if this map was initialized with no variables with non-primitive values
 	bool cloneable;
 	variables_map(MemoryAccount* m);
@@ -719,22 +719,27 @@ public:
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
-	void initializeVar(const multiname& mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
+	void initializeVar(multiname &mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
-	asAtom getSlot(unsigned int n);
-	TRAIT_KIND getSlotKind(unsigned int n);
-	uint32_t findInstanceSlotByMultiname(multiname* name);
+	asAtom getSlot(unsigned int n, SystemState *sys);
+	TRAIT_KIND getSlotKind(unsigned int n, SystemState *sys);
+	multiname* getSlotMultiname(unsigned int n)
+	{
+		assert_and_throw(n > 0 && n<=slots_vars.size());
+		return slots_vars[n-1];
+	}
+	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
 	/*
 	 * This method does throw if the slot id is not valid
 	 */
 	void validateSlotId(unsigned int n) const;
-	void setSlot(unsigned int n,asAtom o,ASObject* obj);
+	void setSlot(unsigned int n, asAtom o, ASObject* obj, SystemState *sys);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	void setSlotNoCoerce(unsigned int n, asAtom o);
-	void initSlot(unsigned int n, uint32_t nameId, const nsNameAndKind& ns);
+	void setSlotNoCoerce(unsigned int n, asAtom o, SystemState *sys);
+	void initSlot(unsigned int n, multiname* name, SystemState *sys);
 	inline unsigned int size() const
 	{
 		return Variables.size();
@@ -994,7 +999,7 @@ public:
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
 	 */
-	void initializeVariableByMultiname(const multiname& name, asAtom& o, multiname* typemname,
+	void initializeVariableByMultiname(multiname &name, asAtom& o, multiname* typemname,
 			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
@@ -1012,27 +1017,31 @@ public:
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	asAtom getSlot(unsigned int n)
 	{
-		return Variables.getSlot(n);
+		return Variables.getSlot(n,getSystemState());
 	}
 	TRAIT_KIND getSlotKind(unsigned int n)
 	{
-		return Variables.getSlotKind(n);
+		return Variables.getSlotKind(n,getSystemState());
+	}
+	multiname* getSlotMultiname(unsigned int n)
+	{
+		return Variables.getSlotMultiname(n);
 	}
 	void setSlot(unsigned int n,asAtom o)
 	{
-		Variables.setSlot(n,o,this);
+		Variables.setSlot(n,o,this,getSystemState());
 		if (asAtomHandler::is<SyntheticFunction>(o))
 			checkFunctionScope(asAtomHandler::getObject(o));
 	}
 	void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
-		Variables.setSlotNoCoerce(n,o);
+		Variables.setSlotNoCoerce(n,o,getSystemState());
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{
-		return Variables.findInstanceSlotByMultiname(name);
+		return Variables.findInstanceSlotByMultiname(name,getSystemState());
 	}
-	void initSlot(unsigned int n, const multiname& name);
+	void initSlot(unsigned int n, multiname &name);
 	
 	void initAdditionalSlots(std::vector<multiname*> additionalslots);
 	unsigned int numVariables() const;

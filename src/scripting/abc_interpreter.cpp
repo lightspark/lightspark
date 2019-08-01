@@ -690,15 +690,15 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setslot_local_constant,
 	abc_setslot_constant_local,
 	abc_setslot_local_local,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_convert_i_constant,// 0x23c ABC_OP_OPTIMZED_CONVERTI
+	abc_convert_i_local,
+	abc_convert_i_constant_localresult,
+	abc_convert_i_local_localresult,
 
-	abc_invalidinstruction, // 0x240
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_convert_u_constant,// 0x240 ABC_OP_OPTIMZED_CONVERTI
+	abc_convert_u_local,
+	abc_convert_u_constant_localresult,
+	abc_convert_u_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -4330,6 +4330,60 @@ void ABCVm::abc_convert_i(call_context* context)
 	}
 	++(context->exec_pos);
 }
+void ABCVm::abc_convert_i_constant(call_context* context)
+{
+	LOG_CALL("convert_i_c");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isInteger(res))
+	{
+		int32_t v= asAtomHandler::toIntStrict(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_i_local(call_context* context)
+{
+	LOG_CALL("convert_i_l:"<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos1]));
+	asAtom res =context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isInteger(res))
+	{
+		int32_t v= asAtomHandler::toIntStrict(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_i_constant_localresult(call_context* context)
+{
+	LOG_CALL("convert_i_cl");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isInteger(res))
+	{
+		int32_t v= asAtomHandler::toIntStrict(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_i_local_localresult(call_context* context)
+{
+	LOG_CALL("convert_i_ll");
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isInteger(res))
+	{
+		int32_t v= asAtomHandler::toIntStrict(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
 void ABCVm::abc_convert_u(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
@@ -4340,6 +4394,60 @@ void ABCVm::abc_convert_u(call_context* context)
 		ASATOM_DECREF_POINTER(pval);
 		asAtomHandler::setUInt(*pval,context->mi->context->root->getSystemState(),v);
 	}
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_u_constant(call_context* context)
+{
+	LOG_CALL("convert_u_c");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isUInteger(res))
+	{
+		int32_t v= asAtomHandler::toUInt(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_u_local(call_context* context)
+{
+	LOG_CALL("convert_u_l:"<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos1]));
+	asAtom res =context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isUInteger(res))
+	{
+		int32_t v= asAtomHandler::toUInt(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_u_constant_localresult(call_context* context)
+{
+	LOG_CALL("convert_u_cl");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isUInteger(res))
+	{
+		int32_t v= asAtomHandler::toUInt(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_u_local_localresult(call_context* context)
+{
+	LOG_CALL("convert_u_ll");
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isUInteger(res))
+	{
+		int32_t v= asAtomHandler::toUInt(res);
+		ASATOM_DECREF(res);
+		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
+	}
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_d(call_context* context)
@@ -6258,6 +6366,8 @@ struct operands
 #define ABC_OP_OPTIMZED_SF32 0x00000230
 #define ABC_OP_OPTIMZED_SF64 0x00000234
 #define ABC_OP_OPTIMZED_SETSLOT 0x00000238
+#define ABC_OP_OPTIMZED_CONVERTI 0x0000023c
+#define ABC_OP_OPTIMZED_CONVERTU 0x00000240
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -6348,6 +6458,30 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				pos++;
 				needstwoargs=true;
 				resultpos=1;
+				break;
+			case 0x73://convert_i
+				if (restype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+				{
+					code.readbyte();
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
+			case 0x74://convert_i
+				if (restype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
+				{
+					code.readbyte();
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
+			case 0x75://convert_d
+				if (restype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr())
+				{
+					code.readbyte();
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
 				break;
 			case 0x2a://dup
 				b = code.peekbyteFromPosition(pos);
@@ -8105,8 +8239,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back(t);
 				break;
 			}
+			case 0x73://convert_i
+				if (jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() > 0 && operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				else
+					setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTI,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Integer>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x74://convert_u
+				if (jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() > 0 && operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				else
+					setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTU,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<UInteger>::getRef(function->getSystemState()).getPtr());
+				break;
 			case 0x75://convert_d
-				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTD,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(code.tellg()) == jumptargets.end() && operandlist.size() > 0 && operandlist.back().objtype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr())
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				else
+					setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTD,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0x91://increment
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr(),dup_indicator == 0);

@@ -787,7 +787,15 @@ private:
 	static void abc_esc_xelem(call_context* context);
 	static void abc_esc_xattr(call_context* context);
 	static void abc_convert_i(call_context* context);
+	static void abc_convert_i_constant(call_context* context);
+	static void abc_convert_i_local(call_context* context);
+	static void abc_convert_i_constant_localresult(call_context* context);
+	static void abc_convert_i_local_localresult(call_context* context);
 	static void abc_convert_u(call_context* context);
+	static void abc_convert_u_constant(call_context* context);
+	static void abc_convert_u_local(call_context* context);
+	static void abc_convert_u_constant_localresult(call_context* context);
+	static void abc_convert_u_local_localresult(call_context* context);
 	static void abc_convert_d(call_context* context);
 	static void abc_convert_d_constant(call_context* context);
 	static void abc_convert_d_local(call_context* context);

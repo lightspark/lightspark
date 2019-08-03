@@ -504,6 +504,8 @@ private:
 	static bool newClassRecursiveLink(Class_base* target, Class_base* c);
 	static void constructFunction(asAtom & ret, call_context* th, asAtom& f, asAtom* args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
+	
+	static void constructpropnoargs_intern(call_context* context, asAtom& ret, asAtom& obj, multiname* name, ASObject *constructor);
 
 #ifdef LLVM_ENABLED
 	//Opcode tables
@@ -713,6 +715,10 @@ private:
 	static void abc_constructsuper_constant(call_context* context);
 	static void abc_constructsuper_local(call_context* context);
 	static void abc_constructprop(call_context* context);
+	static void abc_constructpropStaticName_constant(call_context* context);
+	static void abc_constructpropStaticName_local(call_context* context);
+	static void abc_constructpropStaticName_constant_localresult(call_context* context);
+	static void abc_constructpropStaticName_local_localresult(call_context* context);
 	static void abc_callproplex(call_context* context);
 	static void abc_callsupervoid(call_context* context);
 	static void abc_callpropvoid(call_context* context);
@@ -1052,6 +1058,11 @@ public:
 	void finalize();
 	static void Run(ABCVm* th);
 	static void executeFunction(call_context* context);
+#ifndef NDEBUG
+	static void dumpOpcodeCounters(uint32_t threshhold);
+	static void clearOpcodeCounters();
+#endif
+	
 	static void preloadFunction(SyntheticFunction *function);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller);
 	static void optimizeFunction(SyntheticFunction* function);

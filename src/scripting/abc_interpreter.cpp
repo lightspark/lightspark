@@ -53,6 +53,24 @@ void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 	prop = asAtomHandler::undefinedAtom;
 }
 
+#ifndef NDEBUG
+std::map<uint32_t,uint32_t> opcodecounter;
+void ABCVm::dumpOpcodeCounters(uint32_t threshhold)
+{
+	auto it = opcodecounter.begin();
+	while (it != opcodecounter.end())
+	{
+		if (it->second > threshhold)
+			LOG(LOG_INFO,"opcode counter:"<<hex<<it->first<<":"<<dec<<it->second);
+		it++;
+	}
+}
+void ABCVm::clearOpcodeCounters()
+{
+	opcodecounter.clear();
+}
+#endif
+
 void ABCVm::executeFunction(call_context* context)
 {
 #ifdef PROFILING_SUPPORT
@@ -74,6 +92,10 @@ void ABCVm::executeFunction(call_context* context)
 #endif
 		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x3ff));
 
+#ifndef NDEBUG
+		uint32_t c = opcodecounter[(context->exec_pos->data)&0x3ff];
+		opcodecounter[(context->exec_pos->data)&0x3ff] = c+1;
+#endif
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
 		abcfunctions[(context->exec_pos->data)&0x3ff](context);
@@ -699,10 +721,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_convert_u_local,
 	abc_convert_u_constant_localresult,
 	abc_convert_u_local_localresult,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_constructpropStaticName_constant,// 0x244 ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS
+	abc_constructpropStaticName_local,
+	abc_constructpropStaticName_constant_localresult,
+	abc_constructpropStaticName_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -2979,6 +3001,110 @@ void ABCVm::abc_constructprop(call_context* context)
 	constructProp(context,t,t2);
 	++(context->exec_pos);
 }
+
+void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom& obj,multiname* name, ASObject* constructor)
+{
+	asAtom o=asAtomHandler::invalidAtom;
+	if (constructor)
+		o = asAtomHandler::fromObject(constructor);
+	else
+		asAtomHandler::toObject(obj,context->mi->context->root->getSystemState())->getVariableByMultiname(o,*name);
+
+	if(asAtomHandler::isInvalid(o))
+	{
+		if (asAtomHandler::is<Undefined>(obj))
+		{
+			ASATOM_DECREF(obj);
+			throwError<TypeError>(kConvertUndefinedToObjectError);
+		}
+		if (asAtomHandler::isPrimitive(obj))
+		{
+			ASATOM_DECREF(obj);
+			throwError<TypeError>(kConstructOfNonFunctionError);
+		}
+		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved(context->mi->context->root->getSystemState()));
+	}
+	try
+	{
+		if(asAtomHandler::isClass(o))
+		{
+			Class_base* o_class=asAtomHandler::as<Class_base>(o);
+			o_class->getInstance(ret,true,nullptr,0);
+		}
+		else if(asAtomHandler::isFunction(o))
+		{
+			constructFunction(ret,context, o, nullptr, 0);
+		}
+		else if (asAtomHandler::isTemplate(o))
+			throwError<TypeError>(kConstructOfNonFunctionError);
+		else
+			throwError<TypeError>(kNotConstructorError);
+	}
+	catch(ASObject* exc)
+	{
+		LOG_CALL(_("Exception during object construction. Returning Undefined"));
+		//Handle eventual exceptions from the constructor, to fix the stack
+		RUNTIME_STACK_PUSH(context,obj);
+		throw;
+	}
+	if (asAtomHandler::getObject(ret))
+		asAtomHandler::getObject(ret)->setConstructorCallComplete();
+	LOG_CALL(_("End of constructing ") << asAtomHandler::toDebugString(ret));
+}
+
+void ABCVm::abc_constructpropStaticName_constant(call_context* context)
+{
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom obj= *context->exec_pos->arg1_constant;
+	LOG_CALL( "constructprop_noargs_c "<<*name);
+	++(context->exec_pos);
+	asAtom ret=asAtomHandler::invalidAtom;
+	constructpropnoargs_intern(context,ret,obj,name,context->exec_pos->cacheobj2);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropStaticName_local(call_context* context)
+{
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom obj= context->locals[context->exec_pos->local_pos1];
+	++(context->exec_pos);
+	LOG_CALL( "constructprop_noargs_l " << *name);
+	asAtom ret=asAtomHandler::invalidAtom;
+	constructpropnoargs_intern(context,ret,obj,name,nullptr);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropStaticName_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom obj= *context->exec_pos->arg1_constant;
+	++(context->exec_pos);
+	LOG_CALL( "constructprop_noargs_c_lr " << *name);
+	asAtom res=asAtomHandler::invalidAtom;
+	constructpropnoargs_intern(context,res,obj,name,context->exec_pos->cacheobj2);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropStaticName_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	multiname* name=context->exec_pos->cachedmultiname2;
+	asAtom obj= context->locals[context->exec_pos->local_pos1];
+	++(context->exec_pos);
+	LOG_CALL( "constructprop_noargs_l_lr " << *name);
+	asAtom res=asAtomHandler::invalidAtom;
+	constructpropnoargs_intern(context,res,obj,name,nullptr);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_callproplex(call_context* context)
 {
 	//callproplex
@@ -6368,6 +6494,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SETSLOT 0x00000238
 #define ABC_OP_OPTIMZED_CONVERTI 0x0000023c
 #define ABC_OP_OPTIMZED_CONVERTU 0x00000240
+#define ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS 0x00000244 
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -6467,7 +6594,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 					pos++;
 				}
 				break;
-			case 0x74://convert_i
+			case 0x74://convert_u
 				if (restype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
 				{
 					code.readbyte();
@@ -6584,6 +6711,26 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			}
 			else
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+			break;
+		}
+		case 0x4a://constructprop
+		{
+			uint32_t t = code.peeku30FromPosition(pos);
+			pos = code.skipu30FromPosition(pos);
+			uint32_t argcount = code.peeku30FromPosition(pos);
+			if (jumptargets.find(pos) == jumptargets.end() 
+					&& argcount == 0
+					&& mi->context->constant_pool.multinames[t].runtimeargs == 0
+					&& !needstwoargs && (operandlist.size() >= 1))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,restype, mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(mi,localtypes,operandlist,defaultlocaltypes);
 			break;
 		}
 		case 0x61://setproperty
@@ -7380,7 +7527,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								++it;
 							}
 						}
-						if (!found && !mi->needsActivation())
+						if (!found)
 						{
 							ASObject* target;
 							if (mi->context->root->applicationDomain->findTargetByMultiname(*name, target))
@@ -7939,7 +8086,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x44://callstatic
 			case 0x45://callsuper
 			case 0x4c://callproplex
-			case 0x4a://constructprop
 			case 0x4e://callsupervoid
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
@@ -8010,8 +8156,76 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					code.readbyte();
 				break;
 			}
-			case 0x4f://callpropvoid
+			case 0x4a://constructprop
+			{
+				int32_t p = code.tellg();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
+				uint32_t t = code.readu30();
+				assert_and_throw(t < mi->context->constant_pool.multiname_count);
+				uint32_t argcount = code.readu30();
+				if (jumptargets.find(p) == jumptargets.end())
+				{
+					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+					switch (mi->context->constant_pool.multinames[t].runtimeargs)
+					{
+						case 0:
+							switch (argcount)
+							{
+								case 0:
+								{
+									ASObject* constructor = nullptr;
+									if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+									{
+										// common case: constructprop called to create a class instance
+										ASObject* a = asAtomHandler::getObject(*mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index));
+										if(a)
+										{
+											asAtom o;
+											a->getVariableByMultiname(o,*name);
+											constructor = asAtomHandler::getObject(o);
+										}
+									}
+									if (setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,nullptr))
+									{
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
+										mi->body->preloadedcode.push_back(argcount);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = constructor;
+									}
+									else
+									{
+										mi->body->preloadedcode.push_back(t);
+										mi->body->preloadedcode.push_back(argcount);
+									}
+									break;
+								}
+								default:
+									// TODO handle constructprop with one or more arguments
+									mi->body->preloadedcode.push_back((uint32_t)opcode);
+									clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+									mi->body->preloadedcode.push_back(t);
+									mi->body->preloadedcode.push_back(argcount);
+									break;
+							}
+							break;
+						default:
+							mi->body->preloadedcode.push_back((uint32_t)opcode);
+							clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+							mi->body->preloadedcode.push_back(t);
+							mi->body->preloadedcode.push_back(argcount);
+							break;
+					}
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+					mi->body->preloadedcode.push_back(t);
+					mi->body->preloadedcode.push_back(argcount);
+				}
+				break;
+			}
 			case 0x46://callproperty
+			case 0x4f://callpropvoid
 			{
 				int32_t p = code.tellg();
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;

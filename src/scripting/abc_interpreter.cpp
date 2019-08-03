@@ -6567,11 +6567,52 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		// check if the next opcode can be skipped
 		switch (b)
 		{
+			case 0x24://pushbyte
+				pos++;
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x73)//convert_i
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x25://pushshort
-			case 0x2c://pushstring
 			case 0x2d://pushint
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x73)//convert_i
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x2e://pushuint
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x74)//convert_u
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x2f://pushdouble
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x75)//convert_d
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
+			case 0x2c://pushstring
 			case 0x31://pushnamespace
 			case 0x62://getlocal
 				pos = code.skipu30FromPosition(pos);
@@ -6622,12 +6663,6 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				needstwoargs=true;
-				break;
-			case 0x24://pushbyte
-				pos++;
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				needstwoargs=true;
@@ -6787,6 +6822,9 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x91://increment
 		case 0x93://decrement
 		case 0x96://not
+		case 0x6c://getslot
+		case 0x73://convert_i
+		case 0x74://convert_u
 		case 0x75://convert_d
 		case 0xc0://increment_i
 		case 0xc1://decrement_i
@@ -6795,7 +6833,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0x37://li32
 		case 0x38://lf32
 		case 0x39://lf64
-			if (!needstwoargs && (operandlist.size() > 0) && (jumptargets.find(pos) == jumptargets.end()))
+			if (!needstwoargs && (jumptargets.find(pos) == jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -8363,7 +8401,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
-				if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
+				if (function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back()))
 				{
 					asAtom ret = function->func_scope->scope.front().object;
 					addCachedConstant(mi, ret,operandlist,oldnewpositions,code);

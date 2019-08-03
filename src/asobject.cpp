@@ -2865,7 +2865,7 @@ bool asAtomHandler::Boolean_concrete_string(asAtom &a)
 	return getObject(a) && !getObject(a)->as<ASString>()->isEmpty();
 }
 
-void asAtomHandler::convert_b(asAtom& a)
+void asAtomHandler::convert_b(asAtom& a, bool refcounted)
 {
 	bool v = false;
 	switch(a.uintval&0x7)
@@ -2898,7 +2898,8 @@ void asAtomHandler::convert_b(asAtom& a)
 			v= lightspark::Boolean_concrete(getObject(a));
 			break;
 	}
-	decRef(a);
+	if (refcounted)
+		decRef(a);
 	setBool(a,v);
 }
 

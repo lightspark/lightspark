@@ -508,7 +508,7 @@ public:
 	static uint32_t toStringId(asAtom &a, SystemState *sys);
 	static asAtom typeOf(asAtom& a,SystemState *sys);
 	static bool Boolean_concrete(asAtom& a);
-	static void convert_b(asAtom& a);
+	static void convert_b(asAtom& a, bool refcounted);
 	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
 	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
 	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x3) == ATOM_STRINGID); return a.uintval>>3; }

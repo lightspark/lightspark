@@ -506,6 +506,7 @@ private:
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 	
 	static void constructpropnoargs_intern(call_context* context, asAtom& ret, asAtom& obj, multiname* name, ASObject *constructor);
+	static void construct_noargs_intern(call_context* context, asAtom& ret, asAtom& obj);
 
 #ifdef LLVM_ENABLED
 	//Opcode tables
@@ -688,6 +689,10 @@ private:
 	static void abc_newfunction(call_context* context);// 0x40
 	static void abc_call(call_context* context);
 	static void abc_construct(call_context* context);
+	static void abc_construct_constant(call_context* context);
+	static void abc_construct_local(call_context* context);
+	static void abc_construct_constant_localresult(call_context* context);
+	static void abc_construct_local_localresult(call_context* context);
 	static void abc_callMethod(call_context* context);
 	static void abc_callstatic(call_context* context);
 	static void abc_callsuper(call_context* context);
@@ -808,6 +813,10 @@ private:
 	static void abc_convert_d_constant_localresult(call_context* context);
 	static void abc_convert_d_local_localresult(call_context* context);
 	static void abc_convert_b(call_context* context);
+	static void abc_convert_b_constant(call_context* context);
+	static void abc_convert_b_local(call_context* context);
+	static void abc_convert_b_constant_localresult(call_context* context);
+	static void abc_convert_b_local_localresult(call_context* context);
 	static void abc_convert_o(call_context* context);
 	static void abc_checkfilter(call_context* context);
 

@@ -1107,7 +1107,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//convert_b
 				RUNTIME_STACK_POP_CREATE(context,val);
-				asAtomHandler::convert_b(*val);
+				asAtomHandler::convert_b(*val,true);
 				break;
 			}
 			case 0x77:

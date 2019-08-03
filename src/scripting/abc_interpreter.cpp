@@ -717,7 +717,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_convert_i_constant_localresult,
 	abc_convert_i_local_localresult,
 
-	abc_convert_u_constant,// 0x240 ABC_OP_OPTIMZED_CONVERTI
+	abc_convert_u_constant,// 0x240 ABC_OP_OPTIMZED_CONVERTU
 	abc_convert_u_local,
 	abc_convert_u_constant_localresult,
 	abc_convert_u_local_localresult,
@@ -725,14 +725,14 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_constructpropStaticName_local,
 	abc_constructpropStaticName_constant_localresult,
 	abc_constructpropStaticName_local_localresult,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_convert_b_constant,// 0x248 ABC_OP_OPTIMZED_CONVERTB
+	abc_convert_b_local,
+	abc_convert_b_constant_localresult,
+	abc_convert_b_local_localresult,
+	abc_construct_constant,// 0x24c ABC_OP_OPTIMZED_CONSTRUCT_NOARGS
+	abc_construct_local,
+	abc_construct_constant_localresult,
+	abc_construct_local_localresult,
 
 	abc_invalidinstruction, // 0x250
 	abc_invalidinstruction,
@@ -2430,6 +2430,78 @@ void ABCVm::abc_construct(call_context* context)
 	construct(context,t);
 	++(context->exec_pos);
 }
+void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& obj)
+{
+	LOG_CALL(_("Constructing"));
+
+	switch(asAtomHandler::getObjectType(obj))
+	{
+		case T_CLASS:
+		{
+			Class_base* o_class=asAtomHandler::as<Class_base>(obj);
+			o_class->getInstance(ret,true,nullptr,0);
+			break;
+		}
+		case T_FUNCTION:
+		{
+			constructFunction(ret,context, obj, nullptr,0);
+			break;
+		}
+
+		default:
+		{
+			throwError<TypeError>(kConstructOfNonFunctionError);
+		}
+	}
+	if (asAtomHandler::getObject(ret))
+		asAtomHandler::getObject(ret)->setConstructorCallComplete();
+	LOG_CALL("End of construct_noargs " << asAtomHandler::toDebugString(ret));
+}
+void ABCVm::abc_construct_constant(call_context* context)
+{
+	asAtom obj= *context->exec_pos->arg1_constant;
+	LOG_CALL( "construct_noargs_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	construct_noargs_intern(context,ret,obj);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_construct_local(call_context* context)
+{
+	asAtom obj= context->locals[context->exec_pos->local_pos1];
+	LOG_CALL( "construct_noargs_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	construct_noargs_intern(context,ret,obj);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_construct_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj= *context->exec_pos->arg1_constant;
+	LOG_CALL( "construct_noargs_c_lr");
+	asAtom res=asAtomHandler::invalidAtom;
+	construct_noargs_intern(context,res,obj);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_construct_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj= context->locals[context->exec_pos->local_pos1];
+	LOG_CALL( "construct_noargs_l_lr ");
+	asAtom res=asAtomHandler::invalidAtom;
+	construct_noargs_intern(context,res,obj);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_callMethod(call_context* context)
 {
 	// callmethod
@@ -4636,9 +4708,48 @@ void ABCVm::abc_convert_b(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("convert_b");
-	asAtomHandler::convert_b(*pval);
+	asAtomHandler::convert_b(*pval,true);
 	++(context->exec_pos);
 }
+void ABCVm::abc_convert_b_constant(call_context* context)
+{
+	LOG_CALL("convert_b_c");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isBool(res))
+		asAtomHandler::convert_b(res,false);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_b_local(call_context* context)
+{
+	LOG_CALL("convert_b_l:"<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos1]));
+	asAtom res =context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isBool(res))
+		asAtomHandler::convert_b(res,false);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_b_constant_localresult(call_context* context)
+{
+	LOG_CALL("convert_b_cl");
+	asAtom res = *context->exec_pos->arg1_constant;
+	if(!asAtomHandler::isBool(res))
+		asAtomHandler::convert_b(res,false);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_convert_b_local_localresult(call_context* context)
+{
+	LOG_CALL("convert_b_ll");
+	asAtom res = context->locals[context->exec_pos->local_pos1];
+	if(!asAtomHandler::isBool(res))
+		asAtomHandler::convert_b(res,false);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_convert_o(call_context* context)
 {
 	//convert_o
@@ -6495,6 +6606,8 @@ struct operands
 #define ABC_OP_OPTIMZED_CONVERTI 0x0000023c
 #define ABC_OP_OPTIMZED_CONVERTU 0x00000240
 #define ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS 0x00000244 
+#define ABC_OP_OPTIMZED_CONVERTB 0x00000248 
+#define ABC_OP_OPTIMZED_CONSTRUCT_NOARGS 0x0000024c
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -6590,6 +6703,26 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 					pos++;
 				}
 				break;
+			case 0x26://pushtrue
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x76)//convert_b
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
+			case 0x27://pushfalse
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x76)//convert_b
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x2e://pushuint
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
@@ -6651,6 +6784,17 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 					pos++;
 				}
 				break;
+			case 0x76://convert_b
+				if (restype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()
+						|| code.peekbyteFromPosition(pos) == 0x11 //iftrue
+						|| code.peekbyteFromPosition(pos) == 0x12 //iffalse
+					)
+				{
+					code.readbyte();
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x2a://dup
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -6658,6 +6802,16 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				hasdup=true;
 				break;
 			case 0x20://pushnull
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				needstwoargs=true;
+				if (b==0x80)//coerce
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				break;
 			case 0x28://pushnan
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
@@ -6667,6 +6821,23 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				pos++;
 				needstwoargs=true;
 				break;
+			case 0x80://coerce
+			{
+				uint32_t t = code.peeku30FromPosition(pos);
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				if (name->isStatic)
+				{
+					const Type* tp = Type::getTypeFromMultiname(name,mi->context);
+					if (tp && tp == restype)
+					{
+						code.readu30();
+						pos = code.skipu30FromPosition(pos);
+						b = code.peekbyteFromPosition(pos);
+						pos++;
+					}
+				}
+				break;
+			}
 			case 0x82://coerce_a
 				code.readbyte();
 				b = code.peekbyteFromPosition(pos);
@@ -6746,6 +6917,23 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			}
 			else
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+			break;
+		}
+		case 0x42://construct
+		{
+			uint32_t argcount = code.peeku30FromPosition(pos);
+			if (jumptargets.find(pos) == jumptargets.end() 
+					&& argcount == 0
+					&& !needstwoargs && (operandlist.size() >= 1))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
+				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
+				operandlist.push_back(operands(OP_LOCAL,restype, mi->body->local_count+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(mi,localtypes,operandlist,defaultlocaltypes);
 			break;
 		}
 		case 0x4a://constructprop
@@ -7289,6 +7477,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x75://convert_d
 				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
 				break;
+			case 0x76://convert_b
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
 			case 0x2c://pushstring
 				codejumps.readu30();
 				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
@@ -7381,6 +7572,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
 				break;
 			}
+			case 0x26://pushtrue
+			case 0x27://pushfalse
+			{
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
 			case 0x32://hasnext2
 			case 0x43://callmethod
 			case 0x44://callstatic
@@ -7445,7 +7642,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x08://kill
 			case 0x40://newfunction
 			case 0x41://call
-			case 0x42://construct
 			case 0x53://constructgenerictype
 			case 0x55://newobject
 			case 0x56://newarray
@@ -7456,7 +7652,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x6a://deleteproperty
 			case 0x6e://getglobalSlot
 			case 0x6f://setglobalSlot
-			case 0x80://coerce
 			case 0x86://astype
 			case 0x92://inclocal
 			case 0x94://declocal
@@ -7800,6 +7995,54 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back(t);
 				break;
 			}
+			case 0x80://coerce
+			{
+				int32_t p = code.tellg();
+				int32_t t = code.readu30();
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				bool skip = false;
+				if (jumptargets.find(p) == jumptargets.end() &&
+					(operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+					)
+				{
+					asAtom o = *mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
+					if (asAtomHandler::isValid(o))
+					{
+						assert_and_throw(name->isStatic);
+						const Type* tp = Type::getTypeFromMultiname(name, mi->context);
+						const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+						if (cls)
+						{
+							switch (asAtomHandler::getObjectType(o))
+							{
+								case T_NULL:
+									skip = cls != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() &&
+											cls != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() &&
+											cls != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() &&
+											cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr() &&
+											cls != Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr();
+									break;
+								case T_INTEGER:
+								case T_NUMBER:
+								case T_UINTEGER:
+									skip = cls == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
+									break;
+								default:
+									skip= operandlist.back().objtype && cls->isSubClass(operandlist.back().objtype);
+									break;
+							}
+						}
+					}
+				}
+				if (!skip)
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					mi->body->preloadedcode.push_back(t);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				}
+				break;
+			}
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
@@ -8040,6 +8283,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
 				break;
 			}
+			case 0x26://pushtrue
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(code.tellg()) == jumptargets.end())
+					operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
+				else
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				break;
+			}
+			case 0x27://pushfalse
+			{
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(code.tellg()) == jumptargets.end())
+					operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
+				else
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+				break;
+			}
 			case 0x28://pushnan
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
@@ -8171,6 +8434,39 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				code.readu30();
 				code.readbyte();
 				code.readu30();
+				break;
+			}
+			case 0x42://construct
+			{
+				int32_t p = code.tellg();
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size()+1;
+				uint32_t argcount = code.readu30();
+				if (jumptargets.find(p) == jumptargets.end())
+				{
+					switch (argcount)
+					{
+						case 0:
+						{
+							Class_base* restype = operandlist.size()> 0 ? operandlist.back().objtype : nullptr;
+							if (!setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONSTRUCT_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,restype))
+								mi->body->preloadedcode.push_back(argcount);
+							break;
+						}
+						default:
+							// TODO handle construct with one or more arguments
+							mi->body->preloadedcode.push_back((uint32_t)opcode);
+							clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+							mi->body->preloadedcode.push_back(argcount);
+							break;
+					}
+					break;
+				}
+				else
+				{
+					mi->body->preloadedcode.push_back((uint32_t)opcode);
+					clearOperands(mi,localtypes,operandlist, defaultlocaltypes);
+					mi->body->preloadedcode.push_back(argcount);
+				}
 				break;
 			}
 			case 0x47: //returnvoid
@@ -8335,7 +8631,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									   ((opcode == 0x46 && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes))))
 									{
 										mi->body->preloadedcode.push_back(t);
-										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = mi->context->getMultinameImpl(asAtomHandler::nullAtom,NULL,t,false);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 									}
 									else if (opcode == 0x46 && checkForLocalResult(operandlist,mi,code,oldnewpositions,jumptargets,0,localtypes,nullptr, defaultlocaltypes))
 									{
@@ -8509,6 +8805,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				else
 					setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTD,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr());
+				break;
+			case 0x76://convert_b
+				if (jumptargets.find(code.tellg()) == jumptargets.end() &&
+						((operandlist.size() > 0 && operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
+						((code.peekbyte() == 0x11 ||  //iftrue
+						  code.peekbyte() == 0x12 )   //iffalse
+						 && jumptargets.find(code.tellg()+1) == jumptargets.end()))
+						)
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				else
+					setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONVERTB,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Boolean>::getRef(function->getSystemState()).getPtr());
 				break;
 			case 0x91://increment
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_INCREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr(),dup_indicator == 0);

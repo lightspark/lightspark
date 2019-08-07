@@ -8035,6 +8035,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd3://getlocal_3
 			{
 				int32_t p = code.tellg();
+				if (p==1 && opcode == 0xd0) //getlocal_0
+				{
+					if (code.peekbyte() == 0x30) // pushscope
+					{
+						// function begins with getlocal_0 and pushscope, can be skipped
+						oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+						code.readbyte();
+						oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+						mi->needsscope=true;
+						break;
+					}
+				}
 				assert_and_throw(((uint32_t)opcode)-0xd0 < mi->body->local_count);
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();

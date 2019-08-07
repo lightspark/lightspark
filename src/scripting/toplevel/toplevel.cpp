@@ -519,6 +519,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;
+
+					if (mi->needsscope && cc.exec_pos == mi->body->preloadedcode.data())
+					{
+						ASATOM_INCREF(obj);
+						cc.scope_stack[0] = obj;
+						cc.scope_stack_dynamic[0] = false;
+						cc.curr_scope_stack++;
+					}
 					//This is not a hot function, execute it using the interpreter
 					ABCVm::executeFunction(&cc);
 					//Restore the previous codeStatus

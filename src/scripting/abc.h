@@ -128,6 +128,8 @@ public:
 	std::vector<const Type*> paramTypes;
 	const Type* returnType;
 	bool hasExplicitTypes;
+	// indicates if the function code starts with getlocal_0/pushscope
+	bool needsscope;
 	method_info():
 #ifdef LLVM_ENABLED
 		llvmf(NULL),

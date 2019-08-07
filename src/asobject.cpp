@@ -832,6 +832,13 @@ multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CO
 		if (asAtomHandler::is<SyntheticFunction>(obj->setter))
 			retval = asAtomHandler::as<SyntheticFunction>(obj->setter)->getSimpleName();
 		ASATOM_DECREF(ret);
+		if (asAtomHandler::is<SyntheticFunction>(o))
+		{
+			if (obj->kind == CONSTANT_TRAIT)
+				asAtomHandler::getObject(o)->setConstant();
+			else
+				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
+		}
 		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
 		//assert_and_throw(asAtomHandler::isUndefined(ret));
@@ -841,13 +848,13 @@ multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CO
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->getter));
 		obj->setVar(o,this);
-	}
-	if (asAtomHandler::is<SyntheticFunction>(o))
-	{
-		if (obj->kind == CONSTANT_TRAIT)
-			asAtomHandler::getObject(o)->setConstant();
-		else
-			checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
+		if (asAtomHandler::is<SyntheticFunction>(o))
+		{
+			if (obj->kind == CONSTANT_TRAIT)
+				asAtomHandler::getObject(o)->setConstant();
+			else
+				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
+		}
 	}
 	return retval;
 }
@@ -1764,7 +1771,7 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState*
 	}
 	return UINT32_MAX;
 }
-void variables_map::setSlot(unsigned int n, asAtom o, ASObject *obj, SystemState* sys)
+void variables_map::setSlot(unsigned int n, asAtom& o, ASObject *obj, SystemState* sys)
 {
 	validateSlotId(n);
 	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);

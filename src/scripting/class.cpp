@@ -176,7 +176,7 @@ void Class_inherit::describeClassMetadata(pugi::xml_node &root) const
 
 bool Class_inherit::hasoverriddenmethod(ABCContext* ctx, multiname *name) const
 {
-	return !ctx->instances[this->class_index].overriddenmethods || ctx->instances[this->class_index].overriddenmethods->find(name) != ctx->instances[this->class_index].overriddenmethods->end();
+	return class_index == -1 ? true : !ctx->instances[this->class_index].overriddenmethods || ctx->instances[this->class_index].overriddenmethods->find(name) != ctx->instances[this->class_index].overriddenmethods->end();
 }
 
 template<>

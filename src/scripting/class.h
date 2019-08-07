@@ -143,7 +143,7 @@ protected:
 		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
 		if (asAtomHandler::isInvalid(ret))
 			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
-		asAtomHandler::getObject(ret)->resetCached();
+		asAtomHandler::resetCached(ret);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 	}
@@ -419,7 +419,7 @@ public:
 		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
 		if (asAtomHandler::isInvalid(ret))
 			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
-		asAtomHandler::getObject(ret)->resetCached();
+		asAtomHandler::resetCached(ret);
 		asAtomHandler::as<T>(ret)->setTypes(types);
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);

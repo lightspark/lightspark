@@ -136,7 +136,7 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		f(NULL),context(NULL),body(NULL),returnType(NULL),hasExplicitTypes(false)
+		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false)
 	{
 	}
 };
@@ -322,16 +322,13 @@ private:
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 		T res=appDomain->readFromDomainMemory<T>(addr);
-		ASATOM_DECREF(arg1);
 		ret = asAtomHandler::fromInt(res);
 	}
 	template<class T>
 	static void storeIntN(call_context* th, asAtom& arg1, asAtom& arg2)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
-		ASATOM_DECREF(arg1);
 		int32_t val=asAtomHandler::toInt(arg2);
-		ASATOM_DECREF(arg2);
 		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}

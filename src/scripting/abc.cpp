@@ -726,7 +726,6 @@ void ABCVm::loadFloat(call_context *th,asAtom& ret, asAtom& arg1)
 	float addr=asAtomHandler::toNumber(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=appDomain->readFromDomainMemory<float>(addr);
-	ASATOM_DECREF(arg1);
 	ret = asAtomHandler::fromNumber(appDomain->getSystemState(),res,false);
 }
 
@@ -744,7 +743,6 @@ void ABCVm::loadDouble(call_context *th,asAtom& ret, asAtom& arg1)
 	float addr=asAtomHandler::toNumber(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=appDomain->readFromDomainMemory<double>(addr);
-	ASATOM_DECREF(arg1);
 	ret = asAtomHandler::fromNumber(appDomain->getSystemState(),res,false);
 }
 
@@ -762,9 +760,7 @@ void ABCVm::storeFloat(call_context *th)
 void ABCVm::storeFloat(call_context *th, asAtom& arg1, asAtom& arg2)
 {
 	number_t addr=asAtomHandler::toNumber(arg1);
-	ASATOM_DECREF(arg1);
 	float val=(float)asAtomHandler::toNumber(arg2);
-	ASATOM_DECREF(arg2);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	appDomain->writeToDomainMemory<float>(addr, val);
 }
@@ -783,9 +779,7 @@ void ABCVm::storeDouble(call_context *th)
 void ABCVm::storeDouble(call_context *th, asAtom& arg1, asAtom& arg2)
 {
 	number_t addr=asAtomHandler::toNumber(arg1);
-	ASATOM_DECREF(arg1);
 	double val=asAtomHandler::toNumber(arg2);
-	ASATOM_DECREF(arg2);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	appDomain->writeToDomainMemory<double>(addr, val);
 }

@@ -1699,12 +1699,6 @@ void ABCVm::abc_lookupswitch(call_context* context)
 	preloadedcodedata* defaultdest=here+t;
 	LOG_CALL(_("Switch default dest ") << t);
 	uint32_t count = (++(context->exec_pos))->data;
-	preloadedcodedata* offsets=g_newa(preloadedcodedata, count+1);
-	for(unsigned int i=0;i<count+1;i++)
-	{
-		offsets[i] = *(++(context->exec_pos));
-		LOG_CALL(_("Switch dest ") << i << ' ' << offsets[i].idata);
-	}
 
 	RUNTIME_STACK_POP_CREATE(context,index_obj);
 	assert_and_throw(asAtomHandler::isNumeric(*index_obj));
@@ -1713,7 +1707,7 @@ void ABCVm::abc_lookupswitch(call_context* context)
 
 	preloadedcodedata* dest=defaultdest;
 	if(index<=count)
-		dest=here+offsets[index].idata;
+		dest=here+(context->exec_pos+index+1)->idata;
 
 	context->exec_pos = dest;
 }
@@ -3676,7 +3670,7 @@ void ABCVm::abc_getscopeobject(call_context* context)
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	asAtom ret=context->scope_stack[t];
 	ASATOM_INCREF(ret);
-	LOG_CALL( _("getScopeObject: ") << asAtomHandler::toDebugString(ret));
+	LOG_CALL( _("getScopeObject: ") << asAtomHandler::toDebugString(ret)<<" "<<t);
 
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -3694,7 +3688,7 @@ void ABCVm::abc_getscopeobject_localresult(call_context* context)
 		if (o)
 			o->decRef();
 	}
-	LOG_CALL("getScopeObject_l " << asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos3-1]));
+	LOG_CALL("getScopeObject_l " << asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos3-1])<<" "<<t);
 	++(context->exec_pos);
 }
 
@@ -4535,7 +4529,6 @@ void ABCVm::abc_convert_i_constant(call_context* context)
 	if(!asAtomHandler::isInteger(res))
 	{
 		int32_t v= asAtomHandler::toIntStrict(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	RUNTIME_STACK_PUSH(context,res);
@@ -4548,7 +4541,6 @@ void ABCVm::abc_convert_i_local(call_context* context)
 	if(!asAtomHandler::isInteger(res))
 	{
 		int32_t v= asAtomHandler::toIntStrict(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	RUNTIME_STACK_PUSH(context,res);
@@ -4561,7 +4553,6 @@ void ABCVm::abc_convert_i_constant_localresult(call_context* context)
 	if(!asAtomHandler::isInteger(res))
 	{
 		int32_t v= asAtomHandler::toIntStrict(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
@@ -4575,7 +4566,6 @@ void ABCVm::abc_convert_i_local_localresult(call_context* context)
 	if(!asAtomHandler::isInteger(res))
 	{
 		int32_t v= asAtomHandler::toIntStrict(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
@@ -4601,7 +4591,6 @@ void ABCVm::abc_convert_u_constant(call_context* context)
 	if(!asAtomHandler::isUInteger(res))
 	{
 		int32_t v= asAtomHandler::toUInt(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	RUNTIME_STACK_PUSH(context,res);
@@ -4614,7 +4603,6 @@ void ABCVm::abc_convert_u_local(call_context* context)
 	if(!asAtomHandler::isUInteger(res))
 	{
 		int32_t v= asAtomHandler::toUInt(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	RUNTIME_STACK_PUSH(context,res);
@@ -4627,7 +4615,6 @@ void ABCVm::abc_convert_u_constant_localresult(call_context* context)
 	if(!asAtomHandler::isUInteger(res))
 	{
 		int32_t v= asAtomHandler::toUInt(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
@@ -4641,7 +4628,6 @@ void ABCVm::abc_convert_u_local_localresult(call_context* context)
 	if(!asAtomHandler::isUInteger(res))
 	{
 		int32_t v= asAtomHandler::toUInt(res);
-		ASATOM_DECREF(res);
 		asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),v);
 	}
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);

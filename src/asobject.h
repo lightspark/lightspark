@@ -418,10 +418,8 @@ public:
 	}
 	static ASObject* toObject(asAtom& a, SystemState* sys,bool isconstant=false);
 	// returns NULL if this atom is a primitive;
-	static FORCE_INLINE ASObject* getObject(const asAtom& a)
-	{
-		return a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
-	}
+	static FORCE_INLINE ASObject* getObject(const asAtom& a);
+	static FORCE_INLINE void resetCached(const asAtom& a);
 	static FORCE_INLINE asAtom fromObject(ASObject* obj)
 	{
 		asAtom a=asAtomHandler::invalidAtom;
@@ -733,7 +731,7 @@ public:
 	 * This method does throw if the slot id is not valid
 	 */
 	void validateSlotId(unsigned int n) const;
-	void setSlot(unsigned int n, asAtom o, ASObject* obj, SystemState *sys);
+	void setSlot(unsigned int n, asAtom &o, ASObject* obj, SystemState *sys);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
@@ -2139,6 +2137,18 @@ FORCE_INLINE bool asAtomHandler::isNamespace(const asAtom& a) { return getObject
 FORCE_INLINE bool asAtomHandler::isArray(const asAtom& a) { return getObject(a) && getObject(a)->is<Array>(); }
 FORCE_INLINE bool asAtomHandler::isClass(const asAtom& a) { return getObject(a) && getObject(a)->is<Class_base>(); }
 FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return getObject(a) && getObject(a)->getObjectType() == T_TEMPLATE; }
+
+FORCE_INLINE ASObject* asAtomHandler::getObject(const asAtom& a)
+{
+	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached());
+	return a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
+}
+FORCE_INLINE void asAtomHandler::resetCached(const asAtom& a)
+{
+	ASObject* o = a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
+	if (o)
+		o->resetCached();
+}
 
 inline ASObject* asfreelist::getObjectFromFreeList()
 {

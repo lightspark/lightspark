@@ -132,6 +132,23 @@ bool DisplayObject::destruct()
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	hasChanged = true;
+	tx=0;
+	ty=0;
+	rotation=0;
+	sx=1;
+	sy=1;
+	alpha=1.0;
+	blendMode=BLENDMODE_NORMAL;
+	isLoadedRoot=false;
+	ClipDepth=0;
+	constructed=false;
+	useLegacyMatrix=true;
+	onStage=false;
+	visible=true;
+	filters.reset();
+	legacy=false;
+	cacheAsBitmap=false;
+	name=BUILTIN_STRINGS::EMPTY;
 	return EventDispatcher::destruct();
 }
 

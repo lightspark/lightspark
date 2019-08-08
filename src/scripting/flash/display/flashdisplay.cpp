@@ -744,6 +744,7 @@ bool Sprite::destruct()
 	dragged = false;
 	buttonMode = false;
 	useHandCursor = false;
+	tokens.clear();
 	return DisplayObjectContainer::destruct();
 }
 
@@ -1315,7 +1316,20 @@ bool MovieClip::destruct()
 	frameScripts.clear();
 	
 	fromDefineSpriteTag = UINT32_MAX;
+	frameScriptToExecute = UINT32_MAX;
 	totalFrames_unreliable = 1;
+	avm1initactionsdone = false;
+	avm1variables.clear();
+	variablebindings.clear();
+	avm1functions.clear();
+	frameinitactionsdone.clear();
+
+	frames.clear();
+	scenes.clear();
+	setFramesLoaded(0);
+	frames.emplace_back(Frame());
+	scenes.resize(1);
+	
 	enabled = true;
 	return Sprite::destruct();
 }
@@ -2383,6 +2397,8 @@ bool DisplayObjectContainer::destruct()
 	dynamicDisplayList.clear();
 	mouseChildren = true;
 	tabChildren = true;
+	legacyChildrenMarkedForDeletion.clear();
+	depthToLegacyChild.left.clear();
 	return InteractiveObject::destruct();
 }
 

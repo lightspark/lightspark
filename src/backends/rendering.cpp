@@ -27,11 +27,6 @@
 #   define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #endif
-//None is #defined by X11/X.h, but because it conflicts with libxml++
-//headers Lightspark undefines it elsewhere except in this file.
-#ifndef None
-#define None 0L
-#endif
 
 using namespace lightspark;
 using namespace std;

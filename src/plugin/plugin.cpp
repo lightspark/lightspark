@@ -31,7 +31,7 @@
 #include "plugin/npscriptobject.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
-#ifndef _WIN32
+#ifdef MOZ_X11
 #include <X11/keysym.h>
 #endif
 
@@ -436,7 +436,7 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 	return err;
 
 }
-#ifndef _WIN32
+#ifdef MOZ_X11
 SDL_Keycode getSDLKeyCode(unsigned x11Keyval)
 {
 	switch (x11Keyval)

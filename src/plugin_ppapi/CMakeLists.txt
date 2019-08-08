@@ -31,7 +31,7 @@ TARGET_LINK_LIBRARIES(pepflashplayer spark)
 
 #With STATICDEPS, all deps are compiled into spark
 IF(NOT STATICDEPS)
-TARGET_LINK_LIBRARIES(pepflashplayer spark ${X11_LIBRARIES} ${GLIBMM_LIBRARIES}) 
+TARGET_LINK_LIBRARIES(pepflashplayer spark ${GLIBMM_LIBRARIES})
 ENDIF()
 
 IF(WIN32)

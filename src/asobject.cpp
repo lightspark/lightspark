@@ -484,7 +484,7 @@ bool ASObject::isConstructed() const
 {
 	return traitsInitialized && constructIndicator;
 }
-variables_map::variables_map(MemoryAccount *m):cloneable(true)
+variables_map::variables_map(MemoryAccount *m):slotcount(0),cloneable(true)
 {
 }
 
@@ -870,22 +870,23 @@ void ASObject::setVariableByQName(const tiny_string& name, const nsNameAndKind& 
 	setVariableByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
 }
 
-void ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
+variable* ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable)
 {
 	asAtom v = asAtomHandler::fromObject(o);
-	setVariableAtomByQName(nameId, ns, v, traitKind, isEnumerable);
+	return setVariableAtomByQName(nameId, ns, v, traitKind, isEnumerable);
 }
-void ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable)
+variable *ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable)
 {
-	setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
+	return setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable);
 }
-void ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted)
+variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted)
 {
 	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o,this,isRefcounted);
 	obj->isenumerable=isEnumerable;
 	++varcount;
+	return obj;
 }
 
 void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multiname* typemname,
@@ -897,7 +898,7 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 }
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
-		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),kind(_k),isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
+		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
 {
 	if(_type)
 	{
@@ -934,10 +935,17 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 	isrefcounted = _isrefcounted;
 }
 
-void variable::setVarNoCoerce(asAtom &v)
+void variable::setVarNoCoerce(asAtom &v,ASObject *obj)
 {
-	ASATOM_DECREF(var);
+	if(isrefcounted && asAtomHandler::getObject(var))
+	{
+		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
+		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
+			asAtomHandler::getObject(var)->decActivationCount();
+		ASATOM_DECREF(var);
+	}
 	var=v;
+	isrefcounted = true;
 }
 
 void variables_map::killObjVar(SystemState* sys,const multiname& mname)
@@ -1083,9 +1091,9 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		cloneable = false;
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
+	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
 	if (slot_id)
-		initSlot(slot_id,&mname,mainObj->getSystemState());
+		initSlot(slot_id,&(it->second));
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,generator)
@@ -1302,15 +1310,21 @@ ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 	throwError<ArgumentError>(kCantInstantiateError, asAtomHandler::toObject(obj,sys)->getClassName());
 }
 
-void ASObject::initSlot(unsigned int n, multiname& name)
+void ASObject::initSlot(unsigned int n, variable* v)
 {
-	Variables.initSlot(n,&name,getSystemState());
+	Variables.initSlot(n,v);
 }
-void ASObject::initAdditionalSlots(std::vector<multiname*> additionalslots)
+void ASObject::initAdditionalSlots(std::vector<multiname*>& additionalslots)
 {
 	unsigned int n = Variables.slots_vars.size();
 	for (auto it = additionalslots.begin(); it != additionalslots.end(); it++)
-		Variables.initSlot(++n,*it,getSystemState());
+	{
+		uint32_t nameId = (*it)->normalizedNameId(getSystemState());
+		auto ret=Variables.Variables.find(nameId);
+	
+		assert_and_throw(ret!=Variables.Variables.end());
+		Variables.initSlot(++n,&(ret->second));
+	}
 }
 int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
@@ -1322,7 +1336,7 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return asAtomHandler::toInt(ret);
 }
 
-variable* ASObject::findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t *nsRealID, bool *isborrowed)
+variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t *nsRealID, bool *isborrowed)
 {
 	//Get from the current object without considering borrowed properties
 	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
@@ -1571,14 +1585,7 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter));
-	}
-	auto it2 = slots_vars.begin();
-	while (it2 != slots_vars.end())
-	{
-		LOG(LOG_INFO, "slot:" << (it2-slots_vars.begin() )
-			<<" "<<*(*it2));
-		it2++;
+			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid);
 	}
 }
 
@@ -1600,7 +1607,8 @@ void variables_map::destroyContents()
 		}
 		it = Variables.erase(it);
 	}
-	this->slots_vars.clear();
+	slots_vars.clear();
+	slotcount=0;
 }
 
 bool variables_map::cloneInstance(variables_map &map)
@@ -1608,7 +1616,13 @@ bool variables_map::cloneInstance(variables_map &map)
 	if (!cloneable)
 		return false;
 	map.Variables = Variables;
-	map.slots_vars = this->slots_vars;
+	auto it = map.Variables.begin();
+	while (it !=map.Variables.end())
+	{
+		if (it->second.slotid)
+			map.initSlot(it->second.slotid,&(it->second));
+		it++;
+	}
 	return true;
 }
 
@@ -1707,114 +1721,23 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	return false; 
 }
 
-void variables_map::initSlot(unsigned int n, multiname *name,SystemState* sys)
-{
-	if (n>slots_vars.capacity())
-		slots_vars.reserve(n+8);
-	if(n>slots_vars.size())
-		slots_vars.resize(n);
 
-	uint32_t nameId = name->normalizedNameId(sys);
-	var_iterator ret=Variables.find(nameId);
 
-	if(ret==Variables.end())
-	{
-		//Name not present, no good
-		throw RunTimeException("initSlot on missing variable");
-	}
-	slots_vars[n-1]=name;
-}
 
-asAtom variables_map::getSlot(unsigned int n, SystemState* sys)
-{
-	assert_and_throw(n > 0 && n<=slots_vars.size());
-	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
-	var_iterator it = Variables.find(nameId);
-	while(it!=Variables.end() && it->first == nameId)
-	{
-		if (it->second.ns == slots_vars[n-1]->ns[0])
-			return it->second.var;
-		it++;
-	}
-	return asAtomHandler::invalidAtom;
-}
-TRAIT_KIND variables_map::getSlotKind(unsigned int n,SystemState* sys)
-{
-	assert_and_throw(n > 0 && n<=slots_vars.size());
-	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
-	var_iterator it = Variables.find(nameId);
-	while(it!=Variables.end() && it->first == nameId)
-	{
-		if (it->second.ns == slots_vars[n-1]->ns[0])
-			return it->second.kind;
-		it++;
-	}
-	return TRAIT_KIND::NO_CREATE_TRAIT;
-}
+
 
 uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState* sys)
 {
-	for (auto it = slots_vars.begin(); it != slots_vars.end();it++)
+	uint32_t nameId = name->normalizedNameId(sys);
+	var_iterator it = Variables.find(nameId);
+	while(it!=Variables.end() && it->first == nameId)
 	{
-		if (*it == name)
-		{
-			uint32_t nameId = (*it)->normalizedNameId(sys);
-			var_iterator it2 = Variables.find(nameId);
-			while(it2!=Variables.end() && it2->first == nameId)
-			{
-				if ((name->ns.size() == 0 || (*it)->ns[0] == it2->second.ns)
-						&& (it2->second.kind == INSTANCE_TRAIT))
-						return it-slots_vars.begin()+1;
-				it2++;
-			}
-		}
+		if ((name->ns.size() == 0 || name->ns[0] == it->second.ns)
+				&& (it->second.kind == INSTANCE_TRAIT))
+				return it->second.slotid;
+		it++;
 	}
 	return UINT32_MAX;
-}
-void variables_map::setSlot(unsigned int n, asAtom& o, ASObject *obj, SystemState* sys)
-{
-	validateSlotId(n);
-	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
-	var_iterator it = Variables.find(nameId);
-	while(it!=Variables.end() && it->first == nameId)
-	{
-		if (it->second.ns == slots_vars[n-1]->ns[0])
-		{
-			it->second.setVar(o,obj);
-			return;
-		}
-		it++;
-	}
-}
-
-void variables_map::setSlotNoCoerce(unsigned int n, asAtom o, SystemState* sys)
-{
-	validateSlotId(n);
-	uint32_t nameId = slots_vars[n-1]->normalizedNameId(sys);
-	var_iterator it = Variables.find(nameId);
-	while(it!=Variables.end() && it->first == nameId)
-	{
-		if (it->second.ns == slots_vars[n-1]->ns[0])
-		{
-			it->second.setVarNoCoerce(o);
-			return;
-		}
-		it++;
-	}
-}
-
-void variables_map::validateSlotId(unsigned int n) const
-{
-	if(n == 0 || n-1<slots_vars.size())
-	{
-//		if(slots_vars[n-1] && slots_vars[n-1]->setter)
-//		{
-//			LOG(LOG_INFO,"validate2:"<<this<<" "<<n<<" "<<slots_vars[n-1]->setter);
-//			throw UnsupportedException("setSlot has setters");
-//		}
-	}
-	else
-		throw RunTimeException("setSlot out of bounds");
 }
 
 variable* variables_map::getValueAt(unsigned int index)

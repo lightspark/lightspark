@@ -120,14 +120,14 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 
 	context->buildInstanceTraits(o,class_index);
 }
-void Class_inherit::setupDeclaredTraits(ASObject *target)
+void Class_inherit::setupDeclaredTraits(ASObject *target, bool checkclone)
 {
 	if (!target->traitsInitialized)
 	{
 	#ifndef NDEBUG
 		assert_and_throw(!target->initialized);
 	#endif
-		bool cloneable = !instancefactory.isNull();
+		bool cloneable = checkclone && !instancefactory.isNull();
 		if (cloneable)
 		{
 			if (!instancefactory->isInitialized())

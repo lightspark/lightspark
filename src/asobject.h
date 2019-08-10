@@ -567,19 +567,20 @@ struct variable
 	asAtom setter;
 	asAtom getter;
 	nsNameAndKind ns;
+	uint32_t slotid;
 	TRAIT_KIND kind:4;
 	bool isResolved:1;
 	bool isenumerable:1;
 	bool issealed:1;
 	bool isrefcounted:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
+		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
 	void setVar(asAtom& v, ASObject* obj, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
-	void setVarNoCoerce(asAtom &v);
+	void setVarNoCoerce(asAtom &v, ASObject *obj);
 };
 
 struct varName
@@ -613,7 +614,8 @@ public:
 	mapType Variables;
 	typedef std::unordered_multimap<uint32_t,variable>::iterator var_iterator;
 	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
-	std::vector<multiname*> slots_vars;
+	std::vector<variable*> slots_vars;
+	uint32_t slotcount;
 	// indicates if this map was initialized with no variables with non-primitive values
 	bool cloneable;
 	variables_map(MemoryAccount* m);
@@ -719,26 +721,44 @@ public:
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(multiname &mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);
-	asAtom getSlot(unsigned int n, SystemState *sys);
-	TRAIT_KIND getSlotKind(unsigned int n, SystemState *sys);
-	multiname* getSlotMultiname(unsigned int n)
+	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
-		assert_and_throw(n > 0 && n<=slots_vars.size());
-		return slots_vars[n-1];
+		assert_and_throw(n > 0 && n <= slotcount);
+		return slots_vars[n-1]->var;
+	}
+	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n, SystemState *sys)
+	{
+		assert_and_throw(n > 0 && n <= slotcount);
+		return slots_vars[n-1]->kind;
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
-	/*
-	 * This method does throw if the slot id is not valid
-	 */
-	void validateSlotId(unsigned int n) const;
-	void setSlot(unsigned int n, asAtom &o, ASObject* obj, SystemState *sys);
+	FORCE_INLINE void setSlot(unsigned int n, asAtom &o, ASObject* obj)
+	{
+		assert_and_throw(n > 0 && n <= slotcount);
+		slots_vars[n-1]->setVar(o,obj);
+	}
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	void setSlotNoCoerce(unsigned int n, asAtom o, SystemState *sys);
-	void initSlot(unsigned int n, multiname* name, SystemState *sys);
-	inline unsigned int size() const
+	FORCE_INLINE void setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
+	{
+		assert_and_throw(n > 0 && n <= slotcount);
+		slots_vars[n-1]->setVarNoCoerce(o,obj);
+	}
+	FORCE_INLINE void initSlot(unsigned int n, variable *v)
+	{
+		if (n>slots_vars.capacity())
+			slots_vars.reserve(n+8);
+		if(n>slotcount)
+		{
+			slots_vars.resize(n);
+			slotcount= n;
+		}
+		v->slotid = n;
+		slots_vars[n-1]=v;
+	}
+	FORCE_INLINE  unsigned int size() const
 	{
 		return Variables.size();
 	}
@@ -955,7 +975,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	variable *findVariableByMultiname(const multiname& name, GET_VARIABLE_OPTION opt, Class_base* cls, uint32_t* nsRealID = nullptr, bool* isborrowed=nullptr);
+	variable *findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID = nullptr, bool* isborrowed=nullptr);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
@@ -1002,9 +1022,9 @@ public:
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
-	void setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true, bool isRefcounted = true);
+	variable *setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	variable *setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
+	variable *setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true, bool isRefcounted = true);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
@@ -1013,35 +1033,36 @@ public:
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	asAtom getSlot(unsigned int n)
+	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
-		return Variables.getSlot(n,getSystemState());
+		return Variables.getSlot(n);
 	}
-	TRAIT_KIND getSlotKind(unsigned int n)
+	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{
 		return Variables.getSlotKind(n,getSystemState());
 	}
-	multiname* getSlotMultiname(unsigned int n)
+	FORCE_INLINE void setSlot(unsigned int n,asAtom o)
 	{
-		return Variables.getSlotMultiname(n);
-	}
-	void setSlot(unsigned int n,asAtom o)
-	{
-		Variables.setSlot(n,o,this,getSystemState());
+		Variables.setSlot(n,o,this);
 		if (asAtomHandler::is<SyntheticFunction>(o))
 			checkFunctionScope(asAtomHandler::getObject(o));
 	}
-	void setSlotNoCoerce(unsigned int n,asAtom o)
+	FORCE_INLINE void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
-		Variables.setSlotNoCoerce(n,o,getSystemState());
+		Variables.setSlotNoCoerce(n,o,this);
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{
 		return Variables.findInstanceSlotByMultiname(name,getSystemState());
 	}
-	void initSlot(unsigned int n, multiname &name);
+	unsigned int numSlots() const
+	{
+		return Variables.slots_vars.size();
+	}
 	
-	void initAdditionalSlots(std::vector<multiname*> additionalslots);
+	void initSlot(unsigned int n, variable *v);
+	
+	void initAdditionalSlots(std::vector<multiname *> &additionalslots);
 	unsigned int numVariables() const;
 	inline uint32_t getNameAt(int i) const
 	{

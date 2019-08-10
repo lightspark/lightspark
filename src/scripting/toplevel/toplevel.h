@@ -198,7 +198,7 @@ public:
 	void addConstructorGetter();
 	void addPrototypeGetter();
 	void addLengthGetter();
-	inline virtual void setupDeclaredTraits(ASObject *target) { target->traitsInitialized = true; }
+	inline virtual void setupDeclaredTraits(ASObject *target, bool checkclone=true) { target->traitsInitialized = true; }
 	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	bool hasConstructor() { return constructor != NULL; }

@@ -3001,7 +3001,8 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
 	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
 	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED);
-	catchScope->initSlot(1, *name);
+	variable* v = catchScope->findVariableByMultiname(*name,nullptr);
+	catchScope->initSlot(1, v);
 	return catchScope;
 }
 

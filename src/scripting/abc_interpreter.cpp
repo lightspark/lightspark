@@ -734,10 +734,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_construct_constant_localresult,
 	abc_construct_local_localresult,
 
-	abc_invalidinstruction, // 0x250
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_setslotNoCoerce_constant_constant, // 0x250 ABC_OP_OPTIMZED_SETSLOT_NOCOERCE
+	abc_setslotNoCoerce_local_constant,
+	abc_setslotNoCoerce_constant_local,
+	abc_setslotNoCoerce_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -4105,7 +4105,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //					 && (obj->getClass()->isSealed 
 //						 || (obj->getClass() == Class<Array>::getRef(obj->getSystemState()).getPtr())))))
 //		{
-//			variable* v = obj->findVariableByMultiname(*name,ASObject::NONE,obj->getClass());
+//			variable* v = obj->findVariableByMultiname(*name,obj->getClass());
 //			if (v)
 //			{
 //				context->exec_pos->data |= ABC_OP_CACHED;
@@ -4404,12 +4404,11 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
 	if (o)
 		o->decRef();
-	LOG_CALL("getSlot_ll " << t << " " << asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
+	LOG_CALL("getSlot_ll " << t << " " <<instrptr->local_pos1<<":"<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos1])<<" "<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslot(call_context* context)
 {
-	//setslot
 	uint32_t t = (++(context->exec_pos))->data;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->mi->context->root->getSystemState());
@@ -4421,7 +4420,6 @@ void ABCVm::abc_setslot(call_context* context)
 }
 void ABCVm::abc_setslot_constant_constant(call_context* context)
 {
-	//setslot
 	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = *context->exec_pos->arg2_constant;
@@ -4432,7 +4430,6 @@ void ABCVm::abc_setslot_constant_constant(call_context* context)
 }
 void ABCVm::abc_setslot_local_constant(call_context* context)
 {
-	//setslot
 	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = *context->exec_pos->arg2_constant;
@@ -4454,13 +4451,52 @@ void ABCVm::abc_setslot_constant_local(call_context* context)
 }
 void ABCVm::abc_setslot_local_local(call_context* context)
 {
-	//setslot
 	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = context->locals[context->exec_pos->local_pos2];
 	LOG_CALL("setSlot_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	ASATOM_INCREF(v2);
 	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslotNoCoerce_constant_constant(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = *context->exec_pos->arg1_constant;
+	asAtom v2 = *context->exec_pos->arg2_constant;
+	ASATOM_INCREF(v2);
+	LOG_CALL("setSlotNoCoerce_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslotNoCoerce_local_constant(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = context->locals[context->exec_pos->local_pos1];
+	asAtom v2 = *context->exec_pos->arg2_constant;
+	LOG_CALL("setSlotNoCoerce_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslotNoCoerce_constant_local(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = *context->exec_pos->arg1_constant;
+	asAtom v2 = context->locals[context->exec_pos->local_pos2];
+	LOG_CALL("setSlotNoCoerce_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setslotNoCoerce_local_local(call_context* context)
+{
+	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
+	asAtom v1 = context->locals[context->exec_pos->local_pos1];
+	asAtom v2 = context->locals[context->exec_pos->local_pos2];
+	LOG_CALL("setSlotNoCoerce_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
+	ASATOM_INCREF(v2);
+	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
 	++(context->exec_pos);
 }
 
@@ -6594,6 +6630,7 @@ struct operands
 #define ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS 0x00000244 
 #define ABC_OP_OPTIMZED_CONVERTB 0x00000248 
 #define ABC_OP_OPTIMZED_CONSTRUCT_NOARGS 0x0000024c
+#define ABC_OP_OPTIMZED_SETSLOT_NOCOERCE 0x00000250
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -7365,7 +7402,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 		defaultlocaltypescacheable[0]=true;
 		if (mi->needsArgs() && i == mi->numArgs()+1) // don't cache argument array
 			defaultlocaltypescacheable[i]=false;
-		if (i > 0 && i <= mi->paramTypes.size() && mi->paramTypes[i] != Type::anyType)
+		if (i > 0 && i <= mi->paramTypes.size() && dynamic_cast<const Class_base*>(mi->paramTypes[i-1]))
 			defaultlocaltypes[i]= (Class_base*)mi->paramTypes[i-1]; // cache types of arguments
 	}
 
@@ -7710,7 +7747,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						Class_base* cls = function->inClass;
 						do
 						{
-							v = cls->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),cls,nullptr,&isborrowed);
+							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed);
 							cls = cls->super.getPtr();
 						}
 						while (!v && cls && cls->isSealed);
@@ -7736,7 +7773,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									break;
 								}
 								ASObject* obj = asAtomHandler::toObject(it->object,mi->context->root->getSystemState());
-								v = obj->findVariableByMultiname(*name,GET_VARIABLE_OPTION(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF),obj->is<Class_base>() ? obj->as<Class_base>() : nullptr,nullptr,&isborrowed);
+								v = obj->findVariableByMultiname(*name,obj->is<Class_base>() ? obj->as<Class_base>() : nullptr,nullptr,&isborrowed);
 									
 								if (v)
 								{
@@ -7783,7 +7820,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 							&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 					{
-						variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
+						variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
 						if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 							function->simpleGetterOrSetterName = name;
 					}
@@ -7859,6 +7896,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							if (operandlist.size() > 1)
 							{
 								auto it = operandlist.rbegin();
+								Class_base* contenttype = it->objtype;
 								it++;
 								if (canCallFunctionDirect(mi,(*it),name))
 								{
@@ -7870,7 +7908,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										break;
 									}
 								}
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
+								{
+									// check if we can replace setProperty by setSlot
+									asAtom o = asAtomHandler::invalidAtom;
+									it->objtype->getInstance(o,false,nullptr,0);
+									it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o),false);
+		
+									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									if (v && v->slotid)
+									{
+										setupInstructionTwoArgumentsNoResult(operandlist,mi,contenttype && v->isResolved && contenttype == v->type ? ABC_OP_OPTIMZED_SETSLOT_NOCOERCE : ABC_OP_OPTIMZED_SETSLOT,opcode,code,oldnewpositions, jumptargets);
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data |=v->slotid<<OPCODE_SIZE;
+										ASATOM_DECREF(o);
+										break;
+									}
+									else
+										ASATOM_DECREF(o);
+								}
 							}
+							
 							setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets);
 							mi->body->preloadedcode.push_back(t);
 							mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 =name;
@@ -7879,7 +7936,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 									&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 							{
-								variable* v = function->inClass->findVariableByMultiname(*name,GET_VARIABLE_OPTION::NO_INCREF,nullptr);
+								variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
 								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 									function->simpleGetterOrSetterName = name;
 							}
@@ -8726,21 +8783,32 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								asAtom* a = mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
 								if (asAtomHandler::getObject(*a))
 								{
-									asAtom ret=asAtomHandler::invalidAtom;
-									GET_VARIABLE_RESULT r = asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
-									if ((r & GET_VARIABLE_RESULT::GETVAR_ISCONSTANT) &&
-										!(r & GET_VARIABLE_RESULT::GETVAR_ISGETTER))
+									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass());
+									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter))
 									{
 										operandlist.back().removeArg(mi);
 										operandlist.pop_back();
-										addCachedConstant(mi, ret,operandlist,oldnewpositions,code);
+										addCachedConstant(mi, v->var,operandlist,oldnewpositions,code);
 										addname = false;
 										break;
 									}
-									if (r & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+									if (v && asAtomHandler::isValid(v->getter))
 									{
-										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,nullptr);
-										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(ret);
+										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,(Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr));
+										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(v->getter);
+										addname = false;
+										break;
+									}
+									if (v && v->slotid)
+									{
+										if (asAtomHandler::getObject(*a)->is<Global>())
+										{
+											// ensure init script is run
+											asAtom ret = asAtomHandler::invalidAtom;
+											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
+										}
+										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,(Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr));
+										mi->body->preloadedcode.push_back(v->slotid);
 										addname = false;
 										break;
 									}
@@ -8759,6 +8827,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										addname = false;
 										break;
 									}
+								}
+
+								if (operandlist.back().objtype && !operandlist.back().objtype->isInterface && operandlist.back().objtype->isInitialized())
+								{
+									// check if we can replace getProperty by getSlot
+									asAtom o = asAtomHandler::invalidAtom;
+									operandlist.back().objtype->getInstance(o,false,nullptr,0);
+									operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
+
+									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									if (v && v->slotid)
+									{
+										setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,(Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr));
+										mi->body->preloadedcode.push_back(v->slotid);
+										addname = false;
+										ASATOM_DECREF(o);
+										break;
+									}
+									else
+										ASATOM_DECREF(o);
 								}
 							}
 							bool hasoperands = setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,nullptr);

@@ -66,7 +66,7 @@ public:
 		return Class_base::destruct();
 	}
 	void buildInstanceTraits(ASObject* o) const;
-	void setupDeclaredTraits(ASObject *target);
+	void setupDeclaredTraits(ASObject *target, bool checkclone=true);
 	void bindToTag(DictionaryTag* t)
 	{
 		tag=t;

@@ -179,7 +179,7 @@ EARLY_BIND_STATUS ABCVm::earlyBindForScopeStack(ostream& out, const SyntheticFun
 				return CANNOT_BIND;
 			}
 
-			const variable* var=asAtomHandler::toObject(it->object,f->getSystemState())->findVariableByMultiname(*name, FROM_GETLEX, asAtomHandler::toObject(it->object,f->getSystemState())->getClass());
+			const variable* var=asAtomHandler::toObject(it->object,f->getSystemState())->findVariableByMultiname(*name, asAtomHandler::toObject(it->object,f->getSystemState())->getClass());
 			if(var)
 			{
 				found=true;

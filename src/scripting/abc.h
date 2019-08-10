@@ -789,6 +789,10 @@ private:
 	static void abc_setslot_local_constant(call_context* context);
 	static void abc_setslot_constant_local(call_context* context);
 	static void abc_setslot_local_local(call_context* context);
+	static void abc_setslotNoCoerce_constant_constant(call_context* context);
+	static void abc_setslotNoCoerce_local_constant(call_context* context);
+	static void abc_setslotNoCoerce_constant_local(call_context* context);
+	static void abc_setslotNoCoerce_local_local(call_context* context);
 	
 	static void abc_getglobalSlot(call_context* context);
 	static void abc_setglobalSlot(call_context* context);

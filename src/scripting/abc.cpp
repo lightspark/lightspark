@@ -2721,6 +2721,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 						LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (constructor):"<<className);
 				}
 				ret = ci;
+				ci->setIsInitialized();
 			}
 			else
 			{
@@ -2741,13 +2742,14 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				}
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
+				c->setIsInitialized();
 			}
 
-			obj->setVariableByQName(mname->name_s_id,mname->ns[0],ret,DECLARED_TRAIT);
+			variable* v =obj->setVariableByQName(mname->name_s_id,mname->ns[0],ret,DECLARED_TRAIT);
 
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, *mname);
+				obj->initSlot(t->slot_id, v);
 			else
 				additionalslots.push_back(mname);
 			break;

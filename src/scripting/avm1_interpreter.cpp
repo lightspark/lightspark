@@ -1048,7 +1048,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					ASObject* pr = o->getprop_prototype();
 					while (pr)
 					{
-						variable* var = pr->findVariableByMultiname(m,DONT_CALL_GETTER,nullptr);
+						variable* var = pr->findVariableByMultiname(m,nullptr);
 						if (var && asAtomHandler::is<AVM1Function>(var->setter))
 						{
 							asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1);

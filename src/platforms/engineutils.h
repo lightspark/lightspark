@@ -34,11 +34,6 @@
 namespace lightspark
 {
 
-#ifndef _WIN32
-//taken from X11/X.h
-typedef unsigned long VisualID;
-typedef unsigned long XID;
-#endif
 #define LS_USEREVENT_INIT EngineData::userevent
 #define LS_USEREVENT_EXEC EngineData::userevent+1
 #define LS_USEREVENT_QUIT EngineData::userevent+2

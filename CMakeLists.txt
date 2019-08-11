@@ -287,11 +287,6 @@ ENDIF(Boost_FOUND)
 
 pkg_check_modules(CAIRO REQUIRED cairo pangocairo)
 
-IF(UNIX)
-  pkg_check_modules(X11 REQUIRED x11)
-  INCLUDE_DIRECTORIES(${X11_INCLUDE_DIRS})
-ENDIF(UNIX)
-
 IF(ENABLE_GLES2)
   pkg_check_modules(GLES2 REQUIRED egl glesv2)
   ADD_DEFINITIONS(-DENABLE_GLES2)

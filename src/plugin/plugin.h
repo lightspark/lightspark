@@ -164,7 +164,7 @@ private:
 	 * draw into that.
 	 */
 	uint32_t mWindow;
-#ifdef _WIN32
+#ifdef XP_WIN
 	HDC mDC;
 #endif
 

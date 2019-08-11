@@ -21,7 +21,6 @@
 #define BACKENDS_LSOPENGL_H 1
 
 #ifdef ENABLE_GLES2
-	#define SUPPORT_X11 1 //Needed for SGX/OMAP GL stack
 	#include <EGL/egl.h>
 	#include <GLES2/gl2.h>
 	#include <GLES2/gl2ext.h>
@@ -43,10 +42,6 @@
 	//compile on systems without glu.h.
 	#define GLEW_NO_GLU
 	#include <GL/glew.h>
-	#ifndef _WIN32
-		#include <GL/glx.h>
-	#endif
-	#undef None // conflicts with libxml++ headers
 #endif
 
 #endif /* BACKENDS_LSOPENGL_H */

@@ -2627,7 +2627,7 @@ void ABCVm::newClass(call_context* th, int n)
 			return;
 		}
 		MemoryAccount* m = th->mi->context->root->getSystemState()->allocateMemoryAccount(className.getQualifiedName(th->mi->context->root->getSystemState()));
-		ret=new (m) Class_inherit(className, m,nullptr);
+		ret=new (m) Class_inherit(className, m,nullptr,nullptr);
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
@@ -3001,7 +3001,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
 	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
 	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED);
-	variable* v = catchScope->findVariableByMultiname(*name,nullptr);
+	variable* v = catchScope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true);
 	catchScope->initSlot(1, v);
 	return catchScope;
 }

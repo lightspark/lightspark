@@ -975,7 +975,7 @@ public:
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	variable *findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID = nullptr, bool* isborrowed=nullptr);
+	variable *findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID = nullptr, bool* isborrowed=nullptr, bool considerdynamic=false);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.

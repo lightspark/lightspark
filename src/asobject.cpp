@@ -924,7 +924,7 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 	}
 	if(isResolved && type)
 		type->coerce(obj->getSystemState(),v);
-	if(isrefcounted && asAtomHandler::getObject(var))
+	if(isrefcounted && var.uintval != v.uintval && asAtomHandler::getObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
@@ -937,7 +937,7 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 
 void variable::setVarNoCoerce(asAtom &v,ASObject *obj)
 {
-	if(isrefcounted && asAtomHandler::getObject(var))
+	if(isrefcounted && var.uintval != v.uintval && asAtomHandler::getObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
@@ -1336,10 +1336,10 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return asAtomHandler::toInt(ret);
 }
 
-variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t *nsRealID, bool *isborrowed)
+variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t *nsRealID, bool *isborrowed, bool considerdynamic)
 {
 	//Get from the current object without considering borrowed properties
-	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
+	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS || considerdynamic ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find

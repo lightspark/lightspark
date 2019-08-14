@@ -6830,9 +6830,19 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				needstwoargs=true;
 				if (b==0x80)//coerce
 				{
-					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
+					uint32_t t = code.peeku30FromPosition(pos);
+					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+					if (cls != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() &&
+						cls != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() &&
+						cls != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() &&
+						cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
+					{
+						pos = code.skipu30FromPosition(pos);
+						b = code.peekbyteFromPosition(pos);
+						pos++;
+					}
 				}
 				break;
 			case 0x28://pushnan
@@ -7300,12 +7310,22 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 						(op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()) &&
 						(op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr());
 				if (skip_conversion)
+				{
+					if (op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+						resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+					else
+						resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
+				}
+				break;
+			case ABC_OP_OPTIMZED_SUBTRACT:
+			case ABC_OP_OPTIMZED_MULTIPLY:
+			case ABC_OP_OPTIMZED_MODULO:
+				if (op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+					resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+				else
 					resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_DIVIDE:
-			case ABC_OP_OPTIMZED_MULTIPLY:
-			case ABC_OP_OPTIMZED_SUBTRACT:
-			case ABC_OP_OPTIMZED_MODULO:
 				resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_LSHIFT:
@@ -7313,10 +7333,8 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 			case ABC_OP_OPTIMZED_BITAND:
 			case ABC_OP_OPTIMZED_BITOR:
 			case ABC_OP_OPTIMZED_BITXOR:
-				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
-				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
-				resulttype = Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
 			default:
 				break;
@@ -7910,6 +7928,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								}
 								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 								{
+									if (it->objtype->is<Class_inherit>())
+										it->objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace setProperty by setSlot
 									asAtom o = asAtomHandler::invalidAtom;
 									it->objtype->getInstance(o,false,nullptr,0);
@@ -7918,7 +7938,29 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
 									if (v && v->slotid)
 									{
-										setupInstructionTwoArgumentsNoResult(operandlist,mi,contenttype && v->isResolved && contenttype == v->type ? ABC_OP_OPTIMZED_SETSLOT_NOCOERCE : ABC_OP_OPTIMZED_SETSLOT,opcode,code,oldnewpositions, jumptargets);
+										// we can skip coercing when setting the slot value if
+										// - contenttype is the same as the variable type or
+										// - variable type is any or void or
+										// - contenttype is subclass of variable type or
+										// - contenttype is numeric and variable type is Number
+										int operator_start = v->isResolved && ((contenttype && contenttype == v->type) || !dynamic_cast<const Class_base*>(v->type)) ? ABC_OP_OPTIMZED_SETSLOT_NOCOERCE : ABC_OP_OPTIMZED_SETSLOT;
+										if (contenttype && v->isResolved && contenttype != v->type && dynamic_cast<const Class_base*>(v->type))
+										{
+											Class_base* vtype = (Class_base*)v->type;
+											if (contenttype->isSubClass(vtype)
+												|| (( contenttype == Class<Number>::getRef(function->getSystemState()).getPtr() ||
+													   contenttype == Class<Integer>::getRef(function->getSystemState()).getPtr() ||
+													   contenttype == Class<UInteger>::getRef(function->getSystemState()).getPtr()) &&
+													 ( vtype == Class<Number>::getRef(function->getSystemState()).getPtr()))
+												)
+												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
+											if (operator_start != ABC_OP_OPTIMZED_SETSLOT_NOCOERCE)
+											{
+												LOG(LOG_ERROR,"nomatch:"<<code.tellg()<<" "<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<<vtype->toDebugString()<<" "<<contenttype->toDebugString());
+												function->getSystemState()->dumpStacktrace();
+											}
+										}
+										setupInstructionTwoArgumentsNoResult(operandlist,mi,operator_start,opcode,code,oldnewpositions, jumptargets);
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data |=v->slotid<<OPCODE_SIZE;
 										ASATOM_DECREF(o);
 										break;
@@ -8062,8 +8104,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									skip = cls != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() &&
 											cls != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() &&
 											cls != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() &&
-											cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr() &&
-											cls != Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr();
+											cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr();
 									break;
 								case T_INTEGER:
 								case T_NUMBER:
@@ -8831,6 +8872,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 
 								if (operandlist.back().objtype && !operandlist.back().objtype->isInterface && operandlist.back().objtype->isInitialized())
 								{
+									if (operandlist.back().objtype->is<Class_inherit>())
+										operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace getProperty by getSlot
 									asAtom o = asAtomHandler::invalidAtom;
 									operandlist.back().objtype->getInstance(o,false,nullptr,0);

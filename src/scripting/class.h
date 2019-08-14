@@ -51,8 +51,14 @@ private:
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
+	Global* definitionobject;
 public:
-	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait);
+	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _defobj);
+	void checkScriptInit()
+	{
+		if (definitionobject)
+			definitionobject->checkScriptInit();
+	}
 	bool destruct()
 	{
 		instancefactory.reset();

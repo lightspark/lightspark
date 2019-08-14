@@ -585,13 +585,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 #endif
 	getVm(getSystemState())->currentCallContext = saved_cc;
 
-	this->decRef(); //free local ref
-
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
 
 	if (coerceresult)
 		mi->returnType->coerce(getSystemState(),ret);
+
+	this->decRef(); //free local ref
+
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc.stackp != cc.stack)
 	{
@@ -2495,6 +2496,15 @@ void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o)
 	o->incRef();
 	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,NAMESPACE),o.getPtr(),CONSTANT_TRAIT);
 	//setVariableByQName(name,nsNameAndKind(ns,PACKAGE_NAMESPACE),o.getPtr(),DECLARED_TRAIT);
+}
+
+void Global::checkScriptInit()
+{
+	if(context->hasRunScriptInit[scriptId])
+		return;
+	LOG_CALL("running script init "<<scriptId);
+	asAtom v = asAtomHandler::fromObject(this);
+	context->runScriptInit(scriptId,v);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,eval)

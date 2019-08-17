@@ -569,11 +569,11 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	 * It is necesarry to decide if o is a function or a method,
 	 * i.e. if a method closure should be created in getProperty.
 	 */
-	if(isBorrowed && o->inClass == NULL)
+	if(isBorrowed && o->inClass == nullptr)
 		o->inClass = this->as<Class_base>();
 	o->isStatic = !isBorrowed;
 
-	variable* obj=NULL;
+	variable* obj=nullptr;
 	if(isBorrowed)
 	{
 		assert(this->is<Class_base>());
@@ -608,6 +608,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			break;
 		}
 	}
+	obj->setResultType((const Type*)o->getReturnType());
 	o->functionname = nameId;
 }
 

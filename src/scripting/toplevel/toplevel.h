@@ -448,6 +448,7 @@ public:
 	virtual ASObject *describeType() const;
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
+	virtual Class_base* getReturnType() =0;
 	std::string toDebugString();
 };
 
@@ -509,6 +510,10 @@ public:
 		asAtom c = asAtomHandler::fromObject(target);
 		val_atom(ret,getSystemState(),c,NULL,0);
 		return nullptr;
+	}
+	FORCE_INLINE Class_base* getReturnType()
+	{
+		return returnType;
 	}
 };
 
@@ -607,6 +612,7 @@ public:
 	FORCE_INLINE multiname* getSimpleName() {
 		return simpleGetterOrSetterName;
 	}
+	Class_base* getReturnType();
 };
 class AVM1context
 {
@@ -659,6 +665,10 @@ public:
 	{
 		asAtom obj = asAtomHandler::fromObject(target);
 		ACTIONRECORD::executeActions(clip,&context,this->actionlist,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		return nullptr;
+	}
+	FORCE_INLINE Class_base* getReturnType()
+	{
 		return nullptr;
 	}
 };

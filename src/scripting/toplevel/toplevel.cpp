@@ -665,6 +665,11 @@ bool SyntheticFunction::isEqual(ASObject *r)
 			 this->inClass == r->as<SyntheticFunction>()->inClass);
 }
 
+Class_base *SyntheticFunction::getReturnType()
+{
+	return (Class_base*)dynamic_cast<const Class_base*>(mi->returnType);
+}
+
 bool Function::isEqual(ASObject* r)
 {
 	if (!r->is<Function>())

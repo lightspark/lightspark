@@ -214,6 +214,13 @@
 		ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback)
 
 /* registers getter/setter with Class_base. To be used in ::sinit()-functions */
+#define REGISTER_GETTER_RESULTTYPE(c,name,cls) \
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true)
+
+#define REGISTER_GETTER_SETTER_RESULTTYPE(c,name,cls) \
+		REGISTER_GETTER_RESULTTYPE(c,name,cls); \
+		REGISTER_SETTER(c,name)
+
 #define REGISTER_GETTER(c,name) \
 	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_getter_##name),GETTER_METHOD,true)
 
@@ -581,6 +588,11 @@ struct variable
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
 	void setVarNoCoerce(asAtom &v, ASObject *obj);
+	void setResultType(const Type* t)
+	{
+		isResolved=true;
+		type=t;
+	}
 };
 
 struct varName

@@ -7426,7 +7426,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	for (uint32_t i = 1; i < mi->body->local_count+2; i++)
 	{
 		defaultlocaltypes[i]=nullptr;
-		defaultlocaltypescacheable[0]=true;
+		defaultlocaltypescacheable[i]=true;
 		if (mi->needsArgs() && i == mi->numArgs()+1) // don't cache argument array
 			defaultlocaltypescacheable[i]=false;
 		if (i > 0 && i <= mi->paramTypes.size() && dynamic_cast<const Class_base*>(mi->paramTypes[i-1]))
@@ -7502,12 +7502,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x6d://setslot
 			case 0x6e://getglobalSlot
 			case 0x6f://setglobalSlot
-			case 0x80://coerce
 			case 0x86://astype
 			case 0xb2://istype
 				codejumps.readu30();
 				currenttype=nullptr;
 				break;
+			case 0x80://coerce
+			{
+				uint32_t t = codejumps.readu30();
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				if (name->isStatic)
+				{
+					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+					currenttype = (Class_base*)cls;
+				}
+				else
+					currenttype=nullptr;
+				break;
+			}
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
@@ -7652,6 +7665,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x09://label
+			case 0x2a://dup
 				break;
 			default:
 				currenttype=nullptr;
@@ -8607,6 +8621,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								case 0:
 								{
+									Class_base* resulttype = nullptr;
 									ASObject* constructor = nullptr;
 									if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
 									{
@@ -8617,9 +8632,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											asAtom o;
 											a->getVariableByMultiname(o,*name);
 											constructor = asAtomHandler::getObject(o);
+											if (constructor->is<Class_base>())
+												resulttype = constructor->as<Class_base>();
+											else if (constructor->is<IFunction>())
+												resulttype = constructor->as<IFunction>()->getReturnType();
 										}
 									}
-									if (setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,nullptr))
+									if (setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,resulttype))
 									{
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cachedmultiname2 = name;
 										mi->body->preloadedcode.push_back(argcount);
@@ -8698,6 +8717,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(v->var);
 												break;
 											}
+											if (!operandlist.back().objtype->is<Class_inherit>())
+												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<operandlist.back().objtype->toDebugString());
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,oldnewpositions, jumptargets)) ||
@@ -8728,6 +8749,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
 												break;
 											}
+											if (!operandlist.back().objtype->is<Class_inherit>())
+												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<operandlist.back().objtype->toDebugString());
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false,localtypes, defaultlocaltypes)) ||

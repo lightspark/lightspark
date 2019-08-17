@@ -1023,6 +1023,9 @@ private:
 	static void abc_callFunctionNoArgs_constant_localresult(call_context* context);
 	static void abc_callFunctionNoArgs_local_localresult(call_context* context);
 
+	static void abc_callFunctionNoArgsVoid_constant(call_context* context);
+	static void abc_callFunctionNoArgsVoid_local(call_context* context);
+
 	static void abc_callFunctionOneArgVoid_constant_constant(call_context* context);
 	static void abc_callFunctionOneArgVoid_local_constant(call_context* context);
 	static void abc_callFunctionOneArgVoid_constant_local(call_context* context);

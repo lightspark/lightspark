@@ -738,8 +738,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setslotNoCoerce_local_constant,
 	abc_setslotNoCoerce_constant_local,
 	abc_setslotNoCoerce_local_local,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_callFunctionNoArgsVoid_constant, // 0x254 ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID
+	abc_callFunctionNoArgsVoid_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -4248,6 +4248,27 @@ void ABCVm::abc_callFunctionNoArgs_local_localresult(call_context* context)
 	++(context->exec_pos);
 }
 
+void ABCVm::abc_callFunctionNoArgsVoid_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	asAtom ret;
+	LOG_CALL("callFunctionNoArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionNoArgsVoid_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = context->locals[instrptr->local_pos1];
+	asAtom func = asAtomHandler::fromObject(instrptr->cacheobj2);
+	asAtom ret;
+	LOG_CALL("callFunctionNoArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_callFunctionOneArgVoid_constant_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
@@ -6638,6 +6659,7 @@ struct operands
 #define ABC_OP_OPTIMZED_CONVERTB 0x00000248 
 #define ABC_OP_OPTIMZED_CONSTRUCT_NOARGS 0x0000024c
 #define ABC_OP_OPTIMZED_SETSLOT_NOCOERCE 0x00000250
+#define ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID 0x00000254
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -6689,7 +6711,6 @@ bool canCallFunctionDirect(method_info* mi, operands& op,multiname* name)
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT) &&
 		op.objtype &&
 		!op.objtype->isInterface && // it's not an interface
-		!op.objtype->implementsInterfaces() && // it doesn't implement any interface
 		(
 		!op.objtype->is<Class_inherit>() || // type is builtin class
 		!op.objtype->as<Class_inherit>()->hasoverriddenmethod(mi->context,name) // current method is not in overridden methods
@@ -6920,34 +6941,15 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			}
 			break;
 		case 0x4f://callpropvoid
-		{
-			uint32_t t = code.peeku30FromPosition(pos);
-			pos = code.skipu30FromPosition(pos);
-			uint32_t argcount = code.peeku30FromPosition(pos);
-			if (jumptargets.find(pos) == jumptargets.end() 
-					&& argcount == 0
-					&& mi->context->constant_pool.multinames[t].runtimeargs == 0
-					&& !needstwoargs && (operandlist.size() >= 1))
-			{
-				// set optimized opcode to corresponding opcode with local result 
-				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
-				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3 = mi->body->local_count+2+resultpos;
-				operandlist.push_back(operands(OP_LOCAL,restype, mi->body->local_count+1+resultpos,0,0));
-				res = true;
-			}
-			else
-				clearOperands(mi,localtypes,operandlist,defaultlocaltypes);
-			break;
-		}
 		case 0x46://callproperty
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			pos = code.skipu30FromPosition(pos);
 			uint32_t argcount = code.peeku30FromPosition(pos);
 			if (jumptargets.find(pos) == jumptargets.end() 
-					&& argcount == 1
-					&& mi->context->constant_pool.multinames[t].runtimeargs == 0
-					&& (needstwoargs || (operandlist.size() >= 1)))
+					&& mi->context->constant_pool.multinames[t].runtimeargs == 0 &&
+					((argcount == 1 && (needstwoargs || (operandlist.size() >= 1))) ||
+					(argcount==0 && (!needstwoargs))))
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[mi->body->preloadedcode.size()-1].data += opcode_jumpspace;
@@ -8681,7 +8683,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							switch (argcount)
 							{
 								case 0:
-									if (opcode == 0x46 && operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
+									if (operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT) && operandlist.back().objtype)
 									{
 										if (canCallFunctionDirect(mi,operandlist.back(),name))
 										{
@@ -8689,7 +8691,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											if (v && asAtomHandler::is<IFunction>(v->var))
 											{
 												Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
-												setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,resulttype);
+												if (opcode == 0x46)
+													setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,oldnewpositions, jumptargets,true, false,localtypes, defaultlocaltypes,resulttype);
+												else
+													setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID,opcode,code,oldnewpositions, jumptargets);
 												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj2 = asAtomHandler::getObject(v->var);
 												break;
 											}

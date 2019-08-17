@@ -68,7 +68,10 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	}
 	//Do not allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED);
+	bool alreadyset=false;
+	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		value->decRef();
 	obj->decRef();
 }
 
@@ -1564,7 +1567,10 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
-	obj->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr());
+	bool alreadyset=false;
+	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr(),&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	name->resetNameIfObject();
 	obj->decRef();
 }
@@ -1988,8 +1994,10 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 {
 	//Allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_ALLOWED);
-
+	bool alreadyset=false;
+	obj->setVariableByMultiname(*name,v,ASObject::CONST_ALLOWED,&alreadyset);
+	if (alreadyset)
+		value->decRef();
 	obj->decRef();
 }
 

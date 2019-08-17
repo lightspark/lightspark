@@ -438,7 +438,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 			
-		asAtomHandler::getObject(ret)->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED,traits.type);
+		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,ASObject::CONST_ALLOWED,traits.type,nullptr);
 	}
 
 	//Read dynamic name, value pairs

@@ -1560,7 +1560,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-multiname *XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }

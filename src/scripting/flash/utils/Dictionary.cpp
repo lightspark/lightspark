@@ -74,7 +74,7 @@ void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
 	Dictionary::setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 }
 
-multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -87,19 +87,19 @@ multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, 
 			case T_INTEGER:
 				tmpname.name_type=multiname::NAME_INT;
 				tmpname.name_i = name.name_o->toInt();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset);
 			case T_UINTEGER:
 				tmpname.name_type=multiname::NAME_UINT;
 				tmpname.name_ui = name.name_o->toUInt();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset);
 			case T_NUMBER:
 				tmpname.name_type=multiname::NAME_NUMBER;
 				tmpname.name_d = name.name_o->toNumber();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset);
 			case T_STRING:
 				tmpname.name_type=multiname::NAME_STRING;
 				tmpname.name_s_id = name.name_o->toStringId();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst);
+				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset);
 			default:
 				break;
 		}
@@ -109,8 +109,13 @@ multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, 
 		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
 		if(it!=data.end())
 		{
-			ASATOM_DECREF(it->second);
-			it->second=o;
+			if (alreadyset && it->second.uintval == o.uintval)
+				*alreadyset=true;
+			else
+			{
+				ASATOM_DECREF(it->second);
+				it->second=o;
+			}
 		}
 		else
 			data.insert(make_pair(name_o,o));
@@ -123,7 +128,7 @@ multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, 
 			name.name_type==multiname::NAME_INT ||
 			name.name_type==multiname::NAME_UINT ||
 			name.name_type==multiname::NAME_NUMBER);
-		return ASObject::setVariableByMultiname(name, o, allowConst);
+		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 	}
 	return nullptr;
 }

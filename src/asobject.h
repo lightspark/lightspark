@@ -732,19 +732,29 @@ public:
 		return slots_vars[n-1]->kind;
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
-	FORCE_INLINE void setSlot(unsigned int n, asAtom &o, ASObject* obj)
+	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
-		slots_vars[n-1]->setVar(o,obj);
+		if (slots_vars[n-1]->var.uintval != o.uintval)
+		{
+			slots_vars[n-1]->setVar(o,obj);
+			return true;
+		}
+		return false;
 	}
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	FORCE_INLINE void setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
+	FORCE_INLINE bool setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
-		slots_vars[n-1]->setVarNoCoerce(o,obj);
+		if (slots_vars[n-1]->var.uintval != o.uintval)
+		{
+			slots_vars[n-1]->setVarNoCoerce(o,obj);
+			return true;
+		}
+		return false;
 	}
 	FORCE_INLINE void initSlot(unsigned int n, variable *v)
 	{
@@ -994,9 +1004,14 @@ public:
 	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
-	virtual multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+	/*
+	 * If alreadyset is not null, it has to be initialized to false by the caller.
+	 * It will be set to true if the old and new value are the same.
+	 * In that case the old value will not be decReffed.
+	 */ 
+	virtual multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
 	{
-		return setVariableByMultiname(name,o,allowConst,classdef);
+		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
 	}
 	/*
 	 * Sets  variable of this object. It looks through all classes (beginning at cls),
@@ -1005,7 +1020,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls);
+	multiname* setVariableByMultiname_intern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls,bool *alreadyset);
 	
 	// sets dynamic variable without checking for existence
 	// use it if it is guarranteed that the variable doesn't exist in this object
@@ -1041,15 +1056,16 @@ public:
 	{
 		return Variables.getSlotKind(n,getSystemState());
 	}
-	FORCE_INLINE void setSlot(unsigned int n,asAtom o)
+	FORCE_INLINE bool setSlot(unsigned int n,asAtom o)
 	{
-		Variables.setSlot(n,o,this);
+		bool ret = Variables.setSlot(n,o,this);
 		if (asAtomHandler::is<SyntheticFunction>(o))
 			checkFunctionScope(asAtomHandler::getObject(o));
+		return ret;
 	}
-	FORCE_INLINE void setSlotNoCoerce(unsigned int n,asAtom o)
+	FORCE_INLINE bool setSlotNoCoerce(unsigned int n,asAtom o)
 	{
-		Variables.setSlotNoCoerce(n,o,this);
+		return Variables.setSlotNoCoerce(n,o,this);
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{

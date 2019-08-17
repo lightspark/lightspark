@@ -61,7 +61,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool deleteVariableByMultiname(const multiname& name);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);

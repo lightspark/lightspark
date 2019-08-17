@@ -147,13 +147,13 @@ public:
 		ASATOM_INCREF(ret);
 	}
 	
-	void set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
+	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
 	bool deleteVariableByMultiname(const multiname& name);
 	void setVariableByMultiname_i(const multiname& name, int32_t value);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);

@@ -53,11 +53,11 @@ ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)
 	asAtomHandler::setBool(ret,mname.isAttribute);
 }
 
-multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
 	//If a variable named like this already exist, use that
 	if(ASObject::hasPropertyByMultiname(name, true, false) || !implEnable)
-		return ASObject::setVariableByMultiname(name,o,allowConst);
+		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
 	multiname setPropertyName(NULL);
@@ -68,7 +68,7 @@ multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 	getVariableByMultiname(proxySetter,setPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
 
 	if(asAtomHandler::isInvalid(proxySetter))
-		return ASObject::setVariableByMultiname(name,o,allowConst);
+		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
 
 	assert_and_throw(asAtomHandler::isFunction(proxySetter));
 

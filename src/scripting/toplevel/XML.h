@@ -161,7 +161,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
 	bool hasProperty(const multiname& name,bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
 	multiname *setVariableByMultinameIntern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
 	bool deleteVariableByMultiname(const multiname& name);
 	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);

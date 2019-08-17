@@ -739,7 +739,7 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 }
 
 
-multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls)
+multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset)
 {
 	multiname *retval = nullptr;
 	check();
@@ -847,7 +847,15 @@ multiname *ASObject::setVariableByMultiname(const multiname& name, asAtom& o, CO
 	else
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->getter));
-		obj->setVar(o,this);
+		if (alreadyset)
+		{
+			if (o.uintval == obj->var.uintval)
+				*alreadyset = true;
+			else
+				obj->setVar(o,this);
+		}
+		else
+			obj->setVar(o,this);
 		if (asAtomHandler::is<SyntheticFunction>(o))
 		{
 			if (obj->kind == CONSTANT_TRAIT)
@@ -924,7 +932,7 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 	}
 	if(isResolved && type)
 		type->coerce(obj->getSystemState(),v);
-	if(isrefcounted && var.uintval != v.uintval && asAtomHandler::getObject(var))
+	if(isrefcounted && asAtomHandler::getObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
@@ -937,7 +945,7 @@ void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
 
 void variable::setVarNoCoerce(asAtom &v,ASObject *obj)
 {
-	if(isrefcounted && var.uintval != v.uintval && asAtomHandler::getObject(var))
+	if(isrefcounted && asAtomHandler::getObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
@@ -1284,7 +1292,9 @@ void ASObject::checkFunctionScope(ASObject* o)
 		if (asAtomHandler::getObject(it->object) != this)
 			continue;
 		f->incActivationCount();
-		if (!asAtomHandler::is<Activation_object>(it->object))
+		if (this->is<Activation_object>())
+			this->as<Activation_object>()->addDynamicFunctionUsage(f);
+		else
 			f->addDynamicReferenceObject(this);
 		break;
 	}

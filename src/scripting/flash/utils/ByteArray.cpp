@@ -1136,12 +1136,12 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
-		return ASObject::setVariableByMultiname(name,o,allowConst);
+		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
 	if (index > BA_MAX_SIZE) 
 		throwError<ASError>(kOutOfMemoryError);
 

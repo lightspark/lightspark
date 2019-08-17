@@ -1143,11 +1143,11 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
 	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
-		return ASObject::setVariableByMultiname(name, o, allowConst);
+		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 
 	unsigned int index=0;
 	if(!Vector::isValidMultiname(getSystemState(),name,index))
@@ -1177,13 +1177,21 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		
 		if (!ASObject::hasPropertyByMultiname(name,false,true))
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-		return ASObject::setVariableByMultiname(name, o, allowConst);
+		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 	}
 	this->vec_type->coerce(getSystemState(), o);
 	if(index < vec.size())
 	{
-		ASATOM_DECREF(vec[index]);
-		vec[index] = o;
+		if (vec[index].uintval == o.uintval)
+		{
+			if (alreadyset)
+				*alreadyset = true;
+		}
+		else
+		{
+			ASATOM_DECREF(vec[index]);
+			vec[index] = o;
+		}
 	}
 	else if(!fixed && index == vec.size())
 	{

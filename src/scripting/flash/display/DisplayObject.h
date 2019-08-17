@@ -173,7 +173,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr);
 	bool deleteVariableByMultiname(const multiname& name);
 	
 	// used by MorphShapes

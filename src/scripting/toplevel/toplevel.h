@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <vector>
 #include <set>
+#include <unordered_set>
 #include "asobject.h"
 #include "exceptions.h"
 #include "threading.h"
@@ -334,7 +335,7 @@ public:
 	ObjectPrototype(Class_base* c);
 	inline void finalize() { prevPrototype.reset(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
 	bool isEqual(ASObject* r);
 };
 
@@ -356,8 +357,24 @@ public:
 
 class Activation_object: public ASObject
 {
+	// this is used to keep track of dynamic functions that are added as variables of this ActivationObject
+	// and used elsewhere in the code
+	unordered_set<SyntheticFunction*> dynamicfunctions;
 public:
     Activation_object(Class_base* c) : ASObject(c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
+	inline void addDynamicFunctionUsage(SyntheticFunction* f) 
+	{ 
+		dynamicfunctions.insert(f);
+	}
+	inline bool removeDynamicFunctionUsage(SyntheticFunction* f) 
+	{ 
+		return dynamicfunctions.erase(f); 
+	}
+	inline bool hasDynamicFunctionUsages() const
+	{
+		return !dynamicfunctions.empty();
+	}
+	
 };
 
 /* Special object returned when new func() syntax is used.
@@ -732,7 +749,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
 };
 
 class Null: public ASObject
@@ -746,7 +763,7 @@ public:
 	int64_t toInt64();
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
 	int32_t getVariableByMultiname_i(const multiname& name);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
 
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

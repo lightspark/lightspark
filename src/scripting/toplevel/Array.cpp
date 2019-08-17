@@ -1722,12 +1722,12 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 	return true;
 }
 
-multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
 	if(!isValidMultiname(getSystemState(),name,index))
-		return ASObject::setVariableByMultiname(name,o,allowConst);
+		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,
@@ -1736,7 +1736,11 @@ multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 	if(index>=size())
 		resize((uint64_t)index+1);
 
-	set(index, o,false);
+	if (!set(index, o,false))
+	{
+		if (alreadyset)
+			*alreadyset=true;
+	}
 	return nullptr;
 }
 
@@ -2070,19 +2074,23 @@ Array::~Array()
 {
 }
 
-void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
+bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 {
+	bool ret = true;
 	if(index<currentsize)
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)
 		{
 			if (index < data_first.size())
 			{
-				ASATOM_DECREF(data_first.at(index));
+				if (data_first.at(index).uintval == o.uintval)
+					ret = false;
+				else
+					ASATOM_DECREF(data_first.at(index));
 			}
 			else
 				data_first.resize(index+1);
-			if (addref)
+			if (addref && ret)
 				ASATOM_INCREF(o);
 			data_first[index]=o;
 		}
@@ -2090,15 +2098,19 @@ void Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 		{
 			if(data_second.find(index) != data_second.end())
 			{
-				ASATOM_DECREF(data_second[index]);
+				if (data_second[index].uintval == o.uintval)
+					ret = false;
+				else
+					ASATOM_DECREF(data_second[index]);
 			}
-			if (addref)
+			if (addref && ret)
 				ASATOM_INCREF(o);
 			data_second[index]=o;
 		}
 	}
 	else if (checkbounds)
 		outofbounds(index);
+	return ret;
 }
 
 uint64_t Array::size()

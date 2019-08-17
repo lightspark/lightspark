@@ -3499,7 +3499,10 @@ void ABCVm::abc_setproperty(call_context* context)
 	}
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+	bool alreadyset=false;
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	o->decRef();
 	name->resetNameIfObject();
 	++(context->exec_pos);
@@ -4327,7 +4330,10 @@ void ABCVm::abc_initproperty(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< asAtomHandler::toDebugString(*obj)<<" to "<<asAtomHandler::toDebugString(*value));
-	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+	bool alreadyset=false;
+	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
 	name->resetNameIfObject();
 	++(context->exec_pos);
@@ -4414,7 +4420,8 @@ void ABCVm::abc_setslot(call_context* context)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->mi->context->root->getSystemState());
 
 	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< asAtomHandler::toDebugString(*v1));
-	v2->setSlot(t,*v1);
+	if (!v2->setSlot(t,*v1))
+		ASATOM_DECREF_POINTER(v1);
 	v2->decRef();
 	++(context->exec_pos);
 }
@@ -4423,9 +4430,9 @@ void ABCVm::abc_setslot_constant_constant(call_context* context)
 	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = *context->exec_pos->arg2_constant;
-	ASATOM_INCREF(v2);
 	LOG_CALL("setSlot_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslot_local_constant(call_context* context)
@@ -4434,8 +4441,8 @@ void ABCVm::abc_setslot_local_constant(call_context* context)
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	LOG_CALL("setSlot_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslot_constant_local(call_context* context)
@@ -4445,8 +4452,8 @@ void ABCVm::abc_setslot_constant_local(call_context* context)
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = context->locals[context->exec_pos->local_pos2];
 	LOG_CALL("setSlot_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslot_local_local(call_context* context)
@@ -4455,8 +4462,8 @@ void ABCVm::abc_setslot_local_local(call_context* context)
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = context->locals[context->exec_pos->local_pos2];
 	LOG_CALL("setSlot_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlot(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslotNoCoerce_constant_constant(call_context* context)
@@ -4464,9 +4471,9 @@ void ABCVm::abc_setslotNoCoerce_constant_constant(call_context* context)
 	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = *context->exec_pos->arg2_constant;
-	ASATOM_INCREF(v2);
 	LOG_CALL("setSlotNoCoerce_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslotNoCoerce_local_constant(call_context* context)
@@ -4475,8 +4482,8 @@ void ABCVm::abc_setslotNoCoerce_local_constant(call_context* context)
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	LOG_CALL("setSlotNoCoerce_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslotNoCoerce_constant_local(call_context* context)
@@ -4485,8 +4492,8 @@ void ABCVm::abc_setslotNoCoerce_constant_local(call_context* context)
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = context->locals[context->exec_pos->local_pos2];
 	LOG_CALL("setSlotNoCoerce_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setslotNoCoerce_local_local(call_context* context)
@@ -4495,8 +4502,8 @@ void ABCVm::abc_setslotNoCoerce_local_local(call_context* context)
 	asAtom v1 = context->locals[context->exec_pos->local_pos1];
 	asAtom v2 = context->locals[context->exec_pos->local_pos2];
 	LOG_CALL("setSlotNoCoerce_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	ASATOM_INCREF(v2);
-	asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2);
+	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
+		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
 
@@ -7954,11 +7961,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													 ( vtype == Class<Number>::getRef(function->getSystemState()).getPtr()))
 												)
 												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
-											if (operator_start != ABC_OP_OPTIMZED_SETSLOT_NOCOERCE)
-											{
-												LOG(LOG_ERROR,"nomatch:"<<code.tellg()<<" "<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<<vtype->toDebugString()<<" "<<contenttype->toDebugString());
-												function->getSystemState()->dumpStacktrace();
-											}
 										}
 										setupInstructionTwoArgumentsNoResult(operandlist,mi,operator_start,opcode,code,oldnewpositions, jumptargets);
 										mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data |=v->slotid<<OPCODE_SIZE;

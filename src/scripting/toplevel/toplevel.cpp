@@ -132,7 +132,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		out->writeByte(undefined_marker);
 }
 
-multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<asAtomHandler::toDebugString(o));
 	throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -630,7 +630,20 @@ bool SyntheticFunction::destruct()
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
 			if (o && !o->is<Global>())
+			{
+				if (o->is<Activation_object>())
+				{
+					if (o->as<Activation_object>()->hasDynamicFunctionUsages())
+					{
+						o->as<Activation_object>()->removeDynamicFunctionUsage(this);
+						// the ActivationObject has references to other dynamic functions, so we have to keep it and this function alive
+						if (this->getActivationCount() > 1)
+							this->decActivationCount();
+						return false;
+					}
+				}
 				o->decRef();
+			}
 		}
 	}
 	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
@@ -805,7 +818,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		out->writeByte(null_marker);
 }
 
-multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<asAtomHandler::toDebugString(o));
 	ASATOM_DECREF(o);
@@ -2955,11 +2968,11 @@ GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const m
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
-multiname *ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst)
+multiname *ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
-	return ASObject::setVariableByMultiname(name, o, allowConst);
+	return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 }
 
 

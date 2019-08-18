@@ -447,8 +447,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	for(asAtom* i=cc.locals+1;i< cc.locals+1+passedToLocals;++i)
 	{
 		*i = *argp;
-		if (!(*itpartype++)->coerce(getSystemState(),*i))
-			ASATOM_INCREF_POINTER(i);
+		(*itpartype++)->coerce(getSystemState(),*i);
 		++argp;
 	}
 
@@ -461,8 +460,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		if(iOptional >= 0)
 		{
 			mi->getOptional(cc.locals[i+1],iOptional);
-			if(!mi->paramTypes[i]->coerce(getSystemState(),cc.locals[i+1]))
-				ASATOM_INCREF(cc.locals[i+1]);
+			mi->paramTypes[i]->coerce(getSystemState(),cc.locals[i+1]);
 		} else {
 			assert(mi->paramTypes[i] == Type::anyType);
 			cc.locals[i+1]=asAtomHandler::undefinedAtom;

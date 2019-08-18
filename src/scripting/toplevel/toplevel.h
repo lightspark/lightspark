@@ -84,11 +84,10 @@ public:
 	static const Type *getBuiltinType(SystemState* sys, const multiname* mn);
 	/*
 	 * Converts the given object to an object of this type.
-	 * It consumes one reference of 'o'.
-	 * The returned object must be decRef'ed by caller.
 	 * If the argument cannot be converted, it throws a TypeError
+	 * returns true if the atom is really converted into another instance
 	 */
-	virtual void coerce(SystemState* sys, asAtom& o) const=0;
+	virtual bool coerce(SystemState* sys, asAtom& o) const=0;
 
 	virtual void coerceForTemplate(SystemState* sys, asAtom& o) const=0;
 	
@@ -110,7 +109,7 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	void coerce(SystemState* sys,asAtom& o) const {}
+	bool coerce(SystemState* sys,asAtom& o) const { return false; }
 	void coerceForTemplate(SystemState* sys, asAtom& o) const {}
 	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
@@ -122,8 +121,8 @@ public:
 class Void: public Type
 {
 public:
-	void coerce(SystemState* sys,asAtom& o) const;
-	void coerceForTemplate(SystemState* sys, asAtom& o) const { coerce(sys,o); }
+	bool coerce(SystemState* sys,asAtom& o) const { return false; }
+	void coerceForTemplate(SystemState* sys, asAtom& o) const { }
 	virtual ~Void() {}
 	tiny_string getName() const { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
@@ -140,7 +139,7 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	void coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	bool coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	void coerceForTemplate(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const { return "activation"; }
@@ -229,10 +228,9 @@ public:
 	virtual const Template_base* getTemplate() const { return NULL; }
 	/*
 	 * Converts the given object to an object of this Class_base's type.
-	 * It consumes one reference of 'o'.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	virtual void coerce(SystemState* sys, asAtom& o) const;
+	bool coerce(SystemState* sys, asAtom& o) const;
 	
 	void coerceForTemplate(SystemState* sys, asAtom& o) const;
 

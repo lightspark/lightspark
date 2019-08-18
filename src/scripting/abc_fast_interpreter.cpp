@@ -1151,7 +1151,9 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceOnce " << *name);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				type->coerce(function->getSystemState(),*o);
+				asAtom v = *o;
+				if (type->coerce(function->getSystemState(),*o))
+					ASATOM_DECREF(v);
 				RUNTIME_STACK_PUSH(context,*o);
 
 				instructionPointer+=8;
@@ -1664,7 +1666,9 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL("coerceEarly " << type);
 
 				RUNTIME_STACK_POP_CREATE(context,o);
-				type->coerce(function->getSystemState(),*o);
+				asAtom v = *o;
+				if (type->coerce(function->getSystemState(),*o))
+					ASATOM_DECREF(v);
 				RUNTIME_STACK_PUSH(context,*o);
 
 				instructionPointer+=8;

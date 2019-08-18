@@ -3499,9 +3499,9 @@ void ABCVm::abc_setproperty(call_context* context)
 	}
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
-	bool needsIncRef=false;
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&needsIncRef);
-	if (needsIncRef)
+	bool alreadyset=false;
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	o->decRef();
 	name->resetNameIfObject();
@@ -4351,9 +4351,9 @@ void ABCVm::abc_initproperty(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< asAtomHandler::toDebugString(*obj)<<" to "<<asAtomHandler::toDebugString(*value));
-	bool needsIncRef=false;
-	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&needsIncRef);
-	if (needsIncRef)
+	bool alreadyset=false;
+	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
+	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
 	name->resetNameIfObject();
@@ -4843,7 +4843,11 @@ void ABCVm::abc_coerce_s(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("coerce_s:"<<asAtomHandler::toDebugString(*pval));
 	if (!asAtomHandler::isString(*pval))
-		Class<ASString>::getClass(context->mi->context->root->getSystemState())->coerce(context->mi->context->root->getSystemState(),*pval);
+	{
+		asAtom v = *pval;
+		if (Class<ASString>::getClass(context->mi->context->root->getSystemState())->coerce(context->mi->context->root->getSystemState(),*pval))
+			ASATOM_DECREF(v);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_astype(call_context* context)
@@ -8821,8 +8825,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).cacheobj3 = asAtomHandler::getObject(v->var);
 												break;
 											}
-											if (!operandlist.back().objtype->is<Class_inherit>())
-												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<operandlist.back().objtype->toDebugString());
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code,oldnewpositions, jumptargets,false,false,false,localtypes, defaultlocaltypes)) ||

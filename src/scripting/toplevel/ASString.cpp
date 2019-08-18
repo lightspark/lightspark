@@ -686,12 +686,8 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 	else
 		ret = asAtomHandler::fromObject(abstract_s(sys,data.substr(startIndex,endIndex-startIndex)));
 }
-int64_t charatcount = 0;
 ASFUNCTIONBODY_ATOM(ASString,charAt)
 {
-	if (charatcount++ % 100000 == 0)
-		LOG(LOG_ERROR,"charat:"<<charatcount);
-
 	number_t index;
 	ARG_UNPACK_ATOM (index, 0);
 

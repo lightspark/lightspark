@@ -447,7 +447,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	for(asAtom* i=cc.locals+1;i< cc.locals+1+passedToLocals;++i)
 	{
 		*i = *argp;
-		(*itpartype++)->coerce(getSystemState(),*i);
+		if (!(*itpartype++)->coerce(getSystemState(),*i))
+			ASATOM_INCREF_POINTER(i);
 		++argp;
 	}
 
@@ -460,7 +461,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		if(iOptional >= 0)
 		{
 			mi->getOptional(cc.locals[i+1],iOptional);
-			mi->paramTypes[i]->coerce(getSystemState(),cc.locals[i+1]);
+			if(!mi->paramTypes[i]->coerce(getSystemState(),cc.locals[i+1]))
+				ASATOM_INCREF(cc.locals[i+1]);
 		} else {
 			assert(mi->paramTypes[i] == Type::anyType);
 			cc.locals[i+1]=asAtomHandler::undefinedAtom;
@@ -589,7 +591,11 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		asAtomHandler::setUndefined(ret);
 
 	if (coerceresult)
-		mi->returnType->coerce(getSystemState(),ret);
+	{
+		asAtom v = ret;
+		if (mi->returnType->coerce(getSystemState(),ret))
+			ASATOM_DECREF(v);
+	}
 
 	this->decRef(); //free local ref
 
@@ -831,12 +837,6 @@ multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 	return nullptr;
 }
 
-void Void::coerce(SystemState* sys, asAtom& o) const
-{
-	if(!asAtomHandler::isUndefined(o))
-		throw Class<TypeError>::getInstanceS(sys,"Trying to coerce o!=undefined to void");
-}
-
 const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 {
 	if(mn->isStatic && mn->cachedType)
@@ -977,42 +977,43 @@ void Class_base::initStandardProps()
 }
 
 
-void Class_base::coerce(SystemState* sys, asAtom& o) const
+bool Class_base::coerce(SystemState* sys, asAtom& o) const
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
 		case T_UNDEFINED:
 			asAtomHandler::setNull(o);
-			return;
+			return true;
 		case T_NULL:
-			return;
+			return false;
 		case T_INTEGER:
 		case T_UINTEGER:
 		case T_NUMBER:
 			// int/uint/number are interchangeable
 			if(this == Class<Number>::getRef(sys).getPtr() || this == Class<UInteger>::getRef(sys).getPtr() || this == Class<Integer>::getRef(sys).getPtr())
-				return;
+				return false;
 			break;
 		default:
 			break;
 	}
 	if(this ==getSystemState()->getObjectClassRef())
-		return;
+		return false;
 	if(asAtomHandler::isClass(o))
 	{ /* classes can be cast to the type 'Object' or 'Class' */
 		if(this == getSystemState()->getObjectClassRef()
 		|| (class_name.nameId==BUILTIN_STRINGS::STRING_CLASS && class_name.nsStringId==BUILTIN_STRINGS::EMPTY))
-			return; /* 'this' is the type of a class */
+			return false; /* 'this' is the type of a class */
 		else
 			throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,sys)->getClassName(), getQualifiedClassName());
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
-		return;
+		return false;
 
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!asAtomHandler::getObject(o) ||  !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
 		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,sys)->getClassName(), getQualifiedClassName());
+	return false;
 }
 
 void Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const

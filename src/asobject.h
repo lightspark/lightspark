@@ -583,7 +583,7 @@ struct variable
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(asAtom& v, ASObject* obj, bool _isrefcounted = true);
+	void setVar(asAtom v, ASObject* obj, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
@@ -744,16 +744,7 @@ public:
 		return slots_vars[n-1]->kind;
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
-	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj)
-	{
-		assert_and_throw(n > 0 && n <= slotcount);
-		if (slots_vars[n-1]->var.uintval != o.uintval)
-		{
-			slots_vars[n-1]->setVar(o,obj);
-			return true;
-		}
-		return false;
-	}
+	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
@@ -1070,10 +1061,7 @@ public:
 	}
 	FORCE_INLINE bool setSlot(unsigned int n,asAtom o)
 	{
-		bool ret = Variables.setSlot(n,o,this);
-		if (asAtomHandler::is<SyntheticFunction>(o))
-			checkFunctionScope(asAtomHandler::getObject(o));
-		return ret;
+		return Variables.setSlot(n,o,this);
 	}
 	FORCE_INLINE bool setSlotNoCoerce(unsigned int n,asAtom o)
 	{
@@ -1233,6 +1221,22 @@ public:
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 };
+
+
+FORCE_INLINE bool variables_map::setSlot(unsigned int n, asAtom &o, ASObject* obj)
+{
+	assert_and_throw(n > 0 && n <= slotcount);
+	if (slots_vars[n-1]->var.uintval != o.uintval)
+	{
+		slots_vars[n-1]->setVar(o,obj);
+		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
+			obj->checkFunctionScope(asAtomHandler::getObject(o));
+		return slots_vars[n-1]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
+	}
+	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
+		obj->checkFunctionScope(asAtomHandler::getObject(o));
+	return true;
+}
 
 class AVM1Function;
 class Activation_object;

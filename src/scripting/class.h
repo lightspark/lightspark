@@ -240,9 +240,9 @@ public:
 	{
 		T::generator(ret,getSystemState(), asAtomHandler::invalidAtom, args, argslen);
 	}
-	void coerce(SystemState* sys,asAtom& o) const
+	bool coerce(SystemState* sys,asAtom& o) const
 	{
-		Class_base::coerce(sys,o);
+		return Class_base::coerce(sys,o);
 	}
 };
 
@@ -250,44 +250,43 @@ template<>
 void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
 
 template<>
-inline void Class<Number>::coerce(SystemState* sys,asAtom& o) const
+inline bool Class<Number>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (asAtomHandler::isNumeric(o))
-		return;
+		return false;
 	number_t n = asAtomHandler::toNumber(o);
-	ASATOM_DECREF(o);
 	asAtomHandler::setNumber(o,sys,n);
+	return true;
 }
 
 template<>
-inline void Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
+inline bool Class<UInteger>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (asAtomHandler::isUInteger(o))
-		return;
+		return false;
 	uint32_t n = asAtomHandler::toUInt(o);
-	ASATOM_DECREF(o);
 	asAtomHandler::setUInt(o,sys,n);
-;
+	return true;
 }
 
 template<>
-inline void Class<Integer>::coerce(SystemState* sys,asAtom& o) const
+inline bool Class<Integer>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (asAtomHandler::isInteger(o))
-		return;
+		return false;
 	int32_t n = asAtomHandler::toInt(o);
-	ASATOM_DECREF(o);
 	asAtomHandler::setInt(o,sys,n);
+	return true;
 }
 
 template<>
-inline void Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
+inline bool Class<Boolean>::coerce(SystemState* sys,asAtom& o) const
 {
 	if (asAtomHandler::isBool(o))
-		return;
+		return false;
 	bool n = asAtomHandler::Boolean_concrete(o);
-	ASATOM_DECREF(o);
 	asAtomHandler::setBool(o,n);
+	return true;
 }
 template<>
 inline void Class<Boolean>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
@@ -454,28 +453,27 @@ public:
 		types.push_back(type);
 	}
 
-	void coerce(SystemState* sys,asAtom& o) const
+	bool coerce(SystemState* sys,asAtom& o) const
 	{
 		if (asAtomHandler::isUndefined(o))
 		{
-			ASATOM_DECREF(o);
 			asAtomHandler::setNull(o);
-			return;
+			return true;
 		}
 		else if ((asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<T>() && asAtomHandler::getObject(o)->as<T>()->sameType(this)) ||
 				 asAtomHandler::isNull(o))
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type
-			return;
+			return false;
 		}
 		else
 		{
 			tiny_string clsname = asAtomHandler::getObject(o) ? asAtomHandler::getObject(o)->getClassName() : "";
-			ASATOM_DECREF(o);
 			throwError<TypeError>(kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
 		}
+		return false;
 	}
 };
 

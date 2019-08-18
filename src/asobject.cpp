@@ -840,6 +840,8 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 			else
 				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
 		}
+		if (alreadyset)
+			*alreadyset=false;
 		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
 		//assert_and_throw(asAtomHandler::isUndefined(ret));
@@ -848,16 +850,20 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 	else
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->getter));
+		bool isfunc = asAtomHandler::is<SyntheticFunction>(o);
 		if (alreadyset)
 		{
 			if (o.uintval == obj->var.uintval)
 				*alreadyset = true;
 			else
+			{
 				obj->setVar(o,this);
+				*alreadyset = o.uintval != obj->var.uintval; // setVar may coerce the object into a new instance, so we need to check if decRef is necessary
+			}
 		}
 		else
 			obj->setVar(o,this);
-		if (asAtomHandler::is<SyntheticFunction>(o))
+		if (isfunc)
 		{
 			if (obj->kind == CONSTANT_TRAIT)
 				asAtomHandler::getObject(o)->setConstant();
@@ -920,7 +926,7 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 		traitTypemname=_t;
 	}
 }
-void variable::setVar(asAtom& v,ASObject *obj, bool _isrefcounted)
+void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy

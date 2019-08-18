@@ -186,7 +186,8 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 ASObject* ABCVm::coerce_s(ASObject* o)
 {
 	asAtom v = asAtomHandler::fromObject(o);
-	Class<ASString>::getClass(o->getSystemState())->coerce(o->getSystemState(),v);
+	if (Class<ASString>::getClass(o->getSystemState())->coerce(o->getSystemState(),v))
+		o->decRef();
 	return asAtomHandler::toObject(v,o->getSystemState());
 }
 
@@ -205,7 +206,9 @@ void ABCVm::coerce(call_context* th, int n)
 	}
 	if (mn->isStatic && mn->cachedType == NULL)
 		mn->cachedType = type;
-	type->coerce(th->mi->context->root->getSystemState(),*o);
+	asAtom v= *o;
+	if (type->coerce(th->mi->context->root->getSystemState(),*o))
+		ASATOM_DECREF(v);
 }
 
 void ABCVm::pop()

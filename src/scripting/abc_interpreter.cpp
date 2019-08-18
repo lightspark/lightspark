@@ -742,14 +742,14 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_callFunctionNoArgsVoid_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_lessthan_constant_constant,// 0x258 ABC_OP_OPTIMZED_LESSTHAN
+	abc_lessthan_local_constant,
+	abc_lessthan_constant_local,
+	abc_lessthan_local_local,
+	abc_lessthan_constant_constant_localresult,
+	abc_lessthan_local_constant_localresult,
+	abc_lessthan_constant_local_localresult,
+	abc_lessthan_local_local_localresult,
 
 	abc_invalidinstruction, // 0x260
 	abc_invalidinstruction,
@@ -3499,9 +3499,9 @@ void ABCVm::abc_setproperty(call_context* context)
 	}
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
-	bool alreadyset=false;
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
-	if (alreadyset)
+	bool needsIncRef=false;
+	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&needsIncRef);
+	if (needsIncRef)
 		ASATOM_DECREF_POINTER(value);
 	o->decRef();
 	name->resetNameIfObject();
@@ -4351,9 +4351,9 @@ void ABCVm::abc_initproperty(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,context);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< asAtomHandler::toDebugString(*obj)<<" to "<<asAtomHandler::toDebugString(*value));
-	bool alreadyset=false;
-	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
-	if (alreadyset)
+	bool needsIncRef=false;
+	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&needsIncRef);
+	if (needsIncRef)
 		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
 	name->resetNameIfObject();
@@ -5925,7 +5925,6 @@ void ABCVm::abc_strictequals(call_context* context)
 }
 void ABCVm::abc_lessthan(call_context* context)
 {
-	//lessthan
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
@@ -5937,6 +5936,76 @@ void ABCVm::abc_lessthan(call_context* context)
 	asAtomHandler::setBool(*pval,ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_lessthan_constant_constant(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TTRUE);
+	LOG_CALL(_("lessthan_cc ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_local_constant(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TTRUE);
+	LOG_CALL(_("lessthan_lc ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_constant_local(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TTRUE);
+	LOG_CALL(_("lessthan_cl ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_local_local(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TTRUE);
+	LOG_CALL(_("lessthan_ll ")<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_constant_constant_localresult(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TTRUE);
+	LOG_CALL(_("lessthan_ccl ")<<ret);
+
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::setBool(context->locals[context->exec_pos->local_pos3-1],ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_local_constant_localresult(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant)==TTRUE);
+	LOG_CALL(_("lessthan_lcl ")<<ret);
+
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::setBool(context->locals[context->exec_pos->local_pos3-1],ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_constant_local_localresult(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TTRUE);
+	LOG_CALL(_("lessthan_cll ")<<ret);
+
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::setBool(context->locals[context->exec_pos->local_pos3-1],ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_lessthan_local_local_localresult(call_context* context)
+{
+	bool ret=(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2])==TTRUE);
+	LOG_CALL(_("lessthan_lll ")<<ret);
+
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::setBool(context->locals[context->exec_pos->local_pos3-1],ret);
+	++(context->exec_pos);
+}
+
+
 void ABCVm::abc_lessequals(call_context* context)
 {
 	//lessequals
@@ -6661,6 +6730,8 @@ struct operands
 #define ABC_OP_OPTIMZED_SETSLOT_NOCOERCE 0x00000250
 #define ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID 0x00000254
 
+#define ABC_OP_OPTIMZED_LESSTHAN 0x00000258 
+
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
 	if (b == 0x10) // jump
@@ -7095,6 +7166,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		case 0xa9://bitor
 		case 0xaa://bitxor
 		case 0xab://equals
+		case 0xad://lessthan
 		case 0xae://lessequals
 		case 0xaf://greaterthan
 		case 0xb0://greaterequals
@@ -9022,6 +9094,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0xab://equals
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
+				break;
+			case 0xad://lessthan
+				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);
 				break;
 			case 0xae://lessequals
 				setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes);

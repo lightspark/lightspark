@@ -956,6 +956,14 @@ private:
 	static void abc_equals_local_local_localresult(call_context* context);
 	static void abc_strictequals(call_context* context);
 	static void abc_lessthan(call_context* context);
+	static void abc_lessthan_constant_constant(call_context* context);
+	static void abc_lessthan_local_constant(call_context* context);
+	static void abc_lessthan_constant_local(call_context* context);
+	static void abc_lessthan_local_local(call_context* context);
+	static void abc_lessthan_constant_constant_localresult(call_context* context);
+	static void abc_lessthan_local_constant_localresult(call_context* context);
+	static void abc_lessthan_constant_local_localresult(call_context* context);
+	static void abc_lessthan_local_local_localresult(call_context* context);
 	static void abc_lessequals(call_context* context);
 	static void abc_lessequals_constant_constant(call_context* context);
 	static void abc_lessequals_local_constant(call_context* context);

@@ -22,6 +22,7 @@
 
 #include "swftypes.h"
 #include "memory_support.h"
+#include <unordered_set>
 
 class memorystream;
 
@@ -217,7 +218,7 @@ struct instance_info
 	u30 init;
 	u30 trait_count;
 	std::vector<traits_info> traits;
-	std::set<multiname*>* overriddenmethods;
+	std::unordered_set<uint32_t>* overriddenmethods;
 };
 
 struct class_info

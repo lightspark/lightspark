@@ -25,6 +25,7 @@
 #include <list>
 #include <queue>
 #include <map>
+#include <unordered_set>
 #include <boost/bimap.hpp>
 #include <string>
 #include "swftypes.h"
@@ -372,6 +373,8 @@ public:
 	Class_base** builtinClasses;
 	std::map<QName, Template_base*> templates;
 
+	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
+	
 	//Flags for command line options
 	bool useInterpreter;
 	bool useFastInterpreter;

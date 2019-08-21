@@ -1268,27 +1268,39 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	for(unsigned int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
+
 		if(instances[i].supername)
 		{
-			for (uint32_t j = 0; j < i; j++)
+			multiname* supermname = getMultiname(instances[i].supername,nullptr);
+			QName superclassName(supermname->name_s_id,supermname->ns[0].nsNameId);
+			auto it = root->getSystemState()->customclassoverriddenmethods.find(superclassName);
+			if (it == root->getSystemState()->customclassoverriddenmethods.end())
 			{
-				if (instances[j].name == instances[i].supername)
-				{
-					instances[i].overriddenmethods = instances[j].overriddenmethods;
-					break;
-				}
+				// super class is builtin class
+				instances[i].overriddenmethods = new std::unordered_set<uint32_t>();
+			}
+			else
+			{
+				instances[i].overriddenmethods = it->second;
 			}
 		}
 		else
-			instances[i].overriddenmethods = new std::set<multiname*>();
+			instances[i].overriddenmethods = new std::unordered_set<uint32_t>();
+
 		if (instances[i].overriddenmethods && !instances[i].isInterface())
 		{
 			for (uint32_t j = 0; j < instances[i].trait_count; j++)
 			{
 				if (instances[i].traits[j].kind&traits_info::Override)
-					instances[i].overriddenmethods->insert(getMultiname(instances[i].traits[j].name,nullptr));
+				{
+					const multiname_info* m=&constant_pool.multinames[instances[i].traits[j].name];
+					instances[i].overriddenmethods->insert(getString(m->name));
+				}
 			}
 		}
+		multiname* mname = getMultiname(instances[i].name,nullptr);
+		QName className(mname->name_s_id,mname->ns[0].nsNameId);
+		root->getSystemState()->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
 
 		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,nullptr));
 		LOG(LOG_TRACE,_("Flags:"));
@@ -1342,14 +1354,6 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 
 ABCContext::~ABCContext()
 {
-	std::set<std::set<multiname*>*> multinamesets;
-	for(unsigned int i=0;i<class_count;i++)
-	{
-		if (instances[i].overriddenmethods)
-			multinamesets.insert(instances[i].overriddenmethods);
-	}
-	for (auto it = multinamesets.begin(); it != multinamesets.end(); it++)
-		delete *it;
 }
 
 #ifdef PROFILING_SUPPORT
@@ -1432,8 +1436,22 @@ void ABCVm::finalize()
 
 ABCVm::~ABCVm()
 {
+	std::unordered_set<std::unordered_set<uint32_t>*> overriddenmethods;
 	for(size_t i=0;i<contexts.size();++i)
+	{
+		for(size_t j=0;j<contexts[i]->class_count;j++)
+		{
+			if (contexts[i]->instances[j].overriddenmethods)
+				overriddenmethods.insert(contexts[i]->instances[j].overriddenmethods);
+		}
 		delete contexts[i];
+	}
+	auto it = overriddenmethods.begin();
+	while(it != overriddenmethods.end())
+	{
+		delete (*it);
+		it++;
+	}
 }
 
 int ABCVm::getEventQueueSize()

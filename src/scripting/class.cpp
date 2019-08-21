@@ -116,7 +116,7 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 
 	assert_and_throw(class_index!=-1);
 	//The class is declared in the script and has an index
-	LOG(LOG_CALLS,_("Building instance traits"));
+	LOG_CALL("Building instance traits");
 
 	context->buildInstanceTraits(o,class_index);
 }
@@ -174,9 +174,11 @@ void Class_inherit::describeClassMetadata(pugi::xml_node &root) const
 	}
 }
 
-bool Class_inherit::hasoverriddenmethod(ABCContext* ctx, multiname *name) const
+bool Class_inherit::hasoverriddenmethod(multiname *name) const
 {
-	return class_index == -1 ? true : !ctx->instances[this->class_index].overriddenmethods || ctx->instances[this->class_index].overriddenmethods->find(name) != ctx->instances[this->class_index].overriddenmethods->end();
+	// TODO we currently only check for names, not for namespaces as there are some issues regarding protected namespaces
+	// so we may get some false positives here...
+	return class_index == -1 ? true : this->context->instances[this->class_index].overriddenmethods && this->context->instances[this->class_index].overriddenmethods->find(name->name_s_id) != this->context->instances[this->class_index].overriddenmethods->end();
 }
 
 template<>

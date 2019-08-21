@@ -89,7 +89,7 @@ public:
 	std::vector<scope_entry> class_scope;
 	virtual void describeClassMetadata(pugi::xml_node &root) const;
 	bool isBuiltin() const { return false; }
-	bool hasoverriddenmethod(ABCContext *ctx, multiname* name) const;
+	bool hasoverriddenmethod(multiname* name) const;
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

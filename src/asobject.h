@@ -1290,6 +1290,7 @@ class Rectangle;
 class RectangleTexture;
 class RegExp;
 class RootMovieClip;
+class SampleDataEvent;
 class SharedObject;
 class Sound;
 class SoundChannel;
@@ -1344,7 +1345,7 @@ template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
-template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT; }
+template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
@@ -1373,6 +1374,7 @@ template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE
 template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==SUBTYPE_RECTANGLETEXTURE; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
+template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
 template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
@@ -2112,11 +2114,15 @@ FORCE_INLINE void asAtomHandler::negate_i(asAtom& a,SystemState* sys)
 
 FORCE_INLINE void asAtomHandler::add_i(asAtom& a,SystemState* sys,asAtom &v2)
 {
-	int32_t num2=toInt(v2);
-	int32_t num1=toInt(a);
+	int64_t num2=toInt(v2);
+	int64_t num1=toInt(a);
 
 	LOG_CALL(_("add_i ") << num1 << '+' << num2);
-	setInt(a,sys,num1+num2);
+	int64_t res = num1+num2;
+	if (res >= INT32_MAX || res <= INT32_MIN)
+		setNumber(a,sys,res);
+	else
+		setInt(a,sys,res);
 }
 
 FORCE_INLINE void asAtomHandler::subtract_i(asAtom& a,SystemState* sys,asAtom &v2)
@@ -2133,7 +2139,8 @@ FORCE_INLINE void asAtomHandler::multiply_i(asAtom& a,SystemState* sys,asAtom &v
 	int num1=toInt(a);
 	int num2=toInt(v2);
 	LOG_CALL(_("multiply_i ")  << num1 << '*' << num2);
-	setInt(a,sys,num1*num2);
+	int64_t res = num1*num2;
+	setInt(a,sys,res);
 }
 
 FORCE_INLINE bool asAtomHandler::isNumeric(const asAtom& a)

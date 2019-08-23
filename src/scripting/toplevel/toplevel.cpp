@@ -329,9 +329,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	uint32_t& cur_recursion = getVm(getSystemState())->cur_recursion;
 	if(cur_recursion == getVm(getSystemState())->limits.max_recursion)
 	{
-		for(uint32_t i=0;i<numArgs;i++)
-			ASATOM_DECREF(args[i]);
-		ASATOM_DECREF(obj);
 		throwError<ASError>(kStackOverflowError);
 	}
 
@@ -415,8 +412,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	call_context cc(mi,inClass,ret);
 	cc.exec_pos = mi->body->preloadedcode.data();
 	asAtom* locals = g_newa(asAtom, cc.locals_size+2); // +2, because we need two more elements to store result of optimized operations
-	for(asAtom* i=locals;i< locals+cc.locals_size+2;++i)
-		asAtomHandler::setUndefined(*i);
+	std::fill_n(locals,cc.locals_size+2,asAtomHandler::undefinedAtom);
 	cc.locals=locals;
 	asAtom* stack = g_newa(asAtom, cc.mi->body->max_stack+1);
 	cc.stack=stack;
@@ -438,7 +434,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		LOG(LOG_ERROR,"obj invalid");
 	}
 	assert_and_throw(asAtomHandler::isValid(obj));
-	ASATOM_INCREF(obj); //this is free'd in ~call_context
 	cc.locals[0]=obj;
 
 	/* coerce arguments to expected types */
@@ -490,7 +485,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	//Parameters are ready
 
 	//obtain a local reference to this function, as it may delete itself
-	this->incRef();
+	if (!isMethod())
+		this->incRef();
 
 	++cur_recursion; //increment current recursion depth
 #ifndef NDEBUG
@@ -541,16 +537,16 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			unsigned int pos = cc.exec_pos-cc.mi->body->preloadedcode.data();
 			bool no_handler = true;
 
-			LOG(LOG_TRACE, "got an " << excobj->toDebugString());
-			LOG(LOG_TRACE, "pos=" << pos);
+			LOG_CALL("got an " << excobj->toDebugString());
+			LOG_CALL("pos=" << pos);
 			for (unsigned int i=0;i<mi->body->exceptions.size();i++)
 			{
 				exception_info_abc exc=mi->body->exceptions[i];
 				multiname* name=mi->context->getMultiname(exc.exc_type, NULL);
-				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to << " type=" << *name);
+				LOG_CALL("f=" << exc.from << " t=" << exc.to << " type=" << *name);
 				if (pos >= exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
 				{
-					LOG(LOG_INFO,"Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< asAtomHandler::toDebugString(obj));
+					LOG_CALL("Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< asAtomHandler::toDebugString(obj));
 					no_handler = false;
 					cc.exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc.runtime_stack_clear();
@@ -587,6 +583,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
+	else
+		coerceresult=true;
 
 	if (coerceresult)
 	{
@@ -595,7 +593,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			ASATOM_DECREF(v);
 	}
 
-	this->decRef(); //free local ref
+	if (!isMethod())
+		this->decRef(); //free local ref
 
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc.stackp != cc.stack)
@@ -606,11 +605,13 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			ASATOM_DECREF_POINTER((--cc.stackp));
 		}
 	}
-	for(asAtom* i=cc.locals;i< cc.locals+cc.locals_size+2;++i)
+	for(asAtom* i=cc.locals+1;i< cc.locals+cc.locals_size+2;++i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
 		ASATOM_DECREF_POINTER(i);
 	}
+	if (cc.locals[0].uintval != obj.uintval)
+		ASATOM_DECREF_POINTER(cc.locals);
 	for(asAtom* i=cc.scope_stack;i< cc.scope_stack+cc.curr_scope_stack;++i)
 	{
 		ASATOM_DECREF_POINTER(i);

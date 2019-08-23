@@ -367,6 +367,7 @@ class InterfaceClass: public Class_base
 	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
 		assert(argslen == 1);
+		ASATOM_INCREF(args[0]);
 		ret = args[0];
 	}
 	InterfaceClass(const QName& name, MemoryAccount* m):Class_base(name, m) { }

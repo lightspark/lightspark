@@ -643,8 +643,8 @@ class SampleDataEvent: public Event
 private:
 	Event* cloneImpl() const;
 public:
-	SampleDataEvent(Class_base* c) : Event(c, "sampleData"),position(0) {}
-	SampleDataEvent(Class_base* c,_NR<ByteArray> _data,number_t _pos) : Event(c, "sampleData"),data(_data),position(_pos) {}
+	SampleDataEvent(Class_base* c) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),position(0) {}
+	SampleDataEvent(Class_base* c,_NR<ByteArray> _data,number_t _pos) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),data(_data),position(_pos) {}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);

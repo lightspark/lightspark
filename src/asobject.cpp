@@ -268,7 +268,7 @@ bool ASObject::isEqual(ASObject* r)
 	{
 		case T_NULL:
 		case T_UNDEFINED:
-			if (!this->isConstructed() && !this->is<Class_base>())
+			if (!this->isInitialized() && !this->is<Class_base>())
 				return true;
 			return false;
 		case T_NUMBER:
@@ -822,7 +822,7 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 	if(asAtomHandler::isValid(obj->setter))
 	{
 		//Call the setter
-		LOG_CALL(_("Calling the setter"));
+		LOG_CALL(_("Calling the setter ")<<obj->type<<" "<<obj->slotid);
 		//One argument can be passed without creating an array
 		ASObject* target=this;
 		asAtom* arg1 = &o;

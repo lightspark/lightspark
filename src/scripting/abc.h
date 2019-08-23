@@ -1002,6 +1002,14 @@ private:
 	static void abc_declocal_i(call_context* context);
 	static void abc_negate_i(call_context* context);
 	static void abc_add_i(call_context* context);
+	static void abc_add_i_constant_constant(call_context* context);
+	static void abc_add_i_local_constant(call_context* context);
+	static void abc_add_i_constant_local(call_context* context);
+	static void abc_add_i_local_local(call_context* context);
+	static void abc_add_i_constant_constant_localresult(call_context* context);
+	static void abc_add_i_local_constant_localresult(call_context* context);
+	static void abc_add_i_constant_local_localresult(call_context* context);
+	static void abc_add_i_local_local_localresult(call_context* context);
 	static void abc_subtract_i(call_context* context);
 	static void abc_multiply_i(call_context* context);
 

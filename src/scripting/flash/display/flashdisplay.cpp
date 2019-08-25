@@ -1443,7 +1443,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	uint32_t next_FP;
 	tiny_string sceneName;
 	assert_and_throw(argslen==1 || argslen==2);
-	if(argslen==2)
+	if(argslen==2 && getSystemState()->mainClip->usesActionScript3)
 	{
 		sceneName = asAtomHandler::toString(args[1],getSystemState());
 	}
@@ -1937,23 +1937,23 @@ asAtom MovieClip::AVM1GetVariable(const tiny_string &name)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
-		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name));
+		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
 		if (it != avm1variables.end())
 			return it->second;
 	}
 	else if (pos == 0)
 	{
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		return AVM1GetVariable(localname);
+		return AVM1GetVariable(localname.lowercase());
 	}
 	else
 	{
-		tiny_string path = name.substr_bytes(0,pos);
+		tiny_string path = name.substr_bytes(0,pos).lowercase();
 		MovieClip* clip = AVM1GetClipFromPath(path);
 		if (clip)
 		{
 			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			return clip->AVM1GetVariable(localname);
+			return clip->AVM1GetVariable(localname.lowercase());
 		}
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
@@ -2055,6 +2055,11 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_getter_useHandCursor),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_setter_useHandCursor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getNextHighestDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1GetNextHighestDepth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachBitmap","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachBitmap),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2193,7 +2198,39 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::endFill(ret,sys,o,args,argslen);
 }
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1GetNextHighestDepth)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	asAtomHandler::setUInt(ret,sys,th->getMaxLegacyChildDepth()+1);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	if (argslen < 2)
+		throw RunTimeException("AVM1: invalid number of arguments for attachBitmap");
+	int Depth = asAtomHandler::toInt(args[1]);
+	if (!asAtomHandler::is<BitmapData>(args[0]))
+	{
+		LOG(LOG_ERROR,"AVM1AttachBitmap invalid type:"<<asAtomHandler::toDebugString(args[0]));
+		throw RunTimeException("AVM1: attachBitmap first parameter is no BitmapData");
+	}
 
+	BitmapData* data = asAtomHandler::as<BitmapData>(args[0]);
+	data->incRef();
+	Bitmap* toAdd = Class<Bitmap>::getInstanceS(sys,_MR(data));
+	if (argslen > 2)
+		toAdd->pixelSnapping = asAtomHandler::toString(args[2],sys);
+	if (argslen > 3)
+		toAdd->smoothing = asAtomHandler::Boolean_concrete(args[3]);
+	if(th->hasLegacyChildAt(Depth) )
+	{
+		th->deleteLegacyChildAt(Depth);
+		th->insertLegacyChildAt(Depth,toAdd);
+	}
+	else
+		th->insertLegacyChildAt(Depth,toAdd);
+	ret=asAtomHandler::fromObject(toAdd);
+}
 void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
@@ -2362,7 +2399,18 @@ void DisplayObjectContainer::purgeLegacyChildren()
 		i++;
 	}
 }
-
+uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()
+{
+	auto it = depthToLegacyChild.left.begin();
+	int32_t max =0;
+	while (it !=depthToLegacyChild.left.end())
+	{
+		if (it->first > max)
+			max = it->first;
+		it++;
+	}
+	return max;
+}
 void DisplayObjectContainer::checkClipDepth()
 {
 	DisplayObject* clipobj = NULL;
@@ -2496,7 +2544,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
-			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
+			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"' tag="<<(*it)->getTagID());
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -2830,7 +2878,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 	ASATOM_INCREF(args[0]);
 	_R<DisplayObject> child1=_MR(asAtomHandler::as<DisplayObject>(args[0]));
 	ASATOM_INCREF(args[1]);
-	_R<DisplayObject> child2=_MR(asAtomHandler::as<DisplayObject>(args[0]));
+	_R<DisplayObject> child2=_MR(asAtomHandler::as<DisplayObject>(args[1]));
 
 	{
 		Locker l(th->mutexDisplayList);
@@ -4570,7 +4618,7 @@ void MovieClip::advanceFrame()
 	 */
 	if((!this->is<RootMovieClip>() && fromDefineSpriteTag==UINT32_MAX)
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
-		   && !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))
+		   && (getSystemState()->mainClip->usesActionScript3 || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState())))))
 	{
 		DisplayObjectContainer::advanceFrame();
 		declareFrame();

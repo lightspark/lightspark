@@ -2006,7 +2006,6 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		// SWF5 action model
 		// ActionEnumerate
 		// ActionTargetPath
-		// ActionStackSwap
 		case 0x3a: // ActionDelete
 		case 0x3b: // ActionDelete2
 		case 0x3c: // ActionDefineLocal
@@ -2024,6 +2023,7 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x4a: // ActionToNumber
 		case 0x4b: // ActionToString
 		case 0x4c: // ActionPushDuplicate
+		case 0x4d: // ActionStackSwap
 		case 0x4e: // ActionGetMember
 		case 0x4f: // ActionSetMember
 		case 0x50: // ActionIncrement
@@ -2091,7 +2091,9 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		case 0x67: // ActionGreater
 			break;
 		// SWF7 action model
-		// ActionExtends ActionCastOp ActionImplementsOp ActionTry ActionThrow
+		// ActionExtends ActionImplementsOp ActionTry ActionThrow
+		case 0x2b: // ActionCastOp
+			break;
 		case 0x8e: // ActionDefineFunction2
 		{
 			STRING s;

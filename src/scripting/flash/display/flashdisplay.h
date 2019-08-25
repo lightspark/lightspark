@@ -132,6 +132,7 @@ public:
 	void deleteLegacyChildAt(int32_t depth);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
+	uint32_t getMaxLegacyChildDepth();
 	void purgeLegacyChildren();
 	void checkClipDepth();
 	void advanceFrame() override;
@@ -631,6 +632,8 @@ public:
 	ASFUNCTION_ATOM(AVM1LineStyle);
 	ASFUNCTION_ATOM(AVM1BeginFill);
 	ASFUNCTION_ATOM(AVM1EndFill);
+	ASFUNCTION_ATOM(AVM1GetNextHighestDepth);
+	ASFUNCTION_ATOM(AVM1AttachBitmap);
 };
 
 class Stage: public DisplayObjectContainer

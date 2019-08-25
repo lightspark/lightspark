@@ -47,7 +47,10 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 		case 32: //SPACE
 			b = c == AS3KEYCODE_SPACE;
 			break;
-		default:	
+		case 13: //ENTER
+			b = c == AS3KEYCODE_ENTER;
+			break;
+		default:
 			LOG(LOG_NOT_IMPLEMENTED,"AVM1: Key.isDown handling of key "<<key);
 	}
 	asAtomHandler::setBool(ret,b);

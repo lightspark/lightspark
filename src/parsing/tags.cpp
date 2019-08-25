@@ -836,7 +836,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	}
 }
 
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
 {
 	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;
@@ -912,7 +912,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	streampos expectedPos = offsetReference + (streampos)CodeTableOffset;
 	if (in.tellg() != expectedPos)
 	{
-		LOG(LOG_ERROR, "Malformed SWF file: unexpected offset in DefineFont3 tag");
+		LOG(LOG_ERROR, "Malformed SWF file: unexpected offset in DefineFont3 tag:"<<in.tellg()<<" "<<expectedPos<<" "<<NumGlyphs);
 		if (in.tellg() < expectedPos)
 		{
 			//Read too few bytes => We can still continue

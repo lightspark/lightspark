@@ -1454,7 +1454,6 @@ void ParseThread::parseSWF(UI8 ver)
 		root=getRootMovie();
 		parsedObject->loaderInfo->setWaitedObject(parsedObject);
 	}
-	root->setupAVM1RootMovie();
 	objectSpinlock.unlock();
 
 	TAGTYPE lasttagtype = TAG;
@@ -1511,11 +1510,14 @@ void ParseThread::parseSWF(UI8 ver)
 					LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 				}
 			}
+			else
+				root->usesActionScript3 = root->getSystemState()->mainClip->usesActionScript3;
 		}
 		else
 		{
 			root->getSystemState()->needsAVM2(true);
 		}
+		root->setupAVM1RootMovie();
 
 		bool done=false;
 		bool empty=true;

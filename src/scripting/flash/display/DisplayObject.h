@@ -282,6 +282,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_getAlpha);
 	ASFUNCTION_ATOM(AVM1_setAlpha);
 	ASFUNCTION_ATOM(AVM1_getBounds);
+	ASFUNCTION_ATOM(AVM1_swapDepths);
 	static void AVM1SetupMethods(Class_base* c);
 };
 }

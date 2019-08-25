@@ -651,6 +651,14 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				Sprite::_stopDrag(ret,clip->getSystemState(),obj,nullptr,0);
 				break;
 			}
+			case 0x2b: // ActionCastOp
+			{
+				asAtom obj = PopStack(stack);
+				asAtom constr = PopStack(stack);
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionCastOp "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(constr));
+				PushStack(stack,asAtomHandler::nullAtom);
+				break;
+			}
 			case 0x30: // ActionRandomNumber
 			{
 				asAtom am = PopStack(stack);
@@ -939,6 +947,15 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				PushStack(stack,a);
 				break;
 			}
+			case 0x4d: // ActionStackSwap
+			{
+				asAtom arg1 = PopStack(stack);
+				asAtom arg2 = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionStackSwap "<<asAtomHandler::toDebugString(arg1)<<" "<<asAtomHandler::toDebugString(arg2));
+				PushStack(stack,arg1);
+				PushStack(stack,arg2);
+				break;
+			}
 			case 0x4e: // ActionGetMember
 			{
 				asAtom name = PopStack(stack);
@@ -1177,6 +1194,10 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					if (!proto.isNull())
 						asAtomHandler::toObject(ret,clip->getSystemState())->setprop_prototype(proto);
 					asAtomHandler::as<AVM1Function>(func)->call(nullptr,&ret,args,numargs);
+				}
+				else if (asAtomHandler::is<Class_base>(func))
+				{
+					asAtomHandler::as<Class_base>(func)->getInstance(ret,true,args,numargs);
 				}
 				else
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNewMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));

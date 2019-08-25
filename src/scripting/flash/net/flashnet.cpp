@@ -697,7 +697,10 @@ ASFUNCTIONBODY_ATOM(SharedObject,getRemote)
 ASFUNCTIONBODY_ATOM(SharedObject,flush)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
-	ret = asAtomHandler::fromString(sys,"flushed");
+	if (!sys->mainClip->usesActionScript3)
+		ret = asAtomHandler::trueAtom;
+	else
+		ret = asAtomHandler::fromString(sys,"flushed");
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,clear)

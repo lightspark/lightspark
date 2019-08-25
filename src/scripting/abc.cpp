@@ -279,7 +279,32 @@ void ABCVm::registerClassesAVM1()
 	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 	builtin->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
+	builtin->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
 
+	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
+	{
+		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys);
+		builtin->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
+
+		ASObject* flashdisplaypackage = Class<ASObject>::getInstanceS(m_sys);
+		flashpackage->setVariableByQName("display",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashdisplaypackage,CONSTANT_TRAIT);
+
+		flashdisplaypackage->setVariableByQName("BitmapData","flash.display",Class<BitmapData>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+
+		ASObject* flashfilterspackage = Class<ASObject>::getInstanceS(m_sys);
+		flashpackage->setVariableByQName("filters",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashfilterspackage,CONSTANT_TRAIT);
+
+		flashfilterspackage->setVariableByQName("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("GlowFilter","flash.filters",Class<GlowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("BevelFilter","flash.filters",Class<BevelFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("ColorMatrixFilter","flash.filters",Class<ColorMatrixFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("BlurFilter","flash.filters",Class<BlurFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+	}
 	m_sys->avm1global=builtin;
 }
 
@@ -2194,7 +2219,8 @@ void ABCVm::Run(ABCVm* th)
 #endif
 	}
 	th->registerClasses();
-	th->registerClassesAVM1();
+	if (!th->m_sys->mainClip->usesActionScript3)
+		th->registerClassesAVM1();
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");

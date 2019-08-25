@@ -1742,11 +1742,36 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	v = asAtomHandler::fromNumber(sys,y2,false);
 	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
+{
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (argslen < 1)
+		throw RunTimeException("AVM1: invalid number of arguments for swapDepths");
+	DisplayObject* child1 = th;
+	DisplayObject* child2 = nullptr;
+	if (asAtomHandler::is<DisplayObject>(args[0]))
+		child2 = asAtomHandler::as<DisplayObject>(args[0]);
+	else
+	{
+		if (th->getParent()->hasLegacyChildAt(asAtomHandler::toInt(args[0])))
+			child2 = th->getParent()->getLegacyChildAt(asAtomHandler::toInt(args[0]));
+	}
+	if (th->getParent() && child1 && child2)
+	{
+		asAtom newargs[2];
+		newargs[0] = asAtomHandler::fromObject(child1);
+		newargs[1] = asAtomHandler::fromObject(child2);
+		asAtom obj = asAtomHandler::fromObject(th->getParent());
+		DisplayObjectContainer::swapChildren(ret,sys,obj,newargs,2);
+	}
+}
+
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
 	
 	c->destroyContents();
+	c->borrowedVariables.destroyContents();
 	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
@@ -1774,5 +1799,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getAlpha),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setAlpha),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_swapDepths),NORMAL_METHOD,true);
 }
 

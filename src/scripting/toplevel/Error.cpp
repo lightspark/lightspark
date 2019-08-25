@@ -36,6 +36,8 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 
 	//Replace "%1", "%2" and "%3" with the optional arguments
 	stringstream msg;
+	msg << "Error #"<<errorID;
+	msg << ": ";
 	const char *msgtemplate = found->second;
 	assert(msgtemplate);
 	while (*msgtemplate)

@@ -139,6 +139,8 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	bool deleteVariableByMultiname(const multiname& name) override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

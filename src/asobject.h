@@ -1220,6 +1220,8 @@ public:
 	
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
+	// copies all dynamic values to the target
+	void copyValues(ASObject* target);
 };
 
 
@@ -2216,8 +2218,9 @@ inline ASObject* asfreelist::getObjectFromFreeList()
 	// all ASObjects must be created in the VM thread
 	//assert_and_throw(isVmThread());
 #endif
+	assert(freelistsize>=0);
 	ASObject* o = freelistsize ? freelist[--freelistsize] :nullptr;
-	LOG_CALL("getfromfreelist:"<<freelistsize<<" "<<o);
+	LOG_CALL("getfromfreelist:"<<freelistsize<<" "<<o<<" "<<this);
 	return o;
 }
 inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
@@ -2229,7 +2232,8 @@ inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
 	assert(obj->isLastRef());
 	if (freelistsize < FREELIST_SIZE)
 	{
-		LOG_CALL("pushtofreelist:"<<freelistsize<<" "<<obj);
+		assert(freelistsize>=0);
+		LOG_CALL("pushtofreelist:"<<freelistsize<<" "<<obj<<" "<<this);
 		obj->setCached();
 		freelist[freelistsize++]=obj;
 		return true;

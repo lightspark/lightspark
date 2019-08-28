@@ -97,7 +97,7 @@ void DisplayObject::Render(RenderContext& ctxt)
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),filters(Class<Array>::getInstanceSNoArgs(c->getSystemState())),hasChanged(true),legacy(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -1800,5 +1800,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setAlpha),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_swapDepths),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),NORMAL_METHOD,true);
 }
 

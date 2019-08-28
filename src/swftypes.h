@@ -1411,6 +1411,7 @@ public:
 	unsigned int next_FP;
 	bool stop_FP;
 	bool explicit_FP;
+	bool creatingframe;
 	RunState();
 };
 

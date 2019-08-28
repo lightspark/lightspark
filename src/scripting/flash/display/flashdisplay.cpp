@@ -1468,7 +1468,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
 		if(next_FP > getFramesLoaded())
 		{
-			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded());
+			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded() << " on "<<this->getTagID());
 			/* spec says we should throw an error, but then YT breaks */
 			//throwError<ArgumentError>(kInvalidArgumentError,stop ? "gotoAndStop: frame not found" : "gotoAndPlay: frame not found");
 			next_FP = getFramesLoaded()-1;
@@ -1477,13 +1477,16 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (getSystemState()->getSwfVersion() >= 9 && !this->isOnStage())
+
+	if (!this->isOnStage())
 	{
 		advanceFrame();
 		initFrame();
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
+	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		advanceFrame();
 }
 
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
@@ -1494,7 +1497,7 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
 		return;
 	}
-	AVM1gotoFrame(dest,false,false);
+	AVM1gotoFrame(dest, true, true);
 }
 void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {
@@ -1502,6 +1505,8 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 	state.explicit_FP = true;
 	if (switchplaystate)
 		state.stop_FP = stop;
+	if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		advanceFrame();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -1529,6 +1534,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 		th->incRef();
 		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
+	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		th->advanceFrame();
+
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -1544,6 +1552,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 		th->incRef();
 		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
+	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		th->advanceFrame();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
@@ -1755,7 +1765,8 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 		}
 		if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+			if (!this->state.explicit_FP)
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
 		}
 		if (e->type == "load" && it->EventFlags.ClipEventLoad)
 		{
@@ -1766,18 +1777,21 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 	{
 		if (e->type == "enterFrame")
 		{
-			asAtom func=asAtomHandler::invalidAtom;
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-		
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONENTERFRAME;
-			getVariableByMultiname(func,m);
-			if (asAtomHandler::is<AVM1Function>(func))
+			if (!this->state.explicit_FP)
 			{
-				asAtom ret=asAtomHandler::invalidAtom;
-				asAtom obj = asAtomHandler::fromObject(this);
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+			
+				m.name_s_id=BUILTIN_STRINGS::STRING_ONENTERFRAME;
+				getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
 			}
 		}
 		else if (e->type == "load")
@@ -1824,6 +1838,10 @@ MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
 {
 	if (path.empty() || path == "this")
 		return this;
+	if (path =="_root")
+	{
+		return getSystemState()->mainClip;
+	}
 	if (path.startsWith("/"))
 	{
 		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
@@ -1900,7 +1918,8 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
-		uint32_t nameId = getSystemState()->getUniqueStringId(name);
+		tiny_string localname = name.lowercase();
+		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
@@ -1913,7 +1932,7 @@ void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
 	}
 	else if (pos == 0)
 	{
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1).lowercase();
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
@@ -2060,6 +2079,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2104,7 +2124,7 @@ void MovieClip::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	if (argslen != 3)
+	if (argslen != 3 && argslen != 4)
 		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
 	int Depth = asAtomHandler::toInt(args[2]);
 	uint32_t nameId = asAtomHandler::toStringId(args[1],sys);
@@ -2117,6 +2137,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	toAdd->name = nameId;
+	if (argslen == 4)
+	{
+		ASObject* o = asAtomHandler::getObject(args[3]);
+		if (o)
+		{
+			o->copyValues(toAdd);
+		}
+	}
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth);
@@ -2143,7 +2171,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
-	toAdd->incRef();
 	toAdd->constructionComplete();
 	ret=asAtomHandler::fromObject(toAdd);
 }
@@ -3006,10 +3033,12 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 		while (it != dynamicDisplayList.end())
 		{
 			(*it)->incRef();
-			(*it)->getBounds(xmin,xmax,ymin,ymax,m);
-			if (xmin <= point->getX() && xmax >= point->getX()
-					&& ymin <= point->getY() && ymax >= point->getY())
-					ar->push(asAtomHandler::fromObject((*it).getPtr()));
+			if ((*it)->getBounds(xmin,xmax,ymin,ymax,m))
+			{
+				if (xmin <= point->getX() && xmax >= point->getX()
+						&& ymin <= point->getY() && ymax >= point->getY())
+						ar->push(asAtomHandler::fromObject((*it).getPtr()));
+			}
 			if ((*it)->is<DisplayObjectContainer>())
 				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
 			it++;
@@ -4494,6 +4523,34 @@ void DisplayObjectContainer::executeFrameScript()
 	DisplayObject::executeFrameScript();
 }
 
+multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+{
+	if (asAtomHandler::is<DisplayObject>(o))
+	{
+		// it seems that setting a new value for a named existing legacy child removes the child from the display list
+		variable* v = findVariableByMultiname(name,this->getClass());
+		if (v && asAtomHandler::is<DisplayObject>(v->var))
+		{
+			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
+			obj->incRef();
+			_removeChild(obj);
+		}
+	}
+	return InteractiveObject::setVariableByMultiname(name,o,allowConst,alreadyset);
+}
+
+bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
+{
+	variable* v = findVariableByMultiname(name,this->getClass());
+	if (v && asAtomHandler::is<DisplayObject>(v->var))
+	{
+		DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
+		obj->incRef();
+		_removeChild(obj);
+	}
+	return InteractiveObject::deleteVariableByMultiname(name);
+}
+
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
  * frame top-down. At the same time, call their
@@ -4533,7 +4590,7 @@ void MovieClip::declareFrame()
 			{
 				iter->execute(this);
 			}
-			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && !state.explicit_FP && (int)state.FP != state.last_FP)
+			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP)
 				currentframeIterator= iter;
 			++iter;
 		}
@@ -4571,6 +4628,7 @@ void MovieClip::initFrame()
 	avm1initactionsdone = frameinitactionsdone.find(state.FP) != frameinitactionsdone.end();
 	if (!avm1initactionsdone)
 		frameinitactionsdone.insert(state.FP);
+	state.creatingframe=false;
 }
 
 void MovieClip::executeFrameScript()
@@ -4583,7 +4641,10 @@ void MovieClip::executeFrameScript()
 		itbind++;
 	}
 	if (currentframeIterator != frames.end())
+	{
 		currentframeIterator->AVM1executeActions(this,avm1initactionsdone);
+		currentframeIterator = frames.end();
+	}
 
 	if (frameScriptToExecute != UINT32_MAX)
 	{
@@ -4595,6 +4656,7 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 	}
 	Sprite::executeFrameScript();
+	state.explicit_FP=false;
 }
 
 /* This is run in vm's thread context */
@@ -4611,6 +4673,7 @@ void DisplayObjectContainer::advanceFrame()
  */
 void MovieClip::advanceFrame()
 {
+	state.creatingframe=true;
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag
@@ -4639,7 +4702,6 @@ void MovieClip::advanceFrame()
 	if (state.next_FP != state.FP)
 	{
 		state.FP=state.next_FP;
-		state.explicit_FP=false;
 	}
 	if(!state.stop_FP && getFramesLoaded()>0)
 	{

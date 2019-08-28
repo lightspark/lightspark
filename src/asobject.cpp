@@ -1738,6 +1738,22 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	return false; 
 }
 
+void ASObject::copyValues(ASObject *target)
+{
+	auto it = Variables.Variables.begin();
+	while (it != Variables.Variables.end())
+	{
+		if (it->second.kind == DYNAMIC_TRAIT)
+		{
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_STRING;
+			m.name_s_id = it->first;
+			target->setVariableByMultiname(m,it->second.var,CONST_ALLOWED);
+		}
+		it++;
+	}
+}
+
 
 
 

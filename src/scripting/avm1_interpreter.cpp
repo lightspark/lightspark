@@ -165,19 +165,19 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 			{
 				uint32_t frame = clip->state.FP+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionNextFrame "<<frame);
-				clip->AVM1gotoFrame(frame,false);
+				clip->AVM1gotoFrame(frame,true,true);
 				break;
 			}
 			case 0x05: // ActionPreviousFrame
 			{
 				uint32_t frame = clip->state.FP > 0 ? clip->state.FP-1 : 0;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPreviousFrame "<<frame);
-				clip->AVM1gotoFrame(frame,false);
+				clip->AVM1gotoFrame(frame,true,true);
 				break;
 			}
 			case 0x06: // ActionPlay
 			{
-				uint32_t frame = clip->state.FP == clip->state.next_FP ? clip->state.FP+1 : clip->state.next_FP;
+				uint32_t frame = clip->state.next_FP;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionPlay ");
 				clip->AVM1gotoFrame(frame,false,true);
 				break;
@@ -585,6 +585,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				}
 				if (o && o->getParent())
 				{
+					o->incRef();
 					o->getParent()->_removeChild(o);
 				}
 				break;
@@ -963,7 +964,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom ret=asAtomHandler::invalidAtom;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetMember "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
-				ASObject* o = asAtomHandler::getObject(scriptobject);
+				ASObject* o = asAtomHandler::toObject(scriptobject,clip->getSystemState());
 				multiname m(nullptr);
 				m.isAttribute = false;
 				switch (asAtomHandler::getObjectType(name))
@@ -1125,6 +1126,11 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				asAtom func=asAtomHandler::invalidAtom;
 				if (asAtomHandler::isValid(scriptobject))
 				{
+					if (asAtomHandler::isNull(scriptobject) || asAtomHandler::isUndefined(scriptobject))
+					{
+						PushStack(stack,asAtomHandler::undefinedAtom);
+						break;
+					}
 					ASObject* scrobj = asAtomHandler::toObject(scriptobject,clip->getSystemState());
 					scrobj->getVariableByMultiname(func,m);
 					if (!asAtomHandler::is<IFunction>(func))

@@ -85,12 +85,13 @@ public:
 	ASFUNCTION_ATOM(_getMouseEnabled);
 	ASFUNCTION_ATOM(_setDoubleClickEnabled);
 	ASFUNCTION_ATOM(_getDoubleClickEnabled);
-	bool destruct();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	virtual void lostFocus() {}
 	virtual void gotFocus() {} 
 	virtual void textInputChanged(const tiny_string& newtext) {} 
+	void setMouseEnabled(bool enabled) { mouseEnabled = enabled; }
 };
 
 class DisplayObjectContainer: public InteractiveObject

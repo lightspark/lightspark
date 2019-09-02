@@ -960,9 +960,6 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	std::vector<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
-		// only check interactive objects
-		if(interactiveObjectsOnly && !(*j)->is<InteractiveObject>())
-			continue;
 		//Don't check masks
 		if((*j)->isMask())
 			continue;
@@ -977,6 +974,10 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		if(!ret.isNull())
 			break;
 	}
+	// only check interactive objects
+	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>())
+		ret.reset();
+	
 	/* When mouseChildren is false, we should get all events of our children */
 	if(ret && !mouseChildren)
 	{
@@ -998,7 +999,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,this->is<RootMovieClip>() ? interactiveObjectsOnly : false);
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly);
 
 	if (ret.isNull() && hitArea.isNull())
 	{
@@ -1820,7 +1821,10 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	if (this->actions.AllEventFlags.ClipEventMouseDown ||
 			this->actions.AllEventFlags.ClipEventMouseMove ||
 			this->actions.AllEventFlags.ClipEventMouseUp)
+	{
+		setMouseEnabled(true);
 		getSystemState()->stage->AVM1AddMouseListener(this);
+	}
 	if (this->actions.AllEventFlags.ClipEventKeyDown ||
 			this->actions.AllEventFlags.ClipEventKeyUp)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
@@ -2164,6 +2168,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	uint32_t nameId = asAtomHandler::toStringId(args[0],sys);
 	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(sys);
 	toAdd->name = nameId;
+	toAdd->setMouseEnabled(false);
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth);
@@ -3828,7 +3833,15 @@ _NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, numb
 	//NOTE: on the Y asix the 0th line is valid, while the one past the width is not
 	//NOTE: This is tested behaviour!
 	if(!bitmapData.isNull() && x > 0 && x <= bitmapData->getWidth() && y >=0 && y < bitmapData->getHeight())
+	{
+		if (interactiveObjectsOnly)
+		{
+			// when checking interactive objects only, we need the real object that is hitted, it will be properly handled in the parent
+			this->incRef();
+			return _MR(this);
+		}
 		return last;
+	}
 	return NullRef;
 }
 

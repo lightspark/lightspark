@@ -1443,12 +1443,14 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 			getSystemState()->stage->AVM1AddEventListener(this);
 			setIsEnumerable(name, false);
 		}
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE)
+		if (this->is<InteractiveObject>() && (
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
+			this->as<InteractiveObject>()->setMouseEnabled(true);
 			getSystemState()->stage->AVM1AddMouseListener(this);
 			setIsEnumerable(name, false);
 		}
@@ -1466,6 +1468,17 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 			this->incRef();
 			getSystemState()->unregisterFrameListener(_MR(this));
 		}
+		if (this->is<InteractiveObject>() && (
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
+		{
+			this->as<InteractiveObject>()->setMouseEnabled(false);
+			getSystemState()->stage->AVM1RemoveMouseListener(this);
+		}
+		
 	}
 	return res;
 }

@@ -4540,13 +4540,16 @@ multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name,
 {
 	if (asAtomHandler::is<DisplayObject>(o))
 	{
-		// it seems that setting a new value for a named existing legacy child removes the child from the display list
+		// it seems that setting a new value for a named existing non-legacy child removes the child from the display list
 		variable* v = findVariableByMultiname(name,this->getClass());
 		if (v && asAtomHandler::is<DisplayObject>(v->var))
 		{
 			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
-			obj->incRef();
-			_removeChild(obj);
+			if (!obj->legacy)
+			{
+				obj->incRef();
+				_removeChild(obj);
+			}
 		}
 	}
 	return InteractiveObject::setVariableByMultiname(name,o,allowConst,alreadyset);
@@ -4558,8 +4561,11 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
 	if (v && asAtomHandler::is<DisplayObject>(v->var))
 	{
 		DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
-		obj->incRef();
-		_removeChild(obj);
+		if (!obj->legacy)
+		{
+			obj->incRef();
+			_removeChild(obj);
+		}
 	}
 	return InteractiveObject::deleteVariableByMultiname(name);
 }

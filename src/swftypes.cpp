@@ -1195,9 +1195,8 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTERLIST& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 {
-	UI8 FilterID;
-	stream >> FilterID;
-	switch(FilterID)
+	stream >> v.FilterID;
+	switch(v.FilterID)
 	{
 		case 0:
 			stream >> v.DropShadowFilter;
@@ -1224,7 +1223,7 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 			stream >> v.GradientBevelFilter;
 			break;
 		default:
-			LOG(LOG_ERROR,_("Unsupported Filter Id ") << (int)FilterID);
+			LOG(LOG_ERROR,_("Unsupported Filter Id ") << (int)v.FilterID);
 			throw ParseException("Unsupported Filter Id");
 	}
 	return stream;

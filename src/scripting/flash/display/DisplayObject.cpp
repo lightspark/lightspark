@@ -214,12 +214,24 @@ ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
 //TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,filters);
+ASFUNCTIONBODY_SETTER(DisplayObject,filters);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground);
 
+ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	if(argslen != 0)
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (th->filters.isNull())
+		th->filters = _MR(Class<Array>::getInstanceSNoArgs(sys));
+	th->filters->incRef();
+	ret = asAtomHandler::fromObject(th->filters.getPtr());
+}
 bool DisplayObject::computeCacheAsBitmap() const
 {
 	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);

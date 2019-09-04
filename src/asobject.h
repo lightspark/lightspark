@@ -1248,26 +1248,36 @@ class ASMutex;
 class ASQName;
 class ASString;
 class ASWorker;
+class BevelFilter;
 class Bitmap;
 class BitmapData;
+class BitmapFilter;
 class Boolean;
+class BlurFilter;
 class ByteArray;
 class Class_inherit;
 class ColorTransform;
+class ColorMatrixFilter;
+class ConvolutionFilter;
 class ContentElement;
 class Context3D;
 class ContextMenu;
 class ContextMenuBuiltInItems;
 class CubeTexture;
 class Date;
+class DisplacementFilter;
 class DisplayObject;
 class DisplayObjectContainer;
+class DropShadowFilter;
 class ElementFormat;
 class Event;
 class Function;
 class Function_object;
 class FontDescription;
 class Global;
+class GlowFilter;
+class GradientGlowFilter;
+class GradientBevelFilter;
 class IFunction;
 class Integer;
 class InteractiveObject;
@@ -1293,6 +1303,7 @@ class RectangleTexture;
 class RegExp;
 class RootMovieClip;
 class SampleDataEvent;
+class ShaderFilter;
 class SharedObject;
 class Sound;
 class SoundChannel;
@@ -1331,27 +1342,37 @@ template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
+template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
 template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
+template<> inline bool ASObject::is<BitmapFilter>() const { return subtype==SUBTYPE_BITMAPFILTER || subtype==SUBTYPE_GLOWFILTER || subtype==SUBTYPE_DROPSHADOWFILTER || subtype==SUBTYPE_GRADIENTGLOWFILTER || subtype==SUBTYPE_BEVELFILTER || subtype==SUBTYPE_COLORMATRIXFILTER || subtype==SUBTYPE_BLURFILTER || subtype==SUBTYPE_CONVOLUTIONFILTER || subtype==SUBTYPE_DISPLACEMENTFILTER || subtype==SUBTYPE_GRADIENTBEVELFILTER || subtype==SUBTYPE_SHADERFILTER; }
 template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
+template<> inline bool ASObject::is<BlurFilter>() const { return subtype==SUBTYPE_BLURFILTER; }
 template<> inline bool ASObject::is<ByteArray>() const { return subtype==SUBTYPE_BYTEARRAY; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
 template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }
+template<> inline bool ASObject::is<ColorMatrixFilter>() const { return subtype==SUBTYPE_COLORMATRIXFILTER; }
 template<> inline bool ASObject::is<ContentElement>() const { return subtype==SUBTYPE_CONTENTELEMENT || subtype == SUBTYPE_TEXTELEMENT; }
 template<> inline bool ASObject::is<Context3D>() const { return subtype==SUBTYPE_CONTEXT3D; }
 template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
 template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
+template<> inline bool ASObject::is<ConvolutionFilter>() const { return subtype==SUBTYPE_CONVOLUTIONFILTER; }
 template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTYPE_CUBETEXTURE; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
+template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
+template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
 template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
 template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GLOBAL; }
+template<> inline bool ASObject::is<GlowFilter>() const { return subtype==SUBTYPE_GLOWFILTER; }
+template<> inline bool ASObject::is<GradientGlowFilter>() const { return subtype==SUBTYPE_GRADIENTGLOWFILTER; }
+template<> inline bool ASObject::is<GradientBevelFilter>() const { return subtype==SUBTYPE_GRADIENTBEVELFILTER; }
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
@@ -1377,6 +1398,7 @@ template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
+template<> inline bool ASObject::is<ShaderFilter>() const { return subtype==SUBTYPE_SHADERFILTER; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
 template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }

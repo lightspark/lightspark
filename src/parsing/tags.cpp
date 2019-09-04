@@ -42,6 +42,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/flash/filters/flashfilters.h"
 #include "backends/audio.h"
 
 #undef RGB
@@ -1705,6 +1706,47 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 	PlaceObject2Tag::setProperties(obj,parent);
 	if (PlaceFlagHasBlendMode)
 		obj->setBlendMode(BlendMode);
+	if (this->SurfaceFilterList.Filters.size())
+	{
+		if (obj->filters.isNull())
+			obj->filters = _MR(Class<Array>::getInstanceSNoArgs(obj->getSystemState()));
+		auto it = this->SurfaceFilterList.Filters.begin();
+		while (it != this->SurfaceFilterList.Filters.end())
+		{
+			switch(it->FilterID)
+			{
+				case 0:
+					obj->filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(obj->getSystemState(),it->DropShadowFilter)));
+					break;
+				case 1:
+					obj->filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(obj->getSystemState(),it->BlurFilter)));
+					break;
+				case 2:
+					obj->filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(obj->getSystemState(),it->GlowFilter)));
+					break;
+				case 3:
+					obj->filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(obj->getSystemState(),it->BevelFilter)));
+					break;
+				case 4:
+					obj->filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(obj->getSystemState(),it->GradientGlowFilter)));
+					break;
+				case 5:
+					obj->filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(obj->getSystemState(),it->ConvolutionFilter)));
+					break;
+				case 6:
+					obj->filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(obj->getSystemState(),it->ColorMatrixFilter)));
+					break;
+				case 7:
+					obj->filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(obj->getSystemState(),it->GradientBevelFilter)));
+					break;
+				default:
+					LOG(LOG_ERROR,"Unsupported Filter Id " << (int)it->FilterID);
+					break;
+			}
+			it++;
+		}
+	}
+	
 }
 
 void SetBackgroundColorTag::execute(RootMovieClip* root) const

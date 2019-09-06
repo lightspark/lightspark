@@ -231,7 +231,11 @@ protected:
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
-		{ return TokenContainer::hitTestImpl(last,x,y, type); }
+		{
+			if (interactiveObjectsOnly)
+				this->incRef();
+			return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
+		}
 public:
 	Shape(Class_base* c);
 	Shape(Class_base* c, const tokensVector& tokens, float scaling);
@@ -256,7 +260,11 @@ protected:
 	void renderImpl(RenderContext& ctxt) const
 		{ TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
-		{ return TokenContainer::hitTestImpl(last,x,y, type); }
+		{
+			if (interactiveObjectsOnly)
+				this->incRef();
+			return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
+		}
 public:
 	MorphShape(Class_base* c);
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);

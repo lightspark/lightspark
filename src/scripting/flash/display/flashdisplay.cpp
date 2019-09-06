@@ -971,7 +971,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
 		ret=(*j)->hitTest(_MR(this), localX,localY, type,interactiveObjectsOnly);
-		if(!ret.isNull())
+		if(!ret.isNull() && (!interactiveObjectsOnly || ret->is<InteractiveObject>()) )
 			break;
 	}
 	// only check interactive objects
@@ -1504,9 +1504,17 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {
 	state.next_FP = frame;
 	state.explicit_FP = true;
+	bool advance = true;
 	if (switchplaystate)
+	{
+		if (!stop && state.stop_FP)
+		{
+			// play called and we have stopped before, no need to advance
+			advance = false;
+		}
 		state.stop_FP = stop;
-	if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	}
+	if (advance) 
 		advanceFrame();
 }
 
@@ -1744,6 +1752,8 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "click" && it->EventFlags.ClipEventRelease)
 					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
+					|| (e->type == "rollOver" && it->EventFlags.ClipEventRollOver)
+					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					)
 			{
@@ -4599,6 +4609,7 @@ void MovieClip::declareFrame()
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
 
+	bool newFrame = (int)state.FP != state.last_FP;
 	currentframeIterator=frames.end();
 	if(getFramesLoaded())
 	{
@@ -4609,7 +4620,7 @@ void MovieClip::declareFrame()
 			{
 				iter->execute(this);
 			}
-			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP)
+			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && (!state.stop_FP || newFrame))
 				currentframeIterator= iter;
 			++iter;
 		}

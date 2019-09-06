@@ -67,6 +67,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 		asAtomHandler::setUndefined(*result);
 	std::stack<asAtom> stack;
 	asAtom registers[256];
+	std::fill_n(registers,256,asAtomHandler::undefinedAtom);
 	std::map<uint32_t,asAtom> locals;
 	int curdepth = 0;
 	int maxdepth= clip->getSystemState()->mainClip->version < 6 ? 8 : 16;

@@ -1223,6 +1223,8 @@ public:
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
+	bool AVM1HandleMouseEventStandard(ASObject *dispobj, MouseEvent *e);
+	
 	
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target);

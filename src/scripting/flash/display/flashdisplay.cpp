@@ -971,8 +971,18 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
 		ret=(*j)->hitTest(_MR(this), localX,localY, type,interactiveObjectsOnly);
-		if(!ret.isNull() && (!interactiveObjectsOnly || ret->is<InteractiveObject>()) )
+		if(!ret.isNull())
+		{
+			if (interactiveObjectsOnly && !ret->is<InteractiveObject>())
+			{
+				if (this->is<RootMovieClip>())
+					continue;
+				this->incRef();
+				ret = _MNR(this);
+				return ret;
+			}
 			break;
+		}
 	}
 	// only check interactive objects
 	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>())
@@ -1727,7 +1737,8 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
 				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+			std::map<uint32_t,asAtom> m;
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,m);
 		}
 	}
 	Sprite::AVM1HandleKeyboardEvent(e);
@@ -1757,7 +1768,8 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					)
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+				std::map<uint32_t,asAtom> m;
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,m);
 			}
 		}
 		AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
@@ -1768,20 +1780,21 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
 {
 	if (!this->isOnStage())
 		return;
+	std::map<uint32_t,asAtom> m;
 	for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
 	{
 		if (e->type == "complete" && it->EventFlags.ClipEventLoad)
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,m);
 		}
 		if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
 		{
 			if (!this->state.explicit_FP)
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,m);
 		}
 		if (e->type == "load" && it->EventFlags.ClipEventLoad)
 		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,m);
 		}
 	}
 	if (dispatcher == this)
@@ -2003,8 +2016,6 @@ asAtom MovieClip::AVM1GetVariable(const tiny_string &name)
 		if (asAtomHandler::isInvalid(ret))// get Variable from global object
 			getSystemState()->avm1global->getVariableByMultiname(ret,m);
 	}
-	if (asAtomHandler::isInvalid(ret))
-		asAtomHandler::setUndefined(ret);
 	return ret;
 }
 asAtom MovieClip::getVariableBindingValue(const tiny_string &name)
@@ -3966,7 +3977,8 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 					c = c->getParent();
 				if (c)
 				{
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions);
+					std::map<uint32_t,asAtom> m;
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,m);
 					handled = true;
 				}
 				
@@ -4125,7 +4137,8 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			DisplayObjectContainer* c = getParent();
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
-			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions);
+			std::map<uint32_t,asAtom> m;
+			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,m);
 			handled=true;
 		}
 	}
@@ -4551,9 +4564,9 @@ multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name,
 {
 	if (asAtomHandler::is<DisplayObject>(o))
 	{
-		// it seems that setting a new value for a named existing non-legacy child removes the child from the display list
+		// it seems that setting a new value for a named existing dynamic child removes the child from the display list
 		variable* v = findVariableByMultiname(name,this->getClass());
-		if (v && asAtomHandler::is<DisplayObject>(v->var))
+		if (v && v->kind == TRAIT_KIND::DYNAMIC_TRAIT && asAtomHandler::is<DisplayObject>(v->var))
 		{
 			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
 			if (!obj->legacy)
@@ -4569,7 +4582,7 @@ multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name,
 bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
 {
 	variable* v = findVariableByMultiname(name,this->getClass());
-	if (v && asAtomHandler::is<DisplayObject>(v->var))
+	if (v && v->kind == TRAIT_KIND::DYNAMIC_TRAIT && asAtomHandler::is<DisplayObject>(v->var))
 	{
 		DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
 		if (!obj->legacy)
@@ -4705,6 +4718,13 @@ void DisplayObjectContainer::advanceFrame()
 void MovieClip::advanceFrame()
 {
 	state.creatingframe=true;
+	if (frameScriptToExecute != UINT32_MAX)
+	{
+		// an ExecuteFrameScriptEvent was not handled yet, so we execute the script before advancing to next frame
+		// this can happen if a MovieClip was constructed and has been set explicitely to another frame (by gotoAndStop etc.)
+		// before returning to the event loop
+		executeFrameScript();
+	}
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag

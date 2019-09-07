@@ -58,7 +58,7 @@ int ACTIONRECORD::getFullLength()
 	return res;
 }
 
-void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vector<ACTIONRECORD> &actionlist, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames,const std::vector<uint8_t>& paramregisternumbers,
+void ACTIONRECORD::executeActions(MovieClip *clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal)
 {
 	Log::calls_indent++;
@@ -136,6 +136,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 	}
 	for (uint32_t i = 0; i < paramregisternumbers.size() && i < num_args; i++)
 	{
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<asAtomHandler::toDebugString(args[i]));
 		ASATOM_INCREF(args[i]);
 		if (paramregisternumbers[i] == 0)
 			locals[paramnames[i]] = args[i];
@@ -348,8 +349,15 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					else
 						res = clip->AVM1GetVariable(s);
 				}
+				if (asAtomHandler::isInvalid(res) && !scopevariables.empty())
+				{
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s);
+					auto it = scopevariables.find(nameID);
+					if (it != scopevariables.end())
+						res = it->second;
+				}
 				if (asAtomHandler::isInvalid(res))
-					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionGetVariable variable not found:"<<asAtomHandler::toDebugString(name));
+					asAtomHandler::setUndefined(res);
 				PushStack(stack,res);
 				break;
 			}
@@ -1394,7 +1402,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					paramnames.push_back(clip->getSystemState()->getUniqueStringId(it->data_string[i].lowercase()));
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDefineFunction2 "<<it->data_string.front()<<" "<<it->data_string.size()-1<<" "<<it->data_flag1<<it->data_flag2<<it->data_flag3<<it->data_flag4<<it->data_flag5<<it->data_flag6<<it->data_flag7<<it->data_flag8<<it->data_flag9);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist,it->data_registernumber,it->data_flag1, it->data_flag2, it->data_flag3, it->data_flag4, it->data_flag5, it->data_flag6, it->data_flag7, it->data_flag8, it->data_flag9);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist,locals,it->data_registernumber,it->data_flag1, it->data_flag2, it->data_flag3, it->data_flag4, it->data_flag5, it->data_flag6, it->data_flag7, it->data_flag8, it->data_flag9);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()));
 				if (it->data_string.front() == "")
@@ -1552,7 +1560,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 					paramnames.push_back(clip->getSystemState()->getUniqueStringId(it->data_string[i].lowercase()));
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" ActionDefineFunction "<<it->data_string.front()<<" "<<it->data_string.size()-1);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist,locals);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()));
 				if (it->data_string.front() == "")

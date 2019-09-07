@@ -185,7 +185,6 @@ public:
 	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) { }
 	
 	tiny_string AVM1GetPath();
-	bool AVM1HandleMouseEventStandard(DisplayObject *dispobj, MouseEvent *e);
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	virtual uint32_t getTagID() const { return 0;}

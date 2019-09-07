@@ -1460,6 +1460,7 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(true);
@@ -1485,6 +1486,7 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(false);
@@ -1493,80 +1495,6 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 		
 	}
 	return res;
-}
-bool DisplayObject::AVM1HandleMouseEventStandard(DisplayObject *dispobj,MouseEvent *e)
-{
-	bool result = false;
-	asAtom func=asAtomHandler::invalidAtom;
-	multiname m(nullptr);
-	m.name_type=multiname::NAME_STRING;
-	m.isAttribute = false;
-	asAtom ret=asAtomHandler::invalidAtom;
-	asAtom obj = asAtomHandler::fromObject(this);
-	if (e->type == "mouseMove")
-	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
-		getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
-		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
-	}
-	else if (e->type == "click")
-	{
-		if (dispobj == this)
-		{
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
-			getVariableByMultiname(func,m);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
-		}
-	}
-	else if (e->type == "mouseDown")
-	{
-		if (dispobj == this)
-		{
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
-			getVariableByMultiname(func,m);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
-		}
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
-		getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
-		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
-	}
-	else if (e->type == "mouseUp")
-	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
-		getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
-		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
-	}
-	else if (e->type == "releaseOutside")
-	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
-		getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
-		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
-	}
-	return result;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
@@ -1629,15 +1557,22 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 		{
 			if (asAtomHandler::is<MovieClip>(obj))
 			{
-				tiny_string s = asAtomHandler::toString(args[0],sys);
-				MovieClip* path = asAtomHandler::as<MovieClip>(obj)->AVM1GetClipFromPath(s);
-				if (path)
+				if (asAtomHandler::is<DisplayObject>(args[0]))
 				{
-					asAtom pathobj = asAtomHandler::fromObject(path);
-					hitTestObject(ret,sys,obj,&pathobj,1);
+					hitTestObject(ret,sys,obj,args,1);
 				}
 				else
-					LOG(LOG_ERROR,"AVM1_hitTest:clip not found:"<<asAtomHandler::toDebugString(args[0]));
+				{
+					tiny_string s = asAtomHandler::toString(args[0],sys);
+					MovieClip* path = asAtomHandler::as<MovieClip>(obj)->AVM1GetClipFromPath(s);
+					if (path)
+					{
+						asAtom pathobj = asAtomHandler::fromObject(path);
+						hitTestObject(ret,sys,obj,&pathobj,1);
+					}
+					else
+						LOG(LOG_ERROR,"AVM1_hitTest:clip not found:"<<asAtomHandler::toDebugString(args[0]));
+				}
 			}
 			else
 				LOG(LOG_NOT_IMPLEMENTED,"AVM1_hitTest:object is no MovieClip:"<<asAtomHandler::toDebugString(obj));

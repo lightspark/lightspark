@@ -1740,8 +1740,93 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 
 bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e) 
 {
-	LOG(LOG_NOT_IMPLEMENTED,"handling mouse event for ASObject"<<e->type);
-	return false;
+	return AVM1HandleMouseEventStandard(dispatcher,e);
+}
+bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
+{
+	bool result = false;
+	asAtom func=asAtomHandler::invalidAtom;
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.isAttribute = false;
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::fromObject(this);
+	if (e->type == "mouseMove")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "click")
+	{
+		if (dispobj == this)
+		{
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
+		}
+	}
+	else if (e->type == "mouseDown")
+	{
+		if (dispobj == this)
+		{
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
+		}
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "mouseUp")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "mouseWheel")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "releaseOutside")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"handling avm1 mouse event "<<e->type);
+	return result;
 }
 
 void ASObject::copyValues(ASObject *target)

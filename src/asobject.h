@@ -276,6 +276,8 @@ class SystemState;
 class SyntheticFunction;
 class SoundTransform;
 class KeyboardEvent;
+class EventDispatcher;
+class MouseEvent;
 
 #define FREELIST_SIZE 16
 struct asfreelist
@@ -1220,6 +1222,8 @@ public:
 	
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
+	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
+	
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target);
 };

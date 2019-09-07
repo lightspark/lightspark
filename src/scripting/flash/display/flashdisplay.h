@@ -665,7 +665,7 @@ private:
 	// currently only used when Loader contents are added and the Loader is not on stage
 	list<_R<DisplayObject>> hiddenobjects;
 	vector<_R<ASObject>> avm1KeyboardListeners;
-	vector<_R<DisplayObject>> avm1MouseListeners;
+	vector<_R<ASObject>> avm1MouseListeners;
 	vector<_R<DisplayObject>> avm1EventListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
@@ -718,8 +718,8 @@ public:
 	void AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e);
 	void AVM1AddKeyboardListener(ASObject* o);
 	void AVM1RemoveKeyboardListener(ASObject *o);
-	void AVM1AddMouseListener(DisplayObject* o);
-	void AVM1RemoveMouseListener(DisplayObject* o);
+	void AVM1AddMouseListener(ASObject *o);
+	void AVM1RemoveMouseListener(ASObject* o);
 	void AVM1AddEventListener(DisplayObject *o);
 	void AVM1RemoveEventListener(DisplayObject *o);
 };

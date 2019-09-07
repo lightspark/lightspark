@@ -378,6 +378,7 @@ REGISTER_CLASS_NAME(avmplusDomain,"avmplus")
 
 //AVM1
 REGISTER_CLASS_NAME2(AVM1Key,"Key","")
+REGISTER_CLASS_NAME2(AVM1Mouse,"Mouse","")
 REGISTER_CLASS_NAME2(AVM1Sound,"Sound","")
 REGISTER_CLASS_NAME2(AVM1MovieClip,"MovieClip","")
 REGISTER_CLASS_NAME2(AVM1MovieClipLoader,"MovieClip","")

@@ -29,6 +29,7 @@ void AVM1Key::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtomHandler::fromUInt(32),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ENTER",nsNameAndKind(),asAtomHandler::fromUInt(13),CONSTANT_TRAIT);
 
 	c->setDeclaredMethodByQName("isDown","",Class<IFunction>::getFunction(c->getSystemState(),isDown),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,false);
@@ -41,18 +42,7 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 	int key;
 	ARG_UNPACK_ATOM (key);
 	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
-	bool b=false;
-	switch (key)
-	{
-		case 32: //SPACE
-			b = c == AS3KEYCODE_SPACE;
-			break;
-		case 13: //ENTER
-			b = c == AS3KEYCODE_ENTER;
-			break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,"AVM1: Key.isDown handling of key "<<key);
-	}
+	bool b= c == key;
 	asAtomHandler::setBool(ret,b);
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
@@ -74,5 +64,40 @@ ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
 	LOG(LOG_NOT_IMPLEMENTED,"AVM1Key.getCode doesn't correctly map AVM2 key codes to AVM1 key codes:"<<c);
 	asAtomHandler::setInt(ret,sys,c);
+}
+
+
+
+void AVM1Mouse::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+
+	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(c->getSystemState(),hide),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(c->getSystemState(),show),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeListener),NORMAL_METHOD,false);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1Mouse,hide)
+{
+	sys->showMouseCursor(false);
+}
+ASFUNCTIONBODY_ATOM(AVM1Mouse,show)
+{
+	sys->showMouseCursor(true);
+}
+ASFUNCTIONBODY_ATOM(AVM1Mouse,addListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM (listener);
+	if (listener)
+		sys->stage->AVM1AddMouseListener(listener.getPtr());
+}
+ASFUNCTIONBODY_ATOM(AVM1Mouse,removeListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM (listener);
+	if (listener)
+		sys->stage->AVM1RemoveMouseListener(listener.getPtr());
 }
 

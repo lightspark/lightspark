@@ -35,6 +35,17 @@ public:
 	ASFUNCTION_ATOM(removeListener);
 	ASFUNCTION_ATOM(getCode);
 };
+class AVM1Mouse: public ASObject
+{
+public:
+	AVM1Mouse(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+
+	ASFUNCTION_ATOM(hide);
+	ASFUNCTION_ATOM(show);
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
+};
 
 }
 #endif // SCRIPTING_AVM1_AVM1KEY_H

@@ -262,29 +262,29 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 
 void ABCVm::registerClassesAVM1()
 {
-	Global* builtin = Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
 
-	registerClassesToplevel(builtin);
+	registerClassesToplevel(builtinavm1);
 
 	if (!m_sys->mainClip->usesActionScript3)
 		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
 
-	builtin->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
+	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
 
-	builtin->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
-	builtin->registerBuiltin("Mouse","",Class<Mouse>::getRef(m_sys));
-	builtin->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
-	builtin->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
-	builtin->registerBuiltin("MovieClipLoader","",Class<AVM1MovieClipLoader>::getRef(m_sys));
-	builtin->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
-	builtin->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
-	builtin->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
-	builtin->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Mouse","",Class<AVM1Mouse>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
+	builtinavm1->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
+	builtinavm1->registerBuiltin("MovieClipLoader","",Class<AVM1MovieClipLoader>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
+	builtinavm1->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
+	builtinavm1->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
 
 	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
 	{
 		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys);
-		builtin->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
+		builtinavm1->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
 
 		ASObject* flashdisplaypackage = Class<ASObject>::getInstanceS(m_sys);
 		flashpackage->setVariableByQName("display",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashdisplaypackage,CONSTANT_TRAIT);
@@ -304,8 +304,14 @@ void ABCVm::registerClassesAVM1()
 		flashfilterspackage->setVariableByQName("ConvolutionFilter","flash.filters",Class<ConvolutionFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+
+		ASObject* flashgeompackage = Class<ASObject>::getInstanceS(m_sys);
+		flashpackage->setVariableByQName("geom",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashgeompackage,CONSTANT_TRAIT);
+
+		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
-	m_sys->avm1global=builtin;
+	m_sys->avm1global=builtinavm1;
 }
 
 void ABCVm::registerClassesToplevel(Global* builtin)

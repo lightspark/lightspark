@@ -2167,6 +2167,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
 	toAdd->constructionComplete();
+	toAdd->afterConstruction();
 	ret=asAtomHandler::fromObject(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
@@ -3502,7 +3503,7 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 		}
 	}
 }
-void Stage::AVM1AddMouseListener(DisplayObject *o)
+void Stage::AVM1AddMouseListener(ASObject *o)
 {
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
@@ -3513,7 +3514,7 @@ void Stage::AVM1AddMouseListener(DisplayObject *o)
 	avm1MouseListeners.push_back(_MR(o));
 }
 
-void Stage::AVM1RemoveMouseListener(DisplayObject *o)
+void Stage::AVM1RemoveMouseListener(ASObject *o)
 {
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
@@ -4762,9 +4763,10 @@ void MovieClip::afterConstruction()
 {
 	// execute framescript of frame 0 after construction is completed
 	// only if state.FP was not changed during construction
-	if(frameScripts.count(0) && state.FP == 0)
+	if((currentframeIterator != frames.end() || frameScripts.count(0)) && state.FP == 0)
 	{
-		frameScriptToExecute = 0;
+		if (frameScripts.count(0))
+			frameScriptToExecute = 0;
 		this->incRef();
 		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}

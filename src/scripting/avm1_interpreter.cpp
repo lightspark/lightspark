@@ -1060,8 +1060,25 @@ void ACTIONRECORD::executeActions(MovieClip *clip,AVM1context* context, std::vec
 				{
 					ASObject* o = asAtomHandler::getObject(scriptobject);
 					multiname m(nullptr);
-					m.name_type=multiname::NAME_STRING;
-					m.name_s_id=asAtomHandler::toStringId(name,clip->getSystemState());
+					switch (asAtomHandler::getObjectType(name))
+					{
+						case T_INTEGER:
+							m.name_type=multiname::NAME_INT;
+							m.name_i=asAtomHandler::getInt(name);
+							break;
+						case T_UINTEGER:
+							m.name_type=multiname::NAME_UINT;
+							m.name_ui=asAtomHandler::getUInt(name);
+							break;
+						case T_NUMBER:
+							m.name_type=multiname::NAME_NUMBER;
+							m.name_d=asAtomHandler::toNumber(name);
+							break;
+						default:
+							m.name_type=multiname::NAME_STRING;
+							m.name_s_id=asAtomHandler::toStringId(name,clip->getSystemState());
+							break;
+					}
 					m.isAttribute = false;
 					ASATOM_INCREF(value);
 					ASObject* pr = o->getprop_prototype();

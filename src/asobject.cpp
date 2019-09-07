@@ -1738,6 +1738,12 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	return false; 
 }
 
+bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e) 
+{
+	LOG(LOG_NOT_IMPLEMENTED,"handling mouse event for ASObject"<<e->type);
+	return false;
+}
+
 void ASObject::copyValues(ASObject *target)
 {
 	auto it = Variables.Variables.begin();

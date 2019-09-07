@@ -1675,6 +1675,36 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
 	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
 }
+
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
+{
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	assert_and_throw(argslen == 1);
+
+	
+	ASObject* pt=asAtomHandler::toObject(args[0],sys);
+	
+	asAtom x = asAtomHandler::fromInt(0);
+	asAtom y = asAtomHandler::fromInt(0);
+	multiname mx(nullptr);
+	mx.name_type=multiname::NAME_STRING;
+	mx.name_s_id=sys->getUniqueStringId("x");
+	mx.isAttribute = false;
+	pt->getVariableByMultiname(x,mx);
+	multiname my(nullptr);
+	my.name_type=multiname::NAME_STRING;
+	my.name_s_id=sys->getUniqueStringId("y");
+	my.isAttribute = false;
+	pt->getVariableByMultiname(y,my);
+
+	number_t tempx, tempy;
+
+	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy);
+	asAtomHandler::setNumber(x,sys,tempx);
+	asAtomHandler::setNumber(y,sys,tempy);
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
+}
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {
 	if (sys->mainClip->loaderInfo)
@@ -1815,6 +1845,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_root","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getRoot),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_globalToLocal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesLoaded),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesTotal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("_xmouse","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseX),GETTER_METHOD,true);

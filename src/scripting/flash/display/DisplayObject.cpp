@@ -88,9 +88,9 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
-void DisplayObject::Render(RenderContext& ctxt)
+void DisplayObject::Render(RenderContext& ctxt, bool force)
 {
-	if(!isConstructed() || skipRender())
+	if(!isConstructed() || (!force && !visible) || clippedAlpha()==0.0 || ClipDepth)
 		return;
 	renderImpl(ctxt);
 }

@@ -205,7 +205,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.yOffset=drawable->getYOffset();
 		delete drawable;
 	}
-	d->Render(ctxt);
+	d->Render(ctxt,true);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,draw)

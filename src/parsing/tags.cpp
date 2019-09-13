@@ -2099,16 +2099,16 @@ std::streambuf *DefineSoundTag::createSoundStream() const
 	return SoundData->createReader();
 }
 
-StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):ActionTag(h)
+StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	LOG(LOG_TRACE,_("StartSound Tag"));
 	in >> SoundId >> SoundInfo;
 }
 
-void StartSoundTag::execute(RootMovieClip* root) const
+void StartSoundTag::execute(DisplayObjectContainer *parent)
 {
 	DefineSoundTag *soundTag = \
-		dynamic_cast<DefineSoundTag *>(root->dictionaryLookup(SoundId));
+		dynamic_cast<DefineSoundTag *>(parent->getSystemState()->mainClip->dictionaryLookup(SoundId));
 
 	if (SoundInfo.SyncStop || SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
 	    SoundInfo.HasOutPoint || SoundInfo.HasInPoint)

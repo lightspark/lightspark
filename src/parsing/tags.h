@@ -269,7 +269,7 @@ public:
 	std::streambuf *createSoundStream() const;
 };
 
-class StartSoundTag: public ActionTag
+class StartSoundTag: public DisplayListTag
 {
 private:
 	UI16_SWF SoundId;
@@ -278,7 +278,7 @@ private:
 	void play(const DefineSoundTag *soundTag) const;
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
-	virtual void execute(RootMovieClip* root) const;
+	void execute(DisplayObjectContainer* parent) override;
 };
 
 class SoundStreamHeadTag: public DisplayListTag

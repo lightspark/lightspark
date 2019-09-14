@@ -149,9 +149,7 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 		{
 			asAtom obj = a->at(i);
 			//Convert the elements of the array to the type of this vector
-			if (type->coerce(sys,obj))
-				ASATOM_DECREF(a->at(i));
-			else
+			if (!type->coerce(sys,obj))
 				ASATOM_INCREF(obj);
 			res->vec.push_back(obj);
 		}
@@ -176,9 +174,7 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
 				asAtom v = *i;
-				if (type->coerce(sys,*i))
-					ASATOM_DECREF(v);
-				else
+				if (!type->coerce(sys,*i))
 					ASATOM_INCREF((*i));
 				res->vec.push_back( *i );
 			}
@@ -241,11 +237,9 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		else
 		{
 			asAtom v = args[pos];
-			if (th->vec_type->coerce(sys,args[pos]))
-				ASATOM_DECREF(v);
-			else
-				ASATOM_INCREF(res->vec[index]);
-			res->vec[index] = args[pos];
+			if (!th->vec_type->coerce(sys,v))
+				ASATOM_INCREF(v);
+			res->vec[index] = v;
 			index++;
 		}
 		pos += (sys->getSwfVersion() < 11 ?-1 : 1);
@@ -384,7 +378,7 @@ void Vector::append(asAtom &o)
 		throwError<RangeError>(kVectorFixedError);
 	}
 	asAtom v = o;
-	if (vec_type->coerce(getSystemState(),o))
+	if (vec_type->coerce(getSystemState(),v))
 		ASATOM_DECREF(v);
 	vec.push_back(o);
 }
@@ -439,11 +433,9 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
 		//they are converted to the vec_type
 		asAtom v = args[i];
-		if (th->vec_type->coerce(sys,args[i]))
-			ASATOM_DECREF(v);
-		else
-			ASATOM_INCREF(args[i]);
-		th->vec.push_back(args[i]);
+		if (!th->vec_type->coerce(sys,v))
+			ASATOM_INCREF(v);
+		th->vec.push_back(v);
 	}
 	asAtomHandler::setUInt(ret,sys,(uint32_t)th->vec.size());
 }
@@ -673,10 +665,7 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 		if (asAtomHandler::isValid(th->vec[i]))
 		{
 			res->vec[j] =th->vec[i];
-			asAtom v = res->vec[j];
-			if (th->vec_type->coerce(th->getSystemState(),th->vec[j]))
-				ASATOM_DECREF(v);
-			else
+			if (!th->vec_type->coerce(th->getSystemState(),th->vec[j]))
 				ASATOM_INCREF(th->vec[j]);
 		}
 		j++;
@@ -960,9 +949,7 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 		for(uint32_t i=0;i<argslen;i++)
 		{
 			th->vec[i] = args[i];
-			if (th->vec_type->coerce(th->getSystemState(),th->vec[i]))
-				ASATOM_DECREF(args[i]);
-			else
+			if (!th->vec_type->coerce(th->getSystemState(),th->vec[i]))
 				ASATOM_INCREF(th->vec[i]);
 		}
 	}
@@ -1198,7 +1185,7 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 	}
 	asAtom v = o;
-	if (this->vec_type->coerce(getSystemState(), o))
+	if (this->vec_type->coerce(getSystemState(), v))
 		ASATOM_DECREF(v);
 	if(index < vec.size())
 	{

@@ -412,7 +412,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	call_context cc(mi,inClass,ret);
 	cc.exec_pos = mi->body->preloadedcode.data();
 	asAtom* locals = g_newa(asAtom, cc.locals_size+2); // +2, because we need two more elements to store result of optimized operations
-	std::fill_n(locals,cc.locals_size+2,asAtomHandler::undefinedAtom);
 	cc.locals=locals;
 	asAtom* stack = g_newa(asAtom, cc.mi->body->max_stack+1);
 	cc.stack=stack;
@@ -460,6 +459,10 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			assert(mi->paramTypes[i] == Type::anyType);
 			cc.locals[i+1]=asAtomHandler::undefinedAtom;
 		}
+	}
+	for(uint32_t i=args_len+1;i< cc.locals_size+2;++i)
+	{
+		cc.locals[i]=asAtomHandler::undefinedAtom;
 	}
 	if(mi->needsArgs())
 	{
@@ -518,7 +521,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 					if (mi->needsscope && cc.exec_pos == mi->body->preloadedcode.data())
 					{
-						ASATOM_INCREF(obj);
 						cc.scope_stack[0] = obj;
 						cc.scope_stack_dynamic[0] = false;
 						cc.curr_scope_stack++;
@@ -605,17 +607,22 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			ASATOM_DECREF_POINTER((--cc.stackp));
 		}
 	}
-	for(asAtom* i=cc.locals+1;i< cc.locals+cc.locals_size+2;++i)
+	asAtom* lastlocal = cc.locals+cc.locals_size+2;
+	for(asAtom* i=cc.locals+1;i< lastlocal;++i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
 		ASATOM_DECREF_POINTER(i);
 	}
 	if (cc.locals[0].uintval != obj.uintval)
 		ASATOM_DECREF_POINTER(cc.locals);
-	for(asAtom* i=cc.scope_stack;i< cc.scope_stack+cc.curr_scope_stack;++i)
+
+	asAtom* lastscope=cc.scope_stack+cc.curr_scope_stack;
+	for(asAtom* i=cc.scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
 	{
 		ASATOM_DECREF_POINTER(i);
 	}
+	if (cc.scope_stack[0].uintval != obj.uintval && mi->needsscope)
+		ASATOM_DECREF_POINTER(cc.scope_stack);
 	cc.curr_scope_stack=0;
 	for (auto it = cc.dynamicfunctions.begin(); it != cc.dynamicfunctions.end(); it++)
 	{
@@ -1024,12 +1031,9 @@ void Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
 			return;
 		case T_NULL:
 			return;
-		case T_INTEGER:
-			if(this == Class<Integer>::getRef(sys).getPtr())
-				return;
-			break;
 		case T_UINTEGER:
-			if(this == Class<UInteger>::getRef(sys).getPtr())
+		case T_INTEGER:
+			if(this == Class<Integer>::getRef(sys).getPtr() || this == Class<UInteger>::getRef(sys).getPtr())
 				return;
 			break;
 		case T_NUMBER:

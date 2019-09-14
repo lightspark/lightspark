@@ -3463,8 +3463,10 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 {
 	if (e->is<KeyboardEvent>())
 	{
-		auto it = avm1KeyboardListeners.rbegin();
-		while (it != avm1KeyboardListeners.rend())
+		vector<_R<ASObject>> tmplisteners = avm1KeyboardListeners;
+		// eventhandlers may change the listener list, so we work on a copy
+		auto it = tmplisteners.rbegin();
+		while (it != tmplisteners.rend())
 		{
 			if ((*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
 				break;
@@ -3473,8 +3475,10 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 	}
 	else if (e->is<MouseEvent>())
 	{
-		auto it = avm1MouseListeners.rbegin();
-		while (it != avm1MouseListeners.rend())
+		vector<_R<ASObject>> tmplisteners = avm1MouseListeners;
+		// eventhandlers may change the listener list, so we work on a copy
+		auto it = tmplisteners.rbegin();
+		while (it != tmplisteners.rend())
 		{
 			if ((*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>()))
 				break;
@@ -3483,8 +3487,10 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 	}
 	else 
 	{
-		auto it = avm1EventListeners.rbegin();
-		while (it != avm1EventListeners.rend())
+		vector<_R<DisplayObject>> tmplisteners = avm1EventListeners;
+		// eventhandlers may change the listener list, so we work on a copy
+		auto it = tmplisteners.rbegin();
+		while (it != tmplisteners.rend())
 		{
 			(*it)->AVM1HandleEvent(dispatcher, e);
 			it++;

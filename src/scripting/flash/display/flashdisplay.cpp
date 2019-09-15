@@ -454,6 +454,16 @@ void LoaderThread::execute()
 		}
 		return;
 	}
+	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
+	{
+		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
+		{
+			local_pt.getRootMovie()->incRef();
+			loader->setContent(_MR(local_pt.getRootMovie()));
+			if (loader->getContentLoaderInfo().getPtr())
+				loader->getContentLoaderInfo()->setComplete();
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Loader,_constructor)

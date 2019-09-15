@@ -1900,6 +1900,9 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 	//Let's override the class
 	base->setClass(derived_class_tmp);
 	derived_class_tmp->bindToRoot();
+	// the root movie clip may have it's own constructor, so we make sure it is called
+	asAtom r = asAtomHandler::fromObject(base.getPtr());
+	derived_class_tmp->handleConstruction(r,nullptr,0,true);
 }
 
 bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)

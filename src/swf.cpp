@@ -297,8 +297,6 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	stage=Class<Stage>::getInstanceS(this);
 	mainClip->incRef();
 	stage->setRoot(_MR(mainClip));
-	mainClip->incRef();
-	stage->_addChildAt(_MR(mainClip),0);
 	//Get starting time
 	startTime=compat_msectiming();
 	
@@ -1657,12 +1655,11 @@ void ParseThread::parseSWF(UI8 ver)
 		root->parsingFailed();
 		throw;
 	}
-	if (lasttagtype != END_TAG || root->loaderInfo->getBytesLoaded()+2 != root->loaderInfo->getBytesTotal())
+	if (lasttagtype != END_TAG || root->loaderInfo->getBytesLoaded() != root->loaderInfo->getBytesTotal())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
 	}
 	root->markSoundFinished();
-	
 	LOG(LOG_TRACE,_("End of parsing"));
 }
 
@@ -1752,12 +1749,9 @@ void RootMovieClip::commitFrame(bool another)
 		if(this==sys->mainClip)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
+			incRef();
+			getSystemState()->stage->_addChildAt(_MR(this),0);
 			sys->addTick(1000/frameRate,sys);
-		}
-		else
-		{
-			this->incRef();
-			sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) InitFrameEvent(_MNR(this))));
 		}
 	}
 }
@@ -2201,9 +2195,6 @@ void RootMovieClip::initFrame()
 		return;
 
 	MovieClip::initFrame();
-	
-	if (finishedLoading && (loaderInfo->getBytesTotal() != loaderInfo->getBytesLoaded()))
-		loaderInfo->setBytesLoaded(loaderInfo->getBytesTotal());
 }
 
 /* This is run in vm's thread context */

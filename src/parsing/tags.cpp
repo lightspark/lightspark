@@ -281,9 +281,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 		//throw ParseException("Malformed SWF file");
 	}
 	
-	// don't set loaded bytes if we are at the end of the file (this is done in RootMovieClip::initFrame() )
-	if (root->loaderInfo->getBytesTotal() != f.tellg())
-		root->loaderInfo->setBytesLoaded(f.tellg());
+	root->loaderInfo->setBytesLoaded(f.tellg());
 	
 	return ret;
 }

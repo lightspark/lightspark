@@ -161,7 +161,7 @@ matrix:
     - name: Clang Nightly
       allow_failures: true
       env:
-        - MATRIX_EVAL="CC=clang-10 CXX=clang++-10"
+        - MATRIX_EVAL="CC=clang CXX=clang++"
       before_install:
         - eval "${MATRIX_EVAL}"
       addons:
@@ -173,7 +173,7 @@ matrix:
             - curl
             - cmake
             - nasm
-            - clang-10
+            - clang
             - libcurl4-gnutls-dev
             - libedit-dev
             - zlib1g-dev

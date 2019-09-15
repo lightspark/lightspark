@@ -26,6 +26,7 @@ rmet2 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *(
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
+rgetset3 = re.compile('.*REGISTER_GETTER_SETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 rgetsetstatic2 = re.compile('.*REGISTER_GETTER_SETTER_STATIC\([^,]*, *(.*)\)')
 rconst = re.compile('[^/]*->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
@@ -137,6 +138,11 @@ for line in ptmp.split(";"):
 		setters.add((curClass, m.group(1)))
 		continue
 	m = rgetset2.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
+		setters.add((curClass, m.group(1)))
+		continue
+	m = rgetset3.match(line)
 	if m:
 		getters.add((curClass, m.group(1)))
 		setters.add((curClass, m.group(1)))

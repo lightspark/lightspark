@@ -31,7 +31,9 @@ void AVM1Sound::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachSound","",Class<IFunction>::getFunction(c->getSystemState(),attachSound),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getVolume","",Class<IFunction>::getFunction(c->getSystemState(),getVolume),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setVolume","",Class<IFunction>::getFunction(c->getSystemState(),getVolume),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setVolume","",Class<IFunction>::getFunction(c->getSystemState(),setVolume),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPan","",Class<IFunction>::getFunction(c->getSystemState(),getPan),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setPan","",Class<IFunction>::getFunction(c->getSystemState(),setPan),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
@@ -82,5 +84,21 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 	ARG_UNPACK_ATOM(volume);
 	if (th->soundChannel)
 		th->soundChannel->soundTransform->volume = volume/100.0;
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	if (th->soundChannel)
+		asAtomHandler::setNumber(ret,sys,th->soundChannel->soundTransform->pan*100);
+	else
+		asAtomHandler::setInt(ret,sys,0);
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	number_t pan;
+	ARG_UNPACK_ATOM(pan);
+	if (th->soundChannel)
+		th->soundChannel->soundTransform->pan = pan/100.0;
 }
 

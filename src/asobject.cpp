@@ -1481,6 +1481,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
 				if (asAtomHandler::getObject(obj->var)->as<IFunction>()->isCloned)
 					ASATOM_INCREF(obj->var);
+				asAtomHandler::getClosure(obj->var)->incRef();
 				asAtomHandler::set(ret,obj->var);
 			}
 			else
@@ -2465,26 +2466,26 @@ asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 	return a;
 }
 
-void asAtomHandler::callFunction(asAtom& caller,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult)
+void asAtomHandler::callFunction(asAtom& caller,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments)
 {
-	assert_and_throw(getObject(caller) && getObject(caller)->is<IFunction>());
+	assert_and_throw(asAtomHandler::isFunction(caller));
 
 	asAtom c = obj;
-	if (getObject(caller)->is<SyntheticFunction>())
+	if (getObjectNoCheck(caller)->is<SyntheticFunction>())
 	{
 		if (!args_refcounted)
 		{
 			for (uint32_t i = 0; i < num_args; i++)
 				ASATOM_INCREF(args[i]);
 		}
-		getObject(caller)->as<SyntheticFunction>()->call(ret,c, args, num_args,coerceresult);
+		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(ret,c, args, num_args,coerceresult,coercearguments);
 		if (args_refcounted)
 			ASATOM_DECREF(c);
 		return;
 	}
 	// when calling builtin functions, normally no refcounting is needed
 	// if it is, it has to be done inside the called function
-	getObject(caller)->as<Function>()->call(ret, c, args, num_args);
+	getObjectNoCheck(caller)->as<Function>()->call(ret, c, args, num_args);
 	if (args_refcounted)
 	{
 		for (uint32_t i = 0; i < num_args; i++)
@@ -3234,6 +3235,11 @@ void asAtomHandler::replace(asAtom& a, ASObject *obj)
 
 TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 {
+	if (a.uintval == v2.uintval && 
+			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
+	{
+		return a.uintval == ATOMTYPE_UNDEFINED_BIT ? TUNDEFINED : TFALSE;
+	}
 	switch(a.uintval&0x7)
 	{
 		case ATOM_INTEGER:
@@ -3472,6 +3478,9 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 
 bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
 {
+	if (a.uintval == v2.uintval && 
+			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
+		return true;
 	switch (a.uintval&0x7)
 	{
 		case ATOM_INTEGER:
@@ -3479,7 +3488,7 @@ bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
 			switch (v2.uintval&0x7)
 			{
 				case ATOM_INTEGER:
-					return (a.intval>>3)==toInt(v2);
+					return false;
 				case ATOM_UINTEGER:
 					return (a.intval>>3) >= 0 && (a.intval>>3)==toInt(v2);
 				case ATOM_U_INTEGERPTR:
@@ -3514,6 +3523,7 @@ bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
 				case ATOM_INTEGER:
 					return (v2.intval>>3) >= 0 && (a.uintval>>3)==toUInt(v2);
 				case ATOM_UINTEGER:
+					return false;
 				case ATOM_NUMBERPTR:
 				case ATOM_U_INTEGERPTR:
 					return (a.uintval>>3)==toUInt(v2);

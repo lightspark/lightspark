@@ -428,6 +428,7 @@ public:
 	static ASObject* toObject(asAtom& a, SystemState* sys,bool isconstant=false);
 	// returns NULL if this atom is a primitive;
 	static FORCE_INLINE ASObject* getObject(const asAtom& a);
+	static FORCE_INLINE ASObject* getObjectNoCheck(const asAtom& a);
 	static FORCE_INLINE void resetCached(const asAtom& a);
 	static FORCE_INLINE asAtom fromObject(ASObject* obj)
 	{
@@ -436,7 +437,7 @@ public:
 			replace(a,obj);
 		return a;
 	}
-	
+	static FORCE_INLINE asAtom fromObjectNoPrimitive(ASObject* obj);
 	static FORCE_INLINE asAtom fromStringID(uint32_t sID)
 	{
 #ifndef LIGHTSPARK_64
@@ -461,7 +462,7 @@ public:
 	 * Return the asAtom the function returned.
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
-	static void callFunction(asAtom& caller,asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true);
+	static void callFunction(asAtom& caller, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
 	// returns invalidAtom for not-primitive values
 	static void getVariableByMultiname(asAtom& a, asAtom &ret, SystemState *sys, const multiname& name);
 	static Class_base* getClass(asAtom& a,SystemState *sys, bool followclass=true);
@@ -560,8 +561,8 @@ public:
 		return static_cast<T*>((void*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)));
 	}
 };
-#define ASATOM_INCREF(a) if (asAtomHandler::getObject(a)) asAtomHandler::getObject(a)->incRef()
-#define ASATOM_INCREF_POINTER(a) if (asAtomHandler::getObject(*a)) asAtomHandler::getObject(*a)->incRef()
+#define ASATOM_INCREF(a) if (asAtomHandler::isObject(a)) asAtomHandler::getObjectNoCheck(a)->incRef()
+#define ASATOM_INCREF_POINTER(a) if (asAtomHandler::isObject(*a)) asAtomHandler::getObjectNoCheck(*a)->incRef()
 #define ASATOM_DECREF(a) do { ASObject* obj_b = asAtomHandler::getObject(a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); } while (0)
 #define ASATOM_DECREF_POINTER(a) { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); } while (0)
 struct variable
@@ -1238,11 +1239,11 @@ FORCE_INLINE bool variables_map::setSlot(unsigned int n, asAtom &o, ASObject* ob
 	{
 		slots_vars[n-1]->setVar(o,obj);
 		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
-			obj->checkFunctionScope(asAtomHandler::getObject(o));
+			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 		return slots_vars[n-1]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
 	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
-		obj->checkFunctionScope(asAtomHandler::getObject(o));
+		obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 	return true;
 }
 
@@ -1436,7 +1437,7 @@ template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_X
 
 
 template<class T> inline bool asAtomHandler::is(asAtom& a) {
-	return getObject(a) ? getObject(a)->is<T>() : false;
+	return isObject(a) ? getObjectNoCheck(a)->is<T>() : false;
 }
 template<> inline bool asAtomHandler::is<asAtom>(asAtom& a) { return true; }
 template<> inline bool asAtomHandler::is<ASObject>(asAtom& a) { return true; }
@@ -1468,7 +1469,7 @@ FORCE_INLINE int32_t asAtomHandler::toInt(const asAtom& a)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toInt();
+			return getObjectNoCheck(a)->toInt();
 	}
 }
 FORCE_INLINE int32_t asAtomHandler::toIntStrict(const asAtom& a)
@@ -1490,7 +1491,7 @@ FORCE_INLINE int32_t asAtomHandler::toIntStrict(const asAtom& a)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toIntStrict();
+			return getObjectNoCheck(a)->toIntStrict();
 	}
 }
 FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
@@ -1512,7 +1513,7 @@ FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toNumber();
+			return getObjectNoCheck(a)->toNumber();
 	}
 }
 FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a,int swfversion)
@@ -1534,7 +1535,7 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a,int swfversion)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toNumber();
+			return getObjectNoCheck(a)->toNumber();
 	}
 }
 FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a)
@@ -1573,7 +1574,7 @@ FORCE_INLINE int64_t asAtomHandler::toInt64(const asAtom& a)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toInt64();
+			return getObjectNoCheck(a)->toInt64();
 	}
 }
 FORCE_INLINE uint32_t asAtomHandler::toUInt(asAtom& a)
@@ -1595,7 +1596,7 @@ FORCE_INLINE uint32_t asAtomHandler::toUInt(asAtom& a)
 		}
 		default:
 			assert(getObject(a));
-			return getObject(a)->toUInt();
+			return getObjectNoCheck(a)->toUInt();
 	}
 }
 
@@ -1611,7 +1612,7 @@ FORCE_INLINE void asAtomHandler::applyProxyProperty(asAtom& a,SystemState* sys,m
 			break; // no need to create string, as it won't have a proxyMultiName
 		default:
 			assert(getObject(a));
-			getObject(a)->applyProxyProperty(name);
+			getObjectNoCheck(a)->applyProxyProperty(name);
 			break;
 	}
 }
@@ -1691,7 +1692,7 @@ FORCE_INLINE bool asAtomHandler::isConstructed(const asAtom& a)
 		case ATOM_STRINGID:
 			return true;
 		default:
-			return getObject(a) && getObject(a)->isConstructed();
+			return isObject(a) && getObjectNoCheck(a)->isConstructed();
 	}
 }
 
@@ -1706,7 +1707,7 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 	if ((a.uintval&0x7) == (obj.uintval&0x7))
 	{
 		if ((a.uintval&0x7) == ATOM_OBJECTPTR)
-			return getObject(a)->getObjectType() == getObject(obj)->getObjectType();
+			return getObjectNoCheck(a)->getObjectType() == getObjectNoCheck(obj)->getObjectType();
 		return true;
 	}
 	if (isNumeric(a) && isNumeric(obj))
@@ -2183,11 +2184,18 @@ FORCE_INLINE bool asAtomHandler::isNumber(const asAtom& a)
 }
 FORCE_INLINE bool asAtomHandler::isInteger(const asAtom& a)
 { 
-	return (a.uintval&0x3) == ATOM_INTEGER || ((a.uintval&0x7) == ATOM_U_INTEGERPTR && getObject(a) && getObject(a)->getObjectType() == T_INTEGER);
+	return (a.uintval&0x3) == ATOM_INTEGER || ((a.uintval&0x7) == ATOM_U_INTEGERPTR && isObject(a) && getObjectNoCheck(a)->getObjectType() == T_INTEGER);
 }
 FORCE_INLINE bool asAtomHandler::isUInteger(const asAtom& a)
 { 
-	return (a.uintval&0x7) == ATOM_UINTEGER || ((a.uintval&0x7) == ATOM_U_INTEGERPTR  && getObject(a) && getObject(a)->getObjectType() == T_UINTEGER);
+	return (a.uintval&0x7) == ATOM_UINTEGER || ((a.uintval&0x7) == ATOM_U_INTEGERPTR  && isObject(a) && getObjectNoCheck(a)->getObjectType() == T_UINTEGER);
+}
+FORCE_INLINE asAtom asAtomHandler::fromObjectNoPrimitive(ASObject* obj)
+{
+	assert(!obj->isPrimitive());
+	asAtom a;
+	a.uintval = ATOM_OBJECTPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
+	return a;
 }
 
 FORCE_INLINE SWFOBJECT_TYPE asAtomHandler::getObjectType(const asAtom& a)
@@ -2215,23 +2223,28 @@ FORCE_INLINE SWFOBJECT_TYPE asAtomHandler::getObjectType(const asAtom& a)
 			return T_STRING;
 		case ATOM_U_INTEGERPTR:
 		case ATOM_OBJECTPTR:
-			return getObject(a) ? getObject(a)->getObjectType() : T_INVALID;
+			return isObject(a) ? getObjectNoCheck(a)->getObjectType() : T_INVALID;
 		default:
 			return T_INVALID;
 	}
 }
-FORCE_INLINE bool asAtomHandler::isFunction(const asAtom& a) { return getObject(a) && getObject(a)->is<IFunction>(); }
-FORCE_INLINE bool asAtomHandler::isString(const asAtom& a) { return isStringID(a) || (getObject(a) && getObject(a)->is<ASString>()); }
-FORCE_INLINE bool asAtomHandler::isQName(const asAtom& a) { return getObject(a) && getObject(a)->is<ASQName>(); }
-FORCE_INLINE bool asAtomHandler::isNamespace(const asAtom& a) { return getObject(a) && getObject(a)->is<Namespace>(); }
-FORCE_INLINE bool asAtomHandler::isArray(const asAtom& a) { return getObject(a) && getObject(a)->is<Array>(); }
-FORCE_INLINE bool asAtomHandler::isClass(const asAtom& a) { return getObject(a) && getObject(a)->is<Class_base>(); }
-FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return getObject(a) && getObject(a)->getObjectType() == T_TEMPLATE; }
+FORCE_INLINE bool asAtomHandler::isFunction(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<IFunction>(); }
+FORCE_INLINE bool asAtomHandler::isString(const asAtom& a) { return isStringID(a) || (isObject(a) && getObjectNoCheck(a)->is<ASString>()); }
+FORCE_INLINE bool asAtomHandler::isQName(const asAtom& a) { return getObject(a) && getObjectNoCheck(a)->is<ASQName>(); }
+FORCE_INLINE bool asAtomHandler::isNamespace(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<Namespace>(); }
+FORCE_INLINE bool asAtomHandler::isArray(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<Array>(); }
+FORCE_INLINE bool asAtomHandler::isClass(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<Class_base>(); }
+FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->getObjectType() == T_TEMPLATE; }
 
 FORCE_INLINE ASObject* asAtomHandler::getObject(const asAtom& a)
 {
 	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached());
 	return a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
+}
+FORCE_INLINE ASObject* asAtomHandler::getObjectNoCheck(const asAtom& a)
+{
+	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached());
+	return (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7));
 }
 FORCE_INLINE void asAtomHandler::resetCached(const asAtom& a)
 {

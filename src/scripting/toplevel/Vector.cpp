@@ -174,9 +174,9 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
 				asAtom v = *i;
-				if (!type->coerce(sys,*i))
-					ASATOM_INCREF((*i));
-				res->vec.push_back( *i );
+				if (!type->coerce(sys,v))
+					ASATOM_INCREF(v);
+				res->vec.push_back(v);
 			}
 		}
 	}

@@ -40,6 +40,8 @@ public:
 	}
 	void afterConstruction();
 	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(startDrag);
+	ASFUNCTION_ATOM(stopDrag);
 };
 
 class AVM1Shape: public Shape

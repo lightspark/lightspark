@@ -45,6 +45,37 @@ void AVM1MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("_currentframe","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrame),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_framesloaded","",Class<IFunction>::getFunction(c->getSystemState(),_getFramesLoaded),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_name","",Class<IFunction>::getFunction(c->getSystemState(),_getter_name),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(c->getSystemState(),startDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(c->getSystemState(),stopDrag),NORMAL_METHOD,true);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
+{
+	bool lockcenter;
+	number_t x1, y1, x2, y2;
+	ARG_UNPACK_ATOM (lockcenter)(x1)(y1)(x2)(y2);
+
+	Rectangle* rect = Class<Rectangle>::getInstanceS(sys);
+	asAtom fret = asAtomHandler::invalidAtom;
+	asAtom fobj = asAtomHandler::fromObject(rect);
+	asAtom fx1 = asAtomHandler::fromNumber(sys, x1, false);
+	asAtom fy1 = asAtomHandler::fromNumber(sys, y1, false);
+	asAtom fx2 = asAtomHandler::fromNumber(sys, x2, false);
+	asAtom fy2 = asAtomHandler::fromNumber(sys, y2, false);
+	Rectangle::_setLeft(fret,sys,fobj,&fx1,1);
+	Rectangle::_setTop(fret,sys,fobj,&fy1,1);
+	Rectangle::_setRight(fret,sys,fobj,&fx2,1);
+	Rectangle::_setBottom(fret,sys,fobj,&fy2,1);
+
+	asAtom fargs[2];
+	fargs[0] = asAtomHandler::fromBool(lockcenter);
+	fargs[1] = asAtomHandler::fromObject(rect);
+	Sprite::_startDrag(ret,sys,obj,fargs,2);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)
+{
+	Sprite::_stopDrag(ret,sys,obj,nullptr,0);
 }
 
 void AVM1Shape::sinit(Class_base* c)

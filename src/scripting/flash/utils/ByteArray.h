@@ -45,9 +45,17 @@ protected:
 	void compress_zlib();
 	void uncompress_zlib();
 	Mutex mutex;
+	uint8_t* getBufferIntern(unsigned int size, bool enableResize);
+	
 public:
-	void lock();
-	void unlock();
+	FORCE_INLINE void lock()
+	{
+		if (shareable) mutex.lock();
+	}
+	FORCE_INLINE void unlock()
+	{
+		if (shareable) mutex.unlock();
+	}
 	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
@@ -59,8 +67,17 @@ public:
 	bool readUTF(tiny_string& ret);
 	bool readUTFBytes(uint32_t length,tiny_string& ret);
 	bool readBytes(uint32_t offset, uint32_t length, uint8_t* ret);
-	void writeByte(uint8_t b);
-	void writeBytes(uint8_t* data, int length);
+	FORCE_INLINE void writeByte(uint8_t b)
+	{
+		getBuffer(position+1,true);
+		bytes[position++] = b;
+	}
+	FORCE_INLINE void writeBytes(uint8_t* data, int length)
+	{
+		getBuffer(position+length,true);
+		memcpy(bytes+position,data,length);
+		position+=length;
+	}
 	void writeShort(uint16_t val);
 	void writeUnsignedInt(uint32_t val);
 	void writeUTF(const tiny_string& str);
@@ -73,8 +90,16 @@ public:
 	void serializeDouble(number_t val);
 
 	void setLength(uint32_t newLen);
-	uint32_t getPosition() const;
-	void setPosition(uint32_t p);
+	FORCE_INLINE uint32_t getPosition() const
+	{
+		return position;
+	}
+	FORCE_INLINE void setPosition(uint32_t p)
+	{
+		lock();
+		position=p;
+		unlock();
+	}
 	
 	void append(std::streambuf* data, int length);
 	/**
@@ -151,8 +176,15 @@ public:
 		@pre buf must be allocated using new[]
 	*/
 	void acquireBuffer(uint8_t* buf, int bufLen);
-	uint8_t* getBufferNoCheck() const { return bytes; }
-	uint8_t* getBuffer(unsigned int size, bool enableResize);
+	inline uint8_t* getBufferNoCheck() const { return bytes; }
+	inline uint8_t* getBuffer(unsigned int size, bool enableResize)
+	{
+		if (size <= len && size > 0)
+		{
+			return bytes;
+		}
+		return getBufferIntern(size,enableResize);
+	}
 	uint32_t getLength() const { return len; }
 
 	uint16_t endianIn(uint16_t value);

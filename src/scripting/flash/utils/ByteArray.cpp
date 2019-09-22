@@ -120,16 +120,7 @@ void ByteArray::buildTraits(ASObject* o)
 {
 }
 
-void ByteArray::lock()
-{
-	if (shareable) mutex.lock();
-}
-void ByteArray::unlock()
-{
-	if (shareable) mutex.unlock();
-}
-
-uint8_t* ByteArray::getBuffer(unsigned int size, bool enableResize)
+uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 {
 	if (size > BA_MAX_SIZE) 
 		throwError<ASError>(kOutOfMemoryError);
@@ -226,11 +217,6 @@ uint64_t ByteArray::endianOut(uint64_t value)
 		return GUINT64_FROM_BE(value);
 }
 
-uint32_t ByteArray::getPosition() const
-{
-	return position;
-}
-
 ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 {
 }
@@ -239,13 +225,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	asAtomHandler::setUInt(ret,sys,th->getPosition());
-}
-
-void ByteArray::setPosition(uint32_t p)
-{
-	lock();
-	position=p;
-	unlock();
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setPosition)
@@ -619,19 +598,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeBytes)
 	memcpy(th->bytes+th->position,buf+offset,length);
 	th->position+=length;
 	th->unlock();
-}
-
-void ByteArray::writeByte(uint8_t b)
-{
-	getBuffer(position+1,true);
-	bytes[position++] = b;
-}
-
-void ByteArray::writeBytes(uint8_t *data, int length)
-{
-	getBuffer(position+length,true);
-	memcpy(bytes+position,data,length);
-	position+=length;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeByte)

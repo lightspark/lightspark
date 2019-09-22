@@ -59,29 +59,31 @@ public:
 		if (!isConstant)
 			++ref_count;
 	}
+	bool handleDestruction()
+	{
+		if (inDestruction)
+			return true;
+		inDestruction = true;
+		activation_refcount=1;
+		ref_count=1;
+		if (destruct())
+		{
+			//Let's make refcount very invalid
+			ref_count=-1024;
+			inDestruction = false;
+			delete this;
+		}
+		else
+			inDestruction = false;
+		return true;
+	}
 	inline bool decRef()
 	{
 		if (!isConstant && !cached)
 		{
 			assert(ref_count>0);
 			if (ref_count == activation_refcount)
-			{
-				if (inDestruction)
-					return true;
-				inDestruction = true;
-				activation_refcount=1;
-				ref_count=1;
-				if (destruct())
-				{
-					//Let's make refcount very invalid
-					ref_count=-1024;
-					inDestruction = false;
-					delete this;
-				}
-				else
-					inDestruction = false;
-				return true;
-			}
+				return handleDestruction();
 			else
 				--ref_count;
 		}

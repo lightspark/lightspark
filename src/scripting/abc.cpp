@@ -255,7 +255,11 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 
 void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
-	getVm(root->getSystemState())->stacktrace.reserve(MaxRecursionDepth);
+	if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
+	{
+		delete[] getVm(root->getSystemState())->stacktrace;
+		getVm(root->getSystemState())->stacktrace = new ABCVm::stacktrace_entry[MaxRecursionDepth];
+	}
 	getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
 	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
 }
@@ -1374,7 +1378,13 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 		if(methods[method_body[i].method].body!=NULL)
 			throw ParseException("Duplicated body for function");
 		else
+		{
 			methods[method_body[i].method].body=&method_body[i];
+			methods[method_body[i].method].locals_norecursion = new asAtom[methods[method_body[i].method].body->local_count+1+2]; // +2, because we need two more elements to store result of optimized operations
+			methods[method_body[i].method].stack_norecursion = new asAtom[methods[method_body[i].method].body->max_stack+1];
+			methods[method_body[i].method].scope_stack_norecursion = new asAtom[methods[method_body[i].method].body->max_scope_depth];
+			methods[method_body[i].method].scope_stack_dynamic_norecursion = new bool[methods[method_body[i].method].body->max_scope_depth];
+		}
 	}
 
 	hasRunScriptInit.resize(scripts.size(),false);
@@ -1429,6 +1439,7 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;
 	m_sys=s;
+	stacktrace=new stacktrace_entry[256];
 }
 
 void ABCVm::start()
@@ -1483,6 +1494,7 @@ ABCVm::~ABCVm()
 		delete (*it);
 		it++;
 	}
+	delete[] stacktrace;
 }
 
 int ABCVm::getEventQueueSize()
@@ -1999,13 +2011,7 @@ void ABCVm::not_impl(int n)
 	throw UnsupportedException("Not implemented opcode");
 }
 
-call_context::call_context(method_info* _mi, Class_base* _inClass, asAtom& ret):
-	stackp(NULL),exec_pos(NULL),
-	locals_size(_mi->body->local_count+1),max_stackp(NULL),argarrayposition(-1),
-	max_scope_stack(_mi->body->max_scope_depth),curr_scope_stack(0),mi(_mi),
-	inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
-{
-}
+
 
 void call_context::handleError(int errorcode)
 {
@@ -2419,6 +2425,11 @@ _R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
 _R<SecurityDomain> ABCVm::getCurrentSecurityDomain(call_context* th)
 {
 	return th->mi->context->root->securityDomain;
+}
+
+void ABCVm::throwStackOverflow()
+{
+	throwError<ASError>(kStackOverflowError);
 }
 
 uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)

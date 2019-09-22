@@ -1682,8 +1682,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t t=data->uints[0];
 				LOG_CALL( "getScopeAtIndex " << t);
 				asAtom obj=asAtomHandler::invalidAtom;
-				uint32_t parentsize = context->parent_scope_stack.isNull() ? 0 :context->parent_scope_stack->scope.size();
-				if (!context->parent_scope_stack.isNull() && t<parentsize)
+				uint32_t parentsize = context->parent_scope_stack ? context->parent_scope_stack->scope.size() : 0;
+				if (context->parent_scope_stack && t<parentsize)
 					obj = context->parent_scope_stack->scope[t].object;
 				else
 				{

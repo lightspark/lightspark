@@ -573,7 +573,7 @@ protected:
 	}
 public:
 	~SyntheticFunction() {}
-	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult);
+	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult, bool coercearguments);
 	bool destruct();
 	method_info* getMethodInfo() const { return mi; }
 	
@@ -604,13 +604,15 @@ public:
 			return simpleGetterOrSetterName;
 		}
 		asAtom c = asAtomHandler::fromObject(target);
-		call(ret,c,NULL,0,true);
+		call(ret,c,NULL,0,true,false);
 		return nullptr;
 	}
 	FORCE_INLINE multiname* getSimpleName() {
 		return simpleGetterOrSetterName;
 	}
 	Class_base* getReturnType();
+	void checkParamTypes();
+	bool canSkipCoercion(int param, Class_base* cls);
 };
 class AVM1context
 {

@@ -187,7 +187,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 		{
 			//get the current global object
 			call_context* cc = getVm(th->getSystemState())->currentCallContext;
-			if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+			if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
 				newObj = cc->parent_scope_stack->scope[0].object;
 			else
 			{
@@ -231,7 +231,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		{
 			//get the current global object
 			call_context* cc = getVm(th->getSystemState())->currentCallContext;
-			if (!cc->parent_scope_stack.isNull() && cc->parent_scope_stack->scope.size() > 0)
+			if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
 				newObj = cc->parent_scope_stack->scope[0].object;
 			else
 			{
@@ -317,40 +317,16 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult)
+void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult, bool coercearguments)
 {
-	const uint32_t opt_hit_threshold=1;
-	if (!mi->body)
-		return;
-
-	const uint16_t hit_count = mi->body->hit_count;
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 
-	uint32_t& cur_recursion = getVm(getSystemState())->cur_recursion;
-	if(cur_recursion == getVm(getSystemState())->limits.max_recursion)
-	{
-		throwError<ASError>(kStackOverflowError);
-	}
+	call_context* saved_cc = getVm(getSystemState())->incStack(obj,this->functionname);
 
 	/* resolve argument and return types */
 	if(!mi->returnType)
 	{
-		mi->hasExplicitTypes = false;
-		mi->paramTypes.reserve(mi->numArgs());
-		for(size_t i=0;i < mi->numArgs();++i)
-		{
-			const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context);
-			if (!t)
-				throwError<ReferenceError>(kClassNotFoundError, mi->paramTypeName(i)->qualifiedString(getSystemState()));
-			mi->paramTypes.push_back(t);
-			if(t != Type::anyType)
-				mi->hasExplicitTypes = true;
-		}
-
-		const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context);
-		if (!t)
-			throwError<ReferenceError>(kClassNotFoundError, mi->returnTypeName()->qualifiedString(getSystemState()));
-		mi->returnType = t;
+		checkParamTypes();
 	}
 
 	if(numArgs < mi->numArgs()-mi->numOptions())
@@ -368,12 +344,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if ((isMethod() || mi->hasExplicitTypes) && numArgs > mi->numArgs() && !mi->needsArgs() && !mi->needsRest() && !mi->hasOptional())
 		throwError<ArgumentError>(kWrongArgumentCountError,getSystemState()->getStringFromUniqueId(functionname),Integer::toString(mi->numArgs()),Integer::toString(numArgs));
 
-	//For sufficiently hot methods, optimize them to the internal bytecode
-	if(getSystemState()->useFastInterpreter && hit_count>=opt_hit_threshold && codeStatus==method_body_info::ORIGINAL)
-	{
-		ABCVm::optimizeFunction(this);
-	}
-
 #ifdef LLVM_ENABLED
 	//Temporarily disable JITting
 	const uint32_t jit_hit_threshold=20;
@@ -384,7 +354,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		assert(val);
 	}
 #endif
-	++mi->body->hit_count;
 
 	//Prepare arguments
 	uint32_t args_len=mi->numArgs();
@@ -411,39 +380,44 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	/* setup call_context */
 	call_context cc(mi,inClass,ret);
 	cc.exec_pos = mi->body->preloadedcode.data();
-	asAtom* locals = g_newa(asAtom, cc.locals_size+2); // +2, because we need two more elements to store result of optimized operations
-	cc.locals=locals;
-	asAtom* stack = g_newa(asAtom, cc.mi->body->max_stack+1);
-	cc.stack=stack;
-	cc.stackp=stack;
-	cc.max_stackp=stack+cc.mi->body->max_stack;
-	cc.parent_scope_stack=func_scope;
-
-	cc.scope_stack=g_newa(asAtom, cc.max_scope_stack);
-	cc.scope_stack_dynamic=g_newa(bool, cc.max_scope_stack);
-
-	call_context* saved_cc = getVm(getSystemState())->currentCallContext;
+	if (codeStatus == method_body_info::USED) // recursive call
+	{
+		cc.locals= g_newa(asAtom, cc.mi->body->local_count+1+2); // +2, because we need two more elements to store result of optimized operations
+		cc.stackp = cc.stack = g_newa(asAtom, cc.mi->body->max_stack+1);
+		cc.scope_stack=g_newa(asAtom, cc.mi->body->max_scope_depth);
+		cc.scope_stack_dynamic=g_newa(bool, cc.mi->body->max_scope_depth);
+	}
+	else
+	{
+		assert(mi->locals_norecursion && mi->stack_norecursion && mi->scope_stack_norecursion && mi->scope_stack_dynamic_norecursion);
+		cc.locals=mi->locals_norecursion;
+		cc.stackp=cc.stack=mi->stack_norecursion;
+		cc.scope_stack=mi->scope_stack_norecursion;
+		cc.scope_stack_dynamic=mi->scope_stack_dynamic_norecursion;
+	}
+	cc.max_stackp=cc.stackp+cc.mi->body->max_stack;
+	cc.parent_scope_stack=func_scope.getPtr();
 	cc.defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
 	getVm(getSystemState())->currentCallContext = &cc;
 
-	if (asAtomHandler::isInvalid(obj))
-	{
-		LOG(LOG_ERROR,"obj invalid");
-	}
-	assert_and_throw(asAtomHandler::isValid(obj));
 	cc.locals[0]=obj;
 
-	/* coerce arguments to expected types */
-	auto itpartype = mi->paramTypes.begin();
-	asAtom* argp = args;
-	for(asAtom* i=cc.locals+1;i< cc.locals+1+passedToLocals;++i)
+	if (coercearguments)
 	{
-		*i = *argp;
-		(*itpartype++)->coerce(getSystemState(),*i);
-		++argp;
+		/* coerce arguments to expected types */
+		auto itpartype = mi->paramTypes.begin();
+		asAtom* argp = args;
+		asAtom* lastlocalpasssed = cc.locals+1+passedToLocals;
+		for(asAtom* i=cc.locals+1;i< lastlocalpasssed;++i)
+		{
+			*i = *argp++;
+			(*itpartype++)->coerce(getSystemState(),*i);
+		}
 	}
+	else if (args)
+		memcpy(cc.locals+1,args,1+passedToLocals*sizeof(asAtom));
 
 	//Fill missing parameters until optional parameters begin
 	//like fun(a,b,c,d=3,e=5) called as fun(1,2) becomes
@@ -460,13 +434,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			cc.locals[i+1]=asAtomHandler::undefinedAtom;
 		}
 	}
-	for(uint32_t i=args_len+1;i< cc.locals_size+2;++i)
+	asAtom* lastlocal = cc.locals+cc.mi->body->local_count+1+2;
+	for(asAtom* i=cc.locals+args_len+1;i< lastlocal;++i)
 	{
-		cc.locals[i]=asAtomHandler::undefinedAtom;
+		*i = asAtomHandler::undefinedAtom;
 	}
 	if(mi->needsArgs())
 	{
-		assert_and_throw(cc.locals_size>args_len+1);
+		assert_and_throw(cc.mi->body->local_count>args_len);
 		cc.locals[args_len+1]=asAtomHandler::fromObject(argumentsArray);
 		cc.argarrayposition=args_len+1;
 	}
@@ -481,7 +456,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			rest->set(j,args[passedToLocals+j]);
 		}
 
-		assert_and_throw(cc.locals_size>args_len+1);
+		assert_and_throw(cc.mi->body->local_count>args_len);
 		cc.locals[args_len+1]=asAtomHandler::fromObject(rest);
 		cc.argarrayposition= args_len+1;
 	}
@@ -491,11 +466,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (!isMethod())
 		this->incRef();
 
-	++cur_recursion; //increment current recursion depth
 #ifndef NDEBUG
 	Log::calls_indent++;
 #endif
-	getVm(getSystemState())->stacktrace.push_back(std::pair<uint32_t,asAtom>(this->functionname,obj));
 	while (true)
 	{
 		try
@@ -564,24 +537,20 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			}
 			if (no_handler)
 			{
-				--cur_recursion; //decrement current recursion depth
+				getVm(getSystemState())->decStack(saved_cc);
 #ifndef NDEBUG
 				Log::calls_indent--;
 #endif
-				getVm(getSystemState())->stacktrace.pop_back();
-				getVm(getSystemState())->currentCallContext = saved_cc;
 				throw;
 			}
 			continue;
 		}
 		break;
 	}
-	--cur_recursion; //decrement current recursion depth
-	getVm(getSystemState())->stacktrace.pop_back();
+	getVm(getSystemState())->decStack(saved_cc);
 #ifndef NDEBUG
 	Log::calls_indent--;
 #endif
-	getVm(getSystemState())->currentCallContext = saved_cc;
 
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
@@ -601,13 +570,12 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc.stackp != cc.stack)
 	{
-		LOG(LOG_ERROR,_("Stack not clean at the end of function"));
+		LOG(LOG_ERROR,"Stack not clean at the end of function:"<<getSystemState()->getStringFromUniqueId(this->functionname));
 		while(cc.stackp != cc.stack)
 		{
 			ASATOM_DECREF_POINTER((--cc.stackp));
 		}
 	}
-	asAtom* lastlocal = cc.locals+cc.locals_size+2;
 	for(asAtom* i=cc.locals+1;i< lastlocal;++i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
@@ -680,6 +648,40 @@ bool SyntheticFunction::isEqual(ASObject *r)
 Class_base *SyntheticFunction::getReturnType()
 {
 	return (Class_base*)dynamic_cast<const Class_base*>(mi->returnType);
+}
+
+void SyntheticFunction::checkParamTypes()
+{
+	assert(!mi->returnType);
+	mi->hasExplicitTypes = false;
+	mi->paramTypes.reserve(mi->numArgs());
+	for(size_t i=0;i < mi->numArgs();++i)
+	{
+		const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context);
+		if (!t)
+			throwError<ReferenceError>(kClassNotFoundError, mi->paramTypeName(i)->qualifiedString(getSystemState()));
+		mi->paramTypes.push_back(t);
+		if(t != Type::anyType)
+			mi->hasExplicitTypes = true;
+	}
+
+	const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context);
+	if (!t)
+		throwError<ReferenceError>(kClassNotFoundError, mi->returnTypeName()->qualifiedString(getSystemState()));
+	mi->returnType = t;
+}
+
+bool SyntheticFunction::canSkipCoercion(int param, Class_base *cls)
+{
+	assert(mi->returnType && param < mi->numArgs());
+	
+	return mi->paramTypes[param] == cls ||(
+		(cls == Class<Number>::getRef(getSystemState()).getPtr() ||
+			cls == Class<Integer>::getRef(getSystemState()).getPtr() ||
+			cls == Class<UInteger>::getRef(getSystemState()).getPtr()) &&
+		(mi->paramTypes[param] == Class<Number>::getRef(getSystemState()).getPtr() ||
+			mi->paramTypes[param] == Class<Integer>::getRef(getSystemState()).getPtr() ||
+			mi->paramTypes[param] == Class<UInteger>::getRef(getSystemState()).getPtr()));
 }
 
 bool Function::isEqual(ASObject* r)

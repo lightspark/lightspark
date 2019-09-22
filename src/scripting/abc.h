@@ -127,6 +127,12 @@ public:
 
 	std::vector<const Type*> paramTypes;
 	const Type* returnType;
+	// this stores the locals/stack/scope_stack in case of normal (non-recursive) calls
+	asAtom* locals_norecursion;
+	asAtom* stack_norecursion;
+	asAtom* scope_stack_norecursion;
+	bool* scope_stack_dynamic_norecursion;
+	
 	bool hasExplicitTypes;
 	// indicates if the function code starts with getlocal_0/pushscope
 	bool needsscope;
@@ -138,8 +144,31 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false)
+		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),locals_norecursion(nullptr),stack_norecursion(nullptr),scope_stack_norecursion(nullptr),scope_stack_dynamic_norecursion(nullptr),hasExplicitTypes(false),needsscope(false)
 	{
+	}
+	~method_info()
+	{
+		if (locals_norecursion)
+		{
+			delete[] locals_norecursion;
+			locals_norecursion=nullptr;
+		}
+		if (stack_norecursion)
+		{
+			delete[] stack_norecursion;
+			stack_norecursion=nullptr;
+		}
+		if (scope_stack_norecursion)
+		{
+			delete[] scope_stack_norecursion;
+			scope_stack_norecursion=nullptr;
+		}
+		if (scope_stack_dynamic_norecursion)
+		{
+			delete[] scope_stack_dynamic_norecursion;
+			scope_stack_dynamic_norecursion=nullptr;
+		}
 	}
 };
 
@@ -161,6 +190,8 @@ enum OPERANDTYPES {
 
 #define ABC_OP_CACHED 0x10000000 
 #define ABC_OP_NOTCACHEABLE 0x20000000 
+#define ABC_OP_COERCED 0x40000000 //indicates that the method call doesn't have to coerce the arguments to the expected type
+#define ABC_OP_AVAILABLEBITS 0x0fffffff
 
 struct typed_opcode_handler
 {
@@ -1128,7 +1159,29 @@ public:
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
-	std::vector<std::pair<uint32_t,asAtom> > stacktrace;
+	struct stacktrace_entry
+	{
+		asAtom object;
+		uint32_t name;
+		void set(asAtom o, uint32_t n) { object=o; name=n; }
+	};
+	stacktrace_entry* stacktrace;
+	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
+	{
+		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))
+		{
+			throwStackOverflow();
+		}
+		stacktrace[cur_recursion].set(o,f);
+		++cur_recursion; //increment current recursion depth
+		return currentCallContext;
+	}
+	FORCE_INLINE void decStack(call_context* saved_cc)
+	{
+		currentCallContext = saved_cc;
+		--cur_recursion; //decrement current recursion depth
+	}
+	void throwStackOverflow();
 
 	struct abc_limits {
 		/* maxmium number of recursion allowed. See ScriptLimitsTag */

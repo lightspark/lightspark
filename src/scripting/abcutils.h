@@ -57,11 +57,9 @@ struct call_context
 		struct preloadedcodedata* exec_pos;
 	} PACKED;
 #include "packed_end.h"
-	uint32_t locals_size;
 	asAtom* max_stackp;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
-	_NR<scope_entry_list> parent_scope_stack;
-	uint32_t max_scope_stack;
+	scope_entry_list* parent_scope_stack;
 	uint32_t curr_scope_stack;
 	asAtom* scope_stack;
 	bool* scope_stack_dynamic;
@@ -77,7 +75,13 @@ struct call_context
 	uint32_t defaultNamespaceUri;
 	asAtom& returnvalue;
 	bool returning;
-	call_context(method_info* _mi,Class_base* _inClass, asAtom& ret);
+	call_context(method_info* _mi,Class_base* _inClass, asAtom& ret):
+		stackp(nullptr),exec_pos(nullptr),
+		max_stackp(nullptr),argarrayposition(-1),
+		parent_scope_stack(nullptr),curr_scope_stack(0),mi(_mi),
+		inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
+	{
+	}
 	static void handleError(int errorcode);
 	inline void runtime_stack_clear()
 	{

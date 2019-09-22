@@ -344,7 +344,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	if (instrptr && (instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_POP(th,obj);
-		if (asAtomHandler::getObject(obj) && asAtomHandler::getObject(obj)->getClass() == instrptr->cacheobj1)
+		if (asAtomHandler::isObject(obj) && asAtomHandler::getObjectNoCheck(obj)->getClass() == instrptr->cacheobj1)
 		{
 			asAtom o = asAtomHandler::fromObject(instrptr->cacheobj2);
 			ASATOM_INCREF(o);
@@ -632,7 +632,7 @@ void ABCVm::pushWith(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
 	LOG_CALL( _("pushWith ") << asAtomHandler::toDebugString(*t) );
-	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
+	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = true;
 	th->curr_scope_stack++;
@@ -642,7 +642,7 @@ void ABCVm::pushScope(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
 	LOG_CALL( _("pushScope ") << asAtomHandler::toDebugString(*t) );
-	assert_and_throw(th->curr_scope_stack < th->max_scope_stack);
+	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = false;
 	th->curr_scope_stack++;
@@ -651,7 +651,7 @@ void ABCVm::pushScope(call_context* th)
 Global* ABCVm::getGlobalScope(call_context* th)
 {
 	ASObject* ret;
-	if (!th->parent_scope_stack.isNull() && th->parent_scope_stack->scope.size() > 0)
+	if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
 		ret =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->mi->context->root->getSystemState());
 	else
 	{
@@ -989,7 +989,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	// Register the type name in the global scope. The type name
 	// is later used by the coerce opcode.
 	ASObject* global;
-	if (!th->parent_scope_stack.isNull() && th->parent_scope_stack->scope.size() > 0)
+	if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
 		global =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->mi->context->root->getSystemState());
 	else
 	{
@@ -1655,7 +1655,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			break;
 		}
 	}
-	if(asAtomHandler::isInvalid(o) && !th->parent_scope_stack.isNull()) // check parent scope stack
+	if(asAtomHandler::isInvalid(o) && th->parent_scope_stack) // check parent scope stack
 	{
 		for(it=th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
@@ -1749,7 +1749,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 			break;
 		}
 	}
-	if(!found && !th->parent_scope_stack.isNull()) // check parent scope stack
+	if(!found && th->parent_scope_stack) // check parent scope stack
 	{
 		for(it=th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
@@ -1773,7 +1773,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 			ret=target;
 		else //else push the current global object
 		{
-			if (!th->parent_scope_stack.isNull() && th->parent_scope_stack->scope.size() > 0)
+			if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
 				ret =asAtomHandler::toObject(th->parent_scope_stack->scope[0].object,th->mi->context->root->getSystemState());
 			else
 			{
@@ -1807,7 +1807,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 			break;
 		}
 	}
-	if(!found && !th->parent_scope_stack.isNull()) // check parent scope stack
+	if(!found && th->parent_scope_stack) // check parent scope stack
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
@@ -1899,7 +1899,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			break;
 		}
 	}
-	if(!found && !th->parent_scope_stack.isNull()) // check parent scope stack
+	if(!found && th->parent_scope_stack) // check parent scope stack
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
@@ -2689,7 +2689,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 
-	if (!th->parent_scope_stack.isNull())
+	if (th->parent_scope_stack)
 		ret->class_scope = th->parent_scope_stack->scope;
 	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
 	{
@@ -2782,7 +2782,7 @@ void ABCVm::newClass(call_context* th, int n)
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs());
 	//cinit must inherit the current scope
-	if (!th->parent_scope_stack.isNull())
+	if (th->parent_scope_stack)
 		cinit->acquireScope(th->parent_scope_stack->scope);
 	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
 	{
@@ -2963,7 +2963,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	method_info* m=&th->mi->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->mi->context->root->applicationDomain->getSystemState(),m,m->numArgs());
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
-	if (!th->parent_scope_stack.isNull())
+	if (th->parent_scope_stack)
 	{
 		f->func_scope->scope=th->parent_scope_stack->scope;
 		for (auto it = f->func_scope->scope.begin(); it != f->func_scope->scope.end(); it++)

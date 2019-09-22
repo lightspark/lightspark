@@ -2163,12 +2163,12 @@ void SystemState::sendMainSignal()
 void SystemState::dumpStacktrace()
 {
 	tiny_string stacktrace;
-	for (auto it = getVm(this)->stacktrace.rbegin(); it != getVm(this)->stacktrace.rend(); it++)
+	for (uint32_t i = getVm(this)->cur_recursion; i > 0; i--)
 	{
 		stacktrace += "    at ";
-		stacktrace += asAtomHandler::toObject((*it).second,this)->getClassName();
+		stacktrace += asAtomHandler::toObject(getVm(this)->stacktrace[i-1].object,this)->getClassName();
 		stacktrace += "/";
-		stacktrace += this->getStringFromUniqueId((*it).first);
+		stacktrace += this->getStringFromUniqueId(getVm(this)->stacktrace[i-1].name);
 		stacktrace += "()\n";
 	}
 	LOG(LOG_INFO,"current stacktrace:\n" << stacktrace);

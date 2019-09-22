@@ -76,12 +76,12 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 	{
 		SystemState* sys = getSys();
 		tiny_string stacktrace;
-		for (auto it = getVm(sys)->stacktrace.rbegin(); it != getVm(sys)->stacktrace.rend(); it++)
+		for (uint32_t i = getVm(sys)->cur_recursion; i > 0; i--)
 		{
 			stacktrace += "    at ";
-			stacktrace += asAtomHandler::toObject((*it).second,sys)->getClassName();
+			stacktrace += asAtomHandler::toObject(getVm(sys)->stacktrace[i-1].object,sys)->getClassName();
 			stacktrace += "/";
-			stacktrace += sys->getStringFromUniqueId((*it).first);
+			stacktrace += sys->getStringFromUniqueId(getVm(sys)->stacktrace[i-1].name);
 			stacktrace += "()\n";
 		}
 		LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
@@ -94,12 +94,12 @@ ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const 
 	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
 	stacktrace = "";
-	for (auto it = getVm(c->getSystemState())->stacktrace.rbegin(); it != getVm(c->getSystemState())->stacktrace.rend(); it++)
+	for (uint32_t i = getVm(c->getSystemState())->cur_recursion; i > 0; i--)
 	{
 		stacktrace += "    at ";
-		stacktrace += asAtomHandler::toObject((*it).second,c->getSystemState())->getClassName();
+		stacktrace += asAtomHandler::toObject(getVm(c->getSystemState())->stacktrace[i-1].object,c->getSystemState())->getClassName();
 		stacktrace += "/";
-		stacktrace += c->getSystemState()->getStringFromUniqueId((*it).first);
+		stacktrace += c->getSystemState()->getStringFromUniqueId(getVm(c->getSystemState())->stacktrace[i-1].name);
 		stacktrace += "()\n";
 	}
 }

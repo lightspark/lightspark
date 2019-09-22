@@ -40,6 +40,8 @@ public:
 	ASFUNCTION_ATOM(attachSound);
 	ASFUNCTION_ATOM(getVolume);
 	ASFUNCTION_ATOM(setVolume);
+	ASFUNCTION_ATOM(getPan);
+	ASFUNCTION_ATOM(setPan);
 };
 
 }

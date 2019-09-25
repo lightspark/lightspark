@@ -901,7 +901,7 @@ void ACTIONRECORD::executeActions(MovieClip *clip, AVM1context* context, std::ve
 				if (asAtomHandler::is<MovieClip>(obj))
 					res = asAtomHandler::fromString(clip->getSystemState(),"movieclip");
 				else
-					res = asAtomHandler::typeOf(obj,clip->getSystemState());
+					res = asAtomHandler::typeOf(obj);
 				PushStack(stack,res);
 				break;
 			}

@@ -836,9 +836,9 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 		if (asAtomHandler::is<SyntheticFunction>(o))
 		{
 			if (obj->kind == CONSTANT_TRAIT)
-				asAtomHandler::getObject(o)->setConstant();
+				asAtomHandler::getObjectNoCheck(o)->setConstant();
 			else
-				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
+				checkFunctionScope(asAtomHandler::getObjectNoCheck(o)->as<SyntheticFunction>());
 		}
 		if (alreadyset)
 			*alreadyset=false;
@@ -2862,58 +2862,6 @@ uint32_t asAtomHandler::toStringId(asAtom& a,SystemState* sys)
 	return toObject(a,sys)->toStringId();
 }
 
-asAtom asAtomHandler::typeOf(asAtom& a,SystemState* sys)
-{
-	string ret="object";
-	switch(a.uintval&0x7)
-	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-		{
-			switch (a.uintval&0x70)
-			{
-				case ATOMTYPE_NULL_BIT:
-					ret= "object";
-					break;
-				case ATOMTYPE_UNDEFINED_BIT:
-					ret="undefined";
-					break;
-				case ATOMTYPE_BOOL_BIT:
-					ret="boolean";
-					break;
-				default:
-					break;
-			}
-			break;
-		}
-		case ATOM_OBJECTPTR:
-			if(getObject(a)->is<XML>() || getObject(a)->is<XMLList>())
-				ret = "xml";
-			if(getObject(a)->is<Number>() || getObject(a)->is<Integer>() || getObject(a)->is<UInteger>())
-				ret = "number";
-			if(getObject(a)->is<ASString>())
-				ret = "string";
-			if(getObject(a)->is<IFunction>())
-				ret = "function";
-			if(getObject(a)->is<Undefined>())
-				ret = "undefined";
-			if(getObject(a)->is<Boolean>())
-				ret = "boolean";
-			break;
-		case ATOM_NUMBERPTR:
-		case ATOM_INTEGER:
-		case ATOM_UINTEGER:
-		case ATOM_U_INTEGERPTR:
-			ret="number";
-			break;
-		case ATOM_STRINGID:
-		case ATOM_STRINGPTR:
-			ret = "string";
-			break;
-		default:
-			break;
-	}
-	return asAtomHandler::fromString(sys,ret);
-}
 
 bool asAtomHandler::Boolean_concrete_string(asAtom &a)
 {

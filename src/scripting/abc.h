@@ -870,6 +870,10 @@ private:
 	static void abc_decrement_local_localresult(call_context* context);
 	static void abc_declocal(call_context* context);
 	static void abc_typeof(call_context* context);
+	static void abc_typeof_constant(call_context* context);
+	static void abc_typeof_local(call_context* context);
+	static void abc_typeof_constant_localresult(call_context* context);
+	static void abc_typeof_local_localresult(call_context* context);
 	static void abc_not(call_context* context);
 	static void abc_not_constant(call_context* context);
 	static void abc_not_local(call_context* context);

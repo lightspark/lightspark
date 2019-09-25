@@ -759,10 +759,10 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_add_i_local_constant_localresult,
 	abc_add_i_constant_local_localresult,
 	abc_add_i_local_local_localresult,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_typeof_constant,// 0x268 ABC_OP_OPTIMZED_TYPEOF
+	abc_typeof_local,
+	abc_typeof_constant_localresult,
+	abc_typeof_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -2618,7 +2618,7 @@ void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,asAtom* args,
 					&& (cacheptr->data & ABC_OP_NOTCACHEABLE)==0 
 					&& asAtomHandler::canCacheMethod(obj,name) 
 					&& asAtomHandler::getObject(o) 
-					&& (asAtomHandler::is<Class_base>(obj) || (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,context->mi->context->root->getSystemState())->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
+					&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj)) || (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,context->mi->context->root->getSystemState())->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
 			{
 				// cache method if multiname is static and it is a method of a sealed class
 				cacheptr->data |= ABC_OP_CACHED;
@@ -2779,9 +2779,7 @@ void ABCVm::abc_callpropertyStaticName(call_context* context)
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	multiname* name=instrptr->cachedmultiname2;
 	LOG_CALL( "callProperty_staticname " << *name<<" "<<argcount);
-	asAtom* args=g_newa(asAtom, argcount);
-	for(uint32_t i=0;i<argcount;i++)
-		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount,args);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret=asAtomHandler::invalidAtom;
 	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,true,true,(instrptr->data&ABC_OP_COERCED)==0);
@@ -3216,9 +3214,7 @@ void ABCVm::abc_callpropvoidStaticName(call_context* context)
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	multiname* name=instrptr->cachedmultiname2;
 	LOG_CALL( "callPropvoid_staticname " << *name<<" "<<argcount);
-	asAtom* args=g_newa(asAtom, argcount);
-	for(uint32_t i=0;i<argcount;i++)
-		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount,args);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret=asAtomHandler::invalidAtom;
 	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,true,false,(instrptr->data&ABC_OP_COERCED)==0);
@@ -4331,9 +4327,7 @@ void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArgVoid ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
-	asAtom* args=g_newa(asAtom, argcount);
-	for(uint32_t i=0;i<argcount;i++)
-		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount,args);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret;
 	asAtomHandler::callFunction(func,ret,*obj,args,argcount,false,false,(instrptr->data&ABC_OP_COERCED)==0);
@@ -4345,9 +4339,7 @@ void ABCVm::abc_callFunctionMultiArgs(call_context* context)
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArg ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
-	asAtom* args=g_newa(asAtom, argcount);
-	for(uint32_t i=0;i<argcount;i++)
-		RUNTIME_STACK_POP(context,args[argcount-i-1]);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount,args);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(func,ret,*obj,args,argcount,false,true,(instrptr->data&ABC_OP_COERCED)==0);
@@ -4973,12 +4965,41 @@ void ABCVm::abc_declocal(call_context* context)
 }
 void ABCVm::abc_typeof(call_context* context)
 {
-	//typeof
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL(_("typeOf"));
-	asAtom ret = asAtomHandler::typeOf(*pval,context->mi->context->root->getSystemState());
+	asAtom ret = asAtomHandler::typeOf(*pval);
 	ASATOM_DECREF_POINTER(pval);
 	*pval = ret;
+	++(context->exec_pos);
+}
+void ABCVm::abc_typeof_constant(call_context* context)
+{
+	LOG_CALL("typeof_c");
+	asAtom res = asAtomHandler::typeOf(*context->exec_pos->arg1_constant);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_typeof_local(call_context* context)
+{
+	LOG_CALL("typeof_l "<<asAtomHandler::toDebugString(context->locals[context->exec_pos->local_pos1]));
+	asAtom res = asAtomHandler::typeOf(context->locals[context->exec_pos->local_pos1]);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_typeof_constant_localresult(call_context* context)
+{
+	LOG_CALL("typeof_cl");
+	asAtom res = asAtomHandler::typeOf(*context->exec_pos->arg1_constant);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_typeof_local_localresult(call_context* context)
+{
+	LOG_CALL("typeof_ll");
+	asAtom res = asAtomHandler::typeOf(context->locals[context->exec_pos->local_pos1]);
+	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
+	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_not(call_context* context)
@@ -6833,6 +6854,7 @@ struct operands
 
 #define ABC_OP_OPTIMZED_LESSTHAN 0x00000258
 #define ABC_OP_OPTIMZED_ADD_I 0x00000260
+#define ABC_OP_OPTIMZED_TYPEOF 0x00000268
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -7250,6 +7272,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			break;
 		case 0x91://increment
 		case 0x93://decrement
+		case 0x95://typeof
 		case 0x96://not
 		case 0x6c://getslot
 		case 0x73://convert_i
@@ -9230,6 +9253,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x93://decrement
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_DECREMENT,opcode,code,oldnewpositions, jumptargets,false,true,localtypes, defaultlocaltypes, Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
+				break;
+			case 0x95: //typeof
+				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_TYPEOF,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<ASString>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				break;
 			case 0x96: //not
 				setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_NOT,opcode,code,oldnewpositions, jumptargets,true,true,localtypes, defaultlocaltypes, Class<Boolean>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);

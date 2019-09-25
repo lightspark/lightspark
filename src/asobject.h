@@ -514,7 +514,7 @@ public:
 	static tiny_string toString(const asAtom &a, SystemState *sys);
 	static tiny_string toLocaleString(const asAtom &a);
 	static uint32_t toStringId(asAtom &a, SystemState *sys);
-	static asAtom typeOf(asAtom& a,SystemState *sys);
+	static FORCE_INLINE asAtom typeOf(asAtom& a);
 	static bool Boolean_concrete(asAtom& a);
 	static void convert_b(asAtom& a, bool refcounted);
 	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
@@ -2228,6 +2228,59 @@ FORCE_INLINE SWFOBJECT_TYPE asAtomHandler::getObjectType(const asAtom& a)
 			return T_INVALID;
 	}
 }
+FORCE_INLINE asAtom asAtomHandler::typeOf(asAtom& a)
+{
+	BUILTIN_STRINGS ret=BUILTIN_STRINGS::STRING_OBJECT;
+	switch(a.uintval&0x7)
+	{
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		{
+			switch (a.uintval&0x70)
+			{
+				case ATOMTYPE_NULL_BIT:
+					ret= BUILTIN_STRINGS::STRING_OBJECT;
+					break;
+				case ATOMTYPE_UNDEFINED_BIT:
+					ret=BUILTIN_STRINGS::STRING_UNDEFINED;
+					break;
+				case ATOMTYPE_BOOL_BIT:
+					ret=BUILTIN_STRINGS::STRING_BOOLEAN;
+					break;
+				default:
+					break;
+			}
+			break;
+		}
+		case ATOM_OBJECTPTR:
+			if(getObjectNoCheck(a)->is<XML>() || getObjectNoCheck(a)->is<XMLList>())
+				ret = BUILTIN_STRINGS::STRING_XML;
+			if(getObjectNoCheck(a)->is<Number>() || getObjectNoCheck(a)->is<Integer>() || getObjectNoCheck(a)->is<UInteger>())
+				ret = BUILTIN_STRINGS::STRING_NUMBER;
+			if(getObjectNoCheck(a)->is<ASString>())
+				ret = BUILTIN_STRINGS::STRING_STRING;
+			if(getObjectNoCheck(a)->is<IFunction>())
+				ret = BUILTIN_STRINGS::STRING_FUNCTION_LOWERCASE;
+			if(getObjectNoCheck(a)->is<Undefined>())
+				ret = BUILTIN_STRINGS::STRING_UNDEFINED;
+			if(getObjectNoCheck(a)->is<Boolean>())
+				ret = BUILTIN_STRINGS::STRING_BOOLEAN;
+			break;
+		case ATOM_NUMBERPTR:
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_U_INTEGERPTR:
+			ret=BUILTIN_STRINGS::STRING_NUMBER;
+			break;
+		case ATOM_STRINGID:
+		case ATOM_STRINGPTR:
+			ret = BUILTIN_STRINGS::STRING_STRING;
+			break;
+		default:
+			break;
+	}
+	return asAtomHandler::fromStringID(ret);
+}
+
 FORCE_INLINE bool asAtomHandler::isFunction(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<IFunction>(); }
 FORCE_INLINE bool asAtomHandler::isString(const asAtom& a) { return isStringID(a) || (isObject(a) && getObjectNoCheck(a)->is<ASString>()); }
 FORCE_INLINE bool asAtomHandler::isQName(const asAtom& a) { return getObject(a) && getObjectNoCheck(a)->is<ASQName>(); }

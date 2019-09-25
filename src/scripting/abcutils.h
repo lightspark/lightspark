@@ -108,6 +108,12 @@ else asAtomHandler::set(*(context->stackp++),val)
 	  context->handleError(kStackUnderflowError); \
 	asAtom* ret= --context->stackp; 
 
+#define RUNTIME_STACK_POP_N_CREATE(context,n,ret) \
+	if(USUALLY_FALSE(context->stackp<context->stack+n)) \
+	  context->handleError(kStackUnderflowError); \
+	context->stackp-=n; \
+	asAtom* ret= context->stackp;
+
 #define RUNTIME_STACK_POP_ASOBJECT(context,ret, sys) \
 	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=asAtomHandler::toObject(*(--context->stackp),sys); \
 	else context->handleError(kStackUnderflowError);

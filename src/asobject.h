@@ -741,6 +741,10 @@ public:
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->var;
 	}
+	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
+	{
+		return slots_vars[n-1]->var;
+	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n, SystemState *sys)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
@@ -1057,6 +1061,10 @@ public:
 	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
+	}
+	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
+	{
+		return Variables.getSlotNoCheck(n);
 	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{

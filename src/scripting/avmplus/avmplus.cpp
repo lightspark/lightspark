@@ -147,7 +147,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,isDebugger)
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isGlobal is unimplemented."));
 	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)

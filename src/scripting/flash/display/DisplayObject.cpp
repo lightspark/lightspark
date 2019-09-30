@@ -205,6 +205,7 @@ void DisplayObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, rotationX);
 	REGISTER_GETTER_SETTER(c, rotationY);
 	REGISTER_GETTER_SETTER(c, opaqueBackground);
+	REGISTER_GETTER_SETTER(c, metaData);
 
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	IBitmapDrawable::linkTraits(c);
@@ -219,6 +220,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData);
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 {

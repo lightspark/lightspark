@@ -264,6 +264,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, rotationX);
 	ASPROPERTY_GETTER_SETTER(number_t, rotationY);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, opaqueBackground);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, metaData);
 	
 	ASFUNCTION_ATOM(AVM1_getScaleX);
 	ASFUNCTION_ATOM(AVM1_setScaleX);

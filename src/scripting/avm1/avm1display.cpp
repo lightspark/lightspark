@@ -102,6 +102,8 @@ void AVM1MovieClipLoader::sinit(Class_base* c)
 	CLASS_SETUP(c, Loader, _constructor, CLASS_FINAL);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("loadClip","",Class<IFunction>::getFunction(c->getSystemState(),loadClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeListener),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 {
@@ -126,4 +128,109 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	if (t)
 		t->loaderInfo = th->getContentLoaderInfo();
 	th->loadIntern(r,nullptr);
+}
+ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
+{
+	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
+
+	sys->stage->AVM1AddEventListener(th);
+	ASObject* o = asAtomHandler::toObject(args[0],sys);
+
+	o->incRef();
+	th->listeners.insert(_MR(o));
+}
+ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
+{
+	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
+
+	
+	ASObject* o = asAtomHandler::toObject(args[0],sys);
+
+	th->listeners.erase(_MR(o));
+}
+void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
+{
+	if (dispatcher == this->getContentLoaderInfo().getPtr())
+	{
+		auto it = listeners.begin();
+		while (it != listeners.end())
+		{
+			if (e->type == "open")
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onLoadStart");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+			}
+			else if (e->type == "init")
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onLoadInit");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+			}
+			else if (e->type == "progress")
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onLoadProgress");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+			}
+			else if (e->type == "complete")
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onLoadComplete");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+			}
+			else if (e->type == "ioError")
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onLoadError");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+			}
+			it++;
+		}
+	}
 }

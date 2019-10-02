@@ -1782,7 +1782,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root):DictionaryTag(h,root)
 {
 	in >> ButtonId;
-	int len = Header.getLength();
+	int len = Header.getLength()-2;
 	UI16_SWF ActionOffset;
 	int pos = in.tellg();
 	if (version > 1)
@@ -1839,7 +1839,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 			throw ParseException("Malformed SWF file, DefineButtonTag: invalid length of ACTIONRECORD");
 		if (len > 0)
 		{
-			LOG(LOG_ERROR,"DefineButtonTag: bytes available after reading all actions:"<<len);
+			LOG(LOG_ERROR,"DefineButtonTag "<<ButtonId<<": bytes available after reading all actions:"<< len);
 			ignore(in,len);
 		}
 	}

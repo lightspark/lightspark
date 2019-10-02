@@ -74,12 +74,15 @@ private:
 	mutable Spinlock spinlock;
 	std::list<IThreadJob *> jobs;
 	URLInfo url;
+	std::set<_R<ASObject> > listeners;
 public:
 	AVM1MovieClipLoader(Class_base* c):Loader(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(loadClip);
-	
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
+	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
 };
 
 }

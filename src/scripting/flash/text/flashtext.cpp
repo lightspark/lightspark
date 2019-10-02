@@ -357,7 +357,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	// it seems that Adobe returns the textwidth if in autoSize mode
-	if ((th->autoSize == AS_NONE)||(th->wordWrap == true))
+	if ((th->autoSize == AS_NONE)||(th->autoSize == AS_CENTER)||(th->wordWrap == true))
 		asAtomHandler::setUInt(ret,sys,th->width);
 	else
 		asAtomHandler::setUInt(ret,sys,th->textWidth);
@@ -477,12 +477,21 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 
 	if(!asAtomHandler::isNull(tf->color))
 		th->textColor = asAtomHandler::toUInt(tf->color);
+	bool updatesizes = false;
 	if (tf->font != "")
 	{
+		if (tf->font != th->font)
+			updatesizes = true;
 		th->font = tf->font;
 		th->fontID = UINT32_MAX;
 	}
-	th->fontSize = tf->size;
+	if (th->fontSize != (uint32_t)tf->size)
+	{
+		th->fontSize = tf->size;
+		updatesizes = true;
+	}
+	if (updatesizes)
+		th->updateSizes();
 
 	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");
 }

@@ -520,11 +520,11 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
 	this->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
-	_NR<SecurityDomain> secDomain;
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext);
+	SecurityDomain* secDomain=nullptr;
+	SecurityDomain* curSecDomain=getVm(this->getSystemState())->currentCallContext ? ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext).getPtr():this->getSystemState()->mainClip->securityDomain.getPtr();
 	if(context)
 	{
-		if (!context->securityDomain.isNull())
+		if (context->securityDomain)
 		{
 			//The passed domain must be the current one. See Loader::load specs.
 			if(context->securityDomain!=curSecDomain)
@@ -541,9 +541,9 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	_R<RootMovieClip> currentRoot=getVm(this->getSystemState())->currentCallContext->mi->context->root;
+	RootMovieClip* currentRoot=getVm(this->getSystemState())->currentCallContext ? getVm(this->getSystemState())->currentCallContext->mi->context->root.getPtr():this->getSystemState()->mainClip;
 	// empty origin is possible if swf is loaded by loadBytes()
-	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || !secDomain.isNull())
+	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
 		//Same domain
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
@@ -552,7 +552,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
 		else
 			this->contentLoaderInfo->applicationDomain = context->applicationDomain;
-		this->contentLoaderInfo->securityDomain = curSecDomain;
+		this->contentLoaderInfo->securityDomain = _NR<SecurityDomain>(curSecDomain);
 	}
 	else
 	{

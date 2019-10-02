@@ -1513,7 +1513,7 @@ void ParseThread::parseSWF(UI8 ver)
 			else
 				root->usesActionScript3 = root->getSystemState()->mainClip->usesActionScript3;
 		}
-		else
+		else if(root == root->getSystemState()->mainClip)
 		{
 			root->getSystemState()->needsAVM2(true);
 		}

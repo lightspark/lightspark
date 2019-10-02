@@ -122,6 +122,7 @@
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/globalization/flashglobalization.h"
 #include "scripting/flash/external/ExternalInterface.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/xml/flashxml.h"
@@ -698,6 +699,11 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef(m_sys));
 	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef(m_sys));
 
+	builtin->registerBuiltin("DateTimeFormatter","flash.globalization",Class<DateTimeFormatter>::getRef(m_sys));
+	builtin->registerBuiltin("DateTimeStyle","flash.globalization",Class<DateTimeStyle>::getRef(m_sys));
+	builtin->registerBuiltin("LastOperationStatus","flash.globalization",Class<LastOperationStatus>::getRef(m_sys));
+	
+	
 	// avm intrinsics, not documented, but implemented in avmplus
 	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
 

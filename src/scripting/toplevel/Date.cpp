@@ -1176,6 +1176,14 @@ TRISTATE Date::isLessAtom(asAtom& r)
 	return ASObject::isLessAtom(r);
 }
 
+tiny_string Date::format(const char *fmt, bool utc)
+{
+	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, fmt);
+	tiny_string res(fs);
+	g_free(fs);
+	return res;
+}
+
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)

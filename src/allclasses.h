@@ -212,6 +212,11 @@ REGISTER_CLASS_NAME(Vector3D,"flash.geom")
 REGISTER_CLASS_NAME(Matrix3D,"flash.geom")
 REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 
+//Globalization
+REGISTER_CLASS_NAME(DateTimeFormatter,"flash.globalization")
+REGISTER_CLASS_NAME(DateTimeStyle,"flash.globalization")
+REGISTER_CLASS_NAME(LastOperationStatus,"flash.globalization")
+
 //Media
 REGISTER_CLASS_NAME(Sound,"flash.media")
 REGISTER_CLASS_NAME(SoundChannel,"flash.media")

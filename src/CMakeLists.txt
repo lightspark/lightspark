@@ -91,6 +91,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/filters/flashfilters.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
+  scripting/flash/globalization/flashglobalization.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
   scripting/flash/net/URLRequestHeader.cpp

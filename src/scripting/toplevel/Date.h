@@ -122,6 +122,7 @@ public:
 	TRISTATE isLess(ASObject* r);
 	TRISTATE isLessAtom(asAtom& r);
 	
+	tiny_string format(const char* fmt, bool utc);
 	tiny_string toString();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

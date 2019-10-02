@@ -70,6 +70,7 @@
 #include "scripting/flash/utils/IntervalManager.h"
 #include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/globalization/flashglobalization.h"
 #include "scripting/flash/external/ExternalInterface.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/xml/flashxml.h"

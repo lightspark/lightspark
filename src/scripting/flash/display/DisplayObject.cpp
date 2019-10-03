@@ -149,6 +149,9 @@ bool DisplayObject::destruct()
 	legacy=false;
 	cacheAsBitmap=false;
 	name=BUILTIN_STRINGS::EMPTY;
+	avm1variables.clear();
+	variablebindings.clear();
+	avm1functions.clear();
 	return EventDispatcher::destruct();
 }
 
@@ -1554,7 +1557,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 	{
 		if (!asAtomHandler::is<Undefined>(args[0]))
 		{
-			if (asAtomHandler::is<MovieClip>(obj))
+			if (asAtomHandler::is<DisplayObject>(obj))
 			{
 				if (asAtomHandler::is<DisplayObject>(args[0]))
 				{
@@ -1563,7 +1566,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 				else
 				{
 					tiny_string s = asAtomHandler::toString(args[0],sys);
-					MovieClip* path = asAtomHandler::as<MovieClip>(obj)->AVM1GetClipFromPath(s);
+					DisplayObject* path = asAtomHandler::as<DisplayObject>(obj)->AVM1GetClipFromPath(s);
 					if (path)
 					{
 						asAtom pathobj = asAtomHandler::fromObject(path);
@@ -1791,5 +1794,238 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_swapDepths),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setMask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),NORMAL_METHOD,true);
+}
+DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
+{
+	if (path.empty() || path == "this")
+		return this;
+	if (path =="_root")
+	{
+		return getSystemState()->mainClip;
+	}
+	if (path.startsWith("/"))
+	{
+		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
+		MovieClip* root = getRoot().getPtr();
+		if (root)
+			return root->AVM1GetClipFromPath(newpath);
+		LOG(LOG_ERROR,"AVM1: no root movie clip for path:"<<path<<" "<<this->toDebugString());
+		return nullptr;
+	}
+	if (path.startsWith("../"))
+	{
+		tiny_string newpath = path.substr_bytes(3,path.numBytes()-3);
+		if (this->getParent() && this->getParent()->is<MovieClip>())
+			return this->getParent()->as<MovieClip>()->AVM1GetClipFromPath(newpath);
+		LOG(LOG_ERROR,"AVM1: no parent clip for path:"<<path<<" "<<this->toDebugString());
+		return nullptr;
+	}
+	uint32_t pos = path.find("/");
+	tiny_string subpath = (pos == tiny_string::npos) ? path : path.substr_bytes(0,pos);
+	if (subpath.empty())
+	{
+		return nullptr;
+	}
+	// path "/stage" is mapped to the root movie (?) 
+	if (this == getSystemState()->mainClip && subpath == "stage")
+		return this;
+	uint32_t posdot = subpath.find(".");
+	if (posdot != tiny_string::npos)
+	{
+		tiny_string subdotpath =  subpath.substr_bytes(0,posdot);
+		if (subdotpath.empty())
+			return nullptr;
+		DisplayObject* parent = AVM1GetClipFromPath(subdotpath);
+		if (!parent)
+			return nullptr;
+		tiny_string localname = subpath.substr_bytes(posdot+1,subpath.numBytes()-posdot-1);
+		return parent->AVM1GetClipFromPath(localname);
+	}
+	
+	multiname objName(NULL);
+	objName.name_type=multiname::NAME_STRING;
+	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
+	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	asAtom ret=asAtomHandler::invalidAtom;
+	getVariableByMultiname(ret,objName);
+	if (asAtomHandler::is<DisplayObject>(ret))
+	{
+		if (pos == tiny_string::npos)
+			return asAtomHandler::as<DisplayObject>(ret);
+		else
+		{
+			subpath = path.substr_bytes(pos+1,path.numBytes()-pos-1);
+			return asAtomHandler::as<DisplayObject>(ret)->AVM1GetClipFromPath(subpath);
+		}
+	}
+	LOG(LOG_ERROR,"AVM1:"<<getTagID()<<" path not found:"<<path<<" "<<subpath<<" "<<asAtomHandler::toDebugString(ret));
+	return nullptr;
+}
+
+void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
+{
+	if (name.empty())
+		return;
+	if (name.startsWith("/"))
+	{
+		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
+		MovieClip* root = getSystemState()->mainClip;
+		if (root)
+			root->AVM1SetVariable(newpath,v);
+		else
+			LOG(LOG_ERROR,"AVM1: no root movie clip for name:"<<name<<" "<<this->toDebugString());
+		return;
+	}
+	uint32_t pos = name.find(":");
+	if (pos == tiny_string::npos)
+	{
+		tiny_string localname = name.lowercase();
+		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		if (asAtomHandler::isUndefined(v))
+			avm1variables.erase(nameId);
+		else
+			avm1variables[nameId] = v;
+		multiname objName(NULL);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=nameId;
+		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
+		AVM1UpdateVariableBindings(nameId,v);
+	}
+	else if (pos == 0)
+	{
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1).lowercase();
+		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		if (asAtomHandler::isUndefined(v))
+			avm1variables.erase(nameId);
+		else
+			avm1variables[nameId] = v;
+	}
+	else
+	{
+		tiny_string path = name.substr_bytes(0,pos);
+		DisplayObject* clip = AVM1GetClipFromPath(path);
+		if (clip)
+		{
+			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+			clip->AVM1SetVariable(localname,v);
+		}
+	}
+}
+
+asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
+{
+	uint32_t pos = name.find(":");
+	if (pos == tiny_string::npos)
+	{
+		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
+		if (it != avm1variables.end())
+			return it->second;
+	}
+	else if (pos == 0)
+	{
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		return AVM1GetVariable(localname.lowercase());
+	}
+	else
+	{
+		tiny_string path = name.substr_bytes(0,pos).lowercase();
+		DisplayObject* clip = AVM1GetClipFromPath(path);
+		if (clip)
+		{
+			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+			return clip->AVM1GetVariable(localname.lowercase());
+		}
+	}
+	asAtom ret=asAtomHandler::invalidAtom;
+	
+	if (getSystemState()->mainClip->version > 4)
+	{
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.name_s_id=getSystemState()->getUniqueStringId(name);
+		m.isAttribute = false;
+		getVariableByMultiname(ret,m);
+		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
+			getSystemState()->mainClip->getVariableByMultiname(ret,m);
+		if (asAtomHandler::isInvalid(ret))// get Variable from global object
+			getSystemState()->avm1global->getVariableByMultiname(ret,m);
+	}
+	return ret;
+}
+void DisplayObject::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
+{
+	auto it = variablebindings.find(nameID);
+	while (it != variablebindings.end() && it->first == nameID)
+	{
+		(*it).second->UpdateVariableBinding(value);
+		it++;
+	}
+}
+asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
+{
+	uint32_t pos = name.find(".");
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (pos == tiny_string::npos)
+	{
+		ret = AVM1GetVariable(name);
+	}
+	else
+	{
+		tiny_string firstpart = name.substr_bytes(0,pos);
+		asAtom obj = AVM1GetVariable(firstpart);
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		ret = asAtomHandler::toObject(obj,getSystemState())->getVariableBindingValue(localname);
+	}
+	return ret;
+}
+void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
+{
+	uint32_t key = getSystemState()->getUniqueStringId(name);
+	if (obj)
+	{
+		obj->incRef();
+		auto it = variablebindings.lower_bound(key);
+		while (it != variablebindings.end() && it->first == key)
+		{
+			if (it->second == obj)
+				return;
+			it++;
+		}
+		variablebindings.insert(std::make_pair(key,obj));
+	}
+	else
+	{
+		auto it = variablebindings.find(key);
+		while (it != variablebindings.end() && it->first == key)
+		{
+			if (it->second == obj)
+			{
+				variablebindings.erase(it);
+				break;
+			}
+			it++;
+		}
+	}
+}
+void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
+{
+	if (obj)
+	{
+		obj->incRef();
+		avm1functions[nameID] = obj;
+		avm1variables[nameID] = asAtomHandler::fromObject(obj.getPtr());
+	}
+	else
+	{
+		avm1functions.erase(nameID);
+		avm1variables.erase(nameID);
+	}
+}
+AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)
+{
+	auto it = avm1functions.find(nameID);
+	if (it != avm1functions.end())
+		return it->second.getPtr();
+	return nullptr;
 }
 

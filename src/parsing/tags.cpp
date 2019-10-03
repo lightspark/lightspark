@@ -1791,8 +1791,8 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 		UB(7,bs);
 		TrackAsMenu=UB(1,bs);
 		pos = in.tellg();
+		len-=1;
 		in >> ActionOffset;
-		len-=3;
 	}
 	else
 	{
@@ -1813,9 +1813,9 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	int realactionoffset = (((int)in.tellg())-pos);
 	len -= realactionoffset;
 
-	if (root->version >= 9)
+	if (root->usesActionScript3)
 	{
-		// ignore actions on SWF version >= 9
+		// ignore actions when using ActionScript3
 		ignore(in,len);
 		return;
 	}
@@ -1902,7 +1902,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
-				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList"<<this->getId());
+				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList "<<this->getId());
 			if (i->ColorTransform.isfilled())
 				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
 

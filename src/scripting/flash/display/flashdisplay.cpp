@@ -1340,9 +1340,6 @@ bool MovieClip::destruct()
 	frameScriptToExecute = UINT32_MAX;
 	totalFrames_unreliable = 1;
 	avm1initactionsdone = false;
-	avm1variables.clear();
-	variablebindings.clear();
-	avm1functions.clear();
 	frameinitactionsdone.clear();
 
 	frames.clear();
@@ -1871,230 +1868,6 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	}
 }
 
-MovieClip *MovieClip::AVM1GetClipFromPath(tiny_string &path)
-{
-	if (path.empty() || path == "this")
-		return this;
-	if (path =="_root")
-	{
-		return getSystemState()->mainClip;
-	}
-	if (path.startsWith("/"))
-	{
-		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
-		MovieClip* root = getSystemState()->mainClip;
-		if (root)
-			return root->AVM1GetClipFromPath(newpath);
-		LOG(LOG_ERROR,"AVM1: no root movie clip for path:"<<path<<" "<<this->toDebugString());
-		return nullptr;
-	}
-	if (path.startsWith("../"))
-	{
-		tiny_string newpath = path.substr_bytes(3,path.numBytes()-3);
-		if (this->getParent() && this->getParent()->is<MovieClip>())
-			return this->getParent()->as<MovieClip>()->AVM1GetClipFromPath(newpath);
-		LOG(LOG_ERROR,"AVM1: no parent clip for path:"<<path<<" "<<this->toDebugString());
-		return nullptr;
-	}
-	uint32_t pos = path.find("/");
-	tiny_string subpath = (pos == tiny_string::npos) ? path : path.substr_bytes(0,pos);
-	if (subpath.empty())
-	{
-		return nullptr;
-	}
-	// path "/stage" is mapped to the root movie (?) 
-	if (this == getSystemState()->mainClip && subpath == "stage")
-		return this;
-	uint32_t posdot = subpath.find(".");
-	if (posdot != tiny_string::npos)
-	{
-		tiny_string subdotpath =  subpath.substr_bytes(0,posdot);
-		if (subdotpath.empty())
-			return nullptr;
-		MovieClip* parent = AVM1GetClipFromPath(subdotpath);
-		if (!parent)
-			return nullptr;
-		tiny_string localname = subpath.substr_bytes(posdot+1,subpath.numBytes()-posdot-1);
-		return parent->AVM1GetClipFromPath(localname);
-	}
-	
-	multiname objName(NULL);
-	objName.name_type=multiname::NAME_STRING;
-	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
-	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-	asAtom ret=asAtomHandler::invalidAtom;
-	getVariableByMultiname(ret,objName);
-	if (asAtomHandler::is<MovieClip>(ret))
-	{
-		if (pos == tiny_string::npos)
-			return asAtomHandler::as<MovieClip>(ret);
-		else
-		{
-			subpath = path.substr_bytes(pos+1,path.numBytes()-pos-1);
-			return asAtomHandler::as<MovieClip>(ret)->AVM1GetClipFromPath(subpath);
-		}
-	}
-	LOG(LOG_ERROR,"AVM1:"<<getTagID()<<" "<<state.FP<<" path not found:"<<path<<" "<<subpath<<" "<<asAtomHandler::toDebugString(ret));
-	return nullptr;
-}
-
-void MovieClip::AVM1SetVariable(tiny_string &name, asAtom v)
-{
-	if (name.empty())
-		return;
-	if (name.startsWith("/"))
-	{
-		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
-		MovieClip* root = getSystemState()->mainClip;
-		if (root)
-			root->AVM1SetVariable(newpath,v);
-		else
-			LOG(LOG_ERROR,"AVM1: no root movie clip for name:"<<name<<" "<<this->toDebugString());
-		return;
-	}
-	uint32_t pos = name.find(":");
-	if (pos == tiny_string::npos)
-	{
-		tiny_string localname = name.lowercase();
-		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
-		if (asAtomHandler::isUndefined(v))
-			avm1variables.erase(nameId);
-		else
-			avm1variables[nameId] = v;
-		multiname objName(NULL);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=nameId;
-		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
-		AVM1UpdateVariableBindings(nameId,v);
-	}
-	else if (pos == 0)
-	{
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1).lowercase();
-		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
-		if (asAtomHandler::isUndefined(v))
-			avm1variables.erase(nameId);
-		else
-			avm1variables[nameId] = v;
-	}
-	else
-	{
-		tiny_string path = name.substr_bytes(0,pos);
-		MovieClip* clip = AVM1GetClipFromPath(path);
-		if (clip)
-		{
-			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			clip->AVM1SetVariable(localname,v);
-		}
-	}
-}
-
-asAtom MovieClip::AVM1GetVariable(const tiny_string &name)
-{
-	uint32_t pos = name.find(":");
-	if (pos == tiny_string::npos)
-	{
-		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
-		if (it != avm1variables.end())
-			return it->second;
-	}
-	else if (pos == 0)
-	{
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		return AVM1GetVariable(localname.lowercase());
-	}
-	else
-	{
-		tiny_string path = name.substr_bytes(0,pos).lowercase();
-		MovieClip* clip = AVM1GetClipFromPath(path);
-		if (clip)
-		{
-			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			return clip->AVM1GetVariable(localname.lowercase());
-		}
-	}
-	asAtom ret=asAtomHandler::invalidAtom;
-	
-	if (getSystemState()->mainClip->version > 4)
-	{
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.name_s_id=getSystemState()->getUniqueStringId(name);
-		m.isAttribute = false;
-		getVariableByMultiname(ret,m);
-		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			getSystemState()->mainClip->getVariableByMultiname(ret,m);
-		if (asAtomHandler::isInvalid(ret))// get Variable from global object
-			getSystemState()->avm1global->getVariableByMultiname(ret,m);
-	}
-	return ret;
-}
-asAtom MovieClip::getVariableBindingValue(const tiny_string &name)
-{
-	uint32_t pos = name.find(".");
-	asAtom ret=asAtomHandler::invalidAtom;
-	if (pos == tiny_string::npos)
-	{
-		ret = AVM1GetVariable(name);
-	}
-	else
-	{
-		tiny_string firstpart = name.substr_bytes(0,pos);
-		asAtom obj = AVM1GetVariable(firstpart);
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		ret = asAtomHandler::toObject(obj,getSystemState())->getVariableBindingValue(localname);
-	}
-	return ret;
-}
-void MovieClip::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
-{
-	uint32_t key = getSystemState()->getUniqueStringId(name);
-	if (obj)
-	{
-		obj->incRef();
-		auto it = variablebindings.lower_bound(key);
-		while (it != variablebindings.end() && it->first == key)
-		{
-			if (it->second == obj)
-				return;
-			it++;
-		}
-		variablebindings.insert(std::make_pair(key,obj));
-	}
-	else
-	{
-		auto it = variablebindings.find(key);
-		while (it != variablebindings.end() && it->first == key)
-		{
-			if (it->second == obj)
-			{
-				variablebindings.erase(it);
-				break;
-			}
-			it++;
-		}
-	}
-}
-void MovieClip::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
-{
-	if (obj)
-	{
-		obj->incRef();
-		avm1functions[nameID] = obj;
-		avm1variables[nameID] = asAtomHandler::fromObject(obj.getPtr());
-	}
-	else
-	{
-		avm1functions.erase(nameID);
-		avm1variables.erase(nameID);
-	}
-}
-AVM1Function* MovieClip::AVM1GetFunction(uint32_t nameID)
-{
-	auto it = avm1functions.find(nameID);
-	if (it != avm1functions.end())
-		return it->second.getPtr();
-	return nullptr;
-}
 void MovieClip::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
@@ -2143,16 +1916,6 @@ void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
 		it->AVM1executeActions(this,initactionsdone);
 		if (!initactionsdone)
 			frameinitactionsdone.insert(frame);
-	}
-}
-
-void MovieClip::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
-{
-	auto it = variablebindings.find(nameID);
-	while (it != variablebindings.end() && it->first == nameID)
-	{
-		(*it).second->UpdateVariableBinding(value);
-		it++;
 	}
 }
 
@@ -2444,6 +2207,12 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 
 	depthToLegacyChild.insert(boost::bimap<int32_t,DisplayObject*>::value_type(depth,obj));
 	obj->afterLegacyInsert();
+}
+
+int DisplayObjectContainer::findLegacyChildDepth(DisplayObject *obj)
+{
+	auto it = depthToLegacyChild.right.find(obj);
+	return it->second;
 }
 
 void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX& mat)
@@ -4650,7 +4419,7 @@ void MovieClip::declareFrame()
 			{
 				iter->execute(this);
 			}
-			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && (!state.stop_FP || newFrame))
+			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
 				currentframeIterator= iter;
 			++iter;
 		}

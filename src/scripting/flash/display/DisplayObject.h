@@ -92,7 +92,10 @@ private:
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
+	std::map<uint32_t,asAtom> avm1variables;
+	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 protected:
+	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	bool onStage;
 	bool visible;
 	~DisplayObject();
@@ -284,6 +287,14 @@ public:
 	ASFUNCTION_ATOM(AVM1_getBounds);
 	ASFUNCTION_ATOM(AVM1_swapDepths);
 	static void AVM1SetupMethods(Class_base* c);
+	DisplayObject* AVM1GetClipFromPath(tiny_string& path);
+	void AVM1SetVariable(tiny_string& name, asAtom v);
+	asAtom AVM1GetVariable(const tiny_string &name);
+	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
+	asAtom getVariableBindingValue(const tiny_string &name);
+	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
+	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
+	AVM1Function *AVM1GetFunction(uint32_t nameID);
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

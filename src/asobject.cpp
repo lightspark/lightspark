@@ -724,7 +724,7 @@ variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const 
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
-		if(!(asAtomHandler::isValid(ret->setter) || asAtomHandler::isValid(ret->var)))
+		if(sys->mainClip->usesActionScript3 && (!(asAtomHandler::isValid(ret->setter) || asAtomHandler::isValid(ret->var))))
 		{
 			ret=nullptr;
 			if(has_getter)

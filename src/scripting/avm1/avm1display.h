@@ -73,7 +73,6 @@ class AVM1MovieClipLoader: public Loader
 private:
 	mutable Spinlock spinlock;
 	std::list<IThreadJob *> jobs;
-	URLInfo url;
 	std::set<_R<ASObject> > listeners;
 public:
 	AVM1MovieClipLoader(Class_base* c):Loader(c){}
@@ -83,6 +82,7 @@ public:
 	ASFUNCTION_ATOM(addListener);
 	ASFUNCTION_ATOM(removeListener);
 	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
+	bool destruct() override;
 };
 
 }

@@ -132,6 +132,7 @@ public:
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(int32_t depth);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
+	int findLegacyChildDepth(DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
 	uint32_t getMaxLegacyChildDepth();
 	void purgeLegacyChildren();
@@ -558,9 +559,6 @@ private:
 	uint32_t frameScriptToExecute;
 	bool avm1initactionsdone;
 
-	std::map<uint32_t,asAtom> avm1variables;
-	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
-	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 	std::set<uint32_t> frameinitactionsdone;
 
 	CLIPACTIONS actions;
@@ -616,24 +614,15 @@ public:
 	uint32_t getTagID() const { return fromDefineSpriteTag; }
 	void setupActions(const CLIPACTIONS& clipactions);
 
-	asAtom getVariableBindingValue(const tiny_string &name);
-	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
-	
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
 	
 	void AVM1gotoFrameLabel(const tiny_string &label);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
-	MovieClip* AVM1GetClipFromPath(tiny_string& path);
-	void AVM1SetVariable(tiny_string& name, asAtom v);
-	asAtom AVM1GetVariable(const tiny_string &name);
-	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
-	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
-	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);
 	ASFUNCTION_ATOM(AVM1RemoveMovieClip);

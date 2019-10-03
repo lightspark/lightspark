@@ -116,17 +116,29 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	asAtom target = asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM (strurl)(target);
 	URLRequest* r = Class<URLRequest>::getInstanceS(sys,strurl);
-	DisplayObject* t = nullptr;
+	DisplayObjectContainer* parent = th->getParent();
+	if (!parent)
+		parent = sys->mainClip;
+	int depth =0;
 	if (asAtomHandler::isNumeric(target))
 	{
-		int depth = asAtomHandler::toInt(target);
-		if (sys->mainClip->hasLegacyChildAt(depth))
-			t = sys->mainClip->getLegacyChildAt(depth);
+		depth = asAtomHandler::toInt(target);
+	}
+	else if (asAtomHandler::is<DisplayObject>(target))
+	{
+		DisplayObject* t = asAtomHandler::getObject(target)->as<DisplayObject>();
+		if (t->getParent())
+		{
+			parent = t->getParent();
+			depth = t->getParent()->findLegacyChildDepth(t);
+			parent->deleteLegacyChildAt(depth);
+		}
 	}
 	else
-		t = asAtomHandler::getObject(target)->as<DisplayObject>();
-	if (t)
-		t->loaderInfo = th->getContentLoaderInfo();
+		throwError<ArgumentError>(kInvalidArgumentError,"target");
+	
+	th->loaderInfo = th->getContentLoaderInfo();
+	parent->insertLegacyChildAt(depth+1,th);
 	th->loadIntern(r,nullptr);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
@@ -233,4 +245,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event>
 			it++;
 		}
 	}
+}
+
+bool AVM1MovieClipLoader::destruct()
+{
+	listeners.clear();
+	jobs.clear();
 }

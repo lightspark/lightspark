@@ -251,4 +251,5 @@ bool AVM1MovieClipLoader::destruct()
 {
 	listeners.clear();
 	jobs.clear();
+	return Loader::destruct();
 }

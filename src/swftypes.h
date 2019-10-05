@@ -968,6 +968,13 @@ public:
 	std::vector<RGBA> EndColors;
 	RGBA StartColor;
 	RGBA EndColor;
+	
+	// FOCAL_RADIAL_GRADIENT
+	int SpreadMode;
+	int InterpolationMode;
+	FIXED8 StartFocalPoint;
+	FIXED8 EndFocalPoint;
+
 	~MORPHFILLSTYLE(){}
 };
 

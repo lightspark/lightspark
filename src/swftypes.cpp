@@ -915,11 +915,13 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	{
 		s >> v.StartColor >> v.EndColor;
 	}
-	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT)
+	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT || v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 	{
 		s >> v.StartGradientMatrix >> v.EndGradientMatrix;
-		UI8 NumGradients;
-		s >> NumGradients;
+		BitStream bs(s);
+		v.SpreadMode = UB(2,bs);
+		v.InterpolationMode = UB(2,bs);
+		int NumGradients = UB(4,bs);
 		UI8 t;
 		RGBA t2;
 		for(int i=0;i<NumGradients;i++)
@@ -931,6 +933,8 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 			v.EndRatios.push_back(t);
 			v.EndColors.push_back(t2);
 		}
+		if (v.FillStyleType==FOCAL_RADIAL_GRADIENT)
+			s >> v.StartFocalPoint >> v.EndFocalPoint;
 	}
 	else if(v.FillStyleType==REPEATING_BITMAP
 		|| v.FillStyleType==CLIPPED_BITMAP
@@ -942,7 +946,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << dec << _("... Aborting"));
+		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << " at "<< s.tellg()<< dec <<  _("... Aborting"));
 	}
 	return s;
 }

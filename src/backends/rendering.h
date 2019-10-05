@@ -22,8 +22,8 @@
 
 #include "backends/rendering_context.h"
 #include "timer.h"
-#include <glibmm/timeval.h>
 #include <SDL2/SDL.h>
+#include <sys/time.h>
 #ifdef _WIN32
 #	include <windef.h>
 #endif
@@ -70,8 +70,7 @@ private:
 	int offsetX;
 	int offsetY;
 
-	Glib::TimeVal time_s, time_d;
-	static const Glib::TimeVal FPS_time;
+	struct timeval time_s, time_d;
 
 	bool loadShaderPrograms();
 	bool tempBufferAcquired;

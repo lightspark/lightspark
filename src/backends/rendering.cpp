@@ -31,8 +31,6 @@
 using namespace lightspark;
 using namespace std;
 
-/* calculate FPS every second */
-const Glib::TimeVal RenderThread::FPS_time(/*seconds*/1,/*microseconds*/0);
 
 DEFINE_AND_INITIALIZE_TLS(renderThread);
 RenderThread* lightspark::getRenderThread()
@@ -68,7 +66,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 #else
 	fontPath = "Serif";
 #endif
-	time_s.assign_current_time();
+	gettimeofday(&time_s, NULL);
 }
 
 void RenderThread::start(EngineData* data)
@@ -634,9 +632,10 @@ void RenderThread::draw(bool force)
 		return;
 	renderNeeded=true;
 	event.signal();
-	time_d.assign_current_time();
-	Glib::TimeVal diff=time_d-time_s-FPS_time;
-	if(!diff.negative()) /* is one seconds elapsed? */
+
+	gettimeofday(&time_d, NULL);
+	int diff = time_d.tv_sec-time_s.tv_sec;
+	if(diff>0) /* is one seconds elapsed? */
 	{
 		time_s=time_d;
 		LOG(LOG_INFO,_("FPS: ") << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));

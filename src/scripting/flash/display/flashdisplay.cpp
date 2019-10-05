@@ -4409,19 +4409,23 @@ void MovieClip::declareFrame()
 		getClass()->setupDeclaredTraits(this);
 
 	bool newFrame = (int)state.FP != state.last_FP;
-	currentframeIterator=frames.end();
-	if(getFramesLoaded())
+	if (newFrame ||!state.frameadvanced)
 	{
-		std::list<Frame>::iterator iter=frames.begin();
-		for(uint32_t i=0;i<=state.FP;i++)
+		if (newFrame)
+			currentframeIterator=frames.end();
+		if(getFramesLoaded())
 		{
-			if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+			std::list<Frame>::iterator iter=frames.begin();
+			for(uint32_t i=0;i<=state.FP;i++)
 			{
-				iter->execute(this);
+				if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+				{
+					iter->execute(this);
+				}
+				if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
+					currentframeIterator= iter;
+				++iter;
 			}
-			if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
-				currentframeIterator= iter;
-			++iter;
 		}
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
@@ -4457,6 +4461,7 @@ void MovieClip::initFrame()
 	avm1initactionsdone = frameinitactionsdone.find(state.FP) != frameinitactionsdone.end();
 	if (!avm1initactionsdone)
 		frameinitactionsdone.insert(state.FP);
+	state.frameadvanced=false;
 	state.creatingframe=false;
 }
 
@@ -4548,6 +4553,12 @@ void MovieClip::advanceFrame()
 	// ensure the legacy objects of the current frame are created
 	DisplayObjectContainer::advanceFrame();
 	declareFrame();
+	if (state.explicit_FP)
+	{
+		// setting state.frameadvanced ensures that the frame is not declared multiple times
+		// if it was set by an actionscript command.
+		state.frameadvanced = true;
+	}
 }
 
 void MovieClip::constructionComplete()

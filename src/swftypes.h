@@ -1416,6 +1416,7 @@ public:
 	bool stop_FP;
 	bool explicit_FP;
 	bool creatingframe;
+	bool frameadvanced;
 	RunState();
 };
 

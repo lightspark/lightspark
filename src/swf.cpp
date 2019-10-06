@@ -1660,6 +1660,10 @@ void ParseThread::parseSWF(UI8 ver)
 	if (lasttagtype != END_TAG || root->loaderInfo->getBytesLoaded() != root->loaderInfo->getBytesTotal())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"End of parsing, bytesLoaded != bytesTotal:"<< root->loaderInfo->getBytesLoaded()<<"/"<<root->loaderInfo->getBytesTotal());
+
+		// On compressed swf files bytesLoaded and bytesTotal do not always match (besides being loaded properly, I don't know why...)
+		// We just set bytesLoaded "manually" to ensure the "complete" event is dispatched
+		root->loaderInfo->setBytesLoaded(root->loaderInfo->getBytesTotal());
 	}
 	root->markSoundFinished();
 	LOG(LOG_TRACE,_("End of parsing"));

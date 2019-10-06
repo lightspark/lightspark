@@ -454,7 +454,12 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
+	if(source == BYTES)
+	{
+		if (loader->getContentLoaderInfo().getPtr())
+			loader->getContentLoaderInfo()->setComplete();
+	}
+	else if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
 		{

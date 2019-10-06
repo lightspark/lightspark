@@ -1496,14 +1496,14 @@ void ParseThread::parseSWF(UI8 ver)
 			//Check if this clip is the main clip then honour its FileAttributesTag
 			if(root == root->getSystemState()->mainClip)
 			{
-				root->usesActionScript3 = fat->ActionScript3;
-				root->getSystemState()->needsAVM2(!usegnash || fat->ActionScript3);
-				if(usegnash && !fat->ActionScript3)
+				root->usesActionScript3 = fat ? fat->ActionScript3 : root->version>9;
+				root->getSystemState()->needsAVM2(!usegnash || root->usesActionScript3);
+				if(usegnash && fat && !fat->ActionScript3)
 				{
 					delete fat;
 					return; /* no more parsing necessary, handled by fallback */
 				}
-				if(fat->UseNetwork
+				if(fat && fat->UseNetwork
 						&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 				{
 					root->getSystemState()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);

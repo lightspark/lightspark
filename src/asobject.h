@@ -745,11 +745,16 @@ public:
 	{
 		return slots_vars[n-1]->var;
 	}
-	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n, SystemState *sys)
+	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->kind;
 	}
+	FORCE_INLINE Class_base* getSlotType(unsigned int n)
+	{
+		return (Class_base*)slots_vars[n-1]->type;
+	}
+	
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
 	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj);
 	/*
@@ -1068,7 +1073,7 @@ public:
 	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{
-		return Variables.getSlotKind(n,getSystemState());
+		return Variables.getSlotKind(n);
 	}
 	FORCE_INLINE bool setSlot(unsigned int n,asAtom o)
 	{
@@ -1077,6 +1082,10 @@ public:
 	FORCE_INLINE bool setSlotNoCoerce(unsigned int n,asAtom o)
 	{
 		return Variables.setSlotNoCoerce(n,o,this);
+	}
+	FORCE_INLINE Class_base* getSlotType(unsigned int n)
+	{
+		return Variables.getSlotType(n);
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{
@@ -1460,25 +1469,21 @@ template<> inline bool asAtomHandler::is<Undefined>(asAtom& a) { return isUndefi
 
 FORCE_INLINE int32_t asAtomHandler::toInt(const asAtom& a)
 {
-	switch(a.uintval&0x7)
-	{
-		case ATOM_INTEGER:
-			return a.intval>>3;
-		case ATOM_UINTEGER:
-			return a.uintval>>3;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
-		case ATOM_STRINGID:
-		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
-			int32_t ret = s->toInt();
-			s->decRef();
-			return ret;
-		}
-		default:
-			assert(getObject(a));
-			return getObjectNoCheck(a)->toInt();
-	}
+	if ((a.uintval&0x7)==ATOM_INTEGER)
+        return a.intval>>3;
+    else if ((a.uintval&0x7)==ATOM_UINTEGER)
+        return a.uintval>>3;
+    else if ((a.uintval&0x7)==ATOM_INVALID_UNDEFINED_NULL_BOOL)
+        return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
+    else if ((a.uintval&0x7)==ATOM_STRINGID)
+    {
+        ASObject* s = abstract_s(getSys(),a.uintval>>3);
+        int32_t ret = s->toInt();
+        s->decRef();
+        return ret;
+    }
+    assert(getObject(a));
+    return getObjectNoCheck(a)->toInt();
 }
 FORCE_INLINE int32_t asAtomHandler::toIntStrict(const asAtom& a)
 {

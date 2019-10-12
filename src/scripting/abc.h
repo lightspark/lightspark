@@ -729,6 +729,12 @@ private:
 	static void abc_callproperty(call_context* context);
 	static void abc_callpropertyStaticName(call_context* context);
 	static void abc_callpropertyStaticName_localresult(call_context* context);
+	static void abc_callpropertyStaticNameCached(call_context* context);
+	static void abc_callpropertyStaticNameCached_localResult(call_context* context);
+	static void abc_callpropertyStaticNameCached_constant(call_context* context);
+	static void abc_callpropertyStaticNameCached_local(call_context* context);
+	static void abc_callpropertyStaticNameCached_constant_localResult(call_context* context);
+	static void abc_callpropertyStaticNameCached_local_localResult(call_context* context);
 	static void abc_callpropertyStaticName_constant_constant(call_context* context);
 	static void abc_callpropertyStaticName_local_constant(call_context* context);
 	static void abc_callpropertyStaticName_constant_local(call_context* context);
@@ -758,6 +764,9 @@ private:
 	static void abc_callsupervoid(call_context* context);
 	static void abc_callpropvoid(call_context* context);
 	static void abc_callpropvoidStaticName(call_context* context);
+	static void abc_callpropvoidStaticNameCached(call_context* context);
+	static void abc_callpropvoidStaticNameCached_constant(call_context* context);
+	static void abc_callpropvoidStaticNameCached_local(call_context* context);
 	static void abc_callpropvoidStaticName_constant_constant(call_context* context);
 	static void abc_callpropvoidStaticName_local_constant(call_context* context);
 	static void abc_callpropvoidStaticName_constant_local(call_context* context);
@@ -1085,6 +1094,18 @@ private:
 	static void abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* context);
 	static void abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* context);
 	static void abc_callFunctionBuiltinOneArgVoid_local_local(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgsVoid_local(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgs_constant(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgs_local(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgs_constant_localResult(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgs_local_localResult(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgsVoid_constant(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgsVoid_local(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgs_constant(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgs_local(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgs_constant_localResult(call_context* context);
+	static void abc_callFunctionBuiltinMultiArgs_local_localResult(call_context* context);
 
 	static void abc_increment_i_local(call_context* context);
 	static void abc_increment_i_local_localresult(call_context* context);

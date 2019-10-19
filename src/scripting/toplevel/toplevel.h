@@ -660,12 +660,12 @@ protected:
 public:
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args)
 	{
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
 		asAtom obj = asAtomHandler::fromObject(target);
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType()

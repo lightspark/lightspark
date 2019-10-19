@@ -1447,7 +1447,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset);
-	if (getSystemState()->getSwfVersion() < 9)
+	if (!getSystemState()->mainClip->usesActionScript3)
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)

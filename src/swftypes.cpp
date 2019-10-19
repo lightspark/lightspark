@@ -1473,25 +1473,24 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 	if(v.EventFlags.isNull())
 		return s;
 	s >> v.ActionRecordSize;
-	uint32_t len = v.ActionRecordSize;
+	int32_t len = int(v.ActionRecordSize);
 	if (v.EventFlags.ClipEventKeyPress)
 		s >> v.KeyCode;
-	uint32_t pos = s.tellg();
 	while (true)
 	{
 		ACTIONRECORD r;
 		s>>r;
-		if (r.actionCode== 0)
+		len -= r.getFullLength();
+		if (len == 0)
 			break;
+		if (len < 0)
+			throw ParseException("Malformed SWF file, CLIPACTIONRECORD: invalid length of ACTIONRECORD");
 		v.actions.push_back(r);
 	}
-	pos = (uint32_t)s.tellg()-pos;
-	if (len > pos)
-		throw ParseException("Malformed SWF file, CLIPACTIONRECORD: invalid length of ACTIONRECORD");
-	if (len < pos)
+	if (len > 0)
 	{
 		LOG(LOG_ERROR,"CLIPACTIONRECORD: bytes available after reading all actions:"<<len);
-		ignore(s,pos-len);
+		ignore(s,len);
 	}
 	return s;
 }
@@ -1834,7 +1833,7 @@ std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
 std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 {
 	stream >> v.actionCode;
-	LOG(LOG_TRACE,"AVM1: read action:"<<hex<<(int)v.actionCode);
+	LOG(LOG_TRACE,"AVM1: read action:"<<hex<<stream.tellg()<<" "<<(int)v.actionCode);
 	if (v.actionCode >= 0x80)
 		stream >> v.Length;
 	else
@@ -2148,9 +2147,8 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)
 {
-	int pos =stream.tellg();
 	stream >> v.CondActionSize;
-	int len = v.CondActionSize;
+	int len = v.CondActionSize-4;
 	BitStream bs(stream);
 	v.CondIdleToOverDown = UB(1,bs);
 	v.CondOutDownToIdle = UB(1,bs);
@@ -2167,18 +2165,18 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)
 	{
 		ACTIONRECORD r;
 		stream>>r;
-		if (r.actionCode== 0)
+		len -= r.getFullLength();
+		if (r.actionCode== 0x00)
 			break;
 		v.actions.push_back(r);
 	}
 	if (v.CondActionSize)
 	{
-		len -= (((int)stream.tellg())-pos);
 		if (len < 0)
 			throw ParseException("Malformed SWF file, BUTTONCONDACTION: invalid length of ACTIONRECORD");
 		if (len > 0)
 		{
-			LOG(LOG_ERROR,"BUTTONCONDACTION: bytes available after reading all actions:"<<len);
+			LOG(LOG_ERROR,"BUTTONCONDACTION: bytes available after reading all actions:"<<len<<" at "<<stream.tellg());
 			ignore(stream,len);
 		}
 	}

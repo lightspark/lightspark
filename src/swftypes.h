@@ -479,6 +479,13 @@ public:
 		else
 			return CodeAndLen&0x3f;
 	}
+	unsigned int getHeaderSize() const
+	{
+		if((CodeAndLen&0x3f)==0x3f)
+			return sizeof(uint16_t) + sizeof(uint32_t);
+		else
+			return sizeof(uint16_t);
+	}
 	unsigned int getTagType() const
 	{
 		return CodeAndLen>>6;
@@ -703,7 +710,7 @@ public:
 	unsigned char buffer;
 	unsigned char pos;
 public:
-	BitStream(std::istream& in):f(in),buffer(0),pos(0){};
+	BitStream(std::istream& in):f(in),buffer(0),pos(0){}
 	unsigned int readBits(unsigned int num)
 	{
 		unsigned int ret=0;
@@ -1454,7 +1461,7 @@ public:
 	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
-	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist,std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
+	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, uint32_t startactionpos,std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
 			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false);
 	int getFullLength();
 };

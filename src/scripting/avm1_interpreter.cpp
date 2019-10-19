@@ -58,7 +58,7 @@ int ACTIONRECORD::getFullLength()
 	return res;
 }
 
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
+void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, uint32_t startactionpos,std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal)
 {
 	Log::calls_indent++;
@@ -145,7 +145,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	}
 
 	DisplayObject *originalclip = clip;
-	for (auto it = actionlist.begin(); it != actionlist.end();it++)
+	for (auto it = actionlist.begin()+startactionpos; it != actionlist.end();it++)
 	{
 		if (curdepth > 0 && it == scopestackstop[curdepth])
 		{
@@ -159,10 +159,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			// we are in a target that was not found during ActionSetTarget(2), so these actions are ignored
 			continue;
 		}
-		//LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" action code:"<<hex<<(int)it->actionCode);
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<(it-actionlist.begin())<< " action code:"<<hex<<(int)it->actionCode);
 		
 		switch (it->actionCode)
 		{
+			case 0x00:
+				break;
 			case 0x04: // ActionNextFrame
 			{
 				if (!clip->is<MovieClip>())
@@ -788,25 +790,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					f->call(&ret,nullptr, args,numargs);
 				else
 				{
-					multiname m(nullptr);
-					m.name_type=multiname::NAME_STRING;
-					m.name_s_id=nameID;
-					m.isAttribute = false;
-					asAtom builtinfunc=asAtomHandler::invalidAtom;
-					clip->getVariableByMultiname(builtinfunc,m);
-					if (asAtomHandler::is<Function>(builtinfunc))
+					tiny_string s = clip->getSystemState()->getStringFromUniqueId(nameID);
+					asAtom func = clip->AVM1GetVariable(s);
+					if (asAtomHandler::is<AVM1Function>(func))
 					{
-						asAtom obj = asAtomHandler::fromObject(clip);
-						asAtomHandler::as<Function>(builtinfunc)->call(ret,obj,args,numargs);
+						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+						asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs);
+					}
+					else if (asAtomHandler::is<Function>(func))
+					{
+						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+						asAtomHandler::as<Function>(func)->call(ret,obj,args,numargs);
 					}
 					else
-					{
-						clip->getSystemState()->avm1global->getVariableByMultiname(builtinfunc,m);
-						if (asAtomHandler::is<Function>(builtinfunc))
-							asAtomHandler::as<Function>(builtinfunc)->call(ret,asAtomHandler::undefinedAtom,args,numargs);
-						else
-							LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
-					}
+						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction done "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				PushStack(stack,ret);
@@ -1457,9 +1454,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				asAtom obj = PopStack(stack);
 				auto itend = it;
 				uint16_t skip = it->data_uint16;
-				while (skip > 0 && itend != actionlist.end())
+				while (skip > 0)
 				{
 					itend++;
+					if (itend == actionlist.end())
+						itend = actionlist.begin();
 					skip -= itend->getFullLength();
 				}
 				if (curdepth >= maxdepth)
@@ -1551,21 +1550,31 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x99: // ActionJump
 			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<it->data_int16);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<it->data_int16<<" "<< (it-actionlist.begin()));
 				int skip = it->data_int16;
+				int skip1 = it->data_int16;
 				if (skip < 0)
 				{
-					while (skip < 0 && it != actionlist.begin())
+					while (skip < 0)
 					{
 						skip += it->getFullLength();
-						it--;
+						if (it == actionlist.begin())
+						{
+							it = actionlist.end();
+							it--;
+							LOG(LOG_ERROR,"skip to large:"<<skip1<<" "<<hex<<(int)it->actionCode);
+						}
+						else
+							it--;
 					}
 				}
 				else
 				{
-					while (skip > 0 && it != actionlist.end())
+					while (skip > 0)
 					{
 						it++;
+						if (it == actionlist.end())
+							it = actionlist.begin();
 						skip -= it->getFullLength();
 					}
 				}
@@ -1619,17 +1628,21 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					int skip = it->data_int16;
 					if (skip < 0)
 					{
-						while (skip < 0 && it != actionlist.begin())
+						while (skip < 0)
 						{
 							skip += it->getFullLength();
+							if (it == actionlist.begin())
+								it = actionlist.end();
 							it--;
 						}
 					}
 					else
 					{
-						while (skip > 0 && it != actionlist.end())
+						while (skip > 0)
 						{
 							it++;
+							if (it == actionlist.end())
+								it = ++actionlist.begin();
 							skip -= it->getFullLength();
 						}
 					}

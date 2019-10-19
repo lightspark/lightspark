@@ -282,6 +282,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
 	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this));
 
+    static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 

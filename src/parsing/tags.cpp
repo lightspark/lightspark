@@ -59,230 +59,252 @@
 using namespace std;
 using namespace lightspark;
 
-uint8_t* JPEGTablesTag::JPEGTables = NULL;
+uint8_t* JPEGTablesTag::JPEGTables = nullptr;
 int JPEGTablesTag::tableSize = 0;
 
 Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 {
 	RECORDHEADER h;
 
-	//Catch eofs
-	try
+	bool done = false;
+	AdditionalDataTag* datatag = nullptr;
+	Tag* ret=nullptr;
+	while (!done)
 	{
-		f >> h;
+		done = true;
+		//Catch eofs
+		try
+		{
+			f >> h;
+		}
+		catch (ifstream::failure& e) {
+			if(!f.eof()) //Only handle eof
+				throw;
+			f.clear();
+			LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
+			return new EndTag(h,f);
+		}
+
+		unsigned int expectedLen=h.getLength();
+		unsigned int start=f.tellg();
+		LOG(LOG_TRACE,_("Reading tag type: ") << h.getTagType() << _(" at byte ") << start << _(" with length ") << expectedLen << _(" bytes"));
+		switch(h.getTagType())
+		{
+			case 0:
+				ret=new EndTag(h,f);
+				break;
+			case 1:
+				ret=new ShowFrameTag(h,f);
+				break;
+			case 2:
+				ret=new DefineShapeTag(h,f,root);
+				break;
+				//	case 4:
+				//		ret=new PlaceObjectTag(h,f);
+			case 6:
+				ret=new DefineBitsTag(h,f,root);
+				break;
+			case 7:
+				ret=new DefineButtonTag(h,f,1,root);
+				break;
+			case 8:
+				ret=new JPEGTablesTag(h,f);
+				break;
+			case 9:
+				ret=new SetBackgroundColorTag(h,f);
+				break;
+			case 10:
+				ret=new DefineFontTag(h,f,root);
+				break;
+			case 11:
+				ret=new DefineTextTag(h,f,root);
+				break;
+			case 12:
+				ret=new AVM1ActionTag(h,f,root,datatag);
+				if (datatag)
+					delete datatag;
+				datatag=nullptr;
+				break;
+			case 13:
+				ret=new DefineFontInfoTag(h,f,root);
+				break;
+			case 14:
+				ret=new DefineSoundTag(h,f,root);
+				break;
+			case 15:
+				ret=new StartSoundTag(h,f);
+				break;
+			case 18:
+				ret=new SoundStreamHeadTag(h,f,root,sprite);
+				break;
+			case 19:
+				ret=new SoundStreamBlockTag(h,f,root,sprite);
+				break;
+			case 20:
+				ret=new DefineBitsLosslessTag(h,f,1,root);
+				break;
+			case 21:
+				ret=new DefineBitsJPEG2Tag(h,f,root);
+				break;
+			case 22:
+				ret=new DefineShape2Tag(h,f,root);
+				break;
+			case 24:
+				ret=new ProtectTag(h,f);
+				break;
+			case 26:
+				ret=new PlaceObject2Tag(h,f,root);
+				break;
+			case 28:
+				ret=new RemoveObject2Tag(h,f);
+				break;
+			case 32:
+				ret=new DefineShape3Tag(h,f,root);
+				break;
+			case 33:
+				ret=new DefineText2Tag(h,f,root);
+				break;
+			case 34:
+				ret=new DefineButtonTag(h,f,2,root);
+				break;
+			case 35:
+				ret=new DefineBitsJPEG3Tag(h,f,root);
+				break;
+			case 36:
+				ret=new DefineBitsLosslessTag(h,f,2,root);
+				break;
+			case 37:
+				ret=new DefineEditTextTag(h,f,root);
+				break;
+			case 39:
+				ret=new DefineSpriteTag(h,f,root);
+				break;
+			case 41:
+				ret=new ProductInfoTag(h,f);
+				break;
+			case 43:
+				ret=new FrameLabelTag(h,f);
+				break;
+			case 45:
+				ret=new SoundStreamHeadTag(h,f,root,sprite);
+				break;
+			case 46:
+				ret=new DefineMorphShapeTag(h,f,root);
+				break;
+			case 48:
+				ret=new DefineFont2Tag(h,f,root);
+				break;
+			case 56:
+				ret=new ExportAssetsTag(h,f,root);
+				break;
+			case 58:
+				ret=new EnableDebuggerTag(h,f);
+				break;
+			case 59:
+				ret=new AVM1InitActionTag(h,f,root,datatag);
+				if (datatag)
+					delete datatag;
+				datatag=nullptr;
+				break;
+			case 60:
+				ret=new DefineVideoStreamTag(h,f,root);
+				break;
+			case 63:
+				ret=new DebugIDTag(h,f);
+				break;
+			case 64:
+				ret=new EnableDebugger2Tag(h,f);
+				break;
+			case 65:
+				ret=new ScriptLimitsTag(h,f);
+				break;
+			case 69:
+				//FileAttributes tag is mandatory on version>=8 and must be the first tag
+				if(!firstTag)
+					LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
+				ret=new FileAttributesTag(h,f);
+				break;
+			case 70:
+				ret=new PlaceObject3Tag(h,f,root);
+				break;
+			case 72:
+				ret=new DoABCTag(h,f);
+				break;
+			case 73:
+				ret=new DefineFontAlignZonesTag(h,f);
+				break;
+			case 74:
+				ret=new CSMTextSettingsTag(h,f);
+				break;
+			case 75:
+				ret=new DefineFont3Tag(h,f,root);
+				break;
+			case 76:
+				ret=new SymbolClassTag(h,f);
+				break;
+			case 77:
+				ret=new MetadataTag(h,f);
+				break;
+			case 78:
+				ret=new DefineScalingGridTag(h,f);
+				break;
+			case 82:
+				ret=new DoABCDefineTag(h,f);
+				break;
+			case 83:
+				ret=new DefineShape4Tag(h,f,root);
+				break;
+			case 84:
+				ret=new DefineMorphShape2Tag(h,f,root);
+				break;
+			case 86:
+				ret=new DefineSceneAndFrameLabelDataTag(h,f);
+				break;
+			case 87:
+				ret=new DefineBinaryDataTag(h,f,root);
+				break;
+			case 88:
+				ret=new DefineFontNameTag(h,f);
+				break;
+			case 91:
+				ret=new DefineFont4Tag(h,f,root);
+				break;
+			case 253:
+				// this is an undocumented tag that seems to be used for obfuscation
+				// when placed before a DoActionTag, the bytes in this tag will be interpreted as actionscript code
+				datatag=new AdditionalDataTag(h,f);
+				done = false;
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,_("Unsupported tag type ") << h.getTagType());
+				ret=new UnimplementedTag(h,f);
+				break;
+		}
+		firstTag=false;
+
+		unsigned int end=f.tellg();
+
+		unsigned int actualLen=end-start;
+
+		if(actualLen<expectedLen)
+		{
+			LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
+			ignore(f,expectedLen-actualLen);
+		}
+		else if(actualLen>expectedLen)
+		{
+			LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
+			// Adobe also seems to ignore this
+			//throw ParseException("Malformed SWF file");
+		}
+
+		root->loaderInfo->setBytesLoaded(f.tellg());
 	}
-	catch (ifstream::failure& e) {
-		if(!f.eof()) //Only handle eof
-			throw;
-		f.clear();
-		LOG(LOG_INFO,"Simulating EndTag at EOF @ " << f.tellg());
-		return new EndTag(h,f);
+	if (datatag)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"additionaldatag (type 253) found, but not used in subsequent tag:"<<h.getTagType());
 	}
 
-	unsigned int expectedLen=h.getLength();
-	unsigned int start=f.tellg();
-	Tag* ret=NULL;
-	LOG(LOG_TRACE,_("Reading tag type: ") << h.getTagType() << _(" at byte ") << start << _(" with length ") << expectedLen << _(" bytes"));
-	switch(h.getTagType())
-	{
-		case 0:
-			ret=new EndTag(h,f);
-			break;
-		case 1:
-			ret=new ShowFrameTag(h,f);
-			break;
-		case 2:
-			ret=new DefineShapeTag(h,f,root);
-			break;
-	//	case 4:
-	//		ret=new PlaceObjectTag(h,f);
-		case 6:
-			ret=new DefineBitsTag(h,f,root);
-			break;
-		case 7:
-			ret=new DefineButtonTag(h,f,1,root);
-			break;
-		case 8:
-			ret=new JPEGTablesTag(h,f);
-			break;
-		case 9:
-			ret=new SetBackgroundColorTag(h,f);
-			break;
-		case 10:
-			ret=new DefineFontTag(h,f,root);
-			break;
-		case 11:
-			ret=new DefineTextTag(h,f,root);
-			break;
-		case 12:
-			ret=new AVM1ActionTag(h,f,root);
-			break;
-		case 13:
-			ret=new DefineFontInfoTag(h,f,root);
-			break;
-		case 14:
-			ret=new DefineSoundTag(h,f,root);
-			break;
-		case 15:
-			ret=new StartSoundTag(h,f);
-			break;
-		case 18:
-			ret=new SoundStreamHeadTag(h,f,root,sprite);
-			break;
-		case 19:
-			ret=new SoundStreamBlockTag(h,f,root,sprite);
-			break;
-		case 20:
-			ret=new DefineBitsLosslessTag(h,f,1,root);
-			break;
-		case 21:
-			ret=new DefineBitsJPEG2Tag(h,f,root);
-			break;
-		case 22:
-			ret=new DefineShape2Tag(h,f,root);
-			break;
-		case 24:
-			ret=new ProtectTag(h,f);
-			break;
-		case 26:
-			ret=new PlaceObject2Tag(h,f,root);
-			break;
-		case 28:
-			ret=new RemoveObject2Tag(h,f);
-			break;
-		case 32:
-			ret=new DefineShape3Tag(h,f,root);
-			break;
-		case 33:
-			ret=new DefineText2Tag(h,f,root);
-			break;
-		case 34:
-			ret=new DefineButtonTag(h,f,2,root);
-			break;
-		case 35:
-			ret=new DefineBitsJPEG3Tag(h,f,root);
-			break;
-		case 36:
-			ret=new DefineBitsLosslessTag(h,f,2,root);
-			break;
-		case 37:
-			ret=new DefineEditTextTag(h,f,root);
-			break;
-		case 39:
-			ret=new DefineSpriteTag(h,f,root);
-			break;
-		case 41:
-			ret=new ProductInfoTag(h,f);
-			break;
-		case 43:
-			ret=new FrameLabelTag(h,f);
-			break;
-		case 45:
-			ret=new SoundStreamHeadTag(h,f,root,sprite);
-			break;
-		case 46:
-			ret=new DefineMorphShapeTag(h,f,root);
-			break;
-		case 48:
-			ret=new DefineFont2Tag(h,f,root);
-			break;
-		case 56:
-			ret=new ExportAssetsTag(h,f,root);
-			break;
-		case 58:
-			ret=new EnableDebuggerTag(h,f);
-			break;
-		case 59:
-			ret=new AVM1InitActionTag(h,f,root);
-			break;
-		case 60:
-			ret=new DefineVideoStreamTag(h,f,root);
-			break;
-		case 63:
-			ret=new DebugIDTag(h,f);
-			break;
-		case 64:
-			ret=new EnableDebugger2Tag(h,f);
-			break;
-		case 65:
-			ret=new ScriptLimitsTag(h,f);
-			break;
-		case 69:
-			//FileAttributes tag is mandatory on version>=8 and must be the first tag
-			if(!firstTag)
-				LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
-			ret=new FileAttributesTag(h,f);
-			break;
-		case 70:
-			ret=new PlaceObject3Tag(h,f,root);
-			break;
-		case 72:
-			ret=new DoABCTag(h,f);
-			break;
-		case 73:
-			ret=new DefineFontAlignZonesTag(h,f);
-			break;
-		case 74:
-			ret=new CSMTextSettingsTag(h,f);
-			break;
-		case 75:
-			ret=new DefineFont3Tag(h,f,root);
-			break;
-		case 76:
-			ret=new SymbolClassTag(h,f);
-			break;
-		case 77:
-			ret=new MetadataTag(h,f);
-			break;
-		case 78:
-			ret=new DefineScalingGridTag(h,f);
-			break;
-		case 82:
-			ret=new DoABCDefineTag(h,f);
-			break;
-		case 83:
-			ret=new DefineShape4Tag(h,f,root);
-			break;
-		case 84:
-			ret=new DefineMorphShape2Tag(h,f,root);
-			break;
-		case 86:
-			ret=new DefineSceneAndFrameLabelDataTag(h,f);
-			break;
-		case 87:
-			ret=new DefineBinaryDataTag(h,f,root);
-			break;
-		case 88:
-			ret=new DefineFontNameTag(h,f);
-			break;
-		case 91:
-			ret=new DefineFont4Tag(h,f,root);
-			break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,_("Unsupported tag type ") << h.getTagType());
-			ret=new UnimplementedTag(h,f);
-	}
-
-	firstTag=false;
-
-	unsigned int end=f.tellg();
-	
-	unsigned int actualLen=end-start;
-	
-	if(actualLen<expectedLen)
-	{
-		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
-		ignore(f,expectedLen-actualLen);
-	}
-	else if(actualLen>expectedLen)
-	{
-		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
-		// Adobe also seems to ignore this
-		//throw ParseException("Malformed SWF file");
-	}
-	
-	root->loaderInfo->setBytesLoaded(f.tellg());
-	
 	return ret;
 }
 
@@ -1810,9 +1832,10 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 		Characters.push_back(br);
 	}
 	while(true);
+	
 	int realactionoffset = (((int)in.tellg())-pos);
 	len -= realactionoffset;
-
+	
 	if (root->usesActionScript3)
 	{
 		// ignore actions when using ActionScript3
@@ -1823,20 +1846,18 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	{
 		BUTTONCONDACTION a;
 		a.CondOverDownToOverUp=true; // clicked indicator
-		while (true)
+		while (len > 0)
 		{
 			ACTIONRECORD r;
 			in>>r;
-			len -= 1; // actionCode;
-			if (r.actionCode >= 0x80)
-				len -= r.Length+2;
-			if (r.actionCode== 0)
-				break;
 			a.actions.push_back(r);
+			len -= r.getFullLength();
+			if (len == 0)
+				break;
+			if (len < 0)
+				throw ParseException("Malformed SWF file, DefineButtonTag: invalid length of ACTIONRECORD");
 		}
 		condactions.push_back(a);
-		if (len < 0)
-			throw ParseException("Malformed SWF file, DefineButtonTag: invalid length of ACTIONRECORD");
 		if (len > 0)
 		{
 			LOG(LOG_ERROR,"DefineButtonTag "<<ButtonId<<": bytes available after reading all actions:"<< len);
@@ -1859,7 +1880,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 		len -= (((int)in.tellg())-pos);
 		if (len > 0)
 		{
-			LOG(LOG_ERROR,"DefineButtonTag: bytes available after reading all BUTTONCONDACTION entries:"<<len);
+			LOG(LOG_ERROR,"DefineButtonTag "<<ButtonId<<": bytes available after reading all BUTTONCONDACTION entries:"<<len);
 			ignore(in,len);
 		}
 	}
@@ -2437,7 +2458,7 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 	}
 }
 
-AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
+AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag *datatag):Tag(h)
 {
 	// ActionTags are ignored if FileAttributes.actionScript3 is set
 	if (root->usesActionScript3)
@@ -2445,34 +2466,59 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Ta
 		skip(s);
 		return; 
 	}
-	
-	uint32_t len = Header.getLength();
-	uint32_t pos = s.tellg();
+	startactionpos=0;
+	if (datatag)
+	{
+		string cData((const char*)datatag->bytes,datatag->numbytes);
+		istringstream bytestream(cData);
+		uint32_t bytesread =0;
+		while (true)
+		{
+			ACTIONRECORD r;
+			bytestream>>r;
+			actions.push_back(r);
+			startactionpos++;
+			bytesread += r.getFullLength();
+			if (bytesread > datatag->numbytes)
+				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
+			if (bytesread == datatag->numbytes)
+				break;
+		}
+		// add nop actions for skipping the header of this tag
+		int headerbytes = 1 + h.getHeaderSize();
+		for (int i = 0; i < headerbytes ; i++)
+		{
+			ACTIONRECORD r;
+			actions.push_back(r);
+			startactionpos++;
+		}
+	}
+	int32_t len = int(Header.getLength());
 	while (true)
 	{
 		ACTIONRECORD r;
 		s>>r;
-		if (r.actionCode== 0)
-			break;
 		actions.push_back(r);
+		len -= r.getFullLength();
+		if (len < 0)
+			throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
+		if (len == 0)
+			break;
 	}
-	pos = (uint32_t)s.tellg()-pos;
-	if (len > pos)
-		throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
-	if (len < pos)
+	if (len > 0)
 	{
 		LOG(LOG_ERROR,"DoActionTag: bytes available after reading all actions:"<<len);
-		ignore(s,pos-len);
+		ignore(s,len);
 	}
 }
 
 void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
 {
 	std::map<uint32_t,asAtom> m;
-	ACTIONRECORD::executeActions(clip,context,actions,m);
+	ACTIONRECORD::executeActions(clip,context,actions, startactionpos,m);
 }
 
-AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root):Tag(h)
+AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):Tag(h)
 {
 	// InitActionTags are ignored if swf > 9 or FileAttributes.actionScript3 is set
 	if (root->version > 9 || root->usesActionScript3)
@@ -2480,30 +2526,69 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 		skip(s);
 		return; 
 	}
+	startactionpos=0;
+	if (datatag)
+	{
+		string cData((const char*)datatag->bytes,datatag->numbytes);
+		istringstream bytestream(cData);
+		uint32_t bytesread =0;
+		while (true)
+		{
+			ACTIONRECORD r;
+			bytestream>>r;
+			actions.push_back(r);
+			startactionpos++;
+			bytesread += r.getFullLength();
+			if (bytesread > datatag->numbytes)
+				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
+			if (bytesread == datatag->numbytes)
+				break;
+		}
+		// add nop actions for skipping the header if this tag
+		int headerbytes = 1 + h.getHeaderSize();
+		for (int i = 0; i < headerbytes ; i++)
+		{
+			ACTIONRECORD r;
+			actions.push_back(r);
+			startactionpos++;
+		}
+	}
 	s >> SpriteId;
-	uint32_t len = Header.getLength()-2;
-	
-	uint32_t pos = s.tellg();
-	while (true)
+	int32_t len = int(Header.getLength()-2);
+	while (len > 0)
 	{
 		ACTIONRECORD r;
 		s>>r;
-		if (r.actionCode== 0)
-			break;
 		actions.push_back(r);
+		len -= r.getFullLength();
+		if (len == 0)
+			break;
+		if (len < 0)
+			throw ParseException("Malformed SWF file, DoInitActionTag: invalid length of ACTIONRECORD");
 	}
-	pos = (uint32_t)s.tellg()-pos;
-	if (len > pos)
-		throw ParseException("Malformed SWF file, DoInitActionTag: invalid length of ACTIONRECORD");
-	if (len < pos)
+	if (len > 0)
 	{
 		LOG(LOG_ERROR,"DoInitActionTag: bytes available after reading all actions:"<<len);
-		ignore(s,pos-len);
+		ignore(s,len);
 	}
 }
 
 void AVM1InitActionTag::execute(MovieClip* clip, AVM1context *context)
 {
 	std::map<uint32_t,asAtom> m;
-	ACTIONRECORD::executeActions(clip,context,actions,m);
+	ACTIONRECORD::executeActions(clip,context,actions,startactionpos,m);
+}
+
+AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
+{
+	numbytes = h.getLength();
+	if (numbytes)
+	{
+		// TODO: in test files data starts with 0xfc which is an invalid actionscript tag, so we just skip it for now
+		numbytes--;
+		uint8_t b;
+		in>> b;
+		bytes = new uint8_t[numbytes];
+		in.read((char*)bytes,numbytes);
+	}
 }

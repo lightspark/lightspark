@@ -34,6 +34,7 @@ class Class_base;
 class RootMovieClip;
 class DisplayObjectContainer;
 class DefineSpriteTag;
+class AdditionalDataTag;
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG,AVM1INITACTION_TAG};
 
@@ -116,8 +117,9 @@ class AVM1ActionTag: public Tag
 {
 private:
 	std::vector<ACTIONRECORD> actions;
+	uint32_t startactionpos;
 public:
-	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
+	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
 	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
@@ -127,8 +129,9 @@ class AVM1InitActionTag: public Tag
 private:
 	UI16_SWF SpriteId;
 	std::vector<ACTIONRECORD> actions;
+	uint32_t startactionpos;
 public:
-	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root);
+	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType()const{ return AVM1INITACTION_TAG; }
 	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
@@ -656,6 +659,17 @@ public:
 	DefineScalingGridTag(RECORDHEADER h, std::istream& in);
 };
 
+class AdditionalDataTag: public Tag
+{
+public:
+	AdditionalDataTag(RECORDHEADER h, std::istream& in);
+	~AdditionalDataTag()
+	{
+		delete bytes;
+	}
+	uint8_t* bytes;
+	uint32_t numbytes;
+};
 class UnimplementedTag: public Tag
 {
 public:

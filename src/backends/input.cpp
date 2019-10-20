@@ -32,7 +32,7 @@ using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(false),threaded(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyDown(AS3KeyCode::AS3KEYCODE_UNKNOWN),lastKeyUp(AS3KeyCode::AS3KEYCODE_UNKNOWN), dragLimit(NULL)
+	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(NULL)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
@@ -543,15 +543,16 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 		return;
 
 	Locker locker(mutexListeners);
-	AS3KeyCode c = getAS3KeyCode(keyevent->keysym.sym);
 	if (keyevent->type == SDL_KEYDOWN)
 	{
-		lastKeyDown = c;
+		lastKeymod = (SDL_Keymod)keyevent->keysym.mod;
+		lastKeyDown = keyevent->keysym.sym;
 		lastKeyUp =AS3KEYCODE_UNKNOWN;
 	}
 	else
 	{
-		lastKeyUp = c;
+		lastKeymod = (SDL_Keymod)keyevent->keysym.mod;
+		lastKeyUp = keyevent->keysym.sym;
 		lastKeyDown =AS3KEYCODE_UNKNOWN;
 	}
 
@@ -567,7 +568,7 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 
 	target->incRef();
 	m_sys->currentVm->addIdleEvent(target,
-	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,c, (SDL_Keymod)keyevent->keysym.mod)));
+	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,getAS3KeyCode(keyevent->keysym.sym), (SDL_Keymod)keyevent->keysym.mod)));
 }
 
 void InputThread::addListener(InteractiveObject* ob)
@@ -628,11 +629,23 @@ void InputThread::stopDrag(Sprite* s)
 AS3KeyCode InputThread::getLastKeyDown()
 {
 	Locker locker(mutexListeners);
-	return lastKeyDown;
+	return getAS3KeyCode(lastKeyDown);
 }
 
 AS3KeyCode InputThread::getLastKeyUp()
 {
 	Locker locker(mutexListeners);
-	return lastKeyUp;
+	return getAS3KeyCode(lastKeyUp);
+}
+
+SDL_Keycode InputThread::getLastKeyCode()
+{
+	Locker locker(mutexListeners);
+	return lastKeyDown;
+}
+
+SDL_Keymod InputThread::getLastKeyMod()
+{
+	Locker locker(mutexListeners);
+	return lastKeymod;
 }

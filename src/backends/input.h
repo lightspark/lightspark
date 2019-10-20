@@ -56,8 +56,9 @@ private:
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
 	_NR<InteractiveObject> lastMouseDownTarget;
-	AS3KeyCode lastKeyDown;
-	AS3KeyCode lastKeyUp;
+	SDL_Keymod lastKeymod;
+	SDL_Keycode lastKeyDown;
+	SDL_Keycode lastKeyUp;
 	const RECT* dragLimit;
 	Vector2f dragOffset;
 	class MaskData
@@ -101,7 +102,9 @@ public:
 	}
 	AS3KeyCode getLastKeyDown();
 	AS3KeyCode getLastKeyUp();
+	SDL_Keycode getLastKeyCode();
+	SDL_Keymod getLastKeyMod();
 };
 
-};
+}
 #endif /* BACKENDS_INPUT_H */

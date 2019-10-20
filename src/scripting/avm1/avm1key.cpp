@@ -35,6 +35,7 @@ void AVM1Key::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeListener),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("getCode","",Class<IFunction>::getFunction(c->getSystemState(),getCode),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getAscii","",Class<IFunction>::getFunction(c->getSystemState(),getAscii),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
@@ -62,7 +63,16 @@ ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
 ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 {
 	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
-	LOG(LOG_NOT_IMPLEMENTED,"AVM1Key.getCode doesn't correctly map AVM2 key codes to AVM1 key codes:"<<c);
+	asAtomHandler::setInt(ret,sys,c);
+}
+ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)
+{
+	SDL_Keycode c = sys->getInputThread()->getLastKeyCode();
+	if (c < 0x20 || c > 0x80)
+		c = 0;
+	SDL_Keymod m = sys->getInputThread()->getLastKeyMod();
+	if (m & KMOD_SHIFT)
+		c = toupper(c);
 	asAtomHandler::setInt(ret,sys,c);
 }
 

@@ -42,6 +42,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1text.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/audio.h"
 
@@ -420,11 +421,18 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 
 ASObject* DefineEditTextTag::instance(Class_base* c)
 {
-	if(c==NULL)
-		c=Class<TextField>::getClass(loadedFrom->getSystemState());
+	if(c==nullptr)
+	{
+		if (loadedFrom->usesActionScript3)
+			c=Class<TextField>::getClass(loadedFrom->getSystemState());
+		else
+			c=Class<AVM1TextField>::getClass(loadedFrom->getSystemState());
+	}
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
-	TextField* ret=new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName);
+	TextField* ret= loadedFrom->usesActionScript3 ? 
+					new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName) :
+					new (c->memoryAccount) AVM1TextField(c, textData, !NoSelect, ReadOnly,VariableName);
 	if (HTML)
 		ret->setHtmlText((const char*)InitialText);
 	return ret;
@@ -539,11 +547,11 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		retClass=c;
 	else if(bindedTo)
 		retClass=bindedTo;
-	else if (loadedFrom->version < 9)
+	else if (!loadedFrom->usesActionScript3)
 		retClass=Class<AVM1MovieClip>::getClass(loadedFrom->getSystemState());
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
-	MovieClip* spr = loadedFrom->version < 9 ?
+	MovieClip* spr = !loadedFrom->usesActionScript3 ?
 				new (retClass->memoryAccount) AVM1MovieClip(retClass, *this, this->getId()) :
 				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
@@ -1299,14 +1307,14 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 {
 	if(c==NULL)
 	{
-		if (loadedFrom->version < 9)
+		if (!loadedFrom->usesActionScript3)
 			c=Class<AVM1Shape>::getClass(loadedFrom->getSystemState());
 		else
 			c=Class<Shape>::getClass(loadedFrom->getSystemState());
 	}
 	tokensVector tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory));
 	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
-	Shape* ret= loadedFrom->version >= 9 ?
+	Shape* ret= loadedFrom->usesActionScript3 ?
 				new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f):
 				new (c->memoryAccount) AVM1Shape(c, tokens, 1.0f/20.0f);
 	return ret;
@@ -1951,12 +1959,12 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 
 	if(realClass==NULL)
 	{
-		if (loadedFrom->version <9)
+		if (!loadedFrom->usesActionScript3)
 			realClass=Class<AVM1SimpleButton>::getClass(loadedFrom->getSystemState());
 		else
 			realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
 	}
-	SimpleButton* ret= loadedFrom->version < 9 ?
+	SimpleButton* ret= !loadedFrom->usesActionScript3 ?
 				new (realClass->memoryAccount) AVM1SimpleButton(realClass, states[0], states[1], states[2], states[3],this) :
 				new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3],this);
 	return ret;
@@ -2066,12 +2074,12 @@ ASObject* DefineSoundTag::instance(Class_base* c)
 		retClass=c;
 	else if(bindedTo)
 		retClass=bindedTo;
-	else if (loadedFrom->version < 9)
+	else if (!loadedFrom->usesActionScript3)
 		retClass=Class<AVM1Sound>::getClass(loadedFrom->getSystemState());
 	else
 		retClass=Class<Sound>::getClass(loadedFrom->getSystemState());
 
-	if (loadedFrom->version < 9)
+	if (!loadedFrom->usesActionScript3)
 		return new (retClass->memoryAccount) AVM1Sound(retClass, SoundData,
 			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
 	else
@@ -2520,8 +2528,8 @@ void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
 
 AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):Tag(h)
 {
-	// InitActionTags are ignored if swf > 9 or FileAttributes.actionScript3 is set
-	if (root->version > 9 || root->usesActionScript3)
+	// InitActionTags are ignored if clip uses actionscript3
+	if (root->usesActionScript3)
 	{
 		skip(s);
 		return; 

@@ -144,6 +144,7 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1sound.cpp
   scripting/avm1/avm1display.cpp
   scripting/avm1/avm1net.cpp
+  scripting/avm1/avm1text.cpp
   scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
   3rdparty/pugixml/src/pugixml.cpp)

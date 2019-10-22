@@ -1056,7 +1056,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 
 void Sprite::resetToStart()
 {
-	if (sound)
+	if (sound && this->getTagID() != UINT32_MAX)
 	{
 		sound->threadAbort();
 		sound.reset();

@@ -2081,17 +2081,20 @@ ASObject* DefineSoundTag::instance(Class_base* c)
 
 	if (!loadedFrom->usesActionScript3)
 		return new (retClass->memoryAccount) AVM1Sound(retClass, SoundData,
-			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
+			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),getDurationInMS());
 	else
 		return new (retClass->memoryAccount) Sound(retClass, SoundData,
-			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()));
+			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),getDurationInMS());
 }
 
 LS_AUDIO_CODEC DefineSoundTag::getAudioCodec() const
 {
 	return (LS_AUDIO_CODEC)SoundFormat;
 }
-
+number_t DefineSoundTag::getDurationInMS() const
+{
+	return (SoundSampleCount/getSampleRate())*1000;
+}
 int DefineSoundTag::getSampleRate() const
 {
 	switch(SoundRate)

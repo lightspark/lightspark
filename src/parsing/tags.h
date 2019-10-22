@@ -266,6 +266,7 @@ public:
 	virtual int getId() const { return SoundId; }
 	ASObject* instance(Class_base* c=NULL);
 	LS_AUDIO_CODEC getAudioCodec() const;
+	number_t getDurationInMS() const;
 	int getSampleRate() const;
 	int getChannels() const;
 	_R<MemoryStreamCache> getSoundData() const;

@@ -29,11 +29,14 @@ void AVM1Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, avm1constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachSound","",Class<IFunction>::getFunction(c->getSystemState(),attachSound),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getVolume","",Class<IFunction>::getFunction(c->getSystemState(),getVolume),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setVolume","",Class<IFunction>::getFunction(c->getSystemState(),setVolume),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPan","",Class<IFunction>::getFunction(c->getSystemState(),getPan),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPan","",Class<IFunction>::getFunction(c->getSystemState(),setPan),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("duration","",Class<IFunction>::getFunction(c->getSystemState(),_getter_length),GETTER_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
@@ -63,6 +66,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	th->soundData->incRef();
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());
 	th->container=false;
+	th->length = soundTag->getDurationInMS();
 	if(th->clip)
 	{
 		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false));
@@ -101,5 +105,23 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 	ARG_UNPACK_ATOM(pan);
 	if (th->soundChannel)
 		th->soundChannel->soundTransform->pan = pan/100.0;
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,stop)
+{
+	if (argslen == 1)
+		LOG(LOG_NOT_IMPLEMENTED,"stopping sound with linkage id");
+	else
+		sys->audioManager->stopAllSounds();
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	if (th->soundChannel)
+	{
+		asAtom o = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
+		SoundChannel::_getter_position(ret,sys,o,args,argslen);
+	}
+	else
+		asAtomHandler::setInt(ret,sys,0);
 }
 

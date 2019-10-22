@@ -1003,7 +1003,7 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
  	int framesamplerate = av_frame_get_sample_rate(frameIn);
 #else
-	int framesamplerate = frameIn->sample_rate;
+	int framesamplerate = this->codecContext->sample_rate;
 #endif
 #else
 	int framesamplerate = frameIn->sample_rate;
@@ -1264,6 +1264,12 @@ FFMpegStreamDecoder::~FFMpegStreamDecoder()
 	}
 	if(avioContext)
 		av_free(avioContext);
+}
+
+void FFMpegStreamDecoder::jumpToPosition(number_t position)
+{
+	int64_t pos = (position* AV_TIME_BASE) / 1000;
+	av_seek_frame(formatCtx,-1,pos,0);
 }
 
 bool FFMpegStreamDecoder::decodeNextFrame()

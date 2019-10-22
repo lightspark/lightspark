@@ -216,8 +216,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			case 0x09: // ActionStopSounds
 			{
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStopSounds");
-				// TODO for now we just mute all sounds instead of stopping them
-				clip->getSystemState()->audioManager->muteAll();
+				clip->getSystemState()->audioManager->stopAllSounds();
 				break;
 			}
 			case 0x0a: // ActionAdd

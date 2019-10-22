@@ -59,7 +59,7 @@ protected:
 	void setBytesLoaded(uint32_t b);
 public:
 	Sound(Class_base* c);
-	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format);
+	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms);
 	~Sound();
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);

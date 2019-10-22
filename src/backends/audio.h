@@ -44,13 +44,14 @@ private:
 public:
 	AudioManager(EngineData* engine);
 
-	AudioStream *createStream(AudioDecoder *decoder, bool startpaused);
+	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, uint32_t playedTime);
 
 	void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
 	bool allMuted() { return muteAllStreams; }
 	void muteAll();
 	void unmuteAll();
 	void removeStream(AudioStream* s);
+	void stopAllSounds();
 	~AudioManager();
 };
 
@@ -61,16 +62,17 @@ friend class NetStream;
 private:
 	AudioManager* manager;
 	AudioDecoder *decoder;
+	IThreadJob* producer;
 	bool hasStarted;
 	bool isPaused;
 	double curvolume;
 	double unmutevolume;
-	uint32_t playedtime;
+	uint64_t playedtime;
 	struct timeval starttime;
 	int mixer_channel;
 public:
 	bool init();
-	AudioStream(AudioManager* _manager):manager(_manager),decoder(NULL),hasStarted(false),isPaused(true) { }
+	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(NULL),producer(_producer),hasStarted(false),isPaused(true),playedtime(_playedtime) { }
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();
@@ -80,6 +82,7 @@ public:
 	void pause() { SetPause(true); }
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
+	void setPlayedTime(uint64_t p) { playedtime = p; }
 	inline double getVolume() const { return curvolume; }
 	inline AudioDecoder *getDecoder() const { return decoder; }
 	~AudioStream();

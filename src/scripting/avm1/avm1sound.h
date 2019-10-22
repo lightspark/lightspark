@@ -33,7 +33,7 @@ private:
 	_NR<MovieClip> clip;
 public:
 	AVM1Sound(Class_base* c):Sound(c){}
-	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format):Sound(c,soundData,format) {}
+	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(c,soundData,format,duration_in_ms) {}
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(avm1constructor);
@@ -42,6 +42,8 @@ public:
 	ASFUNCTION_ATOM(setVolume);
 	ASFUNCTION_ATOM(getPan);
 	ASFUNCTION_ATOM(setPan);
+	ASFUNCTION_ATOM(stop);
+	ASFUNCTION_ATOM(getPosition);
 };
 
 }

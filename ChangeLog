@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* better sound handling, especially for AVM1
 	* better support of older (AVM1) swf files
 
 Version 0.8.2:

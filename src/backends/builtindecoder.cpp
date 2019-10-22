@@ -231,3 +231,9 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 	}
 	return true;
 }
+
+void BuiltinStreamDecoder::jumpToPosition(number_t position)
+{
+	if (position != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"jumpToPosition for BuiltinStreamDecoder");
+}

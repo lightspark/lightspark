@@ -230,16 +230,16 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 
 Sound::Sound(Class_base* c)
 	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache(c->getSystemState())),
-	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(60*1000)
+	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
-Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format)
+Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
 	:EventDispatcher(c),downloader(NULL),soundData(data),
 	 container(false),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
-	 bytesTotal(soundData->getReceivedLength()),length(60*1000)
+	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
 {
 	subtype=SUBTYPE_SOUND;
 }
@@ -323,9 +323,10 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	Sound* th=asAtomHandler::as<Sound>(obj);
 	number_t startTime;
 	ARG_UNPACK_ATOM(startTime, 0);
-	//TODO: use startTime
-	if(startTime!=0)
-		LOG(LOG_NOT_IMPLEMENTED,"startTime not supported in Sound::play");
+	if (!sys->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
+		startTime *= 1000;
+	if (argslen > 1)
+		LOG(LOG_NOT_IMPLEMENTED,"Sound.play with more than one argument");
 
 	th->incRef();
 	if (th->container)
@@ -334,11 +335,23 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
 		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(CODEC_NONE,0,0),false));
+		th->soundChannel->position=startTime;
 		th->soundChannel->incRef();
-		ret = asAtomHandler::fromObject(th->soundChannel.getPtr());
+		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 	}
 	else
-		ret = asAtomHandler::fromObject(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
+	{
+		if (th->soundChannel)
+		{
+			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
+			th->soundChannel->position=startTime;
+ 			th->soundChannel->play();
+			return;
+		}
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
+		s->position = startTime;
+		ret = asAtomHandler::fromObjectNoPrimitive(s);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Sound,close)
@@ -580,6 +593,9 @@ void SoundChannel::playStream()
 		if(!streamDecoder->isValid())
 			threadAbort();
 
+		streamDecoder->jumpToPosition(this->position);
+		if (audioStream)
+			audioStream->setPlayedTime(this->position);
 		while(!ACQUIRE_READ(stopped))
 		{
 			bool decodingSuccess=streamDecoder->decodeNextFrame();
@@ -590,12 +606,11 @@ void SoundChannel::playStream()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,position);
 
 			// TODO: check the position only when the getter is called
 			if(audioStream)
 				position=audioStream->getPlayedTime();
-
 			if(audioStream)
 			{
 				//TODO: use soundTransform->pan

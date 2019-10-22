@@ -47,9 +47,10 @@ private:
 public:
 	BuiltinStreamDecoder(std::istream& _s, NetStream* _ns);
 	~BuiltinStreamDecoder();
-	bool decodeNextFrame();
+	bool decodeNextFrame() override;
+	void jumpToPosition(number_t position) override;
 };
 
-};
+}
 
 #endif /* BACKENDS_BUILTINDECODER_H */

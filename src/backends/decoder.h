@@ -309,7 +309,7 @@ public:
 		sampleRate=44100;
 		channelCount=2;
 	}
-	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen){};
+	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen){}
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time){return 0;}
 };
 
@@ -360,6 +360,7 @@ public:
 	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false),hasvideo(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
+	virtual void jumpToPosition(number_t position) = 0;
 	bool isValid() const { return valid; }
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
@@ -395,9 +396,10 @@ private:
 public:
 	FFMpegStreamDecoder(EngineData* eng,std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
 	~FFMpegStreamDecoder();
-	bool decodeNextFrame();
+	void jumpToPosition(number_t position) override;
+	bool decodeNextFrame() override;
 };
 #endif
 
-};
+}
 #endif /* BACKENDS_DECODER */

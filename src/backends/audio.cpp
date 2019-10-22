@@ -40,7 +40,6 @@ uint32_t AudioStream::getPlayedTime()
 bool AudioStream::init()
 {
 	unmutevolume = curvolume = 1.0;
-	playedtime = 0;
 	gettimeofday(&starttime, NULL);
 	mixer_channel = manager->engineData->audio_StreamInit(this);
 	isPaused = false;
@@ -123,7 +122,20 @@ void AudioManager::removeStream(AudioStream *s)
 	}
 }
 
-AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
+void AudioManager::stopAllSounds()
+{
+	muteAll();
+	{
+		Locker l(streamMutex);
+		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+		{
+			if ((*it)->producer)
+				(*it)->producer->threadAbort();
+		}
+	}
+}
+
+AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, uint32_t playedTime)
 {
 	Locker l(streamMutex);
 	if (!audio_available)
@@ -139,7 +151,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused)
 		mixeropened = 1;
 	}
 
-	AudioStream *stream = new AudioStream(this);
+	AudioStream *stream = new AudioStream(this,producer,playedTime);
 	stream->decoder = decoder;
 	if (!stream->init())
 	{

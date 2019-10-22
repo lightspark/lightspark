@@ -1927,7 +1927,7 @@ void NetStream::execute()
 				audioDecoder=streamDecoder->audioDecoder;
 			
 			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
-				audioStream=getSys()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo());
+				audioStream=getSys()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo(),nullptr,0);
 			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				tickStarted=true;

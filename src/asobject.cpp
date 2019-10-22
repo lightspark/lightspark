@@ -1721,7 +1721,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = getSystemState()->getUniqueStringId("onKeyDown");
-		asAtom f;
+		asAtom f=asAtomHandler::invalidAtom;
 		getVariableByMultiname(f,m);
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
@@ -1731,7 +1731,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = getSystemState()->getUniqueStringId("onKeyUp");
-		asAtom f;
+		asAtom f=asAtomHandler::invalidAtom;
 		getVariableByMultiname(f,m);
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);

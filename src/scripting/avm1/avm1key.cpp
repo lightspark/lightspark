@@ -28,8 +28,24 @@ using namespace lightspark;
 void AVM1Key::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtomHandler::fromUInt(32),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("BACKSPACE",nsNameAndKind(),asAtomHandler::fromUInt(8),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CAPSLOCK",nsNameAndKind(),asAtomHandler::fromUInt(20),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("CONTROL",nsNameAndKind(),asAtomHandler::fromUInt(17),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DELETEKEY",nsNameAndKind(),asAtomHandler::fromUInt(46),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DOWN",nsNameAndKind(),asAtomHandler::fromUInt(40),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("END",nsNameAndKind(),asAtomHandler::fromUInt(35),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("ENTER",nsNameAndKind(),asAtomHandler::fromUInt(13),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("ESCAPE",nsNameAndKind(),asAtomHandler::fromUInt(27),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("HOME",nsNameAndKind(),asAtomHandler::fromUInt(36),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("INSERT",nsNameAndKind(),asAtomHandler::fromUInt(45),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LEFT",nsNameAndKind(),asAtomHandler::fromUInt(37),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PGDN",nsNameAndKind(),asAtomHandler::fromUInt(34),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PGUP",nsNameAndKind(),asAtomHandler::fromUInt(33),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RIGHT",nsNameAndKind(),asAtomHandler::fromUInt(39),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SHIFT",nsNameAndKind(),asAtomHandler::fromUInt(16),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SPACE",nsNameAndKind(),asAtomHandler::fromUInt(32),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("TAB",nsNameAndKind(),asAtomHandler::fromUInt(9),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("UP",nsNameAndKind(),asAtomHandler::fromUInt(38),CONSTANT_TRAIT);
 
 	c->setDeclaredMethodByQName("isDown","",Class<IFunction>::getFunction(c->getSystemState(),isDown),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,false);

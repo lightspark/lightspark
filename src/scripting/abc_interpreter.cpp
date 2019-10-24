@@ -7472,20 +7472,16 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		preloadlocalpos = mi->body->preloadedcode.size()-1;
 	uint32_t argsneeded=0;
 	bool localresultfound=false;
+	int localresultused=0;
 	for (auto it = operandlist.begin(); it != operandlist.end(); it++)
 	{
 		if (it->type != OP_LOCAL)
 			continue;
 		if (uint32_t(it->index) > mi->body->local_count) // local result index already used
 		{
-			resultpos = 1- (it->index- mi->body->local_count+1); // use free entry for resultpos
-			if (localresultfound)
-			{
-				// both positions for resultpos already used, no local result possible
-				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,nullptr);
-				return res;
-			}
+			resultpos = 1- (it->index- (mi->body->local_count+1)); // use free entry for resultpos
 			localresultfound=true;
+			break;
 		}
 	}
 	while (jumptargets.find(pos) == jumptargets.end() && keepchecking)
@@ -7569,10 +7565,16 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				argsneeded++;
 				break;
 			case 0x60://getlex
-				pos = code.skipu30FromPosition(pos);
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				argsneeded++;
+				if (localresultused<=1)
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					argsneeded++;
+					localresultused++;
+				}
+				else
+					keepchecking=false;
 				break;
 			case 0x73://convert_i
 				if (restype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
@@ -7676,6 +7678,13 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 				break;
 		}
 	}
+	if (localresultused > (localresultfound ? 0 : 1))
+	{
+		// both positions for resultpos already used, no local result possible
+		clearOperands(mi,localtypes,operandlist, defaultlocaltypes,nullptr);
+		return res;
+	}
+	
 	skipjump(b,mi,code,pos,oldnewpositions,jumptargets,!argsneeded);
 	// check if we need to store the result of the operation on stack
 	switch (b)
@@ -7723,8 +7732,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 					&& mi->context->constant_pool.multinames[t].runtimeargs == 0 &&
 					((argcount == 1 && (argsneeded==1 || (operandlist.size() >= 1))) ||
 					(argsneeded==argcount) ||
-					(operandlist.size() >= argcount && !argsneeded) ||
-					(operandlist.size() >= argcount-1 && (argsneeded==1))
+					(operandlist.size() >= argcount-argsneeded)
 					))
 			{
 				// set optimized opcode to corresponding opcode with local result 

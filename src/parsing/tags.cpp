@@ -180,6 +180,9 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 			case 39:
 				ret=new DefineSpriteTag(h,f,root);
 				break;
+			case 40:
+				ret=new NameCharacterTag(h,f,root);
+				break;
 			case 41:
 				ret=new ProductInfoTag(h,f);
 				break;
@@ -2223,6 +2226,17 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in,RootMovieClip*
 		else
 			LOG(LOG_ERROR,"ExportAssetsTag: tag not found:"<<tagid<<" "<<tagname);
 	}
+}
+NameCharacterTag::NameCharacterTag(RECORDHEADER h, istream &in, RootMovieClip *root):Tag(h)
+{
+	UI16_SWF tagid;
+	STRING tagname;
+	in >> tagid >> tagname;
+	DictionaryTag* tag = root->dictionaryLookup(tagid);
+	if (tag)
+		tag->nameID = root->getSystemState()->getUniqueStringId(tagname);
+	else
+		LOG(LOG_ERROR,"NameCharacterTag: tag not found:"<<tagid<<" "<<tagname);
 }
 
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)

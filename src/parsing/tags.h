@@ -800,6 +800,12 @@ public:
 	ExportAssetsTag(RECORDHEADER h, std::istream& in, RootMovieClip *root);
 };
 
+class NameCharacterTag: public Tag
+{
+public:
+	NameCharacterTag(RECORDHEADER h, std::istream& in, RootMovieClip *root);
+};
+
 class TagFactory
 {
 private:

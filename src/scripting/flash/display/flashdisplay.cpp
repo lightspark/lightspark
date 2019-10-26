@@ -136,6 +136,7 @@ bool LoaderInfo::destruct()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
+	progressEvent.reset();
 	return EventDispatcher::destruct();
 }
 
@@ -166,8 +167,28 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		bytesLoaded=b;
 		if(getVm(getSystemState()))
 		{
-			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal)));
+			// make sure that the event queue is not flooded with progressEvents
+			if (progressEvent.isNull())
+			{
+				this->incRef();
+				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
+				progressEvent->incRef();
+				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+			}
+			else
+			{
+				// event already exists, we only update the values
+				Locker l(progressEvent->accesmutex);
+				progressEvent->bytesLoaded = bytesLoaded;
+				progressEvent->bytesTotal = bytesTotal;
+				// if event is already in event queue, we don't need to add it again
+				if (!progressEvent->queued)
+				{
+					this->incRef();
+					progressEvent->incRef();
+					getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+				}
+			}
 		}
 		if(loadStatus==INIT_SENT)
 		{
@@ -175,7 +196,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			if(getVm(getSystemState()))
 			{
 				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 			}
 			loadStatus=COMPLETE;
 		}
@@ -3704,7 +3725,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
-	_NR<DisplayObject> dispobj;
+	DisplayObject* dispobj=nullptr;
 	if(e->type == "mouseOut")
 	{
 		if (dispatcher!= this)
@@ -3713,16 +3734,17 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	else
 	{
 		if (dispatcher == this)
-			dispobj=hitTest(NullRef,e->localX,e->localY, DisplayObject::MOUSE_CLICK,true);
+			dispobj=this;
 		else
 		{
 			number_t x,y;
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
 			this->globalToLocal(x,y,x1,y1);
-			dispobj=hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true);
+			_NR<DisplayObject> d = hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true);
+			dispobj=d.getPtr();
 		}
-		if (dispobj.getPtr()!= this)
+		if (dispobj!= this)
 			return false;
 	}
 	BUTTONSTATE oldstate = currentState;
@@ -3775,7 +3797,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			}
 		}
 	}
-	handled |= AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
+	handled |= AVM1HandleMouseEventStandard(dispobj,e);
 	return handled;
 }
 

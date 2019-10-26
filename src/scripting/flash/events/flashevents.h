@@ -58,6 +58,7 @@ public:
 	ASPROPERTY_GETTER(bool,bubbles);
 	ASPROPERTY_GETTER(bool,cancelable);
 	bool defaultPrevented;
+	ACQUIRE_RELEASE_FLAG(queued); // indicates that this event was added to the event queue
 	ASPROPERTY_GETTER(uint32_t,eventPhase);
 	ASPROPERTY_GETTER(tiny_string,type);
 	//Altough events may be recycled and sent to more than a handler, the target property is set before sending
@@ -249,10 +250,11 @@ public:
 class ProgressEvent: public Event
 {
 private:
-	ASPROPERTY_GETTER_SETTER(number_t,bytesLoaded);
-	ASPROPERTY_GETTER_SETTER(number_t,bytesTotal);
 	Event* cloneImpl() const;
 public:
+	Mutex accesmutex;
+	ASPROPERTY_GETTER_SETTER(int32_t,bytesLoaded);
+	ASPROPERTY_GETTER_SETTER(int32_t,bytesTotal);
 	ProgressEvent(Class_base* c);
 	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
 	static void sinit(Class_base*);

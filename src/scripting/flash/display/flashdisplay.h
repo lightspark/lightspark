@@ -303,6 +303,7 @@ private:
 	 * completion
 	 */
 	_NR<DisplayObject> waitedObject;
+	_NR<ProgressEvent> progressEvent;
 	Spinlock spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;

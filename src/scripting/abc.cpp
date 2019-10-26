@@ -276,6 +276,8 @@ void ABCVm::registerClassesAVM1()
 		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
 
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
+	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
+	builtinavm1->registerBuiltin("clearInterval","",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
 
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Mouse","",Class<AVM1Mouse>::getRef(m_sys));
@@ -1512,6 +1514,9 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
+	if (event->is<ProgressEvent>())
+		event->as<ProgressEvent>()->accesmutex.lock();
+		
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
 	if(asAtomHandler::isInvalid(event->target))
@@ -1652,6 +1657,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->setTarget(asAtomHandler::invalidAtom);
+	if (event->is<ProgressEvent>())
+		event->as<ProgressEvent>()->accesmutex.unlock();
 }
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
@@ -1687,7 +1694,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				try
 				{
 					asAtom result=asAtomHandler::invalidAtom;
-					asAtomHandler::callFunction(ev->f,result,ev->obj,ev->args,ev->numArgs,true);
+					if (asAtomHandler::is<AVM1Function>(ev->f))
+						asAtomHandler::as<AVM1Function>(ev->f)->call(&result,&ev->obj,ev->args,ev->numArgs);
+					else
+						asAtomHandler::callFunction(ev->f,result,ev->obj,ev->args,ev->numArgs,true);
 					ASATOM_DECREF(result);
 				}
 				catch(ASObject* exception)
@@ -1819,6 +1829,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 	/* If this was a waitable event, signal it */
 	if(e.second->is<WaitableEvent>())
 		e.second->as<WaitableEvent>()->signal();
+	RELEASE_WRITE(e.second->queued,false);
 }
 
 bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
@@ -1861,6 +1872,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	 */
 	if(isVmThread() && ev->is<WaitableEvent>())
 	{
+		RELEASE_WRITE(ev->queued,true);
 		handleEvent( make_pair(obj,ev) );
 		return true;
 	}
@@ -1874,6 +1886,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	if (!obj.isNull())
 		obj->onNewEvent();
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	RELEASE_WRITE(ev->queued,true);
 	sem_event_cond.signal();
 	return true;
 }
@@ -1884,6 +1897,7 @@ void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	if(shuttingdown)
 		return;
 	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	RELEASE_WRITE(ev->queued,true);
 }
 
 Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)

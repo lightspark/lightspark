@@ -422,12 +422,30 @@ void Sound::setBytesLoaded(uint32_t b)
 	if(b!=bytesLoaded)
 	{
 		bytesLoaded=b;
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal)));
+		// make sure that the event queue is not flooded with progressEvents
+		if (progressEvent.isNull())
+		{
+			progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
+			progressEvent->incRef();
+			getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+		}
+		else
+		{
+			// event already exists, we only update the values
+			Locker l(progressEvent->accesmutex);
+			progressEvent->bytesLoaded = bytesLoaded;
+			progressEvent->bytesTotal = bytesTotal;
+			// if event is already in event queue, we don't need to add it again
+			if (!progressEvent->queued)
+			{
+				progressEvent->incRef();
+				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+			}
+		}
 		if(bytesLoaded==bytesTotal)
 		{
 			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+			getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 		}
 	}
 }

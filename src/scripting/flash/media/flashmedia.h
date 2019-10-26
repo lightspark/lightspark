@@ -57,6 +57,7 @@ protected:
 	//ILoadable interface
 	void setBytesTotal(uint32_t b);
 	void setBytesLoaded(uint32_t b);
+	_NR<ProgressEvent> progressEvent;
 public:
 	Sound(Class_base* c);
 	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms);

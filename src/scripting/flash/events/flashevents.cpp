@@ -36,7 +36,7 @@ void IEventDispatcher::linkTraits(Class_base* c)
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
-	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),eventPhase(0),type(t),target(),currentTarget()
+	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),queued(false),eventPhase(0),type(t),target(),currentTarget()
 {
 }
 

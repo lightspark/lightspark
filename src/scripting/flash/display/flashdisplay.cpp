@@ -761,9 +761,22 @@ void Loader::setContent(_R<DisplayObject> o)
 		content->isLoadedRoot = true;
 		loaded=true;
 	}
-
 	// _addChild may cause AS code to run, release locks beforehand.
-	_addChildAt(o, 0);
+
+	if (!avm1target.isNull())
+	{
+		DisplayObjectContainer* p = avm1target->getParent();
+		if (p)
+		{
+			int depth =p->findLegacyChildDepth(avm1target.getPtr());
+			p->deleteLegacyChildAt(depth);
+			p->_addChildAt(o,depth);
+		}
+	}
+	else
+	{
+		_addChildAt(o, 0);
+	}
 }
 
 Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),dragged(false),buttonMode(false),useHandCursor(false)

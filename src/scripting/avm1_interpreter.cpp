@@ -149,7 +149,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	{
 		if (curdepth > 0 && it == scopestackstop[curdepth])
 		{
+			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(scopestack[curdepth]));
+			if (asAtomHandler::is<DisplayObject>(scopestack[curdepth]))
+				clip = originalclip;
 			curdepth--;
+			Log::calls_indent--;
 		}
 		if (!clip
 				&& it->actionCode != 0x20 // ActionSetTarget2
@@ -401,7 +405,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				if (!found)
 				{
-					if (!s.startsWith("/") && !s.startsWith(":"))
+					if (!curdepth && !s.startsWith("/") && !s.startsWith(":"))
 						originalclip->AVM1SetVariable(s,value);
 					else
 						clip->AVM1SetVariable(s,value);
@@ -800,6 +804,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					{
 						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
 						asAtomHandler::as<Function>(func)->call(ret,obj,args,numargs);
+					}
+					else if (asAtomHandler::is<Class_base>(func))
+					{
+						asAtomHandler::as<Class_base>(func)->generator(ret,args,numargs);
 					}
 					else
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
@@ -1452,7 +1460,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			{
 				asAtom obj = PopStack(stack);
 				auto itend = it;
-				uint16_t skip = it->data_uint16;
+				int skip = (int)it->data_uint16;
 				while (skip > 0)
 				{
 					itend++;
@@ -1460,14 +1468,18 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						itend = actionlist.begin();
 					skip -= itend->getFullLength();
 				}
+				itend++;
 				if (curdepth >= maxdepth)
 				{
 					it = itend;
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith depth exceeds maxdepth");
 					break;
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<it->data_uint16);
+				Log::calls_indent++;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<it->data_uint16<<" "<<asAtomHandler::toDebugString(obj));
 				++curdepth;
+				if (asAtomHandler::is<DisplayObject>(obj))
+					clip = asAtomHandler::as<DisplayObject>(obj);
 				scopestack[curdepth] = obj;
 				scopestackstop[curdepth] = itend;
 				break;

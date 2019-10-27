@@ -97,11 +97,12 @@ private:
 	number_t oldVolume;
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
+	bool restartafterabort;
 public:
 	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
-	void play();
+	void play(number_t starttime=0);
 	void markFinished(); // indicates that all sound data is available
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

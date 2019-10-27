@@ -344,8 +344,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		if (th->soundChannel)
 		{
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
-			th->soundChannel->position=startTime;
- 			th->soundChannel->play();
+ 			th->soundChannel->play(startTime);
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
@@ -505,7 +504,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
 	: EventDispatcher(c),stream(_stream),stopped(true),audioDecoder(NULL),audioStream(NULL),
-	format(_format),oldVolume(-1.0),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	format(_format),oldVolume(-1.0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),position(0),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -523,14 +522,22 @@ void SoundChannel::appendStreamBlock(unsigned char *buf, int len)
 		SoundStreamBlockTag::decodeSoundBlock(stream.getPtr(),format.codec,buf,len);
 }
 
-void SoundChannel::play()
+void SoundChannel::play(number_t starttime)
 {
-	if (!stream.isNull() && stopped)
+	if (!ACQUIRE_READ(stopped))
+	{
+		restartafterabort=true;
+		threadAbort();
+		position=starttime;
+		return;
+	}
+	position=starttime;
+	if (!stream.isNull() && ACQUIRE_READ(stopped))
 	{
 		// Start playback
 		incRef();
 		getSystemState()->addJob(this);
-		stopped=false;
+		RELEASE_WRITE(stopped,false);
 	}
 }
 
@@ -602,32 +609,44 @@ void SoundChannel::playStream()
 	s.exceptions ( istream::failbit | istream::badbit );
 
 	bool waitForFlush=true;
-	StreamDecoder* streamDecoder=NULL;
+	StreamDecoder* streamDecoder=nullptr;
+	{
+		Locker l(mutex);
+		if (audioStream)
+		{
+			delete audioStream;
+			audioStream=nullptr;
+		}
+	}
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
 		streamDecoder=new FFMpegStreamDecoder(this->getSystemState()->getEngineData(),s,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
+		{
+			LOG(LOG_ERROR,"invalid streamDecoder");
 			threadAbort();
-
-		streamDecoder->jumpToPosition(this->position);
-		if (audioStream)
-			audioStream->setPlayedTime(this->position);
+		}
+		else
+		{
+			streamDecoder->jumpToPosition(this->position);
+			if (audioStream)
+				audioStream->setPlayedTime(this->position);
+		}
 		while(!ACQUIRE_READ(stopped))
 		{
 			bool decodingSuccess=streamDecoder->decodeNextFrame();
 			if(decodingSuccess==false)
 				break;
-
-			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+			if(audioDecoder==nullptr && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
+			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
 				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,position);
 
 			// TODO: check the position only when the getter is called
-			if(audioStream)
+			if(audioStream && !ACQUIRE_READ(stopped))
 				position=audioStream->getPlayedTime();
 			if(audioStream)
 			{
@@ -670,9 +689,9 @@ void SoundChannel::playStream()
 
 	{
 		Locker l(mutex);
-		audioDecoder=NULL;
+		audioDecoder=nullptr;
 		delete audioStream;
-		audioStream=NULL;
+		audioStream=nullptr;
 	}
 	delete streamDecoder;
 	delete sbuf;
@@ -688,6 +707,13 @@ void SoundChannel::playStream()
 void SoundChannel::jobFence()
 {
 	this->decRef();
+	if (restartafterabort)
+	{
+		restartafterabort=false;
+		incRef();
+		getSystemState()->addJob(this);
+		RELEASE_WRITE(stopped,false);
+	}
 }
 
 void SoundChannel::threadAbort()

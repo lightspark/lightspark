@@ -42,6 +42,7 @@ bool AudioStream::init()
 	unmutevolume = curvolume = 1.0;
 	gettimeofday(&starttime, NULL);
 	mixer_channel = manager->engineData->audio_StreamInit(this);
+	manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
 	isPaused = false;
 	return true;
 }

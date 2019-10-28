@@ -7730,10 +7730,9 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			uint32_t argcount = code.peeku30FromPosition(pos2);
 			if (jumptargets.find(pos) == jumptargets.end() 
 					&& mi->context->constant_pool.multinames[t].runtimeargs == 0 &&
-					((argcount == 1 && (argsneeded==1 || (operandlist.size() >= 1))) ||
-					(argsneeded==argcount) ||
+					(argcount >= argsneeded) &&
 					(operandlist.size() >= argcount-argsneeded)
-					))
+					)
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[preloadpos].data += opcode_jumpspace;

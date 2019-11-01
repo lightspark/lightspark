@@ -530,8 +530,9 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return NULL;
 
-	int32_t windowWidth=getSys()->getRenderThread()->windowWidth;
-	int32_t windowHeight=getSys()->getRenderThread()->windowHeight;
+	int32_t windowWidth=max(int(getSys()->mainClip->getFrameSize().Xmax/20.0),int(getSys()->getRenderThread()->windowWidth));
+	int32_t windowHeight=max(int(getSys()->mainClip->getFrameSize().Ymax/20.0),int(getSys()->getRenderThread()->windowHeight));
+	
 	//Discard stuff that it's outside the visible part
 	if(xOffset >= windowWidth || yOffset >= windowHeight
 		|| xOffset + width <= 0 || yOffset + height <= 0)

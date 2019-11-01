@@ -1151,6 +1151,7 @@ void SystemState::flushInvalidationQueue()
 			//render it and upload it to GPU
 			if(d)
 				addJob(new AsyncDrawJob(d,cur));
+			cur->hasChanged=false;
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;

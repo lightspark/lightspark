@@ -990,12 +990,9 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
-	if (!owner->hasChanged)
-		return;
 	surfaceBytes=drawable->getPixelBuffer();
 	if(surfaceBytes)
 		uploadNeeded=true;
-	owner->hasChanged=false;
 }
 
 void AsyncDrawJob::threadAbort()

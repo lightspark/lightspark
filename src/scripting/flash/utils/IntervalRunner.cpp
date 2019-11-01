@@ -46,8 +46,10 @@ IntervalRunner::~IntervalRunner()
 	delete[] args;
 }
 
-void IntervalRunner::tick() 
+void IntervalRunner::tick()
 {
+	if (getSys()->isShuttingDown())
+		return;
 	//incRef all arguments
 	uint32_t i;
 	for(i=0; i < argslen; i++)

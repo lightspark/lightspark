@@ -334,7 +334,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(th->getSystemState()));
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(CODEC_NONE,0,0),false));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false));
 		th->soundChannel->position=startTime;
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
@@ -394,8 +394,10 @@ void Sound::afterExecution(_R<Event> e)
 			return;
 		}
 		uint32_t len = data->getLength();
+		uint32_t reallen = len;
 		this->soundData->append(data->getBuffer(len,false),len);
-		soundChannel->play();
+		if (reallen)
+			soundChannel->resume();
 		if (len < 2048*sizeof(float))
 		{
 			// less than 2048 samples, stop requesting data
@@ -406,7 +408,7 @@ void Sound::afterExecution(_R<Event> e)
 			// request more data
 			_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
 			incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,0)));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,this->soundData->getReceivedLength())));
 		}
 	}
 }
@@ -503,7 +505,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
-	: EventDispatcher(c),stream(_stream),stopped(true),audioDecoder(NULL),audioStream(NULL),
+	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(NULL),audioStream(NULL),
 	format(_format),oldVolume(-1.0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),position(0),rightPeak(1)
 {
@@ -526,18 +528,37 @@ void SoundChannel::play(number_t starttime)
 {
 	if (!ACQUIRE_READ(stopped))
 	{
-		restartafterabort=true;
 		threadAbort();
+		restartafterabort=true;
 		position=starttime;
-		return;
 	}
-	position=starttime;
+	else
+	{
+		if (restartafterabort)
+			return;
+		while (!ACQUIRE_READ(terminated))
+			compat_msleep(10);
+		restartafterabort=false;
+		position=starttime;
+		if (!stream.isNull() && ACQUIRE_READ(stopped))
+		{
+			// Start playback
+			incRef();
+			getSystemState()->addJob(this);
+			RELEASE_WRITE(stopped,false);
+			RELEASE_WRITE(terminated,false);
+		}
+	}
+}
+void SoundChannel::resume()
+{
 	if (!stream.isNull() && ACQUIRE_READ(stopped))
 	{
 		// Start playback
 		incRef();
 		getSystemState()->addJob(this);
 		RELEASE_WRITE(stopped,false);
+		RELEASE_WRITE(terminated,false);
 	}
 }
 
@@ -627,6 +648,7 @@ void SoundChannel::playStream()
 		{
 			LOG(LOG_ERROR,"invalid streamDecoder");
 			threadAbort();
+			restartafterabort=false;
 		}
 		else
 		{
@@ -679,6 +701,7 @@ void SoundChannel::playStream()
 	}
 	if(waitForFlush)
 	{
+		Locker l(mutex);
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
 		if(audioDecoder)
 		{
@@ -706,25 +729,33 @@ void SoundChannel::playStream()
 
 void SoundChannel::jobFence()
 {
-	this->decRef();
-	if (restartafterabort)
+	RELEASE_WRITE(terminated,true);
+	Locker l(mutex);
+	if (restartafterabort && !getSystemState()->isShuttingDown())
 	{
 		restartafterabort=false;
 		incRef();
 		getSystemState()->addJob(this);
 		RELEASE_WRITE(stopped,false);
+		RELEASE_WRITE(terminated,false);
 	}
+	this->decRef();
 }
 
 void SoundChannel::threadAbort()
 {
+	if (ACQUIRE_READ(stopped))
+		return;
 	RELEASE_WRITE(stopped,true);
 	Locker l(mutex);
+	if (stream)
+		stream->markFinished(false);
 	if(audioDecoder)
 	{
 		//Clear everything we have in buffers, discard all frames
 		audioDecoder->setFlushing();
 		audioDecoder->skipAll();
+		audioDecoder=nullptr;
 	}
 }
 

@@ -91,6 +91,7 @@ private:
 	_NR<StreamCache> stream;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(stopped);
+	ACQUIRE_RELEASE_FLAG(terminated);
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	AudioFormat format;
@@ -103,6 +104,7 @@ public:
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
 	void play(number_t starttime=0);
+	void resume();
 	void markFinished(); // indicates that all sound data is available
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

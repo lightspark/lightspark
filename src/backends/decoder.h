@@ -47,6 +47,8 @@ extern "C"
 #define CODEC_ID_AAC AV_CODEC_ID_AAC
 #define CODEC_ID_MP3 AV_CODEC_ID_MP3
 #define CODEC_ID_PCM_S16LE AV_CODEC_ID_PCM_S16LE
+#define CODEC_ID_PCM_F32BE AV_CODEC_ID_PCM_F32BE
+#define CODEC_ID_PCM_F32LE AV_CODEC_ID_PCM_F32LE
 #define CODEC_ID_ADPCM_SWF AV_CODEC_ID_ADPCM_SWF
 #endif
 #define MAX_AUDIO_FRAME_SIZE AVCODEC_MAX_AUDIO_FRAME_SIZE
@@ -61,8 +63,8 @@ namespace lightspark
 {
 
 enum LS_VIDEO_CODEC { H264=0, H263, VP6 };
-// "Audio coding formats" from Chapter 11 in SWF documentation
-enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
+// "Audio coding formats" from Chapter 11 in SWF documentation (except for LINEAR_PCM_FLOAT_BE)
+enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10, LINEAR_PCM_FLOAT_BE = 100 };
 
 class AudioFormat
 {
@@ -143,7 +145,7 @@ class NullVideoDecoder: public VideoDecoder
 public:
 	NullVideoDecoder() {status=VALID;}
 	~NullVideoDecoder() { while(fenceCount); }
-	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint){};
+	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint){}
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}

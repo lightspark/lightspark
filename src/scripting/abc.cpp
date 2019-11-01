@@ -1474,6 +1474,7 @@ void ABCVm::shutdown()
 		//Wait for the vm thread
 		t->join();
 		status=TERMINATED;
+		signalEventWaiters();
 	}
 }
 
@@ -1882,7 +1883,11 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
+	{
+		if (ev->is<WaitableEvent>())
+			ev->as<WaitableEvent>()->signal();
 		return false;
+	}
 	if (!obj.isNull())
 		obj->onNewEvent();
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
@@ -1957,6 +1962,8 @@ bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
 }
 void ABCVm::checkExternalCallEvent()
 {
+	if (shuttingdown)
+		return;
 	event_queue_mutex.lock();
 	if (events_queue.size() == 0)
 	{
@@ -2044,8 +2051,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, _("isinstance ") << *name);
 
-	//TODO: Should check against multiname index being 0, not the name!
-	if(name->qualifiedString(obj->getSystemState()) == "any")
+	if(name->name_s_id == BUILTIN_STRINGS::ANY)
 		return true;
 	
 	ASObject* target;

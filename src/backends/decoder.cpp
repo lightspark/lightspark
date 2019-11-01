@@ -744,6 +744,8 @@ CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
 			return CODEC_ID_ADPCM_SWF;
 		case LINEAR_PCM_LE:
 			return CODEC_ID_PCM_S16LE;
+		case LINEAR_PCM_FLOAT_BE:
+			return CODEC_ID_PCM_F32BE;
 		default:
 			return CODEC_ID_NONE;
 	}
@@ -1100,16 +1102,16 @@ StreamDecoder::~StreamDecoder()
 
 #ifdef ENABLE_LIBAVCODEC
 FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, AudioFormat* format, int streamsize)
- : audioFound(false),videoFound(false),stream(s),formatCtx(NULL),audioIndex(-1),
-   videoIndex(-1),customAudioDecoder(NULL),customVideoDecoder(NULL),avioContext(NULL),availablestreamlength(streamsize)
+ : audioFound(false),videoFound(false),stream(s),formatCtx(nullptr),audioIndex(-1),
+   videoIndex(-1),customAudioDecoder(nullptr),customVideoDecoder(nullptr),avioContext(nullptr),availablestreamlength(streamsize)
 {
 	int aviobufsize = streamsize == -1 ? 4096 : min(4096, streamsize);
 	valid=false;
 	avioBuffer = (uint8_t*)av_malloc(aviobufsize);
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
-	avioContext=avio_alloc_context(avioBuffer,aviobufsize,0,this,avioReadPacket,NULL,NULL);
+	avioContext=avio_alloc_context(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,nullptr);
 #else
-	avioContext=av_alloc_put_byte(avioBuffer,aviobufsize,0,this,avioReadPacket,NULL,NULL);
+	avioContext=av_alloc_put_byte(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,nullptr);
 #endif
 	if(avioContext==NULL)
 		return;
@@ -1134,6 +1136,9 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
 			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
 				fmt = av_find_input_format("s16le");
+				break;
+			case LS_AUDIO_CODEC::LINEAR_PCM_FLOAT_BE:
+				fmt = av_find_input_format("f32be");
 				break;
 			case LS_AUDIO_CODEC::ADPCM:
 				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");

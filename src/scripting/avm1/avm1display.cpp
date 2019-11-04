@@ -102,6 +102,17 @@ void AVM1Stage::sinit(Class_base* c)
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayState),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayState),SETTER_METHOD,false);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
+{
+	ret = asAtomHandler::fromString(sys,sys->stage->displayState);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,_setDisplayState)
+{
+	ARG_UNPACK_ATOM(sys->stage->displayState);
+	sys->stage->onDisplayState(sys->stage->displayState);
 }
 
 

@@ -60,6 +60,7 @@
 #include "ppapi/c/ppb_graphics_3d.h"
 #include "ppapi/c/ppb_input_event.h"
 #include "ppapi/c/private/ppb_flash_clipboard.h"
+#include "ppapi/c/private/ppb_flash_fullscreen.h"
 #include "ppapi/c/ppb_file_io.h"
 #include "ppapi/c/ppb_file_ref.h"
 #include "ppapi/c/ppb_file_system.h"
@@ -116,6 +117,7 @@ static const PPB_AudioConfig* g_audioconfig_interface = NULL;
 static const PPB_ImageData* g_imagedata_interface = NULL;
 static const PPB_BrowserFont_Trusted* g_browserfont_interface = NULL;
 static const PPB_MessageLoop* g_messageloop_interface = NULL;
+static const PPB_FlashFullscreen* g_flashfullscreen_interface = NULL;
 
 ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance,SystemState* sys):StreamCache(sys),cache(0),cacheref(0),writeoffset(0),m_instance(instance)
   ,reader(NULL),iodone(false)
@@ -849,6 +851,14 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 		{
 			swffile = argv[i];
 		}
+		else if(strcasecmp(argn[i],"allowfullscreen")==0)
+		{
+			m_sys->allowFullscreen= strcasecmp(argv[i],"true") == 0;
+		}
+		else if(strcasecmp(argn[i],"allowfullscreeninteractive")==0)
+		{
+			m_sys->allowFullscreen= strcasecmp(argv[i],"true") == 0;
+		}
 	}
 	if (!swffile.empty())
 	{
@@ -1566,6 +1576,7 @@ extern "C"
 		g_keyboardinputevent_interface = (const PPB_KeyboardInputEvent*)get_browser_interface(PPB_KEYBOARD_INPUT_EVENT_INTERFACE);
 		g_wheelinputevent_interface = (const PPB_WheelInputEvent*)get_browser_interface(PPB_WHEEL_INPUT_EVENT_INTERFACE);
 		g_flashclipboard_interface = (const PPB_Flash_Clipboard*)get_browser_interface(PPB_FLASH_CLIPBOARD_INTERFACE);
+		g_flashfullscreen_interface = (const PPB_FlashFullscreen*)get_browser_interface(PPB_FLASHFULLSCREEN_INTERFACE);
 		g_fileio_interface = (const PPB_FileIO*)get_browser_interface(PPB_FILEIO_INTERFACE);
 		g_fileref_interface = (const PPB_FileRef*)get_browser_interface(PPB_FILEREF_INTERFACE);
 		g_filesystem_interface = (const PPB_FileSystem*)get_browser_interface(PPB_FILESYSTEM_INTERFACE);
@@ -1599,7 +1610,8 @@ extern "C"
 				!g_audioconfig_interface ||
 				!g_imagedata_interface ||
 				!g_browserfont_interface ||
-				!g_messageloop_interface
+				!g_messageloop_interface ||
+				!g_flashfullscreen_interface
 				)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
@@ -1628,6 +1640,7 @@ extern "C"
 				<< g_imagedata_interface<<" "
 				<< g_browserfont_interface<<" "
 				<< g_messageloop_interface<<" "
+				<< g_flashfullscreen_interface<<" "
 				);
 			return PP_ERROR_NOINTERFACE;
 		}
@@ -1707,6 +1720,16 @@ SDL_Window* ppPluginEngineData::createWidget(uint32_t w,uint32_t h)
 
 void ppPluginEngineData::grabFocus()
 {
+}
+
+void ppPluginEngineData::setDisplayState(const tiny_string &displaystate)
+{
+	g_flashfullscreen_interface->SetFullscreen(this->instance->getppInstance(),displaystate.startsWith("fullScreen") ? PP_TRUE : PP_FALSE);
+}
+
+bool ppPluginEngineData::inFullScreenMode()
+{
+	return g_flashfullscreen_interface->IsFullscreen(this->instance->getppInstance()) == PP_TRUE;
 }
 
 void ppPluginEngineData::setClipboardText(const std::string txt)

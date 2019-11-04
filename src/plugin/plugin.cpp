@@ -348,6 +348,14 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			{
 				m_sys->extScriptObject->setProperty(argn[i],argv[i]);
 			}
+			else if(strcasecmp(argn[i],"allowfullscreen")==0)
+			{
+				m_sys->allowFullscreen= strcasecmp(argv[i],"true") == 0;
+			}
+			else if(strcasecmp(argn[i],"allowfullscreeninteractive")==0)
+			{
+				m_sys->allowFullscreen= strcasecmp(argv[i],"true") == 0;
+			}
 			//The SWF file url should be getted from NewStream
 		}
 		NPN_SetValue(aInstance,NPPVpluginWindowBool,(void*)false);
@@ -547,6 +555,20 @@ SDL_Keycode getSDLKeyCode(unsigned x11Keyval)
 SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 {
 	return SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN| SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+}
+
+void PluginEngineData::setDisplayState(const tiny_string &displaystate)
+{
+	if (!this->widget)
+	{
+		LOG(LOG_ERROR,"no widget available for setting displayState");
+		return;
+	}
+	SDL_SetWindowFullscreen(widget, displaystate.startsWith("fullScreen") ? SDL_WINDOW_FULLSCREEN_DESKTOP: 0);
+	if (displaystate == "fullScreen")
+		SDL_ShowWindow(widget);
+	else
+		SDL_HideWindow(widget);
 }
 
 void PluginEngineData::grabFocus()

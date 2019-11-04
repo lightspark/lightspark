@@ -285,6 +285,8 @@ public:
 	//Interative analysis flags
 	bool showProfilingData;
 	bool standalone;
+	bool allowFullscreen;
+	bool allowFullscreenInteractive;
 	//Flash for execution mode
 	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
 	const FLASH_MODE flashMode;

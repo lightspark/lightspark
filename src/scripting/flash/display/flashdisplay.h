@@ -642,7 +642,6 @@ class Stage: public DisplayObjectContainer
 private:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
-	void onDisplayState(const tiny_string&);
 	void onAlign(const tiny_string&);
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);
@@ -661,6 +660,7 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	void renderImpl(RenderContext& ctxt) const;
 public:
+	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	void setOnStage(bool staged, bool force = false) { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot();

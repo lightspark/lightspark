@@ -66,6 +66,8 @@ class AVM1Stage: public Stage
 public:
 	AVM1Stage(Class_base* c):Stage(c) {}
 	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_getDisplayState);
+	ASFUNCTION_ATOM(_setDisplayState);
 };
 
 class AVM1MovieClipLoader: public Loader

@@ -338,6 +338,11 @@ void InputThread::handleMouseLeave()
 
 bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 {
+	if (m_sys->getEngineData()->inFullScreenMode() && keyevent->keysym.sym == SDLK_ESCAPE)
+	{
+		m_sys->getEngineData()->setDisplayState("normal");
+		return true;
+	}
 	bool handled = false;
 	if (!(keyevent->keysym.mod & KMOD_CTRL))
 		return handled;

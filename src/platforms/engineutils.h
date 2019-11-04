@@ -110,6 +110,8 @@ public:
 	/* must be called within mainLoopThread */
 	virtual void grabFocus()=0;
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
+	virtual void setDisplayState(const tiny_string& displaystate);
+	virtual bool inFullScreenMode();
 
 	static bool sdl_needinit;
 	static bool enablerendering;

@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* fullscreen mode implemented
 	* better sound handling, especially for AVM1
 	* better support of older (AVM1) swf files
 

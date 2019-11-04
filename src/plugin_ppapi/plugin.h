@@ -194,6 +194,9 @@ public:
 	SDL_Window* createWidget(uint32_t w,uint32_t h);
 	/* must be called within mainLoopThread */
 	void grabFocus();
+	void setDisplayState(const tiny_string& displaystate) override;
+	bool inFullScreenMode() override;
+	
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
 	void setClipboardText(const std::string txt);
 	bool getScreenData(SDL_DisplayMode* screen);

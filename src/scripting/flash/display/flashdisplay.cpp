@@ -3011,9 +3011,16 @@ ASFUNCTIONBODY_GETTER(Stage,stage3Ds);
 
 void Stage::onDisplayState(const tiny_string&)
 {
-	if (displayState != "normal")
-		LOG(LOG_NOT_IMPLEMENTED,"Stage.displayState = " << displayState);
-	displayState = "normal"; // until fullscreen support is implemented
+	if (displayState != "normal" && displayState != "fullScreen" && displayState != "fullScreenInteractive")
+	{
+		LOG(LOG_ERROR,"invalid value for DisplayState");
+		return;
+	}
+	if (!getSystemState()->allowFullscreen && displayState == "fullScreen")
+		throwError<SecurityError>(kInvalidParamError);
+	if (!getSystemState()->allowFullscreenInteractive && displayState == "fullScreenInteractive")
+		throwError<SecurityError>(kInvalidParamError);
+	getSystemState()->getEngineData()->setDisplayState(displayState);
 }
 
 void Stage::onAlign(const tiny_string& /*oldValue*/)
@@ -3435,12 +3442,12 @@ ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
 
 ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreen)
 {
-	asAtomHandler::setBool(ret,false); // until fullscreen support is implemented
+	asAtomHandler::setBool(ret,sys->allowFullscreen);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreenInteractive)
 {
-	asAtomHandler::setBool(ret,false);
+	asAtomHandler::setBool(ret,sys->allowFullscreenInteractive);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getColorCorrectionSupport)

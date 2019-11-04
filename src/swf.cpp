@@ -207,7 +207,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
-	showProfilingData(false),flashMode(mode),swffilesize(fileSize),
+	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
 	static_SoundMixer_bufferTime(0),isinitialized(false)

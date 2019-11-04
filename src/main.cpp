@@ -381,6 +381,8 @@ int main(int argc, char* argv[])
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
 	setTLSSys(sys);
 	sys->setDownloadedPath(fileName);
+	sys->allowFullscreen=true;
+	sys->allowFullscreenInteractive=true;
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter

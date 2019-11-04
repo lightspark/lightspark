@@ -255,6 +255,26 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	
 }
 
+void EngineData::setDisplayState(const tiny_string &displaystate)
+{
+	if (!this->widget)
+	{
+		LOG(LOG_ERROR,"no widget available for setting displayState");
+		return;
+	}
+	SDL_SetWindowFullscreen(widget, displaystate.startsWith("fullScreen") ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+}
+
+bool EngineData::inFullScreenMode()
+{
+	if (!this->widget)
+	{
+		LOG(LOG_ERROR,"no widget available for getting fullscreen mode");
+		return false;
+	}
+	return SDL_GetWindowFlags(widget) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+}
+
 void EngineData::showMouseCursor(SystemState* /*sys*/)
 {
 	SDL_ShowCursor(SDL_ENABLE);

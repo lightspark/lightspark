@@ -107,6 +107,8 @@ public:
 	uint32_t getWindowForGnash();
 	/* must be called within mainLoopThread */
 	SDL_Window* createWidget(uint32_t w,uint32_t h);
+	void setDisplayState(const tiny_string& displaystate) override;
+	
 	/* must be called within mainLoopThread */
 	void grabFocus();
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);

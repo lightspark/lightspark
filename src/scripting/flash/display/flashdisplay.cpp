@@ -213,7 +213,7 @@ void LoaderInfo::sendInit()
 	{
 		//The clip is also complete now
 		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
 		loadStatus=COMPLETE;
 	}
 }

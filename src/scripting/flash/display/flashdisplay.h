@@ -200,6 +200,7 @@ public:
 	void finalize();
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing);
 	void requestInvalidation(InvalidateQueue* q);
+	uint32_t getTagID() const override;
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

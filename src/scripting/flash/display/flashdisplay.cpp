@@ -4100,6 +4100,11 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q)
 	DisplayObjectContainer::requestInvalidation(q);
 }
 
+uint32_t SimpleButton::getTagID() const
+{
+	return buttontag ? uint32_t(buttontag->getId()) : 0;
+}
+
 ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 {
 	/* This _must_ not call the DisplayObjectContainer

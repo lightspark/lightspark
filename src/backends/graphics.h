@@ -134,7 +134,7 @@ public:
 	 * This method creates a cairo path that can be used as a mask for
 	 * another object
 	 */
-	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const = 0;
+	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const = 0;
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
 	int32_t getXOffset() const { return xOffset; }
@@ -200,7 +200,7 @@ protected:
 	static StaticRecMutex cairoMutex;
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
-	virtual void executeDraw(cairo_t* cr)=0;
+	virtual void executeDraw(cairo_t* cr, float scalex, float scaley)=0;
 	static void copyRGB15To24(uint8_t* dest, uint8_t* src);
 	static void copyRGB24To24(uint8_t* dest, uint8_t* src);
 public:
@@ -223,7 +223,7 @@ class CairoTokenRenderer : public CairoRenderer
 {
 private:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform, float scalex, float scaley);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
@@ -233,8 +233,8 @@ private:
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
-	void executeDraw(cairo_t* cr);
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
+	void executeDraw(cairo_t* cr, float scalex, float scaley);
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -320,11 +320,11 @@ class CairoPangoRenderer : public CairoRenderer
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
-	void executeDraw(cairo_t* cr);
+	void executeDraw(cairo_t* cr, float scalex, float scaley);
 	TextData textData;
 	uint32_t caretIndex;
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
 	static StaticMutex pangoMutex;

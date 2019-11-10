@@ -1973,6 +1973,9 @@ void SystemState::tickFence()
 
 void SystemState::resizeCompleted()
 {
+	stage->hasChanged=true;
+	stage->requestInvalidation(this);
+	
 	if(currentVm && scaleMode==NO_SCALE)
 	{
 		stage->incRef();

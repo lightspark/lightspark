@@ -265,7 +265,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 	return pattern;
 }
 
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint,ColorTransform* colortransform)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint,ColorTransform* colortransform,float scalex,float scaley)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
@@ -314,23 +314,23 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 			switch((*it)->type)
 			{
 				case MOVE:
-					PATH(cairo_move_to, (*it)->p1.x, (*it)->p1.y);
+					PATH(cairo_move_to, (*it)->p1.x*scalex, (*it)->p1.y*scaley);
 					break;
 				case STRAIGHT:
-					PATH(cairo_line_to, (*it)->p1.x, (*it)->p1.y);
+					PATH(cairo_line_to, (*it)->p1.x*scalex, (*it)->p1.y*scaley);
 					empty = false;
 					break;
 				case CURVE_QUADRATIC:
 					PATH(quadraticBezier,
-					   (*it)->p1.x, (*it)->p1.y,
-					   (*it)->p2.x, (*it)->p2.y);
+					   (*it)->p1.x*scalex, (*it)->p1.y*scaley,
+					   (*it)->p2.x*scalex, (*it)->p2.y*scaley);
 					empty = false;
 					break;
 				case CURVE_CUBIC:
 					PATH(cairo_curve_to,
-					   (*it)->p1.x, (*it)->p1.y,
-					   (*it)->p2.x, (*it)->p2.y,
-					   (*it)->p3.x, (*it)->p3.y);
+					   (*it)->p1.x*scalex, (*it)->p1.y*scaley,
+					   (*it)->p2.x*scalex, (*it)->p2.y*scaley,
+					   (*it)->p3.x*scalex, (*it)->p3.y*scaley);
 					empty = false;
 					break;
 				case SET_FILL:
@@ -509,13 +509,13 @@ cairo_surface_t* CairoRenderer::allocateSurface(uint8_t*& buf)
 	return cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 }
 
-void CairoTokenRenderer::executeDraw(cairo_t* cr)
+void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 {
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
-	cairoPathFromTokens(cr, tokens, scaleFactor, false,colortransform.getPtr());
+	cairoPathFromTokens(cr, tokens, scaleFactor, false,colortransform.getPtr(),scalex, scaley);
 }
 
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
@@ -530,9 +530,16 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return NULL;
 
-	int32_t windowWidth=max(int(getSys()->mainClip->getFrameSize().Xmax/20.0),int(getSys()->getRenderThread()->windowWidth));
-	int32_t windowHeight=max(int(getSys()->mainClip->getFrameSize().Ymax/20.0),int(getSys()->getRenderThread()->windowHeight));
+	SystemState* sys = getSys();
+	int32_t windowWidth=(sys->mainClip->getFrameSize().Xmax/20.0);
+	int32_t windowHeight=(sys->mainClip->getFrameSize().Ymax/20.0);
 	
+	float scalex;
+	float scaley;
+	
+	int offx,offy;
+	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+
 	//Discard stuff that it's outside the visible part
 	if(xOffset >= windowWidth || yOffset >= windowHeight
 		|| xOffset + width <= 0 || yOffset + height <= 0)
@@ -552,20 +559,20 @@ uint8_t* CairoRenderer::getPixelBuffer()
 		height+=yOffset;
 		yOffset=0;
 	}
-
 	//Clip the size to the screen borders
 	if((xOffset>=0) && (width+xOffset) > windowWidth)
 		width=windowWidth-xOffset;
 	if((yOffset>=0) && (height+yOffset) > windowHeight)
 		height=windowHeight-yOffset;
 	uint8_t* ret=NULL;
-	cairo_surface_t* cairoSurface=allocateSurface(ret);
 
-	cairo_t* cr=cairo_create(cairoSurface);
-	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
-	cairoClean(cr);
-	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	xOffset*=scalex;
+	yOffset*=scaley;
+	width*=scalex;
+	height*=scaley;
 
+	matrix.x0*=scalex;
+	matrix.y0*=scaley;
 	//Make sure the rendering starts at 0,0 in surface coordinates
 	//This also guarantees that all the shape fills in width/height pixels
 	//We don't translate for negative offsets as we don't want to see what's in negative coords
@@ -574,16 +581,23 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	if(yOffset >= 0)
 		matrix.y0-=yOffset;
 
+	cairo_surface_t* cairoSurface=allocateSurface(ret);
+
+	cairo_t* cr=cairo_create(cairoSurface);
+	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
+	cairoClean(cr);
+	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+
 	//Apply all the masks to clip the drawn part
 	for(uint32_t i=0;i<masks.size();i++)
 	{
 		if(masks[i].maskMode != HARD_MASK)
 			continue;
-		masks[i].m->applyCairoMask(cr,xOffset,yOffset);
+		masks[i].m->applyCairoMask(cr,xOffset,yOffset,scalex,scaley);
 	}
 
 	cairo_set_matrix(cr, &matrix);
-	executeDraw(cr);
+	executeDraw(cr,scalex, scaley);
 
 	cairo_surface_t* maskSurface = NULL;
 	uint8_t* maskRawData = NULL;
@@ -644,7 +658,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
 
-	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,nullptr);
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,nullptr,1.0,1.0);
 	bool ret=false;
 	if(!empty)
 	{
@@ -659,13 +673,13 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	return ret;
 }
 
-void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset) const
+void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset, float scalex, float scaley) const
 {
 	cairo_matrix_t tmp=matrix;
 	tmp.x0-=xOffset;
 	tmp.y0-=yOffset;
 	cairo_set_matrix(cr, &tmp);
-	cairoPathFromTokens(cr, tokens, scaleFactor, true,colortransform.getPtr());
+	cairoPathFromTokens(cr, tokens, scaleFactor, true,colortransform.getPtr(),scalex,scaley);
 	cairo_clip(cr);
 }
 
@@ -806,7 +820,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	pango_font_description_free(desc);
 }
 
-void CairoPangoRenderer::executeDraw(cairo_t* cr)
+void CairoPangoRenderer::executeDraw(cairo_t* cr, float /*scalex*/, float /*scaley*/)
 {
 	/* TODO: pango is not fully thread-safe,
 	 * but we may be able to use finer grained locking.
@@ -973,7 +987,7 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 	return data;
 }
 
-void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const
+void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset, float scalex, float scaley) const
 {
 	assert(false);
 }

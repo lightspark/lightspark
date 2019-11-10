@@ -56,7 +56,7 @@ public:
 	externalFontRenderer(const TextData &_textData,class EngineData* engine, int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m, bool smoothing);
 	
 	uint8_t* getPixelBuffer() override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
 };
 
 class DLL_PUBLIC EngineData

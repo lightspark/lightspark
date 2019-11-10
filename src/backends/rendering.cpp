@@ -351,11 +351,11 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
 	//Viewport setup is left for GLResize	
 
-	//Get the maximum allowed texture size, up to 1024
+	//Get the maximum allowed texture size, up to 2048
 	int maxTexSize;
 	engineData->exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(&maxTexSize);
 	assert(maxTexSize>0);
-	largeTextureSize=min(maxTexSize,1024);
+	largeTextureSize=min(maxTexSize,2048);
 
 	//Create the PBOs
 	engineData->exec_glGenBuffers(2,engineData->pixelBuffers);
@@ -402,7 +402,7 @@ void RenderThread::commonGLResize()
 	//scaleY is negated to adapt the flash and gl coordinates system
 	//An additional translation is added for the same reason
 	lsglTranslatef(offsetX,windowHeight-offsetY,0);
-	lsglScalef(scaleX,-scaleY,1);
+	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
 }
 

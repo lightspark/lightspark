@@ -98,6 +98,7 @@ private:
 	number_t oldVolume;
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
+	number_t startTime;
 	bool restartafterabort;
 public:
 	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true);
@@ -106,15 +107,16 @@ public:
 	void play(number_t starttime=0);
 	void resume();
 	void markFinished(); // indicates that all sound data is available
+	void setStartTime(number_t starttime) { startTime = starttime; }
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	ASPROPERTY_GETTER(number_t,leftPeak);
-	ASPROPERTY_GETTER(number_t,position);
 	ASPROPERTY_GETTER(number_t,rightPeak);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(stop);
+	ASFUNCTION_ATOM(getPosition);
 
 	//IThreadJob interface
 	void execute();

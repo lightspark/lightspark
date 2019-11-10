@@ -335,7 +335,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
 		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false));
-		th->soundChannel->position=startTime;
+		th->soundChannel->setStartTime(startTime);
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 	}
@@ -348,7 +348,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
-		s->position = startTime;
+		s->setStartTime(startTime);
 		ret = asAtomHandler::fromObjectNoPrimitive(s);
 	}
 }
@@ -506,8 +506,8 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
 	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(NULL),audioStream(NULL),
-	format(_format),oldVolume(-1.0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
-	leftPeak(1),position(0),rightPeak(1)
+	format(_format),oldVolume(-1.0),startTime(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
 	if (autoplay)
@@ -530,7 +530,7 @@ void SoundChannel::play(number_t starttime)
 	{
 		threadAbort();
 		restartafterabort=true;
-		position=starttime;
+		startTime = starttime;
 	}
 	else
 	{
@@ -539,7 +539,7 @@ void SoundChannel::play(number_t starttime)
 		while (!ACQUIRE_READ(terminated))
 			compat_msleep(10);
 		restartafterabort=false;
-		position=starttime;
+		startTime = starttime;
 		if (!stream.isNull() && ACQUIRE_READ(stopped))
 		{
 			// Start playback
@@ -572,15 +572,14 @@ void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
 
 	REGISTER_GETTER(c,leftPeak);
-	REGISTER_GETTER(c,position);
 	REGISTER_GETTER(c,rightPeak);
 	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,leftPeak);
-ASFUNCTIONBODY_GETTER(SoundChannel,position);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,rightPeak);
 ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
 
@@ -614,7 +613,13 @@ ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 	SoundChannel* th=asAtomHandler::as<SoundChannel>(obj);
 	th->threadAbort();
 }
-
+ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
+{
+	if(!asAtomHandler::is<SoundChannel>(obj))
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
+	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime() : 0);
+}
 void SoundChannel::execute()
 {
 	playStream();
@@ -652,9 +657,9 @@ void SoundChannel::playStream()
 		}
 		else
 		{
-			streamDecoder->jumpToPosition(this->position);
+			streamDecoder->jumpToPosition(this->startTime);
 			if (audioStream)
-				audioStream->setPlayedTime(this->position);
+				audioStream->setPlayedTime(this->startTime);
 		}
 		while(!ACQUIRE_READ(stopped))
 		{
@@ -665,11 +670,8 @@ void SoundChannel::playStream()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,position);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime);
 
-			// TODO: check the position only when the getter is called
-			if(audioStream && !ACQUIRE_READ(stopped))
-				position=audioStream->getPlayedTime();
 			if(audioStream)
 			{
 				//TODO: use soundTransform->pan

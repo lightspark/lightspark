@@ -119,7 +119,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 	if (th->soundChannel)
 	{
 		asAtom o = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
-		SoundChannel::_getter_position(ret,sys,o,args,argslen);
+		SoundChannel::getPosition(ret,sys,o,args,argslen);
 	}
 	else
 		asAtomHandler::setInt(ret,sys,0);

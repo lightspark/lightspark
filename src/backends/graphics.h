@@ -222,7 +222,7 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
-	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform, float scalex, float scaley);
 	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform, float scalex, float scaley);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*

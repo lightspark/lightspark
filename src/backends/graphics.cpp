@@ -133,7 +133,7 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform* colortransform)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform* colortransform,float scalex,float scaley)
 {
 	cairo_pattern_t* pattern = NULL;
 
@@ -166,8 +166,11 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			}
 
 			MATRIX tmp=style.Matrix;
+			cairo_matrix_scale(&tmp,scalex,scaley);
 			tmp.x0/=scaleCorrection;
 			tmp.y0/=scaleCorrection;
+			tmp.x0*=scalex;
+			tmp.y0*=scaley;
 			// The dimensions of the pattern space are specified in SWF specs
 			// as a 32768x32768 box centered at (0,0)
 			if (style.FillStyleType == LINEAR_GRADIENT)
@@ -235,11 +238,14 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 
 			//Make a copy to invert it
 			cairo_matrix_t mat=style.Matrix;
+			cairo_matrix_scale(&mat,scalex,scaley);
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			(void)st; // silence warning about unused variable
 			mat.x0 /= scaleCorrection;
 			mat.y0 /= scaleCorrection;
+			mat.x0*=scalex;
+			mat.y0*=scaley;
 
 			cairo_pattern_set_matrix (pattern, &mat);
 			assert(cairo_pattern_status(pattern) == CAIRO_STATUS_SUCCESS);
@@ -346,7 +352,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 						style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,colortransform);
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,colortransform,scalex,scaley);
 					if(pattern)
 					{
 						cairo_set_source(cr, pattern);
@@ -372,7 +378,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 							style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 							cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-						cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,colortransform);
+						cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,colortransform,scalex,scaley);
 						if (pattern)
 						{
 							cairo_set_source(stroke_cr, pattern);

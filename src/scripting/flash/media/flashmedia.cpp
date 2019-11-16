@@ -611,14 +611,18 @@ ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 {
 	SoundChannel* th=asAtomHandler::as<SoundChannel>(obj);
+	if (th->audioStream)
+		th->startTime = th->audioStream->getPlayedTime();
 	th->threadAbort();
+	while (!ACQUIRE_READ(th->terminated))
+		compat_msleep(10);
 }
 ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 {
 	if(!asAtomHandler::is<SoundChannel>(obj))
 		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
 	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
-	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime() : 0);
+	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
 }
 void SoundChannel::execute()
 {

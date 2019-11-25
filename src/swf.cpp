@@ -209,7 +209,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),
 	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
-	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
+	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),currentflushstep(1),nextflushstep(0),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
 	static_SoundMixer_bufferTime(0),isinitialized(false)
 {
 	//Forge the builtin strings
@@ -1141,6 +1141,9 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 void SystemState::flushInvalidationQueue()
 {
 	SpinlockLocker l(invalidateQueueLock);
+	nextflushstep++;
+	if (nextflushstep==0)
+		nextflushstep++;
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
 	{
@@ -1150,7 +1153,7 @@ void SystemState::flushInvalidationQueue()
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
-				addJob(new AsyncDrawJob(d,cur));
+				addJob(new AsyncDrawJob(d,cur,nextflushstep));
 			cur->hasChanged=false;
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;

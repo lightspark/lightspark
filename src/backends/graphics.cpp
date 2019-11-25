@@ -998,12 +998,14 @@ void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yO
 	assert(false);
 }
 
-AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(NULL),uploadNeeded(false)
+AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o,int32_t flushstep):drawable(d),owner(o),surfaceBytes(NULL),uploadNeeded(false)
 {
+	o->flushstep = flushstep;
 }
 
 AsyncDrawJob::~AsyncDrawJob()
 {
+	owner->flushstep = 0;
 	delete drawable;
 	delete[] surfaceBytes;
 }
@@ -1034,6 +1036,7 @@ void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
 	assert(surfaceBytes);
 	memcpy(data, surfaceBytes, w*h*4);
+	owner->flushstep = 0;
 }
 
 void AsyncDrawJob::sizeNeeded(uint32_t& w, uint32_t& h) const

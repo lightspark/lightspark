@@ -4431,6 +4431,19 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
 	return InteractiveObject::deleteVariableByMultiname(name);
 }
 
+bool DisplayObjectContainer::checkFlushStep(int32_t fs) const
+{
+	Locker l(mutexDisplayList);
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+	{
+		if ((*it)->checkFlushStep(fs))
+			return true;
+	}
+	return DisplayObject::checkFlushStep(fs);
+}
+
+
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
  * frame top-down. At the same time, call their

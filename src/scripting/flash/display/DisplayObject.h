@@ -144,6 +144,7 @@ public:
 	bool hasChanged;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
+	ATOMIC_INT32(flushstep);
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */
@@ -220,6 +221,7 @@ public:
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();
+	virtual bool checkFlushStep(int32_t fs) const { return flushstep == fs; }
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_getVisible);

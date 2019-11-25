@@ -117,13 +117,13 @@ protected:
 	void LegacyChildEraseDeletionMarked();
 public:
 	void LegacyChildRemoveDeletionMark(int32_t depth);
-	void requestInvalidation(InvalidateQueue* q);
+	void requestInvalidation(InvalidateQueue* q) override;
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child);
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
-	bool destruct();
+	bool destruct() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -143,6 +143,7 @@ public:
 	void executeFrameScript() override;
 	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
+	bool checkFlushStep(int32_t fs) const override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

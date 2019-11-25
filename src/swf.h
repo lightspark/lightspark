@@ -448,7 +448,9 @@ public:
 	void registerTag(Tag* t);
 
 	//Invalidation queue management
-	void addToInvalidateQueue(_R<DisplayObject> d);
+	int32_t currentflushstep;
+	int32_t nextflushstep;
+	void addToInvalidateQueue(_R<DisplayObject> d) override;
 	void flushInvalidationQueue();
 
 	//Resize support

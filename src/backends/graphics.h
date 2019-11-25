@@ -160,7 +160,7 @@ public:
 	 * @param d IDrawable to be rendered asynchronously. The pointer is now
 	 * owned by this instance
 	 */
-	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o);
+	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o,int32_t flushstep);
 	~AsyncDrawJob();
 	//IThreadJob interface
 	void execute();

@@ -97,7 +97,7 @@ void DisplayObject::Render(RenderContext& ctxt, bool force)
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),flushstep(0),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -152,6 +152,7 @@ bool DisplayObject::destruct()
 	avm1variables.clear();
 	variablebindings.clear();
 	avm1functions.clear();
+	flushstep=0;
 	return EventDispatcher::destruct();
 }
 

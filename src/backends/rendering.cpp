@@ -245,9 +245,14 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	{
 		renderErrorPage(this, m_sys->standalone);
 	}
+	m_sys->currentflushstep = m_sys->nextflushstep;
 	if(!m_sys->isOnError())
 	{
-		coreRendering();
+		if (coreRendering())
+		{
+			renderNeeded=false;
+			return true;
+		}
 		//Call glFlush to offload work on the GPU
 		engineData->exec_glFlush();
 	}
@@ -255,7 +260,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
 	renderNeeded=false;
-	
+	m_sys->currentflushstep++;
+	if (m_sys->currentflushstep==0)
+		m_sys->currentflushstep++;
 	return true;
 }
 void RenderThread::deinit()
@@ -526,7 +533,7 @@ void RenderThread::plotProfilingData()
 
 }
 
-void RenderThread::coreRendering()
+bool RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
@@ -540,12 +547,13 @@ void RenderThread::coreRendering()
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	m_sys->stage->Render(*this);
+	bool ret = m_sys->stage->Render(*this);
 
 	if(m_sys->showProfilingData)
 		plotProfilingData();
 
 	handleGLErrors();
+	return ret;
 }
 
 //Renders the error message which caused the VM to stop.

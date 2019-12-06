@@ -115,13 +115,13 @@ protected:
 	number_t computeHeight();
 	bool skipRender() const;
 
-	void defaultRender(RenderContext& ctxt) const;
+	bool defaultRender(RenderContext& ctxt) const;
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
 	bool boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	virtual void renderImpl(RenderContext& ctxt) const
+	virtual bool renderImpl(RenderContext& ctxt) const
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
@@ -193,7 +193,7 @@ public:
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	virtual uint32_t getTagID() const { return 0;}
 	
-	void Render(RenderContext& ctxt,bool force=false);
+	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force = false);
@@ -221,7 +221,6 @@ public:
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();
-	virtual bool checkFlushStep(int32_t fs) const { return flushstep == fs; }
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_getVisible);

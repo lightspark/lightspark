@@ -957,8 +957,9 @@ void Sprite::requestInvalidation(InvalidateQueue* q)
 	TokenContainer::requestInvalidation(q);
 }
 
-void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
+bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 {
+	bool renderingfailed = false;
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
@@ -967,8 +968,13 @@ void DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 		//Skip the drawing of masks
 		if((*it)->isMask() || (*it)->ClipDepth)
 			continue;
-		(*it)->Render(ctxt);
+		if ((*it)->Render(ctxt))
+		{
+			renderingfailed=true;
+			break;
+		}
 	}
+	return renderingfailed;
 }
 
 void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
@@ -989,12 +995,13 @@ void DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 }
 
 
-void Sprite::renderImpl(RenderContext& ctxt) const
+bool Sprite::renderImpl(RenderContext& ctxt) const
 {
 	//Draw the dynamically added graphics, if any
-	defaultRender(ctxt);
+	bool ret = defaultRender(ctxt);
 
-	DisplayObjectContainer::renderImpl(ctxt);
+	return DisplayObjectContainer::renderImpl(ctxt);
+	return ret || (this->flushstep == getSystemState()->currentflushstep);
 }
 
 /*
@@ -3056,7 +3063,7 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 	}
 }
 
-void Stage::renderImpl(RenderContext &ctxt) const
+bool Stage::renderImpl(RenderContext &ctxt) const
 {
 	bool has3d = false;
 	for (uint32_t i = 0; i < stage3Ds->size(); i++)
@@ -3074,7 +3081,7 @@ void Stage::renderImpl(RenderContext &ctxt) const
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
-	DisplayObjectContainer::renderImpl(ctxt);
+	return DisplayObjectContainer::renderImpl(ctxt);
 }
 
 void Stage::buildTraits(ASObject* o)
@@ -4430,19 +4437,6 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
 	}
 	return InteractiveObject::deleteVariableByMultiname(name);
 }
-
-bool DisplayObjectContainer::checkFlushStep(int32_t fs) const
-{
-	Locker l(mutexDisplayList);
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
-	{
-		if ((*it)->checkFlushStep(fs))
-			return true;
-	}
-	return DisplayObject::checkFlushStep(fs);
-}
-
 
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current

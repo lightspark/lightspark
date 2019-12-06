@@ -92,7 +92,7 @@ public:
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
-	void renderImpl(RenderContext& ctxt) const;
+	bool renderImpl(RenderContext& ctxt) const override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
 	void requestInvalidation(InvalidateQueue* q);
@@ -262,8 +262,8 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(RenderContext& ctxt) const
-		{ TokenContainer::renderImpl(ctxt); }
+	bool renderImpl(RenderContext& ctxt) const override
+		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:

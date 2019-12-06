@@ -86,8 +86,9 @@ private:
 	ITextureUploadable* getUploadJob();
 	/*
 		Common code to handle the core of the rendering
+		returns true if at least one of the displayobjects on the stage couldn't be rendered becaus of an AsyncDrawJob not done yet
 	*/
-	void coreRendering();
+	bool coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
 	Mutex mutexRendering;

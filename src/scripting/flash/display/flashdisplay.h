@@ -111,7 +111,7 @@ protected:
 	void setOnStage(bool staged, bool force = false);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(RenderContext& ctxt) const;
+	bool renderImpl(RenderContext& ctxt) const override;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
@@ -143,7 +143,6 @@ public:
 	void executeFrameScript() override;
 	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
-	bool checkFlushStep(int32_t fs) const override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -231,8 +230,8 @@ protected:
 	_NR<Graphics> graphics;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(RenderContext& ctxt) const
-		{ TokenContainer::renderImpl(ctxt); }
+	bool renderImpl(RenderContext& ctxt) const override
+		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 		{
 			if (interactiveObjectsOnly)
@@ -260,8 +259,8 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
-	void renderImpl(RenderContext& ctxt) const
-		{ TokenContainer::renderImpl(ctxt); }
+	bool renderImpl(RenderContext& ctxt) const override
+		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 		{
 			if (interactiveObjectsOnly)
@@ -424,7 +423,7 @@ private:
 	_NR<SoundChannel> sound;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void renderImpl(RenderContext& ctxt) const;
+	bool renderImpl(RenderContext& ctxt) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 	void resetToStart();
 	void checkSound();// start sound streaming if it is not already playing
@@ -660,7 +659,7 @@ private:
 	vector<_R<DisplayObject>> avm1EventListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
-	void renderImpl(RenderContext& ctxt) const;
+	bool renderImpl(RenderContext& ctxt) const override;
 public:
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
@@ -855,8 +854,8 @@ private:
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
 protected:
-	void renderImpl(RenderContext& ctxt) const
-		{ TokenContainer::renderImpl(ctxt); }
+	bool renderImpl(RenderContext& ctxt) const override
+		{ return TokenContainer::renderImpl(ctxt); }
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);

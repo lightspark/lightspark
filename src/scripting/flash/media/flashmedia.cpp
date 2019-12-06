@@ -98,18 +98,18 @@ Video::~Video()
 {
 }
 
-void Video::renderImpl(RenderContext& ctxt) const
+bool Video::renderImpl(RenderContext& ctxt) const
 {
 	Mutex::Lock l(mutex);
 	if(skipRender())
-		return;
+		return false;
 
 	//Video is especially optimized for GL rendering
 	//It needs special treatment for SOFTWARE contextes
 	if(ctxt.contextType != RenderContext::GL)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "Video::renderImpl on SOFTWARE context is not yet supported");
-		return;
+		return false;
 	}
 
 	if(!netStream.isNull() && netStream->lockIfReady())
@@ -131,7 +131,9 @@ void Video::renderImpl(RenderContext& ctxt) const
 			clippedAlpha(), RenderContext::YUV_MODE);
 		
 		netStream->unlock();
+		return true;
 	}
+	return false;
 }
 
 bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

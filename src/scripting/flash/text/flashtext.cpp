@@ -1292,13 +1292,15 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	computeMasksAndMatrix(target, masks, totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+	if (text.empty())
+		return nullptr;
 	if(width==0 || height==0)
-		return NULL;
+		return nullptr;
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->text);
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks,smoothing);
-	if (res != NULL)
+	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
 		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).
@@ -1310,9 +1312,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				getConcatenatedAlpha(), masks,smoothing,caretIndex);
 }
 
-void TextField::renderImpl(RenderContext& ctxt) const
+bool TextField::renderImpl(RenderContext& ctxt) const
 {
-	defaultRender(ctxt);
+	if (text.empty() && !this->border && !this->background)
+		return false;
+	return defaultRender(ctxt);
 }
 
 void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,

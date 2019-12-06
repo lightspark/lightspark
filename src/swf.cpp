@@ -1141,10 +1141,13 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 void SystemState::flushInvalidationQueue()
 {
 	SpinlockLocker l(invalidateQueueLock);
-	nextflushstep++;
-	if (nextflushstep==0)
-		nextflushstep++;
 	_NR<DisplayObject> cur=invalidateQueueHead;
+	if (!cur.isNull())
+	{
+		nextflushstep++;
+		if (nextflushstep==0)
+			nextflushstep++;
+	}
 	while(!cur.isNull())
 	{
 		if(cur->isOnStage() && cur->hasChanged)

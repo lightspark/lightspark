@@ -211,7 +211,7 @@ private:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void requestInvalidation(InvalidateQueue* q);
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
-	void renderImpl(RenderContext& ctxt) const;
+	bool renderImpl(RenderContext& ctxt) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
 public:
 	TextLine(Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);

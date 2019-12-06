@@ -38,9 +38,9 @@ TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m, const token
 	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
 }
 
-void TokenContainer::renderImpl(RenderContext& ctxt) const
+bool TokenContainer::renderImpl(RenderContext& ctxt) const
 {
-	owner->defaultRender(ctxt);
+	return owner->defaultRender(ctxt);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

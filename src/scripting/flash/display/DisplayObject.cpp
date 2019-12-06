@@ -88,11 +88,11 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
-void DisplayObject::Render(RenderContext& ctxt, bool force)
+bool DisplayObject::Render(RenderContext& ctxt, bool force)
 {
 	if(!isConstructed() || (!force && !visible) || clippedAlpha()==0.0 || ClipDepth)
-		return;
-	renderImpl(ctxt);
+		return false;
+	return renderImpl(ctxt);
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
@@ -456,15 +456,15 @@ bool DisplayObject::skipRender() const
 	return visible==false || clippedAlpha()==0.0 || ClipDepth;
 }
 
-void DisplayObject::defaultRender(RenderContext& ctxt) const
+bool DisplayObject::defaultRender(RenderContext& ctxt) const
 {
 	// TODO: use scrollRect
 
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
-	if(!surface.tex.isValid())
-		return;
+	if(!surface.tex.isValid() || flushstep == getSystemState()->currentflushstep)
+		return flushstep == getSystemState()->currentflushstep;
 
 	AS_BLENDMODE bl = this->blendMode;
 	if (bl == BLENDMODE_NORMAL)
@@ -482,6 +482,7 @@ void DisplayObject::defaultRender(RenderContext& ctxt) const
 	ctxt.renderTextured(surface.tex, surface.xOffset, surface.yOffset,
 			surface.tex.width, surface.tex.height,
 			surface.alpha, RenderContext::RGB_MODE);
+	return false;
 }
 
 void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,

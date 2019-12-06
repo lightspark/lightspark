@@ -1829,7 +1829,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 	}
 	return false;
 }
-void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
+void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	if (!this->isOnStage())
 		return;
@@ -3291,7 +3291,7 @@ void Stage::executeFrameScript()
 	hiddenobjects.clear();
 }
 
-void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
+void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 {
 	if (e->is<KeyboardEvent>())
 	{
@@ -3319,7 +3319,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e)
 	}
 	else 
 	{
-		vector<_R<DisplayObject>> tmplisteners = avm1EventListeners;
+		vector<_R<ASObject>> tmplisteners = avm1EventListeners;
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
@@ -3374,7 +3374,7 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 		}
 	}
 }
-void Stage::AVM1AddEventListener(DisplayObject *o)
+void Stage::AVM1AddEventListener(ASObject *o)
 {
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
@@ -3384,7 +3384,7 @@ void Stage::AVM1AddEventListener(DisplayObject *o)
 	o->incRef();
 	avm1EventListeners.push_back(_MR(o));
 }
-void Stage::AVM1RemoveEventListener(DisplayObject *o)
+void Stage::AVM1RemoveEventListener(ASObject *o)
 {
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{

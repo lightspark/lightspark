@@ -89,6 +89,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/avm1/avm1xml.h"
 
 using namespace lightspark;
 

@@ -278,6 +278,7 @@ class SoundTransform;
 class KeyboardEvent;
 class EventDispatcher;
 class MouseEvent;
+class Event;
 
 #define FREELIST_SIZE 16
 struct asfreelist
@@ -1239,6 +1240,7 @@ public:
 	void checkFunctionScope(ASObject *o);
 	
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
+	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) { }
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
 	bool AVM1HandleMouseEventStandard(ASObject *dispobj, MouseEvent *e);

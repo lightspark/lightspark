@@ -83,7 +83,7 @@ public:
 	ASFUNCTION_ATOM(loadClip);
 	ASFUNCTION_ATOM(addListener);
 	ASFUNCTION_ATOM(removeListener);
-	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
+	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 	bool destruct() override;
 };
 

@@ -175,7 +175,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 
 	th->listeners.erase(_MR(o));
 }
-void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e)
+void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	if (dispatcher == this->getContentLoaderInfo().getPtr())
 	{

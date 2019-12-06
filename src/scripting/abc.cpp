@@ -141,6 +141,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/avm1/avm1xml.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
@@ -289,6 +290,8 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
+	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
+	builtinavm1->registerBuiltin("XMLNode","",Class<XMLNode>::getRef(m_sys));
 
 	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
 	{
@@ -356,8 +359,11 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("URIError","",Class<URIError>::getRef(m_sys));
 	builtin->registerBuiltin("UninitializedError","",Class<UninitializedError>::getRef(m_sys));
 	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef(m_sys));
-	builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
-	builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
+	if (m_sys->mainClip->usesActionScript3)
+	{
+		builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
+		builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
+	}
 	builtin->registerBuiltin("int","",Class<Integer>::getRef(m_sys));
 
 	builtin->registerBuiltin("eval","",_MR(Class<IFunction>::getFunction(m_sys,eval)));
@@ -1538,7 +1544,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	bool doTarget = true;
 
 	//capture phase
-	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
+	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(event->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		//We fetch the relatedObject in the case of rollOver/Out
@@ -1648,7 +1654,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	else
 		dispatcher->getSystemState()->stage->setFocusTarget(NullRef);
 	
-	dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event);
+	dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
 	
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)

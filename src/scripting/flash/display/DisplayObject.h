@@ -186,7 +186,6 @@ public:
 	virtual void afterHandleEvent();
 	
 	virtual void UpdateVariableBinding(asAtom v) {}
-	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) { }
 	
 	tiny_string AVM1GetPath();
 	virtual void afterLegacyInsert() {}

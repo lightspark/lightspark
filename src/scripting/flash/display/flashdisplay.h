@@ -618,7 +618,7 @@ public:
 
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
-	void AVM1HandleEvent(EventDispatcher* dispatcher, _R<Event> e) override;
+	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 	
 	void AVM1gotoFrameLabel(const tiny_string &label);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
@@ -656,7 +656,7 @@ private:
 	list<_R<DisplayObject>> hiddenobjects;
 	vector<_R<ASObject>> avm1KeyboardListeners;
 	vector<_R<ASObject>> avm1MouseListeners;
-	vector<_R<DisplayObject>> avm1EventListeners;
+	vector<_R<ASObject>> avm1EventListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName);
 	bool renderImpl(RenderContext& ctxt) const override;
@@ -706,13 +706,13 @@ public:
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 	
-	void AVM1HandleEvent(EventDispatcher *dispatcher, _R<Event> e);
+	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e);
 	void AVM1AddKeyboardListener(ASObject* o);
 	void AVM1RemoveKeyboardListener(ASObject *o);
 	void AVM1AddMouseListener(ASObject *o);
 	void AVM1RemoveMouseListener(ASObject* o);
-	void AVM1AddEventListener(DisplayObject *o);
-	void AVM1RemoveEventListener(DisplayObject *o);
+	void AVM1AddEventListener(ASObject *o);
+	void AVM1RemoveEventListener(ASObject *o);
 };
 
 class StageScaleMode: public ASObject

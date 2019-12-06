@@ -392,4 +392,5 @@ REGISTER_CLASS_NAME2(AVM1SimpleButton,"SimpleButton","")
 REGISTER_CLASS_NAME2(AVM1Stage,"Stage","")
 REGISTER_CLASS_NAME2(AVM1SharedObject,"SharedObject","")
 REGISTER_CLASS_NAME2(AVM1TextField,"TextField","")
+REGISTER_CLASS_NAME2(AVM1XMLDocument,"XML","")
 

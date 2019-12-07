@@ -1934,6 +1934,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2103,6 +2104,20 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
 	ret=asAtomHandler::fromObject(toAdd);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	int32_t depth;
+	ARG_UNPACK_ATOM(depth);
+	if (th->hasLegacyChildAt(depth))
+	{
+		DisplayObject* o = th->getLegacyChildAt(depth);
+		o->incRef();
+		ret = asAtomHandler::fromObjectNoPrimitive(o);
+	}
+	else
+		ret = asAtomHandler::undefinedAtom;
 }
 void DisplayObjectContainer::sinit(Class_base* c)
 {
@@ -3089,7 +3104,7 @@ void Stage::buildTraits(ASObject* o)
 }
 
 Stage::Stage(Class_base* c):
-	DisplayObjectContainer(c), colorCorrection("default"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
+	DisplayObjectContainer(c), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	subtype = SUBTYPE_STAGE;
 	onStage = true;

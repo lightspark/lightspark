@@ -636,6 +636,7 @@ public:
 	ASFUNCTION_ATOM(AVM1EndFill);
 	ASFUNCTION_ATOM(AVM1GetNextHighestDepth);
 	ASFUNCTION_ATOM(AVM1AttachBitmap);
+	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
 };
 
 class Stage: public DisplayObjectContainer

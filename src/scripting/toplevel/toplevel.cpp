@@ -211,7 +211,10 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 			newArgs[i]=val;
 		}
 	}
-	asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
+	if (asAtomHandler::is<AVM1Function>(obj))
+		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
+	else
+		asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
 	if (newArgs)
 		delete[] newArgs;
 }
@@ -253,7 +256,10 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 			newArgs[i]=args[i+1];
 		}
 	}
-	asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
+	if (asAtomHandler::is<AVM1Function>(obj))
+		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
+	else
+		asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,_toString)
@@ -673,7 +679,7 @@ void SyntheticFunction::checkParamTypes()
 
 bool SyntheticFunction::canSkipCoercion(int param, Class_base *cls)
 {
-	assert(mi->returnType && param < mi->numArgs());
+	assert(mi->returnType && param < (int)mi->numArgs());
 	
 	return mi->paramTypes[param] == cls ||(
 		(cls == Class<Number>::getRef(getSystemState()).getPtr() ||

@@ -1687,6 +1687,8 @@ void ParseThread::parseBitmap()
 		SpinlockLocker l(objectSpinlock);
 		parsedObject=tmp;
 	}
+	if (li.getPtr())
+		li->setComplete();
 }
 
 _NR<DisplayObject> ParseThread::getParsedObject()

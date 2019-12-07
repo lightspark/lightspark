@@ -194,25 +194,42 @@ ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2 && asAtomHandler::isFunction(args[0]));
+	assert_and_throw(argslen >= 2);
 
+	uint32_t paramstart = 2;
+	asAtom func = args[0];
+	uint32_t delayarg = 1;
+	if (!asAtomHandler::isFunction(args[0]) && !sys->mainClip->usesActionScript3) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
+	{
+		assert_and_throw(argslen >= 3);
+		
+		paramstart = 3;
+		delayarg = 2;
+		ASObject* o = asAtomHandler::toObject(args[0],sys);
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id=sys->getUniqueStringId("onLoadInit");
+		o->getVariableByMultiname(func,m);
+		assert_and_throw (asAtomHandler::isFunction(func));
+	}
 	//Build arguments array
-	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
+	asAtom* callbackArgs = g_newa(asAtom,argslen-paramstart);
 	uint32_t i;
 	for(i=0; i<argslen-2; i++)
 	{
-		callbackArgs[i] = args[i+2];
+		callbackArgs[i] = args[i+paramstart];
 		//incRef all passed arguments
-		ASATOM_INCREF(args[i+2]);
+		ASATOM_INCREF(args[i+paramstart]);
 	}
 
-	asAtom o = asAtomHandler::getClosureAtom(args[0]);
+	asAtom o = asAtomHandler::getClosureAtom(func);
 
 	//incRef the function
-	ASATOM_INCREF(args[0]);
+	ASATOM_INCREF(func);
 	//Add interval through manager
-	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2,
-			o, asAtomHandler::toInt(args[1]));
+	uint32_t id = sys->intervalManager->setInterval(func, callbackArgs, argslen-paramstart,
+			o, asAtomHandler::toInt(args[delayarg]));
 	asAtomHandler::setInt(ret,sys,(int32_t)id);
 }
 

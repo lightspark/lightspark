@@ -91,12 +91,12 @@ public:
 	enum GRID_FIT_TYPE { GF_NONE, GF_PIXEL, GF_SUBPIXEL };
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool renderImpl(RenderContext& ctxt) const override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
-	void requestInvalidation(InvalidateQueue* q);
-	void defaultEventBehavior(_R<Event> e);
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing) override;
+	void requestInvalidation(InvalidateQueue* q) override;
+	void defaultEventBehavior(_R<Event> e) override;
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
 	void updateSizes();
@@ -122,19 +122,19 @@ protected:
 	void afterSetLegacyMatrix() override;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="");
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
-	void UpdateVariableBinding(asAtom v);
-	void afterLegacyInsert();
-	void afterLegacyDelete(DisplayObjectContainer* par);
-	void lostFocus();
-	void gotFocus();
-	void textInputChanged(const tiny_string& newtext);
-	void tick();
-	void tickFence() {}
+	void UpdateVariableBinding(asAtom v) override;
+	void afterLegacyInsert() override;
+	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void lostFocus() override;
+	void gotFocus() override;
+	void textInputChanged(const tiny_string& newtext) override;
+	void tick() override;
+	void tickFence() override {}
 	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
@@ -260,19 +260,19 @@ class StaticText: public DisplayObject, public TokenContainer
 private:
 	ASFUNCTION_ATOM(_getText);
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override
 		{ return TokenContainer::hitTestImpl(last, x, y, type); }
 public:
 	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory) {}
 	StaticText(Class_base* c, const tokensVector& tokens):
 		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f) {}
 	static void sinit(Class_base* c);
-	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
 

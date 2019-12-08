@@ -102,24 +102,24 @@ public:
 			delete[] mPixels;
 	}
 
-	void stopMainDownload();
-	bool isSizable() const { return false; }
-	uint32_t getWindowForGnash();
+	void stopMainDownload() override;
+	bool isSizable() const override { return false; }
+	uint32_t getWindowForGnash() override;
 	/* must be called within mainLoopThread */
-	SDL_Window* createWidget(uint32_t w,uint32_t h);
+	SDL_Window* createWidget(uint32_t w,uint32_t h) override;
 	void setDisplayState(const tiny_string& displaystate) override;
 	
 	/* must be called within mainLoopThread */
-	void grabFocus();
-	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
-	bool getScreenData(SDL_DisplayMode* screen);
-	double getScreenDPI();
+	void grabFocus() override;
+	void openPageInBrowser(const tiny_string& url, const tiny_string& window) override;
+	bool getScreenData(SDL_DisplayMode* screen) override;
+	double getScreenDPI() override;
 	static void forceRedraw(SystemState* sys);
-	void DoSwapBuffers();
-	void InitOpenGL();
-	void DeinitOpenGL();
+	void DoSwapBuffers() override;
+	void InitOpenGL() override;
+	void DeinitOpenGL() override;
 	void draw(void *event, uint32_t evx, uint32_t evy, uint32_t evwidth, uint32_t evheight);
-	void runInMainThread(SystemState *sys, void (*func)(SystemState *));
+	void runInMainThread(SystemState *sys, void (*func)(SystemState *)) override;
 	static void pluginCallHandler(void* d)
 	{
 		mainloop_from_plugin((SystemState*)d);

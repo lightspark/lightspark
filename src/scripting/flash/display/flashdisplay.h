@@ -108,9 +108,9 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setOnStage(bool staged, bool force = false);
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	void setOnStage(bool staged, bool force = false) override;
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
@@ -191,15 +191,15 @@ private:
 	bool enabled;
 	bool useHandCursor;
 	void reflectState();
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
-	void defaultEventBehavior(_R<Event> e);
+	void defaultEventBehavior(_R<Event> e) override;
 public:
 	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
-	void finalize();
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing);
-	void requestInvalidation(InvalidateQueue* q);
+	void finalize() override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	void requestInvalidation(InvalidateQueue* q) override;
 	uint32_t getTagID() const override;
 
 	static void sinit(Class_base* c);
@@ -218,21 +218,21 @@ public:
 	ASFUNCTION_ATOM(_getUseHandCursor);
 	ASFUNCTION_ATOM(_setUseHandCursor);
 
-	void afterLegacyInsert();
-	void afterLegacyDelete(DisplayObjectContainer* par);
-	bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
-	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e);
+	void afterLegacyInsert() override;
+	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 };
 
 class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override
 		{
 			if (interactiveObjectsOnly)
 				this->incRef();
@@ -241,13 +241,13 @@ protected:
 public:
 	Shape(Class_base* c);
 	Shape(Class_base* c, const tokensVector& tokens, float scaling);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
-	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
 
@@ -257,11 +257,11 @@ class MorphShape: public DisplayObject, public TokenContainer
 private:
 	DefineMorphShapeTag* morphshapetag;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override
 		{
 			if (interactiveObjectsOnly)
 				this->incRef();
@@ -272,10 +272,10 @@ public:
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
-	void checkRatio(uint32_t ratio);
+	void checkRatio(uint32_t ratio) override;
 };
 
 class Loader;
@@ -422,10 +422,10 @@ private:
 	_NR<Sprite> hitTarget;
 	_NR<SoundChannel> sound;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
-	void resetToStart();
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	void resetToStart() override;
 	void checkSound();// start sound streaming if it is not already playing
 	void markSoundFinished();
 public:
@@ -433,7 +433,7 @@ public:
 	Sprite(Class_base* c);
 	void setSound(SoundChannel* s);
 	void appendSound(unsigned char* buf, int len);
-	bool destruct();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -449,9 +449,9 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
-	void requestInvalidation(InvalidateQueue* q);
+	void requestInvalidation(InvalidateQueue* q) override;
 	_NR<Graphics> getGraphics();
 };
 
@@ -570,13 +570,13 @@ protected:
 	uint32_t totalFrames_unreliable;
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
-	void constructionComplete();
-	void afterConstruction();
+	void constructionComplete() override;
+	void afterConstruction() override;
 	RunState state;
 	Frame* getCurrentFrame();
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
-	bool destruct();
+	bool destruct() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -613,7 +613,7 @@ public:
 	void afterLegacyDelete(DisplayObjectContainer* par) override;
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
-	uint32_t getTagID() const { return fromDefineSpriteTag; }
+	uint32_t getTagID() const override { return fromDefineSpriteTag; }
 	void setupActions(const CLIPACTIONS& clipactions);
 
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
@@ -659,23 +659,23 @@ private:
 	vector<_R<ASObject>> avm1MouseListeners;
 	vector<_R<ASObject>> avm1EventListeners;
 protected:
-	virtual void eventListenerAdded(const tiny_string& eventName);
+	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
 	void onDisplayState(const tiny_string&);
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
-	void setOnStage(bool staged, bool force = false) { assert(false); /* we are the stage */}
-	_NR<RootMovieClip> getRoot();
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	void setOnStage(bool staged, bool force = false) override { assert(false); /* we are the stage */}
+	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(Class_base* c);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	_NR<Stage> getStage();
+	_NR<Stage> getStage() override;
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
 	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
-	void initFrame();
-	void executeFrameScript();
+	void initFrame() override;
+	void executeFrameScript() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);
@@ -707,7 +707,7 @@ public:
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 	
-	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e);
+	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
 	void AVM1AddKeyboardListener(ASObject* o);
 	void AVM1RemoveKeyboardListener(ASObject *o);
 	void AVM1AddMouseListener(ASObject *o);
@@ -866,14 +866,14 @@ public:
 	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(Class_base* c, _R<BitmapData> data);
 	~Bitmap();
-	bool destruct();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
-	void requestInvalidation(InvalidateQueue* q) { TokenContainer::requestInvalidation(q); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
 

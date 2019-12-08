@@ -307,8 +307,8 @@ public:
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const DLL_PUBLIC;
 	void setShutdownFlag() DLL_PUBLIC;
-	void tick();
-	void tickFence();
+	void tick() override;
+	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;

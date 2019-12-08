@@ -136,7 +136,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240);
-	void finalize();
+	void finalize() override;
 	~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -150,8 +150,8 @@ public:
 	ASFUNCTION_ATOM(attachNetStream);
 	ASFUNCTION_ATOM(clear);
 	bool renderImpl(RenderContext& ctxt) const override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly);
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 };
 
 class SoundMixer : public ASObject

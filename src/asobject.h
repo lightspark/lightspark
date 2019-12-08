@@ -565,7 +565,7 @@ public:
 #define ASATOM_INCREF(a) if (asAtomHandler::isObject(a)) asAtomHandler::getObjectNoCheck(a)->incRef()
 #define ASATOM_INCREF_POINTER(a) if (asAtomHandler::isObject(*a)) asAtomHandler::getObjectNoCheck(*a)->incRef()
 #define ASATOM_DECREF(a) do { ASObject* obj_b = asAtomHandler::getObject(a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); } while (0)
-#define ASATOM_DECREF_POINTER(a) { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); } while (0)
+#define ASATOM_DECREF_POINTER(a) do { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); } while (0)
 struct variable
 {
 	asAtom var;

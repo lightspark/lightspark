@@ -87,6 +87,7 @@
 #include "scripting/avm1/avm1key.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1xml.h"

@@ -74,6 +74,7 @@ public:
 	int sampleRate;
 	int channels;
 };
+class NetStream;
 
 class Decoder
 {
@@ -376,6 +377,7 @@ protected:
 class FFMpegStreamDecoder: public StreamDecoder
 {
 private:
+	NetStream* netstream;
 	bool audioFound;
 	bool videoFound;
 	std::istream& stream;
@@ -396,7 +398,7 @@ private:
 #endif
 	int availablestreamlength;
 public:
-	FFMpegStreamDecoder(EngineData* eng,std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
+	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
 	~FFMpegStreamDecoder();
 	void jumpToPosition(number_t position) override;
 	bool decodeNextFrame() override;

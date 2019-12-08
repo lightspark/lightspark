@@ -42,6 +42,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1text.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/audio.h"
@@ -1991,11 +1992,15 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c)
 		classRet=c;
 	else if(bindedTo)
 		classRet=bindedTo;
+	else if (!loadedFrom->usesActionScript3)
+		classRet=Class<AVM1Video>::getClass(loadedFrom->getSystemState());
 	else
 		classRet=Class<Video>::getClass(loadedFrom->getSystemState());
 
-	Video* ret=new (classRet->memoryAccount) Video(classRet, Width, Height);
-	return ret;
+	if (!loadedFrom->usesActionScript3)
+		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height);
+	else
+		return new (classRet->memoryAccount) Video(classRet, Width, Height);
 }
 
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovieClip* root):DictionaryTag(h,root)

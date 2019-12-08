@@ -328,6 +328,7 @@ private:
 	enum DATAGENERATION_EXPECT_TYPE { DATAGENERATION_HEADER=0,DATAGENERATION_PREVTAG,DATAGENERATION_FLVTAG };
 	DATAGENERATION_EXPECT_TYPE datagenerationexpecttype;
 	_NR<ByteArray> datagenerationbuffer;
+	StreamDecoder* streamDecoder;
 public:
 	NetStream(Class_base* c);
 	~NetStream();

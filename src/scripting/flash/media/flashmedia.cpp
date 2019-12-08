@@ -131,9 +131,9 @@ bool Video::renderImpl(RenderContext& ctxt) const
 			clippedAlpha(), RenderContext::YUV_MODE);
 		
 		netStream->unlock();
-		return true;
+		return false;
 	}
-	return false;
+	return true;
 }
 
 bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -654,7 +654,7 @@ void SoundChannel::playStream()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(this->getSystemState()->getEngineData(),s,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
+		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 		{
 			LOG(LOG_ERROR,"invalid streamDecoder");

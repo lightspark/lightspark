@@ -1179,9 +1179,10 @@ void NetStreamAppendBytesAction::sinit(Class_base* c)
 
 
 NetStream::NetStream(Class_base* c):EventDispatcher(c),tickStarted(false),paused(false),closed(true),
-	streamTime(0),frameRate(0),connection(),downloader(NULL),videoDecoder(NULL),
-	audioDecoder(NULL),audioStream(NULL),datagenerationfile(NULL),datagenerationthreadstarted(false),client(NullRef),
+	streamTime(0),frameRate(0),connection(),downloader(nullptr),videoDecoder(nullptr),
+	audioDecoder(nullptr),audioStream(nullptr),datagenerationfile(nullptr),datagenerationthreadstarted(false),client(NullRef),
 	oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),framesdecoded(0),playbackBytesPerSecond(0),maxBytesPerSecond(0),datagenerationexpecttype(DATAGENERATION_HEADER),datagenerationbuffer(Class<ByteArray>::getInstanceS(c->getSystemState())),
+	streamDecoder(nullptr),
 	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
 	maxPauseBufferTime(0)
 {
@@ -1194,6 +1195,9 @@ void NetStream::finalize()
 	EventDispatcher::finalize();
 	connection.reset();
 	client.reset();
+	if (streamDecoder)
+		delete streamDecoder;
+	streamDecoder=nullptr;
 }
 
 NetStream::~NetStream()
@@ -1239,6 +1243,8 @@ void NetStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,useHardwareDecoder);
 	c->setDeclaredMethodByQName("info","",Class<IFunction>::getFunction(c->getSystemState(),_getInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("publish","",Class<IFunction>::getFunction(c->getSystemState(),publish),NORMAL_METHOD,true);
+	if (!c->getSystemState()->mainClip->usesActionScript3)
+		c->setDeclaredMethodByQName("setBufferTime","",Class<IFunction>::getFunction(c->getSystemState(),_setter_bufferTime),NORMAL_METHOD,true);
 }
 
 void NetStream::buildTraits(ASObject* o)
@@ -1519,10 +1525,28 @@ ASFUNCTIONBODY_ATOM(NetStream,play2)
 }
 ASFUNCTIONBODY_ATOM(NetStream,seek)
 {
-	//NetStream* th=asAtomHandler::as<NetStream>(obj);
+	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	int pos;
 	ARG_UNPACK_ATOM(pos);
-	LOG(LOG_NOT_IMPLEMENTED,"NetStream.seek is not implemented yet:"<<pos);
+	
+	th->countermutex.lock();
+	if (th->streamDecoder)
+	{
+		th->streamDecoder->jumpToPosition(pos*1000);
+		th->streamTime=pos;
+	}
+	th->countermutex.unlock();
+	if(th->paused)
+	{
+		th->paused = false;
+		{
+			Mutex::Lock l(th->mutex);
+			if(th->audioStream)
+				th->audioStream->resume();
+		}
+		th->incRef();
+		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetStream.Unpause.Notify")));
+	}
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,attach)
@@ -1804,8 +1828,10 @@ void NetStream::execute()
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		rawAccessAllowed = true;
 
-	std::streambuf *sbuf = NULL;
-	StreamDecoder* streamDecoder=NULL;
+	std::streambuf *sbuf = nullptr;
+	if (streamDecoder)
+		delete streamDecoder;
+	streamDecoder=nullptr;
 
 	if (datagenerationfile)
 	{
@@ -1820,7 +1846,7 @@ void NetStream::execute()
 			this->incRef();
 			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(getSystemState())));
 			getSystemState()->downloadManager->destroy(downloader);
-			downloader = NULL;
+			downloader = nullptr;
 			return;
 		}
 		
@@ -1849,7 +1875,7 @@ void NetStream::execute()
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
 			{
 				s.seekg(0);
-				streamDecoder=new FFMpegStreamDecoder(this->getSystemState()->getEngineData(),s);
+				streamDecoder=new FFMpegStreamDecoder(this,this->getSystemState()->getEngineData(),s);
 			}
 			if(!streamDecoder->isValid())
 				threadAbort();
@@ -1931,6 +1957,7 @@ void NetStream::execute()
 			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				tickStarted=true;
+				paused=false;
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),
 								  _MR(Class<NetStatusEvent>::getInstanceS(getSystemState(),"status", "NetStream.Buffer.Full")));
@@ -2004,7 +2031,10 @@ void NetStream::execute()
 		audioStream=NULL;
 	}
 	if (streamDecoder)
+	{
 		delete streamDecoder;
+		streamDecoder = nullptr;
+	}
 	if (sbuf)
 		delete sbuf;
 }

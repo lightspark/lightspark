@@ -26,6 +26,8 @@
 #include "swf.h"
 #include "backends/rendering.h"
 #include "SDL2/SDL_mixer.h"
+#include "scripting/class.h"
+#include "scripting/flash/net/flashnet.h"
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
@@ -398,8 +400,18 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 			if(status==INIT && fillDataAndCheckValidity())
 				status=VALID;
 	
-			assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
-	
+			AVDictionary* meta = frameIn->metadata;
+			if (meta)
+			{
+				AVDictionaryEntry* entry = nullptr;
+				while (true)
+				{
+					entry = av_dict_get(meta, "",entry,AV_DICT_IGNORE_SUFFIX);
+					if (!entry)
+						break;
+					LOG(LOG_NOT_IMPLEMENTED,"sending metadata from stream:"<<entry->key<<" "<<entry->value);
+				}
+			}
 			copyFrameToBuffers(frameIn, time);
 		}
 	}
@@ -1101,8 +1113,8 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, AudioFormat* format, int streamsize)
- : audioFound(false),videoFound(false),stream(s),formatCtx(nullptr),audioIndex(-1),
+FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::istream& s, AudioFormat* format, int streamsize)
+ : netstream(ns),audioFound(false),videoFound(false),stream(s),formatCtx(nullptr),audioIndex(-1),
    videoIndex(-1),customAudioDecoder(nullptr),customVideoDecoder(nullptr),avioContext(nullptr),availablestreamlength(streamsize)
 {
 	int aviobufsize = streamsize == -1 ? 4096 : min(4096, streamsize);
@@ -1244,7 +1256,19 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(EngineData *eng, std::istream& s, Audio
 #endif
 		audioDecoder=customAudioDecoder;
 	}
-
+	if (netstream && formatCtx->duration)
+	{
+		std::list<asAtom> dataobjectlist;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.name_s_id=netstream->getSystemState()->getUniqueStringId("duration");
+		m.isAttribute = false;
+		ASObject* dataobj = Class<ASObject>::getInstanceS(netstream->getSystemState());
+		asAtom v = asAtomHandler::fromInt(formatCtx->duration/AV_TIME_BASE);
+		dataobj->setVariableByMultiname(m,v,ASObject::CONST_NOT_ALLOWED);
+		dataobjectlist.push_back(asAtomHandler::fromObjectNoPrimitive(dataobj));
+		netstream->sendClientNotification("onMetaData",dataobjectlist);
+	}
 	valid=true;
 }
 

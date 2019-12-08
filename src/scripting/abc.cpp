@@ -139,6 +139,7 @@
 #include "scripting/avm1/avm1key.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1xml.h"
@@ -292,6 +293,9 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLNode","",Class<XMLNode>::getRef(m_sys));
+	builtinavm1->registerBuiltin("NetConnection","",Class<NetConnection>::getRef(m_sys));
+	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
 
 	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
 	{

@@ -89,7 +89,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	{
 		if (preloadArguments)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" placing arguments in register "<<num_args);
 			Array* regargs = Class<Array>::getInstanceS(clip->getSystemState());
 			for (uint32_t i = 0; i < num_args; i++)
 			{
@@ -1451,7 +1450,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				else
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front());
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front().lowercase());
 					clip->AVM1SetFunction(nameID,_MR(f));
 				}
 				break;
@@ -1625,7 +1624,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				else
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front());
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front().lowercase());
 					clip->AVM1SetFunction(nameID,_MR(f));
 				}
 				break;

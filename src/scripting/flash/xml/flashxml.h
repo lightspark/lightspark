@@ -40,7 +40,7 @@ protected:
 	pugi::xml_node getParentNode();
 public:
 	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
-	XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n);
+	XMLNode(Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
 	bool destruct()
 	{
 		root.reset();

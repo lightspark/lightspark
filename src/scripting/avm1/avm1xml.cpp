@@ -66,6 +66,11 @@ void AVM1XMLDocument::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	{
 		if (e->type == "complete" || e->type=="ioError")
 		{
+			if (e->type == "complete" && loader->getData())
+			{
+				std::string str = loader->getData()->toString().raw_buf();
+				this->parseXMLImpl(str);
+			}
 			asAtom func=asAtomHandler::invalidAtom;
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;

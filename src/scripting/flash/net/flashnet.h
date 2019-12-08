@@ -183,6 +183,10 @@ public:
 	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job);
 	void setData(_NR<ASObject> data);
+	ASObject* getData() const
+	{
+		return data.getPtr();
+	}
 	tiny_string getDataFormat();
 	void setDataFormat(const tiny_string& newFormat);
 	void setBytesTotal(uint32_t b);

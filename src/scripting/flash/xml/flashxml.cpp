@@ -27,7 +27,7 @@
 using namespace std;
 using namespace lightspark;
 
-XMLNode::XMLNode(Class_base* c, _R<XMLDocument> _r, pugi::xml_node _n):ASObject(c),root(_r),node(_n)
+XMLNode::XMLNode(Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n):ASObject(c),root(_r),node(_n)
 {
 }
 
@@ -120,7 +120,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 		ret = asAtomHandler::fromObject(res);
 		return;
 	}
-	assert_and_throw(!th->root.isNull());
 	auto it = th->node.begin();
 	for(;it!=th->node.end();++it)
 	{
@@ -358,7 +357,7 @@ void XMLDocument::parseXMLImpl(const string& str)
 	unsigned int parsemode = pugi::parse_full |pugi::parse_fragment;
 	if (!ignoreWhite) parsemode |= pugi::parse_ws_pcdata;
 
-	rootNode=buildFromString(str, parsemode);
+	node=rootNode=buildFromString(str, parsemode);
 }
 
 ASFUNCTIONBODY_ATOM(XMLDocument,_toString)

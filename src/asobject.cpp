@@ -1787,6 +1787,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				result=true;
 			}
 		}
+		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 		getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))

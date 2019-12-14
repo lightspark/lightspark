@@ -152,6 +152,7 @@ public:
 	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks,MATRIX& totalMatrix) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	DisplayObjectContainer* getParent() const { return parent; }
+	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObjectContainer* p);
 	/*
 	   Used to link DisplayObjects the invalidation queue

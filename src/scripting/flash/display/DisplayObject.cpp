@@ -1352,6 +1352,15 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 	}
 }
 
+bool DisplayObject::findParent(DisplayObject *d) const
+{
+	if (this == d)
+		return true;
+	if (!parent)
+		return false;
+	return parent->findParent(d);
+}
+
 // Compute the minimal, axis aligned bounding box in global
 // coordinates
 bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

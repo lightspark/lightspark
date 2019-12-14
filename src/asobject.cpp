@@ -1764,7 +1764,8 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "click")
 	{
-		if (dispobj == this)
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 			getVariableByMultiname(func,m);
@@ -1777,7 +1778,8 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "mouseDown")
 	{
-		if (dispobj == this)
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
 			getVariableByMultiname(func,m);

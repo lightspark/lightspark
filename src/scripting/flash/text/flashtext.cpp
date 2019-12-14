@@ -369,7 +369,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 	assert_and_throw(argslen==1);
 	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
 	if(((th->autoSize == AS_NONE)||(th->wordWrap == true))
-			&& (th->width != asAtomHandler::toUInt(args[0])))
+			&& (th->width != asAtomHandler::toUInt(args[0]))
+			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
 		th->width=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;
@@ -391,7 +392,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
 	if((th->autoSize == AS_NONE)
-		&& (th->height != asAtomHandler::toUInt(args[0])))
+		&& (th->height != asAtomHandler::toUInt(args[0]))
+			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
 		th->height=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;

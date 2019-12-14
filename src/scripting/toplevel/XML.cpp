@@ -3083,5 +3083,8 @@ ASFUNCTIONBODY_ATOM(XML,notification)
 	if (th->notifierfunction.isNull())
 		asAtomHandler::setNull(ret);
 	else
+	{
+		th->notifierfunction->incRef();
 		ret = asAtomHandler::fromObject(th->notifierfunction.getPtr());
+	}
 }

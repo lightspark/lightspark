@@ -100,9 +100,13 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, curveTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)GraphicsPathCommand::CURVE_TO);
 	th->commands->append(v);
+	ASATOM_INCREF(ax);
 	th->data->append(ax);
+	ASATOM_INCREF(ay);
 	th->data->append(ay);
+	ASATOM_INCREF(cx);
 	th->data->append(cx);
+	ASATOM_INCREF(cy);
 	th->data->append(cy);
 }
 
@@ -116,7 +120,9 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, lineTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
+	ASATOM_INCREF(x);
 	th->data->append(x);
+	ASATOM_INCREF(y);
 	th->data->append(y);
 }
 
@@ -130,7 +136,9 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, moveTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
+	ASATOM_INCREF(x);
 	th->data->append(x);
+	ASATOM_INCREF(y);
 	th->data->append(y);
 }
 
@@ -145,9 +153,13 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
 	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
+	ASATOM_INCREF(n);
 	th->data->append(n);
+	ASATOM_INCREF(n);
 	th->data->append(n);
+	ASATOM_INCREF(x);
 	th->data->append(x);
+	ASATOM_INCREF(y);
 	th->data->append(y);
 }
 
@@ -162,9 +174,13 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
 	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
+	ASATOM_INCREF(n);
 	th->data->append(n);
+	ASATOM_INCREF(n);
 	th->data->append(n);
+	ASATOM_INCREF(x);
 	th->data->append(x);
+	ASATOM_INCREF(y);
 	th->data->append(y);
 }
 

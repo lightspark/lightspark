@@ -271,6 +271,7 @@ public:
 	int getChannels() const;
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
+	_NR<SoundChannel> soundchanel;
 };
 
 class StartSoundTag: public DisplayListTag
@@ -279,7 +280,7 @@ private:
 	UI16_SWF SoundId;
 	SOUNDINFO SoundInfo;
 
-	void play(const DefineSoundTag *soundTag) const;
+	void play(DefineSoundTag *soundTag);
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
 	void execute(DisplayObjectContainer* parent) override;
@@ -299,7 +300,7 @@ public:
 	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
 	_R<MemoryStreamCache> SoundData;
 	void setSoundChannel(Sprite* spr, bool autoplay);
-	void execute(DisplayObjectContainer *parent) {}
+	void execute(DisplayObjectContainer *parent) override {}
 };
 
 class SoundStreamBlockTag: public DisplayListTag
@@ -307,7 +308,7 @@ class SoundStreamBlockTag: public DisplayListTag
 public:
 	SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip* root,DefineSpriteTag* sprite);
 	static void decodeSoundBlock(StreamCache *cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len);
-	void execute(DisplayObjectContainer *parent) {}
+	void execute(DisplayObjectContainer *parent) override {}
 };
 
 class ShowFrameTag: public Tag

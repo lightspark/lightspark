@@ -994,6 +994,12 @@ void DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 		legacyChildrenMarkedForDeletion.erase(it);
 }
 
+DisplayObject *DisplayObjectContainer::findRemovedLegacyChild(uint32_t name)
+{
+	auto it = namedRemovedLegacyChildren.find(name);
+	return (it == namedRemovedLegacyChildren.end() ? nullptr : (*it).second);
+}
+
 
 bool Sprite::renderImpl(RenderContext& ctxt) const
 {
@@ -2207,8 +2213,9 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 	DisplayObject* obj = depthToLegacyChild.left.at(depth);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
-		// ensure obj is not deleted before _removeChild is called
 		obj->incRef();
+		// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
+		namedRemovedLegacyChildren[obj->name] = obj;
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
 		multiname objName(NULL);
@@ -2216,6 +2223,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		setVariableByMultiname(objName,asAtomHandler::nullAtom, ASObject::CONST_NOT_ALLOWED);
+		
 	}
 
 	obj->incRef();
@@ -2223,8 +2231,6 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
 
-	if(obj->name != BUILTIN_STRINGS::EMPTY)
-			obj->decRef();
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj)
@@ -2341,6 +2347,9 @@ bool DisplayObjectContainer::destruct()
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
 	depthToLegacyChild.left.clear();
+	for (auto it = namedRemovedLegacyChildren.begin(); it != namedRemovedLegacyChildren.end(); it++)
+		(*it).second->decRef();
+	namedRemovedLegacyChildren.clear();
 	return InteractiveObject::destruct();
 }
 

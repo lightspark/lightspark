@@ -1545,24 +1545,34 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		//A new character must be placed
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 
-		if(placedTag==NULL)
+		if(placedTag==nullptr)
 			throw RunTimeException("No tag to place");
 
 		placedTag->loadedFrom->checkBinding(placedTag);
 
-		//We can create the object right away
-		ASObject *instance = placedTag->instance();
-		DisplayObject* toAdd=dynamic_cast<DisplayObject*>(instance);
-
-		if(!toAdd && instance)
+		DisplayObject *toAdd = nullptr;
+		if(PlaceFlagHasName)
 		{
-			//We ignore weird tags. I have seen ASFont
-			//(from a DefineFont) being added by PlaceObject2.
-			LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
-			instance->decRef();
-			return;
+			// check if an obect with this name was already created and removed earlier
+			nameID = parent->getSystemState()->getUniqueStringId((const char*)Name);
+			toAdd = parent->findRemovedLegacyChild(nameID);
+			if (toAdd && toAdd->getTagID() != CharacterId)
+				toAdd=nullptr;
 		}
-
+		if (!toAdd)
+		{
+			//We can create the object right away
+			ASObject* instance = placedTag->instance();
+			toAdd=dynamic_cast<DisplayObject*>(instance);
+			if(!toAdd && instance)
+			{
+				//We ignore weird tags. I have seen ASFont
+				//(from a DefineFont) being added by PlaceObject2.
+				LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
+				instance->decRef();
+				return;
+			}
+		}
 		assert_and_throw(toAdd);
 
 		if (currchar && !PlaceFlagHasMatrix) // reuse matrix of existing DispayObject at this depth
@@ -1604,7 +1614,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 	{
 		currchar->name = nameID;
 		currchar->incRef();
-		multiname objName(NULL);
+		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=currchar->name;
 		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2159,17 +2169,18 @@ void StartSoundTag::execute(DisplayObjectContainer *parent)
 	play(soundTag);
 }
 
-void StartSoundTag::play(const DefineSoundTag *soundTag) const
+void StartSoundTag::play(DefineSoundTag *soundTag)
 {
-	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
-		soundTag->getSoundData(),
-		AudioFormat(soundTag->getAudioCodec(),
+	if (soundTag->soundchanel.isNull())
+		soundTag->soundchanel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
+			soundTag->getSoundData(),
+			AudioFormat(soundTag->getAudioCodec(),
 			    soundTag->getSampleRate(),
-			    soundTag->getChannels()));
+			    soundTag->getChannels()),false));
 
-	// SoundChannel thread keeps one reference, which will be
-	// removed thread is finished
-	schannel->decRef();
+	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchanel->isPlaying())
+		return;
+	soundTag->soundchanel->play(0);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)

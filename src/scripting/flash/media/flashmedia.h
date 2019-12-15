@@ -111,6 +111,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();
+	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	ASPROPERTY_GETTER(number_t,leftPeak);
 	ASPROPERTY_GETTER(number_t,rightPeak);

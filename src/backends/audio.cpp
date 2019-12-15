@@ -32,7 +32,9 @@ uint32_t AudioStream::getPlayedTime()
 {
 	uint32_t ret;
 	struct timeval now;
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nullptr);
+	if (!mixingStarted)
+		return playedtime;
 
 	ret = playedtime + (now.tv_sec * 1000 + now.tv_usec / 1000) - (starttime.tv_sec * 1000 + starttime.tv_usec / 1000);
 	return ret;
@@ -40,11 +42,18 @@ uint32_t AudioStream::getPlayedTime()
 bool AudioStream::init()
 {
 	unmutevolume = curvolume = 1.0;
-	gettimeofday(&starttime, NULL);
 	mixer_channel = manager->engineData->audio_StreamInit(this);
 	manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
 	isPaused = false;
 	return true;
+}
+
+void AudioStream::startMixing()
+{
+	if(mixingStarted)
+		return;
+	mixingStarted=true;
+	gettimeofday(&starttime, nullptr);
 }
 
 void AudioStream::SetPause(bool pause_on)
@@ -56,7 +65,7 @@ void AudioStream::SetPause(bool pause_on)
 	}
 	else
 	{
-		gettimeofday(&starttime, NULL);
+		mixingStarted=false;
 		isPaused = false;
 	}
 	manager->engineData->audio_StreamPause(mixer_channel,pause_on);

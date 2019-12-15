@@ -946,6 +946,7 @@ void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 	AudioStream *s = (AudioStream*)udata;
 	if (!s)
 		return;
+	s->startMixing();
 	memset(stream,0,len);
 	uint32_t readcount = 0;
 	while (readcount < ((uint32_t)len))

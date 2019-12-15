@@ -2400,7 +2400,7 @@ void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDel
 	AudioStream *s = (AudioStream*)user_data;
 	if (!s)
 		return;
-
+	s->startMixing();
 	uint32_t readcount = 0;
 	while (readcount < buffer_size_in_bytes)
 	{

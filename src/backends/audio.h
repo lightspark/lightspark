@@ -65,6 +65,7 @@ private:
 	IThreadJob* producer;
 	bool hasStarted;
 	bool isPaused;
+	bool mixingStarted;
 	double curvolume;
 	double unmutevolume;
 	uint64_t playedtime;
@@ -72,7 +73,8 @@ private:
 	int mixer_channel;
 public:
 	bool init();
-	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(NULL),producer(_producer),hasStarted(false),isPaused(true),playedtime(_playedtime) { }
+	void startMixing();
+	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(NULL),producer(_producer),hasStarted(false),isPaused(true),mixingStarted(false),playedtime(_playedtime) { }
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();

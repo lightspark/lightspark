@@ -112,10 +112,11 @@ for more details.
 
 [site compatibility page]: https://github.com/lightspark/lightspark/wiki/Site-Support
 
-Reporting Bugs
+Testing
 --------------
 
-If you think you have found a bug in Lightspark, please file a bug.
-See our [bug reporting help] for details.
+An easy way to compare Lightspark to Adobe Flash Player is to use the Flash Player Projector, which is simply a standalone executable of Flash that can be quickly run directly from the command line.
 
-[bug reporting help]: https://github.com/lightspark/lightspark/wiki/Reporting-Bugs
+The Flash Player Projector can be found [here](https://fpdownload.macromedia.com/pub/flashplayer/updaters/32/flash_player_sa_linux.x86_64.tar.gz), or if that link is broken, on [this](https://www.adobe.com/support/flashplayer/debug_downloads.html) page, under the Linux category. Extract the archive, and then you have your flashplayer executable.
+
+This should be used when testing Lightspark, to discern what are genuine bugs with Lightspark, and what are simply bugs with the SWF file itself. If you think you have found a bug, see our [bug reporting help] for details.

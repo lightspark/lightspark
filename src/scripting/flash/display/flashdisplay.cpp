@@ -1941,6 +1941,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2125,6 +2126,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
 	else
 		ret = asAtomHandler::undefinedAtom;
 }
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
+{
+	asAtomHandler::setUInt(ret,sys,sys->getSwfVersion());
+}
+
 void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);

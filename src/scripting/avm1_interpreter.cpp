@@ -358,9 +358,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				else if (s == "_global")
 				{
-					res = asAtomHandler::fromObject(clip->getSystemState()->avm1global);
+					res = asAtomHandler::fromObjectNoPrimitive(clip->getSystemState()->avm1global);
 				}
-				else if (s.find(".") == tiny_string::npos)
+				else if (s.numBytes()>6 && s.startsWith("_level"))
+				{
+					if (s.numBytes() == 7 && s.charAt(6)=='0')
+						res = asAtomHandler::fromObjectNoPrimitive(clip->getSystemState()->mainClip);
+					else
+						LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable for "<<s);
+				}
+				else if (context->keepLocals && s.find(".") == tiny_string::npos)
 				{
 					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
 					if (it != locals.end()) // local variable
@@ -392,7 +399,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
 				tiny_string s = asAtomHandler::toString(name,clip->getSystemState());
 				bool found = false;
-				if (!context->keepLocals && s.find(".") == tiny_string::npos)
+				if (context->keepLocals && s.find(".") == tiny_string::npos)
 				{
 					// variable names are case insensitive
 					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));

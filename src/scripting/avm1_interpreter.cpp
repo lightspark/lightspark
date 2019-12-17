@@ -330,6 +330,17 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				PushStack(stack,asAtomHandler::fromBool(a == b));
 				break;
 			}
+			case 0x15: // ActionStringExtract
+			{
+				asAtom count = PopStack(stack);
+				asAtom index = PopStack(stack);
+				asAtom str = PopStack(stack);
+				tiny_string a = asAtomHandler::toString(str,clip->getSystemState());
+				tiny_string b = a.substr(asAtomHandler::toInt(index),asAtomHandler::toInt(count));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStringExtract "<<a<<" "<<b);
+				PushStack(stack,asAtomHandler::fromString(clip->getSystemState(),b));
+				break;
+			}
 			case 0x17: // ActionPop
 			{
 				PopStack(stack);
@@ -562,6 +573,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							break;
 						case 10:// rotation
 							DisplayObject::_setRotation(ret,clip->getSystemState(),obj,&valueInt,1);
+							break;
+						case 13:// name
+							DisplayObject::_setter_name(ret,clip->getSystemState(),obj,&value,1);
 							break;
 						case 16:// quality
 							DisplayObject::AVM1_setQuality(ret,clip->getSystemState(),obj,&value,1);

@@ -299,6 +299,11 @@ void ABCVm::registerClassesAVM1()
 
 	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
 	{
+		ASObject* systempackage = Class<ASObject>::getInstanceS(m_sys);
+		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
+		
+		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+
 		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys);
 		builtinavm1->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
 

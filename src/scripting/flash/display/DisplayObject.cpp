@@ -1698,25 +1698,29 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	assert_and_throw(argslen==1);
 
 	ASObject* o =  Class<ASObject>::getInstanceS(sys);
 	ret = asAtomHandler::fromObject(o);
-	if(asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
-		return;
-	if (!asAtomHandler::is<DisplayObject>(args[0]))
-		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<asAtomHandler::toDebugString(args[0]));
-	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
-	DisplayObject* target=asAtomHandler::as<DisplayObject>(args[0]);
+	DisplayObject* target= th;
+	if(argslen>=1) // contrary to spec adobe allows getBounds with zero parameters
+	{
+		if (asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
+			return;
+		if (!asAtomHandler::is<DisplayObject>(args[0]))
+			LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<asAtomHandler::toDebugString(args[0]));
+		assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
+		target =asAtomHandler::as<DisplayObject>(args[0]);
+	}
+	
 	//Compute the transformation matrix
 	MATRIX m;
 	DisplayObject* cur=th;
-	while(cur!=NULL && cur!=target)
+	while(cur!=nullptr && cur!=target)
 	{
 		m = cur->getMatrix().multiplyMatrix(m);
 		cur=cur->parent;
 	}
-	if(cur==NULL)
+	if(cur==nullptr)
 	{
 		//We crawled all the parent chain without finding the target
 		//The target is unrelated, compute it's transformation matrix
@@ -1730,7 +1734,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	th->getBounds(x1,x2,y1,y2, m);
 
 	asAtom v=asAtomHandler::invalidAtom;
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=sys->getUniqueStringId("xMin");
 	v = asAtomHandler::fromNumber(sys,x1,false);

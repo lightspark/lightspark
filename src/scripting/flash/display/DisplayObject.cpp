@@ -1899,7 +1899,15 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
+		{
 			avm1variables[nameId] = v;
+			if (asAtomHandler::is<AVM1Function>(v))
+			{
+				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
+				f->incRef();
+				avm1functions[getSystemState()->getUniqueStringId(name)] = _MR(f);
+			}
+		}
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameId;

@@ -1981,6 +1981,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	int Depth = asAtomHandler::toInt(args[2]);
 	uint32_t nameId = asAtomHandler::toStringId(args[1],sys);
 	DictionaryTag* placedTag = sys->mainClip->dictionaryLookupByName(asAtomHandler::toStringId(args[0],sys));
+	if (!placedTag)
+	{
+		ret=asAtomHandler::undefinedAtom;
+		return;
+	}
 	ASObject *instance = placedTag->instance();
 	DisplayObject* toAdd=dynamic_cast<DisplayObject*>(instance);
 	if(!toAdd && instance)

@@ -1825,7 +1825,7 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 	if(it==dictionary.end())
 	{
 		LOG(LOG_ERROR,_("No such name on dictionary ") << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
-		throw RunTimeException("Could not find an object on the dictionary");
+		return nullptr;
 	}
 	return *it;
 }

@@ -20,6 +20,10 @@
 #ifndef SWF_H
 #define SWF_H 1
 
+#ifndef BOOST_BIMAP_DISABLE_SERIALIZATION
+#include <boost/serialization/split_member.hpp>
+#endif
+
 #include "compat.h"
 #include <fstream>
 #include <list>

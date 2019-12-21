@@ -137,10 +137,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	{
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<asAtomHandler::toDebugString(args[i]));
 		ASATOM_INCREF(args[i]);
-		if (paramregisternumbers[i] == 0)
-			locals[paramnames[i]] = args[i];
-		else
+		locals[paramnames[i]] = args[i];
+		if (paramregisternumbers[i] != 0)
+		{
+			ASATOM_INCREF(args[i]);
 			registers[paramregisternumbers[i]] = args[i];
+		}
 	}
 
 	DisplayObject *originalclip = clip;
@@ -1018,46 +1020,61 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
 				ASObject* o = asAtomHandler::toObject(scriptobject,clip->getSystemState());
-				multiname m(nullptr);
-				m.isAttribute = false;
-				switch (asAtomHandler::getObjectType(name))
+				int step = 2; // we search in two steps, first with the normal name, then with name in lowercase (TODO find some faster method for case insensitive check for members)
+				while (step)
 				{
-					case T_INTEGER:
-						m.name_type=multiname::NAME_INT;
-						m.name_i=asAtomHandler::getInt(name);
-						break;
-					case T_UINTEGER:
-						m.name_type=multiname::NAME_UINT;
-						m.name_ui=asAtomHandler::getUInt(name);
-						break;
-					case T_NUMBER:
-						m.name_type=multiname::NAME_NUMBER;
-						m.name_d=asAtomHandler::toNumber(name);
-						break;
-					default:
-						m.name_type=multiname::NAME_STRING;
-						m.name_s_id=nameID;
-						break;
-				}
-				if(o)
-				{
-					o->getVariableByMultiname(ret,m);
-					if (asAtomHandler::isInvalid(ret))
+					multiname m(nullptr);
+					m.isAttribute = false;
+					switch (asAtomHandler::getObjectType(name))
 					{
-						ASObject* pr =o->getprop_prototype();
-						while (pr)
+						case T_INTEGER:
+							m.name_type=multiname::NAME_INT;
+							m.name_i=asAtomHandler::getInt(name);
+							break;
+						case T_UINTEGER:
+							m.name_type=multiname::NAME_UINT;
+							m.name_ui=asAtomHandler::getUInt(name);
+							break;
+						case T_NUMBER:
+							m.name_type=multiname::NAME_NUMBER;
+							m.name_d=asAtomHandler::toNumber(name);
+							break;
+						default:
+							m.name_type=multiname::NAME_STRING;
+							m.name_s_id=nameID;
+							break;
+					}
+					if(o)
+					{
+						o->getVariableByMultiname(ret,m);
+						if (asAtomHandler::isInvalid(ret))
 						{
-							bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
-							if (isGetter) // getter from prototype has to be called with o as target
+							ASObject* pr =o->getprop_prototype();
+							while (pr)
 							{
-								IFunction* f = asAtomHandler::as<IFunction>(ret);
-								ret = asAtom();
-								f->callGetter(ret,o);
-								break;
+								bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+								if (isGetter) // getter from prototype has to be called with o as target
+								{
+									IFunction* f = asAtomHandler::as<IFunction>(ret);
+									ret = asAtom();
+									f->callGetter(ret,o);
+									break;
+								}
+								pr = pr->getprop_prototype();
 							}
-							pr = pr->getprop_prototype();
 						}
 					}
+					if (asAtomHandler::isInvalid(ret))
+					{
+						step--;
+						if (step)
+						{
+							tiny_string namelower = asAtomHandler::toString(name,clip->getSystemState()).lowercase();
+							nameID = clip->getSystemState()->getUniqueStringId(namelower);
+						}
+					}
+					else
+						break;
 				}
 				
 				if (asAtomHandler::isInvalid(ret))
@@ -1088,8 +1105,31 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 										asAtomHandler::setUndefined(ret);
 									break;
 								default:
+								{
+									multiname m(nullptr);
+									m.isAttribute = false;
+									switch (asAtomHandler::getObjectType(name))
+									{
+										case T_INTEGER:
+											m.name_type=multiname::NAME_INT;
+											m.name_i=asAtomHandler::getInt(name);
+											break;
+										case T_UINTEGER:
+											m.name_type=multiname::NAME_UINT;
+											m.name_ui=asAtomHandler::getUInt(name);
+											break;
+										case T_NUMBER:
+											m.name_type=multiname::NAME_NUMBER;
+											m.name_d=asAtomHandler::toNumber(name);
+											break;
+										default:
+											m.name_type=multiname::NAME_STRING;
+											m.name_s_id=nameID;
+											break;
+									}
 									o->getVariableByMultiname(ret,m);
 									break;
+								}
 							}
 							break;
 						default:

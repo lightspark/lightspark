@@ -87,6 +87,20 @@ public:
 	bool destruct() override;
 };
 
+class AVM1Color: public ASObject
+{
+	_NR<DisplayObject> target;
+public:
+	AVM1Color(Class_base* c):ASObject(c) {}
+	static void sinit(Class_base* c);
+	bool destruct() override;
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(getRGB);
+	ASFUNCTION_ATOM(setRGB);
+	ASFUNCTION_ATOM(getTransform);
+	ASFUNCTION_ATOM(setTransform);
+};
+
 }
 
 #endif // SCRIPTING_AVM1_AVM1DISPLAY_H

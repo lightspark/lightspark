@@ -1809,6 +1809,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_swapDepths),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setMask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_getTransform),GETTER_METHOD,true);
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 {
@@ -1905,7 +1906,9 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 			{
 				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
 				f->incRef();
-				avm1functions[getSystemState()->getUniqueStringId(name)] = _MR(f);
+				// make nameId case sensitive for use in setVariableByMultiname
+				nameId = getSystemState()->getUniqueStringId(name);
+				avm1functions[nameId] = _MR(f);
 			}
 		}
 		multiname objName(NULL);

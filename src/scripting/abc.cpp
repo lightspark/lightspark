@@ -282,6 +282,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("clearInterval","",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
 
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Color","",Class<AVM1Color>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Mouse","",Class<AVM1Mouse>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
 	builtinavm1->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));
@@ -331,6 +332,7 @@ void ABCVm::registerClassesAVM1()
 
 		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
 	m_sys->avm1global=builtinavm1;
 }

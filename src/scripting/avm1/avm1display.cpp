@@ -304,3 +304,156 @@ bool AVM1MovieClipLoader::destruct()
 	jobs.clear();
 	return Loader::destruct();
 }
+
+void AVM1Color::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
+	c->isReusable = true;
+	c->setDeclaredMethodByQName("getRGB","",Class<IFunction>::getFunction(c->getSystemState(),getRGB),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setRGB","",Class<IFunction>::getFunction(c->getSystemState(),setRGB),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTransform","",Class<IFunction>::getFunction(c->getSystemState(),getTransform),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTransform","",Class<IFunction>::getFunction(c->getSystemState(),setTransform),NORMAL_METHOD,true);
+}
+ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
+{
+	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
+	ARG_UNPACK_ATOM(th->target);
+}
+ASFUNCTIONBODY_ATOM(AVM1Color,getRGB)
+{
+	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
+	if (th->target && th->target->colorTransform)
+	{
+		asAtom t = asAtomHandler::fromObject(th->target->colorTransform.getPtr());
+		ColorTransform::getColor(ret,sys,t,nullptr,0);
+	}
+	else
+		ret = asAtomHandler::undefinedAtom;
+}
+ASFUNCTIONBODY_ATOM(AVM1Color,setRGB)
+{
+	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
+	assert_and_throw(argslen==1);
+	if (th->target && th->target->colorTransform)
+	{
+		asAtom t = asAtomHandler::fromObject(th->target->colorTransform.getPtr());
+		ColorTransform::setColor(ret,sys,t,args,1);
+	}
+}
+
+ASFUNCTIONBODY_ATOM(AVM1Color,getTransform)
+{
+	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
+	ASObject* o = Class<ASObject>::getInstanceS(sys);
+	if (th->target && th->target->colorTransform)
+	{
+		asAtom a= asAtomHandler::undefinedAtom;
+		multiname m(nullptr);
+		m.isAttribute = false;
+		m.name_type=multiname::NAME_STRING;
+
+		m.name_s_id=sys->getUniqueStringId("ra");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->redMultiplier*100.0,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("rb");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->redOffset,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("ga");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->greenMultiplier*100.0,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("gb");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->greenOffset,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("ba");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->blueMultiplier*100.0,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("bb");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->blueOffset,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("aa");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->alphaMultiplier*100.0,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+		m.name_s_id=sys->getUniqueStringId("ab");
+		a = asAtomHandler::fromNumber(sys,th->target->colorTransform->alphaOffset,false);
+		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED);
+
+	}
+	ret = asAtomHandler::fromObject(o);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1Color,setTransform)
+{
+	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
+	assert_and_throw(argslen==1);
+	ASObject* o = asAtomHandler::toObject(args[0],sys);
+	if (th->target)
+	{
+		if (!th->target->colorTransform)
+			th->target->colorTransform = _R<ColorTransform>(Class<ColorTransform>::getInstanceSNoArgs(sys));
+		asAtom a = asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.isAttribute = false;
+		m.name_type=multiname::NAME_STRING;
+
+		m.name_s_id=sys->getUniqueStringId("ra");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->redMultiplier = asAtomHandler::toNumber(a)/100.0;
+
+		m.name_s_id=sys->getUniqueStringId("rb");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->redOffset = asAtomHandler::toNumber(a);
+
+		m.name_s_id=sys->getUniqueStringId("ga");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->greenMultiplier = asAtomHandler::toNumber(a)/100.0;
+
+		m.name_s_id=sys->getUniqueStringId("gb");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->greenOffset = asAtomHandler::toNumber(a);
+
+		m.name_s_id=sys->getUniqueStringId("ba");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->blueMultiplier = asAtomHandler::toNumber(a)/100.0;
+
+		m.name_s_id=sys->getUniqueStringId("bb");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->blueOffset = asAtomHandler::toNumber(a);
+
+		m.name_s_id=sys->getUniqueStringId("aa");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->alphaMultiplier = asAtomHandler::toNumber(a)/100.0;
+
+		m.name_s_id=sys->getUniqueStringId("ab");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m);
+		if (asAtomHandler::isValid(a))
+			th->target->colorTransform->alphaOffset = asAtomHandler::toNumber(a);
+	}
+}
+bool AVM1Color::destruct()
+{
+	target.reset();
+	return ASObject::destruct();
+}
+

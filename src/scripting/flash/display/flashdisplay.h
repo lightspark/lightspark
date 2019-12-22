@@ -20,6 +20,10 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H
 #define SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H 1
 
+#ifndef BOOST_BIMAP_DISABLE_SERIALIZATION
+#include <boost/serialization/split_member.hpp>
+#endif
+
 #include <boost/bimap.hpp>
 #include "compat.h"
 

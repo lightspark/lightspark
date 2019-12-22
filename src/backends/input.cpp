@@ -362,6 +362,10 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			if(m_sys->standalone)
 				m_sys->setShutdownFlag();
 			break;
+		case SDLK_f:
+			handled = true;
+			m_sys->getEngineData()->setDisplayState(m_sys->getEngineData()->inFullScreenMode() ? "normal" : "fullScreen");
+			break;
 		case SDLK_p:
 			handled = true;
 			m_sys->showProfilingData=!m_sys->showProfilingData;

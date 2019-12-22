@@ -92,6 +92,7 @@ Type `lightspark` to see all command line options.
 ### Keyboard shortcuts
 
 Ctrl+Q Quit (standalone player only)
+Ctrl+F toggle between normal and fullscreen view
 Ctrl+M Mute/unmute sounds
 Ctrl+P Show profiling data
 Ctrl+C Copy an error to the clipboard (when Lightspark fails)

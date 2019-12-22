@@ -1581,6 +1581,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 		toAdd->legacy = true;
+		// indicate construction completed if instance is not binded to an inherited class
+		if (toAdd->getClass() && toAdd->getClass()->isBuiltin())
+			toAdd->constructionComplete();
 
 		setProperties(toAdd, parent);
 

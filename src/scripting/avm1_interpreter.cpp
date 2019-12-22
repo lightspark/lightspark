@@ -105,6 +105,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				ASATOM_INCREF(args[i]);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				locals[paramnames[i]] = args[i];
+				if (context->keepLocals)
+				{
+					tiny_string s = clip->getSystemState()->getStringFromUniqueId(paramnames[i]).lowercase();
+					clip->AVM1SetVariable(s,args[i]);
+				}
 			}
 		}
 	}
@@ -138,6 +143,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<asAtomHandler::toDebugString(args[i]));
 		ASATOM_INCREF(args[i]);
 		locals[paramnames[i]] = args[i];
+		if (context->keepLocals)
+		{
+			tiny_string s = clip->getSystemState()->getStringFromUniqueId(paramnames[i]).lowercase();
+			clip->AVM1SetVariable(s,args[i]);
+		}
 		if (paramregisternumbers[i] != 0)
 		{
 			ASATOM_INCREF(args[i]);
@@ -411,7 +421,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
 				tiny_string s = asAtomHandler::toString(name,clip->getSystemState());
-				bool found = false;
 				if (context->keepLocals && s.find(".") == tiny_string::npos)
 				{
 					// variable names are case insensitive
@@ -419,16 +428,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					if (it != locals.end()) // local variable
 					{
 						it->second = value;
-						found = true;
 					}
 				}
-				if (!found)
-				{
-					if (!curdepth && !s.startsWith("/") && !s.startsWith(":"))
-						originalclip->AVM1SetVariable(s,value);
-					else
-						clip->AVM1SetVariable(s,value);
-				}
+				if (!curdepth && !s.startsWith("/") && !s.startsWith(":"))
+					originalclip->AVM1SetVariable(s,value);
+				else
+					clip->AVM1SetVariable(s,value);
 				break;
 			}
 			case 0x20: // ActionSetTarget2

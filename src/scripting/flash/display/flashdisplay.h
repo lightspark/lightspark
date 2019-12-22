@@ -126,6 +126,7 @@ public:
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
+	void resetLegacyState() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -574,6 +575,7 @@ protected:
 public:
 	void constructionComplete() override;
 	void afterConstruction() override;
+	void resetLegacyState() override;
 	RunState state;
 	Frame* getCurrentFrame();
 	MovieClip(Class_base* c);

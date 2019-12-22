@@ -1555,7 +1555,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	else
 		advanceFrame();
 }
 
@@ -1571,6 +1571,8 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
 }
 void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {
+	if (frame < 0)
+		frame = 0;
 	state.next_FP = frame;
 	state.explicit_FP = true;
 	bool advance = true;
@@ -2227,13 +2229,14 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 		obj->incRef();
 		// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
 		namedRemovedLegacyChildren[obj->name] = obj;
+		obj->resetLegacyState();
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,asAtomHandler::nullAtom, ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,getSystemState()->mainClip->usesActionScript3 ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
 		
 	}
 
@@ -2362,6 +2365,16 @@ bool DisplayObjectContainer::destruct()
 		(*it).second->decRef();
 	namedRemovedLegacyChildren.clear();
 	return InteractiveObject::destruct();
+}
+
+void DisplayObjectContainer::resetLegacyState()
+{
+	auto i = depthToLegacyChild.begin();
+	while( i != depthToLegacyChild.end() )
+	{
+		i->right->resetLegacyState();
+		i++;
+	}
 }
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
@@ -4618,7 +4631,8 @@ void MovieClip::advanceFrame()
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
 		   && (getSystemState()->mainClip->usesActionScript3 || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState())))))
 	{
-		DisplayObjectContainer::advanceFrame();
+		if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+			DisplayObjectContainer::advanceFrame();
 		declareFrame();
 		return;
 	}
@@ -4628,7 +4642,7 @@ void MovieClip::advanceFrame()
 	{
 		if(hasFinishedLoading())
 		{
-			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded:")<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString());
+			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded:")<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}
 		return;
@@ -4645,7 +4659,8 @@ void MovieClip::advanceFrame()
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
-	DisplayObjectContainer::advanceFrame();
+	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+		DisplayObjectContainer::advanceFrame();
 	declareFrame();
 	if (state.explicit_FP)
 	{
@@ -4680,6 +4695,18 @@ void MovieClip::afterConstruction()
 		this->incRef();
 		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
+}
+
+void MovieClip::resetLegacyState()
+{
+	DisplayObjectContainer::resetLegacyState();
+	state.last_FP=-1;
+	state.FP=0;
+	state.next_FP=0;
+	state.stop_FP=false;
+	state.explicit_FP=false;
+	state.creatingframe=false;
+	state.frameadvanced=false;
 }
 
 Frame *MovieClip::getCurrentFrame()

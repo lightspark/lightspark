@@ -641,6 +641,9 @@ std::istream& lightspark::operator>>(std::istream& s, SHAPE& v)
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
 	v.NumLineBits=UB(4,bs);
+	// this is not mentioned in the specs, but it seems if NumFillBits and NumLineBits are 0 in font tags, no shaperecords are read.
+	if (v.forfont && v.NumFillBits == 0 && v.NumLineBits==0)
+		return s;
 	do
 	{
 		v.ShapeRecords.push_back(SHAPERECORD(&v,bs));

@@ -674,7 +674,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		SHAPE t;
+		SHAPE t(0,true);
 		in >> t;
 		GlyphShapeTable.push_back(t);
 	}
@@ -775,7 +775,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	}
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		SHAPE t;
+		SHAPE t(0,true);
 		in >> t;
 		GlyphShapeTable.push_back(t);
 	}

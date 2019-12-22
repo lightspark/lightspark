@@ -1146,8 +1146,8 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
-	SHAPE(uint8_t v=0):fillOffset(0),lineOffset(0),version(v){}
-	virtual ~SHAPE(){};
+	SHAPE(uint8_t v=0,bool _forfont=false):fillOffset(0),lineOffset(0),version(v),forfont(_forfont){}
+	virtual ~SHAPE(){}
 	UB NumFillBits;
 	UB NumLineBits;
 	unsigned int fillOffset;
@@ -1155,6 +1155,7 @@ public:
 	uint8_t version; /* version of the DefineShape tag, 0 if
 			  * DefineFont or other tag */
 	std::vector<SHAPERECORD> ShapeRecords;
+	bool forfont;
 };
 
 class SHAPEWITHSTYLE : public SHAPE

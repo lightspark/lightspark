@@ -91,11 +91,11 @@ Type `lightspark` to see all command line options.
 
 ### Keyboard shortcuts
 
-Ctrl+Q Quit (standalone player only)
-Ctrl+F toggle between normal and fullscreen view
-Ctrl+M Mute/unmute sounds
-Ctrl+P Show profiling data
-Ctrl+C Copy an error to the clipboard (when Lightspark fails)
+* _Ctrl+Q_ Quit (standalone player only)
+* _Ctrl+F_ toggle between normal and fullscreen view
+* _Ctrl+M_ Mute/unmute sounds
+* _Ctrl+P_ Show profiling data
+* _Ctrl+C_ Copy an error to the clipboard (when Lightspark fails)
 
 ### Environment variables
 
@@ -120,4 +120,4 @@ An easy way to compare Lightspark to Adobe Flash Player is to use the Flash Play
 
 The Flash Player Projector can be found [here](https://fpdownload.macromedia.com/pub/flashplayer/updaters/32/flash_player_sa_linux.x86_64.tar.gz), or if that link is broken, on [this](https://www.adobe.com/support/flashplayer/debug_downloads.html) page, under the Linux category. Extract the archive, and then you have your flashplayer executable.
 
-This should be used when testing Lightspark, to discern what are genuine bugs with Lightspark, and what are simply bugs with the SWF file itself. If you think you have found a bug, see our [bug reporting help] for details.
+This should be used when testing Lightspark, to discern what are genuine bugs with Lightspark, and what are simply bugs with the SWF file itself. If you think you have found a bug, see our [bug reporting help](https://github.com/lightspark/lightspark/wiki/Reporting-Bugs) for details.

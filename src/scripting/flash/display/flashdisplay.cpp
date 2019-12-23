@@ -459,7 +459,7 @@ void LoaderThread::execute()
 		SpinlockLocker l(downloaderLock);
 		if(downloader)
 			loaderInfo->getSystemState()->downloadManager->destroy(downloader);
-		downloader=NULL;
+		downloader=nullptr;
 	}
 
 	bytes.reset();
@@ -485,6 +485,7 @@ void LoaderThread::execute()
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
 		{
 			local_pt.getRootMovie()->incRef();
+			local_pt.getRootMovie()->setIsInitialized(false);
 			loader->setContent(_MR(local_pt.getRootMovie()));
 			if (loader->getContentLoaderInfo().getPtr())
 				loader->getContentLoaderInfo()->setComplete();
@@ -495,7 +496,7 @@ void LoaderThread::execute()
 ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
-	DisplayObjectContainer::_constructor(ret,sys,obj,NULL,0);
+	DisplayObjectContainer::_constructor(ret,sys,obj,nullptr,0);
 	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
 	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(sys));
 }

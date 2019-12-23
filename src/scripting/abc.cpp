@@ -1555,7 +1555,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	bool doTarget = true;
 
 	//capture phase
-	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(event->getSystemState())))
+	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		//We fetch the relatedObject in the case of rollOver/Out
@@ -1955,6 +1955,8 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 
 	//Let's override the class
 	base->setClass(derived_class_tmp);
+	// ensure that traits are initialized for movies loaded from actionscript
+	base->setIsInitialized(false);
 	derived_class_tmp->bindToRoot();
 	// the root movie clip may have it's own constructor, so we make sure it is called
 	asAtom r = asAtomHandler::fromObject(base.getPtr());

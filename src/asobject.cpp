@@ -3419,6 +3419,37 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 			}
 			break;
 		}
+		case ATOM_U_INTEGERPTR:
+		{
+			switch (v2.uintval&0x7)
+			{
+				case ATOM_INTEGER:
+					return (toInt(a) < (v2.intval>>3))?TTRUE:TFALSE;
+				case ATOM_UINTEGER:
+					return (toUInt(a) < (v2.uintval>>3))?TTRUE:TFALSE;
+				case ATOM_NUMBERPTR:
+					if(std::isnan(toNumber(v2)))
+						return TUNDEFINED;
+					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				{
+					switch (v2.uintval&0x70)
+					{
+						case ATOMTYPE_NULL_BIT:
+							return (toNumber(a) < 0)?TTRUE:TFALSE;
+						case ATOMTYPE_UNDEFINED_BIT:
+							return TUNDEFINED;
+						case ATOMTYPE_BOOL_BIT:
+							return (toNumber(a) < (int32_t)((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
+						default: // INVALID
+							return TUNDEFINED;
+					}
+				}
+				default:
+					break;
+			}
+			break;
+		}
 		default:
 			break;
 	}

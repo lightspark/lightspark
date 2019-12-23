@@ -74,8 +74,8 @@ void ABCVm::clearOpcodeCounters()
 void ABCVm::executeFunction(call_context* context)
 {
 #ifdef PROFILING_SUPPORT
-	if(mi->profTime.empty())
-		mi->profTime.resize(code_len,0);
+	if(context->mi->profTime.empty())
+		context->mi->profTime.resize(context->mi->body->preloadedcode.size(),0);
 	uint64_t startTime=compat_get_thread_cputime_us();
 #define PROF_ACCOUNT_TIME(a, b)  do{a+=b;}while(0)
 #define PROF_IGNORE_TIME(a) do{ a; } while(0)
@@ -88,7 +88,7 @@ void ABCVm::executeFunction(call_context* context)
 	while(!context->returning)
 	{
 #ifdef PROFILING_SUPPORT
-		uint32_t instructionPointer=code.tellg();
+		uint32_t instructionPointer=context->exec_pos- &context->mi->body->preloadedcode.front();
 #endif
 		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x3ff));
 
@@ -100,7 +100,7 @@ void ABCVm::executeFunction(call_context* context)
 		// it points to the next valid instruction after execution
 		abcfunctions[(context->exec_pos->data)&0x3ff](context);
 
-		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
+		PROF_ACCOUNT_TIME(context->mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
 	return;
 

@@ -56,6 +56,7 @@ void IntervalRunner::tick()
 	{
 		ASATOM_INCREF(args[i]);
 	}
+	ASATOM_INCREF(obj);
 	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
 	getVm(getSys())->addEvent(NullRef,event);
 	event->wait();

@@ -535,7 +535,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_OUTPUT_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
 }
 
-EventDispatcher::EventDispatcher(Class_base* c):ASObject(c)
+EventDispatcher::EventDispatcher(Class_base* c):ASObject(c),forcedTarget(asAtomHandler::invalidAtom)
 {
 }
 
@@ -543,6 +543,11 @@ void EventDispatcher::finalize()
 {
 	ASObject::finalize();
 	handlers.clear();
+}
+bool EventDispatcher::destruct()
+{
+	forcedTarget = asAtomHandler::invalidAtom;
+	return ASObject::destruct();
 }
 
 void EventDispatcher::sinit(Class_base* c)

@@ -367,7 +367,8 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) {}
 public:
 	EventDispatcher(Class_base* c);
-	void finalize();
+	void finalize() override;
+	bool destruct() override;
 	// is called when a new event is added to the event queue
 	virtual void onNewEvent(){}
 	// is called after an event was handled by the event queue

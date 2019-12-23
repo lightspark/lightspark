@@ -105,11 +105,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				ASATOM_INCREF(args[i]);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				locals[paramnames[i]] = args[i];
-				if (context->keepLocals)
-				{
-					tiny_string s = clip->getSystemState()->getStringFromUniqueId(paramnames[i]).lowercase();
-					clip->AVM1SetVariable(s,args[i]);
-				}
 			}
 		}
 	}
@@ -145,6 +140,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 		locals[paramnames[i]] = args[i];
 		if (context->keepLocals)
 		{
+			ASATOM_INCREF(args[i]);
 			tiny_string s = clip->getSystemState()->getStringFromUniqueId(paramnames[i]).lowercase();
 			clip->AVM1SetVariable(s,args[i]);
 		}

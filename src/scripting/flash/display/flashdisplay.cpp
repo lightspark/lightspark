@@ -3053,6 +3053,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,stageFocusRect);
 	REGISTER_GETTER(c,allowsFullScreen);
 	REGISTER_GETTER(c,stage3Ds);
+	REGISTER_GETTER(c,softKeyboardRect);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
@@ -3064,6 +3065,7 @@ ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,stageFocusRect);  // stub
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen);  // stub
 ASFUNCTIONBODY_GETTER(Stage,stage3Ds); 
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect);  // stub
 
 void Stage::onDisplayState(const tiny_string&)
 {
@@ -3154,6 +3156,7 @@ Stage::Stage(Class_base* c):
 	stage3Ds->append(v);
 	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
 	stage3Ds->append(v);
+	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(getSystemState()));
 }
 
 _NR<Stage> Stage::getStage()

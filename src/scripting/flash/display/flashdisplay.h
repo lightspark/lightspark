@@ -716,6 +716,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,stageFocusRect);
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
+	ASPROPERTY_GETTER(_NR<Rectangle>, softKeyboardRect);
 	
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
 	void AVM1AddKeyboardListener(ASObject* o);

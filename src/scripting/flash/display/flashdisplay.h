@@ -650,9 +650,10 @@ public:
 
 class Stage: public DisplayObjectContainer
 {
-private:
+public:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
+private:
 	void onAlign(const tiny_string&);
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);

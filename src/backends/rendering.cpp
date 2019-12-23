@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
+#include "scripting/class.h"
 #include "parsing/textfile.h"
 #include "backends/rendering.h"
 #include "compat.h"
@@ -430,6 +431,9 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	newWidth=w;
 	newHeight=h;
 	resizeNeeded=true;
+	m_sys->stage->incRef();
+	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys,"resize")));
+	
 	event.signal();
 }
 

@@ -72,7 +72,7 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 		memcpy(chunks, r.chunks, blocksW*blocksH*4);
 	}
 	else
-		chunks=NULL;
+		chunks=nullptr;
 	return *this;
 }
 
@@ -86,8 +86,9 @@ void TextureChunk::makeEmpty()
 	width=0;
 	height=0;
 	texId=0;
-	delete[] chunks;
-	chunks=NULL;
+	if (chunks)
+		delete[] chunks;
+	chunks=nullptr;
 }
 
 bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
@@ -97,7 +98,7 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 		//The texture collapsed, release the resources
 		getSys()->getRenderThread()->releaseTexture(*this);
 		delete[] chunks;
-		chunks=NULL;
+		chunks=nullptr;
 		width=w;
 		height=h;
 		return true;
@@ -534,11 +535,11 @@ uint8_t* CairoRenderer::getPixelBuffer()
 {
 	RecMutex::Lock l(cairoMutex);
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
-		return NULL;
+		return nullptr;
 
 	SystemState* sys = getSys();
-	int32_t windowWidth=(sys->mainClip->getFrameSize().Xmax/20.0);
-	int32_t windowHeight=(sys->mainClip->getFrameSize().Ymax/20.0);
+	int32_t windowWidth=sys->stage->internalGetWidth();
+	int32_t windowHeight=sys->stage->internalGetHeight();
 	
 	float scalex;
 	float scaley;
@@ -552,7 +553,7 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	{
 		width=0;
 		height=0;
-		return NULL;
+		return nullptr;
 	}
 
 	if(xOffset<0)
@@ -570,7 +571,7 @@ uint8_t* CairoRenderer::getPixelBuffer()
 		width=windowWidth-xOffset;
 	if((yOffset>=0) && (height+yOffset) > windowHeight)
 		height=windowHeight-yOffset;
-	uint8_t* ret=NULL;
+	uint8_t* ret=nullptr;
 
 	xOffset*=scalex;
 	yOffset*=scaley;
@@ -605,9 +606,9 @@ uint8_t* CairoRenderer::getPixelBuffer()
 	cairo_set_matrix(cr, &matrix);
 	executeDraw(cr,scalex, scaley);
 
-	cairo_surface_t* maskSurface = NULL;
-	uint8_t* maskRawData = NULL;
-	cairo_t* maskCr = NULL;
+	cairo_surface_t* maskSurface = nullptr;
+	uint8_t* maskRawData = nullptr;
+	cairo_t* maskCr = nullptr;
 	int32_t maskXOffset = 0;
 	int32_t maskYOffset = 0;
 	//Also apply the soft masks
@@ -617,12 +618,12 @@ uint8_t* CairoRenderer::getPixelBuffer()
 			continue;
 		//TODO: this may be optimized if needed
 		uint8_t* maskData = masks[i].m->getPixelBuffer();
-		if(maskData==NULL)
+		if(maskData==nullptr)
 			continue;
 
 		cairo_surface_t* tmp = cairo_image_surface_create_for_data(maskData,CAIRO_FORMAT_ARGB32,
 				masks[i].m->getWidth(),masks[i].m->getHeight(),masks[i].m->getWidth()*4);
-		if(maskSurface==NULL)
+		if(maskSurface==nullptr)
 		{
 			maskSurface = tmp;
 			maskRawData = maskData;
@@ -659,7 +660,7 @@ uint8_t* CairoRenderer::getPixelBuffer()
 
 bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y)
 {
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);

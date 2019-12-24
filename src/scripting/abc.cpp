@@ -1471,7 +1471,6 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 
 void ABCVm::start()
 {
-	status=STARTED;
 #ifdef HAVE_NEW_GLIBMM_THREAD_API
 	t = Thread::create(sigc::bind(&Run,this));
 #else
@@ -2283,6 +2282,7 @@ void ABCVm::Run(ABCVm* th)
 	th->registerClasses();
 	if (!th->m_sys->mainClip->usesActionScript3)
 		th->registerClassesAVM1();
+	th->status=STARTED;
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");

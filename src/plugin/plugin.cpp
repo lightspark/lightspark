@@ -27,6 +27,7 @@
 #include <string>
 #include <algorithm>
 #include "backends/urlutils.h"
+#include "abc.h"
 
 #include "plugin/npscriptobject.h"
 #include <SDL2/SDL.h>
@@ -869,7 +870,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 		}
 		case KeyPress:
 		case KeyRelease:
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
 			{
 				SDL_Event ev;
 				ev.type = nsEvent->type == KeyPress ? SDL_KEYDOWN : SDL_KEYUP;
@@ -886,7 +887,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 			}
 			break;
 		case MotionNotify: 
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
 			{
 				XMotionEvent* event = &nsEvent->xmotion;
 				SDL_Event ev;
@@ -900,7 +901,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 			break;
 		case ButtonPress:
 		case ButtonRelease: 
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
 			{
 				SDL_Event ev;
 				XButtonEvent* event = &nsEvent->xbutton;

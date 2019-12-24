@@ -3075,9 +3075,18 @@ void Stage::onDisplayState(const tiny_string&)
 		return;
 	}
 	if (!getSystemState()->allowFullscreen && displayState == "fullScreen")
-		throwError<SecurityError>(kInvalidParamError);
+	{
+		if (getSystemState()->mainClip->usesActionScript3)
+			throwError<SecurityError>(kInvalidParamError);
+		return;
+	}
 	if (!getSystemState()->allowFullscreenInteractive && displayState == "fullScreenInteractive")
-		throwError<SecurityError>(kInvalidParamError);
+	{
+		if (getSystemState()->mainClip->usesActionScript3)
+			throwError<SecurityError>(kInvalidParamError);
+		return;
+	}
+	LOG(LOG_NOT_IMPLEMENTED,"setting display state does not check for the security sandbox!");
 	getSystemState()->getEngineData()->setDisplayState(displayState);
 }
 

@@ -639,7 +639,7 @@ bool FontTag::hasGlyphs(const tiny_string text) const
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		bool found = false;
-		if (*it < 0x20)
+		if (*it <= 0x20)
 			continue;
 		for (unsigned int i = 0; i < CodeTable.size(); i++)
 		{

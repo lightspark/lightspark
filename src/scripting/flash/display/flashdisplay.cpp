@@ -1556,7 +1556,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	else
+	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		advanceFrame();
 }
 
@@ -4112,6 +4112,12 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 	tabEnabled = true;
 }
 
+void SimpleButton::constructionComplete()
+{
+	reflectState();
+	DisplayObjectContainer::constructionComplete();
+}
+
 void SimpleButton::finalize()
 {
 	DisplayObjectContainer::finalize();
@@ -4194,8 +4200,6 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 		th->downState = downState;
 	if (!hitTestState.isNull())
 		th->hitTestState = hitTestState;
-
-	th->reflectState();
 }
 
 void SimpleButton::reflectState()

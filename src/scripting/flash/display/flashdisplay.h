@@ -204,6 +204,7 @@ private:
 public:
 	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
+	void constructionComplete() override;
 	void finalize() override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q) override;

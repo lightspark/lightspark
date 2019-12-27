@@ -246,6 +246,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	{
 		renderErrorPage(this, m_sys->standalone);
 	}
+	if(m_sys->currentflushstep > m_sys->nextflushstep)
+	{
+		// no changes since last rendering, so we don't need to do anything
+		renderNeeded=false;
+		return true;
+	}
 	m_sys->currentflushstep = m_sys->nextflushstep;
 	if(!m_sys->isOnError())
 	{
@@ -642,6 +648,8 @@ void RenderThread::draw(bool force)
 {
 	if(renderNeeded && !force) //A rendering is already queued
 		return;
+	if (force)
+		m_sys->currentflushstep = m_sys->nextflushstep;
 	renderNeeded=true;
 	event.signal();
 

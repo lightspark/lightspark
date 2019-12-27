@@ -92,10 +92,9 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 					{
 						//Signal the renderThread
 						if (sys && sys->getRenderThread())
-							sys->getRenderThread()->draw(sys->isOnError());
+							sys->getRenderThread()->draw(true);
 						break;
 					}
-						
 					default:
 						break;
 				}

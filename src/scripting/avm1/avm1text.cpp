@@ -26,6 +26,6 @@ using namespace lightspark;
 
 void AVM1TextField::sinit(Class_base* c)
 {
-	TextField::sinit(c);
 	DisplayObject::AVM1SetupMethods(c);
+	TextField::sinit(c);
 }

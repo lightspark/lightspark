@@ -3069,6 +3069,16 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect);  // stub
 
 void Stage::onDisplayState(const tiny_string&)
 {
+	tiny_string s = displayState.lowercase();
+
+	// AVM1 allows case insensitive values, so we correct them here
+	if (s=="normal")
+		displayState="normal";
+	if (s=="fullscreen")
+		displayState="fullScreen";
+	if (s=="fullscreeninteractive")
+		displayState="fullScreenInteractive";
+
 	if (displayState != "normal" && displayState != "fullScreen" && displayState != "fullScreenInteractive")
 	{
 		LOG(LOG_ERROR,"invalid value for DisplayState");

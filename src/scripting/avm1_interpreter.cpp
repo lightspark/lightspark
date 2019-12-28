@@ -1186,8 +1186,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						pr = pr->getprop_prototype();
 					}
 					o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
-					if (o->is<MovieClip>())
-						o->as<MovieClip>()->AVM1UpdateVariableBindings(m.name_s_id,value);
+					if (o->is<DisplayObject>())
+						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
 				}
 				else
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" "<<(int)asAtomHandler::getObjectType(scriptobject)<<" "<<asAtomHandler::toDebugString(name));

@@ -277,14 +277,6 @@ pkg_check_modules(LZMA REQUIRED liblzma)
 INCLUDE_DIRECTORIES(${LZMA_INCLUDE_DIRS})
 SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${LZMA_LIBRARIES})
 
-find_package(Boost COMPONENTS filesystem system REQUIRED)
-if(Boost_FOUND)
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-  #Without BOOST_MULTI_INDEX_DISABLE_SERIALIZATION, it will indirectly include
-  #windows.h and pollute our namespace
-  ADD_DEFINITIONS(-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION)
-ENDIF(Boost_FOUND) 
-
 pkg_check_modules(CAIRO REQUIRED cairo pangocairo)
 
 IF(ENABLE_GLES2)

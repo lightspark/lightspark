@@ -19,7 +19,7 @@
 
 #include <glib.h>
 #include <string>
-#include <boost/filesystem.hpp>
+#include <sys/stat.h>
 
 #include "backends/config.h"
 #include "compat.h"
@@ -28,7 +28,6 @@
 
 using namespace lightspark;
 using namespace std;
-using namespace boost::filesystem;
 
 Config* Config::getConfig()
 {
@@ -77,12 +76,12 @@ std::string readRegistryEntry(std::string name)
 #endif
 
 Config::Config():
-	parser(NULL),
+	parser(nullptr),
 	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 	configFilename("lightspark.conf"),
 	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
 	//DEFAULT SETTINGS
-	defaultCacheDirectory((string) g_get_user_cache_dir() + "/lightspark"),
+	defaultCacheDirectory((string) g_get_user_cache_dir() + G_DIR_SEPARATOR_S + "lightspark"),
 	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
 	renderingEnabled(true)
 {
@@ -95,20 +94,20 @@ Config::Config():
 	//Try system configs first
 	string sysDir;
 	const char* const* cursor = systemConfigDirectories;
-	while(*cursor != NULL)
+	while(*cursor != nullptr)
 	{
 		sysDir = *cursor;
-		parser = new ConfigParser(sysDir + "/" + configFilename);
+		parser = new ConfigParser(sysDir + G_DIR_SEPARATOR_S + configFilename);
 		while(parser->read())
 			handleEntry();
 		delete parser;
-		parser = NULL;
+		parser = nullptr;
 
 		++cursor;
 	}
 
 	//Try user config next
-	parser = new ConfigParser(userConfigDirectory + "/" + configFilename);
+	parser = new ConfigParser(userConfigDirectory + G_DIR_SEPARATOR_S + configFilename);
 	while(parser->read())
 		handleEntry();
 	delete parser;
@@ -121,46 +120,34 @@ Config::Config():
 #endif
 
 	//If cache dir doesn't exist, create it
-	while (true)
+	if (g_mkdir_with_parents(cacheDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
 	{
-		try
-		{
-			path cacheDirectoryP(cacheDirectory);
-			if(!is_directory(cacheDirectoryP))
-			{
-				LOG(LOG_INFO, "Cache directory does not exist, trying to create");
-					create_directories(cacheDirectoryP);
-			}
-			break;
-		}
-		catch(const filesystem_error& e)
-		{
-			if (cacheDirectory == defaultCacheDirectory)
-				break;
-			LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
-					defaultCacheDirectory);
-			cacheDirectory = defaultCacheDirectory;
-		}
+		LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+				defaultCacheDirectory);
+		cacheDirectory = defaultCacheDirectory;
 	}
-	try
-	{
-		path dataDirectoryP(cacheDirectory);
-		dataDirectoryP /= "files";
-		dataDirectoryP /= "%%%%-%%%%-%%%%-%%%%";
-		dataDirectoryP = unique_path(dataDirectoryP);
-		create_directories(dataDirectoryP);
-		dataDirectory = dataDirectoryP.string();
-	}
-	catch(const filesystem_error& e)
+	dataDirectory = cacheDirectory+G_DIR_SEPARATOR_S+"files";
+	if (g_mkdir_with_parents(dataDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
 	{
 		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
 		dataDirectory = "";
 	}
-	catch(const std::exception& e)
+	else
 	{
-		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
-		dataDirectory = "";
+		dataDirectory += G_DIR_SEPARATOR_S;
+		dataDirectory +="cXXXXXX";
+		char* tmpdir = new char[dataDirectory.length()+100];
+		strncpy(tmpdir,dataDirectory.c_str(),dataDirectory.length());
+		tmpdir =g_mkdtemp(tmpdir);
+		if (!tmpdir)
+		{
+			LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
+			dataDirectory = "";
+		}
+		else
+			dataDirectory = tmpdir;
 	}
+
 #ifdef _WIN32
 	std::string regGnashPath = readRegistryEntry("GnashPath");
 	if(regGnashPath.empty())
@@ -170,16 +157,17 @@ Config::Config():
 			LOG(LOG_ERROR,"Could not get executable path!");
 		else
 		{
-			path gnash_exec_path = s;
-			if(is_regular_file(gnash_exec_path / "gtk-gnash.exe"))
+			
+			std::string gnash_exec_path = s;
+			if(g_file_test(std::string(gnash_exec_path + "gtk-gnash.exe").c_str(),G_FILE_TEST_EXISTS))
 			{
-				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path / "gtk-gnash.exe"));
-				gnashPath = (gnash_exec_path / "gtk-gnash.exe").string();
+				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path + "gtk-gnash.exe"));
+				gnashPath = std::string(gnash_exec_path + "gtk-gnash.exe").c_str();
 			}
-			else if(is_regular_file(gnash_exec_path / "sdl-gnash.exe"))
+			else if(g_file_test(std::string(gnash_exec_path + "sdl-gnash.exe").c_str(),G_FILE_TEST_EXISTS))
 			{
-				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path / "sdl-gnash.exe"));
-				gnashPath = (gnash_exec_path / "sdl-gnash.exe").string();
+				LOG(LOG_INFO,"Found gnash at " << gnash_exec_path + "sdl-gnash.exe");
+				gnashPath = std::string(gnash_exec_path + "sdl-gnash.exe").c_str();
 			}
 			else
 				LOG(LOG_ERROR, "Could not find gnash in " << gnash_exec_path);

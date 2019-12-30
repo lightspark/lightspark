@@ -23,6 +23,7 @@
 #include "backends/rendering.h"
 #include "compat.h"
 #include "scripting/class.h"
+#include <algorithm>
 
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_clipboard.h>

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <glib.h>
 #include "version.h"
 #include "backends/security.h"
 #include "backends/config.h"
@@ -25,9 +26,8 @@
 #include "platforms/engineutils.h"
 #include "compat.h"
 #include <SDL2/SDL.h>
-#include "boost/filesystem.hpp"
 #include "flash/utils/ByteArray.h"
-
+#include <sys/stat.h>
 
 using namespace std;
 using namespace lightspark;
@@ -35,15 +35,49 @@ using namespace lightspark;
 class StandaloneEngineData: public EngineData
 {
 	SDL_GLContext mSDLContext;
+	void removedir(const char* dir)
+	{
+		GDir* d = g_dir_open(dir,0,nullptr);
+		if (!d)
+			return;
+		while (true)
+		{
+			const char* filename = g_dir_read_name (d);
+			if (!filename)
+				return;
+			string path = dir;
+			path += G_DIR_SEPARATOR_S;
+			path += filename;
+			struct stat st;
+			stat(path.c_str(), &st);
+			if(st.st_mode & S_IFDIR)
+				removedir(path.c_str());
+			else
+				::remove(path.c_str());
+		}
+		g_dir_close(d);
+		removedir(dir);
+	}
+	bool isvalidfilename(const tiny_string& filename)
+	{
+		if (filename.find("./") != tiny_string::npos || filename == ".." ||
+				filename.find("~") != tiny_string::npos)
+			return false;
+		return true;
+	}
+	size_t getfilesize(const char* filepath)
+	{
+		struct stat st;
+		stat(filepath, &st);
+		return st.st_size;
+	}
 public:
 	StandaloneEngineData()
 	{
 	}
 	~StandaloneEngineData()
 	{
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
-		if (!p.empty())
-			boost::filesystem::remove_all(p);
+		removedir(Config::getConfig()->getDataDirectory().c_str());
 	}
 	SDL_Window* createWidget(uint32_t w, uint32_t h)
 	{
@@ -119,28 +153,31 @@ public:
 	}
 	bool FileExists(const tiny_string& filename)
 	{
-		if (!boost::filesystem::portable_file_name(filename))
+		if (!isvalidfilename(filename))
 			return false;
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		std::string p = Config::getConfig()->getDataDirectory();
 		if (p.empty())
 			return false;
-		p /= filename.raw_buf();
-		return boost::filesystem::exists(p);
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
+		return g_file_test(p.c_str(),G_FILE_TEST_EXISTS);
 	}
 	tiny_string FileRead(const tiny_string& filename)
 	{
-		if (!boost::filesystem::portable_file_name(filename))
+		if (!isvalidfilename(filename))
 			return "";
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		std::string p = Config::getConfig()->getDataDirectory();
 		if (p.empty())
 			return "";
-		p /= filename.raw_buf();
-		if (!boost::filesystem::exists(p))
+
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
+		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
 			return "";
-		uint32_t len = boost::filesystem::file_size(p);
+		uint32_t len = getfilesize(p.c_str());
 		std::ifstream file;
 		
-		file.open(p.string(), std::ios::in|std::ios::binary);
+		file.open(p, std::ios::in|std::ios::binary);
 		
 		tiny_string res(file,len);
 		file.close();
@@ -148,32 +185,34 @@ public:
 	}
 	void FileWrite(const tiny_string& filename, const tiny_string& data)
 	{
-		if (!boost::filesystem::portable_file_name(filename))
+		if (!isvalidfilename(filename))
 			return;
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		std::string p = Config::getConfig()->getDataDirectory();
 		if (p.empty())
 			return;
-		p /= filename.raw_buf();
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p.string(), std::ios::out|std::ios::binary);
+		file.open(p, std::ios::out|std::ios::binary);
 		file << data;
 		file.close();
 	}
 	void FileReadByteArray(const tiny_string &filename,ByteArray* res)
 	{
-		if (!boost::filesystem::portable_file_name(filename))
+		if (!isvalidfilename(filename))
 			return;
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		std::string p = Config::getConfig()->getDataDirectory();
 		if (p.empty())
 			return;
-		p /= filename.raw_buf();
-		if (!boost::filesystem::exists(p))
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
+		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
 			return;
-		uint32_t len = boost::filesystem::file_size(p);
+		uint32_t len = getfilesize(p.c_str());
 		std::ifstream file;
 		uint8_t buf[len];
-		file.open(p.string(), std::ios::in|std::ios::binary);
+		file.open(p, std::ios::in|std::ios::binary);
 		file.read((char*)buf,len);
 		res->writeBytes(buf,len);
 		file.close();
@@ -181,17 +220,16 @@ public:
 	
 	void FileWriteByteArray(const tiny_string &filename, ByteArray *data)
 	{
-		if (data == NULL)
+		if (!isvalidfilename(filename))
 			return;
-		if (!boost::filesystem::portable_file_name(filename))
-			return;
-		boost::filesystem::path p(Config::getConfig()->getDataDirectory());
+		std::string p = Config::getConfig()->getDataDirectory();
 		if (p.empty())
 			return;
-		p /= filename.raw_buf();
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p.string(), std::ios::out|std::ios::binary|std::ios::trunc);
+		file.open(p, std::ios::out|std::ios::binary|std::ios::trunc);
 		uint8_t* buf = data->getBuffer(data->getLength(),false);
 		file.write((char*)buf,data->getLength());
 		file.close();
@@ -401,7 +439,7 @@ int main(int argc, char* argv[])
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
-		char * cwd = get_current_dir_name();
+		char * cwd = g_get_current_dir();
 		string cwdStr = string("file://") + string(cwd);
 		free(cwd);
 		cwdStr += "/";

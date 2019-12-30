@@ -22,6 +22,7 @@
 #endif
 
 #include "compat.h"
+#include <algorithm>
 
 #ifdef LLVM_ENABLED
 #include <llvm/ExecutionEngine/ExecutionEngine.h>

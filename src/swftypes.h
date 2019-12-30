@@ -378,7 +378,6 @@ struct nsNameAndKind
 	{
 		return nsId==r.nsId;
 	}
-	const nsNameAndKindImpl& getImpl(SystemState *sys) const;
 	inline bool hasEmptyName() const
 	{
 		return nsId==0;

@@ -24,6 +24,7 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/XML.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
+#include <algorithm>
 
 using namespace std;
 using namespace lightspark;

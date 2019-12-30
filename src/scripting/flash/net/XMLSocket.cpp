@@ -33,6 +33,8 @@
 #	include <winsock2.h>
 #	include <ws2tcpip.h>
 #	include <fcntl.h>
+#else
+#include <unistd.h>
 #endif
 
 const char SOCKET_COMMAND_SEND = '*';

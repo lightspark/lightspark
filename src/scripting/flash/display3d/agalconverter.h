@@ -6,6 +6,7 @@
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include <map>
 #include <vector>
+#include <algorithm>
 
 using namespace lightspark;
 

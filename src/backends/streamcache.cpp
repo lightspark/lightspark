@@ -388,7 +388,7 @@ void FileStreamCache::openCache()
 	}
 
 	//Create a temporary file(name)
-	std::string cacheFilenameS = Config::getConfig()->getCacheDirectory() + "/" + Config::getConfig()->getCachePrefix() + "XXXXXX";
+	std::string cacheFilenameS = Config::getConfig()->getCacheDirectory() + G_DIR_SEPARATOR_S + Config::getConfig()->getCachePrefix() + "XXXXXX";
 	char* cacheFilenameC = g_newa(char,cacheFilenameS.length()+1);
 	strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
 	cacheFilenameC[cacheFilenameS.length()] = '\0';

@@ -24,6 +24,7 @@
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/flash/utils/flashutils.h"
+#include <algorithm>
 
 using namespace std;
 using namespace lightspark;

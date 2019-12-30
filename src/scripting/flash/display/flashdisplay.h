@@ -20,11 +20,6 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H
 #define SCRIPTING_FLASH_DISPLAY_FLASHDISPLAY_H 1
 
-#ifndef BOOST_BIMAP_DISABLE_SERIALIZATION
-#include <boost/serialization/split_member.hpp>
-#endif
-
-#include <boost/bimap.hpp>
 #include "compat.h"
 
 #include "swftypes.h"
@@ -102,7 +97,8 @@ class DisplayObjectContainer: public InteractiveObject
 {
 private:
 	bool mouseChildren;
-	boost::bimap<int32_t,DisplayObject*> depthToLegacyChild;
+	map<int32_t,DisplayObject*> mapDepthToLegacyChild;
+	unordered_map<DisplayObject*,int32_t> mapLegacyChildToDepth;
 	map<int32_t,DisplayObject*> namedRemovedLegacyChildren;
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(_R<DisplayObject> child);

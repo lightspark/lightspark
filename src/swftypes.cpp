@@ -27,7 +27,8 @@
 #include <cmath>
 #include <cairo.h>
 #include <glib.h>
-#include <iomanip> 
+#include <iomanip>
+#include <algorithm>
 
 #include "exceptions.h"
 #include "compat.h"
@@ -1748,11 +1749,6 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
 	kind = (NS_KIND)(int)ns.kind;
-}
-
-const nsNameAndKindImpl& nsNameAndKind::getImpl(SystemState* sys) const
-{
-	return sys->getNamespaceFromUniqueId(nsRealId);
 }
 
 nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, uint32_t b)

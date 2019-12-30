@@ -20,17 +20,12 @@
 #ifndef SWF_H
 #define SWF_H 1
 
-#ifndef BOOST_BIMAP_DISABLE_SERIALIZATION
-#include <boost/serialization/split_member.hpp>
-#endif
-
 #include "compat.h"
 #include <fstream>
 #include <list>
 #include <queue>
 #include <map>
 #include <unordered_set>
-#include <boost/bimap.hpp>
 #include <string>
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -273,9 +268,11 @@ private:
 	 * Pooling support
 	 */
 	mutable Mutex poolMutex;
-	boost::bimap<tiny_string, uint32_t> uniqueStringMap;
+	map<tiny_string, uint32_t> uniqueStringMap;
+	unordered_map<uint32_t,tiny_string> uniqueStringIDMap;
 	uint32_t lastUsedStringId;
-	boost::bimap<nsNameAndKindImpl, uint32_t> uniqueNamespaceMap;
+	map<nsNameAndKindImpl, uint32_t> uniqueNamespaceImplMap;
+	unordered_map<uint32_t,nsNameAndKindImpl> uniqueNamespaceIDMap;
 	//This needs to be atomic because it's decremented without the mutex held
 	ATOMIC_INT32(lastUsedNamespaceId);
 	

@@ -38,6 +38,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"
+#include <algorithm>
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
 
@@ -2175,12 +2176,12 @@ DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(
 
 bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
 {
-	auto i = depthToLegacyChild.left.find(depth);
-	return i != depthToLegacyChild.left.end();
+	auto i = mapDepthToLegacyChild.find(depth);
+	return i != mapDepthToLegacyChild.end();
 }
 DisplayObject* DisplayObjectContainer::getLegacyChildAt(int32_t depth)
 {
-	return depthToLegacyChild.left.at(depth);
+	return mapDepthToLegacyChild.at(depth);
 }
 
 
@@ -2203,14 +2204,14 @@ void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t r
 		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth");
 		return;
 	}
-	depthToLegacyChild.left.at(depth)->checkRatio(ratio);
+	mapDepthToLegacyChild.at(depth)->checkRatio(ratio);
 	this->hasChanged=true;
 }
 void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,const CXFORMWITHALPHA& colortransform)
 {
 	if(!hasLegacyChildAt(depth))
 		return;
-	DisplayObject* o = depthToLegacyChild.left.at(depth);
+	DisplayObject* o = mapDepthToLegacyChild.at(depth);
 	if (o->colorTransform.isNull())
 		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getSystemState(),colortransform));
 	else
@@ -2224,7 +2225,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 {
 	if(!hasLegacyChildAt(depth))
 		return;
-	DisplayObject* obj = depthToLegacyChild.left.at(depth);
+	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		obj->incRef();
@@ -2259,11 +2260,11 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 	uint32_t insertpos = 0;
 	// find DisplayObject to insert obj after
 	DisplayObject* preobj=nullptr;
-	for (auto it = depthToLegacyChild.begin(); it != depthToLegacyChild.end();it++)
+	for (auto it = mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end();it++)
 	{
-		if (it->left > depth)
+		if (it->first > depth)
 			break;
-		preobj = it->right;
+		preobj = it->second;
 	}
 	if (preobj)
 	{
@@ -2287,13 +2288,14 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
 	}
 
-	depthToLegacyChild.insert(boost::bimap<int32_t,DisplayObject*>::value_type(depth,obj));
+	mapDepthToLegacyChild.insert(make_pair(depth,obj));
+	mapLegacyChildToDepth.insert(make_pair(obj,depth));
 	obj->afterLegacyInsert();
 }
 
 int DisplayObjectContainer::findLegacyChildDepth(DisplayObject *obj)
 {
-	auto it = depthToLegacyChild.right.find(obj);
+	auto it = mapLegacyChildToDepth.find(obj);
 	return it->second;
 }
 
@@ -2301,24 +2303,24 @@ void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX&
 {
 	if(!hasLegacyChildAt(depth))
 		return;
-	depthToLegacyChild.left.at(depth)->setLegacyMatrix(mat);
+	mapDepthToLegacyChild.at(depth)->setLegacyMatrix(mat);
 }
 
 void DisplayObjectContainer::purgeLegacyChildren()
 {
-	auto i = depthToLegacyChild.begin();
-	while( i != depthToLegacyChild.end() )
+	auto i = mapDepthToLegacyChild.begin();
+	while( i != mapDepthToLegacyChild.end() )
 	{
-		if (i->left < 0)
-			legacyChildrenMarkedForDeletion.insert(i->left);
+		if (i->first < 0)
+			legacyChildrenMarkedForDeletion.insert(i->first);
 		i++;
 	}
 }
 uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()
 {
-	auto it = depthToLegacyChild.left.begin();
+	auto it = mapDepthToLegacyChild.begin();
 	int32_t max =0;
-	while (it !=depthToLegacyChild.left.end())
+	while (it !=mapDepthToLegacyChild.end())
 	{
 		if (it->first > max)
 			max = it->first;
@@ -2330,10 +2332,10 @@ void DisplayObjectContainer::checkClipDepth()
 {
 	DisplayObject* clipobj = NULL;
 	int depth = 0;
-	for (auto it=depthToLegacyChild.begin(); it != depthToLegacyChild.end(); it++)
+	for (auto it=mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end(); it++)
 	{
-		DisplayObject* obj = it->right;
-		depth = it->left;
+		DisplayObject* obj = it->second;
+		depth = it->first;
 		if (obj->ClipDepth)
 		{
 			if (clipobj)
@@ -2361,7 +2363,8 @@ bool DisplayObjectContainer::destruct()
 	mouseChildren = true;
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
-	depthToLegacyChild.left.clear();
+	mapDepthToLegacyChild.clear();
+	mapLegacyChildToDepth.clear();
 	for (auto it = namedRemovedLegacyChildren.begin(); it != namedRemovedLegacyChildren.end(); it++)
 		(*it).second->decRef();
 	namedRemovedLegacyChildren.clear();
@@ -2370,10 +2373,10 @@ bool DisplayObjectContainer::destruct()
 
 void DisplayObjectContainer::resetLegacyState()
 {
-	auto i = depthToLegacyChild.begin();
-	while( i != depthToLegacyChild.end() )
+	auto i = mapDepthToLegacyChild.begin();
+	while( i != mapDepthToLegacyChild.end())
 	{
-		i->right->resetLegacyState();
+		i->second->resetLegacyState();
 		i++;
 	}
 }
@@ -2479,10 +2482,10 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 			(*it)->as<DisplayObjectContainer>()->dumpDisplayList(level+1);
 		}
 	}
-	auto i = depthToLegacyChild.begin();
-	while( i != depthToLegacyChild.end() )
+	auto i = mapDepthToLegacyChild.begin();
+	while( i != mapDepthToLegacyChild.end() )
 	{
-		LOG(LOG_INFO, indent << "legacy:"<<i->left <<" "<<i->right->toDebugString());
+		LOG(LOG_INFO, indent << "legacy:"<<i->first <<" "<<i->second->toDebugString());
 		i++;
 	}
 }
@@ -2593,7 +2596,12 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 		child->setMask(NullRef);
 		
 		//Erase this from the legacy child map (if it is in there)
-		depthToLegacyChild.right.erase(child);
+		auto it2 = mapLegacyChildToDepth.find(child);
+		if (it2 != mapLegacyChildToDepth.end())
+		{
+			mapDepthToLegacyChild.erase(it2->second);
+			mapLegacyChildToDepth.erase(it2);
+		}
 
 		dynamicDisplayList.erase(it);
 	}
@@ -2727,7 +2735,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			++it;
 		child=(*it).getPtr();
 		//Erase this from the legacy child map (if it is in there)
-		th->depthToLegacyChild.right.erase(child);
+		auto it2 = th->mapLegacyChildToDepth.find(child);
+		if (it2 != th->mapLegacyChildToDepth.end())
+		{
+			th->mapDepthToLegacyChild.erase(it2->second);
+			th->mapLegacyChildToDepth.erase(it2);
+		}
 		child->setOnStage(false);
 		child->setParent(nullptr);
 		//incRef before the refrence is destroyed

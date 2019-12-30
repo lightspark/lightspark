@@ -28,6 +28,7 @@
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include <algorithm>
 
 using namespace lightspark;
 using namespace std;

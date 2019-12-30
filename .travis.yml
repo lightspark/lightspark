@@ -15,8 +15,6 @@ addons:
       - libx11-dev
       - libglu1-mesa-dev
       - libglew-dev
-      - libboost-filesystem-dev
-      - libboost-system-dev
       - libavcodec-dev
       - libavformat-dev
       - libavresample-dev
@@ -55,7 +53,6 @@ matrix:
             - mxe-x86-64-w64-mingw32.static-cairo
             - mxe-x86-64-w64-mingw32.static-pango
             - mxe-x86-64-w64-mingw32.static-jpeg
-            - mxe-x86-64-w64-mingw32.static-boost
             - mxe-x86-64-w64-mingw32.static-glew
             - mxe-x86-64-w64-mingw32.static-freetype
             - mxe-x86-64-w64-mingw32.static-curl
@@ -103,8 +100,6 @@ matrix:
                  libx11-dev
                  libglu1-mesa-dev
                  libglew-dev
-                 libboost-filesystem-dev
-                 libboost-system-dev
                  libavcodec-dev
                  libavformat-dev
                  libavresample-dev
@@ -143,9 +138,6 @@ matrix:
             - libx11-dev
             - libglu1-mesa-dev
             - libglew-dev
-            - libboost-filesystem-dev
-            - libboost-system-dev
-            - libboost-regex-dev
             - libpulse-dev
             - libavcodec-dev
             - libavformat-dev
@@ -183,9 +175,6 @@ matrix:
             - libx11-dev
             - libglu1-mesa-dev
             - libglew-dev
-            - libboost-filesystem-dev
-            - libboost-system-dev
-            - libboost-regex-dev
             - libpulse-dev
             - libavcodec-dev
             - libavformat-dev

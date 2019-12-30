@@ -25,7 +25,6 @@ To compile this software you need to install development packages for:
 * pcre
 * librtmp
 * cairo
-* libboost-filesystem,
 * sdl2
 * sdl2_mixer
 * libjpeg

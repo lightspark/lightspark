@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include <algorithm>
 
 using namespace std;
 using namespace lightspark;

@@ -927,7 +927,8 @@ void TextField::updateSizes()
 	
 	//Compute (text)width, (text)height
 	
-	RootMovieClip* currentRoot=getSystemState()->mainClip;
+	RootMovieClip* currentRoot=this->getRoot().getPtr();
+	if (!currentRoot) currentRoot = getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
@@ -1221,7 +1222,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return NULL;
 	}
 
-	RootMovieClip* currentRoot=getSystemState()->mainClip;
+	RootMovieClip* currentRoot=this->getRoot().getPtr();
+	if (!currentRoot) currentRoot = getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();
 	MATRIX totalMatrix;

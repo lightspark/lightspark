@@ -613,8 +613,6 @@ ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 {
 	SoundChannel* th=asAtomHandler::as<SoundChannel>(obj);
-	if (th->audioStream)
-		th->startTime = th->audioStream->getPlayedTime();
 	th->threadAbort();
 	while (!ACQUIRE_READ(th->terminated))
 		compat_msleep(10);
@@ -759,7 +757,11 @@ void SoundChannel::threadAbort()
 	RELEASE_WRITE(stopped,true);
 	Locker l(mutex);
 	if (stream)
+	{
+		if (audioStream)
+			startTime = audioStream->getPlayedTime();
 		stream->markFinished(false);
+	}
 	if(audioDecoder)
 	{
 		//Clear everything we have in buffers, discard all frames

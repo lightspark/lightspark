@@ -138,6 +138,7 @@ Config::Config():
 		dataDirectory +="cXXXXXX";
 		char* tmpdir = new char[dataDirectory.length()+100];
 		strncpy(tmpdir,dataDirectory.c_str(),dataDirectory.length());
+		tmpdir[dataDirectory.length()] = 0x00;
 		tmpdir =g_mkdtemp(tmpdir);
 		if (!tmpdir)
 		{

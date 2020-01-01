@@ -402,6 +402,7 @@ public:
 	~FFMpegStreamDecoder();
 	void jumpToPosition(number_t position) override;
 	bool decodeNextFrame() override;
+	int getAudioSampleRate();
 };
 #endif
 

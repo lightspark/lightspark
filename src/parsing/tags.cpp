@@ -2058,7 +2058,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(24,bs);
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache(root->getSystemState()))
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache(root->getSystemState())),realSampleRate(0)
 {
 	LOG(LOG_TRACE,_("DefineSound Tag"));
 	in >> SoundId;
@@ -2086,6 +2086,15 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 	}
 	SoundData->append(tmpp, soundDataLength);
 	SoundData->markFinished();
+#ifdef ENABLE_LIBAVCODEC
+	// detect real sample rate regardless of value provided in the tag
+	std::streambuf *sbuf = SoundData->createReader();
+	istream s(sbuf);
+	FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,root->getSystemState()->getEngineData(),s);
+	realSampleRate  = streamDecoder->getAudioSampleRate();
+	delete streamDecoder;
+	delete sbuf;
+#endif
 }
 
 ASObject* DefineSoundTag::instance(Class_base* c)
@@ -2118,6 +2127,8 @@ number_t DefineSoundTag::getDurationInMS() const
 }
 int DefineSoundTag::getSampleRate() const
 {
+	if (realSampleRate)
+		return realSampleRate;
 	switch(SoundRate)
 	{
 		case 0:

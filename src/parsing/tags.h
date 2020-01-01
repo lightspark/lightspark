@@ -261,6 +261,7 @@ private:
 	char SoundType;
 	UI32_SWF SoundSampleCount;
 	_R<MemoryStreamCache> SoundData;
+	int realSampleRate;
 public:
 	DefineSoundTag(RECORDHEADER h, std::istream& s, RootMovieClip* root);
 	virtual int getId() const { return SoundId; }

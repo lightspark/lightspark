@@ -1335,6 +1335,13 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	return true;
 }
 
+int FFMpegStreamDecoder::getAudioSampleRate()
+{
+	if (customAudioDecoder)
+		return customAudioDecoder->sampleRate;
+	return 0;
+}
+
 int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 {
 	FFMpegStreamDecoder* th=static_cast<FFMpegStreamDecoder*>(t);

@@ -369,7 +369,6 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
 	EngineData::mainthread_running = true;
-//	g_idle_add((GSourceFunc)EngineData::mainloop_from_plugin,m_sys);
 	//The sys var should be NULL in this thread
 	setTLSSys( NULL );
 }
@@ -384,6 +383,10 @@ nsPluginInstance::~nsPluginInstance()
 	if (mainDownloaderStreambuf)
 		delete mainDownloaderStreambuf;
 
+	// stop fullscreen ticker
+	if (m_sys->getEngineData() && m_sys->getEngineData()->widget)
+		SDL_HideWindow(m_sys->getEngineData()->widget);
+	
 	// Kill all stuff relating to NPScriptObject which is still running
 	m_sys->extScriptObject->destroy();
 
@@ -567,9 +570,15 @@ void PluginEngineData::setDisplayState(const tiny_string &displaystate)
 	}
 	SDL_SetWindowFullscreen(widget, displaystate.startsWith("fullScreen") ? SDL_WINDOW_FULLSCREEN_DESKTOP: 0);
 	if (displaystate == "fullScreen")
+	{
 		SDL_ShowWindow(widget);
+		startFullscreeenTicker(sys);
+	}
 	else
+	{
 		SDL_HideWindow(widget);
+		inRendering=false;
+	}
 }
 
 void PluginEngineData::grabFocus()
@@ -851,6 +860,8 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 
 uint16_t nsPluginInstance::HandleEvent(void *event)
 {
+	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inFullScreenMode())
+		return 0;
 	EngineData::mainloop_from_plugin(m_sys);
 #if defined(MOZ_X11)
 	XEvent* nsEvent = (XEvent*)event;

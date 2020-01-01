@@ -40,6 +40,7 @@ class MouseEvent;
 
 class InputThread
 {
+friend class Stage;
 private:
 	SystemState* m_sys;
 	EngineData* engineData;

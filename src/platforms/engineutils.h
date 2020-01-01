@@ -40,6 +40,7 @@ namespace lightspark
 class SystemState;
 class StreamCache;
 class AudioStream;
+class ITickJob;
 
 enum DEPTH_FUNCTION { ALWAYS, EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, NEVER, NOT_EQUAL };
 enum TRIANGLE_FACE { FACE_BACK, FACE_FRONT, FACE_FRONT_AND_BACK, FACE_NONE };
@@ -67,6 +68,7 @@ protected:
 	 * the specific handler */
 	RecMutex mutex;
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
+	ITickJob* fullscreentickjob;
 public:
 	uint32_t pixelBuffers[2];
 	uint32_t currentPixelBuffer;
@@ -101,7 +103,10 @@ public:
 		SDL_PushEvent(&event);
 	}
 	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
-	static gboolean mainloop_from_plugin(SystemState* sys);
+	static void mainloop_from_plugin(SystemState* sys);
+
+	// this is called when going to fulllscreen mode from plugin, to keep handling of SDL events alive
+	void startFullscreeenTicker(SystemState *sys);
 	
 	/* This function must be called from mainLoopThread
 	 * It fills this->widget and this->window.

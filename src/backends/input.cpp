@@ -561,18 +561,6 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 		return;
 
 	Locker locker(mutexListeners);
-	if (keyevent->type == SDL_KEYDOWN)
-	{
-		lastKeymod = (SDL_Keymod)keyevent->keysym.mod;
-		lastKeyDown = keyevent->keysym.sym;
-		lastKeyUp =AS3KEYCODE_UNKNOWN;
-	}
-	else
-	{
-		lastKeymod = (SDL_Keymod)keyevent->keysym.mod;
-		lastKeyUp = keyevent->keysym.sym;
-		lastKeyDown =AS3KEYCODE_UNKNOWN;
-	}
 
 	_NR<DisplayObject> target = m_sys->stage->getFocusTarget();
 	if (target.isNull())
@@ -586,7 +574,7 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 
 	target->incRef();
 	m_sys->currentVm->addIdleEvent(target,
-	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,getAS3KeyCode(keyevent->keysym.sym), (SDL_Keymod)keyevent->keysym.mod)));
+	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys,type,keyevent->keysym.scancode,getAS3KeyCode(keyevent->keysym.sym), (SDL_Keymod)keyevent->keysym.mod,keyevent->keysym.sym)));
 }
 
 void InputThread::addListener(InteractiveObject* ob)

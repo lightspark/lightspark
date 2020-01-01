@@ -44,7 +44,7 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : fullscreentickjob(nullptr), currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
@@ -153,7 +153,7 @@ static void mainloop_runner()
 		}
 	}
 }
-gboolean EngineData::mainloop_from_plugin(SystemState* sys)
+void EngineData::mainloop_from_plugin(SystemState* sys)
 {
 	SDL_Event event;
 	setTLSSys(sys);
@@ -162,7 +162,31 @@ gboolean EngineData::mainloop_from_plugin(SystemState* sys)
 		mainloop_handleevent(&event,sys);
 	}
 	setTLSSys(NULL);
-	return G_SOURCE_CONTINUE;
+}
+
+class FullscreeenTicker:public ITickJob
+{
+	EngineData* m_engine;
+	SystemState* m_sys;
+public:
+	FullscreeenTicker(EngineData* engine,SystemState* sys):m_engine(engine),m_sys(sys) {}
+	void tick() override
+	{
+		m_engine->runInMainThread(m_sys,EngineData::mainloop_from_plugin);
+		if (!m_engine->inFullScreenMode())
+			stopMe=true;
+	}
+	void tickFence() override
+	{
+		delete this;
+	}
+};
+
+
+void EngineData::startFullscreeenTicker(SystemState* sys)
+{
+	fullscreentickjob = new FullscreeenTicker(this,sys);
+	sys->addTick(50,fullscreentickjob);
 }
 
 /* This is not run in the linux plugin, as firefox

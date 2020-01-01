@@ -110,8 +110,9 @@ private:
 	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
+	SDL_Keycode sdlkeycode;
 public:
-	KeyboardEvent(Class_base* c, tiny_string type="", uint32_t charcode=0, uint32_t keycode=0, SDL_Keymod modifiers=KMOD_NONE);
+	KeyboardEvent(Class_base* c, tiny_string _type="", uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
@@ -125,6 +126,7 @@ public:
 	uint32_t getCharCode() const { return charCode; }
 	uint32_t getKeyCode() const { return keyCode; }
 	uint32_t getModifiers() const { return modifiers; }
+	SDL_Keycode getSDLKeyCode() const { return sdlkeycode; }
 };
 
 class FocusEvent: public Event

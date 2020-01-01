@@ -26,6 +26,8 @@
 #include "logger.h"
 #include "exceptions.h"
 
+#include <cstring>
+
 using namespace lightspark;
 using namespace std;
 

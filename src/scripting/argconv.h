@@ -235,19 +235,31 @@ inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, Sys
 {
 	asAtomHandler::setUInt(ret,sys,val.toUInt());
 }
-
+#ifndef NDEBUG
 #define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen,false)
 #define ARG_UNPACK_ATOM_MORE_ALLOWED ArgUnpackAtom(sys,args,argslen,true)
-
+#else
+#define ARG_UNPACK_ATOM ArgUnpackAtom(sys,args,argslen)
+#define ARG_UNPACK_ATOM_MORE_ALLOWED ArgUnpackAtom(sys,args,argslen)
+#endif
 class ArgUnpackAtom
 {
 private:
 	SystemState* sys;
 	asAtom* args;
 	int argslen;
+#ifndef NDEBUG
 	bool moreAllowed;
+#endif
 public:
-	ArgUnpackAtom(SystemState* _sys,asAtom* _args, int _argslen, bool _moreAllowed) : sys(_sys),args(_args), argslen(_argslen), moreAllowed(_moreAllowed) {}
+#ifndef NDEBUG
+	ArgUnpackAtom(SystemState* _sys,asAtom* _args, int _argslen, bool _moreAllowed) : sys(_sys),args(_args), argslen(_argslen), moreAllowed(_moreAllowed)
+#else
+	ArgUnpackAtom(SystemState* _sys,asAtom* _args, int _argslen) : sys(_sys),args(_args), argslen(_argslen)
+#endif
+	{
+		
+	}
 
 	template<class T> ArgUnpackAtom& operator()(T& v)
 	{

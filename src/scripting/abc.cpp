@@ -276,7 +276,10 @@ void ABCVm::registerClassesAVM1()
 	registerClassesToplevel(builtinavm1);
 
 	if (!m_sys->mainClip->usesActionScript3)
+	{
 		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
+		Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),DYNAMIC_TRAIT);
+	}
 
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
 	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));

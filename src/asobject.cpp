@@ -1258,18 +1258,23 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 }
 ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 {
+	ret = asAtomHandler::falseAtom;
 	tiny_string name;
 	_NR<IFunction> getter;
 	_NR<IFunction> setter;
 	ARG_UNPACK_ATOM(name)(getter)(setter);
 	if (name.empty())
-		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(0));
-	if (getter.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(1));
-	if (setter.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(2));
-	asAtomHandler::toObject(obj,sys)->setDeclaredMethodByQName(name,"",getter.getPtr(),GETTER_METHOD,false);
-	asAtomHandler::toObject(obj,sys)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
+		return;
+	if (!getter.isNull())
+	{
+		ret = asAtomHandler::trueAtom;
+		asAtomHandler::toObject(obj,sys)->setDeclaredMethodByQName(name,"",getter.getPtr(),GETTER_METHOD,false);
+	}
+	if (!setter.isNull())
+	{
+		ret = asAtomHandler::trueAtom;
+		asAtomHandler::toObject(obj,sys)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
+	}
 }
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)

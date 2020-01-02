@@ -1428,18 +1428,8 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOut not handled");
 	if (v.ClipEventRollOver)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOver not handled");
-	if (v.ClipEventReleaseOutside)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventReleaseOutside not handled");
-	if (v.ClipEventRelease)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRelease not handled");
-	if (v.ClipEventPress)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventPress not handled");
-	if (v.ClipEventInitialize)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventInitialize not handled");
 	if (v.ClipEventData)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventData not handled");
-	if (v.ClipEventConstruct)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventConstruct not handled");
 	if (v.ClipEventKeyPress)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventKeyPress not handled");
 	if (v.ClipEventDragOut)
@@ -2087,14 +2077,16 @@ std::istream& lightspark::operator>>(std::istream& stream, ACTIONRECORD& v)
 		}
 
 		// SWF6 action model
-		// DoInitAction ActionInstanceOf ActionStringGreater
+		// DoInitAction ActionStringGreater
+		case 0x54: // ActionInstanceOf
 		case 0x55: // ActionEnumerate2
 		case 0x66: // ActionStrictEquals
 		case 0x67: // ActionGreater
 			break;
 		// SWF7 action model
-		// ActionExtends ActionImplementsOp ActionTry ActionThrow
+		// ActionImplementsOp ActionTry ActionThrow
 		case 0x2b: // ActionCastOp
+		case 0x69: // ActionExtends
 			break;
 		case 0x8e: // ActionDefineFunction2
 		{

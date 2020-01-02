@@ -717,6 +717,21 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				PushStack(stack,asAtomHandler::nullAtom);
 				break;
 			}
+			case 0x69: // ActionExtends
+			{
+				asAtom superconstr = PopStack(stack);
+				asAtom subconstr = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionExtends "<<asAtomHandler::toDebugString(superconstr)<<" "<<asAtomHandler::toDebugString(subconstr));
+				if (!asAtomHandler::isFunction(subconstr))
+				{
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionExtends  wrong constructor type "<<asAtomHandler::toDebugString(superconstr)<<" "<<asAtomHandler::toDebugString(subconstr));
+					break;
+				}
+				IFunction* c = asAtomHandler::as<IFunction>(subconstr);
+				c->prototype = _MNR(Class<ASObject>::getInstanceS(clip->getSystemState()));
+				c->prototype->setVariableAtomByQName("constructor",nsNameAndKind(),superconstr, DECLARED_TRAIT);
+				break;
+			}
 			case 0x30: // ActionRandomNumber
 			{
 				asAtom am = PopStack(stack);
@@ -1219,9 +1234,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
 				asAtom ret=asAtomHandler::invalidAtom;
-				if (asAtomHandler::is<MovieClip>(scriptobject))
+				if (asAtomHandler::is<DisplayObject>(scriptobject))
 				{
-					AVM1Function* f = asAtomHandler::as<MovieClip>(scriptobject)->AVM1GetFunction(nameID);
+					AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameID);
 					if (f)
 					{
 						f->call(&ret,&scriptobject,args,numargs);
@@ -1254,7 +1269,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 								break;
 							pr = pr->getprop_prototype();
 						}
-						
 					}
 					if (asAtomHandler::is<Function>(func))
 						asAtomHandler::as<Function>(func)->call(ret,scriptobject,args,numargs);
@@ -1319,6 +1333,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				else
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
 				PushStack(stack,ret);
+				break;
+			}
+			case 0x54: // ActionInstanceOf
+			{
+				asAtom constr = PopStack(stack);
+				asAtom obj = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionInstanceOf "<<asAtomHandler::toDebugString(constr)<<" "<<asAtomHandler::toDebugString(obj));
+				ASObject* value = asAtomHandler::toObject(obj,clip->getSystemState());
+				ASObject* type = asAtomHandler::toObject(constr,clip->getSystemState());
+				PushStack(stack, asAtomHandler::fromBool(ABCVm::instanceOf(value,type)));
 				break;
 			}
 			case 0x55: // ActionEnumerate2

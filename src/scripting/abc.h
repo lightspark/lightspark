@@ -310,6 +310,7 @@ class ABCVm
 friend class ABCContext;
 friend class method_info;
 friend union asAtom;
+friend class ACTIONRECORD;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;

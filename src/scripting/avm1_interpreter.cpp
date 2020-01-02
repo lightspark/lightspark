@@ -496,6 +496,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						case 3:// xscale
 							DisplayObject::_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 6:// alpha
+							DisplayObject::_getAlpha(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 7:// visible
 							DisplayObject::_getVisible(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -564,6 +567,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							break;
 						case 3:// xscale
 							DisplayObject::_setScaleY(ret,clip->getSystemState(),obj,&valueInt,1);
+							break;
+						case 6:// alpha
+							DisplayObject::_setAlpha(ret,clip->getSystemState(),obj,&valueInt,1);
 							break;
 						case 7:// visible
 							DisplayObject::_setVisible(ret,clip->getSystemState(),obj,&valueInt,1);
@@ -1232,8 +1238,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				for (uint32_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
-				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
 				asAtom ret=asAtomHandler::invalidAtom;
+				if (asAtomHandler::isUndefined(name)|| asAtomHandler::toStringId(name,clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
+				{
+					if (asAtomHandler::is<Function>(scriptobject))
+						asAtomHandler::as<Function>(scriptobject)->call(ret,scriptobject,args,numargs);
+					else if (asAtomHandler::is<AVM1Function>(scriptobject))
+						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scriptobject,args,numargs);
+					else if (asAtomHandler::is<Class_base>(scriptobject))
+						asAtomHandler::as<Class_base>(scriptobject)->generator(ret,args,numargs);
+					else
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod without name and srciptobject is not a function:"<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
+					break;
+				}
+				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
 				if (asAtomHandler::is<DisplayObject>(scriptobject))
 				{
 					AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameID);

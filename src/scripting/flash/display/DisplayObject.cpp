@@ -1464,10 +1464,13 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
-			this->incRef();
-			getSystemState()->registerFrameListener(_MR(this));
-			getSystemState()->stage->AVM1AddEventListener(this);
-			setIsEnumerable(name, false);
+			if (asAtomHandler::isFunction(o))
+			{
+				this->incRef();
+				getSystemState()->registerFrameListener(_MR(this));
+				getSystemState()->stage->AVM1AddEventListener(this);
+				setIsEnumerable(name, false);
+			}
 		}
 		if (this->is<InteractiveObject>() && (
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
@@ -1897,6 +1900,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 	if (pos == tiny_string::npos)
 	{
 		tiny_string localname = name.lowercase();
+		uint32_t nameIdOriginal = getSystemState()->getUniqueStringId(name);
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
@@ -1907,14 +1911,12 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 			{
 				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
 				f->incRef();
-				// make nameId case sensitive for use in setVariableByMultiname
-				nameId = getSystemState()->getUniqueStringId(name);
-				avm1functions[nameId] = _MR(f);
+				avm1functions[nameIdOriginal] = _MR(f);
 			}
 		}
 		multiname objName(NULL);
 		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=nameId;
+		objName.name_s_id=nameIdOriginal;
 		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
 		AVM1UpdateVariableBindings(nameId,v);
 	}

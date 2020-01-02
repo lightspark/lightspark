@@ -987,6 +987,7 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 		deleteLegacyChildAt(*it);
 		it = legacyChildrenMarkedForDeletion.erase(it);
 	}
+	namedRemovedLegacyChildren.clear();
 }
 
 void DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
@@ -2231,7 +2232,6 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 		obj->incRef();
 		// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
 		namedRemovedLegacyChildren[obj->name] = obj;
-		obj->resetLegacyState();
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
 		multiname objName(NULL);

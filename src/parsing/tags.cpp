@@ -1539,7 +1539,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
 	}
-
+	bool newInstance = false;
 	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
@@ -1572,6 +1572,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 				instance->decRef();
 				return;
 			}
+			newInstance = true;
 		}
 		assert_and_throw(toAdd);
 
@@ -1632,6 +1633,32 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio);
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
+	if (newInstance && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
+	{
+		// TODO not sure if this is the right place to handle Construct events
+		std::map<uint32_t,asAtom> m;
+		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+		{
+			if (it->EventFlags.ClipEventConstruct)
+			{
+				AVM1context context;
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,0,m);
+			}
+		}
+	}
+	if (this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
+	{
+		// TODO not sure if this is the right place to handle Initialize events
+		std::map<uint32_t,asAtom> m;
+		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+		{
+			if (it->EventFlags.ClipEventInitialize)
+			{
+				AVM1context context;
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,0,m);
+			}
+		}
+	}
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),ClipActions(root->version),placedTag(nullptr)
@@ -2087,13 +2114,16 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	SoundData->append(tmpp, soundDataLength);
 	SoundData->markFinished();
 #ifdef ENABLE_LIBAVCODEC
-	// detect real sample rate regardless of value provided in the tag
-	std::streambuf *sbuf = SoundData->createReader();
-	istream s(sbuf);
-	FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,root->getSystemState()->getEngineData(),s);
-	realSampleRate  = streamDecoder->getAudioSampleRate();
-	delete streamDecoder;
-	delete sbuf;
+	if (soundDataLength >= 8192)
+	{
+		// detect real sample rate regardless of value provided in the tag
+		std::streambuf *sbuf = SoundData->createReader();
+		istream s(sbuf);
+		FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,root->getSystemState()->getEngineData(),s);
+		realSampleRate  = streamDecoder->getAudioSampleRate();
+		delete streamDecoder;
+		delete sbuf;
+	}
 #endif
 }
 

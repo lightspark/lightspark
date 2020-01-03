@@ -1276,6 +1276,16 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 		asAtomHandler::toObject(obj,sys)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
 	}
 }
+ASFUNCTIONBODY_ATOM(ASObject,registerClass)
+{
+	ret = asAtomHandler::falseAtom;
+	tiny_string name;
+	_NR<IFunction> theClassConstructor;
+	ARG_UNPACK_ATOM(name)(theClassConstructor);
+	if (name.empty())
+		return;
+	ret = asAtomHandler::fromBool(sys->mainClip->AVM1registerTagClass(name,theClassConstructor));
+}
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {

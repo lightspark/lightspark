@@ -854,7 +854,37 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						asAtomHandler::as<Class_base>(func)->generator(ret,args,numargs);
 					}
 					else
-						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
+					{
+						if (clip->getSystemState()->mainClip->version > 4)
+						{
+							func = asAtomHandler::invalidAtom;
+							multiname m(nullptr);
+							m.name_type=multiname::NAME_STRING;
+							m.name_s_id=nameID;
+							m.isAttribute = false;
+							clip->getVariableByMultiname(func,m);
+							if (asAtomHandler::isInvalid(func))// get Variable from root movie
+								clip->getSystemState()->mainClip->getVariableByMultiname(func,m);
+							if (asAtomHandler::isInvalid(func))// get Variable from global object
+								clip->getSystemState()->avm1global->getVariableByMultiname(func,m);
+						}
+						if (asAtomHandler::is<AVM1Function>(func))
+						{
+							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs);
+						}
+						else if (asAtomHandler::is<Function>(func))
+						{
+							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+							asAtomHandler::as<Function>(func)->call(ret,obj,args,numargs);
+						}
+						else if (asAtomHandler::is<Class_base>(func))
+						{
+							asAtomHandler::as<Class_base>(func)->generator(ret,args,numargs);
+						}
+						else
+							LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
+					}
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction done "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				PushStack(stack,ret);

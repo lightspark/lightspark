@@ -969,6 +969,7 @@ public:
 	ASFUNCTION_ATOM(propertyIsEnumerable);
 	ASFUNCTION_ATOM(setPropertyIsEnumerable);
 	ASFUNCTION_ATOM(addProperty);
+	ASFUNCTION_ATOM(registerClass);
 	void check() const;
 	static void s_incRef(ASObject* o)
 	{

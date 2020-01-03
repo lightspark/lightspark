@@ -1572,6 +1572,16 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 				instance->decRef();
 				return;
 			}
+			if (!placedTag->loadedFrom->usesActionScript3)
+			{
+				AVM1Function* constr = placedTag->loadedFrom->AVM1getClassConstructor(placedTag);
+				if (constr)
+				{
+					asAtom ret = asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(toAdd);
+					constr->call(&ret,&obj,nullptr,0);
+				}
+			}
 			newInstance = true;
 		}
 		assert_and_throw(toAdd);

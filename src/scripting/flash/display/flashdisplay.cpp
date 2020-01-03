@@ -1999,6 +1999,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	toAdd->name = nameId;
+	AVM1Function* constr = placedTag->loadedFrom->AVM1getClassConstructor(placedTag);
+	if (constr)
+	{
+		asAtom ret2 = asAtomHandler::invalidAtom;
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(toAdd);
+		constr->call(&ret2,&obj,nullptr,0);
+	}
 	if (argslen == 4)
 	{
 		ASObject* o = asAtomHandler::getObject(args[3]);
@@ -2016,7 +2023,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		th->insertLegacyChildAt(Depth,toAdd);
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
-	ret=asAtomHandler::fromObject(toAdd);
+	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 {

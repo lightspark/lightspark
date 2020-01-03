@@ -279,6 +279,8 @@ void ABCVm::registerClassesAVM1()
 	{
 		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
 		Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),DYNAMIC_TRAIT);
+		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),NORMAL_METHOD,false);
+		Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),DYNAMIC_TRAIT);
 	}
 
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));

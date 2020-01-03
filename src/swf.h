@@ -86,6 +86,8 @@ private:
 	void initFrame();
 	void advanceFrame();
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
+	
+	unordered_map<DictionaryTag*,_NR<IFunction>> avm1ClassConstructors;
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
@@ -135,6 +137,9 @@ public:
 	FontTag* getEmbeddedFont(const tiny_string fontname) const;
 	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
 	void setupAVM1RootMovie();
+	// map AVM1 class constructors to named tags
+	bool AVM1registerTagClass(const tiny_string& name, _NR<IFunction> theClassConstructor);
+	AVM1Function* AVM1getClassConstructor(DictionaryTag* t);
 };
 
 class ThreadProfile
@@ -444,9 +449,6 @@ public:
 	//enterFrame event management
 	void registerFrameListener(_R<DisplayObject> clip);
 	void unregisterFrameListener(_R<DisplayObject> clip);
-
-	//tags management
-	void registerTag(Tag* t);
 
 	//Invalidation queue management
 	int32_t currentflushstep;

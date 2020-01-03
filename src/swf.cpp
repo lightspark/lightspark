@@ -2356,3 +2356,27 @@ void RootMovieClip::setupAVM1RootMovie()
 	if (!usesActionScript3)
 		MovieClip::AVM1SetupMethods(getClass());
 }
+
+bool RootMovieClip::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)
+{
+	uint32_t nameID = getSystemState()->getUniqueStringId(name);
+	DictionaryTag* t = dictionaryLookupByName(nameID);
+	if (!t)
+	{
+		LOG(LOG_ERROR,"registerClass:no tag found in dictionary for "<<name);
+		return false;
+	}
+	if (theClassConstructor.isNull())
+		avm1ClassConstructors.erase(t);
+	else
+		avm1ClassConstructors.insert(make_pair(t,theClassConstructor));
+	return true;
+}
+
+AVM1Function* RootMovieClip::AVM1getClassConstructor(DictionaryTag *t)
+{
+	auto it = avm1ClassConstructors.find(t);
+	if (it == avm1ClassConstructors.end())
+		return nullptr;
+	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
+}

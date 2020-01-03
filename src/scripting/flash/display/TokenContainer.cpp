@@ -224,12 +224,16 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	owner->computeMasksAndMatrix(target,masks,totalMatrix);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+	// TODO should we combine all colorTransformations up to the root here?
+	ColorTransform* ct = owner->colorTransform.getPtr();
+	if (!ct)
+		ct = owner->getParent()->colorTransform.getPtr();
 	if(width==0 || height==0)
 		return NULL;
 	return new CairoTokenRenderer(tokens,
 				totalMatrix, x, y, width, height, scaling,
 				owner->getConcatenatedAlpha(), masks,smoothing,
-				owner->colorTransform.getPtr());
+				ct);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

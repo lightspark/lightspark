@@ -91,9 +91,8 @@ private:
 	bool coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
-	Mutex mutexRendering;
-
 public:
+	Mutex mutexRendering;
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**

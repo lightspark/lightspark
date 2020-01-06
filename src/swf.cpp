@@ -1237,7 +1237,10 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		color_coords[i*4+2] = color.Blue;
 		color_coords[i*4+3] = 1;
 	}
-	assert_and_throw(engineData);
+	if (!engineData)
+		engineData = getSys()->getEngineData();
+	if (!engineData)
+		return;
 	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(COLOR_ATTRIB, 0, color_coords,FLOAT_4);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
@@ -1249,7 +1252,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	cairo_set_source_rgb(cr, float(color.Red)/255.0, float(color.Green)/255.0, float(color.Blue)/255.0);
 
 	//Draw tags
-	string* curTag=NULL;
+	string* curTag=nullptr;
 	int curTagX=0;
 	int curTagY=maxTime;
 	int curTagLen=0;

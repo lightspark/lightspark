@@ -1352,7 +1352,14 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		return true;
 	tiny_string name = node.name();
 	name = name.lowercase();
-	textdata->text += node.value();
+	tiny_string v = node.value();
+	uint32_t index =v.find("&nbsp;");
+	while (index != tiny_string::npos)
+	{
+		v = v.replace(index,6," ");
+		index =v.find("&nbsp;",index);
+	}
+	textdata->text += v;
 	if (name == "br")
 	{
 		if (textdata->multiline)

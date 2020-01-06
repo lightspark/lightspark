@@ -226,7 +226,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	// TODO should we combine all colorTransformations up to the root here?
 	ColorTransform* ct = owner->colorTransform.getPtr();
-	if (!ct)
+	if (!ct && owner->getParent())
 		ct = owner->getParent()->colorTransform.getPtr();
 	if(width==0 || height==0)
 		return NULL;

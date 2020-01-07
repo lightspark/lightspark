@@ -1313,9 +1313,11 @@ void ASObject::checkFunctionScope(ASObject* o)
 	{
 		if (asAtomHandler::getObject(it->object) != this)
 			continue;
-		f->incActivationCount();
 		if (this->is<Activation_object>())
+		{
+			f->incActivationCount();
 			this->as<Activation_object>()->addDynamicFunctionUsage(f);
+		}
 		else
 			f->addDynamicReferenceObject(this);
 		break;

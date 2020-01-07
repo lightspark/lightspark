@@ -570,9 +570,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			ASATOM_DECREF(v);
 	}
 
-	if (!isMethod())
-		this->decRef(); //free local ref
-
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc.stackp != cc.stack)
 	{
@@ -598,6 +595,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (cc.scope_stack[0].uintval != obj.uintval && mi->needsscope)
 		ASATOM_DECREF_POINTER(cc.scope_stack);
 	cc.curr_scope_stack=0;
+	if (!isMethod())
+		this->decRef(); //free local ref
 	for (auto it = cc.dynamicfunctions.begin(); it != cc.dynamicfunctions.end(); it++)
 	{
 		LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());

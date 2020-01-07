@@ -964,6 +964,11 @@ void EngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
+void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
+{
+	glReadPixels(0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
+}
+
 void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 {
 	AudioStream *s = (AudioStream*)udata;

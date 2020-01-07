@@ -989,6 +989,7 @@ ppKeyMap ppkeymap[] = {
 	{ "CapsLock", SDLK_CAPSLOCK },
 	{ "Comma", SDLK_COMMA },
 	{ "ControlLeft", SDLK_LCTRL },
+	{ "ControlRight", SDLK_RCTRL },
 	{ "KeyD", SDLK_d },
 	{ "Delete", SDLK_DELETE },
 	{ "ArrowDown", SDLK_DOWN },
@@ -1083,6 +1084,7 @@ ppKeyMap ppkeymap[] = {
 	{ "KeyY", SDLK_y },
 //	{ "Yellow", SDLK_UNKNOWN }, // TODO
 	{ "KeyZ", SDLK_z },
+	{ "PrintScreen", SDLK_PRINTSCREEN },
 	{ "", SDLK_UNKNOWN } // indicator for last entry
 };
 SDL_Keycode getppSDLKeyCode(PP_Resource input_event)
@@ -2393,6 +2395,11 @@ void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 {
 	g_gles2_interface->GenerateMipmap(instance->m_graphics,GL_TEXTURE_2D);
+}
+
+void ppPluginEngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
+{
+	g_gles2_interface->ReadPixels(instance->m_graphics,0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
 
 void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)

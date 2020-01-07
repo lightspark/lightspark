@@ -94,6 +94,7 @@ Type `lightspark` to see all command line options.
 * _Ctrl+F_: toggle between normal and fullscreen view
 * _Ctrl+M_: mute/unmute sounds
 * _Ctrl+P_: show profiling data
+* _Ctrl+O_: create screenshot and save it as bmp file in temp folder
 * _Ctrl+C_: copy an error to the clipboard (when Lightspark fails)
 
 ### Environment variables

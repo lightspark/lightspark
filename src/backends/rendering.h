@@ -93,6 +93,7 @@ private:
 	Semaphore initialized;
 public:
 	Mutex mutexRendering;
+	volatile bool screenshotneeded;
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**
@@ -109,6 +110,7 @@ public:
 	void init();
 	void deinit();
 	bool doRender(ThreadProfile *profile=NULL, Chronometer *chronometer=NULL);
+	void generateScreenshot();
 
 	/**
 		Allocates a chunk from the shared texture

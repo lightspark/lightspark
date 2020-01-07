@@ -23,6 +23,7 @@
 #include "backends/rendering.h"
 #include "compat.h"
 #include <sstream>
+#include <unistd.h>
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -56,10 +57,10 @@ void RenderThread::wait()
 
 RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
-	prevUploadJob(NULL),
+	prevUploadJob(nullptr),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),
-	cairoTextureContext(NULL)
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),screenshotneeded(false),
+	cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
 #ifdef _WIN32
@@ -242,27 +243,32 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		return true;
 	}
 
-	if(m_sys->isOnError())
+	if(USUALLY_FALSE(m_sys->isOnError()))
 	{
 		renderErrorPage(this, m_sys->standalone);
 	}
-	if(m_sys->currentflushstep > m_sys->nextflushstep)
+	else
 	{
-		// no changes since last rendering, so we don't need to do anything
-		renderNeeded=false;
-		return true;
-	}
-	m_sys->currentflushstep = m_sys->nextflushstep;
-	if(!m_sys->isOnError())
-	{
-		if (coreRendering())
+		if(m_sys->currentflushstep > m_sys->nextflushstep)
 		{
+			// no changes since last rendering, so we don't need to do anything
 			renderNeeded=false;
 			return true;
 		}
-		//Call glFlush to offload work on the GPU
-		engineData->exec_glFlush();
+		m_sys->currentflushstep = m_sys->nextflushstep;
+		if(!m_sys->isOnError())
+		{
+			if (coreRendering())
+			{
+				renderNeeded=false;
+				return true;
+			}
+			//Call glFlush to offload work on the GPU
+			engineData->exec_glFlush();
+		}
 	}
+	if (screenshotneeded)
+		generateScreenshot();
 	engineData->DoSwapBuffers();
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
@@ -272,6 +278,52 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		m_sys->currentflushstep++;
 	return true;
 }
+void RenderThread::generateScreenshot()
+{
+	char* buf = new char[windowWidth*windowHeight*3];
+	if (!buf)
+	{
+		LOG(LOG_ERROR,"generating screenshot memory failed");
+		return;
+	}
+	engineData->exec_glReadPixels(windowWidth, windowHeight, buf);
+	
+	char* name_used=nullptr;
+	int fd = g_file_open_tmp("lightsparkXXXXXX.bmp",&name_used,nullptr);
+	if(fd == -1)
+	{
+		LOG(LOG_ERROR,"generating screenshot file failed");
+		return;
+	}
+	
+	unsigned char bmp_file_header[14] = { 'B', 'M', 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, };
+	unsigned char bmp_info_header[40] = { 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 24, 0, };
+	size_t size = 54 + windowWidth * windowHeight * 3;
+
+	bmp_file_header[2] = (size)&0xff;
+	bmp_file_header[3] = (size >> 8);
+	bmp_file_header[4] = (size >> 16);
+	bmp_file_header[5] = (size >> 24);
+
+	bmp_info_header[4] = (windowWidth)&0xff;
+	bmp_info_header[5] = (windowWidth >> 8)&0xff;
+	bmp_info_header[6] = (windowWidth >> 16)&0xff;
+	bmp_info_header[7] = (windowWidth >> 24)&0xff;
+
+	bmp_info_header[8] = (windowHeight)&0xff;
+	bmp_info_header[9] = (windowHeight >> 8)&0xff;
+	bmp_info_header[10] = (windowHeight >> 16)&0xff;
+	bmp_info_header[11] = (windowHeight >> 24)&0xff;
+		
+	write(fd,bmp_file_header,14);
+	write(fd,bmp_info_header,40);
+	write(fd,buf,windowWidth * windowHeight * 3);
+	close(fd);
+	LOG(LOG_INFO,"screenshot generated:"<<name_used);
+	g_free(name_used);
+	screenshotneeded=false;
+}
+
 void RenderThread::deinit()
 {
 	engineData->exec_glDisable_GL_TEXTURE_2D();

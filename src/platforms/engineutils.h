@@ -237,6 +237,7 @@ public:
 	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 	virtual void exec_glGenerateMipmap_GL_TEXTURE_2D();
+	virtual void exec_glReadPixels(int32_t width, int32_t height,void* buf);
 
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s);

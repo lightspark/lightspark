@@ -62,6 +62,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 		return;
 	}
 	
+	soundTag->isAttached=true;
 	th->soundData = _R<StreamCache>(soundTag->getSoundData().getPtr());
 	th->soundData->incRef();
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());

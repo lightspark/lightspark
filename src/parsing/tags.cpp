@@ -2095,7 +2095,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UB(24,bs);
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache(root->getSystemState())),realSampleRate(0)
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root),SoundData(new MemoryStreamCache(root->getSystemState())),realSampleRate(0),isAttached(false)
 {
 	LOG(LOG_TRACE,_("DefineSound Tag"));
 	in >> SoundId;
@@ -2212,13 +2212,20 @@ void StartSoundTag::execute(DisplayObjectContainer *parent)
 	DefineSoundTag *soundTag = \
 		dynamic_cast<DefineSoundTag *>(parent->getSystemState()->mainClip->dictionaryLookup(SoundId));
 
-	if (SoundInfo.SyncStop || SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
+	if (SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
 	    SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
-		if (SoundInfo.SyncStop)
-			return;
 	}
+	if (SoundInfo.SyncStop)
+	{
+		if (soundTag && soundTag->soundchanel)
+			soundTag->soundchanel->threadAbort();
+		return;
+	}
+	// it seems that adobe ignores the StartSoundTag if SoundInfo.SyncNoMultiple is set and the tag is attached to a Sound object by actionscript
+	if (SoundInfo.SyncNoMultiple && soundTag->isAttached)
+		return;
 
 	play(soundTag);
 }

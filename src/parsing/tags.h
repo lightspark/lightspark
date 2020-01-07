@@ -273,6 +273,8 @@ public:
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
 	_NR<SoundChannel> soundchanel;
+	// indicates if this channel is attached to a Sound object
+	bool isAttached;
 };
 
 class StartSoundTag: public DisplayListTag

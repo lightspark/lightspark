@@ -884,9 +884,11 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 				if(!b)
 				{
 					LOG(LOG_ERROR,"Invalid bitmap ID " << bitmapId);
-					throw ParseException("Invalid ID for bitmap");
+					v.bitmap.reset();
+					//throw ParseException("Invalid ID for bitmap");
 				}
-				v.bitmap = b->getBitmap();
+				else
+					v.bitmap = b->getBitmap();
 			}
 			catch(RunTimeException& e)
 			{

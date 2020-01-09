@@ -2212,6 +2212,9 @@ void StartSoundTag::execute(DisplayObjectContainer *parent)
 	DefineSoundTag *soundTag = \
 		dynamic_cast<DefineSoundTag *>(parent->getSystemState()->mainClip->dictionaryLookup(SoundId));
 
+	if (!soundTag)
+		return;
+
 	if (SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
 	    SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
 	{

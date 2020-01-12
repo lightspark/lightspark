@@ -319,6 +319,7 @@ void RenderThread::generateScreenshot()
 	write(fd,bmp_info_header,40);
 	write(fd,buf,windowWidth * windowHeight * 3);
 	close(fd);
+	delete[] buf;
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
 	g_free(name_used);
 	screenshotneeded=false;

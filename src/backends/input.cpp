@@ -395,7 +395,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 		case SDLK_d:
 			m_sys->stage->dumpDisplayList();
 			break;
-		case SDLK_o: // TODO maybe find a better shortcut for screenshots, Ctrl+o is the one gnash uses...
+		case SDLK_s:
 			if (m_sys->getRenderThread())
 			{
 				handled = true;

@@ -7486,7 +7486,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 	}
 	while (jumptargets.find(pos) == jumptargets.end() && keepchecking)
 	{
-		skipjump(b,mi,code,pos,oldnewpositions,jumptargets,true);
+		skipjump(b,mi,code,pos,oldnewpositions,jumptargets,false);
 		// check if the next opcode can be skipped
 		switch (b)
 		{

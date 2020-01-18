@@ -468,7 +468,7 @@ void RenderThread::commonGLResize()
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 	if (cairoTextureContext)
 	{
-		delete[] cairoTextureContext;
+		cairo_destroy(cairoTextureContext);
 		cairoTextureContext=nullptr;
 	}
 	lsglLoadIdentity();

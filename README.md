@@ -107,11 +107,11 @@ Type `lightspark` to see all command line options.
 SWF Support
 -----------
 
-Many web sites do not yet work yet because the implementation is
-incomplete. But we do support a number of them. See our [site compatibility page]
+Many applications do not yet work yet because the implementation is
+incomplete. But we do support a number of them. See our [compatibility page]
 for more details.
 
-[site compatibility page]: https://github.com/lightspark/lightspark/wiki/Site-Support
+[compatibility page]: https://github.com/lightspark/lightspark/wiki/Status-of-Lightspark-support
 
 Testing
 --------------

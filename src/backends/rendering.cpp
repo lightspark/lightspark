@@ -251,6 +251,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	{
 		if(m_sys->currentflushstep > m_sys->nextflushstep)
 		{
+			if (screenshotneeded)
+				generateScreenshot();
 			// no changes since last rendering, so we don't need to do anything
 			renderNeeded=false;
 			return true;
@@ -464,6 +466,11 @@ void RenderThread::commonGLResize()
 {
 	m_sys->stageCoordinateMapping(windowWidth, windowHeight, offsetX, offsetY, scaleX, scaleY);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	if (cairoTextureContext)
+	{
+		delete[] cairoTextureContext;
+		cairoTextureContext=nullptr;
+	}
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
@@ -623,7 +630,7 @@ bool RenderThread::coreRendering()
 void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 {
 	lsglLoadIdentity();
-	lsglScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+	lsglScalef(1.0f,-1.0f,1);
 	lsglTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
 
 	setMatrixUniform(LSGL_MODELVIEW);

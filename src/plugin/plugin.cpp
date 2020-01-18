@@ -1053,6 +1053,7 @@ void PluginEngineData::DoSwapBuffers()
 			mPixels = new unsigned char[width*height*4]; // 4 bytes for BGRA
 		char* buf = g_newa(char, width*height*4);
 
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);
 		// received image is upside down, so flip it vertically
 		for (uint32_t i= 0; i < height; i++)

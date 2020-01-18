@@ -2399,6 +2399,7 @@ void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 
 void ppPluginEngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 {
+	g_gles2_interface->PixelStorei(instance->m_graphics,GL_PACK_ALIGNMENT, 1);
 	g_gles2_interface->ReadPixels(instance->m_graphics,0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
 

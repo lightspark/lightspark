@@ -966,6 +966,7 @@ void EngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 
 void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 {
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glReadPixels(0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
 

@@ -1563,6 +1563,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		{
 			//We can create the object right away
 			ASObject* instance = placedTag->instance();
+			if (!placedTag->bindedTo)
+				instance->setIsInitialized();
+			
 			toAdd=dynamic_cast<DisplayObject*>(instance);
 			if(!toAdd && instance)
 			{

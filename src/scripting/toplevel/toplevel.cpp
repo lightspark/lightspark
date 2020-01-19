@@ -1398,11 +1398,11 @@ ASObject *Class_base::describeType() const
 	// factory
 	node=root.append_child("factory");
 	node.append_attribute("type").set_value(getQualifiedClassName().raw_buf());
-	describeInstance(node,false);
+	describeInstance(node,false,false);
 	return XML::createFromNode(root);
 }
 
-void Class_base::describeInstance(pugi::xml_node& root, bool istemplate) const
+void Class_base::describeInstance(pugi::xml_node& root, bool istemplate,bool forinstance) const
 {
 	// extendsClass
 	const Class_base* c=super.getPtr();
@@ -1443,8 +1443,9 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate) const
 		LOG(LOG_NOT_IMPLEMENTED, "describeType for builtin classes not completely implemented:"<<this->class_name);
 		std::map<tiny_string, pugi::xml_node*> instanceNodes;
 		if(!istemplate)
-			describeVariables(root,c,instanceNodes,Variables,false);
-		describeVariables(root,c,instanceNodes,borrowedVariables,istemplate);
+			describeVariables(root,c,instanceNodes,Variables,false,forinstance);
+		if (istemplate || !forinstance)
+			describeVariables(root,c,instanceNodes,borrowedVariables,istemplate,forinstance);
 	}
 	std::map<varName,pugi::xml_node> propnames;
 	bool bfirst = true;
@@ -1458,7 +1459,7 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate) const
 	}
 }
 
-void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, std::map<tiny_string, pugi::xml_node*>& instanceNodes, const variables_map& map, bool isTemplate) const
+void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, std::map<tiny_string, pugi::xml_node*>& instanceNodes, const variables_map& map, bool isTemplate,bool forinstance) const
 {
 	variables_map::const_var_iterator it=map.Variables.cbegin();
 	for(;it!=map.Variables.cend();++it)
@@ -1470,8 +1471,8 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 			case CONSTANT_TRAIT:
 				nodename = "constant";
 				break;
-			case DECLARED_TRAIT:
 			case INSTANCE_TRAIT:
+			case DECLARED_TRAIT:
 				if (asAtomHandler::isValid(it->second.var))
 				{
 					if (isTemplate)
@@ -1480,6 +1481,8 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 				}
 				else
 				{
+					if (!isTemplate && forinstance && it->second.kind != INSTANCE_TRAIT)
+						continue;
 					nodename="accessor";
 					if (asAtomHandler::isValid(it->second.getter) && asAtomHandler::isValid(it->second.setter))
 						access = "readwrite";

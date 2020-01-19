@@ -416,7 +416,7 @@ ASObject *Vector::describeType() const
 	node.append_attribute("type").set_value("__AS3__.vec::Vector.<*>");
 
 	if(prot)
-		prot->describeInstance(root,true);
+		prot->describeInstance(root,true,true);
 
 	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getSystemState(),root)->toXMLString_internal());
 

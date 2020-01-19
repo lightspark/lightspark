@@ -163,7 +163,7 @@ private:
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns);
 	IFunction* constructor;
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const;
-	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate) const;
+	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate, bool forinstance) const;
 	void describeConstructor(pugi::xml_node &root) const;
 	virtual void describeClassMetadata(pugi::xml_node &root) const {}
 protected:
@@ -224,7 +224,7 @@ public:
 	tiny_string toString();
 	virtual void generator(asAtom &ret, asAtom* args, const unsigned int argslen);
 	ASObject *describeType() const;
-	void describeInstance(pugi::xml_node &root, bool istemplate) const;
+	void describeInstance(pugi::xml_node &root, bool istemplate, bool forinstance) const;
 	virtual const Template_base* getTemplate() const { return NULL; }
 	/*
 	 * Converts the given object to an object of this Class_base's type.

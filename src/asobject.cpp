@@ -2195,7 +2195,7 @@ ASObject *ASObject::describeType() const
 	root.append_attribute("isStatic").set_value("false");
 
 	if(prot)
-		prot->describeInstance(root,false);
+		prot->describeInstance(root,false,true);
 
 	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getSystemState(),root)->toXMLString_internal());
 

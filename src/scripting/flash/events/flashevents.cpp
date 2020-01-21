@@ -1482,3 +1482,66 @@ Event* SampleDataEvent::cloneImpl() const
 	clone->cancelable = cancelable;
 	return clone;
 }
+
+void ThrottleEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
+	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"Throttle"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
+	
+	REGISTER_GETTER(c, state);
+	REGISTER_GETTER(c, targetFrameRate);
+}
+ASFUNCTIONBODY_GETTER(ThrottleEvent,state)
+ASFUNCTIONBODY_GETTER(ThrottleEvent,targetFrameRate)
+
+ASFUNCTIONBODY_ATOM(ThrottleEvent,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"ThrottleEvent is not dispatched anywhere");
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
+
+	ThrottleEvent* th=asAtomHandler::as<ThrottleEvent>(obj);
+	if(argslen>=4)
+	{
+		th->state = asAtomHandler::toString(args[3],sys);
+		if (argslen>4)
+			th->targetFrameRate = asAtomHandler::toNumber(args[3]);
+	}
+}
+ASFUNCTIONBODY_ATOM(ThrottleEvent,_toString)
+{
+	ThrottleEvent* th=asAtomHandler::as<ThrottleEvent>(obj);
+	tiny_string res = "[ThrottleEvent type=";
+	res += th->type;
+	res += " bubbles=";
+	res += th->bubbles ? "true" : "false";
+	res += " cancelable=";
+	res += th->cancelable ? "true" : "false";
+	res += " state=";
+	res += th->state;
+	res += " targetFrameRate=";
+	res += Number::toString(th->targetFrameRate);
+	res += "]";
+	ret = asAtomHandler::fromString(sys,res);
+}
+
+Event* ThrottleEvent::cloneImpl() const
+{
+	ThrottleEvent *clone;
+	clone = Class<ThrottleEvent>::getInstanceS(getSystemState());
+	clone->state = state;
+	clone->targetFrameRate = targetFrameRate;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+void ThrottleType::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("PAUSE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"pause"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RESUME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resume"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"throttle"),CONSTANT_TRAIT);
+}

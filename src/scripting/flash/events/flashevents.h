@@ -646,7 +646,7 @@ public:
 class SampleDataEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	SampleDataEvent(Class_base* c) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),position(0) {}
 	SampleDataEvent(Class_base* c,_NR<ByteArray> _data,number_t _pos) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),data(_data),position(_pos) {}
@@ -656,6 +656,27 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>,data);
 	ASPROPERTY_GETTER_SETTER(number_t,position);
 };
+
+class ThrottleEvent: public Event
+{
+private:
+	Event* cloneImpl() const override;
+public:
+	ThrottleEvent(Class_base* c) : Event(c, "throttle",false,false,SUBTYPE_SAMPLEDATA_EVENT),targetFrameRate(0) {}
+	ThrottleEvent(Class_base* c,const tiny_string _state,number_t _targetFrameRate) : Event(c, "throttle",false,false,SUBTYPE_SAMPLEDATA_EVENT),state(_state),targetFrameRate(_targetFrameRate) {}
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toString);
+	ASPROPERTY_GETTER(tiny_string,state);
+	ASPROPERTY_GETTER(number_t,targetFrameRate);
+};
+class ThrottleType: public ASObject
+{
+public:
+	ThrottleType(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+};
+
 
 }
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

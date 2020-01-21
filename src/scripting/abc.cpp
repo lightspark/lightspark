@@ -618,6 +618,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("UncaughtErrorEvents","flash.events",Class<UncaughtErrorEvents>::getRef(m_sys));
 	builtin->registerBuiltin("VideoEvent","flash.events",Class<VideoEvent>::getRef(m_sys));
 	builtin->registerBuiltin("SampleDataEvent","flash.events",Class<SampleDataEvent>::getRef(m_sys));
+	builtin->registerBuiltin("ThrottleEvent","flash.events",Class<ThrottleEvent>::getRef(m_sys));
+	builtin->registerBuiltin("ThrottleType","flash.events",Class<ThrottleType>::getRef(m_sys));
 	
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));

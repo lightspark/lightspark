@@ -8532,7 +8532,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			case 0x1d://popscope
-				scopelist.pop_back();
+				if (!scopelist.empty())
+					scopelist.pop_back();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
@@ -8999,7 +9000,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						break;
 					}
 				}
-				assert_and_throw(((uint32_t)opcode)-0xd0 < mi->body->local_count);
+				if (((uint32_t)opcode)-0xd0 >= mi->body->local_count)
+				{
+					// this may happen in unreachable obfuscated code, so we just ignore the opcode
+					LOG(LOG_ERROR,"preload getlocal with argument > local_count:"<<mi->body->local_count<<" "<<hex<<(int)opcode);
+					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					if (jumptargets.find(p) != jumptargets.end())
+						clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				}
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (jumptargets.find(p) != jumptargets.end())

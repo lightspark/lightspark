@@ -56,16 +56,20 @@ public:
 
 
 void clearSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getGetterInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSetterInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getLexicalScopes(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getMasterString(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getMemberNames(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getSampleCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void getSize(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSavedThis(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void isGetterSetter(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void pauseSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void sampleInternalAllocs(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void setSamplerCallback(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void startSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void stopSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 

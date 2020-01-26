@@ -69,6 +69,7 @@ protected:
 	URLInfo origin;
 private:
 	bool parsingIsFailed;
+	bool waitingforparser;
 	RGB Background;
 	Spinlock dictSpinlock;
 	std::list < DictionaryTag* > dictionary;
@@ -83,8 +84,9 @@ private:
 	/* those are private because you shouldn't call mainClip->*,
 	 * but mainClip->getStage()->* instead.
 	 */
-	void initFrame();
-	void advanceFrame();
+	void initFrame() override;
+	void advanceFrame() override;
+	void executeFrameScript() override;
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 	
 	unordered_map<DictionaryTag*,_NR<IFunction>> avm1ClassConstructors;
@@ -93,6 +95,7 @@ public:
 	~RootMovieClip();
 	bool destruct();
 	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
+	bool isWaitingForParser() { return waitingforparser; }
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;

@@ -309,7 +309,7 @@ class ABCVm
 {
 friend class ABCContext;
 friend class method_info;
-friend union asAtom;
+friend class SymbolClassTag;
 friend class ACTIONRECORD;
 private:
 	std::vector<ABCContext*> contexts;
@@ -1174,7 +1174,7 @@ public:
 	static const Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
-	bool prependEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
+	bool prependEvent(_NR<EventDispatcher>, _R<Event> , bool force=false) DLL_PUBLIC;
 	void addIdleEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
@@ -1271,6 +1271,6 @@ inline ABCVm* getVm(SystemState* sys)
 
 std::istream& operator>>(std::istream& in, method_info& v);
 
-};
+}
 
 #endif /* SCRIPTING_ABC_H */

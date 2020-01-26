@@ -87,7 +87,7 @@ ASWorker* lightspark::getWorker()
 
 RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(c),
-	parsingIsFailed(false),Background(0xFF,0xFF,0xFF),frameRate(0),
+	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	subtype=SUBTYPE_ROOTMOVIECLIP;
@@ -2212,6 +2212,8 @@ void SystemState::waitInitialized()
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {
+	if (waitingforparser)
+		return;
 	LOG_CALL("Root:initFrame " << getFramesLoaded() << " " << state.FP<<" "<<state.stop_FP<<" "<<state.next_FP<<" "<<state.explicit_FP);
 	/* We have to wait for at least one frame
 	 * so our class get the right classdef. Else we will
@@ -2225,17 +2227,32 @@ void RootMovieClip::initFrame()
 /* This is run in vm's thread context */
 void RootMovieClip::advanceFrame()
 {
-	/* We have to wait for at least one frame */
-	if(getFramesLoaded() == 0)
+	/* We have to wait until enough frames are available */
+	if(getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading()))
+	{
+		waitingforparser=true;
+		this->incRef();
+		_R<AdvanceFrameEvent> advFrame = _MR(new (getSystemState()->unaccountedMemory) AdvanceFrameEvent(_MR(this)));
+		getVm(getSystemState())->prependEvent(NullRef, advFrame,true);
 		return;
+	}
+	waitingforparser=false;
 
 	MovieClip::advanceFrame();
+}
+
+void RootMovieClip::executeFrameScript()
+{
+	if (waitingforparser)
+		return;
+	MovieClip::executeFrameScript();
 }
 
 bool RootMovieClip::destruct()
 {
 	applicationDomain.reset();
 	securityDomain.reset();
+	waitingforparser=false;
 	return MovieClip::destruct();
 }
 

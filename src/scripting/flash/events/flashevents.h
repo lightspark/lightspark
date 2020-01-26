@@ -505,8 +505,11 @@ public:
 
 class AdvanceFrameEvent: public Event
 {
+friend class ABCVm;
+private:
+	_NR<DisplayObject> clip;
 public:
-	AdvanceFrameEvent(): Event(nullptr,"AdvanceFrameEvent") {}
+	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,"AdvanceFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
 };
 class IdleEvent: public WaitableEvent

@@ -486,7 +486,8 @@ void LoaderThread::execute()
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
 		{
 			local_pt.getRootMovie()->incRef();
-			local_pt.getRootMovie()->setIsInitialized(false);
+			if (local_pt.getRootMovie()->getClass()->isBuiltin())
+				local_pt.getRootMovie()->setIsInitialized(false);
 			loader->setContent(_MR(local_pt.getRootMovie()));
 			if (loader->getContentLoaderInfo().getPtr())
 				loader->getContentLoaderInfo()->setComplete();

@@ -219,7 +219,7 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// some swf files have multiple abc tags without the "lazy" flag.
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
-	if (!getWorker() || getWorker()->isPrimordial)
+	if (root == root->getSystemState()->mainClip && (!getWorker() || getWorker()->isPrimordial))
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,root->hasSymbolClass ? true : ((int32_t)Flags)&1)));
 	else
 		context->exec(root->hasSymbolClass ? true : ((int32_t)Flags)&1);
@@ -248,8 +248,10 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		if(Tags[i]==0)
 		{
 			root->incRef();
-			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-
+			if (root->getSystemState()->mainClip == root)
+				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			else
+				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
 		}
 		else
 		{
@@ -1540,6 +1542,8 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
+	if (dispatcher && dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser() && event->type == "enterFrame")
+		return;
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.lock();
 		
@@ -1798,9 +1802,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case ADVANCE_FRAME:
 			{
 				Locker l(m_sys->getRenderThread()->mutexRendering);
-				//AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
+				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				m_sys->stage->advanceFrame();
+				if (ev->clip)
+					ev->clip->advanceFrame();
+				else
+					m_sys->stage->advanceFrame();
 				break;
 			}
 			case IDLE_EVENT:
@@ -1859,7 +1866,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 	RELEASE_WRITE(e.second->queued,false);
 }
 
-bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 {
 	/* We have to run waitable events directly,
 	 * because otherwise waiting on them in the vm thread
@@ -1880,7 +1887,7 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	if (!obj.isNull())
 		obj->onNewEvent();
 
-	if (isIdle)
+	if (isIdle || force)
 		events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	else
 		events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));

@@ -669,6 +669,7 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
+	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force = false) override { assert(false); /* we are the stage */}

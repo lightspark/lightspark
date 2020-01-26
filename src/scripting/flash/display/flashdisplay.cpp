@@ -3153,7 +3153,16 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(getSystemState())));
 	}
 }
-
+bool Stage::renderStage3D()
+{
+	for (uint32_t i = 0; i < stage3Ds->size(); i++)
+	{
+		asAtom a=stage3Ds->at(i);
+		if (!asAtomHandler::as<Stage3D>(a)->context3D.isNull() && asAtomHandler::as<Stage3D>(a)->visible)
+			return true;
+	}
+	return false;
+}
 bool Stage::renderImpl(RenderContext &ctxt) const
 {
 	bool has3d = false;

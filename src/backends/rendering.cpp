@@ -249,24 +249,40 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	}
 	else
 	{
-		if(m_sys->currentflushstep > m_sys->nextflushstep)
+		if (m_sys->stage->renderStage3D())
 		{
+			// stage3d rendering is needed, so we ignore the flushsteps
+			coreRendering();
+			engineData->exec_glFlush();
 			if (screenshotneeded)
 				generateScreenshot();
-			// no changes since last rendering, so we don't need to do anything
+			engineData->DoSwapBuffers();
+			if (profile && chronometer)
+				profile->accountTime(chronometer->checkpoint());
 			renderNeeded=false;
 			return true;
 		}
-		m_sys->currentflushstep = m_sys->nextflushstep;
-		if(!m_sys->isOnError())
+		else
 		{
-			if (coreRendering())
+			if(m_sys->currentflushstep > m_sys->nextflushstep)
 			{
+				if (screenshotneeded)
+					generateScreenshot();
+				// no changes since last rendering, so we don't need to do anything
 				renderNeeded=false;
 				return true;
 			}
-			//Call glFlush to offload work on the GPU
-			engineData->exec_glFlush();
+			m_sys->currentflushstep = m_sys->nextflushstep;
+			if(!m_sys->isOnError())
+			{
+				if (coreRendering())
+				{
+					renderNeeded=false;
+					return true;
+				}
+				//Call glFlush to offload work on the GPU
+				engineData->exec_glFlush();
+			}
 		}
 	}
 	if (screenshotneeded)

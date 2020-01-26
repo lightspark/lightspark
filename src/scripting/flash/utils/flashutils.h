@@ -67,6 +67,7 @@ void setTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const uns
 void clearInterval(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 void clearTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 void describeType(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void describeTypeJSON(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 void escapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 void unescapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
 }

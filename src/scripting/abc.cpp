@@ -762,7 +762,19 @@ void ABCVm::registerClasses()
 		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedSuperclassName)));
 		builtin->registerBuiltin("getTimer","",_MR(Class<IFunction>::getFunction(m_sys,getTimer)));
 		builtin->registerBuiltin("FLASH10_FLAGS","avmplus",_MR(abstract_ui(m_sys,0x7FF)));
+		builtin->registerBuiltin("HIDE_NSURI_METHODS","avmplus",_MR(abstract_ui(m_sys,0x0001)));
+		builtin->registerBuiltin("INCLUDE_BASES","avmplus",_MR(abstract_ui(m_sys,0x0002)));
+		builtin->registerBuiltin("INCLUDE_INTERFACES","avmplus",_MR(abstract_ui(m_sys,0x0004)));
+		builtin->registerBuiltin("INCLUDE_VARIABLES","avmplus",_MR(abstract_ui(m_sys,0x0008)));
+		builtin->registerBuiltin("INCLUDE_ACCESSORS","avmplus",_MR(abstract_ui(m_sys,0x0010)));
+		builtin->registerBuiltin("INCLUDE_METHODS","avmplus",_MR(abstract_ui(m_sys,0x0020)));
+		builtin->registerBuiltin("INCLUDE_METADATA","avmplus",_MR(abstract_ui(m_sys,0x0040)));
+		builtin->registerBuiltin("INCLUDE_CONSTRUCTOR","avmplus",_MR(abstract_ui(m_sys,0x0080)));
+		builtin->registerBuiltin("INCLUDE_TRAITS","avmplus",_MR(abstract_ui(m_sys,0x0100)));
+		builtin->registerBuiltin("USE_ITRAITS","avmplus",_MR(abstract_ui(m_sys,0x0200)));
+		builtin->registerBuiltin("HIDE_OBJECT","avmplus",_MR(abstract_ui(m_sys,0x0400)));
 		builtin->registerBuiltin("describeType","avmplus",_MR(Class<IFunction>::getFunction(m_sys,describeType)));
+		builtin->registerBuiltin("describeTypeJSON","avmplus",_MR(Class<IFunction>::getFunction(m_sys,describeTypeJSON)),PACKAGE_INTERNAL_NAMESPACE);
 
 		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef(m_sys));
 		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef(m_sys));

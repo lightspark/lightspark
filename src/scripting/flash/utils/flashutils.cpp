@@ -185,6 +185,87 @@ ASFUNCTIONBODY_ATOM(lightspark,describeType)
 	ret = asAtomHandler::fromObject(asAtomHandler::toObject(args[0],sys)->describeType());
 }
 
+ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
+{
+	_NR<ASObject> o;
+	uint32_t flags;
+	ARG_UNPACK_ATOM(o)(flags);
+	ASObject* res = Class<ASObject>::getInstanceS(sys);
+
+	if (o)
+	{
+		asAtom v;
+		Class_base* cls = nullptr;
+		if (o->is<Class_base>())
+			cls = o->as<Class_base>();
+		else
+			cls = o->getClass();
+			
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id=sys->getUniqueStringId("name");
+		v = asAtomHandler::fromString(sys,cls->getQualifiedClassName(true));
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+		m.name_s_id=sys->getUniqueStringId("isDynamic");
+		v = asAtomHandler::fromBool(!cls->isSealed);
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+		m.name_s_id=sys->getUniqueStringId("isFinal");
+		v = asAtomHandler::fromBool(!cls->isFinal);
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+	
+		ASObject* traits = Class<ASObject>::getInstanceS(sys);
+	
+		bool INCLUDE_BASES = flags & 0x0002;
+		bool INCLUDE_INTERFACES = flags & 0x0004;
+		bool INCLUDE_VARIABLES = flags & 0x0008;
+		bool INCLUDE_ACCESSORS = flags & 0x0010;
+		bool INCLUDE_METHODS = flags & 0x0020;
+		bool INCLUDE_METADATA = flags & 0x0040;
+		bool INCLUDE_CONSTRUCTOR = flags & 0x0080;
+		bool INCLUDE_TRAITS = flags & 0x0100;
+
+		if (INCLUDE_TRAITS)
+		{
+			if (INCLUDE_METADATA)
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_METADATA");
+			}
+			if (INCLUDE_BASES)
+			{
+				Array* bases = Class<Array>::getInstanceS(sys);
+				Class_base* baseclass = cls;
+				while (baseclass)
+				{
+					bases->push(asAtomHandler::fromString(sys,baseclass->getQualifiedClassName(true)));
+					baseclass = baseclass->super.getPtr();
+				}
+				m.name_s_id=sys->getUniqueStringId("bases");
+				v = asAtomHandler::fromObject(bases);
+				traits->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+			}
+			if (INCLUDE_INTERFACES)
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_INTERFACES");
+			}
+			if (INCLUDE_CONSTRUCTOR)
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_CONSTRUCTOR");
+			}
+			if (INCLUDE_ACCESSORS || INCLUDE_METHODS || INCLUDE_VARIABLES)
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_ACCESSORS || INCLUDE_METHODS || INCLUDE_VARIABLES");
+			}
+		}
+		m.name_s_id=sys->getUniqueStringId("traits");
+		v = asAtomHandler::fromObjectNoPrimitive(traits);
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"avmplus.describeTypeJSON with flags:"<<hex<<flags);
+	ret = asAtomHandler::fromObject(res);
+}
+
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
 	uint64_t res=compat_msectiming() - sys->startTime;

@@ -858,7 +858,7 @@ public:
 	/*
 	 * Utility method to register builtin methods and classes
 	 */
-	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o);
+	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind=NAMESPACE);
 	// ensures that the init script has been run
 	void checkScriptInit();
 };

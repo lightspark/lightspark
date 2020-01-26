@@ -1707,7 +1707,7 @@ void Class_base::describeMetadata(pugi::xml_node& root, const traits_info& trait
 	}
 }
 
-void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns)
+void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, RootMovieClip *root)
 {
 	Class_inherit* cur=dynamic_cast<Class_inherit*>(super.getPtr());
 	nsNameAndKind* baseNs=NULL;
@@ -1721,9 +1721,9 @@ void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_i
 		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
 	}
 	if(baseNs==NULL)
-		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind,root);
 	else
-		protected_ns=nsNameAndKind(getSystemState(),nameId,baseNs->nsId,(NS_KIND)(int)ns.kind);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,baseNs->nsId,(NS_KIND)(int)ns.kind,root);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)

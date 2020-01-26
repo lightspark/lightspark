@@ -160,7 +160,7 @@ private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	nsNameAndKind protected_ns;
-	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns);
+	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns,RootMovieClip* root);
 	IFunction* constructor;
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const;
 	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate, bool forinstance) const;

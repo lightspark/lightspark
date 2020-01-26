@@ -321,15 +321,19 @@ public:
 //Numbers taken from AVM2 specs
 enum NS_KIND { NAMESPACE=0x08, PACKAGE_NAMESPACE=0x16, PACKAGE_INTERNAL_NAMESPACE=0x17, PROTECTED_NAMESPACE=0x18, 
 			EXPLICIT_NAMESPACE=0x19, STATIC_PROTECTED_NAMESPACE=0x1A, PRIVATE_NAMESPACE=0x05 };
-
+class RootMovieClip;
 struct nsNameAndKindImpl
 {
 	uint32_t nameId;
 	NS_KIND kind;
 	uint32_t baseId;
-	nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, uint32_t b=-1);
+	// this is null for all namespaces except kind PROTECTED_NAMESPACE, to ensure they are treated as different namespaces when declared in different swf files
+	RootMovieClip* root;
+	nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, RootMovieClip* r=nullptr,uint32_t b=-1);
 	bool operator<(const nsNameAndKindImpl& r) const
 	{
+		if(root != r.root)
+			return root<r.root;
 		if(kind==r.kind)
 			return nameId < r.nameId;
 		else
@@ -337,6 +341,8 @@ struct nsNameAndKindImpl
 	}
 	bool operator>(const nsNameAndKindImpl& r) const
 	{
+		if(root != r.root)
+			return root>r.root;
 		if(kind==r.kind)
 			return nameId > r.nameId;
 		else
@@ -353,13 +359,14 @@ struct nsNameAndKind
 	nsNameAndKind():nsId(0),nsRealId(0),nsNameId(BUILTIN_STRINGS::EMPTY),kind(NAMESPACE) {}
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
-	nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys, uint32_t _nameId, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys, uint32_t _nameId, NS_KIND _kind, RootMovieClip *root);
 	nsNameAndKind(ABCContext * c, uint32_t nsContextIndex);
 	/*
 	 * Special constructor for protected namespace, which have
 	 * different representationId
 	 */
-	nsNameAndKind(SystemState* sys,uint32_t _nameId, uint32_t _baseId, NS_KIND _kind);
+	nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind, RootMovieClip *root);
 	/*
 	 * Special version to create the empty bultin namespace
 	 */

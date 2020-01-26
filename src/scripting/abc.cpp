@@ -2812,7 +2812,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					ci->use_protected=true;
 					int ns=instances[t->classi].protectedNs;
 					const namespace_info& ns_info=constant_pool.namespaces[ns];
-					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info);
+					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,root.getPtr());
 				}
 				LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 				//Class objects also contains all the methods/getters/setters declared for instances

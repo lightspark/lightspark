@@ -2684,7 +2684,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->use_protected=true;
 		int ns=th->mi->context->instances[n].protectedNs;
 		const namespace_info& ns_info=th->mi->context->constant_pool.namespaces[ns];
-		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info);
+		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root.getPtr());
 	}
 
 	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);

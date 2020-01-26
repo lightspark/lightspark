@@ -1718,11 +1718,19 @@ nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind)
 	nsNameId = _nameId;
 	kind = _kind;
 }
-nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind)
+nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind,RootMovieClip* root)
+{
+	assert(_kind==PROTECTED_NAMESPACE);
+	nsNameAndKindImpl tmp(_nameId, _kind,root);
+	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
+	nsNameId = _nameId;
+	kind = _kind;
+}
+nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind,RootMovieClip* root)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
-	nsNameAndKindImpl tmp(_nameId, _kind, nsId);
+	nsNameAndKindImpl tmp(_nameId, _kind, root, nsId);
 	uint32_t tmpId;
 	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
@@ -1734,7 +1742,7 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
 	nsNameId=c->getString(ns.name);
-	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind);
+	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind,((NS_KIND)(int)ns.kind)==PROTECTED_NAMESPACE ? c->root.getPtr() : nullptr);
 	//Give an id hint, in case the namespace is created in the map
 	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id
@@ -1743,8 +1751,8 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 	kind = (NS_KIND)(int)ns.kind;
 }
 
-nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, uint32_t b)
-  : nameId(_nameId),kind(_kind),baseId(b)
+nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, RootMovieClip *r, uint32_t b)
+  : nameId(_nameId),kind(_kind),baseId(b),root(r)
 {
 	if (kind != NAMESPACE &&
 	    kind != PACKAGE_NAMESPACE &&

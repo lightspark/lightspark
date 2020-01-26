@@ -856,6 +856,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
+	th->unlock();
 	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 }
 
@@ -900,6 +901,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 		throwError<EOFError>(kEOFError);
 	}
 
+	th->unlock();
 	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
 }
 
@@ -917,9 +919,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 		throwError<EOFError>(kEOFError);
 	}
 
-	// TODO: should convert from charset to UTF-8
-	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset");
-	ret = asAtomHandler::fromObject(abstract_s(sys,(char*)th->bytes+th->position,strlen));
+	if (charset != "us-ascii" && charset != "utf-8")
+		LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset "<<charset);
+	char* s = g_newa(char,strlen+1);
+	// ensure that the resulting string cuts off any zeros at the end
+	strncpy(s,(const char*)th->bytes+th->position,strlen);
+	s[strlen] = 0x0;
+	tiny_string res(s,true);
+	th->unlock();
+	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readObject)
@@ -927,7 +935,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
 	th->lock();
-	if(th->bytes==NULL)
+	if(th->bytes==nullptr)
 	{
 		th->unlock();
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray

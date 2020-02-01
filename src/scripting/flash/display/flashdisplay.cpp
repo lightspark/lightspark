@@ -1540,7 +1540,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 			inFrameNo = 1;
 
 		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
-		if(next_FP > getFramesLoaded())
+		if(next_FP >= getFramesLoaded())
 		{
 			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded() << " on "<<this->getTagID());
 			/* spec says we should throw an error, but then YT breaks */

@@ -1158,9 +1158,6 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 	if(buildAndLink)
 	{
 		setupDeclaredTraits(asAtomHandler::getObject(target));
-
-		//Tell the object that the construction is complete
-		asAtomHandler::getObject(target)->constructionComplete();
 	}
 
 	if(constructor)
@@ -1179,6 +1176,11 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		asAtomHandler::getObject(target)->constructIndicator = true;
 		for(uint32_t i=0;i<argslen;i++)
 			ASATOM_DECREF(args[i]);
+	}
+	if (this->isBuiltin())
+	{
+		// Tell the object that the constructor of the builtin object has been called
+		asAtomHandler::getObject(target)->constructionComplete();
 	}
 	if(buildAndLink)
 	{

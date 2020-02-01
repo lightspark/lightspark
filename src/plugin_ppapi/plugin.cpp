@@ -2309,9 +2309,9 @@ void ppPluginEngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimen
 	//g_gles2_interface->TexParameterf(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS,(float)(lodbias)/8.0);
 }
 
-void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, bool hasalpha)
 {
-	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, hasalpha ? GL_RGBA : GL_RGB, width, height, border, hasalpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, pixels);
 }
 void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {

@@ -3,8 +3,195 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
 
+#define INITGUID
+#include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
+
 namespace lightspark
 {
+void decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, bool hasalpha)
+{
+	PKFactory* pFactory = nullptr;
+	PKCodecFactory* pCodecFactory = nullptr;
+	PKImageDecode* pDecoder = nullptr;
+	PKFormatConverter* pConverter = nullptr;
+	PKRect rect;
+	rect.X=0;
+	rect.Y=0;
+	rect.Width=width;
+	rect.Height=height;
+	if (PKCreateFactory(&pFactory, PK_SDK_VERSION)<0)
+	{
+		LOG(LOG_ERROR,"decodejxr:PKCreateFactory failed");
+		return;
+	}
+	if (PKCreateCodecFactory(&pCodecFactory, WMP_SDK_VERSION)<0)
+	{
+		pFactory->Release(&pFactory);
+		LOG(LOG_ERROR,"decodejxr:PKCreateCodecFactory failed");
+		return;
+	}
+	if (PKImageDecode_Create_WMP(&pDecoder)<0)
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pFactory->Release(&pFactory);
+		LOG(LOG_ERROR,"decodejxr:PKImageDecode_Create_WMP failed");
+		return;
+	}
+	struct WMPStream* pStream = nullptr;
+	if (pFactory->CreateStreamFromMemory(&pStream,bytes,texlen))
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pFactory->Release(&pFactory);
+		LOG(LOG_ERROR,"decodejxr:CreateStreamFromMemory failed");
+		return;
+	}
+	if (pDecoder->Initialize(pDecoder,pStream)<0)
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pDecoder->Release(&pDecoder);
+		pFactory->Release(&pFactory);
+		LOG(LOG_ERROR,"decodejxr:Initialize failed");
+		return;
+	}
+	if (pCodecFactory->CreateFormatConverter(&pConverter) < 0)
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pDecoder->Release(&pDecoder);
+		LOG(LOG_ERROR,"decodejxr:CreateFormatConverter failed");
+		return;
+	}
+	if (pConverter->Initialize(pConverter, pDecoder, nullptr, hasalpha ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB) < 0)
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pDecoder->Release(&pDecoder);
+		LOG(LOG_ERROR,"decodejxr:Converter.Initialize failed");
+		return;
+	}
+	if (pConverter->Copy(pConverter, &rect, result.data(), width*(hasalpha ? 4 : 3)) < 0)
+	{
+		pCodecFactory->Release(&pCodecFactory);
+		pDecoder->Release(&pDecoder);
+		LOG(LOG_ERROR,"decodejxr:Converter.Copy failed");
+		return;
+	}
+	pConverter->Release(&pConverter);
+	pDecoder->Release(&pDecoder);
+	pFactory->Release(&pFactory);
+	pCodecFactory->Release(&pCodecFactory);
+}
+void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffset, bool forCubeTexture, bool& hasalpha)
+{
+	// https://www.adobe.com/devnet/archive/flashruntimes/articles/atf-file-format.html
+	if (data->getLength()-byteArrayOffset < 20)
+	{
+		LOG(LOG_ERROR,"not enough bytes to read");
+		throwError<RangeError>(kParamRangeError);
+	}
+	data->setPosition(byteArrayOffset);
+	uint8_t b1, b2, b3;
+	data->readByte(b1);
+	data->readByte(b2);
+	data->readByte(b3);
+	if (b1 != 'A' || b2 != 'T' || b3 != 'F')
+	{
+		LOG(LOG_ERROR,"Texture.uploadCompressedTextureFromByteArray no ATF file");
+		throwError<ArgumentError>(kInvalidArgumentError,"data");
+	}
+	uint8_t atfversion=0;
+	uint8_t formatbyte;
+	uint8_t reserved[4];
+	data->readByte(reserved[0]);
+	data->readByte(reserved[1]);
+	data->readByte(reserved[2]);
+	data->readByte(reserved[3]);
+	uint32_t len;
+	if (reserved[3] != 0xff) // fourth byte is not 0xff, so it's ATF version "0"(?)
+	{
+		len = uint32_t(reserved[0]<<16) | uint32_t(reserved[1]<<8) | uint32_t(reserved[2]);
+		formatbyte = reserved[3];
+	}
+	else
+	{
+		data->readByte(atfversion);
+		data->readUnsignedInt(len);
+		data->readByte(formatbyte);
+	}
+	if (data->getLength()-data->getPosition() < len)
+	{
+		LOG(LOG_ERROR,"not enough bytes to read");
+		throwError<RangeError>(kParamRangeError);
+	}
+	uint32_t endposition = data->getPosition()+len;
+	bool cubetexture = formatbyte&0x80;
+	if (forCubeTexture != cubetexture)
+	{
+		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray uploading a "<<(forCubeTexture ? "Texture" : "CubeTexture"));
+		throwError<ArgumentError>(kInvalidArgumentError,"data");
+	}
+	int format = formatbyte&0x7f;
+	data->readByte(b1);
+	if (b1 > 12)
+	{
+		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture width:"<<int(b1));
+		throwError<ArgumentError>(kInvalidArgumentError,"data");
+	}
+	data->readByte(b2);
+	if (b2 > 12)
+	{
+		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture height:"<<int(b2));
+		throwError<ArgumentError>(kInvalidArgumentError,"data");
+	}
+	data->readByte(b3);
+	if (b3 > 13)
+	{
+		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture count:"<<int(b3));
+		throwError<ArgumentError>(kInvalidArgumentError,"data");
+	}
+	width = 1<<b1;
+	height = 1<<b2;
+	uint32_t texcount = b2 * (forCubeTexture ? 6 : 1);
+	
+	if (bitmaparray.size() < texcount)
+		bitmaparray.resize(texcount);
+	uint32_t tmpwidth = width;
+	uint32_t tmpheight = width;
+	for (uint32_t i = 0; i < texcount; i++)
+	{
+		switch (format)
+		{
+			case 0:
+			case 1:
+			{
+				uint32_t texlen;
+				if (atfversion == 0)
+				{
+					data->readByte(b1);
+					data->readByte(b2);
+					data->readByte(b3);
+					texlen = uint32_t(b1<<16) | uint32_t(b2<<8) | uint32_t(b3);
+				}
+				else
+					data->readUnsignedInt(texlen);
+				if (texlen == 0)
+					break;
+				uint8_t texbytes[texlen];
+				data->readBytes(data->getPosition(),texlen,texbytes);
+				if (bitmaparray[i].size() < tmpwidth*tmpheight*(format == 0 ? 3 : 4))
+					bitmaparray[i].resize(tmpwidth*tmpheight*(format == 0 ? 3 : 4));
+				decodejxr(texbytes,texlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+				hasalpha = (format == 1);
+				data->setPosition(data->getPosition()+texlen);
+				tmpwidth >>= 1;
+				tmpheight >>= 1;
+				break;
+			}
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"uploadCompressedTextureFromByteArray format not yet supported:"<<hex<<format);
+				break;
+		}
+	}
+	data->setPosition(endposition);
+}
 
 void TextureBase::sinit(Class_base *c)
 {
@@ -25,11 +212,17 @@ void Texture::sinit(Class_base *c)
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray does nothing");
+	Texture* th = asAtomHandler::as<Texture>(obj);
 	_NR<ByteArray> data;
 	int32_t byteArrayOffset;
 	bool async;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
+	if (data.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	if (async)
+		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
+	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false,th->hasalpha);
+	th->context->addAction(RENDER_LOADTEXTURE,th);
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 {
@@ -90,6 +283,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 		throwError<RangeError>(kParamRangeError);
 	}
 	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[miplevel].data());
+	data->setPosition(byteArrayOffset+bytesneeded);
 	th->context->addAction(RENDER_LOADTEXTURE,th);
 }
 

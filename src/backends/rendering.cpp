@@ -555,7 +555,7 @@ void RenderThread::mapCairoTexture(int w, int h)
 
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, cairoTextureData);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, cairoTextureData,true);
 
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};

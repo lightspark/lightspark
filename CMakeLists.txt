@@ -208,6 +208,9 @@ IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
 ENDIF()
 
+# needed for jxr image decoder
+SET(CMAKE_C_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels")
+
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
 		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile" FORCE)

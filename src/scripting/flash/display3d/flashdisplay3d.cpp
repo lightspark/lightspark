@@ -609,15 +609,15 @@ void Context3D::loadTexture(TextureBase *tex)
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 		if (tex->bitmaparray.size() == 0)
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, NULL);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, NULL,tex->hasalpha);
 		else
 		{
 			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 			{
 				if (tex->bitmaparray[i].size() > 0)
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->hasalpha);
 				else
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, nullptr);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->hasalpha);
 			}
 		}
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);

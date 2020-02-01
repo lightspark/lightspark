@@ -149,7 +149,30 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1media.cpp
   scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
-  3rdparty/pugixml/src/pugixml.cpp)
+  3rdparty/pugixml/src/pugixml.cpp
+  3rdparty/jxrlib/image/decode/decode.c
+  3rdparty/jxrlib/image/decode/postprocess.c
+  3rdparty/jxrlib/image/decode/segdec.c
+  3rdparty/jxrlib/image/decode/strdec.c
+  3rdparty/jxrlib/image/decode/strInvTransform.c
+  3rdparty/jxrlib/image/decode/strPredQuantDec.c
+  3rdparty/jxrlib/image/decode/JXRTranscode.c
+  3rdparty/jxrlib/image/encode/encode.c
+  3rdparty/jxrlib/image/encode/segenc.c
+  3rdparty/jxrlib/image/encode/strenc.c
+  3rdparty/jxrlib/image/encode/strFwdTransform.c
+  3rdparty/jxrlib/image/encode/strPredQuantEnc.c
+  3rdparty/jxrlib/image/sys/adapthuff.c
+  3rdparty/jxrlib/image/sys/image.c
+  3rdparty/jxrlib/image/sys/strcodec.c
+  3rdparty/jxrlib/image/sys/strPredQuant.c
+  3rdparty/jxrlib/image/sys/strTransform.c
+  3rdparty/jxrlib/image/sys/perfTimerANSI.c
+  3rdparty/jxrlib/jxrgluelib/JXRGlue.c
+  3rdparty/jxrlib/jxrgluelib/JXRMeta.c
+  3rdparty/jxrlib/jxrgluelib/JXRGluePFC.c
+  3rdparty/jxrlib/jxrgluelib/JXRGlueJxr.c
+  )
 IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -172,6 +195,11 @@ ENDIF(MINGW)
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/scripting)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/jxrgluelib)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys)
+
+
 
 # liblightspark.so target
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

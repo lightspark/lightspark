@@ -876,9 +876,9 @@ void EngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, ui
 }
 
 
-void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, bool hasalpha)
 {
-	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(GL_TEXTURE_2D, level, hasalpha ? GL_RGBA8 : GL_RGB, width, height, border, hasalpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, pixels);
 }
 void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {

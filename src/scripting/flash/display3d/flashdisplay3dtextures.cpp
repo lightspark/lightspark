@@ -66,11 +66,31 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadFromByteArray does nothing");
+	Texture* th = asAtomHandler::as<Texture>(obj);
 	_NR<ByteArray> data;
-	int32_t byteArrayOffset;
+	uint32_t byteArrayOffset;
 	uint32_t miplevel;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(miplevel,0);
+	if (data.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	th->needrefresh = true;
+	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
+	{
+		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
+		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+	}
+	if (th->bitmaparray.size() <= miplevel)
+		th->bitmaparray.resize(miplevel+1);
+	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
+	th->bitmaparray[miplevel].resize(mipsize);
+	uint32_t bytesneeded = (th->height>>miplevel) * (th->width>>miplevel)*4;
+	if (byteArrayOffset + bytesneeded > data->getLength())
+	{
+		LOG(LOG_ERROR,"not enough bytes to read");
+		throwError<RangeError>(kParamRangeError);
+	}
+	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[miplevel].data());
+	th->context->addAction(RENDER_LOADTEXTURE,th);
 }
 
 
@@ -111,7 +131,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 	}
 	uint32_t bitmap_size = 1<<(th->max_miplevel-(miplevel+1));
 	if ((source->getWidth() != source->getHeight())
-		|| (source->getWidth() != bitmap_size))
+		|| (uint32_t(source->getWidth()) != bitmap_size))
 	{
 		LOG(LOG_ERROR,"invalid bitmap:"<<source->getWidth()<<" "<<source->getHeight()<<" "<< th->max_miplevel <<" "<< miplevel);
 		throwError<ArgumentError>(kInvalidArgumentError,"source");

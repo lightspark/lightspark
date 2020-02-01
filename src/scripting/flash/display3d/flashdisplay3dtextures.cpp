@@ -91,11 +91,47 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"CubeTexture.uploadFromBitmapData does nothing");
+	CubeTexture* th = asAtomHandler::as<CubeTexture>(obj);
 	_NR<BitmapData> source;
 	uint32_t side;
 	uint32_t miplevel;
 	ARG_UNPACK_ATOM(source)(side)(miplevel,0);
+	if (source.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	th->needrefresh = true;
+	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > th->width))
+	{
+		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width);
+		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+	}
+	if (side > 5)
+	{
+		LOG(LOG_ERROR,"invalid side:"<<side);
+		throwError<ArgumentError>(kInvalidArgumentError,"side");
+	}
+	uint32_t bitmap_size = 1<<(th->max_miplevel-(miplevel+1));
+	if ((source->getWidth() != source->getHeight())
+		|| (source->getWidth() != bitmap_size))
+	{
+		LOG(LOG_ERROR,"invalid bitmap:"<<source->getWidth()<<" "<<source->getHeight()<<" "<< th->max_miplevel <<" "<< miplevel);
+		throwError<ArgumentError>(kInvalidArgumentError,"source");
+	}
+
+	uint32_t mipsize = (th->width>>miplevel)*(th->width>>miplevel)*4;
+	th->bitmaparray[th->max_miplevel*side + miplevel].resize(mipsize);
+	for (uint32_t i = 0; i < bitmap_size; i++)
+	{
+		for (uint32_t j = 0; j < bitmap_size; j++)
+		{
+			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
+			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+		}
+	}
+	th->context->addAction(RENDER_LOADCUBETEXTURE,th);
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 {

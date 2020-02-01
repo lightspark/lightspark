@@ -62,9 +62,12 @@ public:
 
 class CubeTexture: public TextureBase
 {
+	friend class Context3D;
+protected:
+	uint32_t max_miplevel;
 public:
-	CubeTexture(Class_base* c):TextureBase(c){ subtype = SUBTYPE_CUBETEXTURE;}
-	CubeTexture(Class_base* c,Context3D* _context):TextureBase(c,_context){ subtype = SUBTYPE_CUBETEXTURE;}
+	CubeTexture(Class_base* c):TextureBase(c),max_miplevel(0) { subtype = SUBTYPE_CUBETEXTURE;}
+	CubeTexture(Class_base* c,Context3D* _context):TextureBase(c,_context),max_miplevel(0) { subtype = SUBTYPE_CUBETEXTURE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(uploadCompressedTextureFromByteArray);
 	ASFUNCTION_ATOM(uploadFromBitmapData);

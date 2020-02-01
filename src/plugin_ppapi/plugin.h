@@ -301,6 +301,10 @@ public:
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data) override;
 	void exec_glGenerateMipmap_GL_TEXTURE_2D() override;
 	void exec_glReadPixels(int32_t width, int32_t height,void* buf) override;
+	void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id);
+	void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR() override;
+	void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR() override;
+	void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels) override;
 
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s) override;

@@ -2402,6 +2402,22 @@ void ppPluginEngineData::exec_glReadPixels(int32_t width, int32_t height, void *
 	g_gles2_interface->PixelStorei(instance->m_graphics,GL_PACK_ALIGNMENT, 1);
 	g_gles2_interface->ReadPixels(instance->m_graphics,0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
+void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)
+{
+	g_gles2_interface->BindTexture(instance->m_graphics,GL_TEXTURE_CUBE_MAP, id);
+}
+void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR()
+{
+	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR()
+{
+	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+{
+	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+}
 
 void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)
 {

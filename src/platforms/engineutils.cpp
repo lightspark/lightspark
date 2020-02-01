@@ -969,6 +969,23 @@ void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glReadPixels(0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
+void EngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)
+{
+	glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+}
+void EngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR()
+{
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+void EngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR()
+{
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+void EngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+{
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+}
+
 
 void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 {

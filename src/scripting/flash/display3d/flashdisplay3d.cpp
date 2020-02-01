@@ -435,6 +435,9 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_LOADTEXTURE:
 			loadTexture(action.dataobject->as<TextureBase>());
 			break;
+		case RENDER_LOADCUBETEXTURE:
+			loadCubeTexture(action.dataobject->as<CubeTexture>());
+			break;
 	}
 }
 
@@ -614,7 +617,43 @@ void Context3D::loadTexture(TextureBase *tex)
 				if (tex->bitmaparray[i].size() > 0)
 					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
 				else
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, NULL);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, nullptr);
+			}
+		}
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+		tex->needrefresh = false;
+	}
+}
+void Context3D::loadCubeTexture(CubeTexture *tex)
+{
+	EngineData* engineData = getSystemState()->getEngineData();
+	if (tex->textureID == UINT32_MAX || tex->needrefresh)
+	{
+		if (tex->textureID == UINT32_MAX)
+			engineData->exec_glGenTextures(1, &(tex->textureID));
+		engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(tex->textureID);
+		engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+		engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+		if (tex->bitmaparray.size() == 0)
+		{
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr);
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(1,0, tex->width, tex->height, 0, nullptr);
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(2,0, tex->width, tex->height, 0, nullptr);
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(3,0, tex->width, tex->height, 0, nullptr);
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(4,0, tex->width, tex->height, 0, nullptr);
+			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(5,0, tex->width, tex->height, 0, nullptr);
+		}
+		else
+		{
+			uint32_t side = 0;
+			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+			{
+				if (i % tex->max_miplevel == 1) // next side
+					side++;
+				if (tex->bitmaparray[i].size() > 0)
+					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
+				else
+					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, nullptr);
 			}
 		}
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
@@ -734,13 +773,23 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture does nothing");
-	int32_t size;
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
+	CubeTexture* res = Class<CubeTexture>::getInstanceS(sys,th);
+	uint32_t size;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
-	ret = asAtomHandler::fromObject(Class<CubeTexture>::getInstanceS(sys,th));
+	uint32_t i = size;
+	while (i)
+	{
+		res->max_miplevel++;
+		i>>=1;
+	}
+	res->width = res->height = size;
+	res->bitmaparray.resize(res->max_miplevel*6); // reserve space for 6 bitmaps * no. of mipmaps
+	if (format != "bgra" || optimizeForRenderToTexture || streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {

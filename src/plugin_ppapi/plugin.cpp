@@ -2419,6 +2419,17 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNS
 	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
 
+void ppPluginEngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height)
+{
+	g_gles2_interface->Enable(instance->m_graphics,GL_SCISSOR_TEST);
+	g_gles2_interface->Scissor(instance->m_graphics,x,y,width,height);
+}
+
+void ppPluginEngineData::exec_glColorMask(bool red, bool green, bool blue, bool alpha)
+{
+	g_gles2_interface->ColorMask(instance->m_graphics,red,green,blue,alpha);
+}
+
 void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)
 {
 	AudioStream *s = (AudioStream*)user_data;

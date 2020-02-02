@@ -438,6 +438,15 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_LOADCUBETEXTURE:
 			loadCubeTexture(action.dataobject->as<CubeTexture>());
 			break;
+		case RENDER_SETSCISSORRECTANGLE:
+			// action.fdata = x,y,width,height
+			engineData->exec_glScissor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
+			delete[] action.fdata;
+			break;
+		case RENDER_SETCOLORMASK:
+			// action.udata1 = red | green | blue | alpha
+			engineData->exec_glColorMask(action.udata1&0x01,action.udata1&0x02,action.udata1&0x04,action.udata1&0x08);
+			break;
 	}
 }
 
@@ -937,12 +946,20 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setColorMask does nothing");
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	bool red;
 	bool green;
 	bool blue;
 	bool alpha;
 	ARG_UNPACK_ATOM(red)(green)(blue)(alpha);
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_SETCOLORMASK;
+	action.udata1 = 0;
+	if (red) action.udata1 |= 0x01;
+	if (green) action.udata1 |= 0x02;
+	if (blue) action.udata1 |= 0x04;
+	if (alpha) action.udata1 |= 0x08;
+	th->actions[th->currentactionvector].push_back(action);
 }
 ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 {
@@ -1062,10 +1079,20 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 
 ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 {
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<Rectangle> rectangle;
 	ARG_UNPACK_ATOM(rectangle);
 	if (!rectangle.isNull())
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setScissorRectangle does nothing:"<<rectangle->toDebugString());
+	{
+		renderaction action;
+		action.action = RENDER_ACTION::RENDER_SETSCISSORRECTANGLE;
+		action.fdata = new float[4];
+		action.fdata[0] = rectangle->x;
+		action.fdata[1] = rectangle->y;
+		action.fdata[2] = rectangle->width;
+		action.fdata[3] = rectangle->height;
+		th->addAction(action);
+	}
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)
 {

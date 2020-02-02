@@ -986,6 +986,17 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BY
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 }
 
+void EngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height)
+{
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(x,y,width,height);
+}
+
+void EngineData::exec_glColorMask(bool red, bool green, bool blue, bool alpha)
+{
+	glColorMask(red,green,blue,alpha);
+}
+
 
 void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 {

@@ -197,7 +197,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/scripting)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/jxrgluelib)
 # needed for jxr image decoder
-SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/scripting/flash/display3d/flashdisplay3dtextures.cpp PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include/ -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys/")
+SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/scripting/flash/display3d/flashdisplay3dtextures.cpp PROPERTIES COMPILE_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include/ -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys/")
 SET(CMAKE_C_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include")
 
 

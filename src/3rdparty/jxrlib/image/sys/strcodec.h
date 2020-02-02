@@ -57,9 +57,11 @@
 
 //================================================================
 //#ifdef WIN32
+#ifndef __MINGW32__
 #if defined(WIN32) && !defined(UNDER_CE)   // WIN32 seems to be defined always in VS2005 for ARM platform
 #define PLATFORM_X86
 #include "..\x86\x86.h"
+#endif
 #endif
 
 #ifndef UNREFERENCED_PARAMETER
@@ -450,10 +452,14 @@ typedef struct CWMImageStrCodec {
 
     struct WMPStream ** ppWStream;
 
+#ifdef __MINGW32__
+	char **ppTempFile;
+#else
 #ifdef WIN32
     TCHAR **ppTempFile;
 #else
-    char **ppTempFile;
+	char **ppTempFile;
+#endif
 #endif
 
     // interleaved alpha support - linked structure for Alpha channel

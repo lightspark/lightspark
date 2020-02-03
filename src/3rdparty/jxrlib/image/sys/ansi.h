@@ -44,6 +44,10 @@
 //================================
 #define FORCE_INLINE
 #define CDECL
+#ifdef __MINGW64__
+#define UINTPTR_T unsigned long long
+#define INTPTR_T long long
+#else
 #if __LP64__
 #define UINTPTR_T unsigned long long
 #define INTPTR_T long long
@@ -51,7 +55,7 @@
 #define UINTPTR_T unsigned int
 #define INTPTR_T int
 #endif
-
+#endif
 
 //================================
 // quantization optimization

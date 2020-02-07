@@ -4584,6 +4584,27 @@ void MovieClip::declareFrame()
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
 
+	// contrary to http://www.senocular.com/flash/tutorials/orderofoperations/
+	// the constructors of the children are _not_ really called bottom-up but in a "mixed" fashion:
+	// - the constructor of the parent is called first. that leads to calling the constructors of all super classes of the parent
+	// - after the builtin super constructor of the parent was called, the constructors of the children are called
+	// - after that, the remaining code of the the parents constructor is executed
+	// this ensures that code from the constructor that is placed _before_ the super() call is executed before the children are constructed
+	// example:
+	// class testsprite : MovieClip
+	// {
+	//   public var childclip:MovieClip;
+	//   public function Game()
+	//   {
+	//      // code here will be executed _before_ childclip is constructed
+	//      super();
+	//      // code here will be executed _after_ childclip was constructed
+	//  }
+	if (!this->getConstructIndicator())
+	{
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+		getClass()->handleConstruction(obj,nullptr,0,true);
+	}	
 	bool newFrame = (int)state.FP != state.last_FP;
 	if (newFrame ||!state.frameadvanced)
 	{

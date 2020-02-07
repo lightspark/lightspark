@@ -425,10 +425,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	ARG_UNPACK_ATOM (firstPoint) (firstAlphaThreshold) (secondObject) (secondBitmapDataPoint, NullRef)
 					(secondAlphaThreshold,1);
 
-	if(!secondBitmapDataPoint.isNull() || secondAlphaThreshold!=1)
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest does not expect some parameters");
+	asAtomHandler::setBool(ret,false);
 
-	
 	if(secondObject->is<Point>())
 	{
 		Point* secondPoint = secondObject->as<Point>();
@@ -463,11 +461,38 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	}
 	else if (secondObject->is<Bitmap>())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with Bitmap as secondObject");
+		if (secondBitmapDataPoint.isNull())
+			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with Bitmap as secondObject and no secondBitmapDataPoint");
+		else
+		{
+			if (secondObject->as<Bitmap>()->bitmapData.isNull())
+				LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with empty Bitmap as secondObject");
+			else
+			{
+				Point* secondPoint = secondBitmapDataPoint->as<Point>();
+				uint32_t pix1=th->pixels->getPixel(firstPoint->getX(), firstPoint->getY());
+				uint32_t pix2=secondObject->as<Bitmap>()->bitmapData->pixels->getPixel(secondPoint->getX(), secondPoint->getY());
+				if(((pix1>>24)>=firstAlphaThreshold) && (pix2>>24)>=secondAlphaThreshold)
+					asAtomHandler::setBool(ret,true);
+				else
+					asAtomHandler::setBool(ret,false);
+			}
+		}
 	}
 	else if (secondObject->is<BitmapData>())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with BitmapData as secondObject");
+		if (secondBitmapDataPoint.isNull())
+			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with BitmapData as secondObject and no secondBitmapDataPoint");
+		else
+		{
+			Point* secondPoint = secondBitmapDataPoint->as<Point>();
+			uint32_t pix1=th->pixels->getPixel(firstPoint->getX(), firstPoint->getY());
+			uint32_t pix2=secondObject->as<BitmapData>()->pixels->getPixel(secondPoint->getX(), secondPoint->getY());
+			if(((pix1>>24)>=firstAlphaThreshold) && (pix2>>24)>=secondAlphaThreshold)
+				asAtomHandler::setBool(ret,true);
+			else
+				asAtomHandler::setBool(ret,false);
+		}
 	}
 	else
 		throwError<TypeError>(kCheckTypeFailedError, 

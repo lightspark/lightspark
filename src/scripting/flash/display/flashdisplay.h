@@ -564,6 +564,7 @@ private:
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
 	bool avm1initactionsdone;
+	bool inExecuteFramescript;
 
 	std::set<uint32_t> frameinitactionsdone;
 

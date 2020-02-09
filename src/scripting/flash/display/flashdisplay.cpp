@@ -1365,13 +1365,13 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),actions(0),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),actions(0),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
@@ -1396,6 +1396,7 @@ bool MovieClip::destruct()
 	frameScriptToExecute = UINT32_MAX;
 	totalFrames_unreliable = 1;
 	avm1initactionsdone = false;
+	inExecuteFramescript=false;
 	frameinitactionsdone.clear();
 
 	frames.clear();
@@ -1551,6 +1552,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
+	if (inExecuteFramescript)
+		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
 	if (!this->isOnStage())
 	{
@@ -1611,6 +1614,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP+1;
 	th->state.explicit_FP=true;
+	if (th->inExecuteFramescript)
+		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
 	{
 		th->advanceFrame();
@@ -1629,6 +1634,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
 	th->state.next_FP = th->state.FP-1;
 	th->state.explicit_FP=true;
+	if (th->inExecuteFramescript)
+		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
 	{
 		th->advanceFrame();
@@ -4681,10 +4688,12 @@ void MovieClip::executeFrameScript()
 	{
 		uint32_t f = frameScriptToExecute;
 		frameScriptToExecute = UINT32_MAX;
+		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
 		asAtomHandler::callFunction(frameScripts[f],v,obj,NULL,0,false);
 		ASATOM_DECREF(v);
+		inExecuteFramescript = false;
 	}
 	Sprite::executeFrameScript();
 	state.explicit_FP=false;

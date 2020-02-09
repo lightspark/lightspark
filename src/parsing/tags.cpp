@@ -1596,7 +1596,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 		toAdd->legacy = true;
 		// indicate construction completed if instance is not binded to an inherited class
-		if (toAdd->getClass() && toAdd->getClass()->isBuiltin())
+		if (!placedTag->loadedFrom->usesActionScript3 && toAdd->getClass() && toAdd->getClass()->isBuiltin())
 			toAdd->constructionComplete();
 
 		setProperties(toAdd, parent);

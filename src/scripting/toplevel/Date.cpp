@@ -189,7 +189,7 @@ ASFUNCTIONBODY_ATOM(Date,_constructor)
 			nm = parse(asAtomHandler::toString(args[0],sys));
 		else
 			nm = asAtomHandler::toNumber(args[0]);
-		if (std::isnan(nm))
+		if (std::isnan(nm) || std::isinf(nm))
 			th->nan = true;
 		else
 			th->MakeDateFromMilliseconds(int64_t(nm));

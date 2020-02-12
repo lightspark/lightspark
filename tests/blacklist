@@ -1,9 +1,16 @@
 tamarin-SWF/abcasm/bug_555006b.swf
 tamarin-SWF/abcasm/bug_655118.swf
 tamarin-SWF/ecma3/Exceptions/exception_011_rt.swf
+tamarin-SWF/ecma3/Expressions/e11_6_3.swf
+tamarin-SWF/ecma3/LexicalConventions/e7_7_3.swf
+tamarin-SWF/ecma3/Number/e15_7_1.swf
+tamarin-SWF/ecma3/Number/e15_7_2.swf
+tamarin-SWF/ecma3/Number/e15_7_4_6_1.swf
+tamarin-SWF/ecma3/Number/e15_7_4_7_1.swf
 tamarin-SWF/ecma3/RegExp/eregress_119909.swf
 tamarin-SWF/as3/ByteArray/ByteArrayLzmaThirdParty.swf
 tamarin-SWF/as3/Math/e15_1_2_2.swf
+tamarin-SWF/as3/Types/Number/e15_7_4_6_1.swf
 tamarin-SWF/as3/Vector/concat.swf
 tamarin-SWF/recursion/pcre_find_fixedlength.swf
 tamarin-SWF/regress/bug_599357.swf

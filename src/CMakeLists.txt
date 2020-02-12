@@ -172,6 +172,10 @@ SET(LIBSPARK_SOURCES
   3rdparty/jxrlib/jxrgluelib/JXRMeta.c
   3rdparty/jxrlib/jxrgluelib/JXRGluePFC.c
   3rdparty/jxrlib/jxrgluelib/JXRGlueJxr.c
+  3rdparty/avmplus/core/BigInteger.cpp
+  3rdparty/avmplus/core/BigInteger.h
+  3rdparty/avmplus/core/d2a.cpp
+  3rdparty/avmplus/core/d2a.h
   )
 IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)

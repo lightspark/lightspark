@@ -38,6 +38,8 @@ private:
 	static void purgeTrailingZeroes(char* buf);
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
+	enum DTOSTRMODE { DTOSTR_NORMAL, DTOSTR_FIXED, DTOSTR_PRECISION, DTOSTR_EXPONENTIAL };
+	static tiny_string toString(number_t value, DTOSTRMODE mode, int32_t precision);
 public:
 	Number(Class_base* c, double v=Number::NaN):ASObject(c,T_NUMBER),dval(v),isfloat(true){}
 	static const number_t NaN;
@@ -61,7 +63,7 @@ public:
 	ASFUNCTION_ATOM(toFixed);
 	ASFUNCTION_ATOM(_valueOf);
 	tiny_string toString();
-	static tiny_string toString(number_t val);
+	static tiny_string toString(number_t val) { return toString(val,DTOSTR_NORMAL,15);}
 	static tiny_string toStringRadix(number_t val, int radix);
 	static tiny_string toExponentialString(double v, int32_t fractionDigits);
 	static tiny_string toFixedString(double v, int32_t fractionDigits);

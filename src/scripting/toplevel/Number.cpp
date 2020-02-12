@@ -22,6 +22,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Math.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "3rdparty/avmplus/core/d2a.h"
 
 using namespace std;
 using namespace lightspark;
@@ -247,34 +248,321 @@ tiny_string Number::toString()
 	return Number::toString(isfloat ? dval : ival);
 }
 
-/* static helper function */
-tiny_string Number::toString(number_t val)
+// doubletostring algorithm taken from https://github.com/adobe/avmplus/core/MathUtils.cpp
+tiny_string Number::toString(number_t value, DTOSTRMODE mode, int32_t precision)
 {
-	if(std::isnan(val))
+	if(std::isnan(value))
 		return "NaN";
-	if(std::isinf(val))
+	if(std::isinf(value))
 	{
-		if(val > 0)
+		if(value > 0)
 			return "Infinity";
 		else
 			return "-Infinity";
 	}
-	if(val == 0) //this also handles the case '-0'
-		return "0";
 
-	//See ecma3 8.9.1
-	char buf[40];
-	if (val==(int)(val))
-		snprintf(buf,40,"%d",(int)(val));
-	else
-	{
-		if(fabs(val) >= 1e+21 || fabs(val) <= 1e-6)
-			snprintf(buf,40,"%.15e",val);
-		else
-			snprintf(buf,40,"%.14f",val);
-		purgeTrailingZeroes(buf);
+	char buffer[500];
+	if (mode == DTOSTR_NORMAL) {
+		int32_t intValue = int32_t(value);
+		if ((value == (double)(intValue)) && ((uint32_t)intValue != 0x80000000))
+		{
+			snprintf(buffer,40,"%d",(int)(value));
+			return tiny_string(buffer,true);
+		}
 	}
-	return tiny_string(buf,true);
+
+	const bool negative = value < 0.0;
+	const bool zero = value == 0.0;
+	bool round = true;
+	// Pointer to the next available character
+	char *s = buffer;
+
+	// Negate negative numbers and make space for the sign.  The sign
+	// has to be placed just before we finish because we don't know yet
+	// if it will be in buffer[0] or buffer[1].
+
+	if (negative) {
+		value = -value;
+		s++;
+	}
+
+	// Set up the digit generator.
+	avmplus::D2A d2a(value, mode != DTOSTR_NORMAL, precision);
+	int32_t exp10 = d2a.expBase10()-1;     // Why "-1"?
+
+	// Sentinel is used for rounding - points to the first digit
+	char* const sentinel = s;
+
+	// Format type selection.
+
+	enum FormatType {
+		kNormal,
+		kExponential,
+		kFraction,
+		kFixedFraction
+	};
+
+	FormatType format;
+
+	switch (mode) {
+	case DTOSTR_FIXED:
+		{
+			if (exp10 < 0) {
+				format = kFixedFraction;
+			} else {
+				format = kNormal;
+				precision++;
+			}
+		}
+		break;
+	case DTOSTR_PRECISION:
+		{
+			// FIXME: Bugzilla 442974: This is simply not according to spec,
+			// the canonical test case is Number.MIN_VALUE.toPrecision(21), which
+			// formats as a 346-character string.
+			if (exp10 < 0) {
+				format = kFraction;
+			} else if (exp10 >= precision) {
+				format = kExponential;
+			} else {
+				format = kNormal;
+			}
+		}
+		break;
+	case DTOSTR_EXPONENTIAL:
+		format = kExponential;
+		precision++;
+		break;
+	default:
+		if (exp10 < 0 && exp10 > -7) {
+			// Number is of form 0.######
+			if (exp10 < -precision) {
+				exp10 = -precision-1;
+			}
+			format = kFraction;
+		} else if (exp10 > 20) { // ECMA spec 9.8.1
+			format = kExponential;
+		} else {
+			format = kNormal;
+		}
+	}
+
+	// Digit generation.
+
+	bool wroteDecimal = false;
+	switch (format) {
+	case kNormal:
+		{
+			int32_t digits = 0;
+			int32_t digit;
+			*s++ = '0';
+			digit = d2a.nextDigit();
+			if (digit > 0) {
+				*s++ = (char)(digit + '0');
+			}
+			while (exp10 > 0) {
+				digit = (d2a.finished) ? 0 : d2a.nextDigit();
+				*s++ = (char)(digit + '0');
+				exp10--;
+				digits++;
+			}
+			if (mode == DTOSTR_FIXED) {
+				digits = 0;
+			}
+			if (mode == DTOSTR_NORMAL) {
+				if (!d2a.finished) {
+					*s++ = '.';
+					wroteDecimal = true;
+					while( !d2a.finished ) {
+						*s++ = (char)(d2a.nextDigit() + '0');
+					}
+				}
+			}
+			else if (digits < precision-1)
+			{
+				*s++ = '.';
+				wroteDecimal = true;
+				for (; digits < precision-1; digits++) {
+					digit = d2a.finished ? 0 : d2a.nextDigit();
+					*s++ = (char)(digit + '0');
+				}
+			}
+		}
+		break;
+	case kFixedFraction:
+		{
+			*s++ = '0'; // Sentinel
+			*s++ = '0';
+			*s++ = '.';
+			wroteDecimal = true;
+			// Write out leading zeroes
+			int32_t digits = 0;
+			if (exp10 > 0) {
+				while (++exp10 < 10 && digits < precision) {
+					*s++ = '0';
+					digits++;
+				}
+			} else if (exp10 < 0) {
+				while ((++exp10 < 0) && (precision-- > 0))
+					*s++ = '0';
+			}
+
+			// Write out significand
+			for ( ; digits<precision; digits++) {
+				if (d2a.finished)
+				{
+					if (mode == DTOSTR_NORMAL)
+						break;
+					*s++ = '0';
+				} else {
+					*s++ = (char)(d2a.nextDigit() + '0');
+				}
+			}
+			exp10 = 0;
+		}
+		break;
+	case kFraction:
+		{
+			*s++ = '0'; // Sentinel
+			*s++ = '0';
+			*s++ = '.';
+			wroteDecimal = true;
+
+			// Write out leading zeros
+			if (!zero)
+			{
+				for (int32_t i=exp10; i<-1; i++) {
+					*s++ = '0';
+				}
+			}
+
+			// Write out significand
+			int32_t i=0;
+			while (!d2a.finished)
+			{
+				*s++ = (char)(d2a.nextDigit() + '0');
+				if (mode != DTOSTR_NORMAL && ++i >= precision)
+					break;
+			}
+			if (mode == DTOSTR_PRECISION)
+			{
+				while(i++ < precision)
+					*s++ = (char)(d2a.finished ? '0' : d2a.nextDigit() + '0');
+			}
+			exp10 = 0;
+		}
+		break;
+	case kExponential:
+		{
+			int32_t digit;
+			digit = d2a.finished ? 0 : d2a.nextDigit();
+			*s++ = (char)(digit + '0');
+			if ( ((mode == DTOSTR_NORMAL) && !d2a.finished) ||
+				 ((mode != DTOSTR_NORMAL) && precision > 1) ) {
+				*s++ = '.';
+				wroteDecimal = true;
+				for (int32_t i=0; i<precision-1; i++) {
+					if (d2a.finished)
+					{
+						if (mode == DTOSTR_NORMAL)
+							break;
+						*s++ = '0';
+					} else {
+						*s++ = (char)(d2a.nextDigit() + '0');
+					}
+				}
+			}
+		}
+		break;
+	}
+
+	// Rounding and truncation.
+
+	if (round && (d2a.bFastEstimateOk || mode == DTOSTR_FIXED || mode == DTOSTR_PRECISION))
+	{
+		if (d2a.nextDigit() > 4) {
+			// Round the value up.
+			
+			for ( char* ptr=s-1 ; ptr >= sentinel ; ptr-- ) {
+				// Skip the decimal point
+				if (*ptr == '.')
+					continue;
+				
+				// Carry in
+				*ptr = *ptr + 1;
+
+				// Done if there's no carry out
+				if (*ptr != ('9'+1))
+					break;
+				
+				// Carry out
+				*ptr = '0';
+			}
+		}
+
+		if (mode == DTOSTR_NORMAL && wroteDecimal) {
+			// Remove trailing zeroes, and if necessary the decimal point.
+			while (*(s-1) == '0') {
+				s--;
+			}
+			if (*(s-1) == '.') {
+				s--;
+			}
+		}
+	}
+
+	// Clean up zeroes, and place the exponent
+	if (exp10) {
+
+		// Handle the case where all digits ended up zero.
+		// FIXME: Bugzilla 442974: This code is broken, it will find the decimal point.
+
+		char *firstNonZero = sentinel;
+		while (firstNonZero < s && *firstNonZero == '0') {
+			firstNonZero++;
+		}
+		if (s == firstNonZero) {
+			// FIXME: Bugzilla 442974:  This seems wrong, because it places the '1' at
+			// the end of the string, not at the beginning.  Also it is arguably wrong
+			// if the value is zero, and I don't have any proof that that can't happen.
+			*s++ = '1';
+			exp10++;
+		}
+		else if (!zero) {
+			// Remove trailing zeroes, as might appear in 10e+95
+			char *lastNonZero = s;
+			while (lastNonZero > firstNonZero && *--lastNonZero == '0')
+				;
+
+			if (firstNonZero == lastNonZero) {
+				exp10 += (int32_t) (s - firstNonZero - 1);  // What if exp10 is already the negative of that?
+				s = lastNonZero+1;
+			}
+		}
+		
+		// Place the exponent
+		*s++ = 'e';
+		if (exp10 > 0) {
+			*s++ = '+';
+		}
+		tiny_string e = Integer::toString(exp10);
+		char* t = (char*)e.raw_buf();
+		while (*t) { *s++ = *t++; }
+	}
+
+	int32_t len = (int32_t)(s-buffer);
+	*s = 0;
+	s = sentinel;
+	
+	// Deal with the sentinel introduced for the kFraction case: we might have a leading '00.'
+	
+	if (sentinel[0] == '0' && sentinel[1] != '.') {
+		s = sentinel + 1;
+		len--;
+	}
+	if (negative)
+		*--s = '-';
+	return tiny_string(s,true);
 }
 
 tiny_string Number::toStringRadix(number_t val, int radix)
@@ -404,38 +692,11 @@ ASFUNCTIONBODY_ATOM(Number,toFixed)
 	ret = asAtomHandler::fromObject(abstract_s(sys,toFixedString(val, fractiondigits)));
 }
 
-tiny_string Number::toFixedString(double v, int32_t fractiondigits)
+tiny_string Number::toFixedString(double v, int32_t fractionDigits)
 {
-	if (fractiondigits < 0 || fractiondigits > 20)
+	if (fractionDigits < 0 || fractionDigits > 20)
 		throwError<RangeError>(kInvalidPrecisionError);
-	if (std::isnan(v))
-		return  "NaN";
-	if (v >= pow(10., 21))
-		return toString(v);
-	number_t fractpart, intpart;
-	double rounded = v + 0.5*pow(10., -fractiondigits);
-	fractpart = modf(rounded , &intpart);
-
-	tiny_string res("");
-	char buf[40];
-	snprintf(buf,40,"%ld",int64_t(fabs(intpart)));
-	res += buf;
-	
-	if (fractiondigits > 0)
-	{
-		number_t x = fractpart;
-		res += ".";
-		for (int i=0; i<fractiondigits; i++)
-		{
-			x*=10.0;
-			int n = (int)x;
-			x -= n;
-			res += tiny_string::fromChar('0' + n);
-		}
-	}
-	if ( v < 0)
-		res = tiny_string::fromChar('-')+res;
-	return res;
+	return toString(v,DTOSTR_FIXED,fractionDigits);
 }
 
 ASFUNCTIONBODY_ATOM(Number,toExponential)
@@ -450,24 +711,9 @@ ASFUNCTIONBODY_ATOM(Number,toExponential)
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
 {
-	if (std::isnan(v) || std::isinf(v))
-		return toString(v);
-
-	tiny_string res;
-	if (v < 0)
-	{
-		res = "-";
-		v = -v;
-	}
-
 	if (fractionDigits < 0 || fractionDigits > 20)
 		throwError<RangeError>(kInvalidPrecisionError);
-	
-	char buf[40];
-	snprintf(buf,40,"%.*e", fractionDigits, v);
-	res += buf;
-	res = purgeExponentLeadingZeros(res);
-	return res;
+	return toString(v,DTOSTR_EXPONENTIAL,fractionDigits);
 }
 
 tiny_string Number::purgeExponentLeadingZeros(const tiny_string& exponentialForm)
@@ -561,29 +807,8 @@ ASFUNCTIONBODY_ATOM(Number,toPrecision)
 tiny_string Number::toPrecisionString(double v, int32_t precision)
 {
 	if (precision < 1 || precision > 21)
-	{
 		throwError<RangeError>(kInvalidPrecisionError);
-		return NULL;
-	}
-	else if (std::isnan(v) || std::isinf(v))
-		return toString(v);
-	else if (::fabs(v) > pow(10., precision))
-		return toExponentialString(v, precision-1);
-	else if (v == 0)
-	{
-		tiny_string zero = "0.";
-		for (int i=0; i<precision; i++)
-			zero += "0";
-		return zero;
-	}
-	else
-	{
-		int n = (int)::ceil(::log10(::fabs(v)));
-		if (n < 0)
-			return toExponentialString(v, precision-1);
-		else
-			return toFixedString(v, precision-n);
-	}
+	return toString(v,DTOSTR_PRECISION,precision);
 }
 
 ASFUNCTIONBODY_ATOM(Number,_valueOf)

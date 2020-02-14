@@ -686,7 +686,11 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 	if(obj==nullptr)
 	{
 		if (classdef && classdef->isSealed)
+		{
+			if (classdef->Variables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=nullptr)
+				throwError<ReferenceError>(kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName());
 			return false;
+		}
 
 		// fixed properties cannot be deleted
 		if (hasPropertyByMultiname(name,true,true))

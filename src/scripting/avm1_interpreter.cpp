@@ -831,7 +831,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				if (asAtomHandler::isUndefined(name)|| asAtomHandler::toStringId(name,clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				else
-					f =clip->AVM1GetFunction(nameID);
+				{
+					uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,clip->getSystemState()).lowercase());
+					f =clip->AVM1GetFunction(nameIDlower);
+				}
 				asAtom ret=asAtomHandler::invalidAtom;
 				if (f)
 					f->call(&ret,nullptr, args,numargs);
@@ -922,7 +925,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				if (asAtomHandler::isUndefined(name) || asAtomHandler::toStringId(name,clip->getSystemState()) == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				else
-					f =clip->AVM1GetFunction(nameID);
+				{
+					uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,clip->getSystemState()).lowercase());
+					f =clip->AVM1GetFunction(nameIDlower);
+				}
 				asAtom ret=asAtomHandler::invalidAtom;
 				if (f)
 				{
@@ -1284,7 +1290,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
 				if (asAtomHandler::is<DisplayObject>(scriptobject))
 				{
-					AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameID);
+					uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,clip->getSystemState()).lowercase());
+					AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameIDlower);
 					if (f)
 					{
 						f->call(&ret,&scriptobject,args,numargs);

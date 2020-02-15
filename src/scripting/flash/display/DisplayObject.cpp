@@ -1764,7 +1764,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 		child2 = asAtomHandler::as<DisplayObject>(args[0]);
 	else
 	{
-		if (th->getParent()->hasLegacyChildAt(asAtomHandler::toInt(args[0])))
+		if (th->getParent() && th->getParent()->hasLegacyChildAt(asAtomHandler::toInt(args[0])))
 			child2 = th->getParent()->getLegacyChildAt(asAtomHandler::toInt(args[0]));
 	}
 	if (th->getParent() && child1 && child2)

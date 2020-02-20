@@ -157,11 +157,10 @@ void LastOperationStatus::sinit(Class_base* c)
 void DateTimeStyle::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
-	
+
 	c->setVariableAtomByQName("CUSTOM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"custom"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("LONG",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"long"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"medium"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("NONE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"none"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("SHORT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"short"),CONSTANT_TRAIT);
 }
-

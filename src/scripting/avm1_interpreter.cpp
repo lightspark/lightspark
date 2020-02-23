@@ -947,6 +947,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					{
 						asAtomHandler::as<Class_base>(cls)->getInstance(ret,true,args,numargs);
 					}
+					else if (asAtomHandler::is<AVM1Function>(cls))
+					{
+						ret = asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<AVM1Function>(cls)->prototype));
+						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs);
+					}
 					else
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject class not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(cls));
 				}
@@ -1231,18 +1236,28 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					}
 					m.isAttribute = false;
 					ASATOM_INCREF(value);
-					ASObject* pr = o->getprop_prototype();
-					while (pr)
+					if (m.name_type==multiname::NAME_STRING && m.name_s_id == BUILTIN_STRINGS::PROTOTYPE)
 					{
-						variable* var = pr->findVariableByMultiname(m,nullptr);
-						if (var && asAtomHandler::is<AVM1Function>(var->setter))
-						{
-							asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1);
-							break;
-						}
-						pr = pr->getprop_prototype();
+						ASObject* protobj = asAtomHandler::toObject(value,clip->getSystemState());
+						protobj->incRef();
+						_NR<ASObject> p = _MR(protobj);
+						o->setprop_prototype(p);
 					}
-					o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+					else
+					{
+						ASObject* pr = o->getprop_prototype();
+						while (pr)
+						{
+							variable* var = pr->findVariableByMultiname(m,nullptr);
+							if (var && asAtomHandler::is<AVM1Function>(var->setter))
+							{
+								asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1);
+								break;
+							}
+							pr = pr->getprop_prototype();
+						}
+						o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+					}
 					if (o->is<DisplayObject>())
 						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
 				}

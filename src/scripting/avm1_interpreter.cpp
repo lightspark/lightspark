@@ -514,6 +514,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						case 13:// name
 							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 15:// url
+							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getRoot()->getOrigin().getURL());
+							break;
 						case 16:// quality
 							DisplayObject::AVM1_getQuality(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -524,7 +527,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							DisplayObject::_getMouseY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1: GetProperty type:"<<asAtomHandler::toInt(index));
+							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" GetProperty type:"<<asAtomHandler::toInt(index));
 							break;
 					}
 				}

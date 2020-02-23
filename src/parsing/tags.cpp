@@ -2108,7 +2108,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 	//TODO: get rid of the temporary copy
 	unsigned int soundDataLength = h.getLength()-7;
-	unsigned char *tmp = (unsigned char *)alloca(soundDataLength);
+	unsigned char *tmp = new unsigned char [soundDataLength];
 	in.read((char *)tmp, soundDataLength);
 	unsigned char *tmpp = tmp;
 	// it seems that adobe allows zeros at the beginning of the sound data
@@ -2135,6 +2135,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		delete sbuf;
 	}
 #endif
+	delete[] tmp;
 }
 
 ASObject* DefineSoundTag::instance(Class_base* c)

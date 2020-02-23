@@ -648,6 +648,7 @@ public:
 	ASFUNCTION_ATOM(AVM1AttachBitmap);
 	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
+	ASFUNCTION_ATOM(AVM1LoadMovie);
 };
 
 class Stage: public DisplayObjectContainer

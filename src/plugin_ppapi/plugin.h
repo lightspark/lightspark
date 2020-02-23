@@ -6,6 +6,7 @@
 #include "ppapi/c/pp_var.h"
 #include "ppapi/c/pp_resource.h"
 #include "ppapi/c/pp_completion_callback.h"
+#include "ppapi/c/private/ppb_flash_menu.h"
 
 namespace lightspark
 {
@@ -146,7 +147,7 @@ friend class ppPluginEngineData;
 	PP_Var *m_extargv;
 	PP_Var *m_extexception;
 	void worker();
-	
+	PP_Point mousepos;
 public:
 	ACQUIRE_RELEASE_FLAG(inReading);
 	ACQUIRE_RELEASE_FLAG(inWriting);
@@ -174,28 +175,40 @@ class ppPluginEngineData: public EngineData
 {
 private:
 	ppPluginInstance* instance;
+	PP_Flash_Menu ppcontextmenu;
+	PP_Resource ppcontextmenuid;
+	PP_CompletionCallback contextmenucallback;
 	bool buffersswapped;
 public:
 	SystemState* sys;
 	PP_Resource audioconfig;
 	ppPluginEngineData(ppPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : EngineData(), instance(i),buffersswapped(false),sys(_sys),audioconfig(0)
 	{
+		contextmenucallback.func = contextmenucallbackfunc;
+		contextmenucallback.user_data = (void*)this;
+		contextmenucallback.flags = 0;
 		hasExternalFontRenderer=true;
 		width = w;
 		height = h;
 		//needrenderthread=false;
 	}
+	static void contextmenucallbackfunc(void* user_data, int32_t result);
 	PP_Resource getGraphics() { return instance->m_graphics;}
 	void stopMainDownload() override;
 	bool isSizable() const override { return false; }
 	uint32_t getWindowForGnash() override;
 	void runInMainThread(SystemState* sys, void (*func) (SystemState*) ) override;
+	
 	/* must be called within mainLoopThread */
 	SDL_Window* createWidget(uint32_t w,uint32_t h) override;
 	/* must be called within mainLoopThread */
 	void grabFocus() override;
 	void setDisplayState(const tiny_string& displaystate) override;
 	bool inFullScreenMode() override;
+	void openContextMenu() override;
+	void updateContextMenu(int newselecteditem) override {}
+	void updateContextMenuFromMouse(uint32_t windowID, int mousey) override {}
+	void renderContextMenu() override {}
 	
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window) override;
 	void setClipboardText(const std::string txt) override;

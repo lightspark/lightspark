@@ -299,6 +299,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 	builtinavm1->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
+	builtinavm1->registerBuiltin("ContextMenuItem","",Class<ContextMenuItem>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextFormat","",Class<TextFormat>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
@@ -747,6 +748,7 @@ void ABCVm::registerClasses()
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragManager","flash.desktop",Class<NativeDragManager>::getRef(m_sys));
 		
+		builtin->registerBuiltin("NativeMenuItem","flash.display",Class<NativeMenuItem>::getRef(m_sys));
 
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragEvent","flash.events",Class<NativeDragEvent>::getRef(m_sys));

@@ -22,17 +22,23 @@
 
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/display/NativeMenuItem.h"
 
 namespace lightspark
 {
 
-class ContextMenuItem : public EventDispatcher
+class ContextMenuItem : public NativeMenuItem
 {
+private:
+	_NR<IFunction> callbackfunction;
 public:
-	ContextMenuItem(Class_base* c):EventDispatcher(c){}
+	ContextMenuItem(Class_base* c):NativeMenuItem(c){}
+	void defaultEventBehavior(_R<Event> e);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER_SETTER(tiny_string, caption);
+	ASPROPERTY_GETTER_SETTER(bool, separatorBefore);
+	ASPROPERTY_GETTER_SETTER(bool, visible);
+	void addToMenu(std::vector<_R<NativeMenuItem>>& items) override;
 };
 
 }

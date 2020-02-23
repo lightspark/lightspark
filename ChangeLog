@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* support for context menus added
+	* partial support for CubeTextures and compressed Textures in Stage3d
 	* ability to create screenshot added
 	* boost dependency removed
 	* fullscreen mode implemented

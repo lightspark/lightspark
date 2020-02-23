@@ -27,7 +27,10 @@ namespace lightspark
 
 class ContextMenuBuiltInItems : public ASObject
 {
-private:
+public:
+	ContextMenuBuiltInItems(Class_base* c);
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool,forwardAndBack);
 	ASPROPERTY_GETTER_SETTER(bool,loop);
 	ASPROPERTY_GETTER_SETTER(bool,play);
@@ -36,10 +39,6 @@ private:
 	ASPROPERTY_GETTER_SETTER(bool,rewind);
 	ASPROPERTY_GETTER_SETTER(bool,save);
 	ASPROPERTY_GETTER_SETTER(bool,zoom);
-public:
-	ContextMenuBuiltInItems(Class_base* c);
-	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_constructor);
 };
 
 }

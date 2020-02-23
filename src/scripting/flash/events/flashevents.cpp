@@ -496,6 +496,11 @@ void MouseEvent::setTarget(asAtom t)
 	}
 }
 
+MouseEvent *MouseEvent::getclone() const
+{
+	return (MouseEvent*)cloneImpl();
+}
+
 NativeDragEvent::NativeDragEvent(Class_base* c)
  : MouseEvent(c)
 {
@@ -1365,15 +1370,49 @@ Event* StageVideoAvailabilityEvent::cloneImpl() const
 	return clone;
 }
 
-ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability)
+ASFUNCTIONBODY_GETTER(StageVideoAvailabilityEvent,availability);
 
 void ContextMenuEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("MENU_ITEM_SELECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"menuItemSelect"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("MENU_SELECT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"menuSelect"),DECLARED_TRAIT);
+	REGISTER_GETTER_SETTER(c, mouseTarget);
+	REGISTER_GETTER_SETTER(c, contextMenuOwner);
+}
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuEvent,mouseTarget);
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuEvent,contextMenuOwner);
+
+ASFUNCTIONBODY_ATOM(ContextMenuEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
+
+	ContextMenuEvent* th=asAtomHandler::as<ContextMenuEvent>(obj);
+	if(argslen>=4)
+	{
+		if (asAtomHandler::is<InteractiveObject>(args[3]))
+			th->mouseTarget = _NR<InteractiveObject>(asAtomHandler::as<InteractiveObject>(args[3]));
+	}
+	if(argslen>=5)
+	{
+		if (asAtomHandler::is<InteractiveObject>(args[4]))
+			th->contextMenuOwner = _NR<InteractiveObject>(asAtomHandler::as<InteractiveObject>(args[4]));
+	}
 }
 
+Event* ContextMenuEvent::cloneImpl() const
+{
+	ContextMenuEvent *clone;
+	clone = Class<ContextMenuEvent>::getInstanceS(getSystemState());
+	clone->mouseTarget = mouseTarget;
+	clone->contextMenuOwner = contextMenuOwner;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
 
 void TouchEvent::sinit(Class_base* c)
 {

@@ -61,6 +61,7 @@
 #include "ppapi/c/ppb_input_event.h"
 #include "ppapi/c/private/ppb_flash_clipboard.h"
 #include "ppapi/c/private/ppb_flash_fullscreen.h"
+#include "ppapi/c/private/ppb_flash.h"
 #include "ppapi/c/ppb_file_io.h"
 #include "ppapi/c/ppb_file_ref.h"
 #include "ppapi/c/ppb_file_system.h"
@@ -118,6 +119,8 @@ static const PPB_ImageData* g_imagedata_interface = NULL;
 static const PPB_BrowserFont_Trusted* g_browserfont_interface = NULL;
 static const PPB_MessageLoop* g_messageloop_interface = NULL;
 static const PPB_FlashFullscreen* g_flashfullscreen_interface = NULL;
+static const PPB_Flash_Menu* g_flash_menu_interface = NULL;
+static const PPB_Flash* g_flash_interface = NULL;
 
 ppFileStreamCache::ppFileStreamCache(ppPluginInstance* instance,SystemState* sys):StreamCache(sys),cache(0),cacheref(0),writeoffset(0),m_instance(instance)
   ,reader(NULL),iodone(false)
@@ -880,6 +883,7 @@ void ppPluginInstance::worker()
 	
 	while (g_messageloop_interface->GetCurrent() != 0 && (!m_sys || !m_sys->isShuttingDown()))
 	{
+		LOG(LOG_ERROR,"pluginworker");
 		g_messageloop_interface->Run(m_messageloop);
 	}
 }
@@ -1158,9 +1162,9 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 					break;
 			}
 			ev.button.clicks = g_mouseinputevent_interface->GetClickCount(input_event);
-			PP_Point p = g_mouseinputevent_interface->GetPosition(input_event);
-			ev.button.x = p.x;
-			ev.button.y = p.y;
+			mousepos = g_mouseinputevent_interface->GetPosition(input_event);
+			ev.button.x = mousepos.x;
+			ev.button.y = mousepos.y;
 			break;
 		}
 		case PP_INPUTEVENT_TYPE_MOUSEUP:
@@ -1175,6 +1179,11 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 				case PP_INPUTEVENT_MOUSEBUTTON_RIGHT:
 					ev.button.button = SDL_BUTTON_RIGHT;
 					ev.button.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_RIGHTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
+					if (this->m_sys && this->m_sys->getEngineData())
+					{
+						this->m_sys->getEngineData()->incontextmenupreparing = true;
+						this->m_sys->getEngineData()->startSDLEventTicker(this->m_sys);
+					}
 					break;
 				default:
 					ev.button.button = 0;
@@ -1182,9 +1191,9 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 					break;
 			}
 			ev.button.clicks = 0;
-			PP_Point p = g_mouseinputevent_interface->GetPosition(input_event);
-			ev.button.x = p.x;
-			ev.button.y = p.y;
+			mousepos = g_mouseinputevent_interface->GetPosition(input_event);
+			ev.button.x = mousepos.x;
+			ev.button.y = mousepos.y;
 			break;
 		}
 		case PP_INPUTEVENT_TYPE_MOUSEMOVE:
@@ -1211,6 +1220,10 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 		{
 			ev.type = SDL_WINDOWEVENT_LEAVE;
 			break;
+		}
+		case PP_INPUTEVENT_TYPE_CONTEXTMENU:
+		{
+			return PP_TRUE;
 		}
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"ppp_inputevent:"<<(int)g_inputevent_interface->GetType(input_event));
@@ -1577,8 +1590,10 @@ extern "C"
 		g_mouseinputevent_interface = (const PPB_MouseInputEvent*)get_browser_interface(PPB_MOUSE_INPUT_EVENT_INTERFACE);
 		g_keyboardinputevent_interface = (const PPB_KeyboardInputEvent*)get_browser_interface(PPB_KEYBOARD_INPUT_EVENT_INTERFACE);
 		g_wheelinputevent_interface = (const PPB_WheelInputEvent*)get_browser_interface(PPB_WHEEL_INPUT_EVENT_INTERFACE);
+		g_flash_interface = (const PPB_Flash*)get_browser_interface(PPB_FLASH_INTERFACE);
 		g_flashclipboard_interface = (const PPB_Flash_Clipboard*)get_browser_interface(PPB_FLASH_CLIPBOARD_INTERFACE);
 		g_flashfullscreen_interface = (const PPB_FlashFullscreen*)get_browser_interface(PPB_FLASHFULLSCREEN_INTERFACE);
+		g_flash_menu_interface = (const PPB_Flash_Menu*)get_browser_interface(PPB_FLASH_MENU_INTERFACE);
 		g_fileio_interface = (const PPB_FileIO*)get_browser_interface(PPB_FILEIO_INTERFACE);
 		g_fileref_interface = (const PPB_FileRef*)get_browser_interface(PPB_FILEREF_INTERFACE);
 		g_filesystem_interface = (const PPB_FileSystem*)get_browser_interface(PPB_FILESYSTEM_INTERFACE);
@@ -1613,7 +1628,9 @@ extern "C"
 				!g_imagedata_interface ||
 				!g_browserfont_interface ||
 				!g_messageloop_interface ||
-				!g_flashfullscreen_interface
+				!g_flashfullscreen_interface ||
+				!g_flash_menu_interface ||
+				!g_flash_interface
 				)
 		{
 			LOG(LOG_ERROR,"get_browser_interface failed:"
@@ -1643,6 +1660,8 @@ extern "C"
 				<< g_browserfont_interface<<" "
 				<< g_messageloop_interface<<" "
 				<< g_flashfullscreen_interface<<" "
+				<< g_flash_menu_interface<<" "
+				<< g_flash_interface<<" "
 				);
 			return PP_ERROR_NOINTERFACE;
 		}
@@ -1672,9 +1691,44 @@ extern "C"
 		{
 			return &input_event_interface;
 		}
-		return NULL;
+		return nullptr;
 	}
 
+}
+
+void ppPluginEngineData::contextmenucallbackfunc(void *user_data, int32_t result)
+{
+	if (result != PP_ERROR_USERCANCEL)
+	{
+		((ppPluginEngineData*)user_data)->selectContextMenuItem();
+	}
+	for (uint32_t i = 0; i <((ppPluginEngineData*)user_data)->ppcontextmenu.count; i++)
+	{
+		delete[] ((ppPluginEngineData*)user_data)->ppcontextmenu.items[i].name;
+	}
+	delete[] ((ppPluginEngineData*)user_data)->ppcontextmenu.items;
+}
+void ppPluginEngineData::openContextMenu()
+{
+	incontextmenupreparing = false;
+	ppcontextmenu.count = currentcontextmenuitems.size();
+	ppcontextmenu.items = new PP_Flash_MenuItem[ppcontextmenu.count];
+	for (uint32_t i = 0; i <currentcontextmenuitems.size(); i++)
+	{
+		NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
+		ppcontextmenu.items[i].id=i;
+		ppcontextmenu.items[i].type = item->isSeparator ? PP_FLASH_MENUITEM_TYPE_SEPARATOR : PP_FLASH_MENUITEM_TYPE_NORMAL;
+		ppcontextmenu.items[i].enabled = item->enabled ? PP_TRUE : PP_FALSE;
+		if (item->isSeparator)
+			ppcontextmenu.items[i].name = nullptr;
+		else
+		{
+			ppcontextmenu.items[i].name = new char[item->label.numBytes()+1];
+			strcpy(ppcontextmenu.items[i].name,item->label.raw_buf());
+		}
+	}
+	ppcontextmenuid = g_flash_menu_interface->Create(this->instance->getppInstance(),&ppcontextmenu);
+	g_flash_menu_interface->Show(ppcontextmenuid,&this->instance->mousepos,&contextmenucurrentitem,contextmenucallback);
 }
 
 void ppPluginEngineData::stopMainDownload()
@@ -1711,8 +1765,11 @@ void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemS
 
 void ppPluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"openPageInBrowser:"<<url<<" "<<window);
-	//instance->openLink(url, window);
+	PP_Resource pprequest_info = g_urlrequestinfo_interface->Create(this->instance->getppInstance());
+	PP_Var u = g_var_interface->VarFromUtf8(url.raw_buf(),url.numBytes());
+	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_URL,u);
+	g_urlrequestinfo_interface->SetProperty(pprequest_info,PP_URLREQUESTPROPERTY_ALLOWCROSSORIGINREQUESTS,PP_MakeBool(PP_TRUE));
+	g_flash_interface->Navigate(pprequest_info,window.raw_buf(),PP_TRUE);
 }
 
 SDL_Window* ppPluginEngineData::createWidget(uint32_t w,uint32_t h)

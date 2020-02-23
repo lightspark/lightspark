@@ -56,6 +56,7 @@ class Graphics;
 class Rectangle;
 class Class_inherit;
 class Point;
+class NativeMenuItem;
 
 class InteractiveObject: public DisplayObject
 {
@@ -91,6 +92,9 @@ public:
 	virtual void gotFocus() {} 
 	virtual void textInputChanged(const tiny_string& newtext) {} 
 	void setMouseEnabled(bool enabled) { mouseEnabled = enabled; }
+	void defaultEventBehavior(_R<Event> e) override;
+	// returns the owner of the contextmenu
+	_NR<InteractiveObject> getCurrentContextMenuItems(std::vector<Ref<NativeMenuItem> > &items);
 };
 
 class DisplayObjectContainer: public InteractiveObject

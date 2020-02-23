@@ -24,15 +24,57 @@ using namespace lightspark;
 
 void ContextMenuItem::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
-	REGISTER_GETTER_SETTER(c, caption);
+	CLASS_SETUP(c, NativeMenuItem, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->setDeclaredMethodByQName("caption","",Class<IFunction>::getFunction(c->getSystemState(),NativeMenuItem::_getter_label),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("caption","",Class<IFunction>::getFunction(c->getSystemState(),NativeMenuItem::_setter_label),SETTER_METHOD,true);
+	REGISTER_GETTER_SETTER(c,separatorBefore);
+	REGISTER_GETTER_SETTER(c,visible);
+	REGISTER_GETTER_SETTER(c,enabled);
 }
+
+void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
+{
+	if (e->type == "menuItemSelect" && !callbackfunction.isNull())
+	{
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+		this->incRef();
+		// TODO it is not known what arguments are needed to add to function call
+		if (callbackfunction->is<AVM1Function>())
+			callbackfunction->as<AVM1Function>()->call(nullptr,&obj,nullptr,0);
+		else
+		{
+			asAtom caller = asAtomHandler::fromObjectNoPrimitive(callbackfunction.getPtr());
+			asAtom ret = asAtomHandler::invalidAtom;
+			asAtomHandler::callFunction(caller,ret,obj,nullptr,0,false);
+		}
+	}
+	
+}
+
+void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
+{
+	if (this->visible)
+	{
+		if (this->separatorBefore)
+		{
+			NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getSystemState());
+			n->isSeparator = true;
+			items.push_back(_MR(n));
+		}
+		this->incRef();
+		items.push_back(_MR(this));
+	}
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,separatorBefore);
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,visible);
 
 ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
-	LOG(LOG_NOT_IMPLEMENTED,"ContextMenuItem constructor is a stub");
+	ContextMenuItem* th=asAtomHandler::as<ContextMenuItem>(obj);
+	if (sys->mainClip->usesActionScript3)
+		ARG_UNPACK_ATOM(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
+	else
+		ARG_UNPACK_ATOM(th->label)(th->callbackfunction)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
+	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
 }
-
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,caption);
-

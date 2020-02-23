@@ -28,6 +28,7 @@
 #include "tiny_string.h"
 #include "backends/graphics.h"
 #include "flash/utils/ByteArray.h"
+#include "flash/display/NativeMenuItem.h"
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 8192
 
@@ -37,6 +38,9 @@ namespace lightspark
 #define LS_USEREVENT_INIT EngineData::userevent
 #define LS_USEREVENT_EXEC EngineData::userevent+1
 #define LS_USEREVENT_QUIT EngineData::userevent+2
+#define LS_USEREVENT_OPEN_CONTEXTMENU EngineData::userevent+3
+#define LS_USEREVENT_UPDATE_CONTEXTMENU EngineData::userevent+4
+#define LS_USEREVENT_SELECTITEM_CONTEXTMENU EngineData::userevent+5
 class SystemState;
 class StreamCache;
 class AudioStream;
@@ -60,16 +64,35 @@ public:
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
 };
 
+#define CONTEXTMENUWIDTH 200
+#define CONTEXTMENUITEMHEIGHT 40
+#define CONTEXTMENUSEPARATORHEIGHT 5
+
+
 class DLL_PUBLIC EngineData
 {
 	friend class RenderThread;
+private:
+	SDL_Window* contextmenu;
+	SDL_Renderer* contextmenurenderer;
+	SDL_Texture* contextmenutexture;
+	uint8_t* contextmenupixels;
+	int32_t contextmenuheight;
+	void openContextMenuIntern(InteractiveObject *dispatcher);
+	ITickJob* sdleventtickjob;
 protected:
+	int32_t contextmenucurrentitem;
+	bool incontextmenu;
+	std::vector<_R<NativeMenuItem>> currentcontextmenuitems;
+	_NR<InteractiveObject> contextmenuDispatcher;
+	_NR<InteractiveObject> contextmenuOwner;
+	void selectContextMenuItemIntern();
 	/* use a recursive mutex, because g_signal_connect may directly call
 	 * the specific handler */
 	RecMutex mutex;
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
-	ITickJob* fullscreentickjob;
 public:
+	bool incontextmenupreparing; // needed for PPAPI plugin only
 	uint32_t pixelBuffers[2];
 	uint32_t currentPixelBuffer;
 	intptr_t currentPixelBufferOffset;
@@ -105,18 +128,34 @@ public:
 	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
 	static void mainloop_from_plugin(SystemState* sys);
 
-	// this is called when going to fulllscreen mode from plugin, to keep handling of SDL events alive
-	void startFullscreeenTicker(SystemState *sys);
+	// this is called when going to fulllscreen mode or opening a context menu from plugin, to keep handling of SDL events alive
+	void startSDLEventTicker(SystemState *sys);
+	void resetSDLEventTicker() { sdleventtickjob=nullptr; }
 	
 	/* This function must be called from mainLoopThread
 	 * It fills this->widget and this->window.
 	 */
 	void showWindow(uint32_t w, uint32_t h);
+
 	/* must be called within mainLoopThread */
 	virtual void grabFocus()=0;
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
 	virtual void setDisplayState(const tiny_string& displaystate);
 	virtual bool inFullScreenMode();
+	virtual void openContextMenu();
+	virtual void updateContextMenu(int newselecteditem);
+	virtual void updateContextMenuFromMouse(uint32_t windowID, int mousey);
+	virtual void renderContextMenu();
+	void closeContextMenu();
+	bool inContextMenu() const
+	{
+		return incontextmenu;
+	}
+	bool inContextMenuPreparing() const
+	{
+		return incontextmenupreparing;
+	}
+	void selectContextMenuItem();
 
 	static bool sdl_needinit;
 	static bool enablerendering;

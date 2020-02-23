@@ -1955,6 +1955,8 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_contextMenu),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2455,6 +2457,32 @@ bool InteractiveObject::destruct()
 
 void InteractiveObject::buildTraits(ASObject* o)
 {
+}
+
+void InteractiveObject::defaultEventBehavior(Ref<Event> e)
+{
+	if(mouseEnabled && e->type == "contextMenu")
+	{
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
+		event.user.data1 = (void*)this;
+		SDL_PushEvent(&event);
+	}
+}
+
+_NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items)
+{
+	if (this->contextMenu.isNull())
+	{
+		if (this->getParent())
+			return getParent()->getCurrentContextMenuItems(items);
+		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getSystemState());
+	}
+	else
+		this->contextMenu->getCurrentContextMenuItems(items);
+	this->incRef();
+	return _MR<InteractiveObject>(this);
 }
 
 void InteractiveObject::sinit(Class_base* c)
@@ -4153,6 +4181,8 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		currentState = STATE_OUT;
 		reflectState();
 	}
+	else
+		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,

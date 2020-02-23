@@ -1290,6 +1290,7 @@ class ContentElement;
 class Context3D;
 class ContextMenu;
 class ContextMenuBuiltInItems;
+class ContextMenuEvent;
 class CubeTexture;
 class Date;
 class DisplacementFilter;
@@ -1385,6 +1386,7 @@ template<> inline bool ASObject::is<ContentElement>() const { return subtype==SU
 template<> inline bool ASObject::is<Context3D>() const { return subtype==SUBTYPE_CONTEXT3D; }
 template<> inline bool ASObject::is<ContextMenu>() const { return subtype==SUBTYPE_CONTEXTMENU; }
 template<> inline bool ASObject::is<ContextMenuBuiltInItems>() const { return subtype==SUBTYPE_CONTEXTMENUBUILTINITEMS; }
+template<> inline bool ASObject::is<ContextMenuEvent>() const { return subtype==SUBTYPE_CONTEXTMENUEVENT; }
 template<> inline bool ASObject::is<ConvolutionFilter>() const { return subtype==SUBTYPE_CONVOLUTIONFILTER; }
 template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTYPE_CUBETEXTURE; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
@@ -1393,7 +1395,7 @@ template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUB
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
-template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT; }
+template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }

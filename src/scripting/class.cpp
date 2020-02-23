@@ -234,6 +234,8 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 			case T_STRING:
 			case T_FUNCTION:
 			case T_OBJECT:
+			case T_CLASS:
+			case T_ARRAY:
 				ret = args[0];
 				return;
 			default:

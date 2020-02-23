@@ -572,7 +572,7 @@ void PluginEngineData::setDisplayState(const tiny_string &displaystate)
 	if (displaystate == "fullScreen")
 	{
 		SDL_ShowWindow(widget);
-		startFullscreeenTicker(sys);
+		startSDLEventTicker(sys);
 	}
 	else
 	{
@@ -923,7 +923,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 						ev.button.button = SDL_BUTTON_LEFT;
 						ev.button.state = event->state & Button1Mask ? SDL_PRESSED : SDL_RELEASED;
 						break;
-					case 2:
+					case 3:
 						ev.button.button = SDL_BUTTON_RIGHT;
 						ev.button.state = event->state & Button2Mask ? SDL_PRESSED : SDL_RELEASED;
 						break;
@@ -945,6 +945,15 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				}
 
 				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
+				return EngineData::mainloop_handleevent(&ev,m_sys);
+			}
+			break;
+		case FocusOut:
+			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
+			{
+				SDL_Event ev;
+				ev.type = SDL_WINDOWEVENT_FOCUS_LOST;
+				ev.window.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
 				return EngineData::mainloop_handleevent(&ev,m_sys);
 			}
 			break;
@@ -1037,6 +1046,13 @@ void PluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemSta
 {
 	EngineData::runInMainThread(sys,func);
 	NPN_PluginThreadAsyncCall(instance->mInstance,pluginCallHandler,sys);
+}
+
+void PluginEngineData::openContextMenu()
+{
+	EngineData::openContextMenu();
+	if (!inFullScreenMode())
+		startSDLEventTicker(sys);
 }
 
 void PluginEngineData::DoSwapBuffers()

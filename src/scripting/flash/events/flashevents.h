@@ -303,6 +303,7 @@ public:
 	ASPROPERTY_GETTER(number_t,stageY);
 	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,relatedObject);
 	ASFUNCTION_ATOM(updateAfterEvent);
+	MouseEvent* getclone() const;
 };
 
 class NativeDragEvent: public MouseEvent
@@ -606,9 +607,15 @@ public:
 
 class ContextMenuEvent: public Event
 {
+private:
+	Event* cloneImpl() const;
 public:
 	ContextMenuEvent(Class_base* c) : Event(c, "ContextMenuEvent") {}
+	ContextMenuEvent(Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner) : Event(c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner) {}
 	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,mouseTarget);
+	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,contextMenuOwner);
 };
 
 class TouchEvent: public Event

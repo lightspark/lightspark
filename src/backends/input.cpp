@@ -59,7 +59,13 @@ void InputThread::wait()
 
 bool InputThread::worker(SDL_Event *event)
 {
-	gboolean ret=FALSE;
+	bool ret=false;
+	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inContextMenu())
+	{
+		ret = handleContextMenuEvent(event);
+		if (ret)
+			return ret;
+	}
 	switch(event->type)
 	{
 		case SDL_KEYDOWN:
@@ -67,18 +73,18 @@ bool InputThread::worker(SDL_Event *event)
 			bool handled = handleKeyboardShortcuts(&event->key);
 			if (!handled)
 				sendKeyEvent(&event->key);
-			ret=TRUE;
+			ret=true;
 			break;
 		}
 		case SDL_KEYUP:
 		{
 			sendKeyEvent(&event->key);
-			ret=TRUE;
+			ret=true;
 			break;
 		}
 		case SDL_TEXTINPUT:
 		{
-			if(m_sys->currentVm == NULL)
+			if(m_sys->currentVm == nullptr)
 				break;
 		
 			Locker locker(mutexListeners);
@@ -114,15 +120,15 @@ bool InputThread::worker(SDL_Event *event)
 					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 				}
 			}
-			ret=TRUE;
+			ret=true;
 			break;
 		}
 		case SDL_MOUSEBUTTONUP:
 		{
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
-			ret=TRUE;
+			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED,event->button.button);
+			ret=true;
 			break;
 		}
 		case SDL_MOUSEMOTION:
@@ -130,7 +136,7 @@ bool InputThread::worker(SDL_Event *event)
 			int stageX, stageY;
 			m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
 			handleMouseMove(stageX,stageY,SDL_GetModState(),event->motion.state == SDL_PRESSED);
-			ret=TRUE;
+			ret=true;
 			break;
 		}
 		case SDL_MOUSEWHEEL:
@@ -142,13 +148,70 @@ bool InputThread::worker(SDL_Event *event)
 #else
 			handleScrollEvent(stageX,stageY,1,SDL_GetModState(),false);
 #endif
-			ret=TRUE;
+			ret=true;
 			break;
 		}
 		case SDL_WINDOWEVENT_LEAVE:
 		{
 			handleMouseLeave();
-			ret=TRUE;
+			ret=true;
+			break;
+		}
+		default:
+			break;
+	}
+	return ret;
+}
+bool InputThread::handleContextMenuEvent(SDL_Event *event)
+{
+	bool ret = false;
+	switch(event->type)
+	{
+		case SDL_KEYDOWN:
+		{
+			ret=true;
+			break;
+		}
+		case SDL_KEYUP:
+		{
+			ret=true;
+			break;
+		}
+		case SDL_TEXTINPUT:
+		{
+			ret=true;
+			break;
+		}
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			ret=true;
+			break;
+		}
+		case SDL_MOUSEBUTTONUP:
+		{
+			if(event->button.button == SDL_BUTTON_LEFT)
+			{
+				m_sys->getEngineData()->updateContextMenuFromMouse(event->button.windowID, event->button.y);
+				m_sys->getEngineData()->selectContextMenuItem();
+			}
+			ret=true;
+			break;
+		}
+		case SDL_MOUSEMOTION:
+		{
+			m_sys->getEngineData()->updateContextMenuFromMouse(event->motion.windowID,event->motion.y);
+			ret=true;
+			break;
+		}
+		case SDL_MOUSEWHEEL:
+		{
+			ret=true;
+			break;
+		}
+		case SDL_WINDOWEVENT_LEAVE:
+		{
+			m_sys->getEngineData()->closeContextMenu();
+			ret=true;
 			break;
 		}
 		default:
@@ -211,7 +274,7 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"doubleClick",localX,localY,true,buttonState,pressed)));
 }
 
-void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
+void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed, uint8_t button)
 {
 	if(m_sys->currentVm == NULL)
 		return;
@@ -222,6 +285,12 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	selected->incRef();
+	if (button == SDL_BUTTON_RIGHT)
+	{
+		m_sys->currentVm->addIdleEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys,"contextMenu",localX,localY,true,buttonState,pressed)));
+		return;
+	}
 	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys,"mouseUp",localX,localY,true,buttonState,pressed)));
 	if(lastMouseDownTarget==selected)
@@ -351,6 +420,24 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 	{
 		m_sys->getEngineData()->setDisplayState("normal");
 		return true;
+	}
+	if (keyevent->keysym.sym == SDLK_MENU)
+	{
+		int stageX,stageY;
+		int x, y;
+		SDL_GetMouseState(&x,&y);
+		m_sys->windowToStageCoordinates(x,y,stageX,stageY);
+		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, DisplayObject::MOUSE_CLICK);
+		if (!selected.isNull())
+		{
+			Locker locker(mutexListeners);
+			number_t localX, localY;
+			selected->globalToLocal(x,y,localX,localY);
+			selected->incRef();
+			m_sys->currentVm->addIdleEvent(selected,
+				_MR(Class<MouseEvent>::getInstanceS(m_sys,"contextMenu",localX,localY,true,(SDL_Keymod)keyevent->keysym.mod,false)));
+			return true;
+		}
 	}
 	bool handled = false;
 	if (!(keyevent->keysym.mod & KMOD_CTRL))

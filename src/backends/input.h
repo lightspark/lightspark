@@ -72,7 +72,7 @@ private:
 	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
 	void handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
 	void handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
-	void handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
+	void handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed, uint8_t button);
 	void handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
 	void handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, SDL_Keymod buttonState,bool pressed);
 	void handleMouseLeave();
@@ -80,6 +80,7 @@ private:
 	bool handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent);
 	void sendKeyEvent(const SDL_KeyboardEvent *keyevent);
 
+	bool handleContextMenuEvent(SDL_Event* event);
 	Spinlock inputDataSpinlock;
 	Vector2 mousePos;
 public:

@@ -83,6 +83,8 @@ private:
 	unsigned char * mPixels;
 	bool inRendering;
 	Mutex resizeMutex;
+	int winposx;
+	int winposy;
 public:
 	SystemState* sys;
 	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
@@ -91,6 +93,8 @@ public:
 		height = h;
 		mPixels = NULL;
 		inRendering = false;
+		winposx=0;
+		winposy=0;
 	}
 	~PluginEngineData() 
 	{
@@ -124,6 +128,7 @@ public:
 	{
 		mainloop_from_plugin((SystemState*)d);
 	}
+	void openContextMenu() override;
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

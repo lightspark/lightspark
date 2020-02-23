@@ -1937,6 +1937,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LoadMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
@@ -1955,6 +1956,10 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_contextMenu),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2154,6 +2159,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
 {
 	asAtomHandler::setUInt(ret,sys,sys->getSwfVersion());
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
+{
+//	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	tiny_string url;
+	tiny_string method;
+	ARG_UNPACK_ATOM(url)(method,"GET");
+	LOG(LOG_NOT_IMPLEMENTED,"MovieClip.loadMovie not implemented "<<url<<" "<<method);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -2455,6 +2468,32 @@ bool InteractiveObject::destruct()
 
 void InteractiveObject::buildTraits(ASObject* o)
 {
+}
+
+void InteractiveObject::defaultEventBehavior(Ref<Event> e)
+{
+	if(mouseEnabled && e->type == "contextMenu")
+	{
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
+		event.user.data1 = (void*)this;
+		SDL_PushEvent(&event);
+	}
+}
+
+_NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items)
+{
+	if (this->contextMenu.isNull())
+	{
+		if (this->getParent())
+			return getParent()->getCurrentContextMenuItems(items);
+		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getSystemState());
+	}
+	else
+		this->contextMenu->getCurrentContextMenuItems(items);
+	this->incRef();
+	return _MR<InteractiveObject>(this);
 }
 
 void InteractiveObject::sinit(Class_base* c)
@@ -4153,6 +4192,8 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		currentState = STATE_OUT;
 		reflectState();
 	}
+	else
+		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,

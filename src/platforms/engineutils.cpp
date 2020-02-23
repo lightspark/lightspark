@@ -26,7 +26,11 @@
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"
-#include "platforms/engineutils.h"
+#include <pango/pangocairo.h>
+#include "version.h"
+#include "abc.h"
+#include "class.h"
+#include "scripting/flash/events/flashevents.h"
 
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -44,7 +48,7 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : fullscreentickjob(nullptr), currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false), currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
@@ -57,6 +61,8 @@ EngineData::~EngineData()
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 {
+	if (sys && sys->getEngineData())
+		sys->getEngineData()->renderContextMenu();
 	if (event->type == LS_USEREVENT_INIT)
 	{
 		sys = (SystemState*)event->user.data1;
@@ -69,9 +75,30 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 	}
 	else if (event->type == LS_USEREVENT_QUIT)
 	{
-		setTLSSys(NULL);
+		setTLSSys(nullptr);
 		SDL_Quit();
 		return true;
+	}
+	else if (event->type == LS_USEREVENT_OPEN_CONTEXTMENU)
+	{
+		if (sys && sys->getEngineData())
+			sys->getEngineData()->openContextMenuIntern((InteractiveObject*)event->user.data1);
+	}
+	else if (event->type == LS_USEREVENT_UPDATE_CONTEXTMENU)
+	{
+		if (sys && sys->getEngineData())
+		{
+			int pos = *(int*)event->user.data1;
+			delete (int*)event->user.data1;
+			sys->getEngineData()->updateContextMenu(pos);
+		}
+	}
+	else if (event->type == LS_USEREVENT_SELECTITEM_CONTEXTMENU)
+	{
+		if (sys && sys->getEngineData())
+		{
+			sys->getEngineData()->selectContextMenuItemIntern();
+		}
 	}
 	else
 	{
@@ -95,6 +122,9 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 							sys->getRenderThread()->draw(true);
 						break;
 					}
+					case SDL_WINDOWEVENT_FOCUS_LOST:
+						sys->getEngineData()->closeContextMenu();
+						break;
 					default:
 						break;
 				}
@@ -161,32 +191,35 @@ void EngineData::mainloop_from_plugin(SystemState* sys)
 	{
 		mainloop_handleevent(&event,sys);
 	}
-	setTLSSys(NULL);
+	setTLSSys(nullptr);
 }
 
-class FullscreeenTicker:public ITickJob
+class SDLEventTicker:public ITickJob
 {
 	EngineData* m_engine;
 	SystemState* m_sys;
 public:
-	FullscreeenTicker(EngineData* engine,SystemState* sys):m_engine(engine),m_sys(sys) {}
+	SDLEventTicker(EngineData* engine,SystemState* sys):m_engine(engine),m_sys(sys) {}
 	void tick() override
 	{
 		m_engine->runInMainThread(m_sys,EngineData::mainloop_from_plugin);
-		if (!m_engine->inFullScreenMode())
+		if (!m_engine->inFullScreenMode() && !m_engine->inContextMenu() && !m_engine->inContextMenuPreparing() )
 			stopMe=true;
 	}
 	void tickFence() override
 	{
 		delete this;
+		m_engine->resetSDLEventTicker();
 	}
 };
 
 
-void EngineData::startFullscreeenTicker(SystemState* sys)
+void EngineData::startSDLEventTicker(SystemState* sys)
 {
-	fullscreentickjob = new FullscreeenTicker(this,sys);
-	sys->addTick(50,fullscreentickjob);
+	if (sdleventtickjob)
+		return;
+	sdleventtickjob = new SDLEventTicker(this,sys);
+	sys->addTick(50,sdleventtickjob);
 }
 
 /* This is not run in the linux plugin, as firefox
@@ -297,6 +330,211 @@ bool EngineData::inFullScreenMode()
 	}
 	return SDL_GetWindowFlags(widget) & SDL_WINDOW_FULLSCREEN_DESKTOP;
 }
+
+void EngineData::openContextMenuIntern(InteractiveObject *dispatcher)
+{
+	if (incontextmenu)
+		return;
+	incontextmenu=true;
+	dispatcher->incRef();
+	contextmenuDispatcher = _MR(dispatcher);
+	currentcontextmenuitems.clear();
+	contextmenuOwner= dispatcher->getCurrentContextMenuItems(currentcontextmenuitems);
+	openContextMenu();
+}
+void EngineData::openContextMenu()
+{
+	int x=0,y=0;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+	SDL_GetGlobalMouseState(&x,&y);
+#else
+	LOG(LOG_ERROR,"SDL2 version too old to get mouse position");
+	SDL_GetWindowPosition(widget,&x,&y);
+#endif
+	contextmenuheight = 0;
+	for (uint32_t i = 0; i <currentcontextmenuitems.size(); i++)
+	{
+		NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
+		contextmenuheight += item->isSeparator ? CONTEXTMENUSEPARATORHEIGHT : CONTEXTMENUITEMHEIGHT;
+	}
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+	contextmenu = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_POPUP_MENU);
+#else
+	LOG(LOG_ERROR,"SDL2 version too old to create popup menu");
+	contextmenu = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS);
+#endif
+	contextmenurenderer = SDL_CreateRenderer(contextmenu,-1, SDL_RENDERER_ACCELERATED);
+	contextmenutexture = SDL_CreateTexture(contextmenurenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, CONTEXTMENUWIDTH, contextmenuheight);
+	contextmenupixels = new uint8_t[CONTEXTMENUWIDTH*contextmenuheight*4];
+	updateContextMenu(-1);
+}
+
+void EngineData::updateContextMenuFromMouse(uint32_t windowID, int mousey)
+{
+	int newselecteditem = -1;
+	int ypos = 0;
+	if (windowID == SDL_GetWindowID(contextmenu))
+	{
+		for (uint32_t i = 0; i <currentcontextmenuitems.size(); i++)
+		{
+			NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
+			if (item->isSeparator)
+			{
+				ypos+=CONTEXTMENUSEPARATORHEIGHT;
+			}
+			else
+			{
+				if (mousey > ypos && mousey < ypos+CONTEXTMENUITEMHEIGHT)
+					newselecteditem = i;
+				ypos+=CONTEXTMENUITEMHEIGHT;
+			}
+		}
+	}
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
+	event.user.data1 = (void*)new int(newselecteditem);
+	SDL_PushEvent(&event);
+}
+
+void EngineData::selectContextMenuItem()
+{
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
+	SDL_PushEvent(&event);
+}
+void EngineData::selectContextMenuItemIntern()
+{
+	if (contextmenucurrentitem >=0)
+	{
+		NativeMenuItem* item = currentcontextmenuitems.at(contextmenucurrentitem).getPtr();
+		if (item->label=="Save" ||
+			item->label=="Zoom In" ||
+			item->label=="Zoom Out" ||
+			item->label=="100%" ||
+			item->label=="Show all" ||
+			item->label=="Quality" ||
+			item->label=="Play" ||
+			item->label=="Loop" ||
+			item->label=="Rewind" ||
+			item->label=="Forward" ||
+			item->label=="Back" ||
+			item->label=="Print" ||
+			item->label=="Settings")
+		{
+			closeContextMenu();
+			tiny_string msg("context menu handling not implemented for \"");
+			msg += item->label;
+			msg += "\"";
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Lightspark",msg.raw_buf(),widget);
+			return;
+		}
+		else if (item->label=="About")
+		{
+			closeContextMenu();
+			tiny_string msg("Lightspark version ");
+			msg += VERSION;
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Lightspark",msg.raw_buf(),widget);
+			return;
+		}
+		else
+		{
+			item->incRef();
+			getVm(item->getSystemState())->addEvent(_MR(item),_MR(Class<ContextMenuEvent>::getInstanceS(item->getSystemState(),"menuItemSelect",contextmenuDispatcher,contextmenuOwner)));
+		}
+	}
+	closeContextMenu();
+}
+void EngineData::updateContextMenu(int newselecteditem)
+{
+	float bordercolor = 0.3;
+	float backgroundcolor = 0.9;
+	float selectedbackgroundcolor = 0.5;
+	float textcolor = 0.0;
+	
+	contextmenucurrentitem=newselecteditem;
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(contextmenupixels, CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH, contextmenuheight, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH));
+	cairo_t* cr=cairo_create(cairoSurface);
+	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
+	cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_antialias(cr,CAIRO_ANTIALIAS_DEFAULT);
+	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+	cairo_set_line_width(cr, 2);
+	cairo_rectangle(cr, 1, 1, CONTEXTMENUWIDTH-2, contextmenuheight-2);
+	cairo_stroke(cr);
+	
+	PangoLayout* layout = pango_cairo_create_layout(cr);
+	PangoFontDescription* desc = pango_font_description_new();
+	pango_font_description_set_family(desc, "Helvetica");
+	pango_font_description_set_size(desc, PANGO_SCALE*11);
+	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free(desc);
+
+	int ypos = 0;
+	for (int32_t i = 0; i <(int)currentcontextmenuitems.size(); i++)
+	{
+		NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
+		if (item->isSeparator)
+		{
+			cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+			cairo_set_line_width(cr, 1);
+			cairo_move_to(cr, 0, ypos+2);
+			cairo_line_to(cr, CONTEXTMENUWIDTH, ypos+2);
+			cairo_stroke(cr);
+			ypos+=CONTEXTMENUSEPARATORHEIGHT;
+		}
+		else
+		{
+			cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
+			if (contextmenucurrentitem == i)
+				cairo_set_source_rgb (cr, selectedbackgroundcolor, selectedbackgroundcolor, selectedbackgroundcolor);
+			cairo_set_line_width(cr, 1);
+			cairo_rectangle(cr, 2, ypos, CONTEXTMENUWIDTH-4, ypos+CONTEXTMENUITEMHEIGHT);
+			cairo_fill(cr);
+			cairo_translate(cr, 10, ypos+(CONTEXTMENUITEMHEIGHT-11)/2);
+			cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
+			pango_layout_set_text(layout, item->label.raw_buf(), -1);
+			pango_cairo_show_layout(cr, layout);
+			cairo_translate(cr, -10, -(ypos+(CONTEXTMENUITEMHEIGHT-11)/2));
+			ypos+=CONTEXTMENUITEMHEIGHT;
+		}
+	}
+	g_object_unref(layout);
+	cairo_destroy(cr);
+	SDL_UpdateTexture(contextmenutexture, nullptr, contextmenupixels, CONTEXTMENUWIDTH*4);
+}
+
+void EngineData::closeContextMenu()
+{
+	incontextmenu=false;
+	if (contextmenu)
+	{
+		SDL_DestroyRenderer(contextmenurenderer);
+		SDL_DestroyWindow(contextmenu);
+		delete[] contextmenupixels;
+		contextmenupixels=nullptr;
+		contextmenu=nullptr;
+		contextmenurenderer=nullptr;
+		currentcontextmenuitems.clear();
+		contextmenuOwner.reset();
+	}
+}
+
+void EngineData::renderContextMenu()
+{
+	if (contextmenurenderer)
+	{
+		SDL_RenderCopy(contextmenurenderer, contextmenutexture, nullptr, nullptr);
+		SDL_RenderPresent(contextmenurenderer);
+	}
+}
+
+
+
 
 void EngineData::showMouseCursor(SystemState* /*sys*/)
 {

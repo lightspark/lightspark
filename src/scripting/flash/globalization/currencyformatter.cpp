@@ -61,6 +61,9 @@ void CurrencyFormatter::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 {
 	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+
+	th->fractionalDigits = 0;
+
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
 	try
 	{
@@ -101,12 +104,24 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 		}
 		else
 		{
-			th->lastOperationStatus="USING_DEFAULT_WARNING";
-			LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
+			try
+			{
+				// try appending ".UTF-8"
+				th->requestedLocaleIDName += ".UTF-8";
+				th->currlocale = std::locale(th->requestedLocaleIDName.raw_buf());
+				th->actualLocaleIDName = th->requestedLocaleIDName;
+				th->lastOperationStatus="NO_ERROR";
+			}
+			catch (std::runtime_error& e)
+			{
+				th->lastOperationStatus="USING_DEFAULT_WARNING";
+				LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
+			}
 		}
 	}
+	//LOG(LOG_ERROR,th->currlocale.name().c_str());
+	//LOG(LOG_ERROR,th->actualLocaleIDName.name().c_str());
 }
-
 
 ASFUNCTIONBODY_GETTER(CurrencyFormatter, actualLocaleIDName);
 ASFUNCTIONBODY_GETTER(CurrencyFormatter, currencyISOCode);
@@ -125,37 +140,79 @@ ASFUNCTIONBODY_GETTER(CurrencyFormatter, requestedLocaleIDName);
 ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, trailingZeros);
 ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, useGrouping);
 
-
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.format is not implemented.");
+		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.format is not really tested for all formats");
+		CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+		tiny_string res;
+		double value;
+		ARG_UNPACK_ATOM(value);
+		//value = value * 10;
 
-	_NR<Number> value;
-	ARG_UNPACK_ATOM(value);
+		//LOG(LOG_ERROR,"Value:" + std::to_string(value)  + " " + std::to_string(th->fractionalDigits));
 
-	_NR<Boolean> withCurrencySymbol;
-	ARG_UNPACK_ATOM(withCurrencySymbol);
+		bool withCurrencySymbol = false;
+		ARG_UNPACK_ATOM(withCurrencySymbol);
 
+		std::stringstream result;
+		std::locale l =  std::locale::global(th->currlocale);
+		//std::locale::global(l);
+		result.imbue(l);
 
+		// Debug
+		result.imbue(std::locale("en_US.UTF-8"));
 
-	//std::setlocale(LC_MONETARY, "it_IT");
-	//std::setprecision(2);
+		if (withCurrencySymbol)
+		{
+			result << std::showbase;
+		}
 
+		//value = 12.2345;
 
-	//ret = blah
+		std::cout << std::setprecision(2) << std::put_money(value,true) << std::endl;
+		std::cout << std::setprecision (15) << 3.14159265358979 << std::endl;
+
+		result << std::setprecision(th->fractionalDigits) << std::put_money(value,true);
+		ret = asAtomHandler::fromString(sys,result.str());
+
+		// Debug
+		//LOG(LOG_ERROR,"Value:" + result.str());
+		std::cout << result.str();
 }
+
+/*
+
+
+https://repl.it/languages/cpp
+
+
+#include <iostream>
+#include <locale>
+#include <iomanip>
+#include <iterator>
+#include <sstream>
+
+int main()
+{
+    // using the IO manipulator
+    std::cout.imbue(std::locale("en_US.UTF-8"));
+    std::cout << "american locale: "
+               << std::showbase << std::put_money(12345678.9)<< '\n';
+
+
+
+  double value = 1254.56;
+  std::stringstream result;
+  result.imbue(std::locale("en_US.UTF-8"));
+  result << std::showbase << std::put_money(value*100);
+  std::cout << result.str();
+}
+}*/
+
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,formattingWithCurrencySymbolIsSafe)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.formattingWithCurrencySymbolIsSafe is not implemented.");
-
-	//_NR<String> requestedISOCode;
-	//ARG_UNPACK_ATOM(requestedISOCode);
-
-	/*if (currencyISOCode == requestedISOCode)
-	{
-		 withCurrencySymbol = true;
-	}*/
 }
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,getAvailableLocaleIDNames)
@@ -172,18 +229,18 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,setCurrency)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.setCurrency is not tested.");
-	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+	/*CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName)(th->currencyISOCode,"tiny_string")(th->currencySymbol,"tiny_string");
 	try
 	{
-		ARG_UNPACK_ATOM(th->currencyISOCode);
-		ARG_UNPACK_ATOM(th->currencySymbol);
-		//currencyISOCode = th->currencyISOCode;
-		//currencySymbol = th->currencySymbol;
-		th->lastOperationStatus="LastOperationStatus.NO_ERROR";
+	        ARG_UNPACK_ATOM(th->currencyISOCode);
+	        ARG_UNPACK_ATOM(th->currencySymbol);
+	        //currencyISOCode = th->currencyISOCode;
+	        //currencySymbol = th->currencySymbol;
+	        th->lastOperationStatus="LastOperationStatus.NO_ERROR";
 	}
 	catch (std::runtime_error& e)
 	{
-		// Set LastOperationStatus to any defined constant in LastOperationStatus class.
-	}
+	        // Set LastOperationStatus to any defined constant in LastOperationStatus class.
+	}*/
 }

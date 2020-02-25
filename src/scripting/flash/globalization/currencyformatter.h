@@ -21,6 +21,9 @@
 #define SCRIPTING_FLASH_GLOBALIZATION_CURRENCYFORMATTER_H 1
 
 #include "asobject.h"
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 namespace lightspark
 {

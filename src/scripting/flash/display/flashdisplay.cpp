@@ -481,7 +481,7 @@ void LoaderThread::execute()
 		if (loader->getContentLoaderInfo().getPtr())
 			loader->getContentLoaderInfo()->setComplete();
 	}
-	else if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
+	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
 		{
@@ -753,6 +753,11 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::setContent(_R<DisplayObject> o)
 {
+	// content may have already been set.
+	// this can happen if setContent was already called from ObjectHasLoaded 
+	// and is called again at the end of LoaderThread::execute
+	if (o->getParent() == this) 
+		return;
 	{
 		Locker l(mutexDisplayList);
 		dynamicDisplayList.clear();

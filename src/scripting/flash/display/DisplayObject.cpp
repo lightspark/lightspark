@@ -1389,7 +1389,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
 	_NR<DisplayObject> another;
 	ARG_UNPACK_ATOM(another);
 
-	number_t xmin, xmax, ymin, ymax;
+	number_t xmin = 0, xmax, ymin = 0, ymax;
 	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 	{
 		asAtomHandler::setBool(ret,false);

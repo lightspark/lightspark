@@ -7441,7 +7441,10 @@ void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::m
 void clearOperands(method_info* mi,Class_base** localtypes,std::list<operands>& operandlist, Class_base** defaultlocaltypes,Class_base** lastlocalresulttype )
 {
 	for (uint32_t i = 0; i < mi->body->local_count+2; i++)
+	{
+		assert(i < defaultlocaltypes.len && "array out of bounds!");
 		localtypes[i] = defaultlocaltypes[i];
+	}
 	operandlist.clear();
 	if (lastlocalresulttype)
 		*lastlocalresulttype=nullptr;

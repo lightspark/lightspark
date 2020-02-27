@@ -1303,7 +1303,6 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 		return false;
 	}
 
-	nbytes = 0;
 	do
 	{
 		char buf[4096];

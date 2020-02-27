@@ -935,7 +935,6 @@ bool XMLList::deleteVariableByMultiname(const multiname& name)
 					if (n.getPtr() == node.getPtr())
 					{
 						node->parentNode->childrenlist->nodes.erase(it);
-						bdeleted = true;
 						break;
 					}
 				}

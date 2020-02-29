@@ -58,6 +58,20 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class NumberFormatter : public ASObject
+{
+private:
+	std::locale currlocale;
+public:
+	NumberFormatter(Class_base* c);
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(formatNumber);
+	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
+	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
+	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
+	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
+};
 
 }
 #endif /* SCRIPTING_FLASH_GLOBALIZATION_FLASHGLOBALIZATION_H */

@@ -737,6 +737,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DateTimeFormatter","flash.globalization",Class<DateTimeFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeStyle","flash.globalization",Class<DateTimeStyle>::getRef(m_sys));
 	builtin->registerBuiltin("LastOperationStatus","flash.globalization",Class<LastOperationStatus>::getRef(m_sys));
+	builtin->registerBuiltin("NumberFormatter","flash.globalization",Class<NumberFormatter>::getRef(m_sys));
 	
 	
 	// avm intrinsics, not documented, but implemented in avmplus

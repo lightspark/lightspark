@@ -219,6 +219,7 @@ REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 REGISTER_CLASS_NAME(DateTimeFormatter,"flash.globalization")
 REGISTER_CLASS_NAME(DateTimeStyle,"flash.globalization")
 REGISTER_CLASS_NAME(LastOperationStatus,"flash.globalization")
+REGISTER_CLASS_NAME(NumberFormatter,"flash.globalization")
 
 //Media
 REGISTER_CLASS_NAME(Sound,"flash.media")

@@ -46,7 +46,7 @@ public:
 	BitmapContainer(MemoryAccount* m);
 	uint8_t* getData() { return &data[0]; }
 	const uint8_t* getData() const { return &data[0]; }
-	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format, bool convertendianess = true);
+	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format, bool frompng = false);
 	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);

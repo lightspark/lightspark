@@ -99,7 +99,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 RootMovieClip::~RootMovieClip()
 {
 	for(auto it=dictionary.begin();it!=dictionary.end();++it)
-		delete *it;
+		delete it->second;
 }
 
 void RootMovieClip::parsingFailed()
@@ -1796,26 +1796,21 @@ void RootMovieClip::setBackground(const RGB& bg)
 void RootMovieClip::addToDictionary(DictionaryTag* r)
 {
 	SpinlockLocker l(dictSpinlock);
-	dictionary.push_back(r);
+	dictionary[r->getId()] = r;
 }
 
 /* called in vm's thread context */
 DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	SpinlockLocker l(dictSpinlock);
-	auto it = dictionary.begin();
-	for(;it!=dictionary.end();++it)
-	{
-		if((*it)->getId()==id)
-			break;
-	}
+	auto it = dictionary.find(id);
 	if(it==dictionary.end())
 	{
 		LOG(LOG_ERROR,_("No such Id on dictionary ") << id << " for " << origin);
 		//throw RunTimeException("Could not find an object on the dictionary");
 		return nullptr;
 	}
-	return *it;
+	return it->second;
 }
 DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 {
@@ -1823,7 +1818,7 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 	auto it = dictionary.begin();
 	for(;it!=dictionary.end();++it)
 	{
-		if((*it)->nameID==nameID)
+		if(it->second->nameID==nameID)
 			break;
 	}
 	if(it==dictionary.end())
@@ -1831,7 +1826,7 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 		LOG(LOG_ERROR,_("No such name on dictionary ") << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
 		return nullptr;
 	}
-	return *it;
+	return it->second;
 }
 
 _NR<RootMovieClip> RootMovieClip::getRoot()

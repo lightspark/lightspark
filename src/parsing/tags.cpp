@@ -319,7 +319,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
-void RemoveObject2Tag::execute(DisplayObjectContainer* parent)
+void RemoveObject2Tag::execute(DisplayObjectContainer* parent,bool inskipping)
 {
 	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
@@ -1523,7 +1523,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	}
 }
 
-void PlaceObject2Tag::execute(DisplayObjectContainer* parent)
+void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 {
 	if(!PlaceFlagHasCharacter && !PlaceFlagMove)
 	{
@@ -2208,8 +2208,10 @@ StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 	in >> SoundId >> SoundInfo;
 }
 
-void StartSoundTag::execute(DisplayObjectContainer *parent)
+void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 {
+	if (inskipping) // it seems that StartSoundTags are not executed if we are skipping the frame due to a gotoframe action
+		return;
 	DefineSoundTag *soundTag = \
 		dynamic_cast<DefineSoundTag *>(parent->getSystemState()->mainClip->dictionaryLookup(SoundId));
 

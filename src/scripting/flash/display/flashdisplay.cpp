@@ -1115,7 +1115,6 @@ void Sprite::resetToStart()
 	if (sound && this->getTagID() != UINT32_MAX)
 	{
 		sound->threadAbort();
-		sound.reset();
 	}
 }
 
@@ -1274,11 +1273,11 @@ void Frame::destroyTags()
 		delete (*it2);
 }
 
-void Frame::execute(DisplayObjectContainer* displayList)
+void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
 {
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
-		(*it)->execute(displayList);
+		(*it)->execute(displayList,inskipping);
 	displayList->checkClipDepth();
 
 }
@@ -4670,7 +4669,7 @@ void MovieClip::declareFrame()
 			{
 				if((int)state.FP < state.last_FP || (int)i > state.last_FP)
 				{
-					iter->execute(this);
+					iter->execute(this,i!=state.FP);
 				}
 				if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
 					currentframeIterator= iter;

@@ -136,6 +136,7 @@
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
+#include "scripting/flash/ui/gameinput.h"
 #include "scripting/avmplus/avmplus.h"
 #include "scripting/avm1/avm1key.h"
 #include "scripting/avm1/avm1sound.h"
@@ -613,6 +614,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("StageVideoEvent","flash.events",Class<StageVideoEvent>::getRef(m_sys));
 	builtin->registerBuiltin("StageVideoAvailabilityEvent","flash.events",Class<StageVideoAvailabilityEvent>::getRef(m_sys));
 	builtin->registerBuiltin("TouchEvent","flash.events",Class<TouchEvent>::getRef(m_sys));
+	builtin->registerBuiltin("GameInputEvent","flash.events",Class<GameInputEvent>::getRef(m_sys));
 	builtin->registerBuiltin("GestureEvent","flash.events",Class<GestureEvent>::getRef(m_sys));
 	builtin->registerBuiltin("PressAndTapGestureEvent","flash.events",Class<PressAndTapGestureEvent>::getRef(m_sys));
 	builtin->registerBuiltin("TransformGestureEvent","flash.events",Class<TransformGestureEvent>::getRef(m_sys));
@@ -756,6 +758,9 @@ void ABCVm::registerClasses()
 
 		builtin->registerBuiltin("File","flash.filesystem",Class<ASFile>::getRef(m_sys));
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));
+
+		builtin->registerBuiltin("GameInput","flash.ui",Class<GameInput>::getRef(m_sys));
+		builtin->registerBuiltin("GameInputDevice","flash.ui",Class<GameInputDevice>::getRef(m_sys));
 	}
 
 	// if needed add AVMPLUS definitions

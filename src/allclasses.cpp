@@ -83,6 +83,7 @@
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
+#include "scripting/flash/ui/gameinput.h"
 #include "scripting/avmplus/avmplus.h"
 #include "scripting/avm1/avm1key.h"
 #include "scripting/avm1/avm1sound.h"

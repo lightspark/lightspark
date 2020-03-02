@@ -5,17 +5,14 @@ Lightspark
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/lightspark/lightspark.svg)
 [![Travis Status](https://img.shields.io/travis/com/lightspark/lightspark/master.svg?label=master%20branch)](https://travis-ci.com/lightspark/lightspark)
 
-Lightspark is an open source Flash player implementation for playing
-files in SWF format. Lightspark can run as a web browser plugin or as
-a standalone application.
+Lightspark is an open source Flash player implementation for playingfiles in SWF format. Lightspark can run as a web browser plugin or as a standalone application.
 
-Lightspark supports SWF files written on all versions of the
-ActionScript language.
+Lightspark supports SWF files written on all versions of the ActionScript language.
 
 Building and Installation
 -------------------------
 
-To compile this software you need to install development packages for:
+In preparation for building Lightspark, you need development packages for:
 * opengl
 * curl
 * zlib
@@ -32,18 +29,31 @@ To compile this software you need to install development packages for:
 * pango
 * liblzma
 
-If JIT compilation using llvm is enabled (this is disabled by default),
-you also need the development packages for llvm (version 2.8 or >= 3.0)
-
-If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that
-it will replace the Adobe Flash plugin, as only one flash plugin is allowed in Chromium.
-
-Also install the following tools:
+The following tools are also required:
 * cmake
 * nasm
 * gcc (version 4.6.0 or newer) or clang
 
-To build the software please follow these steps.
+To install these, run the following command(s):
+### Ubuntu (tested on 19.10):
+```
+sudo apt install git gcc nasm cmake libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libglibmm-2.4-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+```
+
+### Fedora (tested on 31):
+RPMFusion is required and will be enabled as part of this process.
+
+```
+sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install nasm cmake make g++ xz-devel pango-devel glibmm24-devel SDL2-devel SDL2_mixer-devel libcurl-devel librtmp-devel ffmpeg-devel mesa-libGL-devel glew-devel libjpeg-turbo-devel
+```
+If you want commands for a distro not listed here, please [create an issue](https://github.com/lightspark/lightspark/issues) if it doesn't already exist.
+
+If JIT compilation using llvm is enabled (this is disabled by default), you also need the development packages for llvm (version 2.8 or >= 3.0).
+
+If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that it will replace the Adobe Flash plugin, as only one Flash plugin is allowed in Chromium.
+
+To build Lightspark, please follow these steps.
 
 ```bash
 cd lightspark
@@ -53,6 +63,8 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install
 ```
+
+If you run into issues with the `make` step, try deleting the contents of `obj`, and run the `cmake` step again.
 
 DEBUG MODE:
 To enable debug mode change the cmake command like this:
@@ -64,26 +76,20 @@ The ``CMAKE_BUILD_TYPE`` options are: Debug LeanDebug Release RelWithDebInfo Pro
 Execution
 ---------
 
-Using `make install`, lightspark is installed in the system wide
+Using `make install`, Lightspark is installed system-wide.
 
 ### Browser plugin
 
-Firefox plugin path and Firefox should show it in the about:plugins
-list and in the Tools -> Add-ons -> Plugins window.
+Firefox plugin path and Firefox should show it in the about:plugins list and in the Tools -> Add-ons -> Plugins window.
 
-Lightspark registers itself as the plugin for
-application/x-shockwave-flash and for application/x-lightspark, so it
-should be recognisable in the about:plugins page. Its description
-string is ``Shockwave Flash 12.1 r<current version>``. The current
-version is now "r710".
+Lightspark registers itself as the plugin for application/x-shockwave-flash and for application/x-lightspark, so it should be recognisable in the about:plugins page. Its description string is ``Shockwave Flash 12.1 r<current version>``. The current version is now "r710".
 
-Firefox is not able to deal very well with multiple plugins for the
-same MIME type. If you only see a black box where a flash app should
-be try to remove any other flash plugin you have installed.
+Firefox is not able to deal very well with multiple plugins for the same MIME type. If you only see a black box where a flash app should be, try to remove any other flash plugin you have installed.
 
 ### Command line
 
 The command line version of Lightspark can play a local SWF file.
+
 Execution: ``lightspark file.swf``
 
 Type `lightspark` to see all command line options.
@@ -114,7 +120,7 @@ for more details.
 [compatibility page]: https://github.com/lightspark/lightspark/wiki/Status-of-Lightspark-support
 
 Testing
---------------
+-----------
 
 An easy way to compare Lightspark to Adobe Flash Player is to use the Flash Player Projector, which is simply a standalone executable of Flash that can be quickly run directly from the command line.
 

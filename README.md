@@ -5,7 +5,7 @@ Lightspark
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/lightspark/lightspark.svg)
 [![Travis Status](https://img.shields.io/travis/com/lightspark/lightspark/master.svg?label=master%20branch)](https://travis-ci.com/lightspark/lightspark)
 
-Lightspark is an open source Flash player implementation for playingfiles in SWF format. Lightspark can run as a web browser plugin or as a standalone application.
+Lightspark is an open source Flash player implementation for playing files in the SWF format. Lightspark can run as a web browser plugin or as a standalone application.
 
 Lightspark supports SWF files written on all versions of the ActionScript language.
 

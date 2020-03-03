@@ -24,6 +24,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include <algorithm>
+#include "scripting/flash/ui/gameinput.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1524,7 +1525,7 @@ Event* SampleDataEvent::cloneImpl() const
 
 void ThrottleEvent::sinit(Class_base* c)
 {
-	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"Throttle"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
 	
@@ -1584,3 +1585,48 @@ void ThrottleType::sinit(Class_base* c)
 	c->setVariableAtomByQName("RESUME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resume"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"throttle"),CONSTANT_TRAIT);
 }
+
+GameInputEvent::GameInputEvent(Class_base *c) : Event(c, "gameinput",false,false,SUBTYPE_GAMEINPUTEVENT)
+{
+}
+
+GameInputEvent::GameInputEvent(Class_base *c, NullableRef<GameInputDevice> _device) : Event(c, "gameinput",false,false,SUBTYPE_GAMEINPUTEVENT),device(_device)
+{
+}
+
+void GameInputEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableAtomByQName("DEVICE_ADDED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"deviceAdded"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DEVICE_REMOVED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"deviceRemoved"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("DEVICE_UNUSABLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"deviceUnusable"),DECLARED_TRAIT);
+	REGISTER_GETTER(c, device);
+}
+ASFUNCTIONBODY_GETTER(GameInputEvent,device);
+
+ASFUNCTIONBODY_ATOM(GameInputEvent,_constructor)
+{
+	uint32_t baseClassArgs=imin(argslen,3);
+	Event::_constructor(ret,sys,obj,args,baseClassArgs);
+
+	GameInputEvent* th=asAtomHandler::as<GameInputEvent>(obj);
+	if(argslen>=4)
+	{
+		if (asAtomHandler::is<GameInputDevice>(args[3]))
+			th->device = _MR(asAtomHandler::as<GameInputDevice>(args[3]));
+		else
+			th->device.reset();
+	}
+}
+Event* GameInputEvent::cloneImpl() const
+{
+	GameInputEvent *clone;
+	clone = Class<GameInputEvent>::getInstanceS(getSystemState());
+	clone->device = device;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+

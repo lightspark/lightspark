@@ -515,7 +515,7 @@ private:
 public:
 	inline AVM1context* getAVM1Context() { return &avm1context; }
 	std::list<DisplayListTag*> blueprint;
-	void execute(DisplayObjectContainer* displayList);
+	void execute(DisplayObjectContainer* displayList, bool inskipping);
 	void AVM1executeActions(MovieClip* clip, bool avm1initactionsdone);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by

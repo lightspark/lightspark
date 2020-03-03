@@ -72,7 +72,7 @@ private:
 	bool waitingforparser;
 	RGB Background;
 	Spinlock dictSpinlock;
-	std::list < DictionaryTag* > dictionary;
+	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
 	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
 	std::map < tiny_string,FontTag* > embeddedfonts;
 	std::map < uint32_t,FontTag* > embeddedfontsByID;

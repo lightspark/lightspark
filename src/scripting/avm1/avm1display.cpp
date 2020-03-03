@@ -53,24 +53,33 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 {
 	bool lockcenter;
 	number_t x1, y1, x2, y2;
-	ARG_UNPACK_ATOM (lockcenter)(x1)(y1)(x2)(y2);
+	ARG_UNPACK_ATOM (lockcenter,false)(x1,0)(y1,0)(x2,0)(y2,0);
 
-	Rectangle* rect = Class<Rectangle>::getInstanceS(sys);
-	asAtom fret = asAtomHandler::invalidAtom;
-	asAtom fobj = asAtomHandler::fromObject(rect);
-	asAtom fx1 = asAtomHandler::fromNumber(sys, x1, false);
-	asAtom fy1 = asAtomHandler::fromNumber(sys, y1, false);
-	asAtom fx2 = asAtomHandler::fromNumber(sys, x2, false);
-	asAtom fy2 = asAtomHandler::fromNumber(sys, y2, false);
-	Rectangle::_setLeft(fret,sys,fobj,&fx1,1);
-	Rectangle::_setTop(fret,sys,fobj,&fy1,1);
-	Rectangle::_setRight(fret,sys,fobj,&fx2,1);
-	Rectangle::_setBottom(fret,sys,fobj,&fy2,1);
-
-	asAtom fargs[2];
-	fargs[0] = asAtomHandler::fromBool(lockcenter);
-	fargs[1] = asAtomHandler::fromObject(rect);
-	Sprite::_startDrag(ret,sys,obj,fargs,2);
+	if (argslen > 1)
+	{
+		Rectangle* rect = Class<Rectangle>::getInstanceS(sys);
+		asAtom fret = asAtomHandler::invalidAtom;
+		asAtom fobj = asAtomHandler::fromObject(rect);
+		asAtom fx1 = asAtomHandler::fromNumber(sys, x1, false);
+		asAtom fy1 = asAtomHandler::fromNumber(sys, y1, false);
+		asAtom fx2 = asAtomHandler::fromNumber(sys, x2, false);
+		asAtom fy2 = asAtomHandler::fromNumber(sys, y2, false);
+		Rectangle::_setLeft(fret,sys,fobj,&fx1,1);
+		Rectangle::_setTop(fret,sys,fobj,&fy1,1);
+		Rectangle::_setRight(fret,sys,fobj,&fx2,1);
+		Rectangle::_setBottom(fret,sys,fobj,&fy2,1);
+	
+		asAtom fargs[2];
+		fargs[0] = asAtomHandler::fromBool(lockcenter);
+		fargs[1] = asAtomHandler::fromObject(rect);
+		Sprite::_startDrag(ret,sys,obj,fargs,2);
+	}
+	else
+	{
+		asAtom fargs[1];
+		fargs[0] = asAtomHandler::fromBool(lockcenter);
+		Sprite::_startDrag(ret,sys,obj,fargs,1);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)

@@ -110,12 +110,14 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),valueOf),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toXMLString","",Class<IFunction>::getFunction(c->getSystemState(),toXMLString),DYNAMIC_TRAIT);
 	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toXMLString),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("nodeKind","",Class<IFunction>::getFunction(c->getSystemState(),nodeKind),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(c->getSystemState(),nodeKind),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(c->getSystemState(),child),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("child","",Class<IFunction>::getFunction(c->getSystemState(),child),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(c->getSystemState(),children),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("children","",Class<IFunction>::getFunction(c->getSystemState(),children),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("childIndex",AS3,Class<IFunction>::getFunction(c->getSystemState(),childIndex),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(c->getSystemState(),contains),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(c->getSystemState(),attribute),NORMAL_METHOD,true);
@@ -1993,7 +1995,10 @@ uint32_t XML::getNamespacePrefixByURI(uint32_t uri, bool create)
 ASFUNCTIONBODY_ATOM(XML,_toString)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(sys,th->toString_priv()));
+	if (th->nodetype == pugi::node_element && th->hasSimpleContent() && (th->childrenlist.isNull() || th->childrenlist->nodes.empty()))
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+	else
+		ret = asAtomHandler::fromObject(abstract_s(sys,th->toString_priv()));
 }
 
 ASFUNCTIONBODY_ATOM(XML,_getIgnoreComments)

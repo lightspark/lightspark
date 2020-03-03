@@ -481,7 +481,7 @@ void LoaderThread::execute()
 		if (loader->getContentLoaderInfo().getPtr())
 			loader->getContentLoaderInfo()->setComplete();
 	}
-	else if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
+	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
 		{
@@ -753,6 +753,11 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::setContent(_R<DisplayObject> o)
 {
+	// content may have already been set.
+	// this can happen if setContent was already called from ObjectHasLoaded 
+	// and is called again at the end of LoaderThread::execute
+	if (o->getParent() == this) 
+		return;
 	{
 		Locker l(mutexDisplayList);
 		dynamicDisplayList.clear();
@@ -1110,7 +1115,6 @@ void Sprite::resetToStart()
 	if (sound && this->getTagID() != UINT32_MAX)
 	{
 		sound->threadAbort();
-		sound.reset();
 	}
 }
 
@@ -1269,11 +1273,11 @@ void Frame::destroyTags()
 		delete (*it2);
 }
 
-void Frame::execute(DisplayObjectContainer* displayList)
+void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
 {
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
-		(*it)->execute(displayList);
+		(*it)->execute(displayList,inskipping);
 	displayList->checkClipDepth();
 
 }
@@ -4665,7 +4669,7 @@ void MovieClip::declareFrame()
 			{
 				if((int)state.FP < state.last_FP || (int)i > state.last_FP)
 				{
-					iter->execute(this);
+					iter->execute(this,i!=state.FP);
 				}
 				if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
 					currentframeIterator= iter;

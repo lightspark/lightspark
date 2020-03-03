@@ -66,7 +66,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
-	virtual void execute(DisplayObjectContainer* parent) =0;
+	virtual void execute(DisplayObjectContainer* parent,bool inskipping) =0;
 };
 
 class DictionaryTag: public Tag
@@ -286,7 +286,7 @@ private:
 	void play(DefineSoundTag *soundTag);
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
-	void execute(DisplayObjectContainer* parent) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 };
 
 class SoundStreamHeadTag: public DisplayListTag
@@ -303,7 +303,7 @@ public:
 	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
 	_R<MemoryStreamCache> SoundData;
 	void setSoundChannel(Sprite* spr, bool autoplay);
-	void execute(DisplayObjectContainer *parent) override {}
+	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
 };
 
 class SoundStreamBlockTag: public DisplayListTag
@@ -311,7 +311,7 @@ class SoundStreamBlockTag: public DisplayListTag
 public:
 	SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip* root,DefineSpriteTag* sprite);
 	static void decodeSoundBlock(StreamCache *cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len);
-	void execute(DisplayObjectContainer *parent) override {}
+	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
 };
 
 class ShowFrameTag: public Tag
@@ -339,7 +339,7 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent);
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -366,7 +366,7 @@ protected:
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void execute(DisplayObjectContainer* parent);
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag

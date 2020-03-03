@@ -40,6 +40,7 @@ class InteractiveObject;
 class PlaceObject2Tag;
 class DisplayObject;
 class Responder;
+class GameInputDevice;
 
 class Event: public ASObject
 {
@@ -672,8 +673,8 @@ class ThrottleEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	ThrottleEvent(Class_base* c) : Event(c, "throttle",false,false,SUBTYPE_SAMPLEDATA_EVENT),targetFrameRate(0) {}
-	ThrottleEvent(Class_base* c,const tiny_string _state,number_t _targetFrameRate) : Event(c, "throttle",false,false,SUBTYPE_SAMPLEDATA_EVENT),state(_state),targetFrameRate(_targetFrameRate) {}
+	ThrottleEvent(Class_base* c) : Event(c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),targetFrameRate(0) {}
+	ThrottleEvent(Class_base* c,const tiny_string _state,number_t _targetFrameRate) : Event(c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),state(_state),targetFrameRate(_targetFrameRate) {}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
@@ -687,6 +688,17 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class GameInputEvent: public Event
+{
+private:
+	Event* cloneImpl() const override;
+public:
+	GameInputEvent(Class_base* c);
+	GameInputEvent(Class_base* c,_NR<GameInputDevice> _device);
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER(_NR<GameInputDevice>,device);
+};
 
 }
 #endif /* SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H */

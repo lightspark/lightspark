@@ -248,11 +248,11 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		for (uint32_t j = 0; j < (th->width>>miplevel); j++)
 		{
 			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4];
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4];
 		}
 	}
 	th->context->addAction(RENDER_LOADTEXTURE,th);
@@ -338,11 +338,11 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 		for (uint32_t j = 0; j < bitmap_size; j++)
 		{
 			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3];
+			uint8_t alpha = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4];
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+1]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+2]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)(source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4+3]*alpha /255);
+			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4 + j*4];
 		}
 	}
 	th->context->addAction(RENDER_LOADCUBETEXTURE,th);

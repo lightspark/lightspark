@@ -62,7 +62,7 @@
 #else
 #  include <llvm/Analysis/Verifier.h>
 #endif
-#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Scalar.h> 
 #ifdef HAVE_TRANSFORMS_SCALAR_GVN_H
 #  include <llvm/Transforms/Scalar/GVN.h>
 #endif
@@ -314,7 +314,7 @@ void ABCVm::registerClassesAVM1()
 	{
 		ASObject* systempackage = Class<ASObject>::getInstanceS(m_sys);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
-
+		
 		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 
 		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys);
@@ -555,7 +555,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextLineValidity","flash.text.engine",Class<TextLineValidity>::getRef(m_sys));
 	builtin->registerBuiltin("TextRotation","flash.text.engine",Class<TextRotation>::getRef(m_sys));
 	builtin->registerBuiltin("TextJustifier","flash.text.engine",Class<TextJustifier>::getRef(m_sys));
-
+	
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef(m_sys));
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef(m_sys));
 
@@ -626,7 +626,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SampleDataEvent","flash.events",Class<SampleDataEvent>::getRef(m_sys));
 	builtin->registerBuiltin("ThrottleEvent","flash.events",Class<ThrottleEvent>::getRef(m_sys));
 	builtin->registerBuiltin("ThrottleType","flash.events",Class<ThrottleType>::getRef(m_sys));
-
+	
 	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
 	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
 	builtin->registerBuiltin("DynamicPropertyOutput","flash.net",Class<DynamicPropertyOutput>::getRef(m_sys));
@@ -709,7 +709,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Camera","flash.media",Class<Camera>::getRef(m_sys));
 	builtin->registerBuiltin("VideoStreamSettings","flash.media",Class<VideoStreamSettings>::getRef(m_sys));
 	builtin->registerBuiltin("H264VideoStreamSettings","flash.media",Class<H264VideoStreamSettings>::getRef(m_sys));
-
+	
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));
@@ -743,6 +743,7 @@ void ABCVm::registerClasses()
   builtin->registerBuiltin("CurrencyFormatter","flash.globalization",Class<CurrencyFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("NumberFormatter","flash.globalization",Class<NumberFormatter>::getRef(m_sys));
 	
+	
 	// avm intrinsics, not documented, but implemented in avmplus
 	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
 
@@ -751,9 +752,12 @@ void ABCVm::registerClasses()
 	{
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragManager","flash.desktop",Class<NativeDragManager>::getRef(m_sys));
+		
 		builtin->registerBuiltin("NativeMenuItem","flash.display",Class<NativeMenuItem>::getRef(m_sys));
+
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragEvent","flash.events",Class<NativeDragEvent>::getRef(m_sys));
+
 		builtin->registerBuiltin("File","flash.filesystem",Class<ASFile>::getRef(m_sys));
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));
 
@@ -997,7 +1001,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 			return m->cached;
 		fromStack = m->runtimeargs;
 	}
-
+	
 	asAtom rt1=asAtomHandler::invalidAtom;
 	ASObject* rt2 = NULL;
 	if(fromStack > 0)
@@ -1340,7 +1344,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),cons
 	for (int32_t i = 0; i < 0x10000; i++)
 		constantAtoms_short[i] = asAtomHandler::fromInt((int32_t)(int16_t)i);
 	atomsCachedMaxID=0;
-
+	
 	namespaceBaseId=vm->getAndIncreaseNamespaceBase(constant_pool.namespaces.size());
 
 	in >> method_count;
@@ -1566,21 +1570,21 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		return;
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.lock();
-
+		
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
 	if(asAtomHandler::isInvalid(event->target))
 		event->setTarget(asAtomHandler::fromObject(dispatcher));
-	/** rollOver/Out are special: according to spec
-	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?
-	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver
+	/** rollOver/Out are special: according to spec 
+	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
+	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 
 	*
-	*   The relatedObject is the object that was previously under the pointing device.
-	*   The rollOver events are dispatched consecutively down the parent chain of the object,
+	*   The relatedObject is the object that was previously under the pointing device. 
+	*   The rollOver events are dispatched consecutively down the parent chain of the object, 
 	*   starting with the highest parent that is neither the root nor an ancestor of the relatedObject
 	*   and ending with the object.
 	*
-	*   So no bubbling phase, a truncated capture phase, and sometimes no target phase (when the target is an ancestor
+	*   So no bubbling phase, a truncated capture phase, and sometimes no target phase (when the target is an ancestor 
 	*	of the relatedObject).
 	*/
 	//This is to take care of rollOver/Out
@@ -1597,16 +1601,16 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->incRef();
 			_R<MouseEvent> mevent = _MR(event->as<MouseEvent>());
 			if(mevent->relatedObject)
-			{
+			{  
 				mevent->relatedObject->incRef();
 				rcur = mevent->relatedObject.getPtr();
 			}
 		}
-		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target
+		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
 		if(rcur)
 		{
 			std::vector<DisplayObject*> rparents;
-			rparents.push_back(rcur);
+			rparents.push_back(rcur);        
 			while(true)
 			{
 				if(!rcur->getParent())
@@ -1629,13 +1633,13 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			while(true && doTarget)
 			{
 				if(!cur->getParent())
-					break;
+					break;        
 				cur = cur->getParent();
-				auto i = rparents.begin();
+				auto i = rparents.begin();        
 				bool stop = false;
 				for(;i!=rparents.end();++i)
 				{
-					if((*i) == cur)
+					if((*i) == cur) 
 					{
 						stop = true;
 						break;
@@ -1696,14 +1700,14 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	}
 	else
 		dispatcher->getSystemState()->stage->setFocusTarget(NullRef);
-
+	
 	dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
-
+	
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
 	dispatcher->afterExecution(event);
-
+	
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->setTarget(asAtomHandler::invalidAtom);
@@ -2042,8 +2046,8 @@ void ABCVm::handleFrontEvent()
 		//handle event without lock
 		handleEvent(e);
 		//Flush the invalidation queue
-		if (!e.first.isNull() ||
-				(e.second->getEventType() != EXTERNAL_CALL
+		if (!e.first.isNull() || 
+				(e.second->getEventType() != EXTERNAL_CALL 
 				 && e.second->getEventType() != INIT_FRAME) // don't flush between initFrame and executeFrameScript
 				)
 			m_sys->flushInvalidationQueue();
@@ -2108,7 +2112,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 
 	if(name->name_s_id == BUILTIN_STRINGS::ANY)
 		return true;
-
+	
 	ASObject* target;
 	asAtom ret=asAtomHandler::invalidAtom;
 	root->applicationDomain->getVariableAndTargetByMultiname(ret,*name, target);
@@ -2139,7 +2143,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 
 	assert_and_throw(type->getObjectType()==T_CLASS);
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not "))
+	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
 			<< "subclass of " << c->class_name);
 	return real_ret;
 }
@@ -2221,7 +2225,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m,m->numArgs());
-
+	
 	entry->addToScope(scope_entry(g,false));
 
 	asAtom ret=asAtomHandler::invalidAtom;
@@ -2457,14 +2461,14 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		return;
 	for(uint32_t i=0;i<numMessage;i++)
 	{
-
+	
 		tiny_string target;
 		if(!message->readUTF(target))
 			return;
 		tiny_string response;
 		if(!message->readUTF(response))
 			return;
-
+	
 		//TODO: Really use the response to map request/responses and detect errors
 		uint32_t objLen;
 		if(!message->readUnsignedInt(objLen))
@@ -2480,7 +2484,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		asAtom v = asAtomHandler::fromObject(message.getPtr());
 		asAtom ret=asAtomHandler::invalidAtom;
 		ByteArray::readObject(ret,m_sys,v, NULL, 0);
-
+	
 		if(!responder.isNull())
 		{
 			multiname onResultName(NULL);
@@ -2630,7 +2634,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			{
 				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable") << ": " << mname);
 			}
-
+			
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
 		}
@@ -2809,7 +2813,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			{
 				return;
 			}
-
+			
 			ASObject* ret;
 
 			QName className(mname->name_s_id,mname->ns[0].nsNameId);

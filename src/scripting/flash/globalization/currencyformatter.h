@@ -49,15 +49,15 @@ public:
 	ASPROPERTY_GETTER(tiny_string, currencyISOCode);
 	ASPROPERTY_GETTER(tiny_string, currencySymbol);
 	ASPROPERTY_GETTER_SETTER(tiny_string, decimalSeparator);
-	ASPROPERTY_GETTER_SETTER(uint, digitsType);
+	ASPROPERTY_GETTER_SETTER(uint32_t, digitsType);
 	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
 	ASPROPERTY_GETTER_SETTER(tiny_string, groupingPattern);
 	ASPROPERTY_GETTER_SETTER(tiny_string, groupingSeparator);
 	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
 	ASPROPERTY_GETTER_SETTER(bool, leadingZero);
-	ASPROPERTY_GETTER_SETTER(uint, negativeCurrencyFormat);
+	ASPROPERTY_GETTER_SETTER(uint32_t, negativeCurrencyFormat);
 	ASPROPERTY_GETTER_SETTER(tiny_string, negativeSymbol);
-	ASPROPERTY_GETTER_SETTER(uint, positiveCurrencyFormat);
+	ASPROPERTY_GETTER_SETTER(uint32_t, positiveCurrencyFormat);
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
 	ASPROPERTY_GETTER_SETTER(bool, trailingZeros);
 	ASPROPERTY_GETTER_SETTER(bool, useGrouping);

@@ -242,19 +242,19 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 				break;
 		}
 	}
-	if(realClass==NULL)
+	if(realClass==nullptr)
 		realClass=this;
-	ret=asAtomHandler::fromObject(new (realClass->memoryAccount) ASObject(realClass));
+	ret=asAtomHandler::fromObjectNoPrimitive(new (realClass->memoryAccount) ASObject(realClass));
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 }
 Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {
 	uint32_t classId=ClassName<ASObject>::id;
-	Class<ASObject>* ret=NULL;
-	SystemState* s = sys == NULL ? getSys() : sys;
+	Class<ASObject>* ret=nullptr;
+	SystemState* s = sys == nullptr ? getSys() : sys;
 	Class_base** retAddr=&s->builtinClasses[classId];
-	if(*retAddr==NULL)
+	if(*retAddr==nullptr)
 	{
 		//Create the class
 		QName name(s->getUniqueStringId(ClassName<ASObject>::name),s->getUniqueStringId(ClassName<ASObject>::ns));

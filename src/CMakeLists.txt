@@ -19,7 +19,7 @@
 #**************************************************************************
 
 # liblightspark.so sources
-SET(LIBSPARK_SOURCES 
+SET(LIBSPARK_SOURCES
   allclasses.cpp
   asobject.cpp
   compat.cpp
@@ -65,6 +65,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
+  scripting/flash/globalization/currencyformatter.cpp
   scripting/flash/concurrent/Mutex.cpp
   scripting/flash/concurrent/Condition.cpp
   scripting/flash/crypto/flashcrypto.cpp
@@ -289,4 +290,3 @@ ENDIF(COMPILE_NPAPI_PLUGIN)
 IF(COMPILE_PPAPI_PLUGIN)
   ADD_SUBDIRECTORY(plugin_ppapi)
 ENDIF(COMPILE_PPAPI_PLUGIN)
-

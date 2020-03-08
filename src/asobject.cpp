@@ -1620,6 +1620,7 @@ void variables_map::dumpVariables()
 				kind="Dynamic: ";
 				break;
 			case NO_CREATE_TRAIT:
+			default:
 				assert(false);
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<

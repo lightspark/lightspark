@@ -201,8 +201,8 @@ protected:
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr, float scalex, float scaley)=0;
-	static void copyRGB15To24(uint8_t* dest, uint8_t* src);
-	static void copyRGB24To24(uint8_t* dest, uint8_t* src);
+	static void copyRGB15To24(uint32_t& dest, uint8_t* src);
+	static void copyRGB24To24(uint32_t& dest, uint8_t* src);
 public:
 	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m,bool _smoothing);
 	//IDrawable interface

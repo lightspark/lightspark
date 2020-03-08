@@ -221,6 +221,7 @@ REGISTER_CLASS_NAME(DateTimeFormatter,"flash.globalization")
 REGISTER_CLASS_NAME(DateTimeStyle,"flash.globalization")
 REGISTER_CLASS_NAME(LastOperationStatus,"flash.globalization")
 REGISTER_CLASS_NAME(NumberFormatter,"flash.globalization")
+REGISTER_CLASS_NAME(CurrencyFormatter, "flash.globalization")
 
 //Media
 REGISTER_CLASS_NAME(Sound,"flash.media")
@@ -402,4 +403,3 @@ REGISTER_CLASS_NAME2(AVM1TextField,"TextField","")
 REGISTER_CLASS_NAME2(AVM1XMLDocument,"XML","")
 REGISTER_CLASS_NAME2(AVM1Video,"Video","")
 REGISTER_CLASS_NAME2(AVM1Color,"Color","")
-

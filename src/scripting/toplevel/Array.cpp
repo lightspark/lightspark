@@ -512,7 +512,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 		return;
 	}
 
-	size_t i = th->size()-1;
+	size_t i;
 
 	if(std::isnan(index))
 	{

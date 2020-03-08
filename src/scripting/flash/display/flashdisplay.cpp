@@ -4529,8 +4529,15 @@ void JointStyle::sinit(Class_base* c)
 
 void DisplayObjectContainer::declareFrame()
 {
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
+	// elements of the dynamicDisplayList may be removed/added during declareFrame() calls,
+	// so we create a temporary list containing all elements
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
 		(*it)->declareFrame();
 	DisplayObject::declareFrame();
 }

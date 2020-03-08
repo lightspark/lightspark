@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Stop on first error
+set -e
+
+# -p prevents an error when the directory already exists
+mkdir -p obj
+cd obj
+
+if [[ $1 == "-d" ]]; then
+	cmake -DCMAKE_BUILD_TYPE=Debug ..
+else
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+fi
+
+# Use all available threads
+make -j $(grep -c processor /proc/cpuinfo)
+
+sudo make install

@@ -54,6 +54,10 @@ private:
 	Global* definitionobject;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _defobj);
+	inline Global* getDefinitionObject() const
+	{
+		return definitionobject;
+	}
 	void checkScriptInit()
 	{
 		if (definitionobject)

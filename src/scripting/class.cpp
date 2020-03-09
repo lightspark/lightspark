@@ -78,7 +78,8 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	//We override the classdef
 	if(realClass==NULL)
 		realClass=this;
-
+	if (!this->isBinded()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
+		getSystemState()->mainClip->bindClass(this->class_name,this);
 	if(tag)
 	{
 		ret=asAtomHandler::fromObject(tag->instance(realClass));

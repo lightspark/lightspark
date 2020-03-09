@@ -900,7 +900,6 @@ variable *ASObject::setVariableAtomByQName(const tiny_string& name, const nsName
 }
 variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted)
 {
-	assert_and_throw(Variables.findObjVar(nameId,ns,NO_CREATE_TRAIT,traitKind)==NULL);
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o,this,isRefcounted);
 	obj->isenumerable=isEnumerable;

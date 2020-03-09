@@ -1545,12 +1545,19 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 			inFrameNo = 1;
 
 		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
-		if(next_FP >= getFramesLoaded())
+		while(next_FP >= getFramesLoaded())
 		{
-			LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded() << " on "<<this->getTagID());
-			/* spec says we should throw an error, but then YT breaks */
-			//throwError<ArgumentError>(kInvalidArgumentError,stop ? "gotoAndStop: frame not found" : "gotoAndPlay: frame not found");
-			next_FP = getFramesLoaded()-1;
+			if (hasFinishedLoading())
+			{
+				if (next_FP >= getFramesLoaded())
+				{
+					LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded() << " on "<<this->toDebugString()<<" "<<this->getTagID());
+					next_FP = getFramesLoaded()-1;
+				}
+				break;
+			}
+			else
+				compat_msleep(100);
 		}
 	}
 	state.next_FP = next_FP;

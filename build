@@ -3,15 +3,28 @@
 # Stop on first error
 set -e
 
+print_help() {
+	echo "-h, --help	Print this message"
+	echo "-d, --debug	Build Lightspark with debug symbols"
+	echo "By default, this script does the release build of Lightspark."
+}
+
 # -p prevents an error when the directory already exists
 mkdir -p obj
 cd obj
 
-if [[ $1 == "-d" ]]; then
-	cmake -DCMAKE_BUILD_TYPE=Debug ..
-else
-	cmake -DCMAKE_BUILD_TYPE=Release ..
-fi
+case "$1" in
+	-h | --help)
+		print_help
+		exit 0
+		;;
+	-d | --debug)
+		cmake -DCMAKE_BUILD_TYPE=Debug ..
+		;;
+	*)
+		cmake -DCMAKE_BUILD_TYPE=Release ..
+		;;
+esac
 
 # Use all available threads
 make -j $(grep -c processor /proc/cpuinfo)

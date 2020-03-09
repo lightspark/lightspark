@@ -53,9 +53,9 @@ If JIT compilation using llvm is enabled (this is disabled by default), you also
 
 If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that it will replace the Adobe Flash plugin, as only one Flash plugin is allowed in Chromium.
 
-To build Lightspark, execute the `build` file. For a debug build, run `build -d`.
+To build Lightspark, run `./build`. For a debug build, run `./build -d`.
 
-If you run into issues building Lightspark, firstly try deleting the contents of `obj`, and run the `build` file again. If you continue to have issues, please [let us know](https://github.com/lightspark/lightspark/issues).
+If you run into issues building Lightspark, firstly try deleting the contents of `obj`, and run `./build` file again. If you continue to have issues, please [let us know](https://github.com/lightspark/lightspark/issues).
 
 The ``CMAKE_BUILD_TYPE`` options are: Debug LeanDebug Release RelWithDebInfo Profile
 

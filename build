@@ -9,19 +9,19 @@ print_help() {
 	echo "By default, this script does the release build of Lightspark."
 }
 
-# -p prevents an error when the directory already exists
-mkdir -p obj
-cd obj
-
 case "$1" in
 	-h | --help)
 		print_help
 		exit 0
 		;;
 	-d | --debug)
+		mkdir -p obj-debug
+		cd obj-debug
 		cmake -DCMAKE_BUILD_TYPE=Debug ..
 		;;
 	*)
+		mkdir -p obj-release
+		cd obj-release
 		cmake -DCMAKE_BUILD_TYPE=Release ..
 		;;
 esac

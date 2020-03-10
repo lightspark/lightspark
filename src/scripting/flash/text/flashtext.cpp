@@ -1333,6 +1333,10 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	textdata->text = "";
 
 	tiny_string rooted = tiny_string("<root>") + html + tiny_string("</root>");
+	uint32_t pos=0;
+	// ensure <br> tags are properly parsed
+	while ((pos = rooted.find("<br>",pos)) != tiny_string::npos)
+		rooted.replace_bytes(pos,4,"<br />");
 	pugi::xml_document doc;
 	if (doc.load_buffer(rooted.raw_buf(),rooted.numBytes()).status == pugi::status_ok)
 	{
@@ -1340,7 +1344,7 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	}
 	else
 	{
-		LOG(LOG_ERROR, "TextField HTML parser error");
+		LOG(LOG_ERROR, "TextField HTML parser error:"<<rooted);
 		return;
 	}
 }

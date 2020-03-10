@@ -2810,8 +2810,11 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(asAtomHandler::isUndefined(ret2));
 	ASATOM_DECREF(ret2);
 	LOG_CALL(_("End of Class init ") << *mname <<" " <<ret);
-	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));
+	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObjectNoPrimitive(ret));
 	cinit->decRef();
+	if (ret->getDefinitionObject()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
+		ret->getDefinitionObject()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
+	th->mi->context->root->bindClass(className,ret);
 
 	auto j = th->mi->context->root->applicationDomain->classesSuperNotFilled.cbegin();
 	while (j != th->mi->context->root->applicationDomain->classesSuperNotFilled.cend())

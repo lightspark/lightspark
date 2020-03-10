@@ -372,6 +372,8 @@ public:
 class PlaceObject3Tag: public PlaceObject2Tag
 {
 private:
+	bool PlaceFlagOpaqueBackground;
+	bool PlaceFlagHasVisible;
 	bool PlaceFlagHasImage;
 	bool PlaceFlagHasClassName;
 	bool PlaceFlagHasCacheAsBitmap;
@@ -381,6 +383,8 @@ private:
 	FILTERLIST SurfaceFilterList;
 	UI8 BlendMode;
 	UI8 BitmapCache;
+	UI8 Visible;
+	RGBA BackgroundColor;
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);

@@ -1726,7 +1726,9 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	PlaceFlagHasMatrix=UB(1,bs);
 	PlaceFlagHasCharacter=UB(1,bs);
 	PlaceFlagMove=UB(1,bs);
-	UB(3,bs); //Reserved
+	UB(1,bs); //Reserved
+	PlaceFlagOpaqueBackground=UB(1,bs);
+	PlaceFlagHasVisible=UB(1,bs);
 	PlaceFlagHasImage=UB(1,bs);
 	PlaceFlagHasClassName=UB(1,bs);
 	PlaceFlagHasCacheAsBitmap=UB(1,bs);
@@ -1734,7 +1736,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	PlaceFlagHasFilterList=UB(1,bs);
 
 	in >> Depth;
-	if(PlaceFlagHasClassName)
+	if(PlaceFlagHasClassName || (PlaceFlagHasImage && PlaceFlagHasCharacter))
 	{
 		in >> ClassName;
 		LOG(LOG_NOT_IMPLEMENTED,"ClassName in PlaceObject3 not yet supported:"<<ClassName);
@@ -1773,6 +1775,13 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		else
 			in >> BitmapCache;
 	}
+	if(PlaceFlagHasVisible)
+		in >> Visible;
+	if(PlaceFlagOpaqueBackground)
+	{
+		in >> BackgroundColor;
+		LOG(LOG_NOT_IMPLEMENTED,"BackgroundColor in PlaceObject3 not yet supported:"<<BackgroundColor);
+	}
 
 	if(PlaceFlagHasClipAction)
 		in >> ClipActions;
@@ -1788,6 +1797,8 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 	PlaceObject2Tag::setProperties(obj,parent);
 	if (PlaceFlagHasBlendMode)
 		obj->setBlendMode(BlendMode);
+	if (PlaceFlagHasVisible)
+		obj->setVisible(Visible);
 	if (this->SurfaceFilterList.Filters.size())
 	{
 		if (obj->filters.isNull())

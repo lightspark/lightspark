@@ -219,6 +219,7 @@ public:
 	void setScaleX(number_t val);
 	void setScaleY(number_t val);
 	void setScaleZ(number_t val);
+	inline void setVisible(bool v) { this->visible = v; }
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();

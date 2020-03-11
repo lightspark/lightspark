@@ -647,6 +647,7 @@ bool SyntheticFunction::isEqual(ASObject *r)
 	return r == this || 
 			(this->inClass && r->is<SyntheticFunction>() && 
 			 this->val == r->as<SyntheticFunction>()->val &&
+			 this->mi == r->as<SyntheticFunction>()->mi &&
 			 this->inClass == r->as<SyntheticFunction>()->inClass);
 }
 

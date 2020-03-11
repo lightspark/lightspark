@@ -23,13 +23,11 @@ case "$1" in
 	-d | --debug)
 		mkdir -p obj-debug
 		cd obj-debug
-		check_cmake
 		cmake -DCMAKE_BUILD_TYPE=Debug ..
 		;;
 	*)
 		mkdir -p obj-release
 		cd obj-release
-		check_cmake
 		cmake -DCMAKE_BUILD_TYPE=Release ..
 		;;
 esac

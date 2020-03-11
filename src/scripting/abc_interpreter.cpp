@@ -7474,7 +7474,6 @@ void clearOperands(method_info* mi,Class_base** localtypes,std::list<operands>& 
 {
 	for (uint32_t i = 0; i < mi->body->local_count+2; i++)
 	{
-		assert(i < defaultlocaltypes.len && "array out of bounds!");
 		localtypes[i] = defaultlocaltypes[i];
 	}
 	operandlist.clear();

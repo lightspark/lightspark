@@ -10,12 +10,14 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
 	exit 0
 fi
 
-check_cmake() {
-	if ! type cmake > /dev/null 2>&1; then
-		echo "cmake not found" >&2
-		exit 1
-	fi
-}
+if ! type cmake > /dev/null 2>&1; then
+	echo "cmake not found" >&2
+	exit 1
+fi
+if ! type make > /dev/null 2>&1; then
+	echo "make not found" >&2
+	exit 1
+fi
 
 case "$1" in
 	-d | --debug)
@@ -31,11 +33,6 @@ case "$1" in
 		cmake -DCMAKE_BUILD_TYPE=Release ..
 		;;
 esac
-
-if ! type make > /dev/null 2>&1; then
-	echo "make not found" >&2
-	exit 1
-fi
 
 # Use all available threads
 make -j $(grep -c processor /proc/cpuinfo)

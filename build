@@ -9,6 +9,13 @@ print_help() {
 	echo "By default, this script does the release build of Lightspark."
 }
 
+check_cmake() {
+	if ! type cmake > /dev/null 2>&1; then
+		echo "cmake not found" >&2
+		exit 1
+	fi
+}
+
 case "$1" in
 	-h | --help)
 		print_help
@@ -17,14 +24,21 @@ case "$1" in
 	-d | --debug)
 		mkdir -p obj-debug
 		cd obj-debug
+		check_cmake
 		cmake -DCMAKE_BUILD_TYPE=Debug ..
 		;;
 	*)
 		mkdir -p obj-release
 		cd obj-release
+		check_cmake
 		cmake -DCMAKE_BUILD_TYPE=Release ..
 		;;
 esac
+
+if ! type make > /dev/null 2>&1; then
+	echo "cmake not found" >&2
+	exit 1
+fi
 
 # Use all available threads
 make -j $(grep -c processor /proc/cpuinfo)

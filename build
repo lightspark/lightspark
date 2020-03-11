@@ -3,11 +3,12 @@
 # Stop on first error
 set -e
 
-print_help() {
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
 	echo "-h, --help	Print this message"
 	echo "-d, --debug	Build Lightspark with debug symbols"
 	echo "By default, this script does the release build of Lightspark."
-}
+	exit 0
+fi
 
 check_cmake() {
 	if ! type cmake > /dev/null 2>&1; then
@@ -17,10 +18,6 @@ check_cmake() {
 }
 
 case "$1" in
-	-h | --help)
-		print_help
-		exit 0
-		;;
 	-d | --debug)
 		mkdir -p obj-debug
 		cd obj-debug
@@ -36,7 +33,7 @@ case "$1" in
 esac
 
 if ! type make > /dev/null 2>&1; then
-	echo "cmake not found" >&2
+	echo "make not found" >&2
 	exit 1
 fi
 

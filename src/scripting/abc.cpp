@@ -2064,15 +2064,16 @@ void ABCVm::handleFrontEvent()
 	}
 	catch(ASObject*& e)
 	{
-		shuttingdown = true;
 		if(e->getClass())
 			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
 		else
 			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
 		if (e->is<ASError>())
 		{
-			m_sys->setError(e->as<ASError>()->getStackTraceString());
 			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->as<ASError>()->getStackTraceString());
+			if (m_sys->ignoreUnhandledExceptions)
+				return;
+			m_sys->setError(e->as<ASError>()->getStackTraceString());
 		}
 		else
 			m_sys->setError(_("Unhandled ActionScript exception"));

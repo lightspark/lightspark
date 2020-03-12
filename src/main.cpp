@@ -249,6 +249,7 @@ int main(int argc, char* argv[])
 	bool useInterpreter=true;
 	bool useFastInterpreter=false;
 	bool useJit=false;
+	bool ignoreUnhandledExceptions = false;
 	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
 	SystemState::FLASH_MODE flashMode=SystemState::FLASH;
@@ -288,6 +289,8 @@ int main(int argc, char* argv[])
 			useFastInterpreter=true;
 		else if(strcmp(argv[i],"-j")==0 || strcmp(argv[i],"--enable-jit")==0)
 			useJit=true;
+		else if(strcmp(argv[i],"-ne")==0 || strcmp(argv[i],"--ignore-unhandled-exceptions")==0)
+			ignoreUnhandledExceptions=true;
 		else if(strcmp(argv[i],"-l")==0 || strcmp(argv[i],"--log-level")==0)
 		{
 			i++;
@@ -389,6 +392,7 @@ int main(int argc, char* argv[])
 #ifdef PROFILING_SUPPORT
 			" [--profiling-output|-o profiling-file]" <<
 #endif
+			" [--ignore-unhandled-exceptions|-ne]"
 			" [--version|-v]" <<
 			" <file.swf>");
 		exit(1);
@@ -461,6 +465,7 @@ int main(int argc, char* argv[])
 	sys->useInterpreter=useInterpreter;
 	sys->useFastInterpreter=useFastInterpreter;
 	sys->useJit=useJit;
+	sys->ignoreUnhandledExceptions=ignoreUnhandledExceptions;
 	sys->exitOnError=exitOnError;
 	if(paramsFileName)
 		sys->parseParametersFromFile(paramsFileName);

@@ -390,6 +390,7 @@ public:
 	bool useInterpreter;
 	bool useFastInterpreter;
 	bool useJit;
+	bool ignoreUnhandledExceptions;
 	ERROR_TYPE exitOnError;
 
 	//Parameters/FlashVars

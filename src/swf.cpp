@@ -203,13 +203,13 @@ extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	terminated(0),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engineData(NULL),mainThread(0),dumpedSWFPathAvailable(0),
+	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),
-	currentVm(NULL),builtinClasses(NULL),useInterpreter(true),useFastInterpreter(false),useJit(false),exitOnError(ERROR_NONE),singleworker(true),
-	downloadManager(NULL),extScriptObject(NULL),scaleMode(SHOW_ALL),currentflushstep(1),nextflushstep(0),unaccountedMemory(NULL),tagsMemory(NULL),stringMemory(NULL),textTokenMemory(NULL),shapeTokenMemory(NULL),morphShapeTokenMemory(NULL),bitmapTokenMemory(NULL),spriteTokenMemory(NULL),
+	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),singleworker(true),
+	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),currentflushstep(1),nextflushstep(0),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),isinitialized(false)
 {
 	//Forge the builtin strings
@@ -233,7 +233,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	getUniqueNamespaceId(as3Ns, BUILTIN_NAMESPACES::AS3_NS, nsId, baseId);
 	assert(nsId==1 && baseId==1);
 
-	cookiesFileName = NULL;
+	cookiesFileName = nullptr;
 
 	setTLSSys(this);
 	// it seems Adobe ignores any locale date settings
@@ -522,7 +522,7 @@ MemoryAccount* SystemState::allocateMemoryAccount(const tiny_string& name)
 	memoryAccounts.emplace_back(name);
 	return &memoryAccounts.back();
 #else
-	return NULL;
+	return nullptr;
 #endif
 }
 

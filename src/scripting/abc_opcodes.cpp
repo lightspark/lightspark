@@ -1641,7 +1641,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		// (normally it would return an empty XMLList if the
 		// property does not exist).
 		// And this ensures dynamic properties are also searched
-		GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX | NO_INCREF);
+		GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX);
 		if(!th->scope_stack_dynamic[i-1])
 			opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 		else
@@ -1664,7 +1664,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			// (normally it would return an empty XMLList if the
 			// property does not exist).
 			// And this ensures dynamic properties are also searched
-			GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX | NO_INCREF);
+			GET_VARIABLE_OPTION opt=GET_VARIABLE_OPTION(FROM_GETLEX);
 			if(!it->considerDynamic)
 				opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 			else
@@ -1697,7 +1697,6 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		// TODO can we cache objects found in the scope_stack? 
 		canCache = false;
 	name->resetNameIfObject();
-	ASATOM_INCREF(o);
 	if (localresult)
 	{
 		ASATOM_DECREF(th->locals[localresult-1]);

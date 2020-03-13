@@ -53,7 +53,7 @@ If JIT compilation using llvm is enabled (this is disabled by default), you also
 
 If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that it will replace the Adobe Flash plugin, as only one Flash plugin is allowed in Chromium.
 
-To build Lightspark, please follow these steps.
+There are two ways of building Lightspark. You can use the included script, by running `./build`. or for a debug build, run `./build -d`. You can also do it manually, with the following commands:
 
 ```bash
 cd lightspark
@@ -64,19 +64,12 @@ make
 sudo make install
 ```
 
-If you run into issues with the `make` step, try deleting the contents of `obj`, and run the `cmake` step again.
-
-DEBUG MODE:
-To enable debug mode change the cmake command like this:
-
-``cmake -DCMAKE_BUILD_TYPE=Debug``
-
 The ``CMAKE_BUILD_TYPE`` options are: Debug LeanDebug Release RelWithDebInfo Profile
 
-Execution
----------
+If you run into issues building Lightspark, firstly try deleting the contents of `obj`, and run `./build` file again. If you continue to have issues, please [let us know](https://github.com/lightspark/lightspark/issues).
 
-Using `make install`, Lightspark is installed system-wide.
+Usage
+---------
 
 ### Browser plugin
 
@@ -90,7 +83,7 @@ Firefox is not able to deal very well with multiple plugins for the same MIME ty
 
 The command line version of Lightspark can play a local SWF file.
 
-Execution: ``lightspark file.swf``
+``lightspark file.swf``
 
 Type `lightspark` to see all command line options.
 

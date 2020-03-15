@@ -412,11 +412,11 @@ public:
 	bool isStatic;
 	bool isCloned;
 	/* returns whether this is this a method of a function */
-	bool isMethod() const { return inClass != NULL; }
+	bool isMethod() const { return inClass != nullptr; }
 	bool isConstructed() const { return constructIndicator; }
 	inline bool destruct() 
 	{
-		inClass=NULL;
+		inClass=nullptr;
 		isStatic=false;
 		isCloned=false;
 		functionname=0;
@@ -427,7 +427,7 @@ public:
 	}
 	IFunction* bind(_NR<ASObject> c)
 	{
-		IFunction* ret=NULL;
+		IFunction* ret=nullptr;
 		ret=clone();
 		ret->setClass(getClass());
 		ret->closure_this=c;
@@ -468,8 +468,8 @@ protected:
 	
 	// type of the return value;
 	Class_base* returnType;
-	Function(Class_base* c,as_atom_function v = NULL):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
-	method_info* getMethodInfo() const { return NULL; }
+	Function(Class_base* c,as_atom_function v = nullptr):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
+	method_info* getMethodInfo() const { return nullptr; }
 	IFunction* clone()
 	{
 		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
@@ -483,9 +483,16 @@ protected:
 			ret->functionname = functionname;
 			ret->objfreelist = objfreelist;
 			ret->resetCached();
+			ret->returnType = returnType;
 		}
 		return ret;
 	}
+	bool destruct() override
+	{
+		returnType=nullptr;
+		return IFunction::destruct();
+	}
+	
 public:
 	/**
 	 * This executes a C++ function.
@@ -506,7 +513,7 @@ public:
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
 	{
 		asAtom c = asAtomHandler::fromObject(target);
-		val_atom(ret,getSystemState(),c,NULL,0);
+		val_atom(ret,getSystemState(),c,nullptr,0);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType()
@@ -604,7 +611,7 @@ public:
 			return simpleGetterOrSetterName;
 		}
 		asAtom c = asAtomHandler::fromObject(target);
-		call(ret,c,NULL,0,true,false);
+		call(ret,c,nullptr,0,true,false);
 		return nullptr;
 	}
 	FORCE_INLINE multiname* getSimpleName() {
@@ -651,7 +658,7 @@ protected:
 	{
 		context.keepLocals=true;
 	}
-	method_info* getMethodInfo() const { return NULL; }
+	method_info* getMethodInfo() const { return nullptr; }
 	IFunction* clone()
 	{
 		// no cloning needed in AVM1
@@ -692,7 +699,7 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=NULL)
+	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=nullptr)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
@@ -728,7 +735,7 @@ public:
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		asAtom obj = asAtomHandler::fromObject(ret);
-		c->handleConstruction(obj,NULL,0,true);
+		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
 	static AVM1Function* getAVM1Function(SystemState* sys,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<ACTIONRECORD>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)

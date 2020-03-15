@@ -139,7 +139,7 @@ multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, C
 	return nullptr;
 }
 
-IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(NULL),isStatic(false),isCloned(false),functionname(0)
+IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),isCloned(false),functionname(0)
 {
 }
 
@@ -637,8 +637,8 @@ bool SyntheticFunction::destruct()
 	}
 	dynamicreferencedobjects.clear();
 	func_scope.reset();
-	val = NULL;
-	mi = NULL;
+	val = nullptr;
+	mi = nullptr;
 	return IFunction::destruct();
 }
 
@@ -1195,7 +1195,7 @@ void Class_base::destroy()
 	if(constructor)
 	{
 		constructor->decRef();
-		constructor=NULL;
+		constructor=nullptr;
 	}
 }
 
@@ -1205,8 +1205,8 @@ void Class_base::finalize()
 	super.reset();
 	prototype.reset();
 	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
-	constructor = NULL;
-	context = NULL;
+	constructor = nullptr;
+	context = nullptr;
 	length = 1;
 	class_index = -1;
 	isFinal = false;
@@ -1819,7 +1819,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 		{
 			if (asAtomHandler::as<IFunction>(obj->var)->closure_this)
 			{
-				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
+				LOG_CALL("class function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
 				ret = obj->var;
 			}
 			else

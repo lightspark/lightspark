@@ -1408,6 +1408,7 @@ bool MovieClip::destruct()
 	setFramesLoaded(0);
 	frames.emplace_back(Frame());
 	scenes.resize(1);
+	state.reset();
 	
 	enabled = true;
 	return Sprite::destruct();
@@ -2045,6 +2046,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
+	toAdd->setConstructIndicator();
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);

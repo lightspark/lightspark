@@ -1440,6 +1440,16 @@ public:
 	bool creatingframe;
 	bool frameadvanced;
 	RunState();
+	inline void reset()
+	{
+		last_FP = -1;
+		FP = 0;
+		next_FP = 0;
+		stop_FP = false;
+		explicit_FP = false;
+		creatingframe = false;
+		frameadvanced = false;
+	}
 };
 
 class ACTIONRECORD

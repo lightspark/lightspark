@@ -1966,7 +1966,19 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 		}
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
-	
+
+	pos = name.find(".");
+	if (pos != tiny_string::npos)
+	{
+		tiny_string path = name.lowercase();
+		DisplayObject* clip = AVM1GetClipFromPath(path);
+		if (clip && clip != this)
+		{
+			ret = asAtomHandler::fromObjectNoPrimitive(clip);
+			return ret;
+		}
+	}
+
 	if (getSystemState()->mainClip->version > 4)
 	{
 		multiname m(nullptr);

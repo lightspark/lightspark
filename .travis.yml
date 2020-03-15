@@ -189,6 +189,10 @@ matrix:
             - libglew-dev
             - libavcodec-dev
             - libavformat-dev
+            - libavresample-dev
+            - libcairo2-dev
+            - libpango1.0-dev
+            - libglibmm-2.4-dev
             - libpng-dev
             - libjpeg-dev
             - librtmp-dev
@@ -223,6 +227,10 @@ matrix:
             - libglew-dev
             - libavcodec-dev
             - libavformat-dev
+            - libavresample-dev
+            - libcairo2-dev
+            - libpango1.0-dev
+            - libglibmm-2.4-dev
             - libpng-dev
             - libjpeg-dev
             - librtmp-dev

@@ -2014,8 +2014,11 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 	{
 		tiny_string firstpart = name.substr_bytes(0,pos);
 		asAtom obj = AVM1GetVariable(firstpart);
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		ret = asAtomHandler::toObject(obj,getSystemState())->getVariableBindingValue(localname);
+		if (asAtomHandler::isValid(obj))
+		{
+			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+			ret = asAtomHandler::toObject(obj,getSystemState())->getVariableBindingValue(localname);
+		}
 	}
 	return ret;
 }

@@ -4814,7 +4814,10 @@ void MovieClip::advanceFrame()
 	}
 	if(!state.stop_FP && getFramesLoaded()>0)
 	{
-		state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
+		if (hasFinishedLoading())
+			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
+		else
+			state.next_FP=state.FP+1;
 		if(hasFinishedLoading() && state.FP == getFramesLoaded()-1)
 			state.next_FP = 0;
 	}

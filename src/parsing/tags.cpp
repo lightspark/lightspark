@@ -1568,8 +1568,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			ASObject* instance = placedTag->instance();
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
-			
-			toAdd=dynamic_cast<DisplayObject*>(instance);
+			if (instance->is<BitmapData>())
+				toAdd =Class<Bitmap>::getInstanceS(instance->getSystemState(),_R<BitmapData>(instance->as<BitmapData>()));
+			else
+				toAdd=dynamic_cast<DisplayObject*>(instance);
 			if(!toAdd && instance)
 			{
 				//We ignore weird tags. I have seen ASFont

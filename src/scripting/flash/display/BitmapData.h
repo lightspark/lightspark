@@ -88,7 +88,8 @@ public:
 	ASFUNCTION_ATOM(perlinNoise);
 	ASFUNCTION_ATOM(threshold);
 	ASFUNCTION_ATOM(merge);
+	ASFUNCTION_ATOM(paletteMap);
 };
 
-};
+}
 #endif /* SCRIPTING_FLASH_DISPLAY_BITMAPDATA_H */

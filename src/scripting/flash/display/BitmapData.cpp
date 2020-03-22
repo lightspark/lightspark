@@ -97,6 +97,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("perlinNoise","",Class<IFunction>::getFunction(c->getSystemState(),perlinNoise),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("threshold","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("merge","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("paletteMap","",Class<IFunction>::getFunction(c->getSystemState(),paletteMap),NORMAL_METHOD,true);
 	// properties
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
@@ -1078,5 +1079,19 @@ ASFUNCTIONBODY_ATOM(BitmapData,merge)
 
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.merge not implemented");
 }
+ASFUNCTIONBODY_ATOM(BitmapData,paletteMap)
+{
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 
+	_NR<BitmapData> sourceBitmapData;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	_NR<Array> redArray;
+	_NR<Array> greenArray;
+	_NR<Array> blueArray;
+	_NR<Array> alphaArray;
+	ARG_UNPACK_ATOM(sourceBitmapData)(sourceRect) (destPoint) (redArray, NullRef) (greenArray, NullRef) (blueArray, NullRef) (alphaArray, NullRef);
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.paletteMap not implemented");
+}
 

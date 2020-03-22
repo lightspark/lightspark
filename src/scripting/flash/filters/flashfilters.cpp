@@ -683,3 +683,11 @@ void DisplacementMapFilterMode::sinit(Class_base* c)
 	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ignore"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"wrap"),DECLARED_TRAIT);
 }
+
+void BitmapFilterType::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
+	c->setVariableAtomByQName("FULL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"full"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("INNER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"inner"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("OUTER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"outer"),DECLARED_TRAIT);
+}

@@ -498,6 +498,7 @@ void ABCVm::registerClasses()
 
 	builtin->registerBuiltin("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapFilterQuality","flash.filters",Class<BitmapFilterQuality>::getRef(m_sys));
+	builtin->registerBuiltin("BitmapFilterType","flash.filters",Class<BitmapFilterType>::getRef(m_sys));
 	builtin->registerBuiltin("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef(m_sys));
 	builtin->registerBuiltin("GlowFilter","flash.filters",Class<GlowFilter>::getRef(m_sys));
 	builtin->registerBuiltin("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef(m_sys));

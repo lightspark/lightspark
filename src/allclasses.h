@@ -193,6 +193,7 @@ REGISTER_CLASS_NAME(FileStream,"flash.filesystem")
 //Filters
 REGISTER_CLASS_NAME(BitmapFilter,"flash.filters")
 REGISTER_CLASS_NAME(BitmapFilterQuality,"flash.filters")
+REGISTER_CLASS_NAME(BitmapFilterType,"flash.filters")
 REGISTER_CLASS_NAME(DropShadowFilter,"flash.filters")
 REGISTER_CLASS_NAME(GlowFilter,"flash.filters")
 REGISTER_CLASS_NAME(GradientGlowFilter,"flash.filters")

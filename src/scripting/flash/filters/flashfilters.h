@@ -227,6 +227,14 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class BitmapFilterType: public ASObject
+{
+public:
+	BitmapFilterType(Class_base* c):ASObject(c) {}
+	static void sinit(Class_base* c);
 };
+
+
+}
 
 #endif /* SCRIPTING_FLASH_FILTERS_FLASHFILTERS_H */

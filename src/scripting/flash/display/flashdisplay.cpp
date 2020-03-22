@@ -1865,24 +1865,24 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	if (!this->isOnStage())
 		return;
 	std::map<uint32_t,asAtom> m;
-	for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
-	{
-		if (e->type == "complete" && it->EventFlags.ClipEventLoad)
-		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
-		}
-		if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
-		{
-			if (!this->state.explicit_FP)
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
-		}
-		if (e->type == "load" && it->EventFlags.ClipEventLoad)
-		{
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
-		}
-	}
 	if (dispatcher == this)
 	{
+		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
+		{
+			if (e->type == "complete" && it->EventFlags.ClipEventLoad)
+			{
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+			}
+			if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
+			{
+				if (!this->state.explicit_FP)
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+			}
+			if (e->type == "load" && it->EventFlags.ClipEventLoad)
+			{
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+			}
+		}
 		if (e->type == "enterFrame")
 		{
 			if (!this->state.explicit_FP)

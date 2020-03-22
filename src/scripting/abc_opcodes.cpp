@@ -1692,6 +1692,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			name->resetNameIfObject();
 			return false;
 		}
+		ASATOM_INCREF(o);
 	}
 	else
 		// TODO can we cache objects found in the scope_stack? 

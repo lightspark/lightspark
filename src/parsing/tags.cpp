@@ -1546,7 +1546,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 
 		if(placedTag==nullptr)
+		{
+			LOG(LOG_ERROR,"no tag to place:"<<CharacterId);
 			throw RunTimeException("No tag to place");
+		}
 
 		placedTag->loadedFrom->checkBinding(placedTag);
 
@@ -1736,7 +1739,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	PlaceFlagHasFilterList=UB(1,bs);
 
 	in >> Depth;
-	if(PlaceFlagHasClassName || (PlaceFlagHasImage && PlaceFlagHasCharacter))
+	if(PlaceFlagHasClassName)// || (PlaceFlagHasImage && PlaceFlagHasCharacter)) // spec is wrong here
 	{
 		in >> ClassName;
 		LOG(LOG_NOT_IMPLEMENTED,"ClassName in PlaceObject3 not yet supported:"<<ClassName);

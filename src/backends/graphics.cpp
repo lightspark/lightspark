@@ -225,14 +225,26 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			if (!style.Matrix.isInvertible())
 				return NULL;
 
-			//Do an explicit cast, the data will not be modified
-			cairo_surface_t* surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
-								CAIRO_FORMAT_ARGB32,
-								bm->getWidth(),
-								bm->getHeight(),
-								cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
+			cairo_surface_t* surface = nullptr;
 			if (colortransform)
-				LOG(LOG_NOT_IMPLEMENTED,"apply colortransform to bitmap fillstyle");
+			{
+				//Do an explicit cast, the data will not be modified
+				surface = cairo_image_surface_create_for_data (colortransform->applyTransformation(bm.getPtr()),
+									CAIRO_FORMAT_ARGB32,
+									bm->getWidth(),
+									bm->getHeight(),
+									cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
+				
+			}
+			else
+			{
+				//Do an explicit cast, the data will not be modified
+				surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
+									CAIRO_FORMAT_ARGB32,
+									bm->getWidth(),
+									bm->getHeight(),
+									cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
+			}
 
 			pattern = cairo_pattern_create_for_surface(surface);
 			cairo_surface_destroy(surface);

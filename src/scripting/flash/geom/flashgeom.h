@@ -25,6 +25,7 @@
 
 namespace lightspark
 {
+class BitmapContainer;
 
 class Rectangle: public ASObject
 {
@@ -34,7 +35,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	const RECT getRect() const;
-	bool destruct();
+	bool destruct() override;
 	// properties
 	ASFUNCTION_ATOM(_getBottom);
 	ASFUNCTION_ATOM(_setBottom);
@@ -116,13 +117,18 @@ protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
-	ColorTransform(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM){}
+	ColorTransform(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
+	  ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
+	  ,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
+	{}
 	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
 	// returning r,g,b,a values are between 0.0 and 1.0
 	void applyTransformation(const RGBA &color, float& r, float& g, float& b, float &a);
+	uint8_t* applyTransformation(BitmapContainer* bm);
 	void setProperties(const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(setColor);
 	ASFUNCTION_ATOM(getColor);

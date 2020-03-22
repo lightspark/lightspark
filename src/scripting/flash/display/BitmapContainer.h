@@ -41,11 +41,18 @@ protected:
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. */
 	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
+	// buffer to contain the 
+	std::vector<uint8_t> data_colortransformed;
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
 public:
 	BitmapContainer(MemoryAccount* m);
 	uint8_t* getData() { return &data[0]; }
 	const uint8_t* getData() const { return &data[0]; }
+	uint8_t* getDataColorTransformed() 
+	{
+		data_colortransformed.reserve(data.size());
+		return &data_colortransformed[0];
+	}
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format, bool frompng = false);
 	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
@@ -78,5 +85,5 @@ public:
 	void clear();
 };
 
-};
+}
 #endif /* SCRIPTING_FLASH_DISPLAY_BITMAPCONTAINER_H */

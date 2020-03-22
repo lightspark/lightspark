@@ -508,6 +508,34 @@ void ColorTransform::applyTransformation(const RGBA& color, float& r, float& g, 
 	b = max(0,min(255,(((int)color.Blue  * (int) blueMultiplier)/256 + (int) blueOffset)))/256.0;
 }
 
+uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
+{
+	if (redMultiplier==1.0 &&
+		greenMultiplier==1.0 &&
+		blueMultiplier==1.0 &&
+		alphaMultiplier==1.0 &&
+		redOffset==0.0 &&
+		greenOffset==0.0 &&
+		blueOffset==0.0 &&
+		alphaOffset==0.0)
+		return (uint8_t*)bm->getData();
+
+	uint32_t* src = (uint32_t*)bm->getData();
+	uint32_t* dst = (uint32_t*)bm->getDataColorTransformed();
+	uint32_t size = bm->getWidth()*bm->getHeight();
+	for (uint32_t i = 0; i < size; i++)
+	{
+		uint32_t color = *src;
+		*dst =  max(0,min(255,(((int)((color>>24)&0xff) * (int)alphaMultiplier) + (int)alphaOffset)))<<24 |
+				max(0,min(255,(((int)((color>>16)&0xff) * (int)  redMultiplier) + (int)  redOffset)))<<16 |
+				max(0,min(255,(((int)((color>> 8)&0xff) * (int)greenMultiplier) + (int)greenOffset)))<<8 |
+				max(0,min(255,(((int)((color    )&0xff) * (int) blueMultiplier) + (int) blueOffset)));
+		dst++;
+		src++;
+	}
+	return (uint8_t*)bm->getDataColorTransformed();
+}
+
 void ColorTransform::setProperties(const CXFORMWITHALPHA &cx)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
@@ -548,6 +576,19 @@ void ColorTransform::sinit(Class_base* c)
 
 void ColorTransform::buildTraits(ASObject* o)
 {
+}
+
+bool ColorTransform::destruct()
+{
+	redMultiplier=1.0;
+	greenMultiplier=1.0;
+	blueMultiplier=1.0;
+	alphaMultiplier=1.0;
+	redOffset=0.0;
+	greenOffset=0.0;
+	blueOffset=0.0;
+	alphaOffset=0.0;
+	return ASObject::destruct();
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,_constructor)
@@ -729,7 +770,6 @@ ASFUNCTIONBODY_ATOM(ColorTransform,concat)
 	assert_and_throw(argslen==1);
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
 	ColorTransform* ct=asAtomHandler::as<ColorTransform>(args[0]);
-
 	th->redMultiplier *= ct->redMultiplier;
 	th->redOffset = th->redOffset * ct->redMultiplier + ct->redOffset;
 	th->greenMultiplier *= ct->greenMultiplier;

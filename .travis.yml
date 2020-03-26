@@ -163,6 +163,8 @@ matrix:
                  libgnutls28-dev
                  liblzma-dev && cd /root/src && cmake . && make'
     - name: Ubuntu 16.04
+    - name: Debug Build (Ubuntu 16.04) 
+      script: cmake -DCMAKE_BUILD_TYPE=Debug . && make
     - name: Clang 8.0
       env:
         - MATRIX_EVAL="CC=clang-8 CXX=clang++-8"

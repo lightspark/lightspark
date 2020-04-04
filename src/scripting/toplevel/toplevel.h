@@ -639,7 +639,7 @@ class AVM1Function : public IFunction
 protected:
 	DisplayObject* clip;
 	AVM1context context;
-	std::vector<ACTIONRECORD> actionlist;
+	std::vector<uint8_t> actionlist;
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
 	std::map<uint32_t, asAtom> scopevariables;
@@ -652,7 +652,7 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<ACTIONRECORD>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
+	AVM1Function(Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
 		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),context(*ctx),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
 		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) 
 	{
@@ -738,7 +738,7 @@ public:
 		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(SystemState* sys,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<ACTIONRECORD>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
+	static AVM1Function* getAVM1Function(SystemState* sys,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);

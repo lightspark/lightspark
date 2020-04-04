@@ -116,7 +116,7 @@ public:
 class AVM1ActionTag: public Tag
 {
 private:
-	std::vector<ACTIONRECORD> actions;
+	std::vector<uint8_t> actions;
 	uint32_t startactionpos;
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
@@ -128,7 +128,7 @@ class AVM1InitActionTag: public Tag
 {
 private:
 	UI16_SWF SpriteId;
-	std::vector<ACTIONRECORD> actions;
+	std::vector<uint8_t> actions;
 	uint32_t startactionpos;
 public:
 	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);

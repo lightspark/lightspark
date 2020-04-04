@@ -1924,38 +1924,29 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	{
 		BUTTONCONDACTION a;
 		a.CondOverDownToOverUp=true; // clicked indicator
-		while (len > 0)
-		{
-			ACTIONRECORD r;
-			in>>r;
-			a.actions.push_back(r);
-			len -= r.getFullLength();
-			if (len == 0)
-				break;
-			if (len < 0)
-				throw ParseException("Malformed SWF file, DefineButtonTag: invalid length of ACTIONRECORD");
-		}
+		a.actions.resize(len);
+		in.read((char*)a.actions.data(),len);
 		condactions.push_back(a);
-		if (len > 0)
-		{
-			LOG(LOG_ERROR,"DefineButtonTag "<<ButtonId<<": bytes available after reading all actions:"<< len);
-			ignore(in,len);
-		}
 	}
 	else if(ActionOffset)
 	{
 		if (ActionOffset != realactionoffset)
 			throw ParseException("Malformed SWF file, DefineButtonTag: invalid ActionOffset");
-		pos = in.tellg();
 		while (true)
 		{
+			pos = in.tellg();
 			BUTTONCONDACTION r;
 			in>>r;
+			len -= (((int)in.tellg())-pos);
+			pos = in.tellg();
+			int codesize = (r.CondActionSize ? r.CondActionSize-4 : len);
+			r.actions.resize(codesize);
+			in.read((char*)r.actions.data(),codesize);
+			len -= (((int)in.tellg())-pos);
 			condactions.push_back(r);
 			if (r.CondActionSize == 0)
 				break;
 		}
-		len -= (((int)in.tellg())-pos);
 		if (len > 0)
 		{
 			LOG(LOG_ERROR,"DefineButtonTag "<<ButtonId<<": bytes available after reading all BUTTONCONDACTION entries:"<<len);
@@ -2591,49 +2582,13 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 		return; 
 	}
 	startactionpos=0;
+	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes : 0)+1,0);
 	if (datatag)
 	{
-		string cData((const char*)datatag->bytes,datatag->numbytes);
-		istringstream bytestream(cData);
-		uint32_t bytesread =0;
-		while (true)
-		{
-			ACTIONRECORD r;
-			bytestream>>r;
-			actions.push_back(r);
-			startactionpos++;
-			bytesread += r.getFullLength();
-			if (bytesread > datatag->numbytes)
-				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
-			if (bytesread == datatag->numbytes)
-				break;
-		}
-		// add nop actions for skipping the header of this tag
-		int headerbytes = 1 + h.getHeaderSize();
-		for (int i = 0; i < headerbytes ; i++)
-		{
-			ACTIONRECORD r;
-			actions.push_back(r);
-			startactionpos++;
-		}
+		startactionpos=datatag->numbytes;
+		memcpy(actions.data(),datatag->bytes,datatag->numbytes);
 	}
-	int32_t len = int(Header.getLength());
-	while (true)
-	{
-		ACTIONRECORD r;
-		s>>r;
-		actions.push_back(r);
-		len -= r.getFullLength();
-		if (len < 0)
-			throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
-		if (len == 0)
-			break;
-	}
-	if (len > 0)
-	{
-		LOG(LOG_ERROR,"DoActionTag: bytes available after reading all actions:"<<len);
-		ignore(s,len);
-	}
+	s.read((char*)actions.data()+startactionpos,Header.getLength());
 }
 
 void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
@@ -2651,50 +2606,14 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 		return; 
 	}
 	startactionpos=0;
+	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes : 0)+1,0);
 	if (datatag)
 	{
-		string cData((const char*)datatag->bytes,datatag->numbytes);
-		istringstream bytestream(cData);
-		uint32_t bytesread =0;
-		while (true)
-		{
-			ACTIONRECORD r;
-			bytestream>>r;
-			actions.push_back(r);
-			startactionpos++;
-			bytesread += r.getFullLength();
-			if (bytesread > datatag->numbytes)
-				throw ParseException("Malformed SWF file, DoActionTag: invalid length of ACTIONRECORD");
-			if (bytesread == datatag->numbytes)
-				break;
-		}
-		// add nop actions for skipping the header if this tag
-		int headerbytes = 1 + h.getHeaderSize();
-		for (int i = 0; i < headerbytes ; i++)
-		{
-			ACTIONRECORD r;
-			actions.push_back(r);
-			startactionpos++;
-		}
+		startactionpos=datatag->numbytes;
+		memcpy(actions.data(),datatag->bytes,datatag->numbytes);
 	}
 	s >> SpriteId;
-	int32_t len = int(Header.getLength()-2);
-	while (len > 0)
-	{
-		ACTIONRECORD r;
-		s>>r;
-		actions.push_back(r);
-		len -= r.getFullLength();
-		if (len == 0)
-			break;
-		if (len < 0)
-			throw ParseException("Malformed SWF file, DoInitActionTag: invalid length of ACTIONRECORD");
-	}
-	if (len > 0)
-	{
-		LOG(LOG_ERROR,"DoInitActionTag: bytes available after reading all actions:"<<len);
-		ignore(s,len);
-	}
+	s.read((char*)actions.data()+startactionpos,Header.getLength()-2);
 }
 
 void AVM1InitActionTag::execute(MovieClip* clip, AVM1context *context)
@@ -2708,8 +2627,6 @@ AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
 	numbytes = h.getLength();
 	if (numbytes)
 	{
-		// TODO: in test files data starts with 0xfc which is an invalid actionscript tag, so we just skip it for now
-		numbytes--;
 		uint8_t b;
 		in>> b;
 		bytes = new uint8_t[numbytes];

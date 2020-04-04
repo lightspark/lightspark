@@ -47,18 +47,8 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
-int ACTIONRECORD::getFullLength()
-{
-	int res = actionCode < 0x80 ? 1 : Length+3;
-	if (actionCode != 0x96) // ActionPush fills data_actionlist, but not from stream
-	{
-		for (auto it = data_actionlist.begin(); it != data_actionlist.end(); it++)
-			res += it->getFullLength();
-	}
-	return res;
-}
 
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, uint32_t startactionpos,std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
+void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos,std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal)
 {
 	Log::calls_indent++;
@@ -74,7 +64,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	asAtom* scopestack = g_newa(asAtom, maxdepth);
 	scopestack[0] = obj ? *obj : asAtomHandler::fromObject(clip);
 	ASATOM_INCREF(scopestack[0]);
-	std::vector<ACTIONRECORD>::iterator* scopestackstop = g_newa(std::vector<ACTIONRECORD>::iterator, maxdepth);
+	std::vector<uint8_t>::iterator* scopestackstop = g_newa(std::vector<uint8_t>::iterator, maxdepth);
 	scopestackstop[0] = actionlist.end();
 	uint32_t currRegister = 1; // spec is not clear, but gnash starts at register 1
 	if (!suppressThis)
@@ -152,7 +142,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	}
 
 	DisplayObject *originalclip = clip;
-	for (auto it = actionlist.begin()+startactionpos; it != actionlist.end();it++)
+	auto it = actionlist.begin()+startactionpos;
+	while (it != actionlist.end())
 	{
 		if (curdepth > 0 && it == scopestackstop[curdepth])
 		{
@@ -163,18 +154,22 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			Log::calls_indent--;
 		}
 		if (!clip
-				&& it->actionCode != 0x20 // ActionSetTarget2
-				&& it->actionCode != 0x8b // ActionSetTarget
+				&& *it != 0x20 // ActionSetTarget2
+				&& *it != 0x8b // ActionSetTarget
 				)
 		{
 			// we are in a target that was not found during ActionSetTarget(2), so these actions are ignored
 			continue;
 		}
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<(it-actionlist.begin())<< " action code:"<<hex<<(int)it->actionCode);
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<(it-actionlist.begin())<< " action code:"<<hex<<(int)*it);
+		uint8_t opcode = *it++;
+		if (opcode > 0x80)
+			it+=2; // skip length
 		
-		switch (it->actionCode)
+		switch (opcode)
 		{
 			case 0x00:
+				it = actionlist.end(); // force quit loop;
 				break;
 			case 0x04: // ActionNextFrame
 			{
@@ -286,7 +281,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				asAtom ab = PopStack(stack);
 				number_t a = asAtomHandler::AVM1toNumber(aa,clip->getSystemState()->mainClip->version);
 				number_t b = asAtomHandler::AVM1toNumber(ab,clip->getSystemState()->mainClip->version);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEquals "<<b<<"=="<<a);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEquals "<<b<<"=="<<a<<" "<<(b==a));
 				PushStack(stack,asAtomHandler::fromBool(b==a));
 				break;
 			}
@@ -1510,29 +1505,42 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionGotoFrame "<<clip->toDebugString());
 					break;
 				}
-				uint32_t frame = it->data_uint16;
+				uint32_t frame = uint32_t(*it++) | ((*it++)<<8);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,true);
 				break;
 			}
 			case 0x83: // ActionGetURL
 			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL "<<it->data_string[0]<<" "<<it->data_string[1]);
-				clip->getSystemState()->openPageInBrowser(it->data_string[0],it->data_string[1]);
+				tiny_string s1((const char*)&(*it));
+				it += s1.numBytes()+1;
+				tiny_string s2((const char*)&(*it));
+				it += s2.numBytes()+1;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL "<<s1<<" "<<s2);
+				clip->getSystemState()->openPageInBrowser(s1,s2);
 				break;
 			}
 			case 0x87: // ActionStoreRegister
 			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)it->data_byte);
 				asAtom a = PeekStack(stack);
 				ASATOM_INCREF(a);
-				registers[it->data_byte] = a;
+				uint8_t num = *it++;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)num);
+				registers[num] = a;
 				break;
 			}
 			case 0x88: // ActionConstantPool
 			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionConstantPool "<<it->data_uint16);
-				context->AVM1SetConstants(clip->getSystemState(),it->data_string);
+				uint32_t c = uint32_t(*it++) | ((*it++)<<8);
+				vector<tiny_string> stringlist;
+				for (uint32_t i = 0; i < c; i++)
+				{
+					tiny_string s((const char*)&(*it));
+					it += s.numBytes()+1;
+					stringlist.push_back((tiny_string&)s);
+				}
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionConstantPool "<<c);
+				context->AVM1SetConstants(clip->getSystemState(),stringlist);
 				break;
 			}
 			case 0x8a: // ActionWaitForFrame
@@ -1542,25 +1550,32 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionWaitForFrame "<<clip->toDebugString());
 					break;
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWaitForFrame "<<it->data_uint16<<"/"<<clip->as<MovieClip>()->getFramesLoaded()<<" skip "<<(uint32_t)it->data_byte);
-				if (clip->as<MovieClip>()->getFramesLoaded() <= it->data_uint16 && !clip->as<MovieClip>()->hasFinishedLoading())
+				uint32_t frame = uint32_t(*it++) | ((*it++)<<8);
+				uint32_t skipcount = (uint32_t)(*it++);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWaitForFrame "<<frame<<"/"<<clip->as<MovieClip>()->getFramesLoaded()<<" skip "<<skipcount);
+				if (clip->as<MovieClip>()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
 				{
 					// frame not yet loaded, skip actions
-					uint32_t skipcount = (uint32_t)it->data_byte;
 					while (skipcount && it != actionlist.end())
 					{
 						it++;
+						if (*it > 0x80)
+						{
+							uint32_t c = uint32_t(*it++) | ((*it++)<<8);
+							it+=c;
+						}
 						skipcount--;
 					}
 				}
 				break;
 			}
 			case 0x08: // ActionToggleQuality
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF3 DoActionTag ActionToggleQuality "<<hex<<(int)it->actionCode);
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF3 DoActionTag ActionToggleQuality "<<hex<<(int)*it);
 				break;
 			case 0x8b: // ActionSetTarget
 			{
-				tiny_string s(it->data_string[0].raw_buf(),true);
+				tiny_string s((const char*)&(*it));
+				it += s.numBytes()+1;
 				if (!clip)
 				{
 					LOG_CALL("AVM1: ActionSetTarget: setting target from undefined value to "<<s);
@@ -1586,30 +1601,54 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionGotoLabel "<<clip->toDebugString());
 					break;
 				}
-				tiny_string s(it->data_string[0].raw_buf(),true);
+				tiny_string s((const char*)&(*it));
+				it += s.numBytes()+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoLabel "<<s);
 				clip->as<MovieClip>()->AVM1gotoFrameLabel(s);
 				break;
 			}
 			case 0x8e: // ActionDefineFunction2
 			{
+				tiny_string name((const char*)&(*it));
+				it += name.numBytes()+1;
+				uint32_t paramcount = uint32_t(*it++) | ((*it++)<<8);
+				*it++; //register count not used
+				uint8_t flags = *it++;
+				bool flag1 = flags&0x80;//PreloadParent
+				bool flag2 = flags&0x40;//PreloadRoot
+				bool flag3 = flags&0x20;//SuppressSuper
+				bool flag4 = flags&0x10;//PreloadSuper
+				bool flag5 = flags&0x08;//SuppressArguments
+				bool flag6 = flags&0x04;//PreloadArguments
+				bool flag7 = flags&0x02;//SuppressThis
+				bool flag8 = flags&0x01;//PreloadThis
+				bool flag9 = (*it++)&0x01;//PreloadGlobal
 				std::vector<uint32_t> paramnames;
-				for (uint32_t i = 1; i < it->data_string.size(); i++)
+				std::vector<uint8_t> registernumber;
+				for (uint16_t i=0; i < paramcount; i++)
 				{
-					paramnames.push_back(clip->getSystemState()->getUniqueStringId(it->data_string[i].lowercase()));
+					uint8_t regnum = *it++;
+					tiny_string n((const char*)&(*it));
+					it += n.numBytes()+1;
+					paramnames.push_back(clip->getSystemState()->getUniqueStringId(n.lowercase()));
+					registernumber.push_back(regnum);
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<it->data_string.front()<<" "<<it->data_string.size()-1<<" "<<it->data_flag1<<it->data_flag2<<it->data_flag3<<it->data_flag4<<it->data_flag5<<it->data_flag6<<it->data_flag7<<it->data_flag8<<it->data_flag9);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist,locals,it->data_registernumber,it->data_flag1, it->data_flag2, it->data_flag3, it->data_flag4, it->data_flag5, it->data_flag6, it->data_flag7, it->data_flag8, it->data_flag9);
+				uint32_t codesize = uint32_t(*it++) | ((*it++)<<8);
+				vector<uint8_t> code;
+				code.assign(it,it+codesize);
+				it += codesize;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,code,locals,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()));
-				if (it->data_string.front() == "")
+				if (name == "")
 				{
 					asAtom a = asAtomHandler::fromObject(f);
 					PushStack(stack,a);
 				}
 				else
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front().lowercase());
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.lowercase());
 					clip->AVM1SetFunction(nameID,_MR(f));
 				}
 				break;
@@ -1618,14 +1657,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			{
 				asAtom obj = PopStack(stack);
 				auto itend = it;
-				int skip = (int)it->data_uint16;
-				while (skip > 0)
-				{
-					itend++;
-					if (itend == actionlist.end())
-						itend = actionlist.begin();
-					skip -= itend->getFullLength();
-				}
+				uint32_t codesize = uint32_t(*it++) | ((*it++)<<8);
+				itend+=codesize;
 				itend++;
 				if (curdepth >= maxdepth)
 				{
@@ -1634,7 +1667,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					break;
 				}
 				Log::calls_indent++;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<it->data_uint16<<" "<<asAtomHandler::toDebugString(obj));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<codesize<<" "<<asAtomHandler::toDebugString(obj));
 				++curdepth;
 				if (asAtomHandler::is<DisplayObject>(obj))
 					clip = asAtomHandler::as<DisplayObject>(obj);
@@ -1644,21 +1677,30 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x96: // ActionPush
 			{
-				auto it2 = it->data_actionlist.begin();
-				while (it2 != it->data_actionlist.end())
+				uint32_t len = ((*(it-1))<<8) | (*(it-2));
+				while (len > 0)
 				{
-					switch (it2->data_byte) // type
+					uint8_t type = *it++;
+					len--;
+					switch (type)
 					{
 						case 0:
 						{
-							asAtom a = asAtomHandler::fromStringID(clip->getSystemState()->getUniqueStringId(it2->data_string[0]));
+							tiny_string val((const char*)&(*it));
+							len -= val.numBytes()+1;
+							it += val.numBytes()+1;
+							asAtom a = asAtomHandler::fromStringID(clip->getSystemState()->getUniqueStringId(val));
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 0 "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						case 1:
 						{
-							asAtom a = asAtomHandler::fromNumber(clip->getSystemState(),it2->data_float,false);
+							FLOAT f;
+							f.read((const uint8_t*)&(*it));
+							it+=4;
+							len-=4;
+							asAtom a = asAtomHandler::fromNumber(clip->getSystemState(),f,false);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 1 "<<asAtomHandler::toDebugString(a));
 							break;
@@ -1673,80 +1715,76 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							break;
 						case 4:
 						{
-							if (it->data_uint16 > 255)
-								throw RunTimeException("AVM1: invalid register number");
-							asAtom a = registers[it2->data_uint16];
+							uint32_t reg = *it++;
+							len--;
+							asAtom a = registers[reg];
 							PushStack(stack,a);
-							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 4 register "<<it2->data_uint16<<" "<<asAtomHandler::toDebugString(a));
+							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 4 register "<<reg<<" "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						case 5:
 						{
-							asAtom a = asAtomHandler::fromBool((bool)it2->data_uint16);
+							asAtom a = asAtomHandler::fromBool((bool)*it++);
+							len--;
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 5 "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						case 6:
 						{
-							asAtom a = asAtomHandler::fromNumber(clip->getSystemState(),it2->data_double,false);
+							DOUBLE d;
+							d.read((const uint8_t*)&(*it));
+							it+=8;
+							len-=8;
+							asAtom a = asAtomHandler::fromNumber(clip->getSystemState(),d,false);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 6 "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						case 7:
 						{
-							asAtom a = asAtomHandler::fromInt((int32_t)it2->data_integer);
+							uint32_t d=GUINT32_FROM_LE(*(uint32_t*)&(*it));
+							it+=4;
+							len-=4;
+							asAtom a = asAtomHandler::fromInt((int32_t)d);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 7 "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						case 8:
+						{
+							uint32_t index = (*it++);
+							len--;
+							asAtom a = context->AVM1GetConstant(index);
+							PushStack(stack,a);
+							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 8 "<<index<<" "<<asAtomHandler::toDebugString(a));
+							break;
+						}
 						case 9:
 						{
-							asAtom a = context->AVM1GetConstant(it2->data_uint16);
+							uint32_t index = uint32_t(*it++) | ((*it++)<<8);
+							len-=2;
+							asAtom a = context->AVM1GetConstant(index);
 							PushStack(stack,a);
-							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 8/9 "<<it2->data_uint16<<" "<<asAtomHandler::toDebugString(a));
+							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 9 "<<index<<" "<<asAtomHandler::toDebugString(a));
 							break;
 						}
 						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF4 DoActionTag push type "<<(int)it2->data_byte);
+							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF4 DoActionTag push type "<<(int)type);
 							break;
 					}
-					it2++;
 				}
 				break;
 			}
 			case 0x99: // ActionJump
 			{
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<it->data_int16<<" "<< (it-actionlist.begin()));
-				int skip = it->data_int16;
-				int skip1 = it->data_int16;
-				if (skip < 0)
+				int32_t skip = int16_t((*it++) | ((*it++)<<8));
+				if ((skip < 0 && it-actionlist.begin() < -skip) || (skip >=0 && skip + (it-actionlist.begin()) > actionlist.size()))
 				{
-					while (skip < 0)
-					{
-						skip += it->getFullLength();
-						if (it == actionlist.begin())
-						{
-							it = actionlist.end();
-							it--;
-							LOG(LOG_ERROR,"skip to large:"<<skip1<<" "<<hex<<(int)it->actionCode);
-						}
-						else
-							it--;
-					}
+					LOG(LOG_ERROR,"ActionJump: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
 				}
-				else
-				{
-					while (skip > 0)
-					{
-						it++;
-						if (it == actionlist.end())
-							it = actionlist.begin();
-						skip -= it->getFullLength();
-					}
-				}
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<skip<<" "<< (it-actionlist.begin()));
+				it+= skip;
 				break;
 			}
 			case 0x9a: // ActionGetURL2
@@ -1755,11 +1793,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				asAtom au=PopStack(stack);
 				tiny_string target = asAtomHandler::toString(at,clip->getSystemState());
 				tiny_string url = asAtomHandler::toString(au,clip->getSystemState());
-				if (it->data_flag1) //LoadTargetFlag
+				uint8_t b = *it++;
+				uint8_t method = b&0xc0>>6;
+				bool loadtarget = b&0x02;
+				bool loadvars = b&0x01;
+
+				if (loadtarget) //LoadTargetFlag
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 with LoadTargetFlag");
-				if (it->data_flag2) //LoadVariablesFlag
+				if (loadvars) //LoadVariablesFlag
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 with LoadVariablesFlag");
-				if (it->data_byte) //SendVarsMethod
+				if (method) //SendVarsMethod
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 with SendVarsMethod");
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL2 "<<url<<" "<<target);
 				clip->getSystemState()->openPageInBrowser(url,target);
@@ -1767,54 +1810,48 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x9b: // ActionDefineFunction
 			{
+				tiny_string name((const char*)&(*it));
+				it += name.numBytes()+1;
+				uint32_t paramcount = uint32_t(*it++) | ((*it++)<<8);
 				std::vector<uint32_t> paramnames;
-				for (uint32_t i = 1; i < it->data_string.size(); i++)
+				for (uint16_t i=0; i < paramcount; i++)
 				{
-					paramnames.push_back(clip->getSystemState()->getUniqueStringId(it->data_string[i].lowercase()));
+					tiny_string n((const char*)&(*it));
+					it += n.numBytes()+1;
+					paramnames.push_back(clip->getSystemState()->getUniqueStringId(n.lowercase()));
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction "<<it->data_string.front()<<" "<<it->data_string.size()-1);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,it->data_actionlist,locals);
+				uint32_t codesize = uint32_t(*it++) | ((*it++)<<8);
+				vector<uint8_t> code;
+				code.assign(it,it+codesize);
+				it += codesize;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction "<<name<<" "<<paramcount);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(clip->getSystemState(),clip,context,paramnames,code,locals);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()));
-				if (it->data_string.front() == "")
+				if (name == "")
 				{
 					asAtom a = asAtomHandler::fromObject(f);
 					PushStack(stack,a);
 				}
 				else
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(it->data_string.front().lowercase());
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.lowercase());
 					clip->AVM1SetFunction(nameID,_MR(f));
 				}
 				break;
 			}
 			case 0x9d: // ActionIf
 			{
+				int32_t skip = int16_t((*it++) | ((*it++)<<8));
 				asAtom a = PopStack(stack);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIf "<<asAtomHandler::toDebugString(a)<<" "<<it->data_int16);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIf "<<asAtomHandler::toDebugString(a)<<" "<<skip);
 				if (asAtomHandler::toInt(a))
 				{
-					int skip = it->data_int16;
-					if (skip < 0)
+					if ((skip < 0 && it-actionlist.begin() < -skip) || (skip >=0 && skip + (it-actionlist.begin()) > (int)actionlist.size()))
 					{
-						while (skip < 0)
-						{
-							skip += it->getFullLength();
-							if (it == actionlist.begin())
-								it = actionlist.end();
-							it--;
-						}
+						LOG(LOG_ERROR,"ActionIf: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
 					}
-					else
-					{
-						while (skip > 0)
-						{
-							it++;
-							if (it == actionlist.end())
-								it = ++actionlist.begin();
-							skip -= it->getFullLength();
-						}
-					}
+					it += skip;
 				}
 				break;
 			}
@@ -1842,6 +1879,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x9f: // ActionGotoFrame2
 			{
+				
+				bool biasflag = (*it)&0x02;
+				bool playflag = (*it)&0x01;
+				it++;
+				uint32_t biasframe = 0;
+				if (biasflag)
+					biasframe = uint32_t(*it++) | ((*it++)<<8);
+				
 				asAtom a = PopStack(stack);
 				if (!clip->is<MovieClip>())
 				{
@@ -1851,7 +1896,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				if (asAtomHandler::isString(a))
 				{
 					tiny_string s = asAtomHandler::toString(a,clip->getSystemState());
-					if (it->data_uint16)
+					if (biasframe)
 						LOG(LOG_NOT_IMPLEMENTED,"AVM1: GotFrame2 with bias and label:"<<asAtomHandler::toDebugString(a));
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame2 label "<<s);
 					clip->as<MovieClip>()->AVM1gotoFrameLabel(s);
@@ -1859,14 +1904,48 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				else
 				{
-					uint32_t frame = asAtomHandler::toUInt(a)+it->data_uint16;
+					uint32_t frame = asAtomHandler::toUInt(a)+biasframe;
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame2 "<<frame);
-					clip->as<MovieClip>()->AVM1gotoFrame(frame,!it->data_flag2,true);
+					clip->as<MovieClip>()->AVM1gotoFrame(frame,!playflag,true);
 				}
 				break;
 			}
+			case 0x14: // ActionStringLength
+			case 0x29: // ActionStringLess
+			case 0x31: // ActionMBStringLength
+			case 0x32: // ActionCharToAscii
+			case 0x33: // ActionAsciiToChar
+			case 0x35: // ActionMBStringExtract
+			case 0x36: // ActionMBCharToAscii
+			case 0x37: // ActionMBAsciiToChar
+			case 0x8d: // ActionWaitForFrame2
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF4 DoActionTag "<<hex<<(int)opcode);
+				if(opcode >= 0x80)
+				{
+					uint32_t len = ((*(it-1))<<8) | (*(it-2));
+					it+=len;
+				}
+				break;
+			case 0x45: // ActionTargetPath
+			case 0x46: // ActionEnumerate
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF5 DoActionTag "<<hex<<(int)opcode);
+				break;
+			case 0x68: // ActionStringGreater
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF6 DoActionTag "<<hex<<(int)opcode);
+				break;
+			case 0x2a: // ActionThrow
+			case 0x2c: // ActionImplementsOp
+			case 0x8f: // ActionTry
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF7 DoActionTag "<<hex<<(int)opcode);
+				if(opcode >= 0x80)
+				{
+					uint32_t len = ((*(it-1))<<8) | (*(it-2));
+					it+=len;
+				}
+				break;
 			default:
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF4+ DoActionTag "<<hex<<(int)it->actionCode);
+				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" invalid DoActionTag "<<hex<<(int)opcode);
+				throw RunTimeException("invalid AVM1 tag");
 				break;
 		}
 	}

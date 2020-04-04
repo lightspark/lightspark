@@ -1447,7 +1447,7 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_strin
 		for(size_t i=0;i<scenes.size();++i)
 		{
 			for(size_t j=0;j<scenes[i].labels.size();++j)
-				if(scenes[i].labels[j].name == label)
+				if(scenes[i].labels[j].name == label || scenes[i].labels[j].name.lowercase() == label.lowercase())
 					return scenes[i].labels[j].frame;
 		}
 	}
@@ -1459,7 +1459,7 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_strin
 		{
 			for(size_t j=0;j<scene->labels.size();++j)
 			{
-				if(scene->labels[j].name == label)
+				if(scene->labels[j].name == label || scene->labels[j].name.lowercase() == label.lowercase())
 					return scene->labels[j].frame;
 			}
 		}
@@ -1533,7 +1533,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		if(dest==FRAME_NOT_FOUND)
 		{
 			dest= 0;
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getSystemState())<<" in scene "<<sceneName);
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getSystemState())<<" in scene "<<sceneName<<" at movieclip "<<getTagID());
 //			throwError<ArgumentError>(kInvalidArgumentError,asAtomHandler::toString(args[0],));
 		}
 

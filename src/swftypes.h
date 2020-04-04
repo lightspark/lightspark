@@ -453,6 +453,18 @@ public:
 	FLOAT():val(0){}
 	FLOAT(float v):val(v){}
 	operator float(){ return val; }
+	inline void read(const uint8_t* data)
+	{
+		union float_reader
+		{
+			uint32_t dump;
+			float value;
+		};
+		float_reader dummy;
+		dummy.dump = *(uint32_t*)data;
+		dummy.dump=GINT32_FROM_LE(dummy.dump);
+		val=dummy.value;
+	}
 };
 
 class DOUBLE 
@@ -464,6 +476,27 @@ public:
 	DOUBLE():val(0){}
 	DOUBLE(double v):val(v){}
 	operator double(){ return val; }
+	void read(const uint8_t* data)
+	{
+		union double_reader
+		{
+			uint64_t dump;
+			double value;
+		};
+		double_reader dummy;
+		// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
+		uint8_t* p = (uint8_t*)&dummy.dump;
+		*p++ = data[4];
+		*p++ = data[5];
+		*p++ = data[6];
+		*p++ = data[7];
+		*p++ = data[0];
+		*p++ = data[1];
+		*p++ = data[2];
+		*p++ = data[3];
+		dummy.dump=GINT64_FROM_LE(dummy.dump);
+		val=dummy.value;
+	}
 };
 
 //TODO: Really implement or suppress
@@ -1393,7 +1426,7 @@ public:
 	CLIPEVENTFLAGS EventFlags;
 	UI32_SWF ActionRecordSize;
 	UI8 KeyCode;
-	std::vector<ACTIONRECORD> actions;
+	std::vector<uint8_t> actions;
 	bool isLast();
 };
 
@@ -1454,34 +1487,12 @@ public:
 
 class ACTIONRECORD
 {
-friend std::istream& operator>>(std::istream& s, ACTIONRECORD& v);
 public:
-	UI8 actionCode;
-	UI16_SWF Length;
-	std::vector<tiny_string> data_string;
-	std::vector<uint8_t> data_registernumber;
-	UI16_SWF data_uint16;
-	SI16_SWF data_int16;
-	UI8 data_byte;
-	FLOAT data_float;
-	DOUBLE data_double;
-	UI32_SWF data_integer;
-	bool data_flag1;
-	bool data_flag2;
-	bool data_flag3;
-	bool data_flag4;
-	bool data_flag5;
-	bool data_flag6;
-	bool data_flag7;
-	bool data_flag8;
-	bool data_flag9;
-	std::vector<ACTIONRECORD> data_actionlist;
 	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
-	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<ACTIONRECORD> &actionlist, uint32_t startactionpos,std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
+	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos,std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
 			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false);
-	int getFullLength();
 };
 class BUTTONCONDACTION
 {
@@ -1502,7 +1513,7 @@ public:
 	bool CondIdleToOverUp;
 	bool CondOverDownToIdle;
 	uint32_t CondKeyPress;
-	std::vector<ACTIONRECORD> actions;
+	std::vector<uint8_t> actions;
 };
 
 ASObject* abstract_i(SystemState *sys, int32_t i);

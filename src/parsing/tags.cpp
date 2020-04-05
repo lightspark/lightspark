@@ -1873,10 +1873,12 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;
-	/* We only support SWF version >=6 */
-	UI8 NamedAnchor=in.peek();
-	if(NamedAnchor==1)
-		in >> NamedAnchor;
+	if (Header.getLength() > uint32_t(Name.size()+1))
+	{
+		UI8 NamedAnchor=in.peek();
+		if(NamedAnchor==1)
+			in >> NamedAnchor;
+	}
 }
 
 DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root):DictionaryTag(h,root)

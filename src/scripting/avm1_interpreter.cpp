@@ -587,6 +587,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						case 16:// quality
 							DisplayObject::AVM1_setQuality(ret,clip->getSystemState(),obj,&value,1);
 							break;
+						case 17:// focusrect
+							if (asAtomHandler::is<InteractiveObject>(obj))
+								InteractiveObject::_setter_focusRect(ret,clip->getSystemState(),obj,&value,1);
+							break;
 						default:
 							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<asAtomHandler::toInt(index));
 							break;
@@ -1779,12 +1783,19 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			case 0x99: // ActionJump
 			{
 				int32_t skip = int16_t((*it++) | ((*it++)<<8));
-				if ((skip < 0 && it-actionlist.begin() < -skip) || (skip >=0 && skip + (it-actionlist.begin()) > actionlist.size()))
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<skip<<" "<< (it-actionlist.begin()));
+				if (skip < 0 && it-actionlist.begin() < -skip)
 				{
 					LOG(LOG_ERROR,"ActionJump: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
+					it = actionlist.begin();
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionJump "<<skip<<" "<< (it-actionlist.begin()));
-				it+= skip;
+				if (skip >=0 && skip + (it-actionlist.begin()) > (int)actionlist.size())
+				{
+					LOG(LOG_ERROR,"ActionJump: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
+					it = actionlist.end();
+				}
+				else
+					it+= skip;
 				break;
 			}
 			case 0x9a: // ActionGetURL2
@@ -1847,11 +1858,18 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIf "<<asAtomHandler::toDebugString(a)<<" "<<skip);
 				if (asAtomHandler::toInt(a))
 				{
-					if ((skip < 0 && it-actionlist.begin() < -skip) || (skip >=0 && skip + (it-actionlist.begin()) > (int)actionlist.size()))
+					if (skip < 0 && it-actionlist.begin() < -skip)
 					{
 						LOG(LOG_ERROR,"ActionIf: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
+						it = actionlist.begin();
 					}
-					it += skip;
+					if (skip >=0 && skip + (it-actionlist.begin()) > (int)actionlist.size())
+					{
+						LOG(LOG_ERROR,"ActionIf: invalid skip target:"<< skip<<" "<<(it-actionlist.begin())<<" "<<actionlist.size());
+						it = actionlist.end();
+					}
+					else
+						it += skip;
 				}
 				break;
 			}

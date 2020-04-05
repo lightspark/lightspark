@@ -194,6 +194,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
+	frameIn=av_frame_alloc();
 	//The tag is the header, initialize decoding
 	switch(codecPar->codec_id)
 	{
@@ -223,12 +224,12 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 	if(fillDataAndCheckValidity())
 		status=VALID;
 
-	frameIn=av_frame_alloc();
 }
 #else
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
 	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0)
 {
+	frameIn=av_frame_alloc();
 	status=INIT;
 	//The tag is the header, initialize decoding
 	switch(codecContext->codec_id)
@@ -258,7 +259,6 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 	if(fillDataAndCheckValidity())
 		status=VALID;
 
-	frameIn=av_frame_alloc();
 }
 #endif
 

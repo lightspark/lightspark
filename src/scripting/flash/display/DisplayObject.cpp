@@ -1946,6 +1946,18 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
+		if (getSystemState()->mainClip->version > 4)
+		{
+			// first check for class names
+			asAtom ret=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=getSystemState()->getUniqueStringId(name);
+			m.isAttribute = false;
+			getSystemState()->avm1global->getVariableByMultiname(ret,m);
+			if(!asAtomHandler::isInvalid(ret))
+				return ret;
+		}
 		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
 		if (it != avm1variables.end())
 			return it->second;
@@ -1988,8 +2000,6 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 		getVariableByMultiname(ret,m);
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
 			getSystemState()->mainClip->getVariableByMultiname(ret,m);
-		if (asAtomHandler::isInvalid(ret))// get Variable from global object
-			getSystemState()->avm1global->getVariableByMultiname(ret,m);
 	}
 	return ret;
 }

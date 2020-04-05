@@ -649,6 +649,7 @@ public:
 	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
 	ASFUNCTION_ATOM(AVM1LoadMovie);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, avm1ContextMenu);
 };
 
 class Stage: public DisplayObjectContainer

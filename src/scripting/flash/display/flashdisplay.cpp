@@ -1968,12 +1968,11 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_avm1ContextMenu),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_avm1ContextMenu),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_contextMenu),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
 }
-ASFUNCTIONBODY_GETTER_SETTER(MovieClip, avm1ContextMenu);
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
 {
@@ -2498,14 +2497,14 @@ void InteractiveObject::defaultEventBehavior(Ref<Event> e)
 
 _NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items)
 {
-	if (this->contextMenu.isNull())
+	if (this->contextMenu.isNull() || !this->contextMenu->is<ContextMenu>())
 	{
 		if (this->getParent())
 			return getParent()->getCurrentContextMenuItems(items);
 		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getSystemState());
 	}
 	else
-		this->contextMenu->getCurrentContextMenuItems(items);
+		this->contextMenu->as<ContextMenu>()->getCurrentContextMenuItems(items);
 	this->incRef();
 	return _MR<InteractiveObject>(this);
 }

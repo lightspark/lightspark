@@ -76,7 +76,7 @@ protected:
 public:
 	InteractiveObject(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);
-	ASPROPERTY_GETTER_SETTER(_NR<ContextMenu>,contextMenu); // TOOD: should be NativeMenu
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,contextMenu); // adobe seems to allow DisplayObjects, too
 	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,focusRect);
@@ -649,7 +649,6 @@ public:
 	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
 	ASFUNCTION_ATOM(AVM1LoadMovie);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, avm1ContextMenu);
 };
 
 class Stage: public DisplayObjectContainer

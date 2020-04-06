@@ -1660,8 +1660,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			case 0x94: // ActionWith
 			{
 				asAtom obj = PopStack(stack);
-				auto itend = it;
 				uint32_t codesize = uint32_t(*it++) | ((*it++)<<8);
+				auto itend = it;
 				itend+=codesize;
 				itend++;
 				if (curdepth >= maxdepth)

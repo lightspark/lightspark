@@ -1060,7 +1060,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	ret = asAtomHandler::fromObject(abstract_s(sys,parseUtf8((uint8_t*)th->bytes+start,th->len-start)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,(const char*)th->bytes+start,th->len-start));
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

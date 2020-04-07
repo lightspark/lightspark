@@ -223,6 +223,7 @@ REGISTER_CLASS_NAME(DateTimeStyle,"flash.globalization")
 REGISTER_CLASS_NAME(LastOperationStatus,"flash.globalization")
 REGISTER_CLASS_NAME(NumberFormatter,"flash.globalization")
 REGISTER_CLASS_NAME(CurrencyFormatter, "flash.globalization")
+REGISTER_CLASS_NAME(StringTools, "flash.globalization")
 
 //Media
 REGISTER_CLASS_NAME(Sound,"flash.media")

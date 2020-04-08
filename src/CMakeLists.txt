@@ -66,6 +66,7 @@ SET(LIBSPARK_SOURCES
   scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
   scripting/flash/globalization/currencyformatter.cpp
+  scripting/flash/globalization/stringtools.cpp
   scripting/flash/concurrent/Mutex.cpp
   scripting/flash/concurrent/Condition.cpp
   scripting/flash/crypto/flashcrypto.cpp

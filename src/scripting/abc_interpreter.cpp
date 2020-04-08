@@ -9113,7 +9113,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x82://coerce_a
 			{
 				//skip
+				int32_t p = code.tellg();
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				if (jumptargets.find(p) != jumptargets.end())
+					jumptargets[p+1]++;
 				break;
 			}
 			case 0xf0://debugline
@@ -9121,8 +9124,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xf2://bkptline
 			{
 				//skip
+				int32_t p = code.tellg();
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				code.readu30();
+				if (jumptargets.find(p) != jumptargets.end())
+					jumptargets[code.tellg()+1]++;
 				break;
 			}
 			case 0x0c://ifnlt

@@ -69,7 +69,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 	{
 		th->currlocale = std::locale(th->requestedLocaleIDName.raw_buf());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
-		th->lastOperationStatus="NO_ERROR";
+		th->lastOperationStatus="noError";
 	}
 	catch (std::runtime_error& e)
 	{
@@ -83,7 +83,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 				// try with "_" instead of "-"
 				th->currlocale = std::locale(l.raw_buf());
 				th->actualLocaleIDName = th->requestedLocaleIDName;
-				th->lastOperationStatus="NO_ERROR";
+				th->lastOperationStatus="noError";
 			}
 			catch (std::runtime_error& e)
 			{
@@ -93,11 +93,11 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 					l += ".UTF-8";
 					th->currlocale = std::locale(l.raw_buf());
 					th->actualLocaleIDName = th->requestedLocaleIDName;
-					th->lastOperationStatus="NO_ERROR";
+					th->lastOperationStatus="noError";
 				}
 				catch (std::runtime_error& e)
 				{
-					th->lastOperationStatus="USING_DEFAULT_WARNING";
+					th->lastOperationStatus="usingDefaultWarning";
 					LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
 				}
 			}
@@ -110,11 +110,11 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 				th->requestedLocaleIDName += ".UTF-8";
 				th->currlocale = std::locale(th->requestedLocaleIDName.raw_buf());
 				th->actualLocaleIDName = th->requestedLocaleIDName;
-				th->lastOperationStatus="NO_ERROR";
+				th->lastOperationStatus="noError";
 			}
 			catch (std::runtime_error& e)
 			{
-				th->lastOperationStatus="USING_DEFAULT_WARNING";
+				th->lastOperationStatus="usingDefaultWarning";
 				LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
 			}
 		}

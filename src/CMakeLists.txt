@@ -65,7 +65,6 @@ SET(LIBSPARK_SOURCES
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp
   scripting/flash/accessibility/flashaccessibility.cpp
-  scripting/flash/globalization/currencyformatter.cpp
   scripting/flash/globalization/stringtools.cpp
   scripting/flash/concurrent/Mutex.cpp
   scripting/flash/concurrent/Condition.cpp
@@ -94,7 +93,11 @@ SET(LIBSPARK_SOURCES
   scripting/flash/filters/flashfilters.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
-  scripting/flash/globalization/flashglobalization.cpp
+  scripting/flash/globalization/datetimeformatter.cpp
+  scripting/flash/globalization/datetimestyle.cpp
+  scripting/flash/globalization/lastoperationstatus.cpp
+  scripting/flash/globalization/currencyformatter.cpp
+  scripting/flash/globalization/numberformatter.cpp
   scripting/flash/media/flashmedia.cpp
   scripting/flash/net/flashnet.cpp
   scripting/flash/net/URLRequestHeader.cpp

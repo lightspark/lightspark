@@ -204,6 +204,8 @@ class ABCContext
 {
 friend class ABCVm;
 friend class method_info;
+private:
+	bool scriptsdeclared;
 public:
 	_R<RootMovieClip> root;
 
@@ -294,6 +296,7 @@ public:
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	~ABCContext();
+	void declareScripts();
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);

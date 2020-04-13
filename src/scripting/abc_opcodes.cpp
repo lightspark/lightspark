@@ -2750,7 +2750,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->mi->context->instances[n].interface_count;i++)
 	{
-		multiname* name=th->mi->context->getMultiname(th->mi->context->instances[n].interfaces[i],NULL);
+		multiname* name=th->mi->context->getMultiname(th->mi->context->instances[n].interfaces[i],nullptr);
 		ret->addImplementedInterface(*name);
 
 		//Make the class valid if needed
@@ -2794,7 +2794,7 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		asAtom v = asAtomHandler::fromObject(ret);
 		asAtom f = asAtomHandler::fromObject(cinit);
-		asAtomHandler::callFunction(f,ret2,v,NULL,0,true);
+		asAtomHandler::callFunction(f,ret2,v,nullptr,0,true);
 	}
 	catch(ASObject* exc)
 	{
@@ -2822,10 +2822,10 @@ void ABCVm::newClass(call_context* th, int n)
 		if((*j)->super == ret)
 		{
 			(*j)->copyBorrowedTraitsFromSuper();
-			th->mi->context->root->applicationDomain->classesSuperNotFilled.remove(ret);
-			break;
+			j = th->mi->context->root->applicationDomain->classesSuperNotFilled.erase(j);
 		}
-		j++;
+		else
+			j++;
 	}
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);

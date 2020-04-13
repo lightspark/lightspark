@@ -71,6 +71,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void registerGlobalScope(Global* scope);
+	Global* getLastGlobalScope() const  { return globalScopes.back(); }
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	bool findTargetByMultiname(const multiname& name, ASObject*& target);
 	void getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target);

@@ -190,6 +190,8 @@ void DoABCTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,_("ABC Exec"));
 	/* currentVM will free the context*/
+	if (getVm(root->getSystemState())->hasEverStarted())
+		context->declareScripts();// ensure script traits are declared as soon as possible
 	if (!getWorker() || getWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
 	else
@@ -222,10 +224,13 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// some swf files have multiple abc tags without the "lazy" flag.
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
+	if (getVm(root->getSystemState())->hasEverStarted())
+		context->declareScripts();// ensure script traits are declared as soon as possible
+	bool lazy = root->hasSymbolClass || ((int32_t)Flags)&1;
 	if (root == root->getSystemState()->mainClip && (!getWorker() || getWorker()->isPrimordial))
-		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,root->hasSymbolClass ? true : ((int32_t)Flags)&1)));
+		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
 	else
-		context->exec(root->hasSymbolClass ? true : ((int32_t)Flags)&1);
+		context->exec(lazy);
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
@@ -1294,7 +1299,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	}
 	return ret;
 }
-ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):root(r),constant_pool(vm->vmDataMemory),
+ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdeclared(false),root(r),constant_pool(vm->vmDataMemory),
 	methods(reporter_allocator<method_info>(vm->vmDataMemory)),
 	metadata(reporter_allocator<metadata_info>(vm->vmDataMemory)),
 	instances(reporter_allocator<instance_info>(vm->vmDataMemory)),
@@ -1573,7 +1578,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		return;
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.lock();
-		
+
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
 	if(asAtomHandler::isInvalid(event->target))
@@ -1636,9 +1641,9 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			while(true && doTarget)
 			{
 				if(!cur->getParent())
-					break;        
+					break;
 				cur = cur->getParent();
-				auto i = rparents.begin();        
+				auto i = rparents.begin();
 				bool stop = false;
 				for(;i!=rparents.end();++i)
 				{
@@ -2004,6 +2009,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 	// the root movie clip may have it's own constructor, so we make sure it is called
 	asAtom r = asAtomHandler::fromObject(base.getPtr());
 	derived_class_tmp->handleConstruction(r,nullptr,0,true);
+	base->setConstructorCallComplete();
 }
 
 bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
@@ -2152,17 +2158,14 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	return real_ret;
 }
 
-/*
- * The ABC definitions (classes, scripts, etc) have been parsed in
- * ABCContext constructor. Now create the internal structures for them
- * and execute the main/init function.
- */
-void ABCContext::exec(bool lazy)
+void ABCContext::declareScripts()
 {
+	if (scriptsdeclared)
+		return;
 	//Take script entries and declare their traits
 	unsigned int i=0;
 
-	for(;i<scripts.size()-1;i++)
+	for(;i<scripts.size();i++)
 	{
 		LOG(LOG_CALLS, _("Script N: ") << i );
 
@@ -2187,35 +2190,29 @@ void ABCContext::exec(bool lazy)
 		//Register it as one of the global scopes
 		root->applicationDomain->registerGlobalScope(global);
 	}
+	scriptsdeclared=true;
+}
+/*
+ * The ABC definitions (classes, scripts, etc) have been parsed in
+ * ABCContext constructor. Now create the internal structures for them
+ * and execute the main/init function.
+ */
+void ABCContext::exec(bool lazy)
+{
+	declareScripts();
 	//The last script entry has to be run
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	//Creating a new global for the last script
-	Global* global=Class<Global>::getInstanceS(root->getSystemState(),this, i);
-#ifndef NDEBUG
-		global->initialized=false;
-#endif
-
-	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
-	std::vector<multiname*> additionalslots;
-	for(unsigned int j=0;j<scripts[i].trait_count;j++)
-	{
-		buildTrait(global,additionalslots,&scripts[i].traits[j],false,i);
-	}
-	global->initAdditionalSlots(additionalslots);
-
+	Global* global=root->applicationDomain->getLastGlobalScope();
 	root->getSystemState()->worker->state ="running";
 	getVm(root->getSystemState())->addEvent(root->getSystemState()->worker,_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
 
-#ifndef NDEBUG
-		global->initialized=true;
-#endif
-	//Register it as one of the global scopes
-	root->applicationDomain->registerGlobalScope(global);
 	//the script init of the last script is the main entry point
 	if(!lazy)
 	{
+		int lastscript = scripts.size()-1;
 		asAtom g = asAtomHandler::fromObject(global);
-		runScriptInit(i, g);
+		runScriptInit(lastscript, g);
 	}
 	LOG(LOG_CALLS, _("End of Entry Point"));
 }
@@ -2887,10 +2884,23 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 
 				if(instances[t->classi].supername)
 				{
-					// set superclass for classes that are not instantiated by newClass opcode (e.g. buttons)
-					multiname mnsuper = *getMultiname(instances[t->classi].supername,NULL);
+					multiname mnsuper = *getMultiname(instances[t->classi].supername,nullptr);
 					ASObject* superclass=root->applicationDomain->getVariableByMultinameOpportunistic(mnsuper);
-					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
+					if (!superclass || superclass->is<Null>())
+					{
+						auto it = root->applicationDomain->classesBeingDefined.cbegin();
+						while (it != root->applicationDomain->classesBeingDefined.cend())
+						{
+							if(it->first->name_s_id == mnsuper.name_s_id && (it->first->ns.empty() || mnsuper.ns.empty() || (it->first->ns[0].nsRealId == mnsuper.ns[0].nsRealId)))
+							{
+								superclass = it->second;
+								root->applicationDomain->classesSuperNotFilled.push_back(c);
+								break;
+							}
+							it++;
+						}
+					}
+					if(superclass && superclass->is<Class_base>())
 					{
 						superclass->incRef();
 						c->setSuper(_MR(superclass->as<Class_base>()));

@@ -29,5 +29,5 @@ void DateTimeNameStyle::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
 	c->setVariableAtomByQName("FULL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"full"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("LONG_ABBREVIATION",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"longAbbreviation"),CONSTANT_TRAIT);
-  c->setVariableAtomByQName("SHORT_ABBREVIATION",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"shortAbbreviation"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("SHORT_ABBREVIATION",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"shortAbbreviation"),CONSTANT_TRAIT);
 }

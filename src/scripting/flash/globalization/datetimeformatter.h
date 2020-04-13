@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_GLOBALIZATION_FLASHGLOBALIZATION_H
-#define SCRIPTING_FLASH_GLOBALIZATION_FLASHGLOBALIZATION_H 1
+#ifndef SCRIPTING_FLASH_GLOBALIZATION_DATEFORMATTER_H
+#define SCRIPTING_FLASH_GLOBALIZATION_DATEFORMATTER_H 1
 
 #include "asobject.h"
 #include <clocale>
@@ -45,33 +45,5 @@ public:
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
 };
 
-class LastOperationStatus: public ASObject
-{
-public:
-	LastOperationStatus(Class_base* c):ASObject(c){}
-	static void sinit(Class_base* c);
-};
-class DateTimeStyle: public ASObject
-{
-public:
-	DateTimeStyle(Class_base* c):ASObject(c){}
-	static void sinit(Class_base* c);
-};
-
-class NumberFormatter : public ASObject
-{
-private:
-	std::locale currlocale;
-public:
-	NumberFormatter(Class_base* c);
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(formatNumber);
-	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
-	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
-	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
-	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
-};
-
 }
-#endif /* SCRIPTING_FLASH_GLOBALIZATION_FLASHGLOBALIZATION_H */
+#endif /* SCRIPTING_FLASH_GLOBALIZATION_DATEFORMATTER_H */

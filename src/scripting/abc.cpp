@@ -125,6 +125,10 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/globalization/datetimeformatter.h"
 #include "scripting/flash/globalization/datetimestyle.h"
+#include "scripting/flash/globalization/collatormode.h"
+#include "scripting/flash/globalization/datetimenamecontext.h"
+#include "scripting/flash/globalization/datetimenamestyle.h"
+#include "scripting/flash/globalization/nationaldigitstype.h"
 #include "scripting/flash/globalization/lastoperationstatus.h"
 #include "scripting/flash/globalization/currencyformatter.h"
 #include "scripting/flash/globalization/numberformatter.h"
@@ -748,6 +752,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LastOperationStatus","flash.globalization",Class<LastOperationStatus>::getRef(m_sys));
   builtin->registerBuiltin("CurrencyFormatter","flash.globalization",Class<CurrencyFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("NumberFormatter","flash.globalization",Class<NumberFormatter>::getRef(m_sys));
+	builtin->registerBuiltin("CollatorMode","flash.globalization",Class<CollatorMode>::getRef(m_sys));
+	builtin->registerBuiltin("DateTimeNameContext","flash.globalization",Class<DateTimeNameContext>::getRef(m_sys));
+	builtin->registerBuiltin("DateTimeNameStyle","flash.globalization",Class<DateTimeNameStyle>::getRef(m_sys));
+	builtin->registerBuiltin("NationalDigitsType","flash.globalization",Class<NationalDigitsType>::getRef(m_sys));
 	
 	
 	// avm intrinsics, not documented, but implemented in avmplus

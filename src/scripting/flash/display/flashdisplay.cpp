@@ -915,10 +915,10 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		{
 			if(ret==true)
 			{
-				xmin = imin(xmin,txmin);
-				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,tymin);
-				ymax = imax(ymax,tymax);
+				xmin = min(xmin,txmin);
+				xmax = max(xmax,txmax);
+				ymin = min(ymin,tymin);
+				ymax = max(ymax,tymax);
 			}
 			else
 			{
@@ -942,10 +942,10 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	{
 		if(ret==true)
 		{
-			xmin = imin(xmin,txmin);
-			xmax = imax(xmax,txmax);
-			ymin = imin(ymin,tymin);
-			ymax = imax(ymax,tymax);
+			xmin = min(xmin,txmin);
+			xmax = max(xmax,txmax);
+			ymin = min(ymin,tymin);
+			ymax = max(ymax,tymax);
 		}
 		else
 		{

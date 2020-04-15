@@ -8528,21 +8528,27 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	memorystream code(mi->body->code.data(), code_len);
 	std::list<bool> scopelist;
 	int dup_indicator=0;
+	bool opcode_skipped=false;
 	while(!code.atend())
 	{
 		oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 		uint8_t opcode = code.readbyte();
 		//LOG(LOG_INFO,"preload opcode:"<<code.tellg()-1<<" "<<operandlist.size()<<" "<<hex<<(int)opcode);
-		switch (dup_indicator)
+		if (opcode_skipped)
+			opcode_skipped=false;
+		else
 		{
-			case 0:
-				break;
-			case 1:// dup found
-				dup_indicator=2;
-				break;
-			case 2:// opcode after dup handled
-				dup_indicator=0;
-				break;
+			switch (dup_indicator)
+			{
+				case 0:
+					break;
+				case 1:// dup found
+					dup_indicator=2;
+					break;
+				case 2:// opcode after dup handled
+					dup_indicator=0;
+					break;
+			}
 		}
 
 
@@ -9058,6 +9064,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					mi->body->preloadedcode.push_back(t);
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				}
+				else
+					opcode_skipped=true;
 				break;
 			}
 			case 0xd0://getlocal_0
@@ -9117,6 +9125,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				if (jumptargets.find(p) != jumptargets.end())
 					jumptargets[p+1]++;
+				opcode_skipped=true;
 				break;
 			}
 			case 0xf0://debugline
@@ -9129,6 +9138,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				code.readu30();
 				if (jumptargets.find(p) != jumptargets.end())
 					jumptargets[code.tellg()+1]++;
+				opcode_skipped=true;
 				break;
 			}
 			case 0x0c://ifnlt
@@ -9175,6 +9185,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						code.readbyte();
 					jumptargets.erase(code.tellg()+1);
 					oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+					opcode_skipped=true;
 				}
 				break;
 			}

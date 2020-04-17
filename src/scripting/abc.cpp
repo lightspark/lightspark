@@ -2887,23 +2887,10 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 
 				if(instances[t->classi].supername)
 				{
-					multiname mnsuper = *getMultiname(instances[t->classi].supername,nullptr);
+					// set superclass for classes that are not instantiated by newClass opcode (e.g. buttons)
+					multiname mnsuper = *getMultiname(instances[t->classi].supername,NULL);
 					ASObject* superclass=root->applicationDomain->getVariableByMultinameOpportunistic(mnsuper);
-					if (!superclass || superclass->is<Null>())
-					{
-						auto it = root->applicationDomain->classesBeingDefined.cbegin();
-						while (it != root->applicationDomain->classesBeingDefined.cend())
-						{
-							if(it->first->name_s_id == mnsuper.name_s_id && (it->first->ns.empty() || mnsuper.ns.empty() || (it->first->ns[0].nsRealId == mnsuper.ns[0].nsRealId)))
-							{
-								superclass = it->second;
-								root->applicationDomain->classesSuperNotFilled.push_back(c);
-								break;
-							}
-							it++;
-						}
-					}
-					if(superclass && superclass->is<Class_base>())
+					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
 					{
 						superclass->incRef();
 						c->setSuper(_MR(superclass->as<Class_base>()));

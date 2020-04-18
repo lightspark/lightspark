@@ -127,6 +127,8 @@ void Vector::setTypes(const std::vector<const Type *> &types)
 }
 bool Vector::sameType(const Class_base *cls) const
 {
+	if (this->getClass()->class_name == cls->class_name)
+		return true;
 	tiny_string clsname = this->getClass()->getQualifiedClassName();
 	return (clsname.startsWith(cls->class_name.getQualifiedName(getSystemState()).raw_buf()));
 }

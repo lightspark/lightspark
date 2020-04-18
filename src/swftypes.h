@@ -133,6 +133,10 @@ public:
 		else
 			return nsStringId<r.nsStringId;
 	}
+	bool operator==(const QName& r) const
+	{
+		return nameId==r.nameId && nsStringId==r.nsStringId;
+	}
 	tiny_string getQualifiedName(SystemState* sys, bool forDescribeType = false) const;
 	operator multiname() const;
 };

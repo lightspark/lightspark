@@ -465,8 +465,7 @@ public:
 			asAtomHandler::setNull(o);
 			return true;
 		}
-		else if ((asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<T>() && asAtomHandler::getObject(o)->as<T>()->sameType(this)) ||
-				 asAtomHandler::isNull(o))
+		else if (asAtomHandler::isNull(o) || (asAtomHandler::isObject(o) && asAtomHandler::is<T>(o) && asAtomHandler::getObjectNoCheck(o)->as<T>()->sameType(this)))
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type

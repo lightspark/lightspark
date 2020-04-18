@@ -1015,8 +1015,8 @@ bool Sprite::renderImpl(RenderContext& ctxt) const
 	//Draw the dynamically added graphics, if any
 	bool ret = defaultRender(ctxt);
 
-	return DisplayObjectContainer::renderImpl(ctxt);
-	return ret || (this->flushstep == getSystemState()->currentflushstep);
+	bool ret2 =DisplayObjectContainer::renderImpl(ctxt);
+	return ret && ret2;
 }
 
 /*
@@ -1041,7 +1041,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret=(*j)->hitTest(_MR(this), localX,localY, type,interactiveObjectsOnly);
+		ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
 		if(!ret.isNull())
 		{
 			if (interactiveObjectsOnly && !ret->is<InteractiveObject>())

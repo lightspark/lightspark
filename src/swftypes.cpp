@@ -1319,6 +1319,8 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTGLOWFILTER& v
 	}
 	stream >> v.BlurX;
 	stream >> v.BlurY;
+	stream >> v.Angle;
+	stream >> v.Distance;
 	stream >> v.Strength;
 	BitStream bs(stream);
 	v.InnerGlow = UB(1,bs);

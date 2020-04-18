@@ -562,34 +562,17 @@ void DisplayObject::setOnStage(bool staged, bool force)
 	}
 	if (force)
 	{
-		/*NOTE: By tests we can assert that added/addedToStage is dispatched
-		  immediately when addChild is called. On the other hand setOnStage may
-		  be also called outside of the VM thread (for example by Loader::execute)
-		  so we have to check isVmThread and act accordingly. If in the future
-		  asynchronous uses of setOnStage are removed the code can be simplified
-		  by removing the !isVmThread case.
-		*/
 		if(onStage==true)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
-			if(isVmThread())
-				ABCVm::publicHandleEvent(this,e);
-			else
-			{
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),e);
-			}
+			this->incRef();
+			getVm(getSystemState())->addEvent(_MR(this),e);
 		}
 		else if(onStage==false)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"removedFromStage"));
-			if(isVmThread())
-				ABCVm::publicHandleEvent(this,e);
-			else
-			{
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),e);
-			}
+			this->incRef();
+			getVm(getSystemState())->addEvent(_MR(this),e);
 		}
 	}
 }

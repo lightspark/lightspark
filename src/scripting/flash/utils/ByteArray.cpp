@@ -965,7 +965,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 	}
 	ASATOM_INCREF(ret);
 }
-
+// replicate adobe behaviour where invalid UTF8 chars are treated as single chars
+// this is very expensive for big strings, so always do validateUtf8 first to check if parseUtf8 is neccessary
 tiny_string parseUtf8(uint8_t* bytes, int32_t len)
 {
 	tiny_string res;
@@ -1047,6 +1048,54 @@ tiny_string parseUtf8(uint8_t* bytes, int32_t len)
 	}
 	return res;
 }
+// check if string is valid UTF8
+bool validateUtf8(uint8_t* bytes, int32_t len)
+{
+	uint8_t* p = bytes;
+	while (len > 0)
+	{
+		switch ((*p)&0xc0)
+		{
+			case 0x80: // invalid
+				return false;
+			case 0xc0: // > 1 byte UTF8
+			{
+				switch ((*p)&0x30)
+				{
+					case 0x00:// 2 byte UTF8
+					case 0x10:// 2 byte UTF8
+						if (len < 2 // truncated
+							|| (((*(p+1))&0xC0) != 0x80))  // invalid 2nd char
+							return false;
+						p+=2;
+						len-=2;
+						break;
+					case 0x20: // 3 byte UTF8
+						if (len < 3  // truncated
+							|| (((*(p+1))&0xC0) != 0x80)  // invalid 2nd char
+							|| (((*(p+2))&0xC0) != 0x80)) // invalid 3rd char
+							return false;
+						p+=3;
+						len-=3;
+						break;
+					case 0x30: // 4 byte UTF8
+						if (len < 4  // truncated
+							|| (((*(p+1))&0xC0) != 0x80)  // invalid 2nd char
+							|| (((*(p+2))&0xC0) != 0x80)  // invalid 3rd char
+							|| (((*(p+3))&0xC0) != 0x80)) // invalid 4th char
+							return false;
+						p+=4;
+						len-=4;
+						break;
+				}
+				break;
+			}
+			default:
+				--len;
+		}
+	}
+	return true;
+}
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 {
@@ -1060,7 +1109,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			th->bytes[2] == 0xbf)
 			start = 3;
 	}
-	ret = asAtomHandler::fromObject(abstract_s(sys,(const char*)th->bytes+start,th->len-start));
+	if (validateUtf8(th->bytes+start,th->len-start))
+		ret = asAtomHandler::fromObject(abstract_s(sys,(const char*)th->bytes+start,th->len-start));
+	else
+		ret = asAtomHandler::fromObject(abstract_s(sys,parseUtf8(th->bytes+start,th->len-start)));
 }
 
 bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)

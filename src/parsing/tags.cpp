@@ -582,6 +582,7 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieC
 	{
 		LOG(LOG_ERROR,"DefineFontInfoTag font not found:"<<FontID);
 		ignore(in,h.getLength()-2);
+		return;
 	}
 	UI8 FontNameLen;
 	in >> FontNameLen;
@@ -2629,8 +2630,6 @@ AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
 	numbytes = h.getLength();
 	if (numbytes)
 	{
-		uint8_t b;
-		in>> b;
 		bytes = new uint8_t[numbytes];
 		in.read((char*)bytes,numbytes);
 	}

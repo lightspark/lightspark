@@ -8721,6 +8721,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							function->simpleGetterOrSetterName = name;
 					}
 					asAtom o=asAtomHandler::invalidAtom;
+					GET_VARIABLE_RESULT r = GETVAR_NORMAL;
 					if(!function->func_scope.isNull()) // check scope stack
 					{
 						auto it=function->func_scope->scope.rbegin();
@@ -8731,7 +8732,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
 							else
 								break;
-							asAtomHandler::toObject(it->object,mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+							r = asAtomHandler::toObject(it->object,mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
 							if(asAtomHandler::isValid(o))
 								break;
 							++it;
@@ -8750,6 +8751,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							addCachedConstant(mi, o,operandlist,oldnewpositions,code);
 							break;
 						}
+					}
+					else if (r & GETVAR_ISCONSTANT)
+					{
+						addCachedConstant(mi, o,operandlist,oldnewpositions,code);
+						break;
 					}
 					else if (function->inClass->super.isNull()) //TODO slot access for derived classes
 					{

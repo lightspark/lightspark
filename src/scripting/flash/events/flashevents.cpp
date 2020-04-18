@@ -743,13 +743,18 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	l.release();
+	// listeners may be removed during the call to a listener, so we have to incref them before the call
+	// TODO how to handle listeners that are removed during the call to a listener, should they really be executed anyway?
+	for(unsigned int i=0;i<tmpListener.size();i++)
+	{
+		//tmpListener is now also owned by the vector
+		ASATOM_INCREF(tmpListener[i].f);
+	}
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 			continue;
-		//tmpListener is now also owned by the vector
-		ASATOM_INCREF(tmpListener[i].f);
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
 		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this.getPtr() : this);
@@ -758,9 +763,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
-
 	}
-	
 	e->check();
 }
 

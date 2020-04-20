@@ -3989,7 +3989,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				if (c)
 				{
 					std::map<uint32_t,asAtom> m;
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 					handled = true;
 				}
 				
@@ -4149,7 +4149,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
 			std::map<uint32_t,asAtom> m;
-			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			handled=true;
 		}
 	}

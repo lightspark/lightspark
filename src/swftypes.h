@@ -1495,8 +1495,8 @@ public:
 	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
-	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos,std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
-			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false);
+	static void executeActions(DisplayObject* clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
+			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false,AVM1Function *caller = nullptr, AVM1Function *callee = nullptr);
 };
 class BUTTONCONDACTION
 {
@@ -1504,7 +1504,7 @@ friend std::istream& operator>>(std::istream& s, BUTTONCONDACTION& v);
 public:
 	BUTTONCONDACTION():CondActionSize(0)
 	  ,CondIdleToOverDown(false),CondOutDownToIdle(false),CondOutDownToOverDown(false),CondOverDownToOutDown(false)
-	  ,CondOverDownToOverUp(false),CondOverUpToOverDown(false),CondOverUpToIdle(false),CondIdleToOverUp(false),CondOverDownToIdle(false)
+	  ,CondOverDownToOverUp(false),CondOverUpToOverDown(false),CondOverUpToIdle(false),CondIdleToOverUp(false),CondOverDownToIdle(false),startactionpos(0)
 	{}
 	UI16_SWF CondActionSize;
 	bool CondIdleToOverDown;
@@ -1517,6 +1517,7 @@ public:
 	bool CondIdleToOverUp;
 	bool CondOverDownToIdle;
 	uint32_t CondKeyPress;
+	uint32_t startactionpos;
 	std::vector<uint8_t> actions;
 };
 

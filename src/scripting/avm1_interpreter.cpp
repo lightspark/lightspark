@@ -48,11 +48,11 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 	return stack.top();
 }
 
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos,std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
-								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal)
+void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
+								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal,AVM1Function *caller, AVM1Function *callee)
 {
 	Log::calls_indent++;
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions "<<preloadParent<<preloadRoot<<suppressSuper<<preloadSuper<<suppressArguments<<preloadArguments<<suppressThis<<preloadThis<<preloadGlobal);
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions "<<preloadParent<<preloadRoot<<suppressSuper<<preloadSuper<<suppressArguments<<preloadArguments<<suppressThis<<preloadThis<<preloadGlobal<<" "<<startactionpos);
 	if (result)
 		asAtomHandler::setUndefined(*result);
 	std::stack<asAtom> stack;
@@ -85,6 +85,21 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				ASATOM_INCREF(args[i]);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				regargs->push(args[i]);
+			}
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=clip->getSystemState()->getUniqueStringId("caller");
+			asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
+			if (caller)
+				caller->incRef();
+			regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED);
+			if (callee)
+			{
+				callee->incRef();
+				m.name_s_id=clip->getSystemState()->getUniqueStringId("callee");
+				asAtom c = asAtomHandler::fromObject(callee);
+				regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED);
 			}
 			registers[currRegister++] = asAtomHandler::fromObject(regargs);
 		}
@@ -491,6 +506,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						case 3:// xscale
 							DisplayObject::_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 5:// totalframes
+							if (o->is<MovieClip>())
+								MovieClip::_getTotalFrames(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 6:// alpha
 							DisplayObject::_getAlpha(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
@@ -505,6 +524,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							break;
 						case 10:// rotation
 							DisplayObject::_getRotation(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
+						case 12:// framesloaded
+							if (o->is<MovieClip>())
+								MovieClip::_getFramesLoaded(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 13:// name
 							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
@@ -839,7 +862,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				asAtom ret=asAtomHandler::invalidAtom;
 				if (f)
-					f->call(&ret,nullptr, args,numargs);
+					f->call(&ret,nullptr, args,numargs,callee);
 				else
 				{
 					tiny_string s = clip->getSystemState()->getStringFromUniqueId(nameID);
@@ -847,7 +870,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					if (asAtomHandler::is<AVM1Function>(func))
 					{
 						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-						asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs);
+						asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,callee);
 					}
 					else if (asAtomHandler::is<Function>(func))
 					{
@@ -876,7 +899,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						if (asAtomHandler::is<AVM1Function>(func))
 						{
 							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs);
+							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,callee);
 						}
 						else if (asAtomHandler::is<Function>(func))
 						{
@@ -935,7 +958,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				if (f)
 				{
 					ret = asAtomHandler::fromObject(new_functionObject(f->prototype));
-					f->call(nullptr,&ret, args,numargs);
+					f->call(nullptr,&ret, args,numargs,callee);
 				}
 				else
 				{
@@ -952,7 +975,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					else if (asAtomHandler::is<AVM1Function>(cls))
 					{
 						ret = asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<AVM1Function>(cls)->prototype));
-						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs);
+						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs,callee);
 					}
 					else
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject class not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(cls));
@@ -1253,7 +1276,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							variable* var = pr->findVariableByMultiname(m,nullptr);
 							if (var && asAtomHandler::is<AVM1Function>(var->setter))
 							{
-								asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1);
+								asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1,callee);
 								break;
 							}
 							pr = pr->getprop_prototype();
@@ -1297,7 +1320,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					if (asAtomHandler::is<Function>(scriptobject))
 						asAtomHandler::as<Function>(scriptobject)->call(ret,scriptobject,args,numargs);
 					else if (asAtomHandler::is<AVM1Function>(scriptobject))
-						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scriptobject,args,numargs);
+						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scriptobject,args,numargs,callee);
 					else if (asAtomHandler::is<Class_base>(scriptobject))
 						asAtomHandler::as<Class_base>(scriptobject)->generator(ret,args,numargs);
 					else
@@ -1311,7 +1334,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameIDlower);
 					if (f)
 					{
-						f->call(&ret,&scriptobject,args,numargs);
+						f->call(&ret,&scriptobject,args,numargs,callee);
 						LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 						PushStack(stack,ret);
 						break;
@@ -1345,7 +1368,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					if (asAtomHandler::is<Function>(func))
 						asAtomHandler::as<Function>(func)->call(ret,scriptobject,args,numargs);
 					else if (asAtomHandler::is<AVM1Function>(func))
-						asAtomHandler::as<AVM1Function>(func)->call(&ret,&scriptobject,args,numargs);
+						asAtomHandler::as<AVM1Function>(func)->call(&ret,&scriptobject,args,numargs,callee);
 					else
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
 				}
@@ -1396,7 +1419,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					proto = asAtomHandler::as<AVM1Function>(func)->prototype;
 					if (!proto.isNull())
 						asAtomHandler::toObject(ret,clip->getSystemState())->setprop_prototype(proto);
-					asAtomHandler::as<AVM1Function>(func)->call(nullptr,&ret,args,numargs);
+					asAtomHandler::as<AVM1Function>(func)->call(nullptr,&ret,args,numargs,callee);
 				}
 				else if (asAtomHandler::is<Class_base>(func))
 				{

@@ -417,7 +417,7 @@ private:
 	std::vector<BUTTONRECORD> Characters;
 public:
 	std::vector<BUTTONCONDACTION> condactions;
-	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root);
+	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root, AdditionalDataTag* datatag);
 	virtual int getId() const { return ButtonId; }
 	ASObject* instance(Class_base* c=NULL);
 };

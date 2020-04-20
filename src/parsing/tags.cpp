@@ -107,7 +107,10 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineBitsTag(h,f,root);
 				break;
 			case 7:
-				ret=new DefineButtonTag(h,f,1,root);
+				ret=new DefineButtonTag(h,f,1,root,datatag);
+				if (datatag)
+					delete datatag;
+				datatag=nullptr;
 				break;
 			case 8:
 				ret=new JPEGTablesTag(h,f);
@@ -167,7 +170,10 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineText2Tag(h,f,root);
 				break;
 			case 34:
-				ret=new DefineButtonTag(h,f,2,root);
+				ret=new DefineButtonTag(h,f,2,root,datatag);
+				if (datatag)
+					delete datatag;
+				datatag=nullptr;
 				break;
 			case 35:
 				ret=new DefineBitsJPEG3Tag(h,f,root);
@@ -1882,7 +1888,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 	}
 }
 
-DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root):DictionaryTag(h,root)
+DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root, AdditionalDataTag *datatag):DictionaryTag(h,root)
 {
 	in >> ButtonId;
 	int len = Header.getLength()-2;
@@ -1916,7 +1922,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	
 	int realactionoffset = (((int)in.tellg())-pos);
 	len -= realactionoffset;
-	
+	int datatagskipbytes = Header.getHeaderSize()+realactionoffset + 2 + (version > 1 ? 3 : 0);
 	if (root->usesActionScript3)
 	{
 		// ignore actions when using ActionScript3
@@ -1927,8 +1933,14 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	{
 		BUTTONCONDACTION a;
 		a.CondOverDownToOverUp=true; // clicked indicator
-		a.actions.resize(len);
-		in.read((char*)a.actions.data(),len);
+		a.startactionpos=0;
+		a.actions.resize(len+ (datatag ? datatag->numbytes+datatagskipbytes : 0)+1,0);
+		if (datatag)
+		{
+			a.startactionpos=datatag->numbytes+datatagskipbytes;
+			memcpy(a.actions.data(),datatag->bytes,datatag->numbytes);
+		}
+		in.read((char*)a.actions.data()+a.startactionpos,len);
 		condactions.push_back(a);
 	}
 	else if(ActionOffset)
@@ -1943,8 +1955,15 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 			len -= (((int)in.tellg())-pos);
 			pos = in.tellg();
 			int codesize = (r.CondActionSize ? r.CondActionSize-4 : len);
-			r.actions.resize(codesize);
-			in.read((char*)r.actions.data(),codesize);
+			r.actions.resize(codesize+ (datatag ? datatag->numbytes+datatagskipbytes+4 : 0)+1,0);
+			r.startactionpos=0;
+			if (datatag)
+			{
+				r.startactionpos=datatag->numbytes+datatagskipbytes+4;
+				memcpy(r.actions.data(),datatag->bytes,datatag->numbytes);
+			}
+			in.read((char*)r.actions.data()+r.startactionpos,codesize);
+			datatagskipbytes+= codesize+4;
 			len -= (((int)in.tellg())-pos);
 			condactions.push_back(r);
 			if (r.CondActionSize == 0)
@@ -2585,10 +2604,10 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 		return; 
 	}
 	startactionpos=0;
-	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes : 0)+1,0);
+	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes+Header.getHeaderSize() : 0)+1,0);
 	if (datatag)
 	{
-		startactionpos=datatag->numbytes;
+		startactionpos=datatag->numbytes+Header.getHeaderSize();
 		memcpy(actions.data(),datatag->bytes,datatag->numbytes);
 	}
 	s.read((char*)actions.data()+startactionpos,Header.getLength());
@@ -2609,10 +2628,10 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 		return; 
 	}
 	startactionpos=0;
-	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes : 0)+1,0);
+	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes+Header.getHeaderSize()+2 : 0)+1,0);
 	if (datatag)
 	{
-		startactionpos=datatag->numbytes;
+		startactionpos=datatag->numbytes+Header.getHeaderSize()+2;// 2 bytes for SpriteID
 		memcpy(actions.data(),datatag->bytes,datatag->numbytes);
 	}
 	s >> SpriteId;

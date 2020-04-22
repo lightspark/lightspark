@@ -1768,13 +1768,22 @@ void RootMovieClip::commitFrame(bool another)
 		if(this==sys->mainClip)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
-			incRef();
-			getSystemState()->stage->_addChildAt(_MR(this),0);
-			sys->addTick(1000/frameRate,sys);
+			// in AS3 this is added to the stage after the construction of the main object is completed
+			if (!usesActionScript3)
+				afterConstruction();
 		}
 	}
 }
 
+void RootMovieClip::afterConstruction()
+{
+	if(this!=getSystemState()->mainClip)
+		return;
+	incRef();
+	getSystemState()->stage->_addChildAt(_MR(this),0);
+	getSystemState()->addTick(1000/frameRate,getSystemState());
+	MovieClip::afterConstruction();
+}
 void RootMovieClip::revertFrame()
 {
 	//TODO: The next should be a regular assert

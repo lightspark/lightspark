@@ -93,9 +93,10 @@ private:
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
-	bool destruct();
-	bool hasFinishedLoading() { return ACQUIRE_READ(finishedLoading); }
+	bool destruct() override;
+	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
+	void afterConstruction() override;
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;
@@ -113,7 +114,7 @@ public:
 	void commitFrame(bool another);
 	void revertFrame();
 	void parsingFailed();
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() { return origin; }
 	void DLL_PUBLIC setBaseURL(const tiny_string& url);

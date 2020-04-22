@@ -1009,6 +1009,10 @@ DisplayObject *DisplayObjectContainer::findRemovedLegacyChild(uint32_t name)
 	return (it == namedRemovedLegacyChildren.end() ? nullptr : (*it).second);
 }
 
+void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
+{
+	namedRemovedLegacyChildren.erase(name);
+}
 
 bool Sprite::renderImpl(RenderContext& ctxt) const
 {

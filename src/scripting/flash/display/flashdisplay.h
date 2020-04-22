@@ -122,6 +122,7 @@ protected:
 	void LegacyChildEraseDeletionMarked();
 public:
 	DisplayObject* findRemovedLegacyChild(uint32_t name);
+	void eraseRemovedLegacyChild(uint32_t name);
 	void LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q) override;
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);

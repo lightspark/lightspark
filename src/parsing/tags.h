@@ -135,6 +135,7 @@ public:
 	TAGTYPE getType()const{ return AVM1INITACTION_TAG; }
 	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
+	int getSpriteId() const { return  SpriteId; }
 };
 
 class DefineShapeTag: public DictionaryTag
@@ -584,6 +585,7 @@ public:
 	~DefineSpriteTag();
 	virtual int getId() const { return SpriteID; }
 	virtual ASObject* instance(Class_base* c=NULL);
+	void addInitActionToFrame(AVM1InitActionTag* t);
 };
 
 class ProtectTag: public ControlTag

@@ -510,9 +510,17 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				break;
 			case AVM1INITACTION_TAG:
 			{
-				if (!(static_cast<AVM1InitActionTag*>(tag)->empty()))
+				AVM1InitActionTag* t = static_cast<AVM1InitActionTag*>(tag);
+				if (!t->empty())
 				{
-					addAvm1InitActionToFrame(static_cast<AVM1InitActionTag*>(tag));
+					DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->dictionaryLookup(t->getSpriteId()));
+					if (sprite)
+						sprite->addInitActionToFrame(t);
+					else
+					{
+						LOG(LOG_ERROR,"DefineSpriteTag:sprite not found in dictionary for InitActionTag:"<<t->getSpriteId());
+						addAvm1InitActionToFrame(t);
+					}
 					empty=false;
 				}
 				break;
@@ -567,6 +575,13 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,true);
 	return spr;
+}
+
+void DefineSpriteTag::addInitActionToFrame(AVM1InitActionTag *t)
+{
+	if (frames.size()==0)
+		frames.push_back(Frame());
+	addAvm1InitActionToFrame(t);
 }
 
 void lightspark::ignore(istream& i, int count)

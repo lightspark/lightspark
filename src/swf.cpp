@@ -1581,8 +1581,18 @@ void ParseThread::parseSWF(UI8 ver)
 				}
 				case AVM1INITACTION_TAG:
 				{
-					if (!(static_cast<AVM1InitActionTag*>(tag)->empty()))
-						root->addAvm1InitActionToFrame(static_cast<AVM1InitActionTag*>(tag));
+					AVM1InitActionTag* t = static_cast<AVM1InitActionTag*>(tag);
+					if (!t->empty())
+					{
+						DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->dictionaryLookup(t->getSpriteId()));
+						if (sprite)
+							sprite->addInitActionToFrame(t);
+						else
+						{
+							LOG(LOG_ERROR,"sprite not found in dictionary for InitActionTag:"<<t->getSpriteId());
+							root->addAvm1InitActionToFrame(t);
+						}
+					}
 					empty=false;
 					break;
 				}

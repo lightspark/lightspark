@@ -263,10 +263,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		if(Tags[i]==0)
 		{
 			root->incRef();
-			if (root->getSystemState()->mainClip == root)
-				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-			else
-				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}
 		else
 		{

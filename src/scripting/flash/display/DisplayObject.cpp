@@ -1064,9 +1064,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 		res =th->getRoot();
 	if(res.isNull())
 	{
-		asAtomHandler::setUndefined(ret);	
+		asAtomHandler::setUndefined(ret);
 		return;
 	}
+	res->incRef(); // one ref will be removed during destruction of res
 
 	res->incRef();
 	ret = asAtomHandler::fromObject(res.getPtr());

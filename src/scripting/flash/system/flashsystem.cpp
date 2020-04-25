@@ -380,16 +380,9 @@ bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& 
 	return false;
 }
 
+
 void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target)
 {
-	//Check in the parent first
-	if(!parentDomain.isNull())
-	{
-		parentDomain->getVariableAndTargetByMultiname(ret,name, target);
-		if(asAtomHandler::isValid(ret))
-			return;
-	}
-
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF);
@@ -399,6 +392,12 @@ void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multi
 			// No incRef, return a reference borrowed from globalScopes
 			return;
 		}
+	}
+	if(!parentDomain.isNull())
+	{
+		parentDomain->getVariableAndTargetByMultiname(ret,name, target);
+		if(asAtomHandler::isValid(ret))
+			return;
 	}
 }
 void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target)
@@ -441,14 +440,6 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 }
 ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
 {
-	//Check in the parent first
-	if(!parentDomain.isNull())
-	{
-		ASObject* ret=parentDomain->getVariableByMultinameOpportunistic(name);
-		if(ret)
-			return ret;
-	}
-
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		asAtom o=asAtomHandler::invalidAtom;
@@ -459,7 +450,13 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 			return asAtomHandler::toObject(o,getSystemState());
 		}
 	}
-	return NULL;
+	if(!parentDomain.isNull())
+	{
+		ASObject* ret=parentDomain->getVariableByMultinameOpportunistic(name);
+		if(ret)
+			return ret;
+	}
+	return nullptr;
 }
 
 void ApplicationDomain::checkDomainMemory()

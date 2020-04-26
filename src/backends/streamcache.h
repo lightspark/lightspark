@@ -70,6 +70,7 @@ public:
 	// Gets the length of downloaded data
 	size_t getReceivedLength() const { return receivedLength; }
 
+	void setTerminated(bool t) { terminated = t; }
 	bool hasTerminated() const { return terminated; }
 	bool hasFailed() const { return failed; }
 	bool getNotifyLoader() const { return notifyLoader; }
@@ -143,17 +144,17 @@ private:
 	// Allocate a new chunk, append it to chunks, update writeChunk
 	void allocateChunk(size_t minLength) DLL_LOCAL;
 
-	virtual void handleAppend(const unsigned char* buffer, size_t length) DLL_LOCAL;
+	void handleAppend(const unsigned char* buffer, size_t length) override DLL_LOCAL;
 
 public:
 	MemoryStreamCache(SystemState *_sys);
 	virtual ~MemoryStreamCache();
 
-	virtual void reserve(size_t expectedLength);
+	void reserve(size_t expectedLength) override;
 
-	virtual std::streambuf *createReader();
+	std::streambuf *createReader() override;
 	
-	void openForWriting();
+	void openForWriting() override;
 };
 
 /*
@@ -168,8 +169,8 @@ private:
 	class DLL_LOCAL Reader : public std::filebuf {
 	private:
 		_R<FileStreamCache> buffer;
-		virtual int underflow();
-		virtual std::streamsize xsgetn(char* s, std::streamsize n);
+		int underflow() override;
+		std::streamsize xsgetn(char* s, std::streamsize n) override;
 	public:
 		Reader(_R<FileStreamCache> buffer);
 	};
@@ -187,17 +188,17 @@ private:
 	// Block until the cache file is opened by the writer stream
 	bool waitForCache() DLL_LOCAL;
 
-	virtual void handleAppend(const unsigned char* buffer, size_t length) DLL_LOCAL;
+	void handleAppend(const unsigned char* buffer, size_t length) override DLL_LOCAL;
 
 public:
 	FileStreamCache(SystemState* _sys);
 	virtual ~FileStreamCache();
 
-	virtual std::streambuf *createReader();
+	std::streambuf *createReader() override;
 
 	// Use an existing file as cache. Must be called before append().
 	void useExistingFile(const tiny_string& filename);
-	void openForWriting();
+	void openForWriting() override;
 };
 
 }

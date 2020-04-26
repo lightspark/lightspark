@@ -2593,6 +2593,7 @@ SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootM
 }
 void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len)
 {
+	cache->setTerminated(false);
 	switch (codec)
 	{
 		case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:

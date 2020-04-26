@@ -8752,7 +8752,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							break;
 						}
 					}
-					else if (r & GETVAR_ISCONSTANT)
+					else if (r & GETVAR_ISCONSTANT && !asAtomHandler::isNull(o)) // class may not be constructed yet, so the result is null and we do not cache
 					{
 						addCachedConstant(mi, o,operandlist,oldnewpositions,code);
 						break;

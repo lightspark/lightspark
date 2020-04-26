@@ -1780,19 +1780,19 @@ void RootMovieClip::commitFrame(bool another)
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
 			// in AS3 this is added to the stage after the construction of the main object is completed
 			if (!usesActionScript3)
-				afterConstruction();
+				constructionComplete();
 		}
 	}
 }
 
-void RootMovieClip::afterConstruction()
+void RootMovieClip::constructionComplete()
 {
-	if(this!=getSystemState()->mainClip)
+	if(this!=getSystemState()->mainClip || isConstructed())
 		return;
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	getSystemState()->addTick(1000/frameRate,getSystemState());
-	MovieClip::afterConstruction();
+	MovieClip::constructionComplete();
 }
 void RootMovieClip::revertFrame()
 {

@@ -96,7 +96,7 @@ public:
 	bool destruct() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
-	void afterConstruction() override;
+	void constructionComplete() override;
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;

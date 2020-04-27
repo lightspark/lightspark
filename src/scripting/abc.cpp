@@ -86,8 +86,12 @@
 #include "scripting/flash/concurrent/Condition.h"
 #include "scripting/flash/crypto/flashcrypto.h"
 #include "scripting/flash/desktop/flashdesktop.h"
+#include "scripting/flash/desktop/clipboardformats.h"
+#include "scripting/flash/desktop/clipboardtransfermode.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/bitmapencodingcolorspace.h"
+#include "scripting/flash/display/colorcorrection.h"
 #include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/GraphicsBitmapFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"
@@ -101,6 +105,10 @@
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display/shaderparametertype.h"
+#include "scripting/flash/display/shaderprecision.h"
+#include "scripting/flash/display/swfversion.h"
+#include "scripting/flash/display/triangleculling.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/display3d/flashdisplay3dtextures.h"
 #include "scripting/flash/events/flashevents.h"
@@ -135,6 +143,22 @@
 #include "scripting/flash/globalization/stringtools.h"
 #include "scripting/flash/external/ExternalInterface.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/media/audiodecoder.h"
+#include "scripting/flash/media/audiooutputchangereason.h"
+#include "scripting/flash/media/h264level.h"
+#include "scripting/flash/media/h264profile.h"
+#include "scripting/flash/media/microphoneenhancedmode.h"
+#include "scripting/flash/media/soundcodec.h"
+#include "scripting/flash/media/stagevideoavailabilityreason.h"
+#include "scripting/flash/media/videodecoder.h"
+#include "scripting/flash/net/netgroupreceivemode.h"
+#include "scripting/flash/net/netgroupreplicationstrategy.h"
+#include "scripting/flash/net/netgroupsendmode.h"
+#include "scripting/flash/net/netgroupsendresult.h"
+#include "scripting/flash/system/messagechannelstate.h"
+#include "scripting/flash/system/securitypanel.h"
+#include "scripting/flash/system/systemupdatertype.h"
+#include "scripting/flash/system/touchscreentype.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/text/flashtext.h"
@@ -466,6 +490,12 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("StageDisplayState","flash.display",Class<StageDisplayState>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapData","flash.display",Class<BitmapData>::getRef(m_sys));
 	builtin->registerBuiltin("Bitmap","flash.display",Class<Bitmap>::getRef(m_sys));
+	builtin->registerBuiltin("BitmapEncodingColorSpace","flash.display",Class<BitmapEncodingColorSpace>::getRef(m_sys));
+	builtin->registerBuiltin("ColorCorrection","flash.display",Class<ColorCorrection>::getRef(m_sys));
+	builtin->registerBuiltin("ShaderParameterType","flash.display",Class<ShaderParameterType>::getRef(m_sys));
+	builtin->registerBuiltin("ShaderPrecision","flash.display",Class<ShaderPrecision>::getRef(m_sys));
+	builtin->registerBuiltin("SWFVersion","flash.display",Class<SWFVersion>::getRef(m_sys));
+	builtin->registerBuiltin("TriangleCulling","flash.display",Class<TriangleCulling>::getRef(m_sys));
 	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef(m_sys));
 	builtin->registerBuiltin("MorphShape","flash.display",Class<MorphShape>::getRef(m_sys));
 	builtin->registerBuiltin("SpreadMethod","flash.display",Class<SpreadMethod>::getRef(m_sys));
@@ -666,6 +696,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef(m_sys));
 	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,registerClassAlias)));
 	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,getClassByAlias)));
+	builtin->registerBuiltin("NetGroupReceiveMode","flash.net",Class<NetGroupReceiveMode>::getRef(m_sys));
+	builtin->registerBuiltin("NetGroupReplicationStrategy","flash.net",Class<NetGroupReplicationStrategy>::getRef(m_sys));
+	builtin->registerBuiltin("NetGroupSendMode","flash.net",Class<NetGroupSendMode>::getRef(m_sys));
+	builtin->registerBuiltin("NetGroupSendResult","flash.net",Class<NetGroupSendResult>::getRef(m_sys));
 
 	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef(m_sys));
 
@@ -703,8 +737,19 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("WorkerState","flash.system",Class<WorkerState>::getRef(m_sys));
 	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef(m_sys));
 	builtin->registerBuiltin("IMEConversionMode","flash.system",Class<IMEConversionMode>::getRef(m_sys));
+	builtin->registerBuiltin("MessageChannelState","flash.system",Class<MessageChannelState>::getRef(m_sys));
+	builtin->registerBuiltin("SecurityPanel","flash.system",Class<SecurityPanel>::getRef(m_sys));
+	builtin->registerBuiltin("SystemUpdaterType","flash.system",Class<SystemUpdaterType>::getRef(m_sys));
+	builtin->registerBuiltin("TouchscreenType","flash.system",Class<TouchscreenType>::getRef(m_sys));
 
-
+	builtin->registerBuiltin("AudioDecoder","flash.media",Class<MediaAudioDecoder>::getRef(m_sys));
+	builtin->registerBuiltin("AudioOutputChangeReason","flash.media",Class<AudioOutputChangeReason>::getRef(m_sys));
+	builtin->registerBuiltin("H264Level","flash.media",Class<H264Level>::getRef(m_sys));
+	builtin->registerBuiltin("H264Profile","flash.media",Class<H264Profile>::getRef(m_sys));
+	builtin->registerBuiltin("MicrophoneEnhancedMode","flash.media",Class<MicrophoneEnhancedMode>::getRef(m_sys));
+	builtin->registerBuiltin("SoundCodec","flash.media",Class<SoundCodec>::getRef(m_sys));
+	builtin->registerBuiltin("StageVideoAvailabilityReason","flash.media",Class<StageVideoAvailabilityReason>::getRef(m_sys));
+	builtin->registerBuiltin("VideoCodec","flash.media",Class<MediaVideoDecoder>::getRef(m_sys));
 	builtin->registerBuiltin("SoundTransform","flash.media",Class<SoundTransform>::getRef(m_sys));
 	builtin->registerBuiltin("Video","flash.media",Class<Video>::getRef(m_sys));
 	builtin->registerBuiltin("Sound","flash.media",Class<Sound>::getRef(m_sys));
@@ -750,14 +795,17 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DateTimeFormatter","flash.globalization",Class<DateTimeFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeStyle","flash.globalization",Class<DateTimeStyle>::getRef(m_sys));
 	builtin->registerBuiltin("LastOperationStatus","flash.globalization",Class<LastOperationStatus>::getRef(m_sys));
-  builtin->registerBuiltin("CurrencyFormatter","flash.globalization",Class<CurrencyFormatter>::getRef(m_sys));
+	builtin->registerBuiltin("CurrencyFormatter","flash.globalization",Class<CurrencyFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("NumberFormatter","flash.globalization",Class<NumberFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("CollatorMode","flash.globalization",Class<CollatorMode>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeNameContext","flash.globalization",Class<DateTimeNameContext>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeNameStyle","flash.globalization",Class<DateTimeNameStyle>::getRef(m_sys));
 	builtin->registerBuiltin("NationalDigitsType","flash.globalization",Class<NationalDigitsType>::getRef(m_sys));
 	
-	
+	builtin->registerBuiltin("ClipboardFormats","flash.desktop",Class<ClipboardFormats>::getRef(m_sys));
+	builtin->registerBuiltin("ClipboardTransferMode","flash.desktop",Class<ClipboardTransferMode>::getRef(m_sys));
+
+
 	// avm intrinsics, not documented, but implemented in avmplus
 	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
 

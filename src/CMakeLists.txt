@@ -69,9 +69,13 @@ SET(LIBSPARK_SOURCES
   scripting/flash/concurrent/Mutex.cpp
   scripting/flash/concurrent/Condition.cpp
   scripting/flash/crypto/flashcrypto.cpp
+  scripting/flash/desktop/clipboardformats.cpp
+  scripting/flash/desktop/clipboardtransfermode.cpp
   scripting/flash/desktop/flashdesktop.cpp
   scripting/flash/display/BitmapContainer.cpp
   scripting/flash/display/BitmapData.cpp
+  scripting/flash/display/bitmapencodingcolorspace.cpp
+  scripting/flash/display/colorcorrection.cpp
   scripting/flash/display/DisplayObject.cpp
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
@@ -86,6 +90,10 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/GraphicsStroke.cpp
   scripting/flash/display/GraphicsTrianglePath.cpp
   scripting/flash/display/NativeMenuItem.cpp
+  scripting/flash/display/shaderparametertype.cpp
+  scripting/flash/display/shaderprecision.cpp
+  scripting/flash/display/swfversion.cpp
+  scripting/flash/display/triangleculling.cpp
   scripting/flash/display3d/flashdisplay3d.cpp
   scripting/flash/display3d/flashdisplay3dtextures.cpp
   scripting/flash/events/flashevents.cpp
@@ -103,7 +111,19 @@ SET(LIBSPARK_SOURCES
   scripting/flash/globalization/datetimenamestyle.cpp
   scripting/flash/globalization/nationaldigitstype.cpp
   scripting/flash/media/flashmedia.cpp
+  scripting/flash/media/audiodecoder.cpp
+  scripting/flash/media/audiooutputchangereason.cpp
+  scripting/flash/media/h264level.cpp
+  scripting/flash/media/h264profile.cpp
+  scripting/flash/media/microphoneenhancedmode.cpp
+  scripting/flash/media/soundcodec.cpp
+  scripting/flash/media/stagevideoavailabilityreason.cpp
+  scripting/flash/media/videodecoder.cpp
   scripting/flash/net/flashnet.cpp
+  scripting/flash/net/netgroupreceivemode.cpp
+  scripting/flash/net/netgroupreplicationstrategy.cpp
+  scripting/flash/net/netgroupsendmode.cpp
+  scripting/flash/net/netgroupsendresult.cpp
   scripting/flash/net/URLRequestHeader.cpp
   scripting/flash/net/URLStream.cpp
   scripting/flash/net/Socket.cpp
@@ -116,6 +136,10 @@ SET(LIBSPARK_SOURCES
   scripting/flash/sampler/flashsampler.cpp
   scripting/flash/sensors/flashsensors.cpp
   scripting/flash/system/flashsystem.cpp
+  scripting/flash/system/messagechannelstate.cpp
+  scripting/flash/system/securitypanel.cpp
+  scripting/flash/system/systemupdatertype.cpp
+  scripting/flash/system/touchscreentype.cpp
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp

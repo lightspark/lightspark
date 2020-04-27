@@ -4848,8 +4848,6 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame();
 		initFrame();
-		if (!getSystemState()->mainClip->usesActionScript3)
-			executeFrameScript();
 	}
 }
 

@@ -1780,7 +1780,10 @@ void RootMovieClip::commitFrame(bool another)
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
 			// in AS3 this is added to the stage after the construction of the main object is completed
 			if (!usesActionScript3)
+			{
 				constructionComplete();
+				afterConstruction();
+			}
 		}
 	}
 }

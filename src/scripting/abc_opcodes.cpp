@@ -1795,7 +1795,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 
 	vector<scope_entry>::reverse_iterator it;
 	bool found=false;
-	ASObject* ret=NULL;
+	ASObject* ret=nullptr;
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
@@ -1870,7 +1870,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		return;
 	}
 	multiname* name=th->mi->context->getMultiname(t,th);
-	LOG_CALL( "findPropStrict " << *name );
+	LOG_CALL( "findPropStrictCache " << *name );
 
 	vector<scope_entry>::reverse_iterator it;
 	bool hasdynamic=false;
@@ -2651,6 +2651,22 @@ void ABCVm::newClass(call_context* th, int n)
 
 	assert_and_throw(th->mi->context);
 	ret->context=th->mi->context;
+
+	// baseClass may be Null if we are currently also executing the newClass opcode of the base class
+	if(baseClass->getObjectType()==T_NULL && th->mi->context->instances[n].supername)
+	{
+		multiname* mnsuper = th->mi->context->getMultiname(th->mi->context->instances[n].supername,nullptr);
+		auto i = th->mi->context->root->applicationDomain->classesBeingDefined.cbegin();
+		while (i != th->mi->context->root->applicationDomain->classesBeingDefined.cend())
+		{
+			if(i->first->name_s_id == mnsuper->name_s_id && i->first->ns[0].nsRealId == mnsuper->ns[0].nsRealId)
+			{
+				baseClass = i->second;
+				break;
+			}
+			i++;
+		}
+	}
 
 	//Null is a "valid" base class
 	if(baseClass->getObjectType()!=T_NULL)

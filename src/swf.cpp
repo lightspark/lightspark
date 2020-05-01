@@ -1790,13 +1790,19 @@ void RootMovieClip::commitFrame(bool another)
 
 void RootMovieClip::constructionComplete()
 {
-	if(this!=getSystemState()->mainClip || isConstructed())
+	if(isConstructed())
 		return;
+	if (this!=getSystemState()->mainClip)
+	{
+		MovieClip::constructionComplete();
+		return;
+	}
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 	MovieClip::constructionComplete();
 }
+
 void RootMovieClip::revertFrame()
 {
 	//TODO: The next should be a regular assert
@@ -1855,6 +1861,12 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 {
 	this->incRef();
 	return _MR(this);
+}
+
+_NR<Stage> RootMovieClip::getStage()
+{
+	getSystemState()->stage->incRef();
+	return _MR(getSystemState()->stage);
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

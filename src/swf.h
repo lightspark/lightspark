@@ -133,7 +133,8 @@ public:
 	 */
 	_NR<SecurityDomain> securityDomain;
 	//DisplayObject interface
-	_NR<RootMovieClip> getRoot();
+	_NR<RootMovieClip> getRoot() override;
+	_NR<Stage> getStage() override;
 	void addBinding(const tiny_string& name, DictionaryTag *tag);
 	void bindClass(const QName &classname, Class_inherit* cls);
 	void checkBinding(DictionaryTag* tag);

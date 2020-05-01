@@ -1,11 +1,11 @@
 /**************************************************************************
-    Lightspark, a free flash player implementation
+    Lightspark,a free flash player implementation
 
     Copyright (C) 2012-2013  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
+    the Free Software Foundation,either version 3 of the License,or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not,see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
 //DO NOT ADD INCLUDE GUARD HERE! This needs to be included twice in allclasses.cpp
@@ -22,7 +22,7 @@
 REGISTER_CLASS_NAME(Array,"")
 REGISTER_CLASS_NAME2(ASObject,"Object","")
 REGISTER_CLASS_NAME2(ASQName,"QName","")
-REGISTER_CLASS_NAME2(ASString, "String", "")
+REGISTER_CLASS_NAME2(ASString,"String","")
 REGISTER_CLASS_NAME(Boolean,"")
 REGISTER_CLASS_NAME(Date,"")
 REGISTER_CLASS_NAME2(Global,"global","")
@@ -34,7 +34,7 @@ REGISTER_CLASS_NAME(Namespace,"")
 REGISTER_CLASS_NAME(Number,"")
 REGISTER_CLASS_NAME(RegExp,"")
 REGISTER_CLASS_NAME2(UInteger,"uint","")
-REGISTER_CLASS_NAME2(ASError, "Error", "")
+REGISTER_CLASS_NAME2(ASError,"Error","")
 REGISTER_CLASS_NAME(SecurityError,"")
 REGISTER_CLASS_NAME(ArgumentError,"")
 REGISTER_CLASS_NAME(DefinitionError,"")
@@ -64,7 +64,8 @@ REGISTER_CLASS_NAME(ASCondition,"flash.concurrent")
 //Desktop (AIR)
 REGISTER_CLASS_NAME(NativeApplication,"flash.desktop")
 REGISTER_CLASS_NAME(NativeDragManager,"flash.desktop")
-
+REGISTER_CLASS_NAME(ClipboardFormats,"flash.desktop")
+REGISTER_CLASS_NAME(ClipboardTransferMode,"flash.desktop")
 
 //Display
 REGISTER_CLASS_NAME(ActionScriptVersion,"flash.display")
@@ -72,8 +73,10 @@ REGISTER_CLASS_NAME(AVM1Movie,"flash.display")
 REGISTER_CLASS_NAME(Bitmap,"flash.display")
 REGISTER_CLASS_NAME(BitmapData,"flash.display")
 REGISTER_CLASS_NAME(BitmapDataChannel,"flash.display")
+REGISTER_CLASS_NAME(BitmapEncodingColorSpace,"flash.display")
 REGISTER_CLASS_NAME(BlendMode,"flash.display")
 REGISTER_CLASS_NAME(CapsStyle,"flash.display")
+REGISTER_CLASS_NAME(ColorCorrection,"flash.display")
 REGISTER_CLASS_NAME(DisplayObject,"flash.display")
 REGISTER_CLASS_NAME(DisplayObjectContainer,"flash.display")
 REGISTER_CLASS_NAME(FrameLabel,"flash.display")
@@ -106,6 +109,8 @@ REGISTER_CLASS_NAME(NativeMenuItem,"flash.display")
 REGISTER_CLASS_NAME(PixelSnapping,"flash.display")
 REGISTER_CLASS_NAME(Scene,"flash.display")
 REGISTER_CLASS_NAME(Shader,"flash.display")
+REGISTER_CLASS_NAME(ShaderParameterType,"flash.display")
+REGISTER_CLASS_NAME(ShaderPrecision,"flash.display")
 REGISTER_CLASS_NAME(Shape,"flash.display")
 REGISTER_CLASS_NAME(SimpleButton,"flash.display")
 REGISTER_CLASS_NAME(SpreadMethod,"flash.display")
@@ -116,6 +121,8 @@ REGISTER_CLASS_NAME(StageAlign,"flash.display")
 REGISTER_CLASS_NAME(StageDisplayState,"flash.display")
 REGISTER_CLASS_NAME(StageScaleMode,"flash.display")
 REGISTER_CLASS_NAME(StageQuality,"flash.display")
+REGISTER_CLASS_NAME(SWFVersion,"flash.display")
+REGISTER_CLASS_NAME(TriangleCulling,"flash.display")
 
 //Display3D
 REGISTER_CLASS_NAME(Context3D,"flash.display3D")
@@ -230,6 +237,14 @@ REGISTER_CLASS_NAME(DateTimeNameStyle,"flash.globalization")
 REGISTER_CLASS_NAME(NationalDigitsType,"flash.globalization")
 
 //Media
+REGISTER_CLASS_NAME(AudioOutputChangeReason,"flash.media")
+REGISTER_CLASS_NAME(H264Level,"flash.media")
+REGISTER_CLASS_NAME(H264Profile,"flash.media")
+REGISTER_CLASS_NAME(MicrophoneEnhancedMode,"flash.media")
+REGISTER_CLASS_NAME(SoundCodec,"flash.media")
+REGISTER_CLASS_NAME(StageVideoAvailabilityReason,"flash.media")
+REGISTER_CLASS_NAME(MediaAudioDecoder,"flash.media")
+REGISTER_CLASS_NAME(MediaVideoDecoder,"flash.media")
 REGISTER_CLASS_NAME(Sound,"flash.media")
 REGISTER_CLASS_NAME(SoundChannel,"flash.media")
 REGISTER_CLASS_NAME(SoundLoaderContext,"flash.media")
@@ -254,6 +269,10 @@ REGISTER_CLASS_NAME(IDynamicPropertyOutput,"flash.net")
 REGISTER_CLASS_NAME(LocalConnection,"flash.net")
 REGISTER_CLASS_NAME(NetConnection,"flash.net")
 REGISTER_CLASS_NAME(NetGroup,"flash.net")
+REGISTER_CLASS_NAME(NetGroupReceiveMode,"flash.net")
+REGISTER_CLASS_NAME(NetGroupReplicationStrategy,"flash.net")
+REGISTER_CLASS_NAME(NetGroupSendMode,"flash.net")
+REGISTER_CLASS_NAME(NetGroupSendResult,"flash.net")
 REGISTER_CLASS_NAME(NetStream,"flash.net")
 REGISTER_CLASS_NAME(NetStreamAppendBytesAction,"flash.net")
 REGISTER_CLASS_NAME(NetStreamInfo,"flash.net")
@@ -302,15 +321,18 @@ REGISTER_CLASS_NAME(Accelerometer,"flash.sensors")
 REGISTER_CLASS_NAME(ApplicationDomain,"flash.system")
 REGISTER_CLASS_NAME(Capabilities,"flash.system")
 REGISTER_CLASS_NAME(LoaderContext,"flash.system")
+REGISTER_CLASS_NAME(MessageChannelState,"flash.system")
 REGISTER_CLASS_NAME(Security,"flash.system")
 REGISTER_CLASS_NAME(SecurityDomain,"flash.system")
+REGISTER_CLASS_NAME(SecurityPanel,"flash.system")
 REGISTER_CLASS_NAME(System,"flash.system")
+REGISTER_CLASS_NAME(SystemUpdaterType,"flash.system")
 REGISTER_CLASS_NAME2(ASWorker,"Worker","flash.system")
 REGISTER_CLASS_NAME(WorkerDomain,"flash.system")
 REGISTER_CLASS_NAME(WorkerState,"flash.system")
 REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
 REGISTER_CLASS_NAME(IMEConversionMode,"flash.system")
-
+REGISTER_CLASS_NAME(TouchscreenType,"flash.system")
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")

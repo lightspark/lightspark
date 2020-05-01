@@ -1264,9 +1264,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					if (m.name_type==multiname::NAME_STRING && m.name_s_id == BUILTIN_STRINGS::PROTOTYPE)
 					{
 						ASObject* protobj = asAtomHandler::toObject(value,clip->getSystemState());
-						protobj->incRef();
-						_NR<ASObject> p = _MR(protobj);
-						o->setprop_prototype(p);
+						if (protobj)
+						{
+							protobj->incRef();
+							_NR<ASObject> p = _MR(protobj);
+							o->setprop_prototype(p);
+						}
+						else
+							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember no prototype found for "<<asAtomHandler::toDebugString(scriptobject));
 					}
 					else
 					{
@@ -1686,7 +1691,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				uint32_t codesize = uint32_t(*it++) | ((*it++)<<8);
 				auto itend = it;
 				itend+=codesize;
-				itend++;
 				if (curdepth >= maxdepth)
 				{
 					it = itend;

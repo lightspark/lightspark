@@ -509,22 +509,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				}
 				break;
 			case AVM1INITACTION_TAG:
-			{
-				AVM1InitActionTag* t = static_cast<AVM1InitActionTag*>(tag);
-				if (!t->empty())
-				{
-					DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->dictionaryLookup(t->getSpriteId()));
-					if (sprite)
-						sprite->addInitActionToFrame(t);
-					else
-					{
-						LOG(LOG_ERROR,"DefineSpriteTag:sprite not found in dictionary for InitActionTag:"<<t->getSpriteId());
-						addAvm1InitActionToFrame(t);
-					}
-					empty=false;
-				}
+				LOG(LOG_NOT_IMPLEMENTED,"InitActionTag inside sprite "<< SpriteID);
+				delete tag;
 				break;
-			}
 			case TAG:
 				delete tag;
 				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
@@ -575,13 +562,6 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,true);
 	return spr;
-}
-
-void DefineSpriteTag::addInitActionToFrame(AVM1InitActionTag *t)
-{
-	if (frames.size()==0)
-		frames.push_back(Frame());
-	addAvm1InitActionToFrame(t);
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -2637,7 +2617,7 @@ void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
 	ACTIONRECORD::executeActions(clip,context,actions, startactionpos,m);
 }
 
-AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):Tag(h)
+AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):ControlTag(h)
 {
 	// InitActionTags are ignored if clip uses actionscript3
 	if (root->usesActionScript3)
@@ -2656,10 +2636,17 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 	s.read((char*)actions.data()+startactionpos,Header.getLength()-2);
 }
 
-void AVM1InitActionTag::execute(MovieClip* clip, AVM1context *context)
+void AVM1InitActionTag::execute(RootMovieClip *root) const
 {
-	std::map<uint32_t,asAtom> m;
-	ACTIONRECORD::executeActions(clip,context,actions,startactionpos,m);
+	
+	DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->dictionaryLookup(SpriteId));
+	if (!sprite)
+	{
+		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
+		return;
+	}
+	MovieClip* o = sprite->instance(nullptr)->as<MovieClip>();
+	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) AVM1InitActionEvent(sprite,actions,startactionpos,_MR(o))));
 }
 
 AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)

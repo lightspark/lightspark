@@ -207,7 +207,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
-	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),
+	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),currentflushstep(1),nextflushstep(0),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),isinitialized(false)
@@ -1579,23 +1579,6 @@ void ParseThread::parseSWF(UI8 ver)
 					empty=false;
 					break;
 				}
-				case AVM1INITACTION_TAG:
-				{
-					AVM1InitActionTag* t = static_cast<AVM1InitActionTag*>(tag);
-					if (!t->empty())
-					{
-						DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->dictionaryLookup(t->getSpriteId()));
-						if (sprite)
-							sprite->addInitActionToFrame(t);
-						else
-						{
-							LOG(LOG_ERROR,"sprite not found in dictionary for InitActionTag:"<<t->getSpriteId());
-							root->addAvm1InitActionToFrame(t);
-						}
-					}
-					empty=false;
-					break;
-				}
 				case SHOW_TAG:
 				{
 					// The whole frame has been parsed, now execute all queued SymbolClass tags,
@@ -1620,6 +1603,7 @@ void ParseThread::parseSWF(UI8 ver)
 				// fall through
 				case ABC_TAG:
 				case ACTION_TAG:
+				case AVM1INITACTION_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
 					// frame has been parsed. This is to handle invalid SWF files that define ID's
@@ -1797,10 +1781,11 @@ void RootMovieClip::constructionComplete()
 		MovieClip::constructionComplete();
 		return;
 	}
+	// don't call MovieClip::constructionComplete(), as advancing the frame will be done during the first tick on SystemState
+	DisplayObject::constructionComplete();
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	getSystemState()->addTick(1000/frameRate,getSystemState());
-	MovieClip::constructionComplete();
 }
 
 void RootMovieClip::revertFrame()
@@ -2404,7 +2389,7 @@ FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 void RootMovieClip::setupAVM1RootMovie()
 {
 	if (!usesActionScript3)
-		MovieClip::AVM1SetupMethods(getClass());
+		this->classdef = Class<AVM1MovieClip>::getRef(getSystemState()).getPtr();
 }
 
 bool RootMovieClip::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)

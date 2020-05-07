@@ -1556,8 +1556,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
 		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	if (p->is<Stage>())
-		p= sys->mainClip;
 	p->incRef();
 	ret = asAtomHandler::fromObject(p);
 }
@@ -1879,7 +1877,6 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 			return asAtomHandler::as<DisplayObject>(ret)->AVM1GetClipFromPath(subpath);
 		}
 	}
-	LOG(LOG_ERROR,"AVM1:"<<getTagID()<<" path not found:"<<path<<" "<<subpath<<" "<<asAtomHandler::toDebugString(ret));
 	return nullptr;
 }
 
@@ -1947,7 +1944,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
-		if (getSystemState()->mainClip->version > 4)
+		if (getSystemState()->mainClip->version > 4 && getSystemState()->avm1global)
 		{
 			// first check for class names
 			asAtom ret=asAtomHandler::invalidAtom;

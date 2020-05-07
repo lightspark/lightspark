@@ -48,7 +48,7 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 	return stack.top();
 }
 
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
+void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal,AVM1Function *caller, AVM1Function *callee)
 {
 	Log::calls_indent++;
@@ -64,7 +64,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 	asAtom* scopestack = g_newa(asAtom, maxdepth);
 	scopestack[0] = obj ? *obj : asAtomHandler::fromObject(clip);
 	ASATOM_INCREF(scopestack[0]);
-	std::vector<uint8_t>::iterator* scopestackstop = g_newa(std::vector<uint8_t>::iterator, maxdepth);
+	std::vector<uint8_t>::const_iterator* scopestackstop = g_newa(std::vector<uint8_t>::const_iterator, maxdepth);
 	scopestackstop[0] = actionlist.end();
 	uint32_t currRegister = 1; // spec is not clear, but gnash starts at register 1
 	if (!suppressThis)
@@ -180,7 +180,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 		uint8_t opcode = *it++;
 		if (opcode > 0x80)
 			it+=2; // skip length
-		
 		switch (opcode)
 		{
 			case 0x00:
@@ -408,6 +407,36 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 						res = originalclip->AVM1GetVariable(s);
 					else
 						res = clip->AVM1GetVariable(s);
+				}
+				if (asAtomHandler::isInvalid(res))
+				{
+					// it seems adobe allows paths in form of "x.y.z" that point to objects in global object
+					tiny_string s1 = s;
+					ASObject* o = clip->getSystemState()->avm1global;
+					multiname m(nullptr);
+					m.name_type=multiname::NAME_STRING;
+					m.isAttribute = false;
+					while (true)
+					{
+						uint32_t pos = s1.find(".");
+						if (pos == tiny_string::npos)
+						{
+							m.name_s_id=clip->getSystemState()->getUniqueStringId(s1);
+							o->getVariableByMultiname(res,m);
+							break;
+						}
+						else
+						{
+							tiny_string s2 = s1.substr_bytes(0,pos);
+							s1 = s1.substr_bytes(pos+1,s1.numBytes()-(pos+1));
+							asAtom r = asAtomHandler::invalidAtom;
+							m.name_s_id=clip->getSystemState()->getUniqueStringId(s2);
+							o->getVariableByMultiname(r,m);
+							if (asAtomHandler::isInvalid(r))
+								break;
+							o = asAtomHandler::toObject(r,clip->getSystemState());
+						}
+					}
 				}
 				if (asAtomHandler::isInvalid(res) && !scopevariables.empty())
 				{
@@ -760,6 +789,23 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				}
 				IFunction* c = asAtomHandler::as<IFunction>(subconstr);
 				c->prototype = _MNR(Class<ASObject>::getInstanceS(clip->getSystemState()));
+				ASObject* superobj = asAtomHandler::toObject(superconstr,clip->getSystemState());
+				ASObject* proto = superobj->getprop_prototype();
+				if (!proto)
+				{
+					if (superobj->is<Class_base>())
+						proto = superobj->as<Class_base>()->prototype->getObj();
+					else if (superobj->is<IFunction>())
+						proto = superobj->as<IFunction>()->prototype.getPtr();
+				}
+				if (proto)
+				{
+					proto->incRef();
+					_NR<ASObject> o = _MR(proto);
+					c->prototype->setprop_prototype(o);
+				}
+				else
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionExtends  super prototype not found "<<asAtomHandler::toDebugString(superconstr)<<" "<<asAtomHandler::toDebugString(subconstr));
 				c->prototype->setVariableAtomByQName("constructor",nsNameAndKind(),superconstr, DECLARED_TRAIT);
 				break;
 			}
@@ -957,7 +1003,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				asAtom ret=asAtomHandler::invalidAtom;
 				if (f)
 				{
-					ret = asAtomHandler::fromObject(new_functionObject(f->prototype));
+					ASObject* pr = f->getprop_prototype();
+					if (pr)
+					{
+						pr->incRef();
+						_NR<ASObject> proto = _MR(pr);
+						ret = asAtomHandler::fromObject(new_functionObject(proto));
+					}
+					else
+						ret = asAtomHandler::fromObject(new_functionObject(f->prototype));
 					f->call(nullptr,&ret, args,numargs,callee);
 				}
 				else
@@ -974,7 +1028,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					}
 					else if (asAtomHandler::is<AVM1Function>(cls))
 					{
-						ret = asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<AVM1Function>(cls)->prototype));
 						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs,callee);
 					}
 					else
@@ -1180,7 +1233,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 							{
 								case BUILTIN_STRINGS::PROTOTYPE:
 								{
-									if (o->getClass())
+									if (o->is<Class_base>())
+										ret = asAtomHandler::fromObject(o->as<Class_base>()->prototype.getPtr()->getObj());
+									else if (o->getClass())
 										ret = asAtomHandler::fromObject(o->getClass()->prototype.getPtr()->getObj());
 									else
 										LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
@@ -1275,18 +1330,25 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					}
 					else
 					{
+						bool hassetter=false;
 						ASObject* pr = o->getprop_prototype();
 						while (pr)
 						{
 							variable* var = pr->findVariableByMultiname(m,nullptr);
 							if (var && asAtomHandler::is<AVM1Function>(var->setter))
 							{
+								ASATOM_INCREF(value);
 								asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1,callee);
+								hassetter=true;
 								break;
 							}
 							pr = pr->getprop_prototype();
 						}
-						o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+						if (!hassetter)
+						{
+							ASATOM_INCREF(value);
+							o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+						}
 					}
 					if (o->is<DisplayObject>())
 						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
@@ -1564,15 +1626,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			case 0x88: // ActionConstantPool
 			{
 				uint32_t c = uint32_t(*it++) | ((*it++)<<8);
-				vector<tiny_string> stringlist;
+				context->AVM1ClearConstants();
 				for (uint32_t i = 0; i < c; i++)
 				{
-					tiny_string s((const char*)&(*it));
+					tiny_string s((const char*)&(*it),true);
 					it += s.numBytes()+1;
-					stringlist.push_back((tiny_string&)s);
+					context->AVM1AddConstant(clip->getSystemState()->getUniqueStringId(s));
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionConstantPool "<<c);
-				context->AVM1SetConstants(clip->getSystemState(),stringlist);
 				break;
 			}
 			case 0x8a: // ActionWaitForFrame
@@ -1641,7 +1702,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x8e: // ActionDefineFunction2
 			{
-				tiny_string name((const char*)&(*it));
+				tiny_string name((const char*)&(*it),true);
 				it += name.numBytes()+1;
 				uint32_t paramcount = uint32_t(*it++) | ((*it++)<<8);
 				*it++; //register count not used
@@ -1660,7 +1721,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 				for (uint16_t i=0; i < paramcount; i++)
 				{
 					uint8_t regnum = *it++;
-					tiny_string n((const char*)&(*it));
+					tiny_string n((const char*)&(*it),true);
 					it += n.numBytes()+1;
 					paramnames.push_back(clip->getSystemState()->getUniqueStringId(n.lowercase()));
 					registernumber.push_back(regnum);
@@ -1717,7 +1778,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 					{
 						case 0:
 						{
-							tiny_string val((const char*)&(*it));
+							tiny_string val((const char*)&(*it),true);
 							len -= val.numBytes()+1;
 							it += val.numBytes()+1;
 							asAtom a = asAtomHandler::fromStringID(clip->getSystemState()->getUniqueStringId(val));
@@ -1848,13 +1909,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, std
 			}
 			case 0x9b: // ActionDefineFunction
 			{
-				tiny_string name((const char*)&(*it));
+				tiny_string name((const char*)&(*it),true);
 				it += name.numBytes()+1;
 				uint32_t paramcount = uint32_t(*it++) | ((*it++)<<8);
 				std::vector<uint32_t> paramnames;
 				for (uint16_t i=0; i < paramcount; i++)
 				{
-					tiny_string n((const char*)&(*it));
+					tiny_string n((const char*)&(*it),true);
 					it += n.numBytes()+1;
 					paramnames.push_back(clip->getSystemState()->getUniqueStringId(n.lowercase()));
 				}

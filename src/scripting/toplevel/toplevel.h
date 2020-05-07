@@ -469,8 +469,8 @@ protected:
 	// type of the return value;
 	Class_base* returnType;
 	Function(Class_base* c,as_atom_function v = nullptr):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
-	method_info* getMethodInfo() const { return nullptr; }
-	IFunction* clone()
+	method_info* getMethodInfo() const override { return nullptr; }
+	IFunction* clone() override
 	{
 		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
 		if (!ret)
@@ -509,14 +509,14 @@ public:
 		 */
 		val_atom(ret,getSystemState(),obj,args,num_args);
 	}
-	bool isEqual(ASObject* r);
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
+	bool isEqual(ASObject* r) override;
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target) override
 	{
 		asAtom c = asAtomHandler::fromObject(target);
 		val_atom(ret,getSystemState(),c,nullptr,0);
 		return nullptr;
 	}
-	FORCE_INLINE Class_base* getReturnType()
+	FORCE_INLINE Class_base* getReturnType() override
 	{
 		return returnType;
 	}
@@ -623,11 +623,13 @@ public:
 };
 class AVM1context
 {
+friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
 public:
 	AVM1context():keepLocals(true) {}
-	void AVM1SetConstants(SystemState* sys,const std::vector<tiny_string>& c);
+	void AVM1ClearConstants();
+	void AVM1AddConstant(uint32_t nameID);
 	asAtom AVM1GetConstant(uint16_t index);
 	bool keepLocals;
 };
@@ -653,9 +655,11 @@ protected:
 	bool preloadThis;
 	bool preloadGlobal;
 	AVM1Function(Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
-		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),context(*ctx),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
+		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
 		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) 
 	{
+		if (ctx)
+			context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 		context.keepLocals=true;
 	}
 	method_info* getMethodInfo() const { return nullptr; }

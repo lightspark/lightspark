@@ -128,6 +128,7 @@ public:
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child);
+	void _removeAllChildren();
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
@@ -511,13 +512,12 @@ class Frame
 friend class FrameContainer;
 private:
 	std::list<AVM1ActionTag*> avm1actions;
-	std::list<AVM1InitActionTag*> avm1initactions;
 	AVM1context avm1context;
 public:
 	inline AVM1context* getAVM1Context() { return &avm1context; }
 	std::list<DisplayListTag*> blueprint;
 	void execute(DisplayObjectContainer* displayList, bool inskipping);
-	void AVM1executeActions(MovieClip* clip, bool avm1initactionsdone);
+	void AVM1executeActions(MovieClip* clip);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -546,16 +546,18 @@ protected:
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
 	void addAvm1ActionToFrame(AVM1ActionTag* t);
-	void addAvm1InitActionToFrame(AVM1InitActionTag* t);
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();
 	FrameContainer(const FrameContainer& f);
 private:
 	//No need for any lock, just make sure accesses are atomic
 	ATOMIC_INT32(framesLoaded);
+	AVM1context avm1context;
 public:
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
 	uint32_t getFramesLoaded() { return framesLoaded; }
+	void setAvm1InitAction(AVM1InitActionTag* t);
+	inline AVM1context* getAVM1Context() { return &avm1context; }
 };
 
 class MovieClip: public Sprite, public FrameContainer
@@ -568,10 +570,7 @@ private:
 	std::map<uint32_t,asAtom > frameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
-	bool avm1initactionsdone;
 	bool inExecuteFramescript;
-
-	std::set<uint32_t> frameinitactionsdone;
 
 	CLIPACTIONS actions;
 	std::list<Frame>::iterator currentframeIterator;
@@ -650,6 +649,7 @@ public:
 	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
 	ASFUNCTION_ATOM(AVM1LoadMovie);
+	ASFUNCTION_ATOM(AVM1UnloadMovie);
 };
 
 class Stage: public DisplayObjectContainer

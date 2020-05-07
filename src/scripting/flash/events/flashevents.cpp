@@ -38,7 +38,7 @@ void IEventDispatcher::linkTraits(Class_base* c)
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
-	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),queued(false),eventPhase(0),type(t),target(),currentTarget()
+	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),queued(false),eventPhase(0),type(t),target(asAtomHandler::invalidAtom),currentTarget()
 {
 }
 
@@ -46,6 +46,7 @@ void Event::finalize()
 {
 	ASObject::finalize();
 	currentTarget.reset();
+	target = asAtomHandler::invalidAtom;
 }
 
 void Event::sinit(Class_base* c)
@@ -1086,8 +1087,27 @@ ASFUNCTIONBODY_ATOM(UncaughtErrorEvent,_constructor)
 	ErrorEvent::_constructor(ret,sys,obj,args,baseClassArgs);
 }
 
-ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(NULL, "ABCContextInitEvent"),context(c),lazy(l)
+ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(nullptr, "ABCContextInitEvent"),context(c),lazy(l)
 {
+}
+
+AVM1InitActionEvent::AVM1InitActionEvent(DefineSpriteTag* s, std::vector<uint8_t> a, uint32_t p, _NR<MovieClip> c):Event(nullptr, "AVM1InitActionEvent"),sprite(s),actions(a),startactionpos(p),clip(c)
+{
+}
+void AVM1InitActionEvent::finalize()
+{
+	sprite = nullptr;
+	actions.clear();
+	startactionpos=0;
+	clip.reset();
+	Event::finalize();
+}
+void AVM1InitActionEvent::executeActions()
+{
+	std::map<uint32_t,asAtom> m;
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
+	ACTIONRECORD::executeActions(clip.getPtr(),sprite->getAVM1Context(),actions,startactionpos,m);
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
 }
 
 ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")

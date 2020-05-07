@@ -1285,17 +1285,8 @@ void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
 	displayList->checkClipDepth();
 
 }
-void Frame::AVM1executeActions(MovieClip* clip, bool avm1initactionsdone)
+void Frame::AVM1executeActions(MovieClip* clip)
 {
-	if (!avm1initactionsdone)
-	{
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString());
-		auto it1=avm1initactions.begin();
-		for(;it1!=avm1initactions.end();++it1)
-			(*it1)->execute(clip,&avm1context);
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done" << clip->toDebugString());
-	}
-
 	auto it2=avm1actions.begin();
 	for(;it2!=avm1actions.end();++it2)
 		(*it2)->execute(clip,&avm1context);
@@ -1322,11 +1313,6 @@ void FrameContainer::addAvm1ActionToFrame(AVM1ActionTag* t)
 {
 	frames.back().avm1actions.push_back(t);
 }
-void FrameContainer::addAvm1InitActionToFrame(AVM1InitActionTag* t)
-{
-	frames.back().avm1initactions.push_back(t);
-}
-
 /**
  * Find the scene to which the given frame belongs and
  * adds the frame label to that scene.
@@ -1403,9 +1389,7 @@ bool MovieClip::destruct()
 	fromDefineSpriteTag = UINT32_MAX;
 	frameScriptToExecute = UINT32_MAX;
 	totalFrames_unreliable = 1;
-	avm1initactionsdone = false;
 	inExecuteFramescript=false;
-	frameinitactionsdone.clear();
 
 	frames.clear();
 	scenes.clear();
@@ -1954,6 +1938,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	DisplayObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LoadMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unloadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1UnloadMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
@@ -2000,10 +1985,7 @@ void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
 	}
 	if (it != frames.end())
 	{
-		bool initactionsdone = frameinitactionsdone.find(frame) != frameinitactionsdone.end();
-		it->AVM1executeActions(this,initactionsdone);
-		if (!initactionsdone)
-			frameinitactionsdone.insert(frame);
+		it->AVM1executeActions(this);
 	}
 }
 
@@ -2184,6 +2166,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	tiny_string method;
 	ARG_UNPACK_ATOM(url)(method,"GET");
 	LOG(LOG_NOT_IMPLEMENTED,"MovieClip.loadMovie not implemented "<<url<<" "<<method);
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	th->_removeAllChildren();
+	th->tokens.clear();
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -2677,6 +2665,28 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 		dynamicDisplayList.erase(it);
 	}
 	return true;
+}
+
+void DisplayObjectContainer::_removeAllChildren()
+{
+	Locker l(mutexDisplayList);
+	auto it=dynamicDisplayList.begin();
+	while (it!=dynamicDisplayList.end())
+	{
+		_R<DisplayObject> child = *it;
+		child->setOnStage(false);
+		child->setParent(nullptr);
+		child->setMask(NullRef);
+		
+		//Erase this from the legacy child map (if it is in there)
+		auto it2 = mapLegacyChildToDepth.find(child.getPtr());
+		if (it2 != mapLegacyChildToDepth.end())
+		{
+			mapDepthToLegacyChild.erase(it2->second);
+			mapLegacyChildToDepth.erase(it2);
+		}
+		it = dynamicDisplayList.erase(it);
+	}
 }
 
 bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
@@ -4727,9 +4737,6 @@ void MovieClip::initFrame()
 	{
 		frameScriptToExecute=state.FP;
 	}
-	avm1initactionsdone = frameinitactionsdone.find(state.FP) != frameinitactionsdone.end();
-	if (!avm1initactionsdone)
-		frameinitactionsdone.insert(state.FP);
 	state.frameadvanced=false;
 	state.creatingframe=false;
 }
@@ -4745,7 +4752,7 @@ void MovieClip::executeFrameScript()
 	}
 	if (currentframeIterator != frames.end())
 	{
-		currentframeIterator->AVM1executeActions(this,avm1initactionsdone);
+		currentframeIterator->AVM1executeActions(this);
 		currentframeIterator = frames.end();
 	}
 

@@ -309,7 +309,7 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 
 void ABCVm::registerClassesAVM1()
 {
-	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0);
 
 	registerClassesToplevel(builtinavm1);
 
@@ -443,7 +443,7 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 
 void ABCVm::registerClasses()
 {
-	Global* builtin=Class<Global>::getInstanceS(m_sys,(ABCContext*)NULL, 0);
+	Global* builtin=Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0);
 	//Register predefined types, ASObject are enough for not implemented classes
 	registerClassesToplevel(builtin);
 
@@ -1871,6 +1871,14 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				contexts.push_back(ev->context);
 				break;
 			}
+			case AVM1INITACTION_EVENT:
+			{
+				LOG(LOG_CALLS,"AVM1INITACTION:"<<e.second->toDebugString());
+				AVM1InitActionEvent* ev=static_cast<AVM1InitActionEvent*>(e.second.getPtr());
+				ev->executeActions();
+				LOG(LOG_CALLS,"AVM1INITACTION done");
+				break;
+			}
 			case INIT_FRAME:
 			{
 				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
@@ -2299,7 +2307,8 @@ void ABCVm::Run(ABCVm* th)
 {
 	//Spin wait until the VM is aknowledged by the SystemState
 	setTLSSys(th->m_sys);
-	while(getVm(th->m_sys)!=th);
+	while(getVm(th->m_sys)!=th)
+		;
 
 	/* set TLS variable for isVmThread() */
         tls_set(&is_vm_thread, GINT_TO_POINTER(1));
@@ -2416,7 +2425,6 @@ void ABCVm::Run(ABCVm* th)
 		}
 		Chronometer chronometer;
 
-		pair<_NR<EventDispatcher>,_R<Event>> e=th->events_queue.front();
 		th->handleFrontEvent();
 		profile->accountTime(chronometer.checkpoint());
 #ifdef MEMORY_USAGE_PROFILING

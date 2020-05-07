@@ -3082,18 +3082,19 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 		if(t->slot_id!=slotId)
 			continue;
 
-		multiname* tname=mi->context->getMultiname(t->type_name,NULL);
+		multiname* tname=mi->context->getMultiname(t->type_name,nullptr);
 		return tname;
 	}
-	return NULL;
+	return nullptr;
 }
-void AVM1context::AVM1SetConstants(SystemState *sys, const std::vector<tiny_string> &c)
+void AVM1context::AVM1ClearConstants()
 {
 	avm1strings.clear();
-	for (auto it = c.begin(); it != c.end(); it++)
-	{
-		avm1strings.push_back(sys->getUniqueStringId(*it)); 
-	}
+}
+
+void AVM1context::AVM1AddConstant(uint32_t nameID)
+{
+	avm1strings.push_back(nameID);
 }
 
 asAtom AVM1context::AVM1GetConstant(uint16_t index)

@@ -319,6 +319,7 @@ public:
 		c->setupDeclaredTraits(ret);
 		ret->constructionComplete();
 		ret->setConstructIndicator();
+		ret->setConstructorCallComplete();
 		return ret;
 		//return c->getInstance(true,NULL,0);
 	}

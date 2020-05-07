@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -41,6 +41,7 @@ class PlaceObject2Tag;
 class DisplayObject;
 class Responder;
 class GameInputDevice;
+class DefineSpriteTag;
 
 class Event: public ASObject
 {
@@ -85,7 +86,7 @@ public:
 		: Event(NULL,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
 	void wait();
 	void signal();
-	void finalize();
+	void finalize() override ;
 };
 
 class EventPhase: public ASObject
@@ -105,7 +106,7 @@ public:
 class KeyboardEvent: public Event
 {
 private:
-	virtual Event* cloneImpl() const;
+	Event* cloneImpl() const override ;
 
 	uint32_t modifiers;
 	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
@@ -155,7 +156,7 @@ public:
 class NetStatusEvent: public Event
 {
 private:
-	virtual Event* cloneImpl() const;
+	Event* cloneImpl() const override ;
 public:
 	NetStatusEvent(Class_base* cb, const tiny_string& l="", const tiny_string& c="");
 	static void sinit(Class_base*);
@@ -194,7 +195,7 @@ class ErrorEvent: public TextEvent
 {
 protected:
 	std::string errorMsg;
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 	ASPROPERTY_GETTER(int32_t,errorID);
 public:
 	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "", int id = 0);
@@ -208,7 +209,7 @@ public:
 class IOErrorEvent: public ErrorEvent
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	IOErrorEvent(Class_base* c, const tiny_string& t = "ioError", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
@@ -253,7 +254,7 @@ public:
 class ProgressEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	Mutex accesmutex;
 	ASPROPERTY_GETTER_SETTER(int32_t,bytesLoaded);
@@ -281,7 +282,7 @@ class MouseEvent: public Event
 {
 private:
 	uint32_t modifiers; 
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	MouseEvent(Class_base* c);
 	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
@@ -289,8 +290,8 @@ public:
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	void setTarget(asAtom t);
-	EVENT_TYPE getEventType() const { return MOUSE_EVENT;}
+	void setTarget(asAtom t) override;
+	EVENT_TYPE getEventType() const override { return MOUSE_EVENT;}
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool,buttonDown);
 	ASFUNCTION_GETTER_SETTER(altKey);
@@ -376,7 +377,7 @@ public:
 	// is called when a new event is added to the event queue
 	virtual void onNewEvent(){}
 	// is called after an event was handled by the event queue
-	virtual void afterHandleEvent(){}
+	virtual void afterHandleEvent() {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void handleEvent(_R<Event> e);
@@ -402,7 +403,7 @@ public:
 class DataEvent: public TextEvent
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "data"), data(_data) {}
 	static void sinit(Class_base*);
@@ -424,7 +425,7 @@ public:
 	BindClassEvent(_R<RootMovieClip> b, const tiny_string& c);
 	BindClassEvent(DictionaryTag* t, const tiny_string& c);
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return BIND_CLASS;}
+	EVENT_TYPE getEventType() const override { return BIND_CLASS;}
 };
 
 class ShutdownEvent: public Event
@@ -432,7 +433,7 @@ class ShutdownEvent: public Event
 public:
 	ShutdownEvent() DLL_PUBLIC;
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return SHUTDOWN; }
+	EVENT_TYPE getEventType() const override { return SHUTDOWN; }
 };
 
 
@@ -448,7 +449,7 @@ public:
 	FunctionEvent(asAtom _f, asAtom _obj=asAtomHandler::invalidAtom, asAtom* _args=NULL, uint32_t _numArgs=0);
 	~FunctionEvent();
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return FUNCTION; }
+	EVENT_TYPE getEventType() const override { return FUNCTION; }
 };
 
 class ExternalCallEvent: public WaitableEvent
@@ -466,7 +467,7 @@ public:
 			  ASObject** _result, bool* _thrown, tiny_string* _exception);
 	~ExternalCallEvent();
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return EXTERNAL_CALL; }
+	EVENT_TYPE getEventType() const override { return EXTERNAL_CALL; }
 };
 
 class ABCContextInitEvent: public Event
@@ -478,8 +479,24 @@ private:
 public:
 	ABCContextInitEvent(ABCContext* c, bool lazy) DLL_PUBLIC;
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return CONTEXT_INIT; }
+	EVENT_TYPE getEventType() const override { return CONTEXT_INIT; }
 };
+class AVM1InitActionEvent: public Event
+{
+friend class ABCVm;
+private:
+	DefineSpriteTag* sprite;
+	std::vector<uint8_t> actions;
+	uint32_t startactionpos;
+	_NR<MovieClip> clip;
+public:
+	AVM1InitActionEvent(DefineSpriteTag* s,std::vector<uint8_t> a, uint32_t p, _NR<MovieClip> c);
+	static void sinit(Class_base*);
+	EVENT_TYPE getEventType() const override { return AVM1INITACTION_EVENT; }
+	void executeActions();
+	void finalize() override;
+};
+
 
 class Frame;
 
@@ -491,7 +508,7 @@ private:
 	_NR<DisplayObject> clip;
 public:
 	InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr, "InitFrameEvent"),clip(m) {}
-	EVENT_TYPE getEventType() const { return INIT_FRAME; }
+	EVENT_TYPE getEventType() const override { return INIT_FRAME; }
 };
 
 class ExecuteFrameScriptEvent: public Event
@@ -502,7 +519,7 @@ private:
 public:
 	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr, "ExecuteFrameScriptEvent"),clip(m) {}
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const { return EXECUTE_FRAMESCRIPT; }
+	EVENT_TYPE getEventType() const override { return EXECUTE_FRAMESCRIPT; }
 };
 
 class AdvanceFrameEvent: public Event
@@ -512,13 +529,13 @@ private:
 	_NR<DisplayObject> clip;
 public:
 	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,"AdvanceFrameEvent"),clip(m) {}
-	EVENT_TYPE getEventType() const { return ADVANCE_FRAME; }
+	EVENT_TYPE getEventType() const override { return ADVANCE_FRAME; }
 };
 class IdleEvent: public WaitableEvent
 {
 public:
 	IdleEvent(): WaitableEvent("IdleEvent") {}
-	EVENT_TYPE getEventType() const { return IDLE_EVENT; }
+	EVENT_TYPE getEventType() const override { return IDLE_EVENT; }
 };
 
 //Event to flush the invalidation queue
@@ -526,7 +543,7 @@ class FlushInvalidationQueueEvent: public Event
 {
 public:
 	FlushInvalidationQueueEvent():Event(NULL, "FlushInvalidationQueueEvent"){}
-	EVENT_TYPE getEventType() const { return FLUSH_INVALIDATION_QUEUE; }
+	EVENT_TYPE getEventType() const override { return FLUSH_INVALIDATION_QUEUE; }
 };
 
 class ParseRPCMessageEvent: public Event
@@ -536,8 +553,8 @@ public:
 	_NR<ASObject> client;
 	_NR<Responder> responder;
 	ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> client, _NR<Responder> responder);
-	EVENT_TYPE getEventType() const { return PARSE_RPC_MESSAGE; }
-	void finalize();
+	EVENT_TYPE getEventType() const override { return PARSE_RPC_MESSAGE; }
+	void finalize() override;
 };
 class TextInputEvent: public Event
 {
@@ -547,7 +564,7 @@ private:
 	tiny_string text;
 public:
 	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr, "TextInputEvent"),target(m),text(s) {}
-	EVENT_TYPE getEventType() const { return TEXTINPUT_EVENT; }
+	EVENT_TYPE getEventType() const override { return TEXTINPUT_EVENT; }
 };
 
 class DRMErrorEvent: public ErrorEvent
@@ -575,7 +592,7 @@ public:
 class VideoEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	VideoEvent(Class_base* c);
 	static void sinit(Class_base*);
@@ -586,7 +603,7 @@ public:
 class StageVideoEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	StageVideoEvent(Class_base* c);
 	static void sinit(Class_base*);
@@ -598,7 +615,7 @@ public:
 class StageVideoAvailabilityEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	StageVideoAvailabilityEvent(Class_base* c);
 	static void sinit(Class_base*);
@@ -609,7 +626,7 @@ public:
 class ContextMenuEvent: public Event
 {
 private:
-	Event* cloneImpl() const;
+	Event* cloneImpl() const override;
 public:
 	ContextMenuEvent(Class_base* c) : Event(c, "ContextMenuEvent") {}
 	ContextMenuEvent(Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner) : Event(c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner) {}

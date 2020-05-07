@@ -818,6 +818,7 @@ friend struct asfreelist;
 friend class SystemState;
 friend struct variable;
 friend class variables_map;
+friend class RootMovieClip;
 public:
 	asfreelist* objfreelist;
 private:

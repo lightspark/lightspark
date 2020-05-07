@@ -58,14 +58,14 @@ class EndTag:public Tag
 {
 public:
 	EndTag(RECORDHEADER h, std::istream& s):Tag(h){}
-	virtual TAGTYPE getType() const{ return END_TAG; }
+	TAGTYPE getType() const override { return END_TAG; }
 };
 
 class DisplayListTag: public Tag
 {
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
-	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
+	TAGTYPE getType() const override { return DISPLAY_LIST_TAG; }
 	virtual void execute(DisplayObjectContainer* parent,bool inskipping) =0;
 };
 
@@ -84,7 +84,7 @@ public:
 	RootMovieClip* loadedFrom;
 	uint32_t nameID;
 	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(NULL),loadedFrom(root),nameID(UINT32_MAX) { }
-	virtual TAGTYPE getType()const{ return DICT_TAG; }
+	TAGTYPE getType() const override { return DICT_TAG; }
 	virtual int getId() const=0;
 	virtual ASObject* instance(Class_base* c=NULL) { return NULL; }
 	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
@@ -98,7 +98,7 @@ class ControlTag: public Tag
 {
 public:
 	ControlTag(RECORDHEADER h):Tag(h){}
-	virtual TAGTYPE getType()const{ return CONTROL_TAG; }
+	TAGTYPE getType() const override { return CONTROL_TAG; }
 	virtual void execute(RootMovieClip* root) const=0;
 };
 
@@ -109,8 +109,8 @@ class ActionTag: public ControlTag
 {
 public:
 	ActionTag(RECORDHEADER h):ControlTag(h){}
-	virtual TAGTYPE getType()const{ return ACTION_TAG; }
-	virtual void execute(RootMovieClip* root) const=0;
+	TAGTYPE getType() const override { return ACTION_TAG; }
+	void execute(RootMovieClip* root) const override =0;
 };
 
 class AVM1ActionTag: public Tag
@@ -120,11 +120,11 @@ private:
 	uint32_t startactionpos;
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
-	TAGTYPE getType()const{ return AVM1ACTION_TAG; }
+	TAGTYPE getType() const override { return AVM1ACTION_TAG; }
 	void execute(MovieClip* clip, AVM1context *context);
 	bool empty() { return actions.empty(); }
 };
-class AVM1InitActionTag: public Tag
+class AVM1InitActionTag: public ControlTag
 {
 private:
 	UI16_SWF SpriteId;
@@ -132,10 +132,9 @@ private:
 	uint32_t startactionpos;
 public:
 	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
-	TAGTYPE getType()const{ return AVM1INITACTION_TAG; }
-	void execute(MovieClip* clip, AVM1context *context);
+	TAGTYPE getType() const override { return AVM1INITACTION_TAG; }
+	void execute(RootMovieClip* root) const override;
 	bool empty() { return actions.empty(); }
-	int getSpriteId() const { return  SpriteId; }
 };
 
 class DefineShapeTag: public DictionaryTag
@@ -319,7 +318,7 @@ class ShowFrameTag: public Tag
 {
 public:
 	ShowFrameTag(RECORDHEADER h, std::istream& in);
-	virtual TAGTYPE getType()const{ return SHOW_TAG; }
+	TAGTYPE getType() const override { return SHOW_TAG; }
 };
 
 /*class PlaceObjectTag: public Tag
@@ -397,7 +396,7 @@ class FrameLabelTag: public Tag
 public:
 	STRING Name;
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
-	virtual TAGTYPE getType()const{ return FRAMELABEL_TAG; }
+	TAGTYPE getType() const override { return FRAMELABEL_TAG; }
 };
 
 class SetBackgroundColorTag: public ControlTag
@@ -585,7 +584,6 @@ public:
 	~DefineSpriteTag();
 	virtual int getId() const { return SpriteID; }
 	virtual ASObject* instance(Class_base* c=NULL);
-	void addInitActionToFrame(AVM1InitActionTag* t);
 };
 
 class ProtectTag: public ControlTag
@@ -750,8 +748,8 @@ private:
 	UI16_SWF ScriptTimeoutSeconds;
 public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return ABC_TAG; }
-	void execute(RootMovieClip* root) const;
+	TAGTYPE getType() const override { return ABC_TAG; }
+	void execute(RootMovieClip* root) const override;
 };
 
 class ProductInfoTag: public Tag

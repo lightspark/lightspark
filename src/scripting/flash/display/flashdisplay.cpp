@@ -38,6 +38,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/avm1/avm1text.h"
 #include <algorithm>
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
@@ -1810,7 +1811,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
 		{
 			std::map<uint32_t,asAtom> m;
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 		}
 	}
 	Sprite::AVM1HandleKeyboardEvent(e);
@@ -1841,7 +1842,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					)
 			{
 				std::map<uint32_t,asAtom> m;
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			}
 		}
 		AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
@@ -1859,16 +1860,16 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		{
 			if (e->type == "complete" && it->EventFlags.ClipEventLoad)
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			}
 			if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
 			{
 				if (!this->state.explicit_FP)
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			}
 			if (e->type == "load" && it->EventFlags.ClipEventLoad)
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,0,m);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			}
 		}
 		if (e->type == "enterFrame")
@@ -1961,6 +1962,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextField","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateTextField),NORMAL_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -2173,6 +2175,40 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 	th->_removeAllChildren();
 	th->tokens.clear();
 }
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	tiny_string instanceName;
+	int depth;
+	int x;
+	int y;
+	uint32_t width;
+	uint32_t height;
+	ARG_UNPACK_ATOM(instanceName)(depth)(x)(y)(width)(height);
+	AVM1TextField* tf = Class<AVM1TextField>::getInstanceS(sys);
+	tf->name = sys->getUniqueStringId(instanceName);
+	tf->setX(x);
+	tf->setY(y);
+	tf->width = width;
+	tf->height = height;
+	th->_addChildAt(_MR(tf),depth);
+	if(tf->name != BUILTIN_STRINGS::EMPTY)
+	{
+		tf->incRef();
+		multiname objName(NULL);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=tf->name;
+		objName.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		asAtom v = asAtomHandler::fromObjectNoPrimitive(tf);
+		th->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
+	}
+	if (sys->getSwfVersion() >= 8)
+	{
+		tf->incRef();
+		ret = asAtomHandler::fromObjectNoPrimitive(tf);
+	}
+}
+
 
 void DisplayObjectContainer::sinit(Class_base* c)
 {

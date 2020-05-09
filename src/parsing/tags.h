@@ -360,12 +360,12 @@ protected:
 	UI16_SWF Ratio;
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
-	PlaceObject2Tag(RECORDHEADER h,uint32_t v):DisplayListTag(h),ClipActions(v){}
+	PlaceObject2Tag(RECORDHEADER h,uint32_t v):DisplayListTag(h),ClipActions(v,nullptr){}
 	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 	DictionaryTag* placedTag;
 public:
 	STRING Name;
-	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag* datatag);
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 };
 

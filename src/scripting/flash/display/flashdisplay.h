@@ -650,6 +650,7 @@ public:
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
 	ASFUNCTION_ATOM(AVM1LoadMovie);
 	ASFUNCTION_ATOM(AVM1UnloadMovie);
+	ASFUNCTION_ATOM(AVM1CreateTextField);
 };
 
 class Stage: public DisplayObjectContainer

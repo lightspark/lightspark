@@ -1422,24 +1422,27 @@ public:
 	uint32_t getSWFVersion() const { return swfversion; }
 };
 
+class AdditionalDataTag;
 class ACTIONRECORD;
 class CLIPACTIONRECORD
 {
 public:
-	CLIPACTIONRECORD(uint32_t v):EventFlags(v) {}
+	CLIPACTIONRECORD(uint32_t v, AdditionalDataTag* _datatag):EventFlags(v),startactionpos(0),datatag( _datatag) {}
 	CLIPEVENTFLAGS EventFlags;
 	UI32_SWF ActionRecordSize;
 	UI8 KeyCode;
 	std::vector<uint8_t> actions;
 	bool isLast();
+	uint32_t startactionpos;
+	AdditionalDataTag* datatag;
 };
-
 class CLIPACTIONS
 {
 public:
-	CLIPACTIONS(uint32_t v):AllEventFlags(v) {}
+	CLIPACTIONS(uint32_t v, AdditionalDataTag* _datatag=nullptr):AllEventFlags(v),datatag(_datatag) {}
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
 	CLIPEVENTFLAGS AllEventFlags;
+	AdditionalDataTag* datatag;
 };
 
 class SOUNDENVELOPE

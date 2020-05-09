@@ -1477,8 +1477,15 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 		s >> v.KeyCode;
 		len -= 1;
 	}
-	v.actions.resize(len);
-	s.read((char*)v.actions.data(),len);
+	if (v.datatag)
+	{
+		v.startactionpos=v.datatag->numbytes;//+datatagskipbytes;
+		v.actions.resize(len+v.startactionpos);
+		memcpy(v.actions.data(),v.datatag->bytes,v.datatag->numbytes);
+	}
+	else
+		v.actions.resize(len);
+	s.read((char*)(v.actions.data()+v.startactionpos),len);
 	return s;
 }
 
@@ -1493,7 +1500,9 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	s >> Reserved >> v.AllEventFlags;
 	while(1)
 	{
-		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion());
+		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion(),v.datatag);
+		// use datatag only on first clipaction
+		v.datatag=nullptr;
 		s >> t;
 		if(t.isLast())
 			break;

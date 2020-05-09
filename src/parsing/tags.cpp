@@ -158,7 +158,10 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new ProtectTag(h,f);
 				break;
 			case 26:
-				ret=new PlaceObject2Tag(h,f,root);
+				ret=new PlaceObject2Tag(h,f,root,datatag);
+				if (datatag)
+					delete datatag;
+				datatag=nullptr;
 				break;
 			case 28:
 				ret=new RemoveObject2Tag(h,f);
@@ -1661,7 +1664,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (it->EventFlags.ClipEventConstruct)
 			{
 				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,0,m);
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
 			}
 		}
 	}
@@ -1674,13 +1677,13 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (it->EventFlags.ClipEventInitialize)
 			{
 				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,0,m);
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
 			}
 		}
 	}
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DisplayListTag(h),ClipActions(root->version),placedTag(nullptr)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag *datatag):DisplayListTag(h),ClipActions(root->version,datatag),placedTag(nullptr)
 {
 	LOG(LOG_TRACE,_("PlaceObject2"));
 

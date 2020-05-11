@@ -115,12 +115,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	}
 	if (!suppressSuper)
 	{
-		if (clip->getClass()->super)
-			clip->getClass()->super->incRef();
+		asAtom superconstr = asAtomHandler::invalidAtom;
+		if (callee)
+		{
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
+			callee->prototype->getVariableByMultiname(superconstr,m);
+			ASATOM_INCREF(superconstr);
+		}
 		if (preloadSuper)
-			registers[currRegister++] = asAtomHandler::fromObject(clip->getClass()->super.getPtr());
+			registers[currRegister++] = superconstr;
 		else
-			locals[paramnames[currRegister++]] = asAtomHandler::fromObject(clip->getClass()->super.getPtr());
+			locals[paramnames[currRegister++]] = superconstr;
 	}
 	if (preloadRoot)
 	{
@@ -1201,6 +1209,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 									f->callGetter(ret,o);
 									break;
 								}
+								else if (!asAtomHandler::isInvalid(ret))
+									break;
 								pr = pr->getprop_prototype();
 							}
 						}
@@ -1421,6 +1431,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					ASObject* scrobj = asAtomHandler::toObject(scriptobject,clip->getSystemState());
 					scrobj->getVariableByMultiname(func,m);
+					if (!asAtomHandler::is<IFunction>(func))
+					{
+						if (scrobj->is<IFunction>())
+						{
+							ASObject* pr =scrobj->as<IFunction>()->prototype.getPtr();
+							while (pr)
+							{
+								pr->getVariableByMultiname(func,m);
+								if (asAtomHandler::isValid(func))
+									break;
+								pr = pr->getprop_prototype();
+							}
+						}
+					}
 					if (!asAtomHandler::is<IFunction>(func))
 					{
 						ASObject* pr =scrobj->getprop_prototype();

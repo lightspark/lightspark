@@ -573,7 +573,18 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
 			if(isVmThread())
-				ABCVm::publicHandleEvent(this,e);
+			{
+				if (this == getSystemState()->mainClip && getSystemState()->mainClip->state.stop_FP)
+				{
+					// mainClip was stopped during construction
+					// so SystemState is not "ticking" yet and we have 
+					// to ensure the addedToStage event is executed after the first frame was displayed
+					this->incRef();
+					getVm(getSystemState())->addIdleEvent(_MR(this),e);
+				}
+				else
+					ABCVm::publicHandleEvent(this,e);
+			}
 			else
 			{
 				this->incRef();

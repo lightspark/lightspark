@@ -550,7 +550,7 @@ DefineSpriteTag::~DefineSpriteTag()
 
 ASObject* DefineSpriteTag::instance(Class_base* c)
 {
-	Class_base* retClass=NULL;
+	Class_base* retClass=nullptr;
 	if(c)
 		retClass=c;
 	else if(bindedTo)
@@ -1586,16 +1586,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
 				instance->decRef();
 				return;
-			}
-			if (!placedTag->loadedFrom->usesActionScript3)
-			{
-				AVM1Function* constr = placedTag->loadedFrom->AVM1getClassConstructor(placedTag);
-				if (constr)
-				{
-					asAtom ret = asAtomHandler::invalidAtom;
-					asAtom obj = asAtomHandler::fromObjectNoPrimitive(toAdd);
-					constr->call(&ret,&obj,nullptr,0);
-				}
 			}
 			newInstance = true;
 		}

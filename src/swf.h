@@ -89,7 +89,7 @@ private:
 	void executeFrameScript() override;
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 	
-	unordered_map<DictionaryTag*,_NR<IFunction>> avm1ClassConstructors;
+	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
@@ -144,7 +144,7 @@ public:
 	void setupAVM1RootMovie();
 	// map AVM1 class constructors to named tags
 	bool AVM1registerTagClass(const tiny_string& name, _NR<IFunction> theClassConstructor);
-	AVM1Function* AVM1getClassConstructor(DictionaryTag* t);
+	AVM1Function* AVM1getClassConstructor(uint32_t spriteID);
 };
 
 class ThreadProfile

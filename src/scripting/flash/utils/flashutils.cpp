@@ -280,31 +280,54 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	uint32_t paramstart = 2;
 	asAtom func = args[0];
 	uint32_t delayarg = 1;
+	asAtom o = asAtomHandler::nullAtom;
 	if (!asAtomHandler::isFunction(args[0]) && !sys->mainClip->usesActionScript3) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
 	{
 		assert_and_throw(argslen >= 3);
 		
 		paramstart = 3;
 		delayarg = 2;
-		ASObject* o = asAtomHandler::toObject(args[0],sys);
+		ASObject* oref = asAtomHandler::toObject(args[0],sys);
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
-		m.name_s_id=sys->getUniqueStringId("onLoadInit");
-		o->getVariableByMultiname(func,m);
+		m.name_s_id= asAtomHandler::toStringId(args[1],sys);
+		func = asAtomHandler::invalidAtom;
+		oref->getVariableByMultiname(func,m);
+		if (asAtomHandler::isInvalid(func))
+		{
+			ASObject* pr = oref->getprop_prototype();
+			if (pr)
+				pr->getVariableByMultiname(func,m);
+		}
 		assert_and_throw (asAtomHandler::isFunction(func));
+	}
+	if (sys->mainClip->usesActionScript3)
+		o = asAtomHandler::getClosureAtom(func);
+	else
+	{
+		if (argslen > paramstart)
+		{
+			o = args[paramstart];
+			paramstart++;
+		}
+		else
+		{
+			// it seems that adobe uses the ObjectReference as "this" for the callback if no argument array is present
+			if (!asAtomHandler::isFunction(args[0]))
+				o = args[0];
+		}
 	}
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-paramstart);
 	uint32_t i;
-	for(i=0; i<argslen-2; i++)
+	for(i=0; i<argslen-paramstart; i++)
 	{
 		callbackArgs[i] = args[i+paramstart];
 		//incRef all passed arguments
 		ASATOM_INCREF(args[i+paramstart]);
 	}
 
-	asAtom o = asAtomHandler::getClosureAtom(func);
 
 	//incRef the function
 	ASATOM_INCREF(func);

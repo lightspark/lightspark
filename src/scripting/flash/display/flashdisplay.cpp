@@ -2012,13 +2012,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	toAdd->name = nameId;
-	AVM1Function* constr = placedTag->loadedFrom->AVM1getClassConstructor(placedTag);
-	if (constr)
-	{
-		asAtom ret2 = asAtomHandler::invalidAtom;
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(toAdd);
-		constr->call(&ret2,&obj,nullptr,0);
-	}
 	if (argslen == 4)
 	{
 		ASObject* o = asAtomHandler::getObject(args[3]);
@@ -4906,6 +4899,17 @@ void MovieClip::afterConstruction()
 			frameScriptToExecute = 0;
 		this->incRef();
 		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+	}
+	if (!getSystemState()->mainClip->usesActionScript3)
+	{
+		AVM1Function* constr = getSystemState()->mainClip->AVM1getClassConstructor(fromDefineSpriteTag);
+		if (constr)
+		{
+			setprop_prototype(constr->prototype);
+			asAtom ret = asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+			constr->call(&ret,&obj,nullptr,0);
+		}
 	}
 }
 

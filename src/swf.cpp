@@ -2402,15 +2402,15 @@ bool RootMovieClip::AVM1registerTagClass(const tiny_string &name, _NR<IFunction>
 		return false;
 	}
 	if (theClassConstructor.isNull())
-		avm1ClassConstructors.erase(t);
+		avm1ClassConstructors.erase(t->getId());
 	else
-		avm1ClassConstructors.insert(make_pair(t,theClassConstructor));
+		avm1ClassConstructors.insert(make_pair(t->getId(),theClassConstructor));
 	return true;
 }
 
-AVM1Function* RootMovieClip::AVM1getClassConstructor(DictionaryTag *t)
+AVM1Function* RootMovieClip::AVM1getClassConstructor(uint32_t spriteID)
 {
-	auto it = avm1ClassConstructors.find(t);
+	auto it = avm1ClassConstructors.find(spriteID);
 	if (it == avm1ClassConstructors.end())
 		return nullptr;
 	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;

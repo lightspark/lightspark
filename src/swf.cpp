@@ -202,7 +202,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	terminated(0),renderRate(0),error(false),shutdown(false),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),mainThread(0),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -1781,13 +1781,15 @@ void RootMovieClip::constructionComplete()
 		MovieClip::constructionComplete();
 		return;
 	}
-	// don't call MovieClip::constructionComplete(), as advancing the frame will be done during the first tick on SystemState
-	DisplayObject::constructionComplete();
+	MovieClip::constructionComplete();
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
-
+void RootMovieClip::afterConstruction()
+{
+	this->setOnStage(true,true);
+}
 void RootMovieClip::revertFrame()
 {
 	//TODO: The next should be a regular assert
@@ -1921,17 +1923,26 @@ void SystemState::tick()
 		for(;it!=profilingData.end();++it)
 			(*it)->tick();
 	}
-	if(currentVm==NULL)
+	if(currentVm==nullptr)
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.
 	 */
 
 	currentVm->setIdle(false);
-	/* Step 0: Set current frame number to the next frame 
-	 * Step 1: declare new objects */
-	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-	currentVm->addEvent(NullRef, advFrame);
+	if (firsttick)
+	{
+		// the first AdvanceFrame is done during the construction of the RootMovieClip,
+		// so we skip it here
+		firsttick = false;
+	}
+	else
+	{
+		/* Step 0: Set current frame number to the next frame 
+		 * Step 1: declare new objects */
+		_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
+		currentVm->addEvent(NullRef, advFrame);
+	}
 
 	/* Step 2: Send enterFrame events, if needed */
 	{

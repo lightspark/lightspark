@@ -97,6 +97,7 @@ public:
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
 	void constructionComplete() override;
+	void afterConstruction() override;
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;
@@ -193,6 +194,7 @@ private:
 	float renderRate;
 	bool error;
 	bool shutdown;
+	bool firsttick;
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;

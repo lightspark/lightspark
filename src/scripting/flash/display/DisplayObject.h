@@ -134,7 +134,8 @@ public:
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
-	void constructionComplete();
+	void constructionComplete() override;
+	void afterConstruction() override;
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);

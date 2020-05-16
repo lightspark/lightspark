@@ -2665,7 +2665,8 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			dynamicDisplayList.insert(it,child);
 		}
 	}
-	child->setOnStage(onStage);
+	if (!onStage || child.getPtr() != getSystemState()->mainClip)
+		child->setOnStage(onStage);
 }
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child)

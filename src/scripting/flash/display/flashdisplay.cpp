@@ -1360,13 +1360,13 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),actions(0),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(0),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
@@ -2027,9 +2027,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
+	if (toAdd->is<MovieClip>())
+		toAdd->as<MovieClip>()->inAVM1Attachment=true;
 	toAdd->setConstructIndicator();
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
+	if (toAdd->is<MovieClip>())
+		toAdd->as<MovieClip>()->inAVM1Attachment=false;
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
@@ -2264,7 +2268,7 @@ void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t r
 {
 	if(!hasLegacyChildAt(depth))
 	{
-		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth");
+		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth "<<depth<<" "<<this->toDebugString()<<" "<<this->getTagID());
 		return;
 	}
 	mapDepthToLegacyChild.at(depth)->checkRatio(ratio);
@@ -4885,7 +4889,7 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame();
 		initFrame();
-		if (!getSystemState()->mainClip->usesActionScript3 && !this->is<RootMovieClip>())
+		if (!getSystemState()->mainClip->usesActionScript3 && !this->is<RootMovieClip>() && !this->inAVM1Attachment)
 			executeFrameScript();
 	}
 }

@@ -571,6 +571,7 @@ private:
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
 	bool inExecuteFramescript;
+	bool inAVM1Attachment;
 
 	CLIPACTIONS actions;
 	std::list<Frame>::iterator currentframeIterator;

@@ -1562,9 +1562,32 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
+GET_VARIABLE_RESULT XML::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+{
+	if (index < 0)
+		return getVariableByIntegerIntern(ret,index,opt);
+	if(index==0)
+	{
+		incRef();
+		ret = asAtomHandler::fromObject(this);
+	}
+	else
+		asAtomHandler::setUndefined(ret);
+	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+}
+
 multiname *XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
+}
+void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (index < 0)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+		return;
+	}
+	childrenlist->setVariableByInteger(index,o,allowConst);
 }
 multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {

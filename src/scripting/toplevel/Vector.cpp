@@ -1150,6 +1150,26 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
+GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+{
+	if (index >=0 && uint32_t(index) < size())
+	{
+		if (asAtomHandler::isValid(vec[index]))
+		{
+			ret = vec[index];
+			if (!(opt & NO_INCREF))
+				ASATOM_INCREF(ret);
+		}
+		else
+		{
+			asAtomHandler::setNull(ret);
+			vec_type->coerce(getSystemState(), ret );
+		}
+		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+	}
+	else
+		return getVariableByIntegerIntern(ret,index,opt);
+}
 
 multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
@@ -1216,6 +1236,38 @@ multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONS
 				       Integer::toString(vec.size()));
 	}
 	return nullptr;
+}
+
+void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (index < 0)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+		return;
+	}
+	asAtom v = o;
+	if (this->vec_type->coerce(getSystemState(), v))
+		ASATOM_DECREF(v);
+	if(size_t(index) < vec.size())
+	{
+		if (vec[index].uintval != o.uintval)
+		{
+			ASATOM_DECREF(vec[index]);
+			vec[index] = o;
+		}
+	}
+	else if(!fixed && size_t(index) == vec.size())
+	{
+		vec.push_back( o );
+	}
+	else
+	{
+		/* Spec says: one may not set a value with an index more than
+		 * one beyond the current final index. */
+		throwError<RangeError>(kOutOfRangeError,
+				       Integer::toString(index),
+				       Integer::toString(vec.size()));
+	}
 }
 
 tiny_string Vector::toString()

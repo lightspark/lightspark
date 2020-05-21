@@ -20,12 +20,8 @@
 #ifndef ASOBJECT_H
 #define ASOBJECT_H 1
 
-#include "compat.h"
 #include "swftypes.h"
-#include "smartrefs.h"
 #include "threading.h"
-#include "memory_support.h"
-#include <map>
 #include <unordered_map>
 #include <limits>
 
@@ -999,6 +995,10 @@ public:
 	{
 		return getVariableByMultinameIntern(ret,name,classdef,opt);
 	}
+	virtual GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE)
+	{
+		return getVariableByIntegerIntern(ret,index,opt);
+	}
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
@@ -1010,6 +1010,13 @@ public:
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
 	GET_VARIABLE_RESULT getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByIntegerIntern(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE)
+	{
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_INT;
+		m.name_i = index;
+		return getVariableByMultiname(ret,m,opt);
+	}
 	virtual int32_t getVariableByMultiname_i(const multiname& name);
 	/* Simple getter interface for the common case */
 	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);
@@ -1031,6 +1038,10 @@ public:
 	{
 		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
 	}
+	virtual void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+	}
 	/*
 	 * Sets  variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
@@ -1039,6 +1050,13 @@ public:
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
 	multiname* setVariableByMultiname_intern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls,bool *alreadyset);
+	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst)
+	{
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_INT;
+		m.name_i = index;
+		setVariableByMultiname(m,o,allowConst,nullptr);
+	}
 	
 	// sets dynamic variable without checking for existence
 	// use it if it is guarranteed that the variable doesn't exist in this object

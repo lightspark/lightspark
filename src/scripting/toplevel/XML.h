@@ -82,7 +82,7 @@ public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
 	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
-	bool destruct();
+	bool destruct() override;
 	
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
@@ -158,34 +158,36 @@ public:
 	
 	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const;
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	bool hasProperty(const multiname& name,bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst) override;
 	multiname *setVariableByMultinameIntern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
-	bool deleteVariableByMultiname(const multiname& name);
+	bool deleteVariableByMultiname(const multiname& name) override;
 	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
 
 	void setTextContent(const tiny_string& content);
 	tiny_string toString();
 	const tiny_string toXMLString_internal(bool pretty=true, uint32_t defaultnsprefix = BUILTIN_STRINGS::EMPTY, const char* indent = "", bool bfirst = true);
-	int32_t toInt();
-	int64_t toInt64();
-	number_t toNumber();
+	int32_t toInt() override;
+	int64_t toInt64() override;
+	number_t toNumber() override;
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	pugi::xml_node_type getNodeKind() const;
 	ASObject *getParentNode();
 	XML *copy();
 	void normalize();
-	bool isEqual(ASObject* r);
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
+	bool isEqual(ASObject* r) override;
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_XML_H */

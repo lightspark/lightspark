@@ -197,15 +197,17 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
-	int32_t getVariableByMultiname_i(const multiname& name);
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
-	void setVariableByMultiname_i(const multiname& name, int32_t value);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
+	int32_t getVariableByMultiname_i(const multiname& name) override;
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
+	void setVariableByMultiname_i(const multiname& name, int32_t value) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 
 }

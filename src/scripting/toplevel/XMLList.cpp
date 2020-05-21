@@ -798,6 +798,19 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
+GET_VARIABLE_RESULT XMLList::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+{
+	if (index < 0)
+		return getVariableByIntegerIntern(ret,index,opt);
+	if(uint32_t(index)<nodes.size())
+	{
+		nodes[index]->incRef();
+		ret = asAtomHandler::fromObject(nodes[index].getPtr());
+	}
+	else
+		asAtomHandler::setUndefined(ret);
+	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+}
 
 bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
 {
@@ -827,6 +840,40 @@ multiname *XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CON
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
+void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (index < 0)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+		return;
+	}
+	XML::XMLVector retnodes;
+	XMLList* tmplist = targetobject;
+	multiname tmpprop = targetproperty;
+	if (targetobject)
+	{
+		while (tmplist->targetobject)
+		{
+			tmpprop = tmplist->targetproperty;
+			tmplist = tmplist->targetobject;
+		}
+		if (tmplist)
+		{
+			tmplist->getTargetVariables(tmpprop,retnodes);
+		}
+	}
+	if (uint32_t(index) >= nodes.size())
+	{
+		if (targetobject)
+			targetobject->appendSingleNode(asAtomHandler::toObject(o,getSystemState()));
+		appendSingleNode(asAtomHandler::toObject(o,getSystemState()));
+	}
+	else
+	{
+		replace(index, asAtomHandler::toObject(o,getSystemState()),retnodes,allowConst,false);
+	}
+}
+
 multiname* XMLList::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {
 	assert_and_throw(implEnable);

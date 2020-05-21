@@ -1145,7 +1145,19 @@ GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multina
 	asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-
+GET_VARIABLE_RESULT ByteArray::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+{
+	if (index < 0)
+		return getVariableByIntegerIntern(ret,index,opt);
+	if (index >=0 && uint32_t(index) < len)
+	{
+		uint8_t value = bytes[index];
+		asAtomHandler::setUInt(ret,this->getSystemState(),static_cast<uint32_t>(value));
+		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+	}
+	asAtomHandler::setUndefined(ret);
+	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+}
 int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 {
 	assert_and_throw(implEnable);
@@ -1186,7 +1198,27 @@ multiname *ByteArray::setVariableByMultiname(const multiname& name, asAtom& o, C
 	ASATOM_DECREF(o);
 	return nullptr;
 }
+void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (index < 0)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+		return;
+	}
+	if(uint32_t(index)>=len)
+	{
+		uint32_t prevLen = len;
+		getBuffer(index+1, true);
+		// Fill the gap between the end of the current data and the index with zeros
+		memset(bytes+prevLen, 0, index-prevLen);
+	}
 
+	// Fill the byte pointed to by index with the truncated uint value of the object.
+	uint8_t value = static_cast<uint8_t>(asAtomHandler::toUInt(o) & 0xff);
+	bytes[index] = value;
+
+	ASATOM_DECREF(o);
+}
 void ByteArray::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	asAtom v = asAtomHandler::fromInt(value);

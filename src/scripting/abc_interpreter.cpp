@@ -52,6 +52,13 @@ void checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	prop = asAtomHandler::undefinedAtom;
 }
+void checkPropertyExceptionInteger(ASObject* obj,int index, asAtom& prop)
+{
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_INT;
+	m.name_i = index;
+	checkPropertyException(obj,&m, prop);
+}
 
 #ifndef NDEBUG
 std::map<uint32_t,uint32_t> opcodecounter;
@@ -793,27 +800,27 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_getPropertyInteger_constant_constant, // 0x288 ABC_OP_OPTIMZED_GETPROPERTY_INTEGER
+	abc_getPropertyInteger_local_constant,
+	abc_getPropertyInteger_constant_local,
+	abc_getPropertyInteger_local_local,
+	abc_getPropertyInteger_constant_constant_localresult,
+	abc_getPropertyInteger_local_constant_localresult,
+	abc_getPropertyInteger_constant_local_localresult,
+	abc_getPropertyInteger_local_local_localresult,
 
-	abc_invalidinstruction, // 0x290
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_setPropertyInteger_constant_constant_constant, // 0x290 ABC_OP_OPTIMZED_SETPROPERTY_INTEGER
+	abc_setPropertyInteger_constant_local_constant,
+	abc_setPropertyInteger_constant_constant_local,
+	abc_setPropertyInteger_constant_local_local,
+	abc_setPropertyInteger_local_constant_constant,
+	abc_setPropertyInteger_local_local_constant,
+	abc_setPropertyInteger_local_constant_local,
+	abc_setPropertyInteger_local_local_local,
+	abc_ifnlt_constant_constant, // 0x298 ABC_OP_OPTIMZED_IFNLT
+	abc_ifnlt_local_constant,
+	abc_ifnlt_constant_local,
+	abc_ifnlt_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1015,7 +1022,6 @@ void ABCVm::abc_label(call_context* context)
 }
 void ABCVm::abc_ifnlt(call_context* context)
 {
-	//ifnlt
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
@@ -1029,6 +1035,47 @@ void ABCVm::abc_ifnlt(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifnlt_constant_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE);
+	LOG_CALL(_("ifNLT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnlt_local_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE);
+	LOG_CALL(_("ifNLT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnlt_constant_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE);
+	LOG_CALL(_("ifNLT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnlt_local_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TTRUE);
+	LOG_CALL(_("ifNLT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+
 void ABCVm::abc_ifnle(call_context* context)
 {
 	//ifnle
@@ -3871,6 +3918,231 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 	++(context->exec_pos);
 }
 
+void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_i_ccc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_i_clc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_i_ccl ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_i_cll ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = &context->locals[instrptr->local_pos3];
+	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_i_lcc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = &context->locals[instrptr->local_pos3];
+	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_i_llc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = &context->locals[instrptr->local_pos3];
+	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_i_lcl ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = &context->locals[instrptr->local_pos3];
+	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	asAtom* value = &context->locals[instrptr->local_pos2];
+
+	LOG_CALL(_("setProperty_i_lll ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	if (context->exec_pos->local_pos3 == 0x68)//initproperty
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+	else//Do not allow to set contant traits
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_getlocal(call_context* context)
 {
 	//getlocal
@@ -4151,6 +4423,127 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
 	}
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_cc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	RUNTIME_STACK_PUSH(context,prop);
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_lc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	RUNTIME_STACK_PUSH(context,prop);
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_cl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	RUNTIME_STACK_PUSH(context,prop);
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_ll ") << index <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	RUNTIME_STACK_PUSH(context,prop);
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_ccl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_lcl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true);
+	LOG_CALL( _("getPropertyInteger_cll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
+	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
+	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	LOG_CALL( _("getPropertyInteger_lll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	asAtom prop=asAtomHandler::invalidAtom;
+	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if(asAtomHandler::isInvalid(prop))
+		checkPropertyExceptionInteger(obj,index,prop);
 	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],prop);
 	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
@@ -7449,6 +7842,9 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS_CACHED 0x00000280
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER 0x00000282
 #define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME_SIMPLE 0x00000284
+#define ABC_OP_OPTIMZED_GETPROPERTY_INTEGER 0x00000288
+#define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER 0x00000290
+#define ABC_OP_OPTIMZED_IFNLT 0x00000298
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -7489,7 +7885,7 @@ void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::m
 		}
 	}
 }
-void clearOperands(method_info* mi,Class_base** localtypes,std::list<operands>& operandlist, Class_base** defaultlocaltypes,Class_base** lastlocalresulttype )
+void clearOperands(method_info* mi,Class_base** localtypes,std::vector<operands>& operandlist, Class_base** defaultlocaltypes,Class_base** lastlocalresulttype )
 {
 	for (uint32_t i = 0; i < mi->body->local_count+2; i++)
 	{
@@ -7513,7 +7909,7 @@ bool canCallFunctionDirect(operands& op,multiname* name)
 		));
 }
 
-bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,uint32_t opcode_jumpspace, Class_base** localtypes, Class_base* restype, Class_base** defaultlocaltypes,int preloadpos=-1,int preloadlocalpos=-1)
+bool checkForLocalResult(std::vector<operands>& operandlist,method_info* mi,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,uint32_t opcode_jumpspace, Class_base** localtypes, Class_base* restype, Class_base** defaultlocaltypes,int preloadpos=-1,int preloadlocalpos=-1)
 {
 	bool res = false;
 	bool hasdup = false;
@@ -7841,9 +8237,14 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (jumptargets.find(pos) == jumptargets.end() && (argsneeded<=1) &&
-					((argsneeded==1) || operandlist.size() >= 1) &&
-					(uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 0
+					(
+					   (((argsneeded==1) || (operandlist.size() >= 1)) 
+					    && (uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 0)
+					|| ((argsneeded==0) && (operandlist.size() > 1) 
+						&& (uint32_t)mi->context->constant_pool.multinames[t].runtimeargs == 1
+						&& (operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()))
 					)
+				)
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				mi->body->preloadedcode[preloadpos].data += opcode_jumpspace;
@@ -7913,6 +8314,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 			else
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,nullptr);
 			break;
+		case 0x0c://ifnlt
 		case 0x13://ifeq
 		case 0x14://ifne
 		case 0x15://iflt
@@ -7976,7 +8378,7 @@ bool checkForLocalResult(std::list<operands>& operandlist,method_info* mi,memory
 	return res;
 }
 
-bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, uint32_t startcodepos)
+bool setupInstructionOneArgumentNoResult(std::vector<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, uint32_t startcodepos)
 {
 	bool hasoperands = jumptargets.find(startcodepos) == jumptargets.end() && operandlist.size() >= 1;
 	if (hasoperands)
@@ -7996,7 +8398,7 @@ bool setupInstructionOneArgumentNoResult(std::list<operands>& operandlist,method
 	}
 	return hasoperands;
 }
-bool setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
+bool setupInstructionTwoArgumentsNoResult(std::vector<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets)
 {
 	bool hasoperands = operandlist.size() >= 2;
 	if (hasoperands)
@@ -8020,7 +8422,7 @@ bool setupInstructionTwoArgumentsNoResult(std::list<operands>& operandlist,metho
 	}
 	return hasoperands;
 }
-bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed, bool useargument_for_skip, Class_base** localtypes, Class_base** defaultlocaltypes, Class_base* resulttype, uint32_t startcodepos, bool checkforlocalresult)
+bool setupInstructionOneArgument(std::vector<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool constantsallowed, bool useargument_for_skip, Class_base** localtypes, Class_base** defaultlocaltypes, Class_base* resulttype, uint32_t startcodepos, bool checkforlocalresult)
 {
 	bool hasoperands = jumptargets.find(startcodepos) == jumptargets.end() && operandlist.size() >= 1 && (constantsallowed || operandlist.back().type == OP_LOCAL);
 	Class_base* skiptype = resulttype;
@@ -8076,7 +8478,7 @@ bool setupInstructionOneArgument(std::list<operands>& operandlist,method_info* m
 	return hasoperands;
 }
 
-bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult, Class_base** localtypes, Class_base** defaultlocaltypes, uint32_t startcodepos)
+bool setupInstructionTwoArguments(std::vector<operands>& operandlist,method_info* mi,int operator_start,int opcode,memorystream& code,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets, bool skip_conversion,bool cancollapse,bool checklocalresult, Class_base** localtypes, Class_base** defaultlocaltypes, uint32_t startcodepos)
 {
 	bool hasoperands = jumptargets.find(startcodepos) == jumptargets.end() && operandlist.size() >= 2;
 	Class_base* resulttype = nullptr;
@@ -8222,7 +8624,7 @@ bool setupInstructionTwoArguments(std::list<operands>& operandlist,method_info* 
 	}
 	return hasoperands;
 }
-void addCachedConstant(method_info* mi, asAtom& val,std::list<operands>& operandlist,std::map<int32_t,int32_t>& oldnewpositions,memorystream& code)
+void addCachedConstant(method_info* mi, asAtom& val,std::vector<operands>& operandlist,std::map<int32_t,int32_t>& oldnewpositions,memorystream& code)
 {
 	if (asAtomHandler::isObject(val))
 		asAtomHandler::getObject(val)->setConstant();
@@ -8521,7 +8923,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	}
 	
 	// second pass: use optimized opcode version if it doesn't interfere with a jump target
-	std::list<operands> operandlist;
+	std::vector<operands> operandlist;
 	Class_base* localtypes[mi->body->local_count+2];
 	Class_base* lastlocalresulttype=nullptr;
 	clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
@@ -8881,6 +9283,36 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							}
 							break;
 						}
+						case 1:
+							if (operandlist.size() > 2 && (operandlist[operandlist.size()-2].objtype == Class<Integer>::getRef(function->getSystemState()).getPtr()))
+							{
+								if (operandlist[operandlist.size()-3].type == OP_LOCAL)
+								{
+									int index = operandlist[operandlist.size()-3].index;
+									setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_INTEGER+4,opcode,code,oldnewpositions, jumptargets);
+									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3=index;
+									mi->body->preloadedcode.push_back(t);
+									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
+									operandlist.back().removeArg(mi);
+								}
+								else
+								{
+									asAtom* arg = mi->context->getConstantAtom(operandlist[operandlist.size()-3].type,operandlist[operandlist.size()-3].index);
+									setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_INTEGER+0,opcode,code,oldnewpositions, jumptargets);
+									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).arg3_constant=arg;
+									mi->body->preloadedcode.push_back(t);
+									mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
+									operandlist.back().removeArg(mi);
+								}
+								clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+							}
+							else
+							{
+								mi->body->preloadedcode.push_back((uint32_t)opcode);
+								mi->body->preloadedcode.push_back(t);
+								clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+							}
+							break;
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);
 							mi->body->preloadedcode.push_back(t);
@@ -9148,6 +9580,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x0c://ifnlt
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNLT,opcode,code,oldnewpositions, jumptargets);
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				break;
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			case 0x0f://ifnge
@@ -9322,10 +9759,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = (int32_t)(int8_t)code.readbyte();
 				uint8_t index = value;
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x25://pushshort
@@ -9336,40 +9772,39 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t value = code.readu32();
 				uint16_t index = value;
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x26://pushtrue
 			{
+				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				if (jumptargets.find(code.tellg()) == jumptargets.end())
-					operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
 			case 0x27://pushfalse
 			{
+				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				if (jumptargets.find(code.tellg()) == jumptargets.end())
-					operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
 			case 0x28://pushnan
 			{
+				int32_t p = code.tellg();
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
-				if (jumptargets.find(code.tellg()) == jumptargets.end())
-					operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,mi->body->preloadedcode.size()-1));
 				break;
 			}
 			case 0x2c://pushstring
@@ -9379,10 +9814,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x2d://pushint
@@ -9392,10 +9826,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x2e://pushuint
@@ -9405,10 +9838,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x2f://pushdouble
@@ -9418,10 +9850,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x30://pushscope
@@ -9435,10 +9866,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				int32_t value = code.readu30();
 				mi->body->preloadedcode.push_back(value);
-				if (jumptargets.find(p) == jumptargets.end())
-					operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
-				else
+				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->root->getSystemState()).getPtr(),value,2,mi->body->preloadedcode.size()-2));
 				break;
 			}
 			case 0x32://hasnext2
@@ -9975,7 +10405,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							break;
 						}
 						case 1:
-							setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);
+							if (operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT)
+									&& operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr())
+							{
+								addname = false;
+								setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);
+							}
+							else
+								setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);
 							break;
 						default:
 							mi->body->preloadedcode.push_back((uint32_t)opcode);

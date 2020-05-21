@@ -53,7 +53,7 @@ public:
 	};
 	Vector(Class_base* c, const Type *vtype=NULL);
 	~Vector();
-	bool destruct();
+	bool destruct() override;
 	
 	
 	static void sinit(Class_base* c);
@@ -65,12 +65,14 @@ public:
 
 	//Overloads
 	tiny_string toString();
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt);
-	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = NULL);
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
+	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = nullptr);
 
-	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
+	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter) override;
 
 	uint32_t nextNameIndex(uint32_t cur_index);
 	void nextName(asAtom &ret, uint32_t index);
@@ -130,11 +132,11 @@ public:
 	ASFUNCTION_ATOM(insertAt);
 	ASFUNCTION_ATOM(removeAt);
 
-	ASObject* describeType() const;
+	ASObject* describeType() const override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 
 }

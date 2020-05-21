@@ -1631,6 +1631,36 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
+GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+{
+	if (index >=0 && uint32_t(index) < size())
+	{
+		if (index < ARRAY_SIZE_THRESHOLD)
+		{
+			if (data_first.size() > uint32_t(index))
+			{
+				ret = data_first.at(index);
+				if (!(opt & NO_INCREF))
+					ASATOM_INCREF(ret);
+				if (asAtomHandler::isValid(ret))
+					return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+			}
+		}
+		auto it = data_second.find(index);
+		if(it != data_second.end())
+		{
+			ret = it->second;
+			if (!(opt & NO_INCREF))
+				ASATOM_INCREF(ret);
+			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+		}
+		asAtomHandler::setUndefined(ret);
+		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+	}
+	else
+		return getVariableByIntegerIntern(ret,index,opt);
+}
+
 void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
@@ -1743,6 +1773,28 @@ multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST
 			*alreadyset=true;
 	}
 	return nullptr;
+}
+
+void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+{
+	if (index < 0)
+	{
+		setVariableByInteger_intern(index,o,allowConst);
+		return;
+	}
+	// Derived classes may be sealed!
+	if (getClass() && getClass()->isSealed)
+	{
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_INT;
+		m.name_i = index;
+		throwError<ReferenceError>(kWriteSealedError,
+					   m.normalizedNameUnresolved(getSystemState()),
+					   getClass()->getQualifiedClassName());
+	}
+	if(uint64_t(index)>=size())
+		resize((uint64_t)index+1);
+	set(index, o,false);
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name)

@@ -1789,6 +1789,7 @@ void RootMovieClip::constructionComplete()
 void RootMovieClip::afterConstruction()
 {
 	this->setOnStage(true,true);
+	DisplayObject::afterConstruction();
 }
 void RootMovieClip::revertFrame()
 {

@@ -4023,6 +4023,7 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
@@ -4107,6 +4108,7 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
@@ -4135,6 +4137,7 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
@@ -5405,11 +5408,10 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 	if (!obj)
 		throwError<TypeError>(kConvertNullToObjectError);
 	asAtom res = obj->getSlotNoCheck(t);
-	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
+	asAtom o = context->locals[instrptr->local_pos3-1];
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
-	ASATOM_INCREF(context->locals[instrptr->local_pos3-1]);
-	if (o)
-		o->decRef();
+	ASATOM_INCREF(res);
+	ASATOM_DECREF(o);
 	LOG_CALL("getSlot_ll " << t << " " <<instrptr->local_pos1<<":"<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos1])<<" "<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
 	++(context->exec_pos);
 }
@@ -10408,8 +10410,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							if (operandlist.size() > 0 && (operandlist.back().type == OP_LOCAL || operandlist.back().type == OP_CACHED_CONSTANT)
 									&& operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr())
 							{
-								addname = false;
-								setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);
+								addname = !setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);
 							}
 							else
 								setupInstructionTwoArguments(operandlist,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,oldnewpositions, jumptargets,false,false,true,localtypes, defaultlocaltypes,p);

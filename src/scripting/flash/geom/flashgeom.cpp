@@ -30,27 +30,19 @@ void Rectangle::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	
-	IFunction* gleft=Class<IFunction>::getFunction(c->getSystemState(),_getLeft);
-	c->setDeclaredMethodByQName("left","",gleft,GETTER_METHOD,true);
-	gleft->incRef();
-	c->setDeclaredMethodByQName("x","",gleft,GETTER_METHOD,true);
-	IFunction* sleft=Class<IFunction>::getFunction(c->getSystemState(),_setLeft);
-	c->setDeclaredMethodByQName("left","",sleft,SETTER_METHOD,true);
-	sleft->incRef();
-	c->setDeclaredMethodByQName("x","",sleft,SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("left","",Class<IFunction>::getFunction(c->getSystemState(),_getLeft),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("left","",Class<IFunction>::getFunction(c->getSystemState(),_setLeft),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getLeft),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_setLeft),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(c->getSystemState(),_getRight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("right","",Class<IFunction>::getFunction(c->getSystemState(),_setRight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_setWidth),SETTER_METHOD,true);
 
-	IFunction* gtop=Class<IFunction>::getFunction(c->getSystemState(),_getTop);
-	c->setDeclaredMethodByQName("top","",gtop,GETTER_METHOD,true);
-	gtop->incRef();
-	c->setDeclaredMethodByQName("y","",gtop,GETTER_METHOD,true);
-	IFunction* stop=Class<IFunction>::getFunction(c->getSystemState(),_setTop);
-	c->setDeclaredMethodByQName("top","",stop,SETTER_METHOD,true);
-	stop->incRef();
-	c->setDeclaredMethodByQName("y","",stop,SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("top","",Class<IFunction>::getFunction(c->getSystemState(),_getTop),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("top","",Class<IFunction>::getFunction(c->getSystemState(),_setTop),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getTop),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_setTop),SETTER_METHOD,true);
 
 	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(c->getSystemState(),_getBottom),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottom","",Class<IFunction>::getFunction(c->getSystemState(),_setBottom),SETTER_METHOD,true);
@@ -81,6 +73,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setEmpty","",Class<IFunction>::getFunction(c->getSystemState(),setEmpty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("union","",Class<IFunction>::getFunction(c->getSystemState(),_union),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
@@ -492,6 +485,19 @@ ASFUNCTIONBODY_ATOM(Rectangle,setTo)
 	th->width = w;
 	th->height = h;
 }
+ASFUNCTIONBODY_ATOM(Rectangle,copyFrom)
+{
+	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
+	_NR<Rectangle> sourcerect;
+	ARG_UNPACK_ATOM(sourcerect);
+	if (!sourcerect.isNull())
+	{
+		th->x = sourcerect->x;
+		th->y = sourcerect->y;
+		th->width = sourcerect->width;
+		th->height = sourcerect->height;
+	}
+}
 
 ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
   : ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
@@ -809,6 +815,7 @@ void Point::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("offset","",Class<IFunction>::getFunction(c->getSystemState(),offset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("polar","",Class<IFunction>::getFunction(c->getSystemState(),polar),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
@@ -976,6 +983,18 @@ ASFUNCTIONBODY_ATOM(Point,setTo)
 	th->x = x;
 	th->y = y;
 }
+ASFUNCTIONBODY_ATOM(Point,copyFrom)
+{
+	Point* th=asAtomHandler::as<Point>(obj);
+	_NR<Point> sourcepoint;
+	ARG_UNPACK_ATOM(sourcepoint);
+	if (!sourcepoint.isNull())
+	{
+		th->x = sourcepoint->x;
+		th->y = sourcepoint->y;
+	}
+}
+
 Transform::Transform(Class_base* c):ASObject(c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(c->getSystemState()))
 {
 }
@@ -1458,6 +1477,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(c->getSystemState(),scaleBy),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(c->getSystemState(),subtract),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
@@ -1797,6 +1817,19 @@ ASFUNCTIONBODY_ATOM(Vector3D,setTo)
 	th->x = xa;
 	th->y = ya;
 	th->z = za;
+}
+ASFUNCTIONBODY_ATOM(Vector3D,copyFrom)
+{
+	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
+	_NR<Vector3D> sourcevector;
+	ARG_UNPACK_ATOM(sourcevector);
+	if (!sourcevector.isNull())
+	{
+		th->w = sourcevector->w;
+		th->x = sourcevector->x;
+		th->y = sourcevector->y;
+		th->z = sourcevector->z;
+	}
 }
 
 

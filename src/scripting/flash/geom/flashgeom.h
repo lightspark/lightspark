@@ -74,6 +74,7 @@ public:
 	ASFUNCTION_ATOM(setTo);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(_union);
+	ASFUNCTION_ATOM(copyFrom);
 };
 
 class Point: public ASObject
@@ -102,7 +103,8 @@ public:
 	ASFUNCTION_ATOM(polar);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(setTo);
-	
+	ASFUNCTION_ATOM(copyFrom);
+
 	number_t len() const;
 	number_t getX() const { return x; }
 	number_t getY() const { return y; }
@@ -253,7 +255,8 @@ public:
 	ASFUNCTION_ATOM(scaleBy);
 	ASFUNCTION_ATOM(subtract);
 	ASFUNCTION_ATOM(setTo);
-	
+	ASFUNCTION_ATOM(copyFrom);
+
 	//Properties
 	ASFUNCTION_ATOM(_get_w);
 	ASFUNCTION_ATOM(_get_x);

@@ -298,6 +298,8 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 
 void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
+	if (root != root->getSystemState()->mainClip)
+		return;
 	if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
 	{
 		delete[] getVm(root->getSystemState())->stacktrace;

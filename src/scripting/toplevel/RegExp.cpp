@@ -213,7 +213,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	tiny_string tmp = str.substr_bytes(0, ovector[0]);
 	int index = tmp.numChars();
 
-	a->setVariableByQName("index","",abstract_i(getSystemState(),index),DYNAMIC_TRAIT);
+	a->setVariableAtomByQName("index",nsNameAndKind(),asAtomHandler::fromInt(index),DYNAMIC_TRAIT);
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=reinterpret_cast<nameEntry*>(entries);

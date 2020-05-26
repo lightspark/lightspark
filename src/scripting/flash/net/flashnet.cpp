@@ -107,7 +107,7 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 	const char *illegalHeaders[] = 
 		{"accept-charset", "accept_charset", "accept-encoding",
 		 "accept_encoding", "accept-ranges", "accept_ranges",
-		 "age", "allow", "allowed", "authorization", "charge-to",
+		 "age", "allow", "allowed", "charge-to",
 		 "charge_to", "connect", "connection", "content-length",
 		 "content_length", "content-location", "content_location",
 		 "content-range", "content_range", "cookie", "date", "delete",
@@ -126,8 +126,8 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 		 "x-flash-version", "x_flash-version", "x-flash_version",
 		 "x_flash_version"};
 
-	if ((headerName.strchr('\r') != NULL) ||
-	     headerName.strchr('\n') != NULL)
+	if ((headerName.strchr('\r') != nullptr) ||
+	     headerName.strchr('\n') != nullptr)
 		throw Class<ArgumentError>::getInstanceS(getSystemState(),"The HTTP request header cannot be set via ActionScript", 2096);
 
 	for (unsigned i=0; i<(sizeof illegalHeaders)/(sizeof illegalHeaders[0]); i++)
@@ -160,8 +160,8 @@ std::list<tiny_string> URLRequest::getHeaders() const
 		URLRequestHeader *header = asAtomHandler::as<URLRequestHeader>(headerObject);
 		tiny_string headerName = header->name;
 		validateHeaderName(headerName);
-		if ((header->value.strchr('\r') != NULL) ||
-		     header->value.strchr('\n') != NULL)
+		if ((header->value.strchr('\r') != nullptr) ||
+		     header->value.strchr('\n') != nullptr)
 			throw Class<ArgumentError>::getInstanceS(getSystemState(),"Illegal HTTP header value");
 		
 		// Should this include the separators?

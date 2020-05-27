@@ -1765,6 +1765,8 @@ void RootMovieClip::commitFrame(bool another)
 			// in AS3 this is added to the stage after the construction of the main object is completed
 			if (!usesActionScript3)
 			{
+				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
+					compat_msleep(10);
 				constructionComplete();
 				afterConstruction();
 			}

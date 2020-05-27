@@ -563,7 +563,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 				new (retClass->memoryAccount) AVM1MovieClip(retClass, *this, this->getId()) :
 				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
-		soundheadtag->setSoundChannel(spr,true);
+		soundheadtag->setSoundChannel(spr,false);
 	return spr;
 }
 

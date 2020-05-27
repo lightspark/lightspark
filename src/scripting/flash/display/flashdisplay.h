@@ -437,6 +437,7 @@ protected:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
 	void checkSound();// start sound streaming if it is not already playing
+	void stopSound();
 	void markSoundFinished();
 public:
 	bool dragged;

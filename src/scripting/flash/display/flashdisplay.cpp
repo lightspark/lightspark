@@ -1136,9 +1136,14 @@ void Sprite::appendSound(unsigned char *buf, int len)
 
 void Sprite::checkSound()
 {
+	if (sound && !sound->isPlaying())
+		sound->play();
+}
+
+void Sprite::stopSound()
+{
 	if (sound)
-		sound->play(); 
-	
+		sound->threadAbort();
 }
 
 void Sprite::markSoundFinished()
@@ -4819,6 +4824,10 @@ void DisplayObjectContainer::advanceFrame()
  */
 void MovieClip::advanceFrame()
 {
+	if (state.stop_FP)
+		stopSound();
+	else
+		checkSound();
 	state.creatingframe=true;
 	if (frameScriptToExecute != UINT32_MAX)
 	{

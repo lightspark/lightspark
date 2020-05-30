@@ -76,6 +76,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/BitmapData.cpp
   scripting/flash/display/bitmapencodingcolorspace.cpp
   scripting/flash/display/colorcorrection.cpp
+  scripting/flash/display/ColorCorrectionSupport.cpp
   scripting/flash/display/DisplayObject.cpp
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp

@@ -152,6 +152,7 @@
 #include "scripting/flash/media/soundcodec.h"
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"
+#include "scripting/flash/media/avtagdata.h"
 #include "scripting/flash/net/netgroupreceivemode.h"
 #include "scripting/flash/net/netgroupreplicationstrategy.h"
 #include "scripting/flash/net/netgroupsendmode.h"
@@ -769,7 +770,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Camera","flash.media",Class<Camera>::getRef(m_sys));
 	builtin->registerBuiltin("VideoStreamSettings","flash.media",Class<VideoStreamSettings>::getRef(m_sys));
 	builtin->registerBuiltin("H264VideoStreamSettings","flash.media",Class<H264VideoStreamSettings>::getRef(m_sys));
-	
+	builtin->registerBuiltin("AVTagData","flash.media",Class<AVTagData>::getRef(m_sys));
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));

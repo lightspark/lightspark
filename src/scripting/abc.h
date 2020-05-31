@@ -805,6 +805,7 @@ private:
 	static void abc_setPropertyStaticName_local_constant(call_context* context);
 	static void abc_setPropertyStaticName_constant_local(call_context* context);
 	static void abc_setPropertyStaticName_local_local(call_context* context);
+	static void abc_setPropertyInteger(call_context* context);
 	static void abc_setPropertyInteger_constant_constant_constant(call_context* context);
 	static void abc_setPropertyInteger_constant_local_constant(call_context* context);
 	static void abc_setPropertyInteger_constant_constant_local(call_context* context);
@@ -815,6 +816,8 @@ private:
 	static void abc_setPropertyInteger_local_local_local(call_context* context);
 	static void abc_getlocal(call_context* context);
 	static void abc_setlocal(call_context* context);
+	static void abc_setlocal_constant(call_context* context);
+	static void abc_setlocal_local(call_context* context);
 	static void abc_getglobalscope(call_context* context);
 	static void abc_getscopeobject(call_context* context);
 	static void abc_getscopeobject_localresult(call_context* context);
@@ -827,6 +830,7 @@ private:
 	static void abc_getProperty_local_constant_localresult(call_context* context);
 	static void abc_getProperty_constant_local_localresult(call_context* context);
 	static void abc_getProperty_local_local_localresult(call_context* context);
+	static void abc_getPropertyInteger(call_context* context);
 	static void abc_getPropertyInteger_constant_constant(call_context* context);
 	static void abc_getPropertyInteger_local_constant(call_context* context);
 	static void abc_getPropertyInteger_constant_local(call_context* context);

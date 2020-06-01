@@ -580,6 +580,7 @@ protected:
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
+	void checkFrameScriptToExecute();
 public:
 	void constructionComplete() override;
 	void afterConstruction() override;

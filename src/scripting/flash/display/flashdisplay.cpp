@@ -1462,6 +1462,14 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_strin
 	return FRAME_NOT_FOUND;
 }
 
+void MovieClip::checkFrameScriptToExecute()
+{
+	if(frameScripts.count(state.FP))
+	{
+		frameScriptToExecute=state.FP;
+	}
+}
+
 /* Return global frame index for frame i (zero-based) in a scene
  * called sceneName. If sceneName is empty, use the current scene.
  */
@@ -4715,7 +4723,7 @@ void MovieClip::declareFrame()
 	// class testsprite : MovieClip
 	// {
 	//   public var childclip:MovieClip;
-	//   public function Game()
+	//   public function testsprite()
 	//   {
 	//      // code here will be executed _before_ childclip is constructed
 	//      super();

@@ -85,7 +85,7 @@ bool BitmapContainer::fromPNG(std::istream &s)
 	bool hasAlpha;
 	uint8_t *rgb=ImageDecoder::decodePNG(s, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	BITMAP_FORMAT format=ARGB32; // libpng also returns ARGB32 for images without alpha channel
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, format,true);
 }
 bool BitmapContainer::fromPNG(uint8_t* data, int len)
@@ -95,7 +95,7 @@ bool BitmapContainer::fromPNG(uint8_t* data, int len)
 	bool hasAlpha;
 	uint8_t *rgb=ImageDecoder::decodePNG(data,len, &w, &h,&hasAlpha);
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
-	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
+	BITMAP_FORMAT format=ARGB32; // libpng also returns ARGB32 for images without alpha channel
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, format,true);
 }
 

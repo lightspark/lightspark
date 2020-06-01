@@ -77,6 +77,7 @@ REGISTER_CLASS_NAME(BitmapEncodingColorSpace,"flash.display")
 REGISTER_CLASS_NAME(BlendMode,"flash.display")
 REGISTER_CLASS_NAME(CapsStyle,"flash.display")
 REGISTER_CLASS_NAME(ColorCorrection,"flash.display")
+REGISTER_CLASS_NAME(ColorCorrectionSupport,"flash.display")
 REGISTER_CLASS_NAME(DisplayObject,"flash.display")
 REGISTER_CLASS_NAME(DisplayObjectContainer,"flash.display")
 REGISTER_CLASS_NAME(FrameLabel,"flash.display")
@@ -258,6 +259,7 @@ REGISTER_CLASS_NAME(Microphone,"flash.media")
 REGISTER_CLASS_NAME(Camera,"flash.media")
 REGISTER_CLASS_NAME(VideoStreamSettings,"flash.media")
 REGISTER_CLASS_NAME(H264VideoStreamSettings,"flash.media")
+REGISTER_CLASS_NAME(AVTagData,"flash.media")
 
 
 //Net

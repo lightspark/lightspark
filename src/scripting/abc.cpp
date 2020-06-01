@@ -92,6 +92,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/bitmapencodingcolorspace.h"
 #include "scripting/flash/display/colorcorrection.h"
+#include "scripting/flash/display/ColorCorrectionSupport.h"
 #include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/GraphicsBitmapFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"
@@ -151,6 +152,7 @@
 #include "scripting/flash/media/soundcodec.h"
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"
+#include "scripting/flash/media/avtagdata.h"
 #include "scripting/flash/net/netgroupreceivemode.h"
 #include "scripting/flash/net/netgroupreplicationstrategy.h"
 #include "scripting/flash/net/netgroupsendmode.h"
@@ -496,6 +498,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Bitmap","flash.display",Class<Bitmap>::getRef(m_sys));
 	builtin->registerBuiltin("BitmapEncodingColorSpace","flash.display",Class<BitmapEncodingColorSpace>::getRef(m_sys));
 	builtin->registerBuiltin("ColorCorrection","flash.display",Class<ColorCorrection>::getRef(m_sys));
+	builtin->registerBuiltin("ColorCorrectionSupport","flash.display",Class<ColorCorrectionSupport>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderParameterType","flash.display",Class<ShaderParameterType>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderPrecision","flash.display",Class<ShaderPrecision>::getRef(m_sys));
 	builtin->registerBuiltin("SWFVersion","flash.display",Class<SWFVersion>::getRef(m_sys));
@@ -767,7 +770,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Camera","flash.media",Class<Camera>::getRef(m_sys));
 	builtin->registerBuiltin("VideoStreamSettings","flash.media",Class<VideoStreamSettings>::getRef(m_sys));
 	builtin->registerBuiltin("H264VideoStreamSettings","flash.media",Class<H264VideoStreamSettings>::getRef(m_sys));
-	
+	builtin->registerBuiltin("AVTagData","flash.media",Class<AVTagData>::getRef(m_sys));
 
 	builtin->registerBuiltin("Keyboard","flash.ui",Class<Keyboard>::getRef(m_sys));
 	builtin->registerBuiltin("KeyboardType","flash.ui",Class<KeyboardType>::getRef(m_sys));

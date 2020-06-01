@@ -76,6 +76,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/BitmapData.cpp
   scripting/flash/display/bitmapencodingcolorspace.cpp
   scripting/flash/display/colorcorrection.cpp
+  scripting/flash/display/ColorCorrectionSupport.cpp
   scripting/flash/display/DisplayObject.cpp
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
@@ -113,6 +114,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/flashmedia.cpp
   scripting/flash/media/audiodecoder.cpp
   scripting/flash/media/audiooutputchangereason.cpp
+  scripting/flash/media/avtagdata.cpp
   scripting/flash/media/h264level.cpp
   scripting/flash/media/h264profile.cpp
   scripting/flash/media/microphoneenhancedmode.cpp

@@ -865,6 +865,7 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	multiname* setVariableByMultiname(const multiname &name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset = nullptr) override;
 	void getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name);
 	/*
 	 * Utility method to register builtin methods and classes

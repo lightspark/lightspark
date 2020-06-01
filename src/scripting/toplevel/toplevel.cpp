@@ -2526,6 +2526,17 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 }
 
+multiname *Global::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+{
+	if (context && !context->hasRunScriptInit[scriptId])
+	{
+		LOG_CALL("Access to " << name << ", running script init");
+		asAtom v = asAtomHandler::fromObject(this);
+		context->runScriptInit(scriptId,v);
+	}
+	return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset);
+}
+
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind)
 {
 	o->incRef();

@@ -1846,14 +1846,14 @@ bool setupInstructionTwoArguments(std::vector<operands>& operandlist,method_info
 						resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				}
 				break;
-			case ABC_OP_OPTIMZED_SUBTRACT:
-			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_MODULO:
 				if (op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 					resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
 				else
 					resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
+			case ABC_OP_OPTIMZED_SUBTRACT:
+			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_DIVIDE:
 				resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
 				break;
@@ -2248,9 +2248,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 
 		switch(opcode)
 		{
+			case 0x5f://finddef
+			{
+				uint32_t t = code.readu30();
+				assert_and_throw(t < mi->context->constant_pool.multiname_count);
+				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
+				typestack.push_back(nullptr);
+				mi->body->preloadedcode.push_back((uint32_t)opcode);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				mi->body->preloadedcode.push_back(t);
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				break;
+			}
 			case 0x04://getsuper
 			case 0x59://getdescendants
-			case 0x5f://finddef
 			{
 				uint32_t t = code.readu30();
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);

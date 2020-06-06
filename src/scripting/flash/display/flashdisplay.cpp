@@ -3812,6 +3812,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 			break;
 	}
 	Bitmap::updatedData();
+	afterConstruction();
 }
 
 Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this, this->getSystemState()->bitmapTokenMemory),smoothing(false)

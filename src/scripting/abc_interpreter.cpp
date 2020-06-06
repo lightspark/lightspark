@@ -3666,7 +3666,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										auto it2 = typestack.rbegin();
 										for(uint32_t i= argcount; i > 0; i--)
 										{
-											if ((*it2) && (*it2)->is<Class_base>() && !f->canSkipCoercion(i-1,(*it2)->as<Class_base>()))
+											if (!(*it2) || !(*it2)->is<Class_base>() || !f->canSkipCoercion(i-1,(*it2)->as<Class_base>()))
 											{
 												skipcoerce=false;
 												break;

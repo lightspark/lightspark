@@ -260,6 +260,7 @@ REGISTER_CLASS_NAME(Camera,"flash.media")
 REGISTER_CLASS_NAME(VideoStreamSettings,"flash.media")
 REGISTER_CLASS_NAME(H264VideoStreamSettings,"flash.media")
 REGISTER_CLASS_NAME(AVTagData,"flash.media")
+REGISTER_CLASS_NAME(ID3Info,"flash.media")
 
 
 //Net

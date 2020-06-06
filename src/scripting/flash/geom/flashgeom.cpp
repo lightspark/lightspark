@@ -532,10 +532,10 @@ uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
 	for (uint32_t i = 0; i < size; i++)
 	{
 		uint32_t color = *src;
-		*dst =  max(0,min(255,(((int)((color>>24)&0xff) * (int)alphaMultiplier) + (int)alphaOffset)))<<24 |
-				max(0,min(255,(((int)((color>>16)&0xff) * (int)  redMultiplier) + (int)  redOffset)))<<16 |
-				max(0,min(255,(((int)((color>> 8)&0xff) * (int)greenMultiplier) + (int)greenOffset)))<<8 |
-				max(0,min(255,(((int)((color    )&0xff) * (int) blueMultiplier) + (int) blueOffset)));
+		*dst =  max(0,min(255,(((int)((color>>24)&0xff) * (int)alphaMultiplier)/256 + (int)alphaOffset)))<<24 |
+				max(0,min(255,(((int)((color>>16)&0xff) * (int)  redMultiplier)/256 + (int)  redOffset)))<<16 |
+				max(0,min(255,(((int)((color>> 8)&0xff) * (int)greenMultiplier)/256 + (int)greenOffset)))<<8 |
+				max(0,min(255,(((int)((color    )&0xff) * (int) blueMultiplier)/256 + (int) blueOffset)));
 		dst++;
 		src++;
 	}

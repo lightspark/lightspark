@@ -2260,9 +2260,6 @@ void RootMovieClip::advanceFrame()
 	if(getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading()))
 	{
 		waitingforparser=true;
-		this->incRef();
-		_R<AdvanceFrameEvent> advFrame = _MR(new (getSystemState()->unaccountedMemory) AdvanceFrameEvent(_MR(this)));
-		getVm(getSystemState())->prependEvent(NullRef, advFrame,true);
 		return;
 	}
 	waitingforparser=false;

@@ -1576,7 +1576,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	else if (getSystemState()->mainClip->usesActionScript3 || state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		advanceFrame();
 }
 
@@ -1637,7 +1637,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 		th->incRef();
 		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
-	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	else if (sys->mainClip->usesActionScript3 || th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		th->advanceFrame();
 
 }
@@ -1657,7 +1657,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 		th->incRef();
 		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
-	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	else if (sys->mainClip->usesActionScript3 || th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		th->advanceFrame();
 }
 

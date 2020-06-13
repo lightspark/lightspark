@@ -67,7 +67,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 #ifndef NDEBUG
 	bool ret=
 #endif
-	this->getSystemState()->customClasses.insert(this).second;
+	this->getSystemState()->customClasses.insert(this);
 	assert(ret);
 	isReusable = true;
 	subtype = SUBTYPE_INHERIT;

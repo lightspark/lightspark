@@ -212,7 +212,7 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 			objectValue = new ExtObject();
 			bool allNumericProperties = true;
 
-			objectsMap[other.getPtr()] = move(unique_ptr<ExtObject>(objectValue));
+			objectsMap[other.getPtr()] = unique_ptr<ExtObject>(objectValue);
 
 			unsigned int index = 0;
 			while((index=other->nextNameIndex(index))!=0)

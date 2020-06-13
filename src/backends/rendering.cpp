@@ -333,9 +333,12 @@ void RenderThread::generateScreenshot()
 	bmp_info_header[10] = (windowHeight >> 16)&0xff;
 	bmp_info_header[11] = (windowHeight >> 24)&0xff;
 		
-	write(fd,bmp_file_header,14);
-	write(fd,bmp_info_header,40);
-	write(fd,buf,windowWidth * windowHeight * 3);
+	if (write(fd,bmp_file_header,14)<0)
+		LOG(LOG_INFO,"screenshot header write error");
+	if (write(fd,bmp_info_header,40)<0)
+		LOG(LOG_INFO,"screenshot header write error");
+	if (write(fd,buf,windowWidth * windowHeight * 3)<0)
+		LOG(LOG_INFO,"screenshot write error");
 	close(fd);
 	delete[] buf;
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);

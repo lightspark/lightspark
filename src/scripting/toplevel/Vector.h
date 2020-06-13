@@ -74,9 +74,9 @@ public:
 
 	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter) override;
 
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 
 	uint32_t size() const
 	{

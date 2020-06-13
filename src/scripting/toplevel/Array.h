@@ -91,7 +91,7 @@ public:
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(Class_base* c);
-	bool destruct();
+	bool destruct() override;
 	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);

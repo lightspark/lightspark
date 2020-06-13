@@ -893,7 +893,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 	tiny_string sourceFactor;
 	tiny_string destinationFactor;
 	ARG_UNPACK_ATOM(sourceFactor)(destinationFactor);
-	BLEND_FACTOR src, dst;
+	BLEND_FACTOR src = BLEND_ONE, dst = BLEND_ONE;
 	if (sourceFactor == "destinationAlpha")
 		src = BLEND_DST_ALPHA;
 	else if (sourceFactor == "destinationColor")

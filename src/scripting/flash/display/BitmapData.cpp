@@ -1081,7 +1081,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,merge)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,paletteMap)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+//	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;

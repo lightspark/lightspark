@@ -131,7 +131,6 @@ private:
 	mutable Mutex mutex;
 	uint32_t width, height;
 	mutable uint32_t videoWidth, videoHeight;
-	bool initialized;
 	_NR<NetStream> netStream;
 	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);

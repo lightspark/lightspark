@@ -29,6 +29,11 @@
 #include "strcodec.h"
 #include "decode.h"
 
+#ifndef _WIN32
+#include <byteswap.h>
+#define _byteswap_ulong(x) bswap_64(x)
+#endif
+
 #ifdef MEM_TRACE
 #define TRACE_MALLOC    1
 #define TRACE_NEW       0

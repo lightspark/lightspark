@@ -33,7 +33,7 @@ private:
 	_NR<IFunction> callbackfunction;
 public:
 	ContextMenuItem(Class_base* c):NativeMenuItem(c){}
-	void defaultEventBehavior(_R<Event> e);
+	void defaultEventBehavior(_R<Event> e) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool, separatorBefore);

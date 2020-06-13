@@ -159,10 +159,10 @@ public:
 	   Used to link DisplayObjects the invalidation queue
 	*/
 	DisplayObject(Class_base* c);
-	void finalize();
-	bool destruct();
+	void finalize() override;
+	bool destruct() override;
 	MATRIX getMatrix() const;
-	bool isConstructed() const { return ACQUIRE_READ(constructed); }
+	bool isConstructed() const override { return ACQUIRE_READ(constructed); }
 	/**
 	 * Generate a new IDrawable instance for this object
 	 * @param target The topmost object in the hierarchy that is being drawn. Such object
@@ -179,13 +179,13 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr);
-	bool deleteVariableByMultiname(const multiname& name);
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	bool deleteVariableByMultiname(const multiname& name) override;
 	
 	// used by MorphShapes
 	virtual void checkRatio(uint32_t ratio) {}
-	virtual void onNewEvent();
-	virtual void afterHandleEvent();
+	void onNewEvent() override;
+	void afterHandleEvent() override;
 	
 	virtual void UpdateVariableBinding(asAtom v) {}
 	
@@ -295,7 +295,7 @@ public:
 	void AVM1SetVariable(tiny_string& name, asAtom v);
 	asAtom AVM1GetVariable(const tiny_string &name);
 	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
-	asAtom getVariableBindingValue(const tiny_string &name);
+	asAtom getVariableBindingValue(const tiny_string &name) override;
 	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
 	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);

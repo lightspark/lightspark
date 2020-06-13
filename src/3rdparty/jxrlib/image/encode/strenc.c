@@ -1319,7 +1319,7 @@ static Void InitializeStrEnc(CWMImageStrCodec *pSC,
 
     // set nExpBias
     if (pSC->WMISCP.nExpBias == 0)
-        pSC->WMISCP.nExpBias = 4 + 128;//default
+        pSC->WMISCP.nExpBias = (I8)(4 + 128);//default
     pSC->WMISCP.nExpBias += 128; // rollover arithmetic
 
     pSC->cRow = 0;

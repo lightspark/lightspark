@@ -20,7 +20,6 @@
 #include "scripting/flash/display/IBitmapDrawable.h"
 
 using namespace lightspark;
-using namespace std;
 
 void IBitmapDrawable::linkTraits(Class_base* c)
 {

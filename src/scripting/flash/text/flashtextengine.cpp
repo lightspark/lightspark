@@ -473,7 +473,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 		return;
 	}
 	if (!previousLine.isNull())
-		previousLine->nextLine == textLine;
+		previousLine->nextLine = textLine;
 	textLine->incRef();
 	ret = asAtomHandler::fromObject(textLine.getPtr());
 }

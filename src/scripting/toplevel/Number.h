@@ -53,8 +53,8 @@ public:
 		isfloat = true;
 		dval=v;
 	}
-	inline number_t toNumber() { return isfloat ? dval : ival; }
-	inline bool destruct() { dval=Number::NaN; isfloat = true; return destructIntern(); }
+	inline number_t toNumber() override { return isfloat ? dval : ival; }
+	inline bool destruct() override { dval=Number::NaN; isfloat = true; return destructIntern(); }
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(_toLocaleString);
@@ -72,11 +72,11 @@ public:
 	{
 		return trunc(val) == val;
 	}
-	unsigned int toUInt()
+	unsigned int toUInt() override
 	{
 		return isfloat ? (unsigned int)(dval) : ival;
 	}
-	int64_t toInt64()
+	int64_t toInt64() override
 	{
 		if (!isfloat) return ival;
 		if(std::isnan(dval) || std::isinf(dval))
@@ -85,7 +85,7 @@ public:
 	}
 
 	/* ECMA-262 9.5 ToInt32 */
-	int32_t toInt()
+	int32_t toInt() override
 	{
 		if (!isfloat) return ival;
 		return toInt(dval);
@@ -112,19 +112,19 @@ public:
 		}
 		return (int32_t)(val < 0.0 ? -posInt : posInt);
 	}
-	TRISTATE isLess(ASObject* o);
-	bool isEqual(ASObject* o);
+	TRISTATE isLess(ASObject* o) override;
+	bool isEqual(ASObject* o) override;
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(generator);
-	std::string toDebugString();
+	std::string toDebugString() override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 
 
-};
+}
 
 #endif /* SCRIPTING_TOPLEVEL_NUMBER_H */

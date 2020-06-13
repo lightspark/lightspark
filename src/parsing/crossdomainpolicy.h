@@ -41,7 +41,6 @@ namespace lightspark
 		bool first;
 
 		//Ease-of-use variables
-		int depth;
 		std::string tagName;
 		int attrCount;
 		std::string attrValue;

@@ -51,7 +51,7 @@ uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsig
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
-		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
+		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj);
 
 	//Add runner as tickjob
 	getSys()->addTick(interval, runner);
@@ -68,7 +68,7 @@ uint32_t IntervalManager::setTimeout(asAtom callback, asAtom* args, const unsign
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
-		IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
+		IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj);
 
 	//Add runner as waitjob
 	asAtomHandler::getObject(callback)->getSystemState()->addWait(interval, runner);

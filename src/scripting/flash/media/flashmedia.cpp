@@ -90,7 +90,7 @@ void Video::finalize()
 
 Video::Video(Class_base* c, uint32_t w, uint32_t h)
 	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
-	  initialized(false),netStream(NullRef),deblocking(0),smoothing(false)
+	  netStream(NullRef),deblocking(0),smoothing(false)
 {
 }
 

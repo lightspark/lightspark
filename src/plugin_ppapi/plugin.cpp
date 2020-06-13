@@ -474,7 +474,7 @@ ppObjectObject::ppObjectObject(std::map<int64_t, std::unique_ptr<ExtObject>>& ob
 {
 	//First of all add this object to the map, so that recursive cycles may be broken
 	if(objectsMap.count(obj.value.as_id)==0)
-		objectsMap[obj.value.as_id] = move(unique_ptr<ExtObject>(this));
+		objectsMap[obj.value.as_id] = unique_ptr<ExtObject>(this);
 
 	uint32_t property_count;
 	PP_Var* properties;
@@ -548,13 +548,13 @@ PP_Var ppObjectObject::getppObject(std::map<const ExtObject*, PP_Var>& objectsMa
 			PP_Var propname;
 			switch (ids[i]->getType())
 			{
-				case ExtVariant::EV_STRING:
+				case ExtIdentifier::EI_STRING:
 				{
 					std::string name = ids[i]->getString();
 					propname = g_var_interface->VarFromUtf8(name.c_str(),name.length());
 					break;
 				}
-				case ExtVariant::EV_INT32:
+				case ExtIdentifier::EI_INT32:
 					propname = PP_MakeInt32(ids[i]->getInt());
 					break;
 				default:
@@ -574,7 +574,7 @@ PP_Var ppObjectObject::getppObject(std::map<const ExtObject*, PP_Var>& objectsMa
 	return result;
 }
 
-ppDownloadManager::ppDownloadManager(ppPluginInstance *_instance, SystemState *sys):m_instance(_instance),m_sys(sys)
+ppDownloadManager::ppDownloadManager(ppPluginInstance *_instance):m_instance(_instance)
 {
 	type = NPAPI;
 }
@@ -865,7 +865,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	}
 	if (!swffile.empty())
 	{
-		m_sys->downloadManager=new ppDownloadManager(this,m_sys);
+		m_sys->downloadManager=new ppDownloadManager(this);
 	
 		//EngineData::startSDLMain();
 		EngineData::mainthread_running = true;

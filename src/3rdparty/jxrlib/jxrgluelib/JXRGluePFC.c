@@ -56,9 +56,9 @@ static U32 Convert_Half_To_Float(U16 u16)
     {
         return s << 31;
     }
-    else if (~(~0 << 5) == e) // inf, snan, qnan
+    else if (~(-32) == e) // inf, snan, qnan
     {
-        return (s << 31) | ~(~0 << 8) << 23| (m << 13);
+        return (s << 31) | ~(-256) << 23| (m << 13);
     }
 
     return (s << 31) | ((e - 15 + 127) << 23) | (m << 13); // norm

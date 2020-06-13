@@ -529,13 +529,13 @@ class FunctionPrototype: public Function, public Prototype
 {
 public:
 	FunctionPrototype(Class_base* c, _NR<Prototype> p);
-	inline bool destruct()
+	inline bool destruct() override
 	{
 		prevPrototype.reset();
 		return Function::destruct();
 	}
 	
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
 };
 
 /*
@@ -558,7 +558,7 @@ private:
 	multiname* simpleGetterOrSetterName;
 	SyntheticFunction(Class_base* c,method_info* m);
 protected:
-	IFunction* clone()
+	IFunction* clone() override
 	{
 		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
 		if (!ret)
@@ -581,11 +581,11 @@ protected:
 public:
 	~SyntheticFunction() {}
 	void call(asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult, bool coercearguments);
-	bool destruct();
-	method_info* getMethodInfo() const { return mi; }
+	bool destruct() override;
+	method_info* getMethodInfo() const override { return mi; }
 	
 	_NR<scope_entry_list> func_scope;
-	bool isEqual(ASObject* r);
+	bool isEqual(ASObject* r) override;
 	void acquireScope(const std::vector<scope_entry>& scope)
 	{
 		if (func_scope.isNull())
@@ -603,7 +603,7 @@ public:
 	{
 		dynamicreferencedobjects.push_back(o);
 	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target) override
 	{
 		if (simpleGetterOrSetterName)
 		{
@@ -617,7 +617,7 @@ public:
 	FORCE_INLINE multiname* getSimpleName() {
 		return simpleGetterOrSetterName;
 	}
-	Class_base* getReturnType();
+	Class_base* getReturnType() override;
 	void checkParamTypes();
 	bool canSkipCoercion(int param, Class_base* cls);
 };
@@ -662,8 +662,8 @@ protected:
 			context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 		context.keepLocals=true;
 	}
-	method_info* getMethodInfo() const { return nullptr; }
-	IFunction* clone()
+	method_info* getMethodInfo() const override { return nullptr; }
+	IFunction* clone() override
 	{
 		// no cloning needed in AVM1
 		return nullptr;
@@ -673,13 +673,13 @@ public:
 	{
 		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this);
 	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target)
+	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target) override
 	{
 		asAtom obj = asAtomHandler::fromObject(target);
 		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this);
 		return nullptr;
 	}
-	FORCE_INLINE Class_base* getReturnType()
+	FORCE_INLINE Class_base* getReturnType() override
 	{
 		return nullptr;
 	}
@@ -693,7 +693,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class<IFunction>(MemoryAccount* m):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),m){}
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass) override;
 	IFunction* getNopFunction();
 public:
 	static Class<IFunction>* getClass(SystemState* sys);
@@ -750,10 +750,10 @@ public:
 		ret->constructorCallComplete = true;
 		return ret;
 	}
-	void buildInstanceTraits(ASObject* o) const
+	void buildInstanceTraits(ASObject* o) const override
 	{
 	}
-	virtual void generator(asAtom& ret, asAtom* args, const unsigned int argslen);
+	void generator(asAtom& ret, asAtom* args, const unsigned int argslen) override;
 };
 
 class Undefined : public ASObject
@@ -761,17 +761,17 @@ class Undefined : public ASObject
 public:
 	ASFUNCTION_ATOM(call);
 	Undefined();
-	int32_t toInt();
-	int64_t toInt64();
-	bool isEqual(ASObject* r);
-	TRISTATE isLess(ASObject* r);
-	TRISTATE isLessAtom(asAtom& r);
-	ASObject *describeType() const;
+	int32_t toInt() override;
+	int64_t toInt64() override;
+	bool isEqual(ASObject* r) override;
+	TRISTATE isLess(ASObject* r) override;
+	TRISTATE isLessAtom(asAtom& r) override;
+	ASObject *describeType() const override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
 };
 
 class Null: public ASObject
@@ -812,13 +812,13 @@ public:
 	ASFUNCTION_ATOM(_toString);
 	uint32_t getURI() const { return uri; }
 	uint32_t getLocalName() const { return local_name; }
-	bool isEqual(ASObject* o);
+	bool isEqual(ASObject* o) override;
 
 	tiny_string toString();
 
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 };
 
 class Namespace: public ASObject
@@ -845,13 +845,13 @@ public:
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(_valueOf);
 	ASFUNCTION_ATOM(_ECMA_valueOf);
-	bool isEqual(ASObject* o);
+	bool isEqual(ASObject* o) override;
 	uint32_t getURI() const { return uri; }
 	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 };
 
 
@@ -864,7 +864,7 @@ public:
 	Global(Class_base* cb, ABCContext* c, int s);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
 	multiname* setVariableByMultiname(const multiname &name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset = nullptr) override;
 	void getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name);
 	/*

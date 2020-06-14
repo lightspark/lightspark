@@ -740,7 +740,7 @@ public:
 	}
 	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
 	{
-		return slots_vars[n-1]->var;
+		return slots_vars[n]->var;
 	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{

@@ -286,6 +286,8 @@ struct preloadedcodedata
 		ASObject* cacheobj1;
 		asAtom* arg1_constant;
 		uint32_t local_pos1;
+		int32_t arg1_int;
+		uint32_t arg1_uint;
 	};
 	union
 	{
@@ -294,14 +296,18 @@ struct preloadedcodedata
 		variable* cachedvar2;
 		asAtom* arg2_constant;
 		uint32_t local_pos2;
+		int32_t arg2_int;
+		uint32_t arg2_uint;
 	};
 	union
 	{
 		ASObject* cacheobj3;
 		asAtom* arg3_constant;
 		uint32_t local_pos3;
+		int32_t arg3_int;
+		uint32_t arg3_uint;
 	};
-	preloadedcodedata(uint32_t d):data(d),cacheobj1(NULL),cacheobj2(NULL),cacheobj3(NULL){}
+	preloadedcodedata(uint32_t d):data(d),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr){}
 };
 
 struct method_body_info

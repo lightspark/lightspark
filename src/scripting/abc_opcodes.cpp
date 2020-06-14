@@ -2843,6 +2843,7 @@ void ABCVm::newClass(call_context* th, int n)
 		else
 			j++;
 	}
+	ret->setConstructIndicator();
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);
 }

@@ -595,6 +595,11 @@ private:
 	static void abc_ifnlt_local_constant(call_context* context);
 	static void abc_ifnlt_constant_local(call_context* context);
 	static void abc_ifnlt_local_local(call_context* context);
+	static void abc_ifnltInt(call_context* context);
+	static void abc_ifnltInt_constant_constant(call_context* context);
+	static void abc_ifnltInt_local_constant(call_context* context);
+	static void abc_ifnltInt_constant_local(call_context* context);
+	static void abc_ifnltInt_local_local(call_context* context);
 	static void abc_ifnle(call_context* context);
 	static void abc_ifngt(call_context* context);
 	static void abc_ifnge(call_context* context);

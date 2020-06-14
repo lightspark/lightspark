@@ -71,6 +71,61 @@ void ABCVm::abc_ifnlt_local_local(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifnltInt(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v2->intval < v1->intval);
+	ASATOM_DECREF_POINTER(v2);
+	ASATOM_DECREF_POINTER(v1);
+	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
+
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnltInt_constant_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->exec_pos->arg1_constant->intval < context->exec_pos->arg2_constant->intval);
+	LOG_CALL(_("ifNLTInt_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnltInt_local_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->locals[context->exec_pos->local_pos1].intval < context->exec_pos->arg2_constant->intval);
+	LOG_CALL(_("ifNLTInt_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnltInt_constant_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->exec_pos->arg1_constant->intval < context->locals[context->exec_pos->local_pos2].intval);
+	LOG_CALL(_("ifNLTInt_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnltInt_local_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->locals[context->exec_pos->local_pos1].intval < context->locals[context->exec_pos->local_pos2].intval);
+	LOG_CALL(_("ifNLTInt_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_iftrue_constant(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
@@ -2559,7 +2614,7 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,arg1);
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
-	int index=asAtomHandler::toInt(*arg1);
+	int index=asAtomHandler::getInt(*arg1);
 	LOG_CALL( _("getPropertyInteger ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2571,8 +2626,10 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
-	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
+	if (!obj)
+		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_cc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2584,8 +2641,10 @@ void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
-	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
+	if (!obj)
+		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2597,8 +2656,10 @@ void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
-	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
+	if (!obj)
+		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_cl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2610,8 +2671,10 @@ void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
-	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
+	if (!obj)
+		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_ll ") << index <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2623,8 +2686,10 @@ void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
-	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
+	if (!obj)
+		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_ccl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2640,8 +2705,10 @@ void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* c
 void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
-	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
+	if (!obj)
+		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lcl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
@@ -2657,8 +2724,10 @@ void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* cont
 void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
-	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true);
+	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
+	if (!obj)
+		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true);
 	LOG_CALL( _("getPropertyInteger_cll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
@@ -2674,8 +2743,10 @@ void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* cont
 void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
-	ASObject* obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
+	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
+	if (!obj)
+		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
@@ -3452,7 +3523,7 @@ void ABCVm::abc_callFunctionMultiArgs(call_context* context)
 void ABCVm::abc_getslot_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom* pval = instrptr->arg1_constant;
 	asAtom ret=asAtomHandler::getObject(*pval)->getSlotNoCheck(t);
 	LOG_CALL("getSlot_c " << t << " " << asAtomHandler::toDebugString(ret));
@@ -3463,7 +3534,7 @@ void ABCVm::abc_getslot_constant(call_context* context)
 void ABCVm::abc_getslot_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	ASObject* obj = asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
 		throwError<TypeError>(kConvertNullToObjectError);
@@ -3476,7 +3547,7 @@ void ABCVm::abc_getslot_local(call_context* context)
 void ABCVm::abc_getslot_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
 	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
 	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
@@ -3489,7 +3560,7 @@ void ABCVm::abc_getslot_constant_localresult(call_context* context)
 void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	uint32_t t = (++(context->exec_pos))->data;
+	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	ASObject* obj = asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
 		throwError<TypeError>(kConvertNullToObjectError);
@@ -4267,25 +4338,31 @@ void ABCVm::abc_rshift_local_local_localresult(call_context* context)
 }
 void ABCVm::abc_urshift_constant_constant(call_context* context)
 {
-	//urshift
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	uint32_t i2=context->exec_pos->arg1_uint;
+	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
+	LOG_CALL("urShift_cc "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_local_constant(call_context* context)
 {
-	//urshift
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	uint32_t i2=asAtomHandler::toUInt(context->locals[context->exec_pos->local_pos1]);
+	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
+	LOG_CALL("urShift_lc "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_constant_local(call_context* context)
 {
-	//urshift
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	uint32_t i2=(context->exec_pos->arg1_uint);
+	uint32_t i1=asAtomHandler::toUInt(context->locals[context->exec_pos->local_pos2])&0x1f;
+	LOG_CALL("urShift_cl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4299,34 +4376,39 @@ void ABCVm::abc_urshift_local_local(call_context* context)
 }
 void ABCVm::abc_urshift_constant_constant_localresult(call_context* context)
 {
-	//urshift
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	uint32_t i2=context->exec_pos->arg1_uint;
+	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
+	LOG_CALL("urShift_ccl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_local_constant_localresult(call_context* context)
 {
-	//urshift
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	uint32_t i2=asAtomHandler::toUInt(context->locals[context->exec_pos->local_pos1]);
+	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
+	LOG_CALL("urShift_lcl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_constant_local_localresult(call_context* context)
 {
-	//urshift
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	uint32_t i2=(context->exec_pos->arg1_uint);
+	uint32_t i1=asAtomHandler::toUInt(context->locals[context->exec_pos->local_pos2])&0x1f;
+	LOG_CALL("urShift_cll "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	asAtom res;
+	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_local_local_localresult(call_context* context)
 {
-	//urshift
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
@@ -4335,31 +4417,36 @@ void ABCVm::abc_urshift_local_local_localresult(call_context* context)
 }
 void ABCVm::abc_bitand_constant_constant(call_context* context)
 {
-	//bitand
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL("bitAnd_cc " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_local_constant(call_context* context)
 {
-	//bitand
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL("bitAnd_lc " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_constant_local(call_context* context)
 {
-	//bitand
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	int32_t i1=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos2]);
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL("bitAnd_cl " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_local_local(call_context* context)
 {
-	//bitand
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
@@ -4367,34 +4454,39 @@ void ABCVm::abc_bitand_local_local(call_context* context)
 }
 void ABCVm::abc_bitand_constant_constant_localresult(call_context* context)
 {
-	//bitand
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL("bitAnd_ccl " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_local_constant_localresult(call_context* context)
 {
-	//bitand
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL("bitAnd_lcl " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_constant_local_localresult(call_context* context)
 {
-	//bitand
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	int32_t i1=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos2]);
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL("bitAnd_cll " << std::hex << i1 << '&' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1&i2);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitand_local_local_localresult(call_context* context)
 {
-	//bitand
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	asAtomHandler::bit_and(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
@@ -4471,31 +4563,36 @@ void ABCVm::abc_bitor_local_local_localresult(call_context* context)
 }
 void ABCVm::abc_bitxor_constant_constant(call_context* context)
 {
-	//bitxor
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL(_("bitXor_cc ") << std::hex << i1 << '^' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1^i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_local_constant(call_context* context)
 {
-	//bitxor
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL(_("bitXor_lc ") << std::hex << i1 << '^' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1^i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_constant_local(call_context* context)
 {
-	//bitxor
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	int32_t i1=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos2]);
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL(_("bitXor_cl ") << std::hex << i1 << '^' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1^i2);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_local_local(call_context* context)
 {
-	//bitxor
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	RUNTIME_STACK_PUSH(context,res);
@@ -4503,34 +4600,34 @@ void ABCVm::abc_bitxor_local_local(call_context* context)
 }
 void ABCVm::abc_bitxor_constant_constant_localresult(call_context* context)
 {
-	//bitxor
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=context->exec_pos->arg1_int;
+	LOG_CALL(_("bitXor_ccl ") << std::hex << i1 << '^' << i2 << std::dec);
+	asAtom res;
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i1^i2);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
 	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_local_constant_localresult(call_context* context)
 {
-	//bitxor
-	asAtom res = context->locals[context->exec_pos->local_pos1];
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	int32_t i1=context->exec_pos->arg2_int;
+	int32_t i2=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos1]);
+	LOG_CALL(_("bitXor_lcl ") << std::hex << i1 << '^' << i2 << std::dec);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
-	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	asAtomHandler::setInt(context->locals[context->exec_pos->local_pos3-1],context->mi->context->root->getSystemState(),i1^i2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_constant_local_localresult(call_context* context)
 {
-	//bitxor
-	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
+	int32_t i1=asAtomHandler::toInt(context->locals[context->exec_pos->local_pos2]);
+	int32_t i2=context->exec_pos->arg1_int;
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);
-	asAtomHandler::set(context->locals[context->exec_pos->local_pos3-1],res);
+	asAtomHandler::setInt(context->locals[context->exec_pos->local_pos3-1],context->mi->context->root->getSystemState(),i1^i2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bitxor_local_local_localresult(call_context* context)
 {
-	//bitxor
 	asAtom res = context->locals[context->exec_pos->local_pos1];
 	asAtomHandler::bit_xor(res,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	ASATOM_DECREF(context->locals[context->exec_pos->local_pos3-1]);

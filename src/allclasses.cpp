@@ -51,6 +51,7 @@
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display/jpegencoderoptions.h"
 #include "scripting/flash/display/jpegxrencoderoptions.h"
 #include "scripting/flash/display/pngencoderoptions.h"
 #include "scripting/flash/display/shaderparametertype.h"

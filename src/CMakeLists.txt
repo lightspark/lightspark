@@ -93,6 +93,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/GraphicsStroke.cpp
   scripting/flash/display/GraphicsTrianglePath.cpp
   scripting/flash/display/NativeMenuItem.cpp
+  scripting/flash/display/jpegencoderoptions.cpp
   scripting/flash/display/jpegxrencoderoptions.cpp
   scripting/flash/display/pngencoderoptions.cpp
   scripting/flash/display/shaderparametertype.cpp

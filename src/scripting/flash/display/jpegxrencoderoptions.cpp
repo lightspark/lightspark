@@ -27,14 +27,14 @@ using namespace lightspark;
 void JPEGXREncoderOptions::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
-    REGISTER_GETTER_SETTER(c,colorSpace);
-    REGISTER_GETTER_SETTER(c,quantization);
-    REGISTER_GETTER_SETTER(c,trimFlexBits);
+	REGISTER_GETTER_SETTER(c,colorSpace);
+	REGISTER_GETTER_SETTER(c,quantization);
+	REGISTER_GETTER_SETTER(c,trimFlexBits);
 }
 
 ASFUNCTIONBODY_ATOM(JPEGXREncoderOptions,_constructor)
 {
-    JPEGXREncoderOptions* th =asAtomHandler::as<JPEGXREncoderOptions>(obj);
+	JPEGXREncoderOptions* th =asAtomHandler::as<JPEGXREncoderOptions>(obj);
 	ARG_UNPACK_ATOM(th->quantization,20)(th->colorSpace,"auto")(th->trimFlexBits,0);
 }
 

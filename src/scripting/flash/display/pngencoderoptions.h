@@ -30,8 +30,8 @@ class PNGEncoderOptions: public ASObject
 public:
 	PNGEncoderOptions(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-    ASFUNCTION_ATOM(_constructor);
-    ASPROPERTY_GETTER_SETTER(bool, fastCompression);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(bool, fastCompression);
 };
 
 }

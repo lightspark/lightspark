@@ -27,12 +27,12 @@ using namespace lightspark;
 void JPEGEncoderOptions::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
-    REGISTER_GETTER_SETTER(c,quality);
+	REGISTER_GETTER_SETTER(c,quality);
 }
 
 ASFUNCTIONBODY_ATOM(JPEGEncoderOptions,_constructor)
 {
-    JPEGEncoderOptions* th =asAtomHandler::as<JPEGEncoderOptions>(obj);
+	JPEGEncoderOptions* th =asAtomHandler::as<JPEGEncoderOptions>(obj);
 	ARG_UNPACK_ATOM(th->quality,80);
 }
 

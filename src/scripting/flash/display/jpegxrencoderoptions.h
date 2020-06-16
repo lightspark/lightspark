@@ -30,10 +30,10 @@ class JPEGXREncoderOptions: public ASObject
 public:
 	JPEGXREncoderOptions(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-    ASFUNCTION_ATOM(_constructor);
-    ASPROPERTY_GETTER_SETTER(tiny_string, colorSpace);
-    ASPROPERTY_GETTER_SETTER(uint32_t, quantization);
-    ASPROPERTY_GETTER_SETTER(uint32_t, trimFlexBits);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string, colorSpace);
+	ASPROPERTY_GETTER_SETTER(uint32_t, quantization);
+	ASPROPERTY_GETTER_SETTER(uint32_t, trimFlexBits);
 };
 
 }

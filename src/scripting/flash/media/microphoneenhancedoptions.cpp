@@ -27,10 +27,10 @@ using namespace lightspark;
 void MicrophoneEnhancedOptions::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
-    REGISTER_GETTER_SETTER(c,echoPath);
-    REGISTER_GETTER_SETTER(c,isVoiceDetected);
-    REGISTER_GETTER_SETTER(c,mode);
-    REGISTER_GETTER_SETTER(c,nonLinearProcessing);
+	REGISTER_GETTER_SETTER(c,echoPath);
+	REGISTER_GETTER_SETTER(c,isVoiceDetected);
+	REGISTER_GETTER_SETTER(c,mode);
+	REGISTER_GETTER_SETTER(c,nonLinearProcessing);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(MicrophoneEnhancedOptions, echoPath);

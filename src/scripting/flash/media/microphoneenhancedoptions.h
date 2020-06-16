@@ -30,10 +30,10 @@ class MicrophoneEnhancedOptions: public ASObject
 public:
 	MicrophoneEnhancedOptions(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-    ASPROPERTY_GETTER_SETTER(int, echoPath);
-    ASPROPERTY_GETTER_SETTER(int, isVoiceDetected);
-    ASPROPERTY_GETTER_SETTER(tiny_string, mode);
-    ASPROPERTY_GETTER_SETTER(bool, nonLinearProcessing);
+	ASPROPERTY_GETTER_SETTER(int, echoPath);
+	ASPROPERTY_GETTER_SETTER(int, isVoiceDetected);
+	ASPROPERTY_GETTER_SETTER(tiny_string, mode);
+	ASPROPERTY_GETTER_SETTER(bool, nonLinearProcessing);
 };
 
 }

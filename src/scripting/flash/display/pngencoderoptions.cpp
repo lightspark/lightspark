@@ -27,12 +27,12 @@ using namespace lightspark;
 void PNGEncoderOptions::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
-    REGISTER_GETTER_SETTER(c,fastCompression);
+	REGISTER_GETTER_SETTER(c,fastCompression);
 }
 
 ASFUNCTIONBODY_ATOM(PNGEncoderOptions,_constructor)
 {
-    PNGEncoderOptions* th =asAtomHandler::as<PNGEncoderOptions>(obj);
+	PNGEncoderOptions* th =asAtomHandler::as<PNGEncoderOptions>(obj);
 	ARG_UNPACK_ATOM(th->fastCompression);
 }
 

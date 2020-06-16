@@ -106,6 +106,7 @@
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display/pngencoderoptions.h"
 #include "scripting/flash/display/shaderparametertype.h"
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
@@ -466,6 +467,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SimpleButton","flash.display",Class<SimpleButton>::getRef(m_sys));
 	builtin->registerBuiltin("InteractiveObject","flash.display",Class<InteractiveObject>::getRef(m_sys));
 	builtin->registerBuiltin("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getRef(m_sys));
+	builtin->registerBuiltin("PNGEncoderOptions","flash.display",Class<PNGEncoderOptions>::getRef(m_sys));
 	builtin->registerBuiltin("Sprite","flash.display",Class<Sprite>::getRef(m_sys));
 	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef(m_sys));

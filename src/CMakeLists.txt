@@ -121,6 +121,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/h264profile.cpp
   scripting/flash/media/id3info.cpp
   scripting/flash/media/microphoneenhancedmode.cpp
+  scripting/flash/media/microphoneenhancedoptions.cpp
   scripting/flash/media/soundcodec.cpp
   scripting/flash/media/stagevideoavailabilityreason.cpp
   scripting/flash/media/videodecoder.cpp

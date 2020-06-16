@@ -149,6 +149,7 @@
 #include "scripting/flash/media/h264level.h"
 #include "scripting/flash/media/h264profile.h"
 #include "scripting/flash/media/microphoneenhancedmode.h"
+#include "scripting/flash/media/microphoneenhancedoptions.h"
 #include "scripting/flash/media/soundcodec.h"
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"
@@ -751,6 +752,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("H264Level","flash.media",Class<H264Level>::getRef(m_sys));
 	builtin->registerBuiltin("H264Profile","flash.media",Class<H264Profile>::getRef(m_sys));
 	builtin->registerBuiltin("MicrophoneEnhancedMode","flash.media",Class<MicrophoneEnhancedMode>::getRef(m_sys));
+	builtin->registerBuiltin("MicrophoneEnhancedOptions","flash.media",Class<MicrophoneEnhancedOptions>::getRef(m_sys));
 	builtin->registerBuiltin("SoundCodec","flash.media",Class<SoundCodec>::getRef(m_sys));
 	builtin->registerBuiltin("StageVideoAvailabilityReason","flash.media",Class<StageVideoAvailabilityReason>::getRef(m_sys));
 	builtin->registerBuiltin("VideoCodec","flash.media",Class<MediaVideoDecoder>::getRef(m_sys));

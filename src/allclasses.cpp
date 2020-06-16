@@ -107,6 +107,7 @@
 #include "scripting/flash/media/avtagdata.h"
 #include "scripting/flash/media/id3info.h"
 #include "scripting/flash/media/microphoneenhancedmode.h"
+#include "scripting/flash/media/microphoneenhancedoptions.h"
 #include "scripting/flash/media/soundcodec.h"
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"

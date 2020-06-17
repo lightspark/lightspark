@@ -79,7 +79,7 @@ void ABCVm::abc_ifnltInt(call_context* context)
 	bool cond=!(v2->intval < v1->intval);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL(_("ifNLTInt (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
 		context->exec_pos += t+1;
@@ -304,6 +304,60 @@ void ABCVm::abc_ifne_local_local(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifneInt(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=!(v1->intval==v2->intval);
+	LOG_CALL("ifNEInt (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifneInt_constant_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->exec_pos->arg1_constant->intval == context->exec_pos->arg2_constant->intval);
+	LOG_CALL("ifNEInt_cc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifneInt_local_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->exec_pos->arg2_constant->intval ==  context->locals[context->exec_pos->local_pos1].intval);
+	LOG_CALL("ifNEInt_lc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifneInt_constant_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->exec_pos->arg1_constant->intval ==  context->locals[context->exec_pos->local_pos2].intval);
+	LOG_CALL("ifNEInt_cl (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifneInt_local_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(context->locals[context->exec_pos->local_pos1].intval  == context->locals[context->exec_pos->local_pos2].intval);
+	LOG_CALL("ifNEInt_ll (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+
 void ABCVm::abc_iflt_constant_constant(call_context* context)
 {
 	//iflt
@@ -2149,7 +2203,7 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 	(++(context->exec_pos));
 	RUNTIME_STACK_POP_CREATE(context,value);
 	RUNTIME_STACK_POP_CREATE(context,idx);
-	int index = asAtomHandler::toInt(*idx);
+	int index = asAtomHandler::getInt(*idx);
 	RUNTIME_STACK_POP_CREATE(context,obj);
 
 	LOG_CALL(_("setPropertyInteger ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2165,7 +2219,9 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2177,7 +2233,7 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
-	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
 	asAtom* value = instrptr->arg2_constant;
 
 	LOG_CALL(_("setProperty_i_ccc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2193,7 +2249,9 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2205,7 +2263,7 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
-	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	int index = asAtomHandler::getInt(context->locals[instrptr->local_pos1]);
 	asAtom* value = instrptr->arg2_constant;
 
 	LOG_CALL(_("setProperty_i_clc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2221,7 +2279,9 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2233,7 +2293,7 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
-	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
 	asAtom* value = &context->locals[instrptr->local_pos2];
 
 	LOG_CALL(_("setProperty_i_ccl ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2249,7 +2309,9 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2261,7 +2323,7 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
-	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	int index = asAtomHandler::getInt(context->locals[instrptr->local_pos1]);
 	asAtom* value = &context->locals[instrptr->local_pos2];
 
 	LOG_CALL(_("setProperty_i_cll ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2278,7 +2340,9 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 	}
 
 	ASATOM_INCREF_POINTER(value);
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2290,7 +2354,7 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = &context->locals[instrptr->local_pos3];
-	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
 	asAtom* value = instrptr->arg2_constant;
 
 	LOG_CALL(_("setProperty_i_lcc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2306,7 +2370,9 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2318,7 +2384,7 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = &context->locals[instrptr->local_pos3];
-	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	int index = asAtomHandler::getInt(context->locals[instrptr->local_pos1]);
 	asAtom* value = instrptr->arg2_constant;
 
 	LOG_CALL(_("setProperty_i_llc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2334,7 +2400,9 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2346,7 +2414,7 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = &context->locals[instrptr->local_pos3];
-	int index = asAtomHandler::toInt(*instrptr->arg1_constant);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
 	asAtom* value = &context->locals[instrptr->local_pos2];
 
 	LOG_CALL(_("setProperty_i_lcl ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2363,7 +2431,9 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 	}
 
 	ASATOM_INCREF_POINTER(value);
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -2375,7 +2445,7 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 	asAtom* obj = &context->locals[instrptr->local_pos3];
-	int index = asAtomHandler::toInt(context->locals[instrptr->local_pos1]);
+	int index = asAtomHandler::getInt(context->locals[instrptr->local_pos1]);
 	asAtom* value = &context->locals[instrptr->local_pos2];
 
 	LOG_CALL(_("setProperty_i_lll ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -2392,7 +2462,9 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 	}
 
 	ASATOM_INCREF_POINTER(value);
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::getObject(*obj);
+	if (!o)
+		o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
 	if (context->exec_pos->local_pos3 == 0x68)//initproperty
 		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
 	else//Do not allow to set contant traits
@@ -3566,9 +3638,12 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 		throwError<TypeError>(kConvertNullToObjectError);
 	asAtom res = obj->getSlotNoCheck(t);
 	asAtom o = context->locals[instrptr->local_pos3-1];
-	asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
-	ASATOM_INCREF(res);
-	ASATOM_DECREF(o);
+	if (o.uintval != res.uintval)
+	{
+		asAtomHandler::set(context->locals[instrptr->local_pos3-1],res);
+		ASATOM_INCREF(res);
+		ASATOM_DECREF(o);
+	}
 	LOG_CALL("getSlot_ll " << t << " " <<instrptr->local_pos1<<":"<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos1])<<" "<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
 	++(context->exec_pos);
 }

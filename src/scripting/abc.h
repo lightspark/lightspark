@@ -625,6 +625,11 @@ private:
 	static void abc_ifne_local_constant(call_context* context);
 	static void abc_ifne_constant_local(call_context* context);
 	static void abc_ifne_local_local(call_context* context);
+	static void abc_ifneInt(call_context* context);
+	static void abc_ifneInt_constant_constant(call_context* context);
+	static void abc_ifneInt_local_constant(call_context* context);
+	static void abc_ifneInt_constant_local(call_context* context);
+	static void abc_ifneInt_local_local(call_context* context);
 	static void abc_iflt(call_context* context);
 	static void abc_iflt_constant_constant(call_context* context);
 	static void abc_iflt_local_constant(call_context* context);

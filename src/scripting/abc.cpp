@@ -106,6 +106,9 @@
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/flash/display/IGraphicsPath.h"
 #include "scripting/flash/display/IGraphicsStroke.h"
+#include "scripting/flash/display/jpegencoderoptions.h"
+#include "scripting/flash/display/jpegxrencoderoptions.h"
+#include "scripting/flash/display/pngencoderoptions.h"
 #include "scripting/flash/display/shaderparametertype.h"
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
@@ -149,6 +152,7 @@
 #include "scripting/flash/media/h264level.h"
 #include "scripting/flash/media/h264profile.h"
 #include "scripting/flash/media/microphoneenhancedmode.h"
+#include "scripting/flash/media/microphoneenhancedoptions.h"
 #include "scripting/flash/media/soundcodec.h"
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"
@@ -464,7 +468,10 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LoaderInfo","flash.display",Class<LoaderInfo>::getRef(m_sys));
 	builtin->registerBuiltin("SimpleButton","flash.display",Class<SimpleButton>::getRef(m_sys));
 	builtin->registerBuiltin("InteractiveObject","flash.display",Class<InteractiveObject>::getRef(m_sys));
+	builtin->registerBuiltin("JPEGEncoderOptions","flash.display",Class<JPEGEncoderOptions>::getRef(m_sys));
+	builtin->registerBuiltin("JPEGXREncoderOptions","flash.display",Class<JPEGXREncoderOptions>::getRef(m_sys));
 	builtin->registerBuiltin("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getRef(m_sys));
+	builtin->registerBuiltin("PNGEncoderOptions","flash.display",Class<PNGEncoderOptions>::getRef(m_sys));
 	builtin->registerBuiltin("Sprite","flash.display",Class<Sprite>::getRef(m_sys));
 	builtin->registerBuiltin("Shape","flash.display",Class<Shape>::getRef(m_sys));
 	builtin->registerBuiltin("Stage","flash.display",Class<Stage>::getRef(m_sys));
@@ -751,6 +758,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("H264Level","flash.media",Class<H264Level>::getRef(m_sys));
 	builtin->registerBuiltin("H264Profile","flash.media",Class<H264Profile>::getRef(m_sys));
 	builtin->registerBuiltin("MicrophoneEnhancedMode","flash.media",Class<MicrophoneEnhancedMode>::getRef(m_sys));
+	builtin->registerBuiltin("MicrophoneEnhancedOptions","flash.media",Class<MicrophoneEnhancedOptions>::getRef(m_sys));
 	builtin->registerBuiltin("SoundCodec","flash.media",Class<SoundCodec>::getRef(m_sys));
 	builtin->registerBuiltin("StageVideoAvailabilityReason","flash.media",Class<StageVideoAvailabilityReason>::getRef(m_sys));
 	builtin->registerBuiltin("VideoCodec","flash.media",Class<MediaVideoDecoder>::getRef(m_sys));

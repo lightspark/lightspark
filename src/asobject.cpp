@@ -955,7 +955,7 @@ void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 
 void variable::setVarNoCoerce(asAtom &v,ASObject *obj)
 {
-	if(isrefcounted && asAtomHandler::getObject(var))
+	if(isrefcounted && asAtomHandler::isObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
@@ -3219,7 +3219,7 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 			switch (v2.uintval&0x7)
 			{
 				case ATOM_INTEGER:
-					return ((a.intval>>3) < (v2.intval>>3))?TTRUE:TFALSE;
+					return (a.intval < v2.intval)?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
 					return ((a.intval>>3) < 0 || ((uint32_t)(a.intval>>3)) < (v2.uintval>>3))?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
@@ -3763,8 +3763,8 @@ ASObject *asAtomHandler::toObject(asAtom& a, SystemState *sys, bool isconstant)
 {
 	if (isObject(a))
 	{
-		assert(getObject(a) && getObject(a)->getRefCount() >= 1);
-		return getObject(a);
+		assert(getObjectNoCheck(a) && getObjectNoCheck(a)->getRefCount() >= 1);
+		return getObjectNoCheck(a);
 	}
 	switch(a.uintval&0x7)
 	{
@@ -3799,6 +3799,6 @@ ASObject *asAtomHandler::toObject(asAtom& a, SystemState *sys, bool isconstant)
 			break;
 	}
 	if (isconstant)
-		getObject(a)->setConstant();
-	return getObject(a);
+		getObjectNoCheck(a)->setConstant();
+	return getObjectNoCheck(a);
 }

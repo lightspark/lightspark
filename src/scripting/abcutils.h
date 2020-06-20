@@ -58,6 +58,7 @@ struct call_context
 	} PACKED;
 #include "packed_end.h"
 	asAtom* max_stackp;
+	asAtom* lastlocal;
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	scope_entry_list* parent_scope_stack;
 	uint32_t curr_scope_stack;
@@ -73,13 +74,13 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	uint32_t defaultNamespaceUri;
-	asAtom& returnvalue;
+	asAtom returnvalue;
 	bool returning;
-	call_context(method_info* _mi,Class_base* _inClass, asAtom& ret):
+	call_context(method_info* _mi):
 		stackp(nullptr),exec_pos(nullptr),
 		max_stackp(nullptr),argarrayposition(-1),
 		parent_scope_stack(nullptr),curr_scope_stack(0),mi(_mi),
-		inClass(_inClass),defaultNamespaceUri(0),returnvalue(ret),returning(false)
+		inClass(nullptr),defaultNamespaceUri(0),returning(false)
 	{
 	}
 	static void handleError(int errorcode);
@@ -87,7 +88,8 @@ struct call_context
 	{
 		while(stackp != stack)
 		{
-			ASATOM_DECREF_POINTER((--stackp));
+			--stackp;
+			ASATOM_DECREF_POINTER(stackp);
 		}
 	}
 };

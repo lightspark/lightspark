@@ -384,46 +384,46 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 
 	/* setup call_context */
-	call_context cc(mi,inClass,ret);
-	cc.exec_pos = mi->body->preloadedcode.data();
+	call_context* cc = nullptr;
 	if (codeStatus == method_body_info::USED) // recursive call
 	{
-		cc.locals= g_newa(asAtom, cc.mi->body->local_count+1+2); // +2, because we need two more elements to store result of optimized operations
-		cc.stackp = cc.stack = g_newa(asAtom, cc.mi->body->max_stack+1);
-		cc.scope_stack=g_newa(asAtom, cc.mi->body->max_scope_depth);
-		cc.scope_stack_dynamic=g_newa(bool, cc.mi->body->max_scope_depth);
+		cc = new call_context(mi);
+		cc->locals= g_newa(asAtom, mi->body->local_count+1+2); // +2, because we need two more elements to store result of optimized operations
+		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
+		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);
+		cc->scope_stack_dynamic=g_newa(bool, mi->body->max_scope_depth);
+		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
+		cc->lastlocal = cc->locals+mi->body->local_count+1+2;
 	}
 	else
 	{
-		assert(mi->locals_norecursion && mi->stack_norecursion && mi->scope_stack_norecursion && mi->scope_stack_dynamic_norecursion);
-		cc.locals=mi->locals_norecursion;
-		cc.stackp=cc.stack=mi->stack_norecursion;
-		cc.scope_stack=mi->scope_stack_norecursion;
-		cc.scope_stack_dynamic=mi->scope_stack_dynamic_norecursion;
+		cc = &mi->cc;
 	}
-	cc.max_stackp=cc.stackp+cc.mi->body->max_stack;
-	cc.parent_scope_stack=func_scope.getPtr();
-	cc.defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
+	cc->exec_pos = mi->body->preloadedcode.data();
+	cc->parent_scope_stack=func_scope.getPtr();
+	cc->defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
+	cc->inClass = this->inClass;
+	cc->stackp = cc->stack;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	getVm(getSystemState())->currentCallContext = &cc;
+	getVm(getSystemState())->currentCallContext = cc;
 
-	cc.locals[0]=obj;
+	cc->locals[0]=obj;
 
 	if (coercearguments)
 	{
 		/* coerce arguments to expected types */
 		auto itpartype = mi->paramTypes.begin();
 		asAtom* argp = args;
-		asAtom* lastlocalpasssed = cc.locals+1+passedToLocals;
-		for(asAtom* i=cc.locals+1;i< lastlocalpasssed;++i)
+		asAtom* lastlocalpasssed = cc->locals+1+passedToLocals;
+		for(asAtom* i=cc->locals+1;i< lastlocalpasssed;++i)
 		{
 			*i = *argp++;
 			(*itpartype++)->coerce(getSystemState(),*i);
 		}
 	}
 	else if (args)
-		memcpy(cc.locals+1,args,1+passedToLocals*sizeof(asAtom));
+		memcpy(cc->locals+1,args,1+passedToLocals*sizeof(asAtom));
 
 	//Fill missing parameters until optional parameters begin
 	//like fun(a,b,c,d=3,e=5) called as fun(1,2) becomes
@@ -433,23 +433,19 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		int iOptional = mi->numOptions()-args_len+i;
 		if(iOptional >= 0)
 		{
-			mi->getOptional(cc.locals[i+1],iOptional);
-			mi->paramTypes[i]->coerce(getSystemState(),cc.locals[i+1]);
+			mi->getOptional(cc->locals[i+1],iOptional);
+			mi->paramTypes[i]->coerce(getSystemState(),cc->locals[i+1]);
 		} else {
 			assert(mi->paramTypes[i] == Type::anyType);
-			cc.locals[i+1]=asAtomHandler::undefinedAtom;
+			cc->locals[i+1]=asAtomHandler::undefinedAtom;
 		}
 	}
-	asAtom* lastlocal = cc.locals+cc.mi->body->local_count+1+2;
-	for(asAtom* i=cc.locals+args_len+1;i< lastlocal;++i)
-	{
-		*i = asAtomHandler::undefinedAtom;
-	}
+	memset(cc->locals+args_len+1,ATOMTYPE_UNDEFINED_BIT,(mi->body->local_count+2-(args_len))*sizeof(asAtom));
 	if(mi->needsArgs())
 	{
-		assert_and_throw(cc.mi->body->local_count>args_len);
-		cc.locals[args_len+1]=asAtomHandler::fromObject(argumentsArray);
-		cc.argarrayposition=args_len+1;
+		assert_and_throw(cc->mi->body->local_count>args_len);
+		cc->locals[args_len+1]=asAtomHandler::fromObject(argumentsArray);
+		cc->argarrayposition=args_len+1;
 	}
 	else if(mi->needsRest())
 	{
@@ -462,9 +458,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			rest->set(j,args[passedToLocals+j]);
 		}
 
-		assert_and_throw(cc.mi->body->local_count>args_len);
-		cc.locals[args_len+1]=asAtomHandler::fromObject(rest);
-		cc.argarrayposition= args_len+1;
+		assert_and_throw(cc->mi->body->local_count>args_len);
+		cc->locals[args_len+1]=asAtomHandler::fromObject(rest);
+		cc->argarrayposition= args_len+1;
 	}
 	//Parameters are ready
 
@@ -484,7 +480,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 				if(codeStatus == method_body_info::OPTIMIZED && getSystemState()->useFastInterpreter)
 				{
 					//This is a mildy hot function, execute it using the fast interpreter
-					ret=asAtomHandler::fromObject(ABCVm::executeFunctionFast(this,&cc,asAtomHandler::toObject(obj,getSystemState())));
+					ret=asAtomHandler::fromObject(ABCVm::executeFunctionFast(this,cc,asAtomHandler::toObject(obj,getSystemState())));
 				}
 				else
 				{
@@ -492,30 +488,30 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					{
 						ABCVm::preloadFunction(this);
 						mi->body->codeStatus = method_body_info::PRELOADED;
-						cc.exec_pos = mi->body->preloadedcode.data();
+						cc->exec_pos = mi->body->preloadedcode.data();
 					}
 					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;
 					mi->body->codeStatus = method_body_info::USED;
 
-					if (mi->needsscope && cc.exec_pos == mi->body->preloadedcode.data())
+					if (mi->needsscope && cc->exec_pos == mi->body->preloadedcode.data())
 					{
-						cc.scope_stack[0] = obj;
-						cc.scope_stack_dynamic[0] = false;
-						cc.curr_scope_stack++;
+						cc->scope_stack[0] = obj;
+						cc->scope_stack_dynamic[0] = false;
+						cc->curr_scope_stack++;
 					}
 					//This is not a hot function, execute it using the interpreter
-					ABCVm::executeFunction(&cc);
+					ABCVm::executeFunction(cc);
 					//Restore the previous codeStatus
 					mi->body->codeStatus = oldCodeStatus;
 				}
 			}
 			else
-				ret=asAtomHandler::fromObject(val(&cc));
+				ret=asAtomHandler::fromObject(val(cc));
 		}
 		catch (ASObject* excobj) // Doesn't have to be an ASError at all.
 		{
-			unsigned int pos = cc.exec_pos-cc.mi->body->preloadedcode.data();
+			unsigned int pos = cc->exec_pos-cc->mi->body->preloadedcode.data();
 			bool no_handler = true;
 
 			LOG_CALL("got an " << excobj->toDebugString());
@@ -529,14 +525,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 				{
 					LOG_CALL("Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< asAtomHandler::toDebugString(obj));
 					no_handler = false;
-					cc.exec_pos = mi->body->preloadedcode.data()+exc.target;
-					cc.runtime_stack_clear();
-					*(cc.stackp++)=asAtomHandler::fromObject(excobj);
+					cc->exec_pos = mi->body->preloadedcode.data()+exc.target;
+					cc->runtime_stack_clear();
+					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
 					excobj->incRef();
-					while (cc.curr_scope_stack)
+					while (cc->curr_scope_stack)
 					{
-						--cc.curr_scope_stack;
-						ASATOM_DECREF(cc.scope_stack[cc.curr_scope_stack]);
+						--cc->curr_scope_stack;
+						ASATOM_DECREF(cc->scope_stack[cc->curr_scope_stack]);
 					}
 					break;
 				}
@@ -558,6 +554,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	Log::calls_indent--;
 #endif
 
+	ret = cc->returnvalue;
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
 	else
@@ -571,37 +568,41 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 
 	//The stack may be not clean, is this a programmer/compiler error?
-	if(cc.stackp != cc.stack)
+	if(cc->stackp != cc->stack)
 	{
 		LOG(LOG_ERROR,"Stack not clean at the end of function:"<<getSystemState()->getStringFromUniqueId(this->functionname));
-		while(cc.stackp != cc.stack)
+		while(cc->stackp != cc->stack)
 		{
-			ASATOM_DECREF_POINTER((--cc.stackp));
+			--cc->stackp;
+			ASATOM_DECREF_POINTER(cc->stackp);
 		}
 	}
-	for(asAtom* i=cc.locals+1;i< lastlocal;++i)
+	for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
 		ASATOM_DECREF_POINTER(i);
 	}
-	if (cc.locals[0].uintval != obj.uintval)
-		ASATOM_DECREF_POINTER(cc.locals);
+	if (cc->locals[0].uintval != obj.uintval)
+		ASATOM_DECREF_POINTER(cc->locals);
 
-	asAtom* lastscope=cc.scope_stack+cc.curr_scope_stack;
-	for(asAtom* i=cc.scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
+	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
+	for(asAtom* i=cc->scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
 	{
 		ASATOM_DECREF_POINTER(i);
 	}
-	if (cc.scope_stack[0].uintval != obj.uintval && mi->needsscope)
-		ASATOM_DECREF_POINTER(cc.scope_stack);
-	cc.curr_scope_stack=0;
+	if (cc->scope_stack[0].uintval != obj.uintval && mi->needsscope)
+		ASATOM_DECREF_POINTER(cc->scope_stack);
+	cc->curr_scope_stack=0;
+	cc->returning=false;
 	if (!isMethod())
 		this->decRef(); //free local ref
-	for (auto it = cc.dynamicfunctions.begin(); it != cc.dynamicfunctions.end(); it++)
+	for (auto it = cc->dynamicfunctions.begin(); it != cc->dynamicfunctions.end(); it++)
 	{
 		LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
 		(*it)->decRef();
 	}
+	if (codeStatus == method_body_info::USED)
+		delete cc;
 }
 
 bool SyntheticFunction::destruct()

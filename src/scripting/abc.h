@@ -127,47 +127,43 @@ public:
 
 	std::vector<const Type*> paramTypes;
 	const Type* returnType;
-	// this stores the locals/stack/scope_stack in case of normal (non-recursive) calls
-	asAtom* locals_norecursion;
-	asAtom* stack_norecursion;
-	asAtom* scope_stack_norecursion;
-	bool* scope_stack_dynamic_norecursion;
 	
 	bool hasExplicitTypes;
 	// indicates if the function code starts with getlocal_0/pushscope
 	bool needsscope;
+	call_context cc;
 	method_info():
 #ifdef LLVM_ENABLED
-		llvmf(NULL),
+		llvmf(nullptr),
 #endif
 #ifdef PROFILING_SUPPORT
 		profTime(0),
 		validProfName(false),
 #endif
-		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),locals_norecursion(nullptr),stack_norecursion(nullptr),scope_stack_norecursion(nullptr),scope_stack_dynamic_norecursion(nullptr),hasExplicitTypes(false),needsscope(false)
+		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false),cc(this)
 	{
 	}
 	~method_info()
 	{
-		if (locals_norecursion)
+		if (cc.locals)
 		{
-			delete[] locals_norecursion;
-			locals_norecursion=nullptr;
+			delete[] cc.locals;
+			cc.locals=nullptr;
 		}
-		if (stack_norecursion)
+		if (cc.stack)
 		{
-			delete[] stack_norecursion;
-			stack_norecursion=nullptr;
+			delete[] cc.stack;
+			cc.stack=nullptr;
 		}
-		if (scope_stack_norecursion)
+		if (cc.scope_stack)
 		{
-			delete[] scope_stack_norecursion;
-			scope_stack_norecursion=nullptr;
+			delete[] cc.scope_stack;
+			cc.scope_stack=nullptr;
 		}
-		if (scope_stack_dynamic_norecursion)
+		if (cc.scope_stack_dynamic)
 		{
-			delete[] scope_stack_dynamic_norecursion;
-			scope_stack_dynamic_norecursion=nullptr;
+			delete[] cc.scope_stack_dynamic;
+			cc.scope_stack_dynamic=nullptr;
 		}
 	}
 };

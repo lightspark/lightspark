@@ -384,8 +384,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 
 	/* setup call_context */
+	bool recursive_call = codeStatus == method_body_info::USED;
 	call_context* cc = nullptr;
-	if (codeStatus == method_body_info::USED) // recursive call
+	if (recursive_call)
 	{
 		cc = new call_context(mi);
 		cc->locals= g_newa(asAtom, mi->body->local_count+1+2); // +2, because we need two more elements to store result of optimized operations
@@ -404,6 +405,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	cc->defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 	cc->inClass = this->inClass;
 	cc->stackp = cc->stack;
+	cc->returning=false;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
 	getVm(getSystemState())->currentCallContext = cc;
@@ -502,6 +504,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					}
 					//This is not a hot function, execute it using the interpreter
 					ABCVm::executeFunction(cc);
+					ret = cc->returnvalue;
 					//Restore the previous codeStatus
 					mi->body->codeStatus = oldCodeStatus;
 				}
@@ -554,7 +557,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	Log::calls_indent--;
 #endif
 
-	ret = cc->returnvalue;
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
 	else
@@ -601,7 +603,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
 		(*it)->decRef();
 	}
-	if (codeStatus == method_body_info::USED)
+	cc->dynamicfunctions.clear();
+	if (recursive_call)
 		delete cc;
 }
 

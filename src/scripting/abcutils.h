@@ -77,9 +77,11 @@ struct call_context
 	asAtom returnvalue;
 	bool returning;
 	call_context(method_info* _mi):
+		locals(nullptr),stack(nullptr),
 		stackp(nullptr),exec_pos(nullptr),
 		max_stackp(nullptr),argarrayposition(-1),
-		parent_scope_stack(nullptr),curr_scope_stack(0),mi(_mi),
+		parent_scope_stack(nullptr),curr_scope_stack(0),
+		scope_stack(nullptr),scope_stack_dynamic(nullptr),mi(_mi),
 		inClass(nullptr),defaultNamespaceUri(0),returning(false)
 	{
 	}

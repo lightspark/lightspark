@@ -1145,6 +1145,8 @@ private:
 	static void abc_callFunctionBuiltinMultiArgs_local(call_context* context);
 	static void abc_callFunctionBuiltinMultiArgs_constant_localResult(call_context* context);
 	static void abc_callFunctionBuiltinMultiArgs_local_localResult(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgs(call_context* context);
+	static void abc_callFunctionSyntheticMultiArgsVoid(call_context* context);
 
 	static void abc_increment_i_local(call_context* context);
 	static void abc_increment_i_local_localresult(call_context* context);

@@ -3282,6 +3282,18 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* context)
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_callFunctionSyntheticMultiArgsVoid(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
+	SyntheticFunction* func = instrptr->cacheobj3->as<SyntheticFunction>();
+	LOG_CALL("callFunctionSyntheticMultiArgsVoid " << func->getSystemState()->getStringFromUniqueId(func->functionname) << ' ' <<argcount);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
+	asAtom ret;
+	func->call(ret,*args, args+1, argcount,false,(instrptr->data&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+	++(context->exec_pos);
+}
 void ABCVm::abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
@@ -3328,6 +3340,18 @@ void ABCVm::abc_callFunctionSyntheticMultiArgsVoid_local(call_context* context)
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, args, argcount,false,(instrptr->data&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticMultiArgs(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
+	SyntheticFunction* func = instrptr->cacheobj3->as<SyntheticFunction>();
+	LOG_CALL("callFunctionSyntheticMultiArgs " << func->getSystemState()->getStringFromUniqueId(func->functionname) << ' ' <<argcount);
+	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
+	asAtom ret;
+	func->call(ret,*args, args+1, argcount,false,(instrptr->data&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callFunctionSyntheticMultiArgs_constant(call_context* context)

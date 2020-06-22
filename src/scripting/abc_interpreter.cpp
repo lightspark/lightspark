@@ -828,7 +828,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setlocal_constant, // 0x2a0 ABC_OP_OPTIMZED_SETLOCAL
 	abc_setlocal_local,
 	abc_ifneInt, // 0x2a2 ABC_OP_OPTIMZED_IFNE_INT_SIMPLE
-	abc_invalidinstruction,
+	abc_ifngeInt, // 0x2a3 ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE
 	abc_ifneInt_constant_constant, // 0x2a4 ABC_OP_OPTIMZED_IFNE_INT
 	abc_ifneInt_local_constant,
 	abc_ifneInt_constant_local,
@@ -842,14 +842,14 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 
-	abc_invalidinstruction, // 0x2b0
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_ifnge_constant_constant, // 0x2b0 ABC_OP_OPTIMZED_IFNGE
+	abc_ifnge_local_constant,
+	abc_ifnge_constant_local,
+	abc_ifnge_local_local,
+	abc_ifngeInt_constant_constant, // 0x2b4 ABC_OP_OPTIMZED_IFNGE_INT
+	abc_ifngeInt_local_constant,
+	abc_ifngeInt_constant_local,
+	abc_ifngeInt_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1106,9 +1106,12 @@ struct operands
 #define ABC_OP_OPTIMZED_IFNLT_INT 0x0000029c
 #define ABC_OP_OPTIMZED_SETLOCAL 0x000002a0
 #define ABC_OP_OPTIMZED_IFNE_INT_SIMPLE 0x000002a2
+#define ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE 0x000002a3
 #define ABC_OP_OPTIMZED_IFNE_INT 0x000002a4
 #define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS 0x000002a8
 #define ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS 0x000002a9
+#define ABC_OP_OPTIMZED_IFNGE 0x000002b0
+#define ABC_OP_OPTIMZED_IFNGE_INT 0x000002b4
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -1595,6 +1598,7 @@ bool checkForLocalResult(std::vector<operands>& operandlist,method_info* mi,memo
 				clearOperands(mi,nullptr,operandlist, defaultlocaltypes,nullptr);
 			break;
 		case 0x0c://ifnlt
+		case 0x0f://ifnge
 		case 0x13://ifeq
 		case 0x14://ifne
 		case 0x15://iflt
@@ -2151,6 +2155,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				currenttype=nullptr;
 				break;
 			}
+			case 0xc0://increment_i
+			case 0xc1://decrement_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
 			case 0xc2://inclocal_i
 			case 0xc3://declocal_i
 			{
@@ -3115,9 +3123,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			}
+			case 0x0f://ifnge
+			{
+				bool intcomparison = (typestack.size() >=2
+						&& typestack[typestack.size()-1].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
+						&& typestack[typestack.size()-2].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr());
+				removetypestack(typestack,2);
+				if (!setupInstructionTwoArgumentsNoResult(operandlist,mi,intcomparison ? ABC_OP_OPTIMZED_IFNGE_INT : ABC_OP_OPTIMZED_IFNGE,opcode,code,oldnewpositions, jumptargets))
+				{
+					if (intcomparison)
+						mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=uint32_t(ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE);
+				}
+				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				break;
+			}
 			case 0x0d://ifnle
 			case 0x0e://ifngt
-			case 0x0f://ifnge
 			{
 				removetypestack(typestack,2);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
@@ -4045,7 +4068,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										addCachedConstant(mi, v->var,operandlist,oldnewpositions,code);
 										addname = false;
 										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-										typestack.push_back(typestackentry(nullptr,false));
+										typestack.push_back(typestackentry(asAtomHandler::getClass(v->var,function->getSystemState()),false));
 										break;
 									}
 									if (v && asAtomHandler::isValid(v->getter))

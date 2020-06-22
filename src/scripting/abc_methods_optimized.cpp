@@ -126,6 +126,101 @@ void ABCVm::abc_ifnltInt_local_local(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifnge_constant_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE);
+	LOG_CALL("ifNGE_cc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnge_local_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE);
+	LOG_CALL("ifNGE_lc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnge_constant_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE);
+	LOG_CALL("ifNGE_cl (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnge_local_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE);
+	LOG_CALL("ifNGE_ll (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngeInt(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	RUNTIME_STACK_POP_CREATE(context,v1);
+	RUNTIME_STACK_POP_CREATE(context,v2);
+	bool cond=(v1->intval > v2->intval);
+	ASATOM_DECREF_POINTER(v2);
+	ASATOM_DECREF_POINTER(v1);
+	LOG_CALL("ifNGEInt (" << ((cond)?_("taken)"):_("not taken)")));
+
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngeInt_constant_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=(context->exec_pos->arg2_constant->intval > context->exec_pos->arg1_constant->intval);
+	LOG_CALL("ifNGEInt_cc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngeInt_local_constant(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->exec_pos->arg1_constant->intval);
+	LOG_CALL("ifNGEInt_lc (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngeInt_constant_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=(context->exec_pos->arg2_constant->intval > context->locals[context->exec_pos->local_pos1].intval);
+	LOG_CALL("ifNGEInt_cl (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngeInt_local_local(call_context* context)
+{
+	int32_t t = (*context->exec_pos).jumpdata.jump;
+	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->locals[context->exec_pos->local_pos1].intval);
+	LOG_CALL("ifNGEInt_ll (" << ((cond)?_("taken)"):_("not taken)")));
+	if(cond)
+		context->exec_pos += t+1;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_iftrue_constant(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
@@ -3594,7 +3689,7 @@ void ABCVm::abc_callFunctionBuiltinMultiArgs_local_localResult(call_context* con
 }
 void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArgVoid ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
@@ -3602,11 +3697,10 @@ void ABCVm::abc_callFunctionMultiArgsVoid(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(func,ret,*args,args+1,argcount,false,false,(instrptr->data&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
-	++(context->exec_pos);
 }
 void ABCVm::abc_callFunctionMultiArgs(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t argcount = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL(_("callFunctionMultiArg ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname)<<" "<<argcount);
@@ -3614,22 +3708,20 @@ void ABCVm::abc_callFunctionMultiArgs(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(func,ret,*args,args+1,argcount,false,true,(instrptr->data&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
-	++(context->exec_pos);
 }
 void ABCVm::abc_getslot_constant(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom* pval = instrptr->arg1_constant;
 	asAtom ret=asAtomHandler::getObject(*pval)->getSlotNoCheck(t);
 	LOG_CALL("getSlot_c " << t << " " << asAtomHandler::toDebugString(ret));
 	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
-	++(context->exec_pos);
 }
 void ABCVm::abc_getslot_local(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	ASObject* obj = asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
@@ -3638,11 +3730,10 @@ void ABCVm::abc_getslot_local(call_context* context)
 	LOG_CALL("getSlot_l " << t << " " << asAtomHandler::toDebugString(res));
 	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
-	++(context->exec_pos);
 }
 void ABCVm::abc_getslot_constant_localresult(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
 	ASObject* o = asAtomHandler::getObject(context->locals[instrptr->local_pos3-1]);
@@ -3651,11 +3742,10 @@ void ABCVm::abc_getslot_constant_localresult(call_context* context)
 	if (o)
 		o->decRef();
 	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
-	++(context->exec_pos);
 }
 void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
-	preloadedcodedata* instrptr = context->exec_pos;
+	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
 	ASObject* obj = asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
@@ -3669,7 +3759,6 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 		ASATOM_DECREF(o);
 	}
 	LOG_CALL("getSlot_ll " << t << " " <<instrptr->local_pos1<<":"<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos1])<<" "<< asAtomHandler::toDebugString(context->locals[instrptr->local_pos3-1]));
-	++(context->exec_pos);
 }
 void ABCVm::abc_setslot_constant_constant(call_context* context)
 {

@@ -2266,6 +2266,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	std::list<bool> scopelist;
 	int dup_indicator=0;
 	bool opcode_skipped=false;
+	bool coercereturnvalue=false;
 	auto itcurEx = mi->body->exceptions.begin();
 	while(!code.atend())
 	{
@@ -3615,8 +3616,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				// skip unreachable code
-				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
-					code.readbyte();
+				// this doesn't work properly on obfuscated code, so we don't skip here
+				//while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+				//	code.readbyte();
 				break;
 			}
 			case 0x48://returnvalue
@@ -3624,10 +3626,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				if (jumptargets.find(p) != jumptargets.end())
 					clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
+				else
+				{
+					if (!typestack.back().obj
+							|| !typestack.back().obj->is<Class_base>() 
+							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType))))
+					{
+						coercereturnvalue = true;
+					}
+				}
 				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions, jumptargets,p);
 				// skip unreachable code
-				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
-					code.readbyte();
+				// this doesn't work properly on obfuscated code, so we don't skip here
+				//while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+				//	code.readbyte();
 				removetypestack(typestack,1);
 				break;
 			}
@@ -4551,6 +4563,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 		}
 	}
+	mi->needscoerceresult = coercereturnvalue;
 	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 	// also add position for end of code, as it seems that jumps to this position are allowed
 	oldnewpositions[code.tellg()+1] = (int32_t)mi->body->preloadedcode.size();

@@ -131,6 +131,7 @@ public:
 	bool hasExplicitTypes;
 	// indicates if the function code starts with getlocal_0/pushscope
 	bool needsscope;
+	bool needscoerceresult;
 	call_context cc;
 	method_info():
 #ifdef LLVM_ENABLED
@@ -140,7 +141,7 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false),cc(this)
+		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false),needscoerceresult(true),cc(this)
 	{
 	}
 	~method_info()

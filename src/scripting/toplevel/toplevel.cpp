@@ -562,7 +562,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	else
 		coerceresult=true;
 
-	if (coerceresult)
+	if (coerceresult && mi->needscoerceresult)
 	{
 		asAtom v = ret;
 		if (mi->returnType->coerce(getSystemState(),ret))

@@ -139,7 +139,7 @@ void ABCVm::abc_ifnge_constant_constant(call_context* context)
 void ABCVm::abc_ifnge_local_constant(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE);
+	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE);
 	LOG_CALL("ifNGE_lc (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -149,7 +149,7 @@ void ABCVm::abc_ifnge_local_constant(call_context* context)
 void ABCVm::abc_ifnge_constant_local(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TFALSE);
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE);
 	LOG_CALL("ifNGE_cl (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -194,7 +194,7 @@ void ABCVm::abc_ifngeInt_constant_constant(call_context* context)
 void ABCVm::abc_ifngeInt_local_constant(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->exec_pos->arg1_constant->intval);
+	bool cond=(context->exec_pos->arg2_constant->intval > context->locals[context->exec_pos->local_pos1].intval);
 	LOG_CALL("ifNGEInt_lc (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
@@ -204,7 +204,7 @@ void ABCVm::abc_ifngeInt_local_constant(call_context* context)
 void ABCVm::abc_ifngeInt_constant_local(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->exec_pos->arg2_constant->intval > context->locals[context->exec_pos->local_pos1].intval);
+	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->exec_pos->arg1_constant->intval);
 	LOG_CALL("ifNGEInt_cl (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;

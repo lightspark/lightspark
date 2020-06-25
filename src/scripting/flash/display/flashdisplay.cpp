@@ -160,7 +160,14 @@ void LoaderInfo::setComplete()
 		sendInit();
 	}
 }
-
+void LoaderInfo::setContent(DisplayObject *o)
+{
+	if (loader)
+	{
+		o->incRef();
+		loader->setContent(_MR(o));
+	}
+}
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -484,14 +491,14 @@ void LoaderThread::execute()
 	}
 	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
-		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip )
+		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)
 		{
-			local_pt.getRootMovie()->incRef();
-			if (local_pt.getRootMovie()->getClass()->isBuiltin())
+			if (!local_pt.getRootMovie()->usesActionScript3)
+			{
 				local_pt.getRootMovie()->setIsInitialized(false);
-			loader->setContent(_MR(local_pt.getRootMovie()));
-			if (loader->getContentLoaderInfo().getPtr())
-				loader->getContentLoaderInfo()->setComplete();
+				local_pt.getRootMovie()->incRef();
+				loader->setContent(_MR(local_pt.getRootMovie()));
+			}
 		}
 	}
 }

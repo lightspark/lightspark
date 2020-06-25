@@ -362,6 +362,7 @@ public:
 	void resetState();
 	void setFrameRate(number_t f) { frameRate=f; }
 	void setComplete();
+	void setContent(DisplayObject *o);
 };
 
 class URLRequest;

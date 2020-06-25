@@ -1989,6 +1989,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	// - store all jump target points
 	// - compute types of the locals and detect if they don't change during execution
 	std::map<int32_t,int32_t> jumptargets;
+	std::multimap<int32_t,int32_t> unreachabletargets;
+	int32_t nextreachable = -1;
+	int32_t unreachablestart = -1;
+	
 	Class_base* defaultlocaltypes[mi->body->local_count+2];
 	bool defaultlocaltypescacheable[mi->body->local_count+2];
 	defaultlocaltypes[0]= function->inClass;
@@ -2182,17 +2186,52 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x18://ifge
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
-				jumptargets[codejumps.reads24()+codejumps.tellg()+1]++;
+			{
+				int32_t p = codejumps.reads24()+codejumps.tellg()+1;
+				jumptargets[p]++;
+				if (p >= nextreachable)
+				{
+					// we reached the position of the next reachable jump point, so we end checking for unreachables here
+					unreachablestart = -1;
+				}
+				if (unreachablestart != -1)
+				{
+					// this jump points to a position that is potentially not reachable
+					unreachabletargets.insert(make_pair(unreachablestart,p));
+				}
 				currenttype=nullptr;
 				break;
+			}
 			case 0x1b://lookupswitch
 			{
 				int32_t p = codejumps.tellg();
-				jumptargets[p+codejumps.reads24()]++;
+				int32_t p1 = p+codejumps.reads24();
+				if (p1 >= nextreachable)
+				{
+					// we reached the position of the next reachable jump point, so we end checking for unreachables here
+					unreachablestart = -1;
+				}
+				if (unreachablestart != -1)
+				{
+					// this jump points to a position that is potentially not reachable
+					unreachabletargets.insert(make_pair(unreachablestart,p1));
+				}
+				jumptargets[p1]++;
 				uint32_t count = codejumps.readu30();
 				for(unsigned int i=0;i<count+1;i++)
 				{
-					jumptargets[p+codejumps.reads24()]++;
+					p1 = p+codejumps.reads24();
+					jumptargets[p1]++;
+					if (p1 >= nextreachable)
+					{
+						// we reached the position of the next reachable jump point, so we end checking for unreachables here
+						unreachablestart = -1;
+					}
+					if (unreachablestart != -1)
+					{
+						// this jump points to a position that is potentially not reachable
+						unreachabletargets.insert(make_pair(unreachablestart,p1));
+					}
 				}
 				currenttype=nullptr;
 				break;
@@ -2249,12 +2288,49 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x09://label
 			case 0x2a://dup
 				break;
+			case 0x47: //returnvoid
+			case 0x48://returnvalue
+				if (unreachablestart == -1)
+				{
+					unreachablestart = codejumps.tellg();
+					nextreachable = codejumps.size();
+					// find the first jump target after the current position
+					auto it = jumptargets.begin();
+					while (it != jumptargets.end() && it->first < (int)codejumps.tellg())
+					{
+						it++;
+					}
+					if (it != jumptargets.end())
+						nextreachable = it->second;
+				}
+				currenttype=nullptr;
+				break;
 			default:
 				currenttype=nullptr;
 				break;
 		}
 	}
-	
+	// remove all really unreachable targets
+	auto it = unreachabletargets.begin();
+	while (it != unreachabletargets.end())
+	{
+		auto ittarget = jumptargets.begin();
+		while (ittarget != jumptargets.end())
+		{
+			// find first target after unreachable start position
+			if (ittarget->first <= it->first)
+				ittarget++;
+			else
+			{
+				if (ittarget->first > it->second)
+				{
+					jumptargets.erase(ittarget);
+				}
+				break;
+			}
+		}
+		it++;
+	}
 	// second pass: use optimized opcode version if it doesn't interfere with a jump target
 	std::vector<operands> operandlist;
 	
@@ -3616,9 +3692,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				// skip unreachable code
-				// this doesn't work properly on obfuscated code, so we don't skip here
-				//while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
-				//	code.readbyte();
+				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+					code.readbyte();
 				break;
 			}
 			case 0x48://returnvalue
@@ -3637,9 +3712,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				setupInstructionOneArgumentNoResult(operandlist,mi,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,oldnewpositions, jumptargets,p);
 				// skip unreachable code
-				// this doesn't work properly on obfuscated code, so we don't skip here
-				//while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
-				//	code.readbyte();
+				while (!code.atend() && jumptargets.find(code.tellg()+1) == jumptargets.end())
+					code.readbyte();
 				removetypestack(typestack,1);
 				break;
 			}

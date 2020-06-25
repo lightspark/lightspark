@@ -3817,11 +3817,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					Class_base* resulttype=nullptr;
 					bool skipcoerce = false;
 					SyntheticFunction* func= nullptr;
+					variable* v = nullptr;
 					if (typestack.size() >= argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)
 					{
 						if (canCallFunctionDirect(typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj,name))
 						{
-							variable* v = typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].classvar ?
+							v = typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].classvar ?
 										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->findVariableByMultiname(
 										*name,
 										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->as<Class_base>(),
@@ -3863,7 +3864,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									{
 										if (canCallFunctionDirect(operandlist.back(),name))
 										{
-											variable* v = operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 											if (v && asAtomHandler::is<IFunction>(v->var))
 											{
 												if (opcode == 0x46)
@@ -3932,7 +3932,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 											if (v)
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
@@ -4010,7 +4009,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											uint32_t oppos = mi->body->preloadedcode.size()-1-argcount;
 											if (canCallFunctionDirect((*it),name))
 											{
-												variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 												if (v)
 												{
 													if (asAtomHandler::is<SyntheticFunction>(v->var))

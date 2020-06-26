@@ -4487,7 +4487,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						operandlist.pop_back();
 						if (dup_indicator)
 							clearOperands(mi,nullptr,operandlist, defaultlocaltypes,&lastlocalresulttype);
-						typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 						break;
 					}
 				}

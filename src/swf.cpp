@@ -213,14 +213,24 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	static_SoundMixer_bufferTime(0),isinitialized(false)
 {
 	//Forge the builtin strings
-	getUniqueStringId("");
+	uniqueStringIDMap.reserve(LAST_BUILTIN_STRING);
+	tiny_string sempty;
+	uniqueStringMap.emplace(make_pair(sempty,lastUsedStringId));
+	uniqueStringIDMap.push_back(sempty);
+	lastUsedStringId++;
 	for(uint32_t i=1;i<BUILTIN_STRINGS_CHAR_MAX;i++)
 	{
-		getUniqueStringId(tiny_string::fromChar(i));
+		tiny_string s = tiny_string::fromChar(i);
+		uniqueStringMap.emplace(make_pair(s,lastUsedStringId));
+		uniqueStringIDMap.push_back(s);
+		lastUsedStringId++;
 	}
 	for(uint32_t i=BUILTIN_STRINGS_CHAR_MAX;i<LAST_BUILTIN_STRING;i++)
 	{
-		getUniqueStringId(builtinStrings[i-BUILTIN_STRINGS_CHAR_MAX]);
+		tiny_string s(builtinStrings[i-BUILTIN_STRINGS_CHAR_MAX]);
+		uniqueStringMap.emplace(make_pair(s,lastUsedStringId));
+		uniqueStringIDMap.push_back(s);
+		lastUsedStringId++;
 	}
 	//Forge the empty namespace and make sure it gets id 0
 	nsNameAndKindImpl emptyNs(BUILTIN_STRINGS::EMPTY, NAMESPACE);
@@ -2032,9 +2042,8 @@ void SystemState::resizeCompleted()
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
 {
 	Locker l(poolMutex);
-	auto it=uniqueStringIDMap.find(id);
-	assert(it!=uniqueStringIDMap.end());
-	return it->second;
+	assert(uniqueStringIDMap.size() > id);
+	return uniqueStringIDMap[id];
 }
 
 uint32_t SystemState::getUniqueStringId(const tiny_string& s)
@@ -2044,7 +2053,7 @@ uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 	if(it==uniqueStringMap.end())
 	{
 		auto ret=uniqueStringMap.insert(make_pair(s,lastUsedStringId));
-		uniqueStringIDMap.insert(make_pair(lastUsedStringId,s));
+		uniqueStringIDMap.push_back(s);
 		assert(ret.second);
 		it=ret.first;
 		lastUsedStringId++;

@@ -55,7 +55,7 @@ public:
 	~AudioManager();
 };
 
-class AudioStream
+class DLL_PUBLIC AudioStream
 {
 friend class AudioManager;
 friend class NetStream;

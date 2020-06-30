@@ -806,13 +806,13 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	m_graphics(0),
 	m_cachefilesystem(0),
 	m_cachedirectory_ref(0),
-	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
-	mainDownloader(NULL),
-	m_pt(NULL),
-	m_ppLoopThread(NULL),
+	mainDownloaderStreambuf(nullptr),mainDownloaderStream(nullptr),
+	mainDownloader(nullptr),
+	m_pt(nullptr),
+	m_ppLoopThread(nullptr),
 	m_extargc(0),
-	m_extargv(NULL),
-	m_extexception(NULL),
+	m_extargv(nullptr),
+	m_extexception(nullptr),
 	inReading(false),
 	inWriting(false)
 {
@@ -829,7 +829,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	m_last_size.width = 0;
 	m_last_size.height = 0;
 	m_graphics = 0;
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
@@ -839,7 +839,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	tiny_string swffile;
 	for(int i=0;i<argc;i++)
 	{
-		if(argn[i]==NULL || argv[i]==NULL)
+		if(argn[i]==nullptr || argv[i]==nullptr)
 			continue;
 		LOG(LOG_INFO,"param:"<<argn[i]<<" "<<argv[i]);
 		if(strcasecmp(argn[i],"flashvars")==0)
@@ -850,7 +850,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 		{
 			m_sys->extScriptObject->setProperty(argn[i],argv[i]);
 		}
-		else if(strcasecmp(argn[i],"src")==0)
+		else if(strcasecmp(argn[i],"src")==0 || strcasecmp(argn[i],"movie")==0)
 		{
 			swffile = argv[i];
 		}

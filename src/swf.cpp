@@ -2303,7 +2303,7 @@ void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)
 
 void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 {
-	if (cls->isBinded())
+	if (cls->isBinded() || classesToBeBound.empty())
 		return;
 
 	tiny_string clsname;
@@ -2320,6 +2320,7 @@ void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 				it->second->bindedTo=cls;
 			
 			cls->bindToTag(it->second);
+			classesToBeBound.erase(it);
 			break;
 		}
 	}

@@ -2839,8 +2839,10 @@ void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
-	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
-	if (!obj)
+	ASObject* obj = nullptr;
+	if (asAtomHandler::isObject(context->locals[instrptr->local_pos1]))
+		obj = asAtomHandler::getObjectNoCheck(context->locals[instrptr->local_pos1]);
+	else
 		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_ll ") << index <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
@@ -3747,9 +3749,9 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = (instrptr->data&ABC_OP_AVAILABLEBITS) >>OPCODE_SIZE;
-	ASObject* obj = asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
-	if (!obj)
+	if (!asAtomHandler::isObject(context->locals[instrptr->local_pos1]))
 		throwError<TypeError>(kConvertNullToObjectError);
+	ASObject* obj = asAtomHandler::getObjectNoCheck(context->locals[instrptr->local_pos1]);
 	asAtom res = obj->getSlotNoCheck(t);
 	asAtom o = context->locals[instrptr->local_pos3-1];
 	if (o.uintval != res.uintval)

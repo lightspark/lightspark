@@ -221,7 +221,12 @@ bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFract
 		{
 			tiny_string str;
 			if(name_type==multiname::NAME_STRING)
+			{
+				if (name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING &&
+					(name_s_id < 0x30 || name_s_id > 0x39)) // char 0-9
+					return false;
 				str=sys->getStringFromUniqueId(name_s_id);
+			}
 			else
 				str=name_o->toString();
 

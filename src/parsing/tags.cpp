@@ -1516,7 +1516,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		LOG(LOG_TRACE,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
-			obj->name = obj->getSystemState()->getUniqueStringId((const char*)Name);
+			obj->name = NameID;
 		}
 		else
 			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
@@ -1562,7 +1562,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if(PlaceFlagHasName)
 		{
 			// check if an obect with this name was already created and removed earlier
-			nameID = parent->getSystemState()->getUniqueStringId((const char*)Name);
+			nameID = NameID;
 			toAdd = parent->findRemovedLegacyChild(nameID);
 			if (toAdd && toAdd->getTagID() != CharacterId)
 				toAdd=nullptr;
@@ -1700,7 +1700,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> Ratio;
 
 	if(PlaceFlagHasName)
+	{
 		in >> Name;
+		NameID =root->getSystemState()->getUniqueStringId(Name);
+	}
+	else
+		NameID = BUILTIN_STRINGS::EMPTY;
 
 	if(PlaceFlagHasClipDepth)
 		in >> ClipDepth;
@@ -1757,7 +1762,12 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> Ratio;
 
 	if(PlaceFlagHasName)
+	{
 		in >> Name;
+		NameID =root->getSystemState()->getUniqueStringId(Name);
+	}
+	else
+		NameID = BUILTIN_STRINGS::EMPTY;
 
 	if(PlaceFlagHasClipDepth)
 		in >> ClipDepth;

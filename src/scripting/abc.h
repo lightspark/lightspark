@@ -592,11 +592,6 @@ private:
 	static void abc_ifnlt_local_constant(call_context* context);
 	static void abc_ifnlt_constant_local(call_context* context);
 	static void abc_ifnlt_local_local(call_context* context);
-	static void abc_ifnltInt(call_context* context);
-	static void abc_ifnltInt_constant_constant(call_context* context);
-	static void abc_ifnltInt_local_constant(call_context* context);
-	static void abc_ifnltInt_constant_local(call_context* context);
-	static void abc_ifnltInt_local_local(call_context* context);
 	static void abc_ifnle(call_context* context);
 	static void abc_ifngt(call_context* context);
 	static void abc_ifnge(call_context* context);
@@ -604,11 +599,6 @@ private:
 	static void abc_ifnge_local_constant(call_context* context);
 	static void abc_ifnge_constant_local(call_context* context);
 	static void abc_ifnge_local_local(call_context* context);
-	static void abc_ifngeInt(call_context* context);
-	static void abc_ifngeInt_constant_constant(call_context* context);
-	static void abc_ifngeInt_local_constant(call_context* context);
-	static void abc_ifngeInt_constant_local(call_context* context);
-	static void abc_ifngeInt_local_local(call_context* context);
 
 	static void abc_jump(call_context* context);// 0x10
 	static void abc_iftrue(call_context* context);
@@ -631,11 +621,6 @@ private:
 	static void abc_ifne_local_constant(call_context* context);
 	static void abc_ifne_constant_local(call_context* context);
 	static void abc_ifne_local_local(call_context* context);
-	static void abc_ifneInt(call_context* context);
-	static void abc_ifneInt_constant_constant(call_context* context);
-	static void abc_ifneInt_local_constant(call_context* context);
-	static void abc_ifneInt_constant_local(call_context* context);
-	static void abc_ifneInt_local_local(call_context* context);
 	static void abc_iflt(call_context* context);
 	static void abc_iflt_constant_constant(call_context* context);
 	static void abc_iflt_local_constant(call_context* context);

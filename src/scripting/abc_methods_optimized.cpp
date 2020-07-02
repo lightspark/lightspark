@@ -71,61 +71,6 @@ void ABCVm::abc_ifnlt_local_local(call_context* context)
 	else
 		++(context->exec_pos);
 }
-void ABCVm::abc_ifnltInt(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	RUNTIME_STACK_POP_CREATE(context,v1);
-	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v2->intval < v1->intval);
-	ASATOM_DECREF_POINTER(v2);
-	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNLTInt (") << ((cond)?_("taken)"):_("not taken)")));
-
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifnltInt_constant_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->exec_pos->arg1_constant->intval < context->exec_pos->arg2_constant->intval);
-	LOG_CALL(_("ifNLTInt_cc (") << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifnltInt_local_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->locals[context->exec_pos->local_pos1].intval < context->exec_pos->arg2_constant->intval);
-	LOG_CALL(_("ifNLTInt_lc (") << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifnltInt_constant_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->exec_pos->arg1_constant->intval < context->locals[context->exec_pos->local_pos2].intval);
-	LOG_CALL(_("ifNLTInt_cl (") << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifnltInt_local_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->locals[context->exec_pos->local_pos1].intval < context->locals[context->exec_pos->local_pos2].intval);
-	LOG_CALL(_("ifNLTInt_ll (") << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
 void ABCVm::abc_ifnge_constant_constant(call_context* context)
 {
 	int32_t t = (*context->exec_pos).jumpdata.jump;
@@ -161,61 +106,6 @@ void ABCVm::abc_ifnge_local_local(call_context* context)
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=!(asAtomHandler::isLess(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]) == TFALSE);
 	LOG_CALL("ifNGE_ll (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifngeInt(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	RUNTIME_STACK_POP_CREATE(context,v1);
-	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=(v1->intval > v2->intval);
-	ASATOM_DECREF_POINTER(v2);
-	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL("ifNGEInt (" << ((cond)?_("taken)"):_("not taken)")));
-
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifngeInt_constant_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->exec_pos->arg2_constant->intval > context->exec_pos->arg1_constant->intval);
-	LOG_CALL("ifNGEInt_cc (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifngeInt_local_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->exec_pos->arg2_constant->intval > context->locals[context->exec_pos->local_pos1].intval);
-	LOG_CALL("ifNGEInt_lc (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifngeInt_constant_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->exec_pos->arg1_constant->intval);
-	LOG_CALL("ifNGEInt_cl (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifngeInt_local_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=(context->locals[context->exec_pos->local_pos2].intval > context->locals[context->exec_pos->local_pos1].intval);
-	LOG_CALL("ifNGEInt_ll (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else
@@ -394,59 +284,6 @@ void ABCVm::abc_ifne_local_local(call_context* context)
 	int32_t t = (*context->exec_pos).jumpdata.jump;
 	bool cond=!asAtomHandler::isEqual(context->locals[context->exec_pos->local_pos1],context->mi->context->root->getSystemState(),context->locals[context->exec_pos->local_pos2]);
 	LOG_CALL(_("ifNE_ll (") << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifneInt(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
-	RUNTIME_STACK_POP_CREATE(context,v1);
-	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(v1->intval==v2->intval);
-	LOG_CALL("ifNEInt (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifneInt_constant_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->exec_pos->arg1_constant->intval == context->exec_pos->arg2_constant->intval);
-	LOG_CALL("ifNEInt_cc (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifneInt_local_constant(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->exec_pos->arg2_constant->intval ==  context->locals[context->exec_pos->local_pos1].intval);
-	LOG_CALL("ifNEInt_lc (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifneInt_constant_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->exec_pos->arg1_constant->intval ==  context->locals[context->exec_pos->local_pos2].intval);
-	LOG_CALL("ifNEInt_cl (" << ((cond)?_("taken)"):_("not taken)")));
-	if(cond)
-		context->exec_pos += t+1;
-	else
-		++(context->exec_pos);
-}
-void ABCVm::abc_ifneInt_local_local(call_context* context)
-{
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-	bool cond=!(context->locals[context->exec_pos->local_pos1].intval  == context->locals[context->exec_pos->local_pos2].intval);
-	LOG_CALL("ifNEInt_ll (" << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += t+1;
 	else

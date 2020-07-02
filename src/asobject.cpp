@@ -3205,13 +3205,8 @@ void asAtomHandler::replace(asAtom& a, ASObject *obj)
 	}
 }
 
-TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
+TRISTATE asAtomHandler::isLessIntern(asAtom& a,SystemState *sys, asAtom &v2)
 {
-	if (a.uintval == v2.uintval && 
-			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
-	{
-		return a.uintval == ATOMTYPE_UNDEFINED_BIT ? TUNDEFINED : TFALSE;
-	}
 	switch(a.uintval&0x7)
 	{
 		case ATOM_INTEGER:
@@ -3479,11 +3474,8 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 	return getObject(a)->isLess(getObject(v2));
 }
 
-bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
+bool asAtomHandler::isEqualIntern(asAtom& a, SystemState *sys, asAtom &v2)
 {
-	if (a.uintval == v2.uintval && 
-			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
-		return true;
 	switch (a.uintval&0x7)
 	{
 		case ATOM_INTEGER:

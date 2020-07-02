@@ -798,7 +798,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setPropertyStaticName, // 0x284 ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME_SIMPLE
 	abc_getPropertyInteger, // 0x285 ABC_OP_OPTIMZED_GETPROPERTY_INTEGER_SIMPLE
 	abc_setPropertyInteger, // 0x286 ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_SIMPLE
-	abc_ifnltInt, // 0x287 ABC_OP_OPTIMZED_IFNLT_INT_SIMPLE
+	abc_invalidinstruction,
 	abc_getPropertyInteger_constant_constant, // 0x288 ABC_OP_OPTIMZED_GETPROPERTY_INTEGER
 	abc_getPropertyInteger_local_constant,
 	abc_getPropertyInteger_constant_local,
@@ -820,36 +820,36 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_ifnlt_local_constant,
 	abc_ifnlt_constant_local,
 	abc_ifnlt_local_local,
-	abc_ifnltInt_constant_constant, // 0x29c ABC_OP_OPTIMZED_IFNLT_INT
-	abc_ifnltInt_local_constant,
-	abc_ifnltInt_constant_local,
-	abc_ifnltInt_local_local,
-
-	abc_setlocal_constant, // 0x2a0 ABC_OP_OPTIMZED_SETLOCAL
-	abc_setlocal_local,
-	abc_ifneInt, // 0x2a2 ABC_OP_OPTIMZED_IFNE_INT_SIMPLE
-	abc_ifngeInt, // 0x2a3 ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE
-	abc_ifneInt_constant_constant, // 0x2a4 ABC_OP_OPTIMZED_IFNE_INT
-	abc_ifneInt_local_constant,
-	abc_ifneInt_constant_local,
-	abc_ifneInt_local_local,
-	abc_callFunctionSyntheticMultiArgs, // 0x2a8 ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS
-	abc_callFunctionSyntheticMultiArgsVoid, // 0x2a9 ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-
-	abc_ifnge_constant_constant, // 0x2b0 ABC_OP_OPTIMZED_IFNGE
+	abc_ifnge_constant_constant, // 0x29c ABC_OP_OPTIMZED_IFNGE
 	abc_ifnge_local_constant,
 	abc_ifnge_constant_local,
 	abc_ifnge_local_local,
-	abc_ifngeInt_constant_constant, // 0x2b4 ABC_OP_OPTIMZED_IFNGE_INT
-	abc_ifngeInt_local_constant,
-	abc_ifngeInt_constant_local,
-	abc_ifngeInt_local_local,
+
+	abc_setlocal_constant, // 0x2a0 ABC_OP_OPTIMZED_SETLOCAL
+	abc_setlocal_local,
+	abc_callFunctionSyntheticMultiArgs, // 0x2a2 ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS
+	abc_callFunctionSyntheticMultiArgsVoid, // 0x2a3 ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1099,19 +1099,13 @@ struct operands
 #define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME_SIMPLE 0x00000284
 #define ABC_OP_OPTIMZED_GETPROPERTY_INTEGER_SIMPLE 0x00000285
 #define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_SIMPLE 0x00000286
-#define ABC_OP_OPTIMZED_IFNLT_INT_SIMPLE 0x00000287
 #define ABC_OP_OPTIMZED_GETPROPERTY_INTEGER 0x00000288
 #define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER 0x00000290
 #define ABC_OP_OPTIMZED_IFNLT 0x00000298
-#define ABC_OP_OPTIMZED_IFNLT_INT 0x0000029c
+#define ABC_OP_OPTIMZED_IFNGE 0x0000029c
 #define ABC_OP_OPTIMZED_SETLOCAL 0x000002a0
-#define ABC_OP_OPTIMZED_IFNE_INT_SIMPLE 0x000002a2
-#define ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE 0x000002a3
-#define ABC_OP_OPTIMZED_IFNE_INT 0x000002a4
-#define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS 0x000002a8
-#define ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS 0x000002a9
-#define ABC_OP_OPTIMZED_IFNGE 0x000002b0
-#define ABC_OP_OPTIMZED_IFNGE_INT 0x000002b4
+#define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS 0x000002a2
+#define ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS 0x000002a3
 
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
@@ -3185,37 +3179,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x0c://ifnlt
-			{
-				bool intcomparison = (typestack.size() >=2 
-						&& typestack[typestack.size()-1].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& typestack[typestack.size()-2].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr());
 				removetypestack(typestack,2);
-				if (!setupInstructionTwoArgumentsNoResult(operandlist,mi,intcomparison ? ABC_OP_OPTIMZED_IFNLT_INT : ABC_OP_OPTIMZED_IFNLT,opcode,code,oldnewpositions, jumptargets))
-				{
-					if (intcomparison)
-						mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=uint32_t(ABC_OP_OPTIMZED_IFNLT_INT_SIMPLE);
-				}
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNLT,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
-			}
 			case 0x0f://ifnge
-			{
-				bool intcomparison = (typestack.size() >=2
-						&& typestack[typestack.size()-1].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& typestack[typestack.size()-2].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr());
 				removetypestack(typestack,2);
-				if (!setupInstructionTwoArgumentsNoResult(operandlist,mi,intcomparison ? ABC_OP_OPTIMZED_IFNGE_INT : ABC_OP_OPTIMZED_IFNGE,opcode,code,oldnewpositions, jumptargets))
-				{
-					if (intcomparison)
-						mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=uint32_t(ABC_OP_OPTIMZED_IFNGE_INT_SIMPLE);
-				}
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNGE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
-			}
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			{
@@ -3315,21 +3291,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			case 0x14://ifne
-			{
-				bool intcomparison = (typestack.size() >=2 
-						&& typestack[typestack.size()-1].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& typestack[typestack.size()-2].obj ==Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr());
 				removetypestack(typestack,2);
-				if (!setupInstructionTwoArgumentsNoResult(operandlist,mi,intcomparison ? ABC_OP_OPTIMZED_IFNE_INT : ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions, jumptargets))
-				{
-					if (intcomparison)
-						mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data=uint32_t(ABC_OP_OPTIMZED_IFNE_INT_SIMPLE);
-				}
+				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFNE,opcode,code,oldnewpositions, jumptargets);
 				jumppositions[mi->body->preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[mi->body->preloadedcode.size()-1] = code.tellg();
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
-			}
 			case 0x15://iflt
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_IFLT,opcode,code,oldnewpositions, jumptargets);

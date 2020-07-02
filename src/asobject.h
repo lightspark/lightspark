@@ -349,6 +349,8 @@ private:
 	static void decRef(asAtom& a);
 	static void replaceBool(asAtom &a, ASObject* obj);
 	static bool Boolean_concrete_string(asAtom &a);
+	static TRISTATE isLessIntern(asAtom& a,SystemState *sys, asAtom& v2);
+	static bool isEqualIntern(asAtom& a,SystemState *sys, asAtom& v2);
 public:
 	static FORCE_INLINE asAtom fromType(SWFOBJECT_TYPE _t)
 	{
@@ -474,8 +476,8 @@ public:
 	static bool functioncompare(asAtom& a, SystemState* sys,asAtom& v2);
 	static std::string toDebugString(asAtom& a);
 	static FORCE_INLINE void applyProxyProperty(asAtom& a,SystemState *sys, multiname& name);
-	static TRISTATE isLess(asAtom& a,SystemState *sys, asAtom& v2);
-	static bool isEqual(asAtom& a,SystemState *sys, asAtom& v2);
+	static FORCE_INLINE TRISTATE isLess(asAtom& a,SystemState *sys, asAtom& v2);
+	static FORCE_INLINE bool isEqual(asAtom& a,SystemState *sys, asAtom& v2);
 	static FORCE_INLINE bool isEqualStrict(asAtom& a,SystemState *sys, asAtom& v2);
 	static FORCE_INLINE bool isConstructed(const asAtom& a);
 	static FORCE_INLINE bool isPrimitive(const asAtom& a);
@@ -2323,7 +2325,26 @@ FORCE_INLINE asAtom asAtomHandler::typeOf(asAtom& a)
 	}
 	return asAtomHandler::fromStringID(ret);
 }
-
+bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
+{
+	if ((((a.intval ^ ATOM_INTEGER) | (v2.intval ^ ATOM_INTEGER)) & 7) == 0)
+		return (a.intval == v2.intval);
+	if (a.uintval == v2.uintval && 
+			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
+		return true;
+	return isEqualIntern(a,sys,v2);
+}
+TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
+{
+	if ((((a.intval ^ ATOM_INTEGER) | (v2.intval ^ ATOM_INTEGER)) & 7) == 0)
+		return (a.intval < v2.intval)?TTRUE:TFALSE;
+	if (a.uintval == v2.uintval && 
+			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
+	{
+		return a.uintval == ATOMTYPE_UNDEFINED_BIT ? TUNDEFINED : TFALSE;
+	}
+	return isLessIntern(a,sys,v2);
+}
 FORCE_INLINE bool asAtomHandler::isFunction(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<IFunction>(); }
 FORCE_INLINE bool asAtomHandler::isString(const asAtom& a) { return isStringID(a) || (isObject(a) && getObjectNoCheck(a)->is<ASString>()); }
 FORCE_INLINE bool asAtomHandler::isQName(const asAtom& a) { return getObject(a) && getObjectNoCheck(a)->is<ASQName>(); }

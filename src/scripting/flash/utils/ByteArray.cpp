@@ -127,11 +127,12 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
 	uint32_t prevLen = len;
-	if(bytes==NULL)
+	if(bytes==nullptr)
 	{
 		len=size;
 		real_len=len;
 		bytes = (uint8_t*) malloc(len);
+		memset(bytes,0,len);
 #ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->addBytes(len);
 #endif
@@ -154,17 +155,14 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 #endif
 		assert_and_throw(bytes2);
 		bytes = bytes2;
+		if(prevLen<size)
+			memset(bytes+prevLen,0,real_len-prevLen);
 		len=size;
 		bytes=bytes2;
 	}
 	else if(len<size)
 	{
 		len=size;
-	}
-	if(prevLen<size)
-	{
-		//Extend
-		memset(bytes+prevLen,0,size-prevLen);
 	}
 	return bytes;
 }
@@ -848,7 +846,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
-
 	uint8_t res;
 	th->lock();
 	if (!th->readByte(res))

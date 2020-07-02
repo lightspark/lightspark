@@ -179,8 +179,12 @@ public:
 	inline uint8_t* getBufferNoCheck() const { return bytes; }
 	inline uint8_t* getBuffer(unsigned int size, bool enableResize)
 	{
-		if (size <= len && size > 0)
+		if (size <= real_len && size > 0)
 		{
+			if(len<size)
+			{
+				len=size;
+			}
 			return bytes;
 		}
 		return getBufferIntern(size,enableResize);

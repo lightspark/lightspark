@@ -3808,7 +3808,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 							if (v)
 							{
-								if (asAtomHandler::is<SyntheticFunction>(v->var))
+								if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj)
 								{
 									func = asAtomHandler::as<SyntheticFunction>(v->var);
 									if (!func->getMethodInfo()->returnType)

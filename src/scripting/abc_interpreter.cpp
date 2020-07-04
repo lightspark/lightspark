@@ -829,8 +829,8 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setlocal_local,
 	abc_callFunctionSyntheticMultiArgs, // 0x2a2 ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS
 	abc_callFunctionSyntheticMultiArgsVoid, // 0x2a3 ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_inclocal_i_optimized, // 0x2a4 ABC_OP_OPTIMZED_INCLOCAL_I
+	abc_declocal_i_optimized, // 0x2a4 ABC_OP_OPTIMZED_DECLOCAL_I
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1106,7 +1106,8 @@ struct operands
 #define ABC_OP_OPTIMZED_SETLOCAL 0x000002a0
 #define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS 0x000002a2
 #define ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS 0x000002a3
-
+#define ABC_OP_OPTIMZED_INCLOCAL_I 0x000002a4
+#define ABC_OP_OPTIMZED_DECLOCAL_I 0x000002a5
 void skipjump(uint8_t& b,method_info* mi,memorystream& code,uint32_t& pos,std::map<int32_t,int32_t>& oldnewpositions,std::map<int32_t,int32_t>& jumptargets,bool jumpInCode)
 {
 	if (b == 0x10) // jump
@@ -2523,14 +2524,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			}
-
-			
+			case 0xc2://inclocal_i
+			{
+				uint32_t t = code.readu30();
+				mi->body->preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_INCLOCAL_I|t<<OPCODE_SIZE);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				break;
+			}
+			case 0xc3://declocal_i
+			{
+				uint32_t t = code.readu30();
+				mi->body->preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_DECLOCAL_I|t<<OPCODE_SIZE);
+				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				break;
+			}
 			case 0x06://dxns
 			case 0x08://kill
 			case 0x92://inclocal
 			case 0x94://declocal
-			case 0xc2://inclocal_i
-			case 0xc3://declocal_i
 			{
 				mi->body->preloadedcode.push_back((uint32_t)opcode);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
@@ -4446,8 +4457,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (t == operandlist.back().index)
 					{
 						operandlist.back().removeArg(mi);
-						mi->body->preloadedcode.push_back((uint32_t)(opcode == 0xc0 ? 0xc2 : 0xc3)); // inclocal_i/declocal_i
-						mi->body->preloadedcode.push_back((uint32_t)t);
+						mi->body->preloadedcode.push_back((uint32_t)(opcode == 0xc0 ? ABC_OP_OPTIMZED_INCLOCAL_I : ABC_OP_OPTIMZED_DECLOCAL_I)|t<<OPCODE_SIZE); // inclocal_i/declocal_i
 						oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
 						if (code.readbyte() == 0x63) //setlocal
 							code.readbyte();

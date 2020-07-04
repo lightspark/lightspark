@@ -1077,7 +1077,9 @@ private:
 	static void abc_increment_i(call_context* context); // 0xc0
 	static void abc_decrement_i(call_context* context);
 	static void abc_inclocal_i(call_context* context);
+	static void abc_inclocal_i_optimized(call_context* context);
 	static void abc_declocal_i(call_context* context);
+	static void abc_declocal_i_optimized(call_context* context);
 	static void abc_negate_i(call_context* context);
 	static void abc_add_i(call_context* context);
 	static void abc_add_i_constant_constant(call_context* context);

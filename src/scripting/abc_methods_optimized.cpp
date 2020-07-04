@@ -5179,3 +5179,20 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 		o->decRef();
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_inclocal_i_optimized(call_context* context)
+{
+	uint32_t t = (context->exec_pos++)->data>>OPCODE_SIZE;
+	LOG_CALL( _("incLocal_i ") << t );
+	int32_t tmp=asAtomHandler::toInt(context->locals[t]);
+	ASATOM_DECREF(context->locals[t]);
+	asAtomHandler::setInt(context->locals[t],context->mi->context->root->getSystemState(),tmp+1);
+}
+void ABCVm::abc_declocal_i_optimized(call_context* context)
+{
+	uint32_t t = (context->exec_pos++)->data>>OPCODE_SIZE;
+	LOG_CALL( _("decLocal_i ") << t );
+	int32_t tmp=asAtomHandler::toInt(context->locals[t]);
+	ASATOM_DECREF(context->locals[t]);
+	asAtomHandler::setInt(context->locals[t],context->mi->context->root->getSystemState(),tmp-1);
+}

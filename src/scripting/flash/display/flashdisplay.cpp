@@ -484,11 +484,8 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	if(source == BYTES)
-	{
-		if (loader->getContentLoaderInfo().getPtr())
-			loader->getContentLoaderInfo()->setComplete();
-	}
+	if (loader->getContentLoaderInfo().getPtr())
+		loader->getContentLoaderInfo()->setComplete();
 	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)

@@ -2618,7 +2618,7 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,arg1);
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
-	int index=asAtomHandler::getInt(*arg1);
+	int index=asAtomHandler::toInt(*arg1);
 	LOG_CALL( _("getPropertyInteger ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index);
@@ -2630,7 +2630,7 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
 	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
 	if (!obj)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
@@ -2645,7 +2645,7 @@ void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
 	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
 		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
@@ -2660,7 +2660,7 @@ void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
 	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
 	if (!obj)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
@@ -2675,7 +2675,7 @@ void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
 	ASObject* obj = nullptr;
 	if (asAtomHandler::isObject(context->locals[instrptr->local_pos1]))
 		obj = asAtomHandler::getObjectNoCheck(context->locals[instrptr->local_pos1]);
@@ -2692,7 +2692,7 @@ void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
 	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
 	if (!obj)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
@@ -2711,7 +2711,7 @@ void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* c
 void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(*instrptr->arg2_constant);
+	int index=asAtomHandler::toInt(*instrptr->arg2_constant);
 	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
 		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());
@@ -2730,7 +2730,7 @@ void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* cont
 void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
 	ASObject* obj= asAtomHandler::getObject(*instrptr->arg1_constant);
 	if (!obj)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true);
@@ -2749,7 +2749,7 @@ void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* cont
 void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	int index=asAtomHandler::getInt(context->locals[instrptr->local_pos2]);
+	int index=asAtomHandler::toInt(context->locals[instrptr->local_pos2]);
 	ASObject* obj= asAtomHandler::getObject(context->locals[instrptr->local_pos1]);
 	if (!obj)
 		obj= asAtomHandler::toObject(context->locals[instrptr->local_pos1],context->mi->context->root->getSystemState());

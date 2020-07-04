@@ -226,6 +226,7 @@ REGISTER_CLASS_NAME2(Rectangle,"Rectangle","flash.geom")
 REGISTER_CLASS_NAME(Transform,"flash.geom")
 REGISTER_CLASS_NAME(Vector3D,"flash.geom")
 REGISTER_CLASS_NAME(Matrix3D,"flash.geom")
+REGISTER_CLASS_NAME(Orientation3D,"flash.geom")
 REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 
 //Globalization

@@ -135,6 +135,7 @@
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/orientation3d.h"
 #include "scripting/flash/globalization/datetimeformatter.h"
 #include "scripting/flash/globalization/datetimestyle.h"
 #include "scripting/flash/globalization/collatormode.h"
@@ -639,6 +640,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("Point","flash.geom",Class<Point>::getRef(m_sys));
 	builtin->registerBuiltin("Vector3D","flash.geom",Class<Vector3D>::getRef(m_sys));
 	builtin->registerBuiltin("Matrix3D","flash.geom",Class<Matrix3D>::getRef(m_sys));
+	builtin->registerBuiltin("Orientation3D","flash.geom",Class<Orientation3D>::getRef(m_sys));
 	builtin->registerBuiltin("PerspectiveProjection","flash.geom",Class<PerspectiveProjection>::getRef(m_sys));
 
 	builtin->registerBuiltin("EventDispatcher","flash.events",Class<EventDispatcher>::getRef(m_sys));

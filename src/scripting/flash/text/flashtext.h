@@ -264,8 +264,7 @@ protected:
 		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override
-		{ return TokenContainer::hitTestImpl(last, x, y, type); }
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory) {}
 	StaticText(Class_base* c, const tokensVector& tokens):

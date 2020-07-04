@@ -1685,7 +1685,18 @@ void StaticText::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
-
+_NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+{
+	number_t xmin,xmax,ymin,ymax;
+	boundsRect(xmin,xmax,ymin,ymax);
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
+	{
+		incRef();
+		return _MNR(this);
+	}
+	else
+		return NullRef;
+}
 ASFUNCTIONBODY_ATOM(StaticText,_getText)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.display.StaticText.text is not implemented");

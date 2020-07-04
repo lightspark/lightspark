@@ -107,6 +107,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/filters/flashfilters.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
+  scripting/flash/geom/orientation3d.cpp
   scripting/flash/globalization/datetimeformatter.cpp
   scripting/flash/globalization/datetimestyle.cpp
   scripting/flash/globalization/lastoperationstatus.cpp

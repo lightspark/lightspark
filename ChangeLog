@@ -1,7 +1,9 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.8.3:
 
+	* fix support for sound in PPAPI plugin
+	* better handling of obfuscated code
 	* new command line argument to ignore unhandled exceptions
 	* support for context menus added
 	* partial support for CubeTextures and compressed Textures in Stage3d

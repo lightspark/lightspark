@@ -1068,19 +1068,21 @@ void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
 				    number_t& blueOffset,
 				    number_t& alphaOffset) const
 {
+	// multipliers are stored as values from 0.0 to 1.0
 	if (HasMultTerms)
 	{
-		redMultiplier = RedMultTerm;
-		greenMultiplier = GreenMultTerm;
-		blueMultiplier = BlueMultTerm;
-		alphaMultiplier = AlphaMultTerm;
+		redMultiplier = RedMultTerm/256.0;
+		greenMultiplier = GreenMultTerm/256.0;
+		blueMultiplier = BlueMultTerm/256.0;
+		alphaMultiplier = AlphaMultTerm/256.0;
+		
 	}
 	else
 	{
-		redMultiplier = 256.0;
-		greenMultiplier = 256.0;
-		blueMultiplier = 256.0;
-		alphaMultiplier = 256.0;
+		redMultiplier = 1.0;
+		greenMultiplier = 1.0;
+		blueMultiplier = 1.0;
+		alphaMultiplier = 1.0;
 	}
 
 	if (HasAddTerms)

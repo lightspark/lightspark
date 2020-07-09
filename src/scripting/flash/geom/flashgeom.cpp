@@ -508,10 +508,11 @@ ColorTransform::ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx)
 
 void ColorTransform::applyTransformation(const RGBA& color, float& r, float& g, float& b, float &a)
 {
-	a = max(0,min(255,(((int)color.Alpha * (int)alphaMultiplier)/256 + (int)alphaOffset)))/256.0;
-	r = max(0,min(255,(((int)color.Red   * (int)  redMultiplier)/256 + (int)  redOffset)))/256.0;
-	g = max(0,min(255,(((int)color.Green * (int)greenMultiplier)/256 + (int)greenOffset)))/256.0;
-	b = max(0,min(255,(((int)color.Blue  * (int) blueMultiplier)/256 + (int) blueOffset)))/256.0;
+	a = max(0.0,min(255.0,((color.Alpha * alphaMultiplier * 256.0)/256.0 + alphaOffset)))/256.0;
+	r = max(0.0,min(255.0,((color.Red   *   redMultiplier * 256.0)/256.0 +   redOffset)))/256.0;
+	g = max(0.0,min(255.0,((color.Green * greenMultiplier * 256.0)/256.0 + greenOffset)))/256.0;
+	b = max(0.0,min(255.0,((color.Blue  *  blueMultiplier * 256.0)/256.0 +  blueOffset)))/256.0;
+	
 }
 
 uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)

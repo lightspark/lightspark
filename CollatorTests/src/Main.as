@@ -3,6 +3,7 @@ package
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.globalization.Collator;
+	import flash.system.WorkerDomain;
 	//import flash.globalization.LocaleID;
 	import flash.globalization.CollatorMode;
 	
@@ -10,222 +11,127 @@ package
 	 * ...
 	 * @author Huw Pritchard
 	 */
+	 
 	public class Main extends Sprite 
 	{
-		public var col:Collator;
-        public var testMatchData:Array = ["cote", "Cote", "cÃ´te", "cotÃ©"];
-        public var wordToMatch:String = "Cote";
-        		
+		
+		
 		public function Main() 
 		{
-			col = new Collator( "en-US", CollatorMode.MATCHING );
-
-			/*trace("Normal comparison");
-            if (col.equals("hello world!", "hello world!"))
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
+			var list:Array = new Array();
+			
+			list.push(new Word("hello world!", "hello world!", 0, true, false, false)); // 1
+			list.push(new Word("hello world!", "hello world!", 0, true, true, false));  // 2
+			list.push(new Word("hello world!", "hello world!", 0, true, false, true));  // 3
+			list.push(new Word("hello world!", "hello world!", 0, true, true, true));   // 4
+			
+			list.push(new Word("hello world!", "hello world@",-1, 0, false, false)); // 5
+			list.push(new Word("hello world!", "hello world@", -1, 0, true, false)); // 6
+			list.push(new Word("hello world!", "hello world@", 0, true, false, true));  // 7
+			list.push(new Word("hello world!", "hello world@", 0, true, true, true));   // 8
+			
+			list.push(new Word("hello world!", "hello world@", -1, 0, false, false)); // 9
+			list.push(new Word("hello world!", "hello world@", -1, 0, true, false)); // 10
+			list.push(new Word("hello world!", "hello world@", 0, true, false, true)); // 11
+			list.push(new Word("hello world!", "hello world@", 0, true, true, true)); // 12
+			
+			list.push(new Word("hello world!", "HELLO WORLD!", -1, 0, false, false)); // 13
+			list.push(new Word("hello world!", "HELLO WORLD!", 0, true, true, false)); // 14
+			list.push(new Word("hello world!", "HELLO WORLD!", -1, 0, false, true)); // 15
+			list.push(new Word("hello world!", "HELLO WORLD!", 0, true, true, true)); // 16
+			
+			list.push(new Word("", "", 0, true, false, false)); // 17
+			list.push(new Word("", "", 0, true, true, false));  // 18
+			list.push(new Word("", "", 0, true, false, true));  // 19
+			list.push(new Word("", "", 0, true, true, true));  // 20
+			
+			list.push(new Word(" ", " ", 0, true, false, false)); // 21
+			list.push(new Word(" ", " ", 0, true, true, false)); // 22
+			list.push(new Word(" ", " ", 0, true, false, true)); // 23
+			list.push(new Word(" ", " ", 0, true, true, true)); // 24
+			
+			list.push(new Word("-", " ", -1, 0, false, false)); // 25
+			list.push(new Word("-", " ", -1, 0, true, false)); // 26
+			list.push(new Word("-", " ", 0, true, false, true)); // 27
+			list.push(new Word("-", " ", 0, true, true, true)); // 28
+			
+			list.push(new Word("-", "", 1, 0, false, false)); // 29
+			list.push(new Word("-", "", 1, 0, true, false)); // 30
+			list.push(new Word("-", "", 1, 0, false, true)); // 31
+			list.push(new Word("-", "", 1, 0, true, true)); // 32
+			
+			list.push(new Word("Ａｱ", "Ａｱ", 0, true, false, false)); // 33
+			list.push(new Word("Ａｱ", "Ａｱ", 0, true, true, false)); // 34
+			list.push(new Word("Ａｱ", "Ａｱ", 0, true, false, true)); // 35
+			list.push(new Word("Ａｱ", "Ａｱ", 0, true, true, true)); // 36
 			
 			
+			list.push(new Word("カナ", "カナ", 0, true, false, false)); // 37
+			list.push(new Word("カナ", "カナ", 0, true, true, false)); // 38
+			list.push(new Word("カナ", "カナ", 0, true, false, true)); // 39
+			list.push(new Word("カナ", "カナ", 0, true, true, true)); // 40
 			
-			trace("Ignore case 1");
-			col.ignoreSymbols = true;
-			if (col.equals("hello world!", "hello world@"))
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreSymbols = false;
+			list.push(new Word("OBrian", "O'Brian", -1, 0, false, false)); // 41
+			list.push(new Word("OBrian", "O'Brian", -1, 0, true, false)); // 42
+			list.push(new Word("OBrian", "O'Brian", 0, true, false, true)); // 43
+			list.push(new Word("OBrian", "O'Brian", 0, true, true, true)); // 44
+				
 			
-			trace("Ignore case 2");
-			col.ignoreSymbols = true;
-			if (col.equals("hello world!", "HELLO WORLD!"))
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreSymbols = false;
+			list.push(new Word("OBrian", "O Brian", 1, 0, false, false)); // 45
+			list.push(new Word("OBrian", "O Brian", 1, 0, true, false)); // 46
+			list.push(new Word("OBrian", "O Brian", 0, true, false, true)); // 47
+			list.push(new Word("OBrian", "O Brian", 0, true, true, true)); // 48
 			
-			trace("Ignore case 3");
-			col.ignoreCase = true;
-			if (col.equals("hello world!", "HELLO WORLD!"))
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreCase = false;
+			list.push(new Word("côte", "côte", 0, true, false, false)); // 49
+			list.push(new Word("côte", "côte", 0, true, true, false)); // 50
+			list.push(new Word("côte", "côte", 0, true, false, true)); // 51
+			list.push(new Word("côte", "côte", 0, true, true, true)); // 52
 			
+			list.push(new Word("hello", "hello world!", -1, false, false, false)); // 53
+			list.push(new Word("hello", "hello world!", -1, false, true, false)); // 54
+			list.push(new Word("hello", "hello world!", -1, false, false, true)); // 55
+			list.push(new Word("hello", "hello world!", -1, false, true, true)); // 56
 			
+			list.push(new Word("hello world!", "hello", 1, false, false, false)); // 57
+			list.push(new Word("hello world!", "hello", 1, false, true, false)); // 58
+			list.push(new Word("hello world!", "hello", 1, false, false, true)); // 59
+			list.push(new Word("hello world!", "hello", 1, false, true, true)); // 60
 			
-			trace("Ignore symbols 1");
-			col.ignoreSymbols = true;
-			if (col.compare("hello world!", "hello world@") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreSymbols = false;
+			var i = 1;
 			
-			trace("Ignore case 4");
-			col.ignoreCase = true;
-			if (col.compare("hello world!", "HELLO WORLD!") == 0)
-			{
-				trace("Passed");
+			for each (var item in list){
+				var collator:Collator = new Collator("LocaleID.DEFAULT");
+				collator.ignoreCase = item.ignoreCase;
+				collator.ignoreSymbols = item.ignoreSymbols;
+				var result = collator.compare(item.firstWord, item.secondWord)
+				if (result == item.expectedResult1)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					//trace("Failed");
+					trace(i + " " + item.firstWord + ":" + collator.compare(item.firstWord, item.secondWord));
+				}
+				i++;
 			}
-			else
-			{
-				trace("Failed");
+			i = 1;
+			for each (var item in list){
+				var collator:Collator = new Collator("LocaleID.DEFAULT");
+				collator.ignoreCase = item.ignoreCase;
+				collator.ignoreSymbols = item.ignoreSymbols;
+				var result = collator.equals(item.firstWord, item.secondWord);
+				if (result == item.expectedResult2)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					//trace("Failed");
+					trace(i + " " + item.firstWord + ":" + result);
+				}
+				i++;
 			}
-			col.ignoreCase = false;
-			
-			trace("Ignore empty string");
-			if (col.compare("", "") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			
-			
-			
-			trace("Ignore character width 1");
-			// Ignore character width
-			col.ignoreCharacterWidth = true;
-			if (col.compare("Ａｱ", "Aア") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreCharacterWidth = false;
-			
-			trace("Ignore character width 2");
-			// Check against character width
-			if (col.compare("Ａｱ", "Aア") != 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}*/
-			
-			/*trace("Ignore Kana type 1");
-			// Check against Kana type
-			col.ignoreKanaType = false
-			if (col.compare("カナ", "かな") != 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			
-			trace("Ignore Kana type 2");
-			col.ignoreKanaType = true;
-			// Check against Kana type
-			if (col.compare("カナ", "かな") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreKanaType = false;*/
-			
-			trace("Ignore symbols 1");
-			// Ignore symbols
-			col.ignoreSymbols = true;
-			// Check against Kana type
-			if (col.compare("OBrian", "O'Brian") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			trace("Ignore symbols 2");
-			if (col.compare("OBrian", "O Brian") == 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreSymbols = false;
-			trace("Ignore symbols 3");
-			if (col.compare("OBrian", "O'Brian") != 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			trace("Ignore symbols 4");
-			if (col.compare("OBrian", "O Brian") != 0)
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			
-			
-			
-			
-			
-			
-			
-			
-			// Ignore Diacritics
-			
-			/*trace("Ignore diacritics 1");
-			col.ignoreDiacritics = true;
-			if (col.compare("côte", "coté") == 0) // French
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			col.ignoreDiacritics = false;
-			
-			trace("Ignore diacritics 2");			
-			if (col.compare("côte", "coté") != 0) // French
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}*/
         }		
 	}
 }

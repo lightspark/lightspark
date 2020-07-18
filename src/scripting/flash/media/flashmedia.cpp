@@ -709,12 +709,11 @@ void SoundChannel::playStream()
 	}
 	if(waitForFlush)
 	{
-		Locker l(mutex);
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		if(audioDecoder)
+		if(streamDecoder && streamDecoder->audioDecoder)
 		{
-			audioDecoder->setFlushing();
-			audioDecoder->waitFlushed();
+			streamDecoder->audioDecoder->setFlushing();
+			streamDecoder->audioDecoder->waitFlushed();
 		}
 	}
 

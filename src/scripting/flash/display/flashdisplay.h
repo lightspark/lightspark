@@ -299,6 +299,7 @@ public:
 	ASPROPERTY_GETTER(tiny_string, contentType);
 private:
 	uint32_t bytesLoaded;
+	uint32_t bytesLoadedPublic; // bytes loaded synchronized with ProgressEvent
 	uint32_t bytesTotal;
 	tiny_string url;
 	tiny_string loaderURL;
@@ -354,6 +355,7 @@ public:
 		bytesTotal=b;
 	}
 	void setBytesLoaded(uint32_t b);
+	void setBytesLoadedPublic(uint32_t b) { bytesLoadedPublic = b; }
 	uint32_t getBytesLoaded() { return bytesLoaded; }
 	uint32_t getBytesTotal() { return bytesTotal; }
 	void setURL(const tiny_string& _url, bool setParameters=true);

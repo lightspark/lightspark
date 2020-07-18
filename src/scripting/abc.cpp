@@ -1648,7 +1648,11 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	if (dispatcher && dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser() && event->type == "enterFrame")
 		return;
 	if (event->is<ProgressEvent>())
+	{
 		event->as<ProgressEvent>()->accesmutex.lock();
+		if (dispatcher->is<LoaderInfo>()) // ensure that the LoaderInfo reports the same number as the ProgressEvent for bytesLoaded
+			dispatcher->as<LoaderInfo>()->setBytesLoadedPublic(event->as<ProgressEvent>()->bytesLoaded);
+	}
 
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden

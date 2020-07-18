@@ -56,7 +56,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 
 LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
-	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
@@ -69,7 +69,7 @@ LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullR
 
 LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
-	bytesLoaded(0),bytesTotal(0),sharedEvents(NullRef),
+	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
@@ -128,6 +128,7 @@ bool LoaderInfo::destruct()
 	bytesData.reset();
 	contentType = "application/x-shockwave-flash";
 	bytesLoaded = 0;
+	bytesLoadedPublic = 0;
 	bytesTotal = 0;
 	loadStatus =STARTED;
 	actionScriptVersion = 3;
@@ -146,6 +147,7 @@ void LoaderInfo::resetState()
 {
 	SpinlockLocker l(spinlock);
 	bytesLoaded=0;
+	bytesLoadedPublic = 0;
 	bytesTotal=0;
 	if(!bytesData.isNull())
 		bytesData->setLength(0);
@@ -199,8 +201,14 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				}
 			}
 		}
-		if(loadStatus==INIT_SENT)
+		if(bytesLoaded == bytesTotal)
 		{
+			if (loadStatus==STARTED)
+			{
+				this->incRef();
+				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"init")));
+				loadStatus=INIT_SENT;
+			}
 			//The clip is also complete now
 			if(getVm(getSystemState()))
 			{
@@ -241,10 +249,7 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
 
-	// the init/complete events are sended after the first frame of the waitedObject was executed
-	if (loader.isNull() || waitedObject.isNull())
-		sendInit();
-	else if (!loader->getParent()) // loader has no parent, ensure init/complete events are sended anyway
+	if (!loader.isNull() && !loader->getParent()) // loader has no parent, ensure init/complete events are sended anyway
 		loader->getSystemState()->stage->addHiddenObject(waitedObject);
 		
 	waitedObject.reset();
@@ -322,8 +327,8 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesLoaded)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-
-	asAtomHandler::setUInt(ret,sys,th->bytesLoaded);
+	// we always return bytesLoadedPublic to ensure it shows the same value as the last handled ProgressEvent
+	asAtomHandler::setUInt(ret,sys,th->bytesLoadedPublic);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
@@ -484,8 +489,6 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	if (loader->getContentLoaderInfo().getPtr())
-		loader->getContentLoaderInfo()->setComplete();
 	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)

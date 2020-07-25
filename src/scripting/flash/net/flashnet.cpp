@@ -2077,7 +2077,10 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 	{
 		asAtom callbackArgs[arglist.size()];
 
-		client->incRef();
+		ASObject* closure = client.getPtr();
+		if (asAtomHandler::getClosure(callback))
+			closure = asAtomHandler::getClosure(callback);
+		closure->incRef();
 		int i= 0;
 		for (auto it = arglist.cbegin();it != arglist.cend(); it++)
 		{
@@ -2087,7 +2090,7 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 		}
 		ASATOM_INCREF(callback);
 		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback,
-				asAtomHandler::fromObject(client.getPtr()), callbackArgs, arglist.size()));
+				asAtomHandler::fromObject(closure), callbackArgs, arglist.size()));
 		getVm(getSystemState())->addEvent(NullRef,event);
 	}
 }

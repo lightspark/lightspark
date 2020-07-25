@@ -428,6 +428,7 @@ void Sound::setBytesLoaded(uint32_t b)
 		// make sure that the event queue is not flooded with progressEvents
 		if (progressEvent.isNull())
 		{
+			this->incRef();
 			progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
 			progressEvent->incRef();
 			getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
@@ -441,6 +442,7 @@ void Sound::setBytesLoaded(uint32_t b)
 			// if event is already in event queue, we don't need to add it again
 			if (!progressEvent->queued)
 			{
+				this->incRef();
 				progressEvent->incRef();
 				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 			}

@@ -35,12 +35,18 @@ class SystemState;
 class ThreadPool
 {
 private:
+	struct ThreadPoolData
+	{
+		ThreadPool* pool;
+		int index;
+	};
 	Mutex mutex;
-	Thread* threads[NUM_THREADS];
+	SDL_Thread* threads[NUM_THREADS];
+	ThreadPoolData data[NUM_THREADS];
 	IThreadJob* volatile curJobs[NUM_THREADS];
 	std::deque<IThreadJob*> jobs;
 	Semaphore num_jobs;
-	static void job_worker(ThreadPool* th, uint32_t threadIndex);
+	static int job_worker(void* d);
 	SystemState* m_sys;
 	volatile bool stopFlag;
 public:
@@ -50,6 +56,6 @@ public:
 	void forceStop();
 };
 
-};
+}
 
 #endif /* THREAD_POOL_H */

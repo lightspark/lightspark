@@ -537,15 +537,8 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false,colortransform.getPtr(),scalex, scaley);
 }
 
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-StaticRecMutex CairoRenderer::cairoMutex;
-#else
-StaticRecMutex CairoRenderer::cairoMutex = GLIBMM_STATIC_REC_MUTEX_INIT;
-#endif
-
 uint8_t* CairoRenderer::getPixelBuffer()
 {
-	RecMutex::Lock l(cairoMutex);
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
 
@@ -785,12 +778,6 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 	}
 }
 
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-StaticMutex CairoPangoRenderer::pangoMutex;
-#else
-StaticMutex CairoPangoRenderer::pangoMutex = GLIBMM_STATIC_MUTEX_INIT;
-#endif
-
 void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData)
 {
 	PangoFontDescription* desc;
@@ -841,10 +828,6 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 
 void CairoPangoRenderer::executeDraw(cairo_t* cr, float /*scalex*/, float /*scaley*/)
 {
-	/* TODO: pango is not fully thread-safe,
-	 * but we may be able to use finer grained locking.
-	 */
-	Locker l(pangoMutex);
 	PangoLayout* layout;
 
 	layout = pango_cairo_create_layout(cr);
@@ -967,8 +950,6 @@ PangoRectangle CairoPangoRenderer::lineExtents(PangoLayout *layout, int lineNumb
 
 std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 {
-	//TODO:check locking
-	Locker l(pangoMutex);
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 

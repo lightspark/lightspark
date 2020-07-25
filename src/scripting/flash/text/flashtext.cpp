@@ -944,7 +944,6 @@ void TextField::updateSizes()
 	}
 	else
 	{
-		Locker l(CairoPangoRenderer::pangoMutex);
 		CairoPangoRenderer::getBounds(*this, w, h, tw, th);
 	}
 	//width = w; //TODO: check the case when w,h == 0
@@ -1450,10 +1449,9 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	return true;
 }
 
-uint32_t TextField::HtmlTextParser::parseFontSize(const Glib::ustring& sizestr,
+uint32_t TextField::HtmlTextParser::parseFontSize(const char* s,
 						  uint32_t currentFontSize)
 {
-	const char *s = sizestr.c_str();
 	if (!s)
 		return currentFontSize;
 

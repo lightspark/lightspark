@@ -160,6 +160,26 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.totalMemory is unimplemented."));
 	asAtomHandler::setUInt(ret,sys,1024);
 }
+//#include <sys/resource.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <errno.h>
+//#include <unistd.h>
+
+//int main() {
+//   struct rusage r_usage;
+//   int *p = 0;
+//   while(1) {
+//      p = (int*)malloc(sizeof(int)*1000);
+//      int ret = getrusage(RUSAGE_SELF,&r_usage);
+//      if(ret == 0)
+//         printf("Memory usage: %ld kilobytes\n",r_usage.ru_maxrss);
+//      else
+//         printf("Error in getrusage. errno = %d\n", errno);
+//      usleep(10);
+//   }
+//   return 0;
+//}
 ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));

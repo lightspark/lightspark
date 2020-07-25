@@ -31,9 +31,9 @@
 using namespace lightspark;
 using namespace std;
 
-InputThread::InputThread(SystemState* s):m_sys(s),engineData(NULL),terminated(false),threaded(false),
+InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(NULL)
+	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
@@ -52,8 +52,6 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	if(threaded)
-		t->join();
 	terminated=true;
 }
 
@@ -311,9 +309,9 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 
 void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
-	SpinlockLocker locker(inputDataSpinlock);
+	Locker locker(inputDataSpinlock);
 	mousePos.x=x;
 	mousePos.y=y;
 	mutexDragged.lock();

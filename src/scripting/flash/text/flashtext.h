@@ -77,7 +77,7 @@ private:
 	protected:
 		TextData *textdata;
 
-		uint32_t parseFontSize(const Glib::ustring& s, uint32_t currentFontSize);
+		uint32_t parseFontSize(const char *s, uint32_t currentFontSize);
 		bool for_each(pugi::xml_node& node);
 	public:
 		HtmlTextParser() : textdata(NULL) {}

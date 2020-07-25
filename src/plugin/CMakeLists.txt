@@ -48,7 +48,7 @@ ADD_LIBRARY(lightsparkplugin MODULE ${PLUGIN_SOURCES})
 
 #With STATICDEPS, all deps are compiled into spark
 IF(NOT STATICDEPS)
-TARGET_LINK_LIBRARIES(lightsparkplugin spark ${GLIBMM_LIBRARIES})
+TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 ENDIF()
 
 IF(WIN32)

@@ -100,7 +100,7 @@ Video::~Video()
 
 bool Video::renderImpl(RenderContext& ctxt) const
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	if(skipRender())
 		return false;
 
@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(Video,_getWidth)
 ASFUNCTIONBODY_ATOM(Video,_setWidth)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	Mutex::Lock l(th->mutex);
+	Locker l(th->mutex);
 	assert_and_throw(argslen==1);
 	th->width=asAtomHandler::toInt(args[0]);
 }
@@ -191,7 +191,7 @@ ASFUNCTIONBODY_ATOM(Video,_setHeight)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
 	assert_and_throw(argslen==1);
-	Mutex::Lock l(th->mutex);
+	Locker l(th->mutex);
 	th->height=asAtomHandler::toInt(args[0]);
 }
 
@@ -201,7 +201,7 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 	assert_and_throw(argslen==1);
 	if(asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0])) //Drop the connection
 	{
-		Mutex::Lock l(th->mutex);
+		Locker l(th->mutex);
 		th->netStream=NullRef;
 		return;
 	}
@@ -213,7 +213,7 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 	//Acquire the netStream
 	ASATOM_INCREF(args[0]);
 
-	Mutex::Lock l(th->mutex);
+	Locker l(th->mutex);
 	th->netStream=_MR(asAtomHandler::as<NetStream>(args[0]));
 }
 ASFUNCTIONBODY_ATOM(Video,clear)
@@ -802,7 +802,7 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 	assert_and_throw(argslen==1);
 	if(asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0])) //Drop the connection
 	{
-		Mutex::Lock l(th->mutex);
+		Locker l(th->mutex);
 		th->netStream=NullRef;
 		return;
 	}
@@ -814,7 +814,7 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 	//Acquire the netStream
 	ASATOM_INCREF(args[0]);
 
-	Mutex::Lock l(th->mutex);
+	Locker l(th->mutex);
 	th->netStream=_MR(asAtomHandler::as<NetStream>(args[0]));
 }
 

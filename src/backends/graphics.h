@@ -190,14 +190,6 @@ protected:
 	  The whole transformation matrix that is applied to the rendered object
 	*/
 	MATRIX matrix;
-	/*
-	 * There are reports (http://lists.freedesktop.org/archives/cairo/2011-September/022247.html)
-	 * that cairo is not threadsafe, and I have encountered some spurious crashes, too.
-	 * So we use a global lock for all cairo calls until this issue is sorted out.
-	 * TODO: CairoRenderes are enqueued as IThreadJobs, therefore this mutex
-	 *       will serialize the thread pool when all thread pool workers are executing CairoRenderers!
-	 */
-	static StaticRecMutex cairoMutex;
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr, float scalex, float scaley)=0;
@@ -327,7 +319,6 @@ class CairoPangoRenderer : public CairoRenderer
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
-	static StaticMutex pangoMutex;
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,uint32_t _ci)
 		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing), textData(_textData),caretIndex(_ci) {}
@@ -343,7 +334,7 @@ public:
 class InvalidateQueue
 {
 public:
-	virtual ~InvalidateQueue(){};
+	virtual ~InvalidateQueue(){}
 	//Invalidation queue management
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
 };

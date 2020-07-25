@@ -35,7 +35,7 @@ class XMLSocket : public EventDispatcher
 {
 protected:
 	XMLSocketThread *job;
-	Spinlock joblock; // protect access to job
+	Mutex joblock; // protect access to job
 
 	ASPROPERTY_GETTER_SETTER(int,timeout);
 	ASFUNCTION_ATOM(_constructor);

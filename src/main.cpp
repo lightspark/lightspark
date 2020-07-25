@@ -502,7 +502,7 @@ int main(int argc, char* argv[])
 	SDL_zero(event);
 	event.type = LS_USEREVENT_QUIT;
 	SDL_PushEvent(&event);
-	EngineData::mainLoopThread->join();
+	SDL_WaitThread(EngineData::mainLoopThread,nullptr);
 
 	delete pt;
 	delete sys;

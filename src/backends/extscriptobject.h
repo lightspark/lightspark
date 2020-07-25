@@ -260,7 +260,7 @@ public:
 
 	SystemState* getSystemState() const { return m_sys; }
 	
-	void assertThread() { assert(Thread::self() == mainThread); }
+	void assertThread() { assert( SDL_GetThreadID(nullptr) == mainThreadID); }
 
 	// Methods
 	bool hasMethod(const lightspark::ExtIdentifier& id) const
@@ -364,7 +364,7 @@ protected:
 	SystemState* m_sys;
 private:
 	// Used to determine if a method is called in the main plugin thread
-	Thread* mainThread;
+	SDL_threadID mainThreadID;
 
 	// Provides mutual exclusion for external calls
 	Mutex mutex;

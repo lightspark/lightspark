@@ -103,7 +103,7 @@ protected:
 	  	The object that masks us, if any
 	*/
 	_NR<DisplayObject> mask;
-	mutable Spinlock spinlock;
+	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
 			const MATRIX& m) const;

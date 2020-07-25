@@ -27,7 +27,7 @@ namespace lightspark
 class ASMutex: public ASObject
 {
 private:
-	RecMutex mutex;
+	Mutex mutex;
 	int lockcount;
 
 public:

@@ -138,14 +138,14 @@ friend class ppPluginEngineData;
 	std::istream mainDownloaderStream;
 	ppDownloader* mainDownloader;
 	ParseThread* m_pt;
-	Thread* m_ppLoopThread;
+	SDL_Thread* m_ppLoopThread;
 	PP_Resource m_messageloop;
 	
 	ExtIdentifier m_extmethod_name;
 	uint32_t m_extargc;
 	PP_Var *m_extargv;
 	PP_Var *m_extexception;
-	void worker();
+	static int worker(void *d);
 	PP_Point mousepos;
 public:
 	ACQUIRE_RELEASE_FLAG(inReading);

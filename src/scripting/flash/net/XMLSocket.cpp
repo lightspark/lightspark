@@ -65,7 +65,7 @@ void XMLSocket::finalize()
 {
 	EventDispatcher::finalize();
 
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	if (job)
 	{
 		job->threadAborting = true;
@@ -101,7 +101,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 {
 	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 
 	if (th->job)
 	{
@@ -171,7 +171,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 	tiny_string data;
 	ARG_UNPACK_ATOM (data);
 
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->sendData(data);
@@ -184,7 +184,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 
 bool XMLSocket::isConnected()
 {
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	return job && job->isConnected();
 }
 
@@ -196,7 +196,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
 
 void XMLSocket::threadFinished()
 {
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	job = NULL;
 }
 

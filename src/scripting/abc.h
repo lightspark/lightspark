@@ -314,7 +314,7 @@ friend class ACTIONRECORD;
 private:
 	std::vector<ABCContext*> contexts;
 	SystemState* m_sys;
-	Thread* t;
+	SDL_Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 	bool isIdle;
@@ -1185,7 +1185,7 @@ public:
 	*/
 	void start() DLL_PUBLIC;
 	void finalize();
-	static void Run(ABCVm* th);
+	static int Run(void* d);
 	static void executeFunction(call_context* context);
 #ifndef NDEBUG
 	static void dumpOpcodeCounters(uint32_t threshhold);

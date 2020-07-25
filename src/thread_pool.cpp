@@ -31,13 +31,10 @@ ThreadPool::ThreadPool(SystemState* s):num_jobs(0),stopFlag(false)
 	m_sys=s;
 	for(uint32_t i=0;i<NUM_THREADS;i++)
 	{
-		curJobs[i]=NULL;
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-		threads[i] = Thread::create(sigc::bind(&job_worker,this,i));
-#else
-		threads[i] = Thread::create(sigc::bind(&job_worker,this,i),true);
-#endif
-		
+		curJobs[i]=nullptr;
+		data[i].index=i;
+		data[i].pool = this;
+		threads[i] = SDL_CreateThread(job_worker,"ThreadPool",&data[i]);
 	}
 }
 
@@ -70,7 +67,7 @@ void ThreadPool::forceStop()
 
 		for(int i=0;i<NUM_THREADS;i++)
 		{
-			threads[i]->join();
+			SDL_WaitThread(threads[i],nullptr);
 		}
 	}
 }
@@ -80,33 +77,34 @@ ThreadPool::~ThreadPool()
 	forceStop();
 }
 
-void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
+int ThreadPool::job_worker(void *d)
 {
-	setTLSSys(th->m_sys);
+	ThreadPoolData* data = (ThreadPoolData*)d;
+	setTLSSys(data->pool->m_sys);
 
-	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(200,200,0));
+	ThreadProfile* profile=data->pool->m_sys->allocateProfiler(RGB(200,200,0));
 	char buf[16];
-	snprintf(buf,16,"Thread %u",index);
+	snprintf(buf,16,"Thread %u",data->index);
 	profile->setTag(buf);
 
 	Chronometer chronometer;
 	while(1)
 	{
-		th->num_jobs.wait();
-		if(th->stopFlag)
-			return;
-		Locker l(th->mutex);
-		IThreadJob* myJob=th->jobs.front();
-		th->jobs.pop_front();
-		th->curJobs[index]=myJob;
+		data->pool->num_jobs.wait();
+		if(data->pool->stopFlag)
+			return 0;
+		Locker l(data->pool->mutex);
+		IThreadJob* myJob=data->pool->jobs.front();
+		data->pool->jobs.pop_front();
+		data->pool->curJobs[data->index]=myJob;
 		l.release();
 
 		chronometer.checkpoint();
 		try
 		{
 			// it's possible that a job was added and will be executed while forcestop() has been called
-			if(th->stopFlag)
-				return;
+			if(data->pool->stopFlag)
+				return 0;
 			myJob->execute();
 		}
 		catch(JobTerminationException& ex)
@@ -116,23 +114,24 @@ void ThreadPool::job_worker(ThreadPool* th, uint32_t index)
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
-			th->m_sys->setError(e.cause);
+			data->pool->m_sys->setError(e.cause);
 		}
 		catch(std::exception& e)
 		{
 			LOG(LOG_ERROR,"std Exception in ThreadPool:"<<myJob<<" "<<e.what());
-			th->m_sys->setError(e.what());
+			data->pool->m_sys->setError(e.what());
 		}
 		
 		profile->accountTime(chronometer.checkpoint());
 
 		l.acquire();
-		th->curJobs[index]=NULL;
+		data->pool->curJobs[data->index]=nullptr;
 		l.release();
 
 		//jobFencing is allowed to happen outside the mutex
 		myJob->jobFence();
 	}
+	return 0;
 }
 
 void ThreadPool::addJob(IThreadJob* j)

@@ -26,72 +26,40 @@
 
 using namespace lightspark;
 
-#if GLIB_CHECK_VERSION(2, 31, 0)
-
-void lightspark::tls_set(GPrivate *key, gpointer value)
+void lightspark::tls_set(SDL_TLSID key, void* value)
 {
-	g_private_set(key, value);
+	SDL_TLSSet(key, value,0);
 }
 
-gpointer lightspark::tls_get(GPrivate *key)
+void* lightspark::tls_get(SDL_TLSID key)
 {
-	return g_private_get(key);
+	return SDL_TLSGet(key);
 }
 
-#else
-
-void lightspark::tls_set(GStaticPrivate *key, gpointer value)
+Semaphore::Semaphore(uint32_t init)
 {
-	g_static_private_set(key, value, NULL);
-}
-
-gpointer lightspark::tls_get(GStaticPrivate *key)
-{
-	return g_static_private_get(key);
-}
-
-#endif
-
-
-Semaphore::Semaphore(uint32_t init):value(init)
-{
+	sem = SDL_CreateSemaphore(init);
 }
 
 Semaphore::~Semaphore()
 {
-	//On destrucion unblocks all blocked threads
-	value = 4096;
-	cond.broadcast();
+	SDL_DestroySemaphore(sem);
 }
 
 void Semaphore::wait()
 {
-	Mutex::Lock lock(mutex);
-	while(value == 0)
-		cond.wait(mutex);
-	value--;
+	SDL_SemWait(sem);
 }
 
 bool Semaphore::try_wait()
 {
-	Mutex::Lock lock(mutex);
-	if(value == 0)
-		return false;
-	else
-	{
-		value--;
-		return true;
-	}
+	return SDL_SemTryWait(sem)==0;
 }
 
 void Semaphore::signal()
 {
-	Mutex::Lock lock(mutex);
-	value++;
-	cond.signal();
+	SDL_SemPost(sem);
 }
-
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
 
 CondTime::CondTime(long milliseconds)
 {
@@ -126,42 +94,6 @@ void CondTime::addMilliseconds(long ms)
 
 bool CondTime::wait(Mutex& mutex, Cond& cond)
 {
-	return cond.wait_until(mutex,timepoint);
+	gint64 now=g_get_monotonic_time();
+	return cond.wait_until(mutex, (timepoint > now ? (timepoint-now)/G_TIME_SPAN_MILLISECOND : 0));
 }
-
-#else // HAVE_NEW_GLIBMM_THREAD_API
-
-CondTime::CondTime(long milliseconds)
-{
-	timepoint.assign_current_time();
-	timepoint.add_milliseconds(milliseconds);
-}
-
-bool CondTime::operator<(CondTime& c) const
-{
-	return timepoint<c.timepoint;
-}
-
-bool CondTime::operator>(CondTime& c) const
-{
-	return timepoint>c.timepoint;
-}
-
-bool CondTime::isInTheFuture() const
-{
-	Glib::TimeVal now;
-	now.assign_current_time();
-	return (now-timepoint).negative(); // timepoint > now
-}
-
-void CondTime::addMilliseconds(long ms)
-{
-	timepoint.add_milliseconds(ms);
-}
-
-bool CondTime::wait(Mutex& mutex, Cond& cond)
-{
-	return cond.timed_wait(mutex,timepoint);
-}
-
-#endif // HAVE_NEW_GLIBMM_THREAD_API

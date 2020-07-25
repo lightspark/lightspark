@@ -43,7 +43,7 @@ using namespace std;
 using namespace lightspark;
 
 uint32_t EngineData::userevent = (uint32_t)-1;
-Thread* EngineData::mainLoopThread = NULL;
+SDL_Thread* EngineData::mainLoopThread = nullptr;
 bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
@@ -139,7 +139,7 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 }
 
 /* main loop handling */
-static void mainloop_runner()
+static int mainloop_runner(void*)
 {
 	bool sdl_available = !EngineData::sdl_needinit;
 	
@@ -164,7 +164,7 @@ static void mainloop_runner()
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
 		EngineData::mainthread_initialized.signal();
-		return;
+		return 0;
 	}
 	else
 	{
@@ -178,10 +178,11 @@ static void mainloop_runner()
 			if (EngineData::mainloop_handleevent(&event,sys))
 			{
 				EngineData::mainthread_running = false;
-				return;
+				return 0;
 			}
 		}
 	}
+	return 0;
 }
 void EngineData::mainloop_from_plugin(SystemState* sys)
 {
@@ -228,11 +229,7 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 bool EngineData::startSDLMain()
 {
 	assert(!mainLoopThread);
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-	mainLoopThread = Thread::create(sigc::ptr_fun(&mainloop_runner));
-#else
-	mainLoopThread = Thread::create(sigc::ptr_fun(&mainloop_runner),true);
-#endif
+	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",nullptr);
 	mainthread_initialized.wait();
 	return mainthread_running;
 }
@@ -292,8 +289,6 @@ void EngineData::initGLEW()
 
 void EngineData::showWindow(uint32_t w, uint32_t h)
 {
-	RecMutex::Lock l(mutex);
-
 	assert(!widget);
 	this->origwidth = w;
 	this->origheight = h;

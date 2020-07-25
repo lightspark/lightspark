@@ -173,7 +173,7 @@ class URLLoader: public EventDispatcher, public IDownloaderThreadListener, publi
 private:
 	tiny_string dataFormat;
 	_NR<ASObject> data;
-	Spinlock spinlock;
+	Mutex spinlock;
 	URLLoaderThread *job;
 	uint64_t timestamp_last_progress;
 public:
@@ -227,7 +227,7 @@ private:
 	//Data for remoting support (NetConnection::call)
 	// The message data to be sent asynchronously
 	std::vector<uint8_t> messageData;
-	Spinlock downloaderLock;
+	Mutex downloaderLock;
 	Downloader* downloader;
 	_NR<Responder> responder;
 	uint32_t messageCount;

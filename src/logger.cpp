@@ -23,7 +23,7 @@
 
 using namespace lightspark;
 
-static StaticMutex mutex;
+static Mutex logmutex;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
 int Log::calls_indent = 0;
@@ -45,7 +45,7 @@ Log::~Log()
 {
 	if(valid)
 	{
-		Mutex::Lock l(mutex);
+		Locker l(logmutex);
 		std::cerr << level_names[cur_level] << ": " << message.str();
 	}
 }
@@ -57,13 +57,13 @@ std::ostream& Log::operator()()
 
 void Log::print(const std::string& s)
 {
-	Mutex::Lock l(mutex);
+	Locker l(logmutex);
 	std::cout << s << std::endl;
 }
 
 void Log::redirect(std::string filename)
 {
-	Mutex::Lock l(mutex);
+	Locker l(logmutex);
 	static std::ofstream file(filename);
 	std::cout.rdbuf(file.rdbuf());
 	std::cerr.rdbuf(file.rdbuf());

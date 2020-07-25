@@ -145,7 +145,7 @@ bool LoaderInfo::destruct()
 
 void LoaderInfo::resetState()
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	bytesLoaded=0;
 	bytesLoadedPublic = 0;
 	bytesTotal=0;
@@ -156,7 +156,7 @@ void LoaderInfo::resetState()
 
 void LoaderInfo::setComplete()
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	if (loadStatus==STARTED)
 	{
 		sendInit();
@@ -174,7 +174,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
 	{
-		SpinlockLocker l(spinlock);
+		Locker l(spinlock);
 		bytesLoaded=b;
 		if(getVm(getSystemState()))
 		{
@@ -237,13 +237,13 @@ void LoaderInfo::sendInit()
 
 void LoaderInfo::setWaitedObject(_NR<DisplayObject> w)
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	waitedObject = w;
 }
 
 void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	if(waitedObject != obj)
 		return;
 	if(!loader.isNull() && obj==waitedObject)
@@ -470,7 +470,7 @@ void LoaderThread::execute()
 	sbuf = NULL;
 	if (source==URL) {
 		//Acquire the lock to ensure consistency in threadAbort
-		SpinlockLocker l(downloaderLock);
+		Locker l(downloaderLock);
 		if(downloader)
 			loaderInfo->getSystemState()->downloadManager->destroy(downloader);
 		downloader=nullptr;
@@ -514,7 +514,7 @@ ASFUNCTIONBODY_ATOM(Loader,_constructor)
 ASFUNCTIONBODY_ATOM(Loader,_getContent)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
-	SpinlockLocker l(th->spinlock);
+	Locker l(th->spinlock);
 	_NR<ASObject> res=th->content;
 	if(res.isNull())
 	{
@@ -536,7 +536,7 @@ ASFUNCTIONBODY_ATOM(Loader,_getContentLoaderInfo)
 ASFUNCTIONBODY_ATOM(Loader,close)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
- 	SpinlockLocker l(th->spinlock);
+ 	Locker l(th->spinlock);
 	for (auto j=th->jobs.begin(); j!=th->jobs.end(); j++)
 		(*j)->threadAbort();
 }
@@ -627,7 +627,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	r->incRef();
 	LoaderThread *thread=new LoaderThread(_MR(r), _MR(this));
 
-	SpinlockLocker l(this->spinlock);
+	Locker l(this->spinlock);
 	this->jobs.push_back(thread);
 	this->getSystemState()->addJob(thread);
 }
@@ -661,7 +661,7 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	{
 		th->incRef();
 		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
-		SpinlockLocker l(th->spinlock);
+		Locker l(th->spinlock);
 		th->jobs.push_back(thread);
 		sys->addJob(thread);
 	}
@@ -693,7 +693,7 @@ void Loader::unload()
 {
 	DisplayObject* content_copy = nullptr;
 	{
-		SpinlockLocker l(spinlock);
+		Locker l(spinlock);
 		for (auto j=jobs.begin(); j!=jobs.end(); j++)
 			(*j)->threadAbort();
 
@@ -750,7 +750,7 @@ ASFUNCTIONBODY_GETTER(Loader,uncaughtErrorEvents);
 
 void Loader::threadFinished(IThreadJob* finishedJob)
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	jobs.remove(finishedJob);
 	delete finishedJob;
 }
@@ -772,7 +772,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	}
 
 	{
-		SpinlockLocker l(spinlock);
+		Locker l(spinlock);
 		content=o;
 		content->isLoadedRoot = true;
 		loaded=true;
@@ -3473,7 +3473,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 
 _NR<InteractiveObject> Stage::getFocusTarget()
 {
-	SpinlockLocker l(focusSpinlock);
+	Locker l(focusSpinlock);
 	if (focus.isNull() || !focus->isOnStage() || !focus->isVisible())
 	{
 		incRef();
@@ -3487,7 +3487,7 @@ _NR<InteractiveObject> Stage::getFocusTarget()
 
 void Stage::setFocusTarget(_NR<InteractiveObject> f)
 {
-	SpinlockLocker l(focusSpinlock);
+	Locker l(focusSpinlock);
 	if (focus)
 		focus->lostFocus();
 	focus = f;

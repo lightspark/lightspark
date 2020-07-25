@@ -1,5 +1,9 @@
 lightspark: An open source flash player implementation
 
+Version NEXT:
+
+	* use SDL threading methods, remove glibmm dependency
+
 Version 0.8.3:
 
 	* fix support for sound in PPAPI plugin

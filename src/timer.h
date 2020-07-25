@@ -44,7 +44,7 @@ protected:
 public:
 	virtual void tick()=0;
 	ITickJob():stopMe(false){}
-	virtual ~ITickJob(){};
+	virtual ~ITickJob(){}
 	// This is called after tick() for single-shot jobs (i.e. enqueued with isTick==false)
 	virtual void tickFence() = 0;
 };
@@ -56,7 +56,7 @@ private:
 	{
 	public:
 		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
-			: job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime),tickTime(_tickTime),isTick(_isTick) {};
+			: job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime),tickTime(_tickTime),isTick(_isTick) {}
 		ITickJob* job;
 		CondTime wakeUpTime;
 		uint32_t tickTime;
@@ -64,12 +64,12 @@ private:
 	};
 	Mutex mutex;
 	Cond newEvent;
-	Thread* t;
+	SDL_Thread* t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
 	volatile bool stopped;
 	bool joined;
-	void worker();
+	static int worker(void* d);
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();

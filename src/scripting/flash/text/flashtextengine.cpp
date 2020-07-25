@@ -678,7 +678,6 @@ void TextLine::updateSizes()
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
-	Locker l(CairoPangoRenderer::pangoMutex);
 	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
 	if (w == 0)
 		w = tw;

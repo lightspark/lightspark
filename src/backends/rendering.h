@@ -38,11 +38,11 @@ friend class DisplayObject;
 friend class Context3D;
 private:
 	SystemState* m_sys;
-	Thread* t;
+	SDL_Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	volatile STATUS status;
 
-	void worker();
+	static int worker(void* d);
 
 	void commonGLInit(int width, int height);
 	void commonGLResize();

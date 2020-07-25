@@ -42,10 +42,6 @@ ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),da
 {
 }
 
-ASString::ASString(Class_base* c,const Glib::ustring& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
-{
-}
-
 ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),currentindex(0),hasId(false),datafilled(true)
 {
 }

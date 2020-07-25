@@ -53,7 +53,7 @@ private:
 	URLInfo url;
 	_NR<ByteArray> data;
 	URLStreamThread *job;
-	Spinlock spinlock;
+	Mutex spinlock;
 	void finalize();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getEndian);

@@ -279,7 +279,7 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 	}
 	else
 	{
-		SpinlockLocker locker(spinlock);
+		Locker locker(spinlock);
 		if (matrix.isNull())
 			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
 		if(matrix->matrix!=m->matrix)
@@ -302,7 +302,7 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 		return;
 	bool mustInvalidate=false;
 	{
-		SpinlockLocker locker(spinlock);
+		Locker locker(spinlock);
 		if (matrix.isNull())
 			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
 		if(matrix->matrix!=m)
@@ -423,7 +423,7 @@ tiny_string DisplayObject::AVM1GetPath()
 
 MATRIX DisplayObject::getMatrix() const
 {
-	SpinlockLocker locker(spinlock);
+	Locker locker(spinlock);
 	//Start from the residual matrix and construct the whole one
 	MATRIX ret;
 	if (!matrix.isNull())

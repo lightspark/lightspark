@@ -64,7 +64,7 @@ SecurityManager::SecurityManager():
  */
 SecurityManager::~SecurityManager()
 {
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	URLPFileMapIt i = pendingURLPFiles.begin();
 	for(; i != pendingURLPFiles.end(); ++i)
@@ -104,7 +104,7 @@ PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
  */
 URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 {
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	URLPolicyFile* file = new URLPolicyFile(url);
 	if(file->isValid())
@@ -128,7 +128,7 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
  */
 SocketPolicyFile* SecurityManager::addSocketPolicyFile(const URLInfo& url)
 {
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	SocketPolicyFile* file = new SocketPolicyFile(url);
 	if(file->isValid())
@@ -143,7 +143,7 @@ SocketPolicyFile* SecurityManager::addSocketPolicyFile(const URLInfo& url)
 template <class T>
 T* SecurityManager::getPolicyFileByURL(std::multimap<tiny_string, T*>& pendingFiles, std::multimap<tiny_string, T*>& loadedFiles, const URLInfo& url)
 {
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 	std::pair< typename std::multimap<tiny_string, T*>::iterator, typename std::multimap<tiny_string, T*>::iterator > range;
 	typename std::multimap<tiny_string, T*>::iterator i;
 
@@ -205,7 +205,7 @@ SocketPolicyFile* SecurityManager::getSocketPolicyFileByURL(const URLInfo& url)
 template <class T>
 void SecurityManager::loadPolicyFile(std::multimap<tiny_string, T*>& pendingFiles, std::multimap<tiny_string, T*>& loadedFiles, PolicyFile *file)
 {
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	if(pendingFiles.count(file->getURL().getHostname()) > 0)
 	{
@@ -269,7 +269,7 @@ std::list<T*> *SecurityManager::searchPolicyFiles(const URLInfo& url,
 {
 	std::list<T*> *result = new std::list<T*>;
 
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 	//Check if the master policy file is loaded.
 	//If another user-added relevant policy file is already loaded, 
 	//it's master will have already been loaded too (to check if it is allowed).
@@ -603,7 +603,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	//Search for the policy files to check
 	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	//Check the policy files
 	if(files != NULL)
@@ -639,7 +639,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSocketConnection(cons
 	//Search for the policy files to check
 	SocketPFileList* files = searchSocketPolicyFiles(url, loadPendingPolicies);
 
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	//Check the policy files
 	if(files != NULL)
@@ -724,7 +724,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	//Search for the policy files to check
 	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 
-	RecMutex::Lock l(mutex);
+	Locker l(mutex);
 
 	//Check the policy files
 	if(files != NULL)
@@ -769,7 +769,7 @@ PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
  */
 PolicyFile::~PolicyFile()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	for(list<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin();
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
@@ -787,7 +787,7 @@ PolicyFile::~PolicyFile()
  */
 void PolicyFile::load()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	//TODO: support download timeout handling
 	
 	//Invalid URLPolicyFile or already loaded, ignore this call
@@ -941,7 +941,7 @@ URLPolicyFile::URLPolicyFile(const URLInfo& _url):
  */
 URLPolicyFile::~URLPolicyFile()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	for(list<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
@@ -957,7 +957,7 @@ URLPolicyFile::~URLPolicyFile()
  */
 URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	if(isMaster())
 		return this;

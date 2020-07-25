@@ -57,7 +57,7 @@ class SecurityManager
 public:
 	enum SANDBOXTYPE { REMOTE=1, LOCAL_WITH_FILE=2, LOCAL_WITH_NETWORK=4, LOCAL_TRUSTED=8 };
 private:
-	RecMutex mutex;
+	Mutex mutex;
 
 	const char* sandboxNames[4];
 	const char* sandboxTitles[4];

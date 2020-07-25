@@ -44,9 +44,7 @@ friend class Stage;
 private:
 	SystemState* m_sys;
 	EngineData* engineData;
-	Thread* t;
 	bool terminated;
-	bool threaded;
 	// this is called from mainloopthread
 	bool worker(SDL_Event *event);
 
@@ -81,7 +79,7 @@ private:
 	void sendKeyEvent(const SDL_KeyboardEvent *keyevent);
 
 	bool handleContextMenuEvent(SDL_Event* event);
-	Spinlock inputDataSpinlock;
+	Mutex inputDataSpinlock;
 	Vector2 mousePos;
 public:
 	InputThread(SystemState* s);
@@ -95,7 +93,7 @@ public:
 
 	Vector2 getMousePos()
 	{
-		SpinlockLocker locker(inputDataSpinlock);
+		Locker locker(inputDataSpinlock);
 		return mousePos;
 	}
 	bool handleEvent(SDL_Event *event)

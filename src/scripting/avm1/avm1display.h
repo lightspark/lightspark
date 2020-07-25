@@ -73,7 +73,7 @@ public:
 class AVM1MovieClipLoader: public Loader
 {
 private:
-	mutable Spinlock spinlock;
+	mutable Mutex spinlock;
 	std::list<IThreadJob *> jobs;
 	std::set<_R<ASObject> > listeners;
 public:

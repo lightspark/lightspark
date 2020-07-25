@@ -415,7 +415,7 @@ void URLLoaderThread::execute()
 
 	{
 		//Acquire the lock to ensure consistency in threadAbort
-		SpinlockLocker l(downloaderLock);
+		Locker l(downloaderLock);
 		getSys()->downloadManager->destroy(downloader);
 		downloader = NULL;
 	}
@@ -457,7 +457,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	// equal, finishedJob is a job that was cancelled when load()
 	// was called again, and we have to still wait for the correct
 	// job.
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	if(finishedJob==job)
 		job=NULL;
 
@@ -466,7 +466,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 
 void URLLoader::setData(_NR<ASObject> newData)
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	data=newData;
 }
 
@@ -505,7 +505,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	assert_and_throw(urlRequest);
 
 	{
-		SpinlockLocker l(th->spinlock);
+		Locker l(th->spinlock);
 		if(th->job)
 			th->job->threadAbort();
 	}
@@ -537,20 +537,20 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 ASFUNCTIONBODY_ATOM(URLLoader,close)
 {
 	URLLoader* th=asAtomHandler::as<URLLoader>(obj);
-	SpinlockLocker l(th->spinlock);
+	Locker l(th->spinlock);
 	if(th->job)
 		th->job->threadAbort();
 }
 
 tiny_string URLLoader::getDataFormat()
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	return dataFormat;
 }
 
 void URLLoader::setDataFormat(const tiny_string& newFormat)
 {
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	dataFormat=newFormat.lowercase();
 }
 
@@ -563,7 +563,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,_getDataFormat)
 ASFUNCTIONBODY_ATOM(URLLoader,_getData)
 {
 	URLLoader* th=asAtomHandler::as<URLLoader>(obj);
-	SpinlockLocker l(th->spinlock);
+	Locker l(th->spinlock);
 	if(th->data.isNull())
 	{
 		asAtomHandler::setUndefined(ret);
@@ -915,7 +915,7 @@ void NetConnection::execute()
 //		getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
 		{
 			//Acquire the lock to ensure consistency in threadAbort
-			SpinlockLocker l(downloaderLock);
+			Locker l(downloaderLock);
 			getSys()->downloadManager->destroy(downloader);
 			downloader = NULL;
 		}
@@ -930,7 +930,7 @@ void NetConnection::execute()
 	delete sbuf;
 	{
 		//Acquire the lock to ensure consistency in threadAbort
-		SpinlockLocker l(downloaderLock);
+		Locker l(downloaderLock);
 		getSys()->downloadManager->destroy(downloader);
 		downloader = NULL;
 	}
@@ -942,7 +942,7 @@ void NetConnection::execute()
 void NetConnection::threadAbort()
 {
 	//We have to stop the downloader
-	SpinlockLocker l(downloaderLock);
+	Locker l(downloaderLock);
 	if(downloader != NULL)
 		downloader->stop();
 }
@@ -1470,7 +1470,7 @@ ASFUNCTIONBODY_ATOM(NetStream,resume)
 	{
 		th->paused = false;
 		{
-			Mutex::Lock l(th->mutex);
+			Locker l(th->mutex);
 			if(th->audioStream)
 				th->audioStream->resume();
 		}
@@ -1486,7 +1486,7 @@ ASFUNCTIONBODY_ATOM(NetStream,pause)
 	{
 		th->paused = true;
 		{
-			Mutex::Lock l(th->mutex);
+			Locker l(th->mutex);
 			if(th->audioStream)
 				th->audioStream->pause();
 		}
@@ -1540,7 +1540,7 @@ ASFUNCTIONBODY_ATOM(NetStream,seek)
 	{
 		th->paused = false;
 		{
-			Mutex::Lock l(th->mutex);
+			Locker l(th->mutex);
 			if(th->audioStream)
 				th->audioStream->resume();
 		}
@@ -2017,7 +2017,7 @@ void NetStream::execute()
 	tickStarted=false;
 
 	{
-		Mutex::Lock l(mutex);
+		Locker l(mutex);
 		//Change the state to invalid to avoid locking
 		videoDecoder=NULL;
 		audioDecoder=NULL;
@@ -2041,7 +2041,7 @@ void NetStream::execute()
 
 void NetStream::threadAbort()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	//This will stop the rendering loop
 	closed = true;
 

@@ -114,7 +114,7 @@ void URLStreamThread::execute()
 
 	{
 		//Acquire the lock to ensure consistency in threadAbort
-		SpinlockLocker l(downloaderLock);
+		Locker l(downloaderLock);
 		getSys()->downloadManager->destroy(downloader);
 		downloader = NULL;
 	}
@@ -162,7 +162,7 @@ void URLStream::threadFinished(IThreadJob* finishedJob)
 	// equal, finishedJob is a job that was cancelled when load()
 	// was called again, and we have to still wait for the correct
 	// job.
-	SpinlockLocker l(spinlock);
+	Locker l(spinlock);
 	if(finishedJob==job)
 		job=NULL;
 
@@ -181,7 +181,7 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 	ARG_UNPACK_ATOM (urlRequest);
 
 	{
-		SpinlockLocker l(th->spinlock);
+		Locker l(th->spinlock);
 		if(th->job)
 			th->job->threadAbort();
 	}
@@ -210,7 +210,7 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 ASFUNCTIONBODY_ATOM(URLStream,close)
 {
 	URLStream* th=asAtomHandler::as<URLStream>(obj);
- 	SpinlockLocker l(th->spinlock);
+ 	Locker l(th->spinlock);
 	if(th->job)
 		th->job->threadAbort();
 	th->connected = false;

@@ -817,11 +817,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	inWriting(false)
 {
 	m_messageloop = g_messageloop_interface->Create(this->getppInstance());
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-	m_ppLoopThread = Thread::create(sigc::mem_fun(this,&ppPluginInstance::worker));
-#else
-	m_ppLoopThread = Thread::create(sigc::mem_fun(this,&ppPluginInstance::worker),true);
-#endif
+	m_ppLoopThread = SDL_CreateThread(ppPluginInstance::worker,"pploop",this);
 	m_cachefilesystem = g_filesystem_interface->Create(getppInstance(),PP_FileSystemType::PP_FILESYSTEMTYPE_LOCALTEMPORARY);
 	g_messageloop_interface->PostWork(m_messageloop,PP_MakeCompletionCallback(openfilesystem_callback,this),0);
 	
@@ -875,17 +871,19 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	}
 	
 	//The sys var should be NULL in this thread
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
 }
-void ppPluginInstance::worker()
+int ppPluginInstance::worker(void* d)
 {
-	g_messageloop_interface->AttachToCurrentThread(m_messageloop);
+	ppPluginInstance* th = (ppPluginInstance*)d;
+	g_messageloop_interface->AttachToCurrentThread(th->m_messageloop);
 	
-	while (g_messageloop_interface->GetCurrent() != 0 && (!m_sys || !m_sys->isShuttingDown()))
+	while (g_messageloop_interface->GetCurrent() != 0 && (!th->m_sys || !th->m_sys->isShuttingDown()))
 	{
 		LOG(LOG_ERROR,"pluginworker");
-		g_messageloop_interface->Run(m_messageloop);
+		g_messageloop_interface->Run(th->m_messageloop);
 	}
+	return 0;
 }
 void ppPluginInstance::startMainParser()
 {
@@ -917,7 +915,7 @@ ppPluginInstance::~ppPluginInstance()
 	{
 		m_sys->extScriptObject->destroy();
 		delete m_sys->extScriptObject;
-		m_sys->extScriptObject = NULL;
+		m_sys->extScriptObject = nullptr;
 	}
 
 	m_sys->setShutdownFlag();
@@ -926,8 +924,8 @@ ppPluginInstance::~ppPluginInstance()
 	delete m_sys;
 	delete m_pt;
 	g_messageloop_interface->PostQuit(m_messageloop,PP_TRUE);
-	m_ppLoopThread->join();
-	setTLSSys(NULL);
+	SDL_WaitThread(m_ppLoopThread,nullptr);
+	setTLSSys(nullptr);
 }
 
 void ppPluginInstance::handleResize(PP_Resource view)

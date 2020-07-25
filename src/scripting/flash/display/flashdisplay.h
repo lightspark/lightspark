@@ -316,7 +316,7 @@ private:
 	 */
 	_NR<DisplayObject> waitedObject;
 	_NR<ProgressEvent> progressEvent;
-	Spinlock spinlock;
+	Mutex spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
 	/*
@@ -386,7 +386,7 @@ public:
 class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
 {
 private:
-	mutable Spinlock spinlock;
+	mutable Mutex spinlock;
 	_NR<DisplayObject> content;
 	// There can be multiple jobs, one active and aborted ones
 	// that have not yet terminated
@@ -670,7 +670,7 @@ private:
 	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS
 	// code) and the input thread and is protected focusSpinlock
-	Spinlock focusSpinlock;
+	Mutex focusSpinlock;
 	_NR<InteractiveObject> focus;
 	_NR<RootMovieClip> root;
 	// list of objects that are not added to stage, but need to be handled when first frame is executed

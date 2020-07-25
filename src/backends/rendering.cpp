@@ -37,7 +37,7 @@ using namespace std;
 DEFINE_AND_INITIALIZE_TLS(renderThread);
 RenderThread* lightspark::getRenderThread()
 {
-	RenderThread* ret = (RenderThread*)tls_get(&renderThread);
+	RenderThread* ret = (RenderThread*)tls_get(renderThread);
 	/* If this is NULL, then you are not calling from the render thread,
 	 * which is disallowed! (OpenGL is not threadsafe)
 	 */
@@ -51,7 +51,7 @@ void RenderThread::wait()
 	{
 		//Signal potentially blocking semaphore
 		event.signal();
-		t->join();
+		SDL_WaitThread(t,nullptr);
 	}
 }
 
@@ -75,11 +75,7 @@ void RenderThread::start(EngineData* data)
 {
 	status=STARTED;
 	engineData=data;
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-	t = Thread::create(sigc::mem_fun(this,&RenderThread::worker));
-#else
-	t = Thread::create(sigc::mem_fun(this,&RenderThread::worker),true);
-#endif
+	t = SDL_CreateThread(RenderThread::worker,"RenderThread",this);
 }
 
 void RenderThread::stop()
@@ -160,31 +156,32 @@ void RenderThread::init()
 	
 }
 
-void RenderThread::worker()
+int RenderThread::worker(void* d)
 {
-	setTLSSys(m_sys);
+	RenderThread *th = (RenderThread *)d;
+	setTLSSys(th->m_sys);
 	/* set TLS variable for getRenderThread() */
-	tls_set(&renderThread, this);
+	tls_set(renderThread, th);
 
-	ThreadProfile* profile=m_sys->allocateProfiler(RGB(200,0,0));
+	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
 	try
 	{
-		init();
+		th->init();
 
-		ThreadProfile* profile=m_sys->allocateProfiler(RGB(200,0,0));
+		ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(200,0,0));
 		profile->setTag("Render");
 
-		engineData->exec_glEnable_GL_TEXTURE_2D();
+		th->engineData->exec_glEnable_GL_TEXTURE_2D();
 
 		Chronometer chronometer;
 		while(1)
 		{
-			if (!doRender(profile,&chronometer))
+			if (!th->doRender(profile,&chronometer))
 				break;
 		}
 
-		deinit();
+		th->deinit();
 	}
 	catch(LightsparkException& e)
 	{
@@ -192,18 +189,19 @@ void RenderThread::worker()
 		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Exception in RenderThread, stopping rendering",e.what(),engineData->widget);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Exception in RenderThread, stopping rendering",e.what(),th->engineData->widget);
 	}
 
 	/* cleanup */
 	//Keep addUploadJob from enqueueing
-	status=TERMINATED;
+	th->status=TERMINATED;
 	//Fence existing jobs
-	Locker l(mutexUploadJobs);
-	if(prevUploadJob)
-		prevUploadJob->uploadFence();
-	for(auto i=uploadJobs.begin(); i != uploadJobs.end(); ++i)
+	Locker l(th->mutexUploadJobs);
+	if(th->prevUploadJob)
+		th->prevUploadJob->uploadFence();
+	for(auto i=th->uploadJobs.begin(); i != th->uploadJobs.end(); ++i)
 		(*i)->uploadFence();
+	return 0;
 }
 bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 {

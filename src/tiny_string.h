@@ -26,11 +26,9 @@
 #include <list>
 /* for utf8 handling */
 #include <glib.h>
-#include <glibmm/ustring.h>
 #include "compat.h"
 
 /* forward declare for tiny_string conversion */
-namespace Glib { class ustring; }
 typedef unsigned char xmlChar;
 
 namespace lightspark
@@ -125,22 +123,18 @@ public:
 	tiny_string(const char* s,bool copy=false);
 	tiny_string(const tiny_string& r);
 	tiny_string(const std::string& r);
-	tiny_string(const Glib::ustring& r);
 	tiny_string(std::istream& in, int len);
 	~tiny_string();
 	tiny_string& operator=(const tiny_string& s);
 	tiny_string& operator=(const std::string& s);
 	tiny_string& operator=(const char* s);
-	tiny_string& operator=(const Glib::ustring& s);
 	tiny_string& operator+=(const char* s);
 	tiny_string& operator+=(const tiny_string& r);
 	tiny_string& operator+=(const std::string& s);
-	tiny_string& operator+=(const Glib::ustring& s);
 	tiny_string& operator+=(uint32_t c);
 	const tiny_string operator+(const tiny_string& r) const;
 	const tiny_string operator+(const char* s) const;
 	const tiny_string operator+(const std::string& r) const;
-	const tiny_string operator+(const Glib::ustring& r) const;
 	bool operator<(const tiny_string& r) const;
 	bool operator>(const tiny_string& r) const;
 	bool operator==(const tiny_string& r) const;
@@ -150,8 +144,6 @@ public:
 	bool operator==(const char* r) const;
 	bool operator==(const xmlChar* r) const;
 	bool operator!=(const char* r) const;
-	bool operator==(const Glib::ustring&) const;
-	bool operator!=(const Glib::ustring&) const;
 	inline const char* raw_buf() const
 	{
 		return buf;
@@ -193,7 +185,6 @@ public:
 	char* strchr(char c) const;
 	char* strchrr(char c) const;
 	/*explicit*/ operator std::string() const;
-	operator Glib::ustring() const;
 	bool startsWith(const char* o) const;
         bool endsWith(const char* o) const;
 	/* idx is an index of utf-8 characters */

@@ -59,7 +59,7 @@ DownloadManager::~DownloadManager()
  */
 void DownloadManager::stopAll()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	std::list<Downloader*>::iterator it=downloaders.begin();
 	for(;it!=downloaders.end();++it)
@@ -77,7 +77,7 @@ void DownloadManager::stopAll()
  */
 void DownloadManager::cleanUp()
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	while(!downloaders.empty())
 	{
@@ -118,7 +118,7 @@ void StandaloneDownloadManager::destroy(Downloader* downloader)
  */
 void DownloadManager::addDownloader(Downloader* downloader)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	downloaders.push_back(downloader);
 }
 
@@ -129,7 +129,7 @@ void DownloadManager::addDownloader(Downloader* downloader)
  */
 bool DownloadManager::removeDownloader(Downloader* downloader)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
 	{
@@ -871,7 +871,7 @@ void DownloaderThreadBase::jobFence()
 	//be called over this thread job
 	Downloader* d=NULL;
 	{
-		SpinlockLocker l(downloaderLock);
+		Locker l(downloaderLock);
 		d=downloader;
 		downloader=NULL;
 	}
@@ -884,7 +884,7 @@ void DownloaderThreadBase::jobFence()
 void DownloaderThreadBase::threadAbort()
 {
 	//We have to stop the downloader
-	SpinlockLocker l(downloaderLock);
+	Locker l(downloaderLock);
 	if(downloader != NULL)
 		downloader->stop();
 	threadAborting=true;

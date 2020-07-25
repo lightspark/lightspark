@@ -29,11 +29,7 @@ using namespace std;
 
 TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
 {
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker));
-#else
-	t = Thread::create(sigc::mem_fun(this,&TimerThread::worker),true);
-#endif
+	t = SDL_CreateThread(&TimerThread::worker,"TimerThread",this);
 }
 
 void TimerThread::stop()
@@ -51,7 +47,7 @@ void TimerThread::wait()
 	{
 		joined=true;
 		stop();
-		t->join();
+		SDL_WaitThread(t,nullptr);
 	}
 }
 
@@ -89,7 +85,7 @@ void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 
 void TimerThread::insertNewEvent(TimingEvent* e)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 	insertNewEvent_nolock(e);
 }
 
@@ -111,42 +107,43 @@ void TimerThread::dumpJobs()
  * The pendingEvents queue may be altered by another thread with "mutex"
  * An event may be deleted by another thread with "mutex" only if inExectution != jobToDelete
  */
-void TimerThread::worker()
+int TimerThread::worker(void *d)
 {
-	setTLSSys(m_sys);
+	TimerThread* th = (TimerThread*)d;
+	setTLSSys(th->m_sys);
 
-	Mutex::Lock l(mutex);
+	Locker l(th->mutex);
 	while(1)
 	{
 		/* Wait until the first event appears */
-		while(pendingEvents.empty())
+		while(th->pendingEvents.empty())
 		{
-			newEvent.wait(mutex);
-			if(stopped)
-				return;
+			th->newEvent.wait(th->mutex);
+			if(th->stopped)
+				return 0;
 		}
 
 		/* Get expiration of first event */
-		CondTime timing=pendingEvents.front()->wakeUpTime;
+		CondTime timing=th->pendingEvents.front()->wakeUpTime;
 		/* Wait for the absolute time or a newEvent signal
 		 * this unlocks the mutex and relocks it before returing
 		 */
-		timing.wait(mutex,newEvent);
+		timing.wait(th->mutex,th->newEvent);
 
-		if(stopped)
-			return;
+		if(th->stopped)
+			return 0;
 
-		if(pendingEvents.empty())
+		if(th->pendingEvents.empty())
 			continue;
 
-		TimingEvent* e=pendingEvents.front();
+		TimingEvent* e=th->pendingEvents.front();
 
 		/* check if the top event is due now. It could be have been removed/inserted
 		 * while we slept */
 		if(e->wakeUpTime.isInTheFuture())
 			continue;
 
-		pendingEvents.pop_front();
+		th->pendingEvents.pop_front();
 
 		if(e->job->stopMe)
 		{
@@ -159,7 +156,7 @@ void TimerThread::worker()
 		{
 			/* re-enqueue*/
 			e->wakeUpTime.addMilliseconds(e->tickTime);
-			insertNewEvent_nolock(e);
+			th->insertNewEvent_nolock(e);
 		}
 
 		/* If e->isTick == false, e is not in pendingQueue anymore and this function has the only reference to it.
@@ -182,6 +179,7 @@ void TimerThread::worker()
 			delete e;
 		}
 	}
+	return 0;
 }
 
 void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
@@ -203,7 +201,7 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
  */
 void TimerThread::removeJob(ITickJob* job)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	/* See if that job is currently pending */
 	list<TimingEvent*>::iterator it=pendingEvents.begin();

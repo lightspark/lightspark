@@ -214,7 +214,7 @@ void ASSocket::finalize()
 {
 	EventDispatcher::finalize();
 
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	if (job)
 	{
 		job->threadAborting = true;
@@ -250,7 +250,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 ASFUNCTIONBODY_ATOM(ASSocket, _close)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 
 	if (th->job)
 	{
@@ -317,7 +317,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _connect)
 ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 
 	if (th->job)
 	{
@@ -332,7 +332,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		if(th->job->datasend->getLittleEndian())
@@ -354,7 +354,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
 		v = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->datasend->setLittleEndian(v);
@@ -371,7 +371,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	ARG_UNPACK_ATOM (data)(offset,0)(length,0);
 	if (data.isNull())
 		return;
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->datareceive->lock();
@@ -396,7 +396,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	tiny_string data;
 	ARG_UNPACK_ATOM (data);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->datasend->lock();
@@ -421,7 +421,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 		throwError<RangeError>(kParamRangeError);
 	if (offset+length > data->getLength())
 		throwError<RangeError>(kParamRangeError);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		if (length == 0)
@@ -444,7 +444,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 	uint32_t length;
 	ARG_UNPACK_ATOM (length);
 	tiny_string data;
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->datareceive->lock();
@@ -461,7 +461,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	SpinlockLocker l(th->joblock);
+	Locker l(th->joblock);
 	if (th->job)
 	{
 		th->job->flushData();
@@ -474,7 +474,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 
 bool ASSocket::isConnected()
 {
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	return job && job->isConnected();
 }
 
@@ -486,7 +486,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _connected)
 
 void ASSocket::threadFinished()
 {
-	SpinlockLocker l(joblock);
+	Locker l(joblock);
 	job = NULL;
 }
 

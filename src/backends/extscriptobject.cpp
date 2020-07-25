@@ -549,7 +549,7 @@ void ExtScriptObject::doHostCall(ExtScriptObject::HOST_CALL_TYPE type,
 	};
 	// We are in the main thread,
 	// so we can call the method ourselves synchronously straight away
-	if(Thread::self() == mainThread)
+	if(SDL_GetThreadID(nullptr) == mainThreadID)
 	{
 		hostCallHandler(&callData);
 		return;
@@ -663,12 +663,12 @@ bool ExtScriptObject::callExternal(const ExtIdentifier &id, const ExtVariant **a
 
 // ExtScriptObject interface: methods
 ExtScriptObject::ExtScriptObject(SystemState *sys):
-	m_sys(sys),currentCallback(NULL), hostCallData(NULL),
+	m_sys(sys),currentCallback(nullptr), hostCallData(nullptr),
 	shuttingDown(false), marshallExceptions(false)
 {
 	// This object is always created in the main plugin thread, so lets save
 	// so that we can check if we are in the main plugin thread later on.
-	mainThread = Thread::self();
+	mainThreadID = SDL_GetThreadID(nullptr);
 
 	setProperty("$version", Capabilities::EMULATED_VERSION);
 
@@ -709,7 +709,7 @@ void ExtScriptObject::destroy()
 		callStatusses.top()->signal();
 	mutex.unlock();
 	// Wait for all external calls to finish
-	Mutex::Lock l(externalCall);
+	Locker l(externalCall);
 }
 bool ExtScriptObject::doinvoke(const ExtIdentifier& id, const ExtVariant **args, uint32_t argc, const lightspark::ExtVariant* result)
 {

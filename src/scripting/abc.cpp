@@ -201,9 +201,9 @@ bool inStartupOrClose=true;
 bool lightspark::isVmThread()
 {
 #ifndef NDEBUG
-	return inStartupOrClose || GPOINTER_TO_INT(tls_get(&is_vm_thread));
+	return inStartupOrClose || GPOINTER_TO_INT(tls_get(is_vm_thread));
 #else
-	return GPOINTER_TO_INT(tls_get(&is_vm_thread));
+	return GPOINTER_TO_INT(tls_get(is_vm_thread));
 #endif
 }
 
@@ -1585,11 +1585,7 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 
 void ABCVm::start()
 {
-#ifdef HAVE_NEW_GLIBMM_THREAD_API
-	t = Thread::create(sigc::bind(&Run,this));
-#else
-	t = Thread::create(sigc::bind(&Run,this),true);
-#endif
+	t = SDL_CreateThread(Run,"ABCVm",this);
 }
 
 void ABCVm::shutdown()
@@ -1602,7 +1598,7 @@ void ABCVm::shutdown()
 		sem_event_cond.signal();
 		event_queue_mutex.unlock();
 		//Wait for the vm thread
-		t->join();
+		SDL_WaitThread(t,0);
 		status=TERMINATED;
 		signalEventWaiters();
 	}
@@ -1800,6 +1796,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
+	//LOG(LOG_INFO,"handleEvent:"<<e.second->type);
 	e.second->check();
 	if(!e.first.isNull())
 		publicHandleEvent(e.first.getPtr(), e.second);
@@ -1927,7 +1924,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
-				Mutex::Lock l(event_queue_mutex);
+				Locker l(event_queue_mutex);
 				while (!idleevents_queue.empty())
 				{
 					events_queue.push_back(idleevents_queue.front());
@@ -1979,6 +1976,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 	if(e.second->is<WaitableEvent>())
 		e.second->as<WaitableEvent>()->signal();
 	RELEASE_WRITE(e.second->queued,false);
+	//LOG(LOG_INFO,"handleEvent done:"<<e.second->type);
 }
 
 bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
@@ -1993,7 +1991,7 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 		return true;
 	}
 
-	Mutex::Lock l(event_queue_mutex);
+	Locker l(event_queue_mutex);
 
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
@@ -2027,7 +2025,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	}
 
 
-	Mutex::Lock l(event_queue_mutex);
+	Locker l(event_queue_mutex);
 
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
@@ -2045,7 +2043,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 }
 void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 {
-	Mutex::Lock l(event_queue_mutex);
+	Locker l(event_queue_mutex);
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
 		return;
@@ -2322,15 +2320,16 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
-void ABCVm::Run(ABCVm* th)
+int ABCVm::Run(void* d)
 {
+	ABCVm* th = (ABCVm*)d;
 	//Spin wait until the VM is aknowledged by the SystemState
 	setTLSSys(th->m_sys);
 	while(getVm(th->m_sys)!=th)
 		;
 
 	/* set TLS variable for isVmThread() */
-        tls_set(&is_vm_thread, GINT_TO_POINTER(1));
+        tls_set(is_vm_thread, GINT_TO_POINTER(1));
 #ifndef NDEBUG
 	inStartupOrClose= false;
 #endif
@@ -2462,6 +2461,7 @@ void ABCVm::Run(ABCVm* th)
 #ifndef NDEBUG
 	inStartupOrClose= true;
 #endif
+	return 0;
 }
 
 /* This breaks the lock on all enqueued events to prevent deadlocking */
@@ -2472,7 +2472,7 @@ void ABCVm::signalEventWaiters()
 	while(!events_queue.empty())
 	{
 		pair<_NR<EventDispatcher>,_R<Event>> e=events_queue.front();
-                events_queue.pop_front();
+		events_queue.pop_front();
 		if(e.second->is<WaitableEvent>())
 			e.second->as<WaitableEvent>()->signal();
 	}

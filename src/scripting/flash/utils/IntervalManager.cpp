@@ -47,7 +47,7 @@ IntervalManager::~IntervalManager()
 
 uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
@@ -64,7 +64,7 @@ uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsig
 }
 uint32_t IntervalManager::setTimeout(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
@@ -91,7 +91,7 @@ uint32_t IntervalManager::getFreeID()
 
 void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob)
 {
-	Mutex::Lock l(mutex);
+	Locker l(mutex);
 
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.find(id);
 	//If the entry exists and the types match, remove its tickjob, delete its intervalRunner and erase their entry

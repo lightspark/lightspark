@@ -87,9 +87,6 @@ protected:
 	_NR<InteractiveObject> contextmenuDispatcher;
 	_NR<InteractiveObject> contextmenuOwner;
 	void selectContextMenuItemIntern();
-	/* use a recursive mutex, because g_signal_connect may directly call
-	 * the specific handler */
-	RecMutex mutex;
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
 public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
@@ -101,7 +98,7 @@ public:
 	uint32_t pixelBufferHeight;
 	SDL_Window* widget;
 	static uint32_t userevent;
-	static Thread* mainLoopThread;
+	static SDL_Thread* mainLoopThread;
 	uint32_t width;
 	uint32_t height;
 	uint32_t origwidth;

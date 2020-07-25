@@ -71,7 +71,7 @@ private:
 	bool parsingIsFailed;
 	bool waitingforparser;
 	RGB Background;
-	Spinlock dictSpinlock;
+	Mutex dictSpinlock;
 	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
 	std::list< std::pair<tiny_string, DictionaryTag*> > classesToBeBound;
 	std::map < tiny_string,FontTag* > embeddedfonts;
@@ -198,7 +198,6 @@ private:
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;
-	Thread* mainThread;
 	void startRenderTicks();
 	Mutex rootMutex;
 	/**
@@ -250,7 +249,7 @@ private:
 	char* cookiesFileName;
 
 	URLInfo url;
-	Spinlock profileDataSpinlock;
+	Mutex profileDataSpinlock;
 
 	Mutex mutexFrameListeners;
 	std::set<_R<DisplayObject>> frameListeners;
@@ -265,7 +264,7 @@ private:
 	/*
 	   The lock for the invalidate queue
 	*/
-	Spinlock invalidateQueueLock;
+	Mutex invalidateQueueLock;
 #ifdef PROFILING_SUPPORT
 	/*
 	   Output file for the profiling data
@@ -561,7 +560,7 @@ private:
 	std::streambuf* backend;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;
-	Spinlock objectSpinlock;
+	Mutex objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
 	void threadAbort();

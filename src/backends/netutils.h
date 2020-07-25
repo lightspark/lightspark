@@ -241,7 +241,7 @@ protected:
 	URLInfo url;
 	std::vector<uint8_t> postData;
 	std::list<tiny_string> requestHeaders;
-	Spinlock downloaderLock;
+	Mutex downloaderLock;
 	Downloader* downloader;
 	bool createDownloader(_R<StreamCache> cache,
 			      _NR<EventDispatcher> dispatcher=NullRef,

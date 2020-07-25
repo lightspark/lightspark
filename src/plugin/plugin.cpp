@@ -235,12 +235,7 @@ char* NPP_GetMIMEDescription(void)
 NPError NS_PluginInitialize()
 {
 	LOG_LEVEL log_level = LOG_NOT_IMPLEMENTED;
-	/* setup glib, this is already done on firefox/linux, but needs to be done
-	 * on firefox/windows (because there we statically link to glib) */
-#ifdef HAVE_G_THREAD_INIT
-	if(!g_thread_supported())
-		g_thread_init(NULL);
-#endif
+
 	char *envvar = getenv("LIGHTSPARK_PLUGIN_LOGLEVEL");
 	if (envvar)
 		log_level=(LOG_LEVEL) min(4, max(0, atoi(envvar)));

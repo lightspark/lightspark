@@ -290,6 +290,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		tiny_string className((const char*)Names[i],true);
 		if(Tags[i]==0)
 		{
+			root->hasMainClass=true;
 			root->incRef();
 			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}

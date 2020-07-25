@@ -93,6 +93,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
 	hasSymbolClass=false;
+	hasMainClass=false;
 	usesActionScript3=false;
 }
 
@@ -1767,11 +1768,11 @@ void RootMovieClip::commitFrame(bool another)
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{
 		SystemState* sys = getSys();
-		if(this==sys->mainClip)
+		if(this==sys->mainClip || !hasMainClass)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
-			// in AS3 this is added to the stage after the construction of the main object is completed
-			if (!usesActionScript3)
+			// in AS3 this is added to the stage after the construction of the main object is completed (if a main object exists)
+			if (!usesActionScript3 || !hasMainClass)
 			{
 				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
 					compat_msleep(10);
@@ -1800,7 +1801,8 @@ void RootMovieClip::constructionComplete()
 }
 void RootMovieClip::afterConstruction()
 {
-	this->setOnStage(true,true);
+	if (this==getSystemState()->mainClip)
+		this->setOnStage(true,true);
 	DisplayObject::afterConstruction();
 	checkFrameScriptToExecute();
 }

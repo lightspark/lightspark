@@ -201,14 +201,8 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				}
 			}
 		}
-		if(bytesLoaded == bytesTotal)
+		if(bytesLoaded == bytesTotal && loadStatus==INIT_SENT)
 		{
-			if (loadStatus==STARTED)
-			{
-				this->incRef();
-				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"init")));
-				loadStatus=INIT_SENT;
-			}
 			//The clip is also complete now
 			if(getVm(getSystemState()))
 			{
@@ -494,11 +488,9 @@ void LoaderThread::execute()
 		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)
 		{
 			if (!local_pt.getRootMovie()->usesActionScript3)
-			{
 				local_pt.getRootMovie()->setIsInitialized(false);
-				local_pt.getRootMovie()->incRef();
-				loader->setContent(_MR(local_pt.getRootMovie()));
-			}
+			local_pt.getRootMovie()->incRef();
+			loader->setContent(_MR(local_pt.getRootMovie()));
 		}
 	}
 }

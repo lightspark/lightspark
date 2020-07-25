@@ -101,6 +101,7 @@ public:
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;
+	bool hasMainClass;
 	bool usesActionScript3;
 	RGB getBackground();
 	void setBackground(const RGB& bg);

@@ -604,20 +604,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeByte)
 	assert_and_throw(argslen==1);
 
 	int32_t value=asAtomHandler::toInt(args[0]);
-//	if (th->position == 10)
-//	{
-//		Log::setLogLevel(LOG_CALLS);
-//	}
-//	if (th->position == 20)
-//	{
-//		Log::setLogLevel(LOG_INFO);
-//		exit(0);
-//	}
-//	if (th->position == 10)
-//	{
-//		Log::setLogLevel(LOG_INFO);
-//		exit(0);
-//	}
 
 	th->lock();
 	th->writeByte(value&0xff);
@@ -855,27 +841,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	th->unlock();
 	asAtomHandler::setInt(ret,sys,(int16_t)res);
 }
-#include <valgrind/callgrind.h>
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==0);
-	if (th->position % 100000 == 0)
-		LOG(LOG_ERROR,"reaUnsignedByte:"<<compat_get_thread_cputime_us()/1000<<":"<<th->position<<" "<<th->len);
-//	if (th->position == 20000)
-//	{
-//		exit(0);
-//	}
-	if (th->position == 1200000)
-	{
-		CALLGRIND_START_INSTRUMENTATION ;
-	}
-if (th->position == 1300000)
-{
-	CALLGRIND_STOP_INSTRUMENTATION ;
-	exit(0);
-}
 	uint8_t res;
 	th->lock();
 	if (!th->readByte(res))

@@ -92,7 +92,6 @@ void ABCVm::abc_label(call_context* context)
 }
 void ABCVm::abc_ifnlt(call_context* context)
 {
-	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TTRUE);
@@ -101,14 +100,12 @@ void ABCVm::abc_ifnlt(call_context* context)
 	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifnle(call_context* context)
 {
-	//ifnle
-	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TFALSE);
@@ -117,14 +114,12 @@ void ABCVm::abc_ifnle(call_context* context)
 	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifngt(call_context* context)
 {
-	//ifngt
-	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TTRUE);
@@ -133,14 +128,12 @@ void ABCVm::abc_ifngt(call_context* context)
 	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifnge(call_context* context)
 {
-	//ifnge
-	int32_t t = (*context->exec_pos).jumpdata.jump;
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TFALSE);
@@ -149,51 +142,39 @@ void ABCVm::abc_ifnge(call_context* context)
 	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_jump(call_context* context)
 {
-	//jump
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
-	LOG_CALL("jump:"<<t);
-	context->exec_pos += t+1;
+	LOG_CALL("jump:"<<(*context->exec_pos).jumpdata.jump);
+	context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 }
 void ABCVm::abc_iftrue(call_context* context)
 {
-	//iftrue
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=asAtomHandler::Boolean_concrete(*v1);
 	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_iffalse(call_context* context)
 {
-	//iffalse
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=!asAtomHandler::Boolean_concrete(*v1);
 	LOG_CALL(_("ifFalse (") << ((cond)?_("taken"):_("not taken")) << ')');
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifeq(call_context* context)
 {
-	//ifeq
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=(asAtomHandler::isEqual(*v1,context->mi->context->root->getSystemState(),*v2));
@@ -201,15 +182,12 @@ void ABCVm::abc_ifeq(call_context* context)
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifne(call_context* context)
 {
-	//ifne
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=!(asAtomHandler::isEqual(*v1,context->mi->context->root->getSystemState(),*v2));
@@ -217,15 +195,12 @@ void ABCVm::abc_ifne(call_context* context)
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_iflt(call_context* context)
 {
-	//iflt
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TTRUE;
@@ -234,15 +209,12 @@ void ABCVm::abc_iflt(call_context* context)
 	LOG_CALL(_("ifLT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifle(call_context* context)
 {
-	//ifle
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TFALSE;
@@ -251,15 +223,12 @@ void ABCVm::abc_ifle(call_context* context)
 	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifgt(call_context* context)
 {
-	//ifgt
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TTRUE;
@@ -268,15 +237,12 @@ void ABCVm::abc_ifgt(call_context* context)
 	LOG_CALL(_("ifGT (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifge(call_context* context)
 {
-	//ifge
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	bool cond=asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TFALSE;
@@ -285,15 +251,12 @@ void ABCVm::abc_ifge(call_context* context)
 	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
 
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifstricteq(call_context* context)
 {
-	//ifstricteq
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
@@ -302,15 +265,12 @@ void ABCVm::abc_ifstricteq(call_context* context)
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }
 void ABCVm::abc_ifstrictne(call_context* context)
 {
-	//ifstrictne
-	int32_t t = (*context->exec_pos).jumpdata.jump;
-
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
@@ -319,7 +279,7 @@ void ABCVm::abc_ifstrictne(call_context* context)
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
 	if(cond)
-		context->exec_pos += t+1;
+		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
 	else
 		++(context->exec_pos);
 }

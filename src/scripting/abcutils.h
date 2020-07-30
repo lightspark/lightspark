@@ -46,25 +46,22 @@ class scope_entry_list: public RefCountable
 public:
 	std::vector<scope_entry> scope;
 };
+struct variable;
 struct call_context
 {
-#include "packed_begin.h"
-	struct
-	{
-		asAtom* locals;
-		asAtom* stack;
-		asAtom* stackp;
-		struct preloadedcodedata* exec_pos;
-	} PACKED;
-#include "packed_end.h"
+	asAtom* locals;
+	asAtom* stack;
+	asAtom* stackp;
+	struct preloadedcodedata* exec_pos;
 	asAtom* max_stackp;
 	asAtom* lastlocal;
-	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	scope_entry_list* parent_scope_stack;
 	uint32_t curr_scope_stack;
+	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	asAtom* scope_stack;
 	bool* scope_stack_dynamic;
 	std::vector<SyntheticFunction*> dynamicfunctions;
+	asAtom** localslots;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
 	 * by {construct,call,get,set}Super
@@ -79,9 +76,9 @@ struct call_context
 	call_context(method_info* _mi):
 		locals(nullptr),stack(nullptr),
 		stackp(nullptr),exec_pos(nullptr),
-		max_stackp(nullptr),argarrayposition(-1),
-		parent_scope_stack(nullptr),curr_scope_stack(0),
-		scope_stack(nullptr),scope_stack_dynamic(nullptr),mi(_mi),
+		max_stackp(nullptr),
+		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
+		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
 		inClass(nullptr),defaultNamespaceUri(0),returning(false)
 	{
 	}
@@ -95,6 +92,9 @@ struct call_context
 		}
 	}
 };
+#define CONTEXT_GETLOCAL(context,pos) \
+	(*(context->localslots[pos]))
+
 #define RUNTIME_STACK_PUSH(context,val) \
 if(USUALLY_FALSE(context->stackp==context->max_stackp)) \
 	context->handleError(kStackOverflowError); \

@@ -395,6 +395,11 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		cc->scope_stack_dynamic=g_newa(bool, mi->body->max_scope_depth);
 		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
 		cc->lastlocal = cc->locals+mi->body->local_count+1+2;
+		cc->localslots = g_newa(asAtom*,mi->body->localconstantslots.size()+mi->body->local_count+1+2);
+		for (uint32_t i = 0; i < mi->body->local_count+1+2; i++)
+		{
+			cc->localslots[i] = &cc->locals[i];
+		}
 	}
 	else
 	{
@@ -491,6 +496,25 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 						ABCVm::preloadFunction(this);
 						mi->body->codeStatus = method_body_info::PRELOADED;
 						cc->exec_pos = mi->body->preloadedcode.data();
+						cc->localslots = new asAtom*[mi->body->localconstantslots.size()+mi->body->local_count+1+2];
+						for (uint32_t i = 0; i < mi->body->local_count+1+2; i++)
+						{
+							cc->localslots[i] = &cc->locals[i];
+						}
+					}
+					// fill additional locals with slots of objects that don't change during execution
+					int i = mi->body->local_count+1+2;
+					for (auto it = mi->body->localconstantslots.begin(); it != mi->body->localconstantslots.end(); it++)
+					{
+						assert(it->local_pos < (mi->numArgs()-mi->numOptions())+1);
+						if (asAtomHandler::isObject(cc->locals[it->local_pos]))
+						{
+							ASObject* o = asAtomHandler::getObjectNoCheck(cc->locals[it->local_pos]);
+							cc->localslots[i] = &(o->getSlotVar(it->slot_number)->var);
+						}
+						else
+							cc->localslots[i] = &asAtomHandler::nullAtom;
+						i++;
 					}
 					//Switch the codeStatus to USED to make sure the method will not be optimized while being used
 					const method_body_info::CODE_STATUS oldCodeStatus = codeStatus;

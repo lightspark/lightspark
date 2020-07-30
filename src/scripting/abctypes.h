@@ -309,6 +309,11 @@ struct preloadedcodedata
 	};
 	preloadedcodedata(uint32_t d):data(d),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr){}
 };
+struct localconstantslot
+{
+	uint32_t local_pos;
+	uint32_t slot_number;
+};
 
 struct method_body_info
 {
@@ -327,6 +332,8 @@ struct method_body_info
 	//The code status
 	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED, PRELOADED };
 	CODE_STATUS codeStatus;
+	// list of local/slot pairs that were optimized away
+	std::vector<localconstantslot> localconstantslots;
 	std::vector<preloadedcodedata> preloadedcode;
 };
 

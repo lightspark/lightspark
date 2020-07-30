@@ -740,6 +740,10 @@ public:
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->var;
 	}
+	FORCE_INLINE variable* getSlotVar(unsigned int n)
+	{
+		return slots_vars[n-1];
+	}
 	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
 	{
 		return slots_vars[n]->var;
@@ -1089,6 +1093,10 @@ public:
 	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
+	}
+	FORCE_INLINE variable* getSlotVar(unsigned int n)
+	{
+		return Variables.getSlotVar(n);
 	}
 	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
 	{
@@ -1904,11 +1912,17 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
 
 FORCE_INLINE void asAtomHandler::increment_i(asAtom& a,SystemState* sys)
 {
-	setInt(a,sys,toInt(a)+1);
+	if ((a.uintval&0x7) == ATOM_INTEGER)
+		setInt(a,sys,(a.intval>>3)+1);
+	else
+		setInt(a,sys,toInt(a)+1);
 }
 FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a,SystemState* sys)
 {
-	setInt(a,sys,toInt(a)-1);
+	if ((a.uintval&0x7) == ATOM_INTEGER)
+		setInt(a,sys,(a.intval>>3)-1);
+	else
+		setInt(a,sys,toInt(a)-1);
 }
 
 FORCE_INLINE void asAtomHandler::bit_xor(asAtom& a,SystemState* sys,asAtom &v1)

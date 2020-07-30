@@ -104,7 +104,7 @@ void ABCVm::executeFunction(call_context* context)
 #endif
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
-		abcfunctions[(context->exec_pos->data)&0x3ff](context);
+		abcfunctions[context->exec_pos->jumpdata.opcode](context);
 
 		PROF_ACCOUNT_TIME(context->mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
@@ -798,7 +798,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_setPropertyStaticName, // 0x284 ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME_SIMPLE
 	abc_getPropertyInteger, // 0x285 ABC_OP_OPTIMZED_GETPROPERTY_INTEGER_SIMPLE
 	abc_setPropertyInteger, // 0x286 ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_SIMPLE
-	abc_invalidinstruction,
+	abc_pushcachedslot,// 0x287 ABC_OP_OPTIMZED_PUSHCACHEDSLOT
 	abc_getPropertyInteger_constant_constant, // 0x288 ABC_OP_OPTIMZED_GETPROPERTY_INTEGER
 	abc_getPropertyInteger_local_constant,
 	abc_getPropertyInteger_constant_local,
@@ -830,7 +830,7 @@ ABCVm::abc_function ABCVm::abcfunctions[]={
 	abc_callFunctionSyntheticMultiArgs, // 0x2a2 ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS
 	abc_callFunctionSyntheticMultiArgsVoid, // 0x2a3 ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS
 	abc_inclocal_i_optimized, // 0x2a4 ABC_OP_OPTIMZED_INCLOCAL_I
-	abc_declocal_i_optimized, // 0x2a4 ABC_OP_OPTIMZED_DECLOCAL_I
+	abc_declocal_i_optimized, // 0x2a5 ABC_OP_OPTIMZED_DECLOCAL_I
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -979,6 +979,7 @@ struct operands
 		switch (type)
 		{
 			case OP_LOCAL:
+			case OP_CACHED_SLOT:
 				switch (pos)
 				{
 					case 0:
@@ -1099,6 +1100,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME_SIMPLE 0x00000284
 #define ABC_OP_OPTIMZED_GETPROPERTY_INTEGER_SIMPLE 0x00000285
 #define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_SIMPLE 0x00000286
+#define ABC_OP_OPTIMZED_PUSHCACHEDSLOT 0x00000287
 #define ABC_OP_OPTIMZED_GETPROPERTY_INTEGER 0x00000288
 #define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER 0x00000290
 #define ABC_OP_OPTIMZED_IFNLT 0x00000298
@@ -1164,7 +1166,7 @@ void clearOperands(method_info* mi,Class_base** localtypes,std::vector<operands>
 }
 bool canCallFunctionDirect(operands& op,multiname* name)
 {
-	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT) &&
+	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
 		op.objtype &&
 		!op.objtype->isInterface && // it's not an interface
 		op.objtype->isSealed && // it's sealed
@@ -1766,7 +1768,7 @@ bool setupInstructionTwoArguments(std::vector<operands>& operandlist,method_info
 	if (hasoperands)
 	{
 		auto it = operandlist.end();
-		if (cancollapse && (--it)->type != OP_LOCAL && (--it)->type != OP_LOCAL) // two constants means we can compute the result now and use it
+		if (cancollapse && (--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT && (--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT) // two constants means we can compute the result now and use it
 		{
 			it =operandlist.end();
 			(--it)->removeArg(mi);// remove arg2
@@ -1827,8 +1829,8 @@ bool setupInstructionTwoArguments(std::vector<operands>& operandlist,method_info
 		if (cancollapse)
 		{
 			it = operandlist.end();
-			op2isconstant = ((--it)->type != OP_LOCAL);
-			op1isconstant = ((--it)->type != OP_LOCAL);
+			op2isconstant = ((--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT);
+			op1isconstant = ((--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT);
 		}
 		
 		it =operandlist.end();
@@ -1935,6 +1937,18 @@ void addCachedConstant(method_info* mi, asAtom& val,std::vector<operands>& opera
 	mi->body->preloadedcode.push_back(value);
 	operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->root->getSystemState()),value,2,mi->body->preloadedcode.size()-2));
 }
+void addCachedSlot(method_info* mi, uint32_t localpos, uint32_t slotid,std::vector<operands>& operandlist,std::map<int32_t,int32_t>& oldnewpositions,memorystream& code,Class_base* resulttype)
+{
+	localconstantslot sl;
+	sl.local_pos= localpos;
+	sl.slot_number = slotid;
+	uint32_t value = mi->body->local_count+1+2+mi->body->localconstantslots.size();
+	mi->body->localconstantslots.push_back(sl);
+	mi->body->preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
+	oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+	mi->body->preloadedcode.push_back(value);
+	operandlist.push_back(operands(OP_CACHED_SLOT,resulttype,value,2,mi->body->preloadedcode.size()-2));
+}
 void setdefaultlocaltype(uint32_t t,method_info* mi,Class_base* c,Class_base** defaultlocaltypes, bool* defaultlocaltypescacheable)
 {
 	if (c==nullptr)
@@ -1987,6 +2001,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	std::multimap<int32_t,int32_t> jumppoints;
 	std::set<int32_t> exceptionjumptargets;
 	std::map<int32_t,int32_t> unreachabletargets;
+
+	// local variables (arguments and "this" object) that do not change during execution
+	std::set<int32_t> unchangedlocals;
+	for (int32_t i = 0; i < (int32_t)(mi->numArgs()-mi->numOptions())+1; i++)
+	{
+		unchangedlocals.insert(i);
+	}
 	
 	Class_base* defaultlocaltypes[mi->body->local_count+2];
 	bool defaultlocaltypescacheable[mi->body->local_count+2];
@@ -2136,6 +2157,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x63://setlocal
 			{
 				uint32_t t = codejumps.readu30();
+				unchangedlocals.erase(t);
 				setdefaultlocaltype(t,mi,currenttype,defaultlocaltypes,defaultlocaltypescacheable);
 				currenttype=nullptr;
 				break;
@@ -2144,6 +2166,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd5://setlocal_1
 			case 0xd6://setlocal_2
 			case 0xd7://setlocal_3
+				unchangedlocals.erase(opcode-0xd4);
 				setdefaultlocaltype(opcode-0xd4,mi,currenttype,defaultlocaltypes,defaultlocaltypescacheable);
 				currenttype=nullptr;
 				break;
@@ -2151,6 +2174,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x94://declocal
 			{
 				uint32_t t = codejumps.readu30();
+				unchangedlocals.erase(t);
 				setdefaultlocaltype(t,mi,Class<Number>::getRef(function->getSystemState()).getPtr(),defaultlocaltypes,defaultlocaltypescacheable);
 				currenttype=nullptr;
 				break;
@@ -2163,6 +2187,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xc3://declocal_i
 			{
 				uint32_t t = codejumps.readu30();
+				unchangedlocals.erase(t);
 				setdefaultlocaltype(t,mi,Class<Integer>::getRef(function->getSystemState()).getPtr(),defaultlocaltypes,defaultlocaltypescacheable);
 				currenttype=nullptr;
 				break;
@@ -2544,6 +2569,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t t = code.readu30();
 				mi->body->preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_INCLOCAL_I|t<<OPCODE_SIZE);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			}
 			case 0xc3://declocal_i
@@ -2551,6 +2577,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t t = code.readu30();
 				mi->body->preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_DECLOCAL_I|t<<OPCODE_SIZE);
 				oldnewpositions[code.tellg()] = (int32_t)mi->body->preloadedcode.size();
+				clearOperands(mi,localtypes,operandlist, defaultlocaltypes,&lastlocalresulttype);
 				break;
 			}
 			case 0x06://dxns
@@ -2882,7 +2909,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						case 1:
 							if (operandlist.size() > 2 && (operandlist[operandlist.size()-2].objtype == Class<Integer>::getRef(function->getSystemState()).getPtr()))
 							{
-								if (operandlist[operandlist.size()-3].type == OP_LOCAL)
+								if (operandlist[operandlist.size()-3].type == OP_LOCAL || operandlist[operandlist.size()-3].type == OP_CACHED_SLOT)
 								{
 									int index = operandlist[operandlist.size()-3].index;
 									setupInstructionTwoArgumentsNoResult(operandlist,mi,ABC_OP_OPTIMZED_SETPROPERTY_INTEGER+4,opcode,code,oldnewpositions, jumptargets);
@@ -3016,7 +3043,30 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (!mi->needsActivation() && operandlist.size() > 0)
 				{
 					auto it = operandlist.rbegin();
-					if (it->type != OP_LOCAL)
+					if (it->type == OP_LOCAL)
+					{
+						if (unchangedlocals.find(it->index) != unchangedlocals.end())
+						{
+							it->removeArg(mi);
+							operandlist.pop_back();
+							if (it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
+							{
+								if (it->objtype->is<Class_inherit>())
+									it->objtype->as<Class_inherit>()->checkScriptInit();
+								// check if we can replace getProperty by getSlot
+								asAtom o = asAtomHandler::invalidAtom;
+								it->objtype->getInstance(o,false,nullptr,0);
+								it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
+								ASObject* obj =asAtomHandler::getObject(o);
+								if (obj)
+									resulttype = obj->getSlotType(t);
+							}
+							addCachedSlot(mi,it->index,t,operandlist,oldnewpositions,code,resulttype);
+							typestack.push_back(typestackentry(resulttype,false));
+							break;
+						}
+					}
+					else if (it->type != OP_CACHED_SLOT)
 					{
 						asAtom* o = mi->context->getConstantAtom(it->type,it->index);
 						if (asAtomHandler::getObject(*o) && asAtomHandler::getObject(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
@@ -3088,7 +3138,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						else
 							skip = cls && cls->isSubClass(tobj->as<Class_base>());
 					}
-					else if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+					else if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL && operandlist.back().type != OP_CACHED_SLOT)
 					{
 						asAtom o = *mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
 						if (asAtomHandler::isValid(o))
@@ -3736,7 +3786,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								{
 									Class_base* resulttype = nullptr;
 									ASObject* constructor = nullptr;
-									if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+									if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL && operandlist.back().type != OP_CACHED_SLOT)
 									{
 										// common case: constructprop called to create a class instance
 										ASObject* a = asAtomHandler::getObject(*mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index));
@@ -4003,6 +4053,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											it->fillCode(0,mi->body->preloadedcode[mi->body->preloadedcode.size()-1],mi->context,false);
 											it++;
 										}
+										
 										if (operandlist.size() > argcount)
 										{
 											uint32_t oppos = mi->body->preloadedcode.size()-1-argcount;
@@ -4138,7 +4189,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						case 0:
 						{
 							multiname* name = mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-							if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL)
+							if (operandlist.size() > 0 && operandlist.back().type != OP_LOCAL && operandlist.back().type != OP_CACHED_SLOT)
 							{
 								asAtom* a = mi->context->getConstantAtom(operandlist.back().type,operandlist.back().index);
 								if (asAtomHandler::getObject(*a))
@@ -4218,6 +4269,21 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (v && v->slotid)
 									{
 										Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										if (operandlist.back().type == OP_LOCAL)
+										{
+											if (unchangedlocals.find(operandlist.back().index) != unchangedlocals.end())
+											{
+												uint32_t index = operandlist.back().index;
+												operandlist.back().removeArg(mi);
+												operandlist.pop_back();
+												addname = false;
+												addCachedSlot(mi,index,v->slotid,operandlist,oldnewpositions,code,resulttype);
+												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+												typestack.push_back(typestackentry(resulttype,false));
+												break;
+											}
+										}
+										
 										if (setupInstructionOneArgument(operandlist,mi,ABC_OP_OPTIMZED_GETSLOT,opcode,code,oldnewpositions, jumptargets,true,false,localtypes, defaultlocaltypes,resulttype,p,true))
 										{
 											mi->body->preloadedcode.at(mi->body->preloadedcode.size()-1).data |=(v->slotid-1)<<OPCODE_SIZE;

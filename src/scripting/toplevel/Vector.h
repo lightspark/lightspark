@@ -42,6 +42,7 @@ class Vector: public ASObject
 		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
+	asAtom getDefaultValue();
 public:
 	class sortComparatorWrapper
 	{

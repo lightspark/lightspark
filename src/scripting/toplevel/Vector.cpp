@@ -199,7 +199,7 @@ ASFUNCTIONBODY_ATOM(Vector,_constructor)
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	assert(th->vec_type);
 	th->fixed = fixed;
-	th->vec.resize(len, asAtomHandler::invalidAtom);
+	th->vec.resize(len, th->getDefaultValue());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_concat)
@@ -208,7 +208,7 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 	th->getClass()->getInstance(ret,true,NULL,0);
 	Vector* res = asAtomHandler::as<Vector>(ret);
 	// copy values into new Vector
-	res->vec.resize(th->size(), asAtomHandler::invalidAtom);
+	res->vec.resize(th->size(), th->getDefaultValue());
 	auto it=th->vec.begin();
 	uint32_t index = 0;
 	for(;it != th->vec.end();++it)
@@ -224,7 +224,7 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		if (asAtomHandler::is<Vector>(args[pos]))
 		{
 			Vector* arg=asAtomHandler::as<Vector>(args[pos]);
-			res->vec.resize(index+arg->size(), asAtomHandler::invalidAtom);
+			res->vec.resize(index+arg->size(), th->getDefaultValue());
 			auto it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
 			{
@@ -266,8 +266,6 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 
 	for(unsigned int i=0;i<th->size();i++)
 	{
-		if (asAtomHandler::isInvalid(th->vec[i]))
-			continue;
 		params[0] = th->vec[i];
 		params[1] = asAtomHandler::fromUInt(i);
 		params[2] = asAtomHandler::fromObject(th);
@@ -305,8 +303,6 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
-		if (asAtomHandler::isInvalid(th->vec[i]))
-			continue;
 		params[0] = th->vec[i];
 		params[1] = asAtomHandler::fromUInt(i);
 		params[2] = asAtomHandler::fromObject(th);
@@ -456,11 +452,6 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 		return;
 	}
 	ret = th->vec[size-1];
-	if (asAtomHandler::isInvalid(ret))
-	{
-		asAtomHandler::setNull(ret);
-		th->vec_type->coerce(th->getSystemState(),ret);
-	}
 	th->vec.pop_back();
 }
 
@@ -481,7 +472,7 @@ ASFUNCTIONBODY_ATOM(Vector,setLength)
 		for(size_t i=len; i< th->vec.size(); ++i)
 			ASATOM_DECREF(th->vec[i]);
 	}
-	th->vec.resize(len, asAtomHandler::invalidAtom);
+	th->vec.resize(len, th->getDefaultValue());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,getFixed)
@@ -510,8 +501,6 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
-		if (asAtomHandler::isInvalid(th->vec[i]))
-			continue;
 		params[0] = th->vec[i];
 		params[1] = asAtomHandler::fromUInt(i);
 		params[2] = asAtomHandler::fromObject(th);
@@ -536,7 +525,7 @@ ASFUNCTIONBODY_ATOM(Vector, _reverse)
 	std::vector<asAtom> tmp = std::vector<asAtom>(th->vec.begin(),th->vec.end());
 	uint32_t size = th->size();
 	th->vec.clear();
-	th->vec.resize(size, asAtomHandler::invalidAtom);
+	th->vec.resize(size, th->getDefaultValue());
 	std::vector<asAtom>::iterator it=tmp.begin();
 	uint32_t index = size-1;
 	for(;it != tmp.end();++it)
@@ -589,8 +578,6 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 	}
 	do
 	{
-		if (asAtomHandler::isInvalid(th->vec[i]))
-		    continue;
 		if (asAtomHandler::isEqualStrict(th->vec[i],th->getSystemState(),arg0))
 		{
 			res=i;
@@ -624,7 +611,7 @@ ASFUNCTIONBODY_ATOM(Vector,shift)
 	{
 		th->vec[i-1]=th->vec[i];
 	}
-	th->vec.resize(th->size()-1, asAtomHandler::invalidAtom);
+	th->vec.resize(th->size()-1, th->getDefaultValue());
 }
 
 int Vector::capIndex(int i) const
@@ -646,6 +633,18 @@ int Vector::capIndex(int i) const
 	}
 }
 
+asAtom Vector::getDefaultValue()
+{
+	if (vec_type == Class<Integer>::getClass(getSystemState()))
+		return asAtomHandler::fromInt(0);
+	else if (vec_type == Class<UInteger>::getClass(getSystemState()))
+		return asAtomHandler::fromUInt(0);
+	else if (vec_type == Class<Number>::getClass(getSystemState()))
+		return asAtomHandler::fromInt(0);
+	else
+		return asAtomHandler::nullAtom;
+}
+
 ASFUNCTIONBODY_ATOM(Vector,slice)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
@@ -661,7 +660,7 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 	endIndex=th->capIndex(endIndex);
 	th->getClass()->getInstance(ret,true,NULL,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
-	res->vec.resize(endIndex-startIndex, asAtomHandler::invalidAtom);
+	res->vec.resize(endIndex-startIndex, th->getDefaultValue());
 	int j = 0;
 	for(int i=startIndex; i<endIndex; i++) 
 	{
@@ -695,7 +694,7 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	if((startIndex+deleteCount)>totalSize)
 		deleteCount=totalSize-startIndex;
 
-	res->vec.resize(deleteCount, asAtomHandler::invalidAtom);
+	res->vec.resize(deleteCount, th->getDefaultValue());
 	if(deleteCount)
 	{
 		// write deleted items to return array
@@ -706,21 +705,21 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 		// delete items from current array
 		for (int i = 0; i < deleteCount; i++)
 		{
-			th->vec[startIndex+i] = asAtomHandler::invalidAtom;
+			th->vec[startIndex+i] = th->getDefaultValue();
 		}
 	}
 	// remember items in current array that have to be moved to new position
 	vector<asAtom> tmp = vector<asAtom>(totalSize- (startIndex+deleteCount));
-	tmp.resize(totalSize- (startIndex+deleteCount), asAtomHandler::invalidAtom);
+	tmp.resize(totalSize- (startIndex+deleteCount), th->getDefaultValue());
 	for (int i = startIndex+deleteCount; i < totalSize ; i++)
 	{
 		if (asAtomHandler::isValid(th->vec[i]))
 		{
 			tmp[i-(startIndex+deleteCount)] = th->vec[i];
-			th->vec[i] = asAtomHandler::invalidAtom;
+			th->vec[i] = th->getDefaultValue();
 		}
 	}
-	th->vec.resize(startIndex, asAtomHandler::invalidAtom);
+	th->vec.resize(startIndex, th->getDefaultValue());
 
 	
 	//Insert requested values starting at startIndex
@@ -730,7 +729,7 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 		th->vec.push_back(args[i]);
 	}
 	// move remembered items to new position
-	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), asAtomHandler::invalidAtom);
+	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), th->getDefaultValue());
 	for(int i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
 		th->vec[startIndex+i+(argslen > 2 ? argslen-2 : 0)] = tmp[i];
@@ -770,8 +769,6 @@ ASFUNCTIONBODY_ATOM(Vector,indexOf)
 
 	for(;i<th->size();i++)
 	{
-		if (asAtomHandler::isInvalid(th->vec[i]))
-			continue;
 		if(asAtomHandler::isEqualStrict(th->vec[i],th->getSystemState(),arg0))
 		{
 			res=i;
@@ -942,11 +939,11 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 	if (argslen > 0)
 	{
 		uint32_t s = th->size();
-		th->vec.resize(th->size()+argslen, asAtomHandler::invalidAtom);
+		th->vec.resize(th->size()+argslen, th->getDefaultValue());
 		for(uint32_t i=s;i> 0;i--)
 		{
 			th->vec[(i-1)+argslen]=th->vec[i-1];
-			th->vec[i-1] = asAtomHandler::invalidAtom;
+			th->vec[i-1] = th->getDefaultValue();
 		}
 		
 		for(uint32_t i=0;i<argslen;i++)
@@ -1130,17 +1127,9 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	}
 	if(index < vec.size())
 	{
-		if (asAtomHandler::isValid(vec[index]))
-		{
-			ret = vec[index];
-			if (!(opt & NO_INCREF))
-				ASATOM_INCREF(ret);
-		}
-		else
-		{
-			asAtomHandler::setNull(ret);
-			vec_type->coerce(getSystemState(), ret );
-		}
+		ret = vec[index];
+		if (!(opt & NO_INCREF))
+			ASATOM_INCREF(ret);
 	}
 	else
 	{
@@ -1154,17 +1143,9 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 {
 	if (index >=0 && uint32_t(index) < size())
 	{
-		if (asAtomHandler::isValid(vec[index]))
-		{
-			ret = vec[index];
-			if (!(opt & NO_INCREF))
-				ASATOM_INCREF(ret);
-		}
-		else
-		{
-			asAtomHandler::setNull(ret);
-			vec_type->coerce(getSystemState(), ret );
-		}
+		ret = vec[index];
+		if (!(opt & NO_INCREF))
+			ASATOM_INCREF(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	else
@@ -1278,14 +1259,7 @@ tiny_string Vector::toString()
 	{
 		if( i )
 			t += ",";
-		if (asAtomHandler::isValid(vec[i])) 
-			t += asAtomHandler::toString(vec[i],getSystemState());
-		else
-		{
-			asAtom natom = asAtomHandler::nullAtom;
-			vec_type->coerce(getSystemState(), natom );
-			t += asAtomHandler::toString(natom,getSystemState());
-		}
+		t += asAtomHandler::toString(vec[i],getSystemState());
 	}
 	return t;
 }
@@ -1310,16 +1284,8 @@ void Vector::nextValue(asAtom& ret,uint32_t index)
 {
 	if(index<=vec.size())
 	{
-		if (asAtomHandler::isValid(vec[index-1]))
-		{
-			ASATOM_INCREF(vec[index-1]);
-			ret = vec[index-1];
-		}
-		else
-		{
-			asAtomHandler::setNull(ret);
-			vec_type->coerce(getSystemState(), ret);
-		}
+		ASATOM_INCREF(vec[index-1]);
+		ret = vec[index-1];
 	}
 	else
 		throw RunTimeException("Vector::nextValue out of bounds");
@@ -1357,8 +1323,6 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 	{
 		tiny_string subres;
 		asAtom o = vec[i];
-		if (asAtomHandler::isInvalid(o))
-			o= asAtomHandler::nullAtom;
 		if (asAtomHandler::isValid(replacer))
 		{
 			asAtom params[2];

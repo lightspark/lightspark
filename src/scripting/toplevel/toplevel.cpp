@@ -326,8 +326,24 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
 void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult, bool coercearguments)
 {
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
-
 	call_context* saved_cc = getVm(getSystemState())->incStack(obj,this->functionname);
+	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
+	{
+		ABCVm::preloadFunction(this);
+		mi->body->codeStatus = method_body_info::PRELOADED;
+		mi->cc.exec_pos = mi->body->preloadedcode.data();
+		mi->cc.locals = new asAtom[mi->body->local_count+1+mi->body->localresultcount];
+		mi->cc.stack = new asAtom[mi->body->max_stack+1];
+		mi->cc.scope_stack = new asAtom[mi->body->max_scope_depth];
+		mi->cc.scope_stack_dynamic = new bool[mi->body->max_scope_depth];
+		mi->cc.max_stackp=mi->cc.stack+mi->cc.mi->body->max_stack;
+		mi->cc.lastlocal = mi->cc.locals+mi->cc.mi->body->local_count+1+mi->body->localresultcount;
+		mi->cc.localslots = new asAtom*[mi->body->localconstantslots.size()+mi->body->local_count+1+mi->body->localresultcount];
+		for (uint32_t i = 0; i < mi->body->local_count+1+mi->body->localresultcount; i++)
+		{
+			mi->cc.localslots[i] = &mi->cc.locals[i];
+		}
+	}
 
 	/* resolve argument and return types */
 	if(!mi->returnType)
@@ -389,14 +405,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (recursive_call)
 	{
 		cc = new call_context(mi);
-		cc->locals= g_newa(asAtom, mi->body->local_count+1+2); // +2, because we need two more elements to store result of optimized operations
+		cc->locals= g_newa(asAtom, mi->body->local_count+1+mi->body->localresultcount);
 		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);
 		cc->scope_stack_dynamic=g_newa(bool, mi->body->max_scope_depth);
 		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
-		cc->lastlocal = cc->locals+mi->body->local_count+1+2;
-		cc->localslots = g_newa(asAtom*,mi->body->localconstantslots.size()+mi->body->local_count+1+2);
-		for (uint32_t i = 0; i < mi->body->local_count+1+2; i++)
+		cc->lastlocal = cc->locals+mi->body->local_count+1+mi->body->localresultcount;
+		cc->localslots = g_newa(asAtom*,mi->body->localconstantslots.size()+mi->body->local_count+1+mi->body->localresultcount);
+		for (uint32_t i = 0; i < mi->body->local_count+1+mi->body->localresultcount; i++)
 		{
 			cc->localslots[i] = &cc->locals[i];
 		}
@@ -447,7 +463,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			cc->locals[i+1]=asAtomHandler::undefinedAtom;
 		}
 	}
-	memset(cc->locals+args_len+1,ATOMTYPE_UNDEFINED_BIT,(mi->body->local_count+2-(args_len))*sizeof(asAtom));
+	memset(cc->locals+args_len+1,ATOMTYPE_UNDEFINED_BIT,(mi->body->local_count+mi->body->localresultcount-(args_len))*sizeof(asAtom));
 	if(mi->needsArgs())
 	{
 		assert_and_throw(cc->mi->body->local_count>args_len);
@@ -491,19 +507,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 				}
 				else
 				{
-					if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
-					{
-						ABCVm::preloadFunction(this);
-						mi->body->codeStatus = method_body_info::PRELOADED;
-						cc->exec_pos = mi->body->preloadedcode.data();
-						cc->localslots = new asAtom*[mi->body->localconstantslots.size()+mi->body->local_count+1+2];
-						for (uint32_t i = 0; i < mi->body->local_count+1+2; i++)
-						{
-							cc->localslots[i] = &cc->locals[i];
-						}
-					}
 					// fill additional locals with slots of objects that don't change during execution
-					int i = mi->body->local_count+1+2;
+					int i = mi->body->local_count+1+mi->body->localresultcount;
 					for (auto it = mi->body->localconstantslots.begin(); it != mi->body->localconstantslots.end(); it++)
 					{
 						assert(it->local_pos < (mi->numArgs()-mi->numOptions())+1);

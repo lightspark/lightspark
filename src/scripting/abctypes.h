@@ -317,7 +317,7 @@ struct localconstantslot
 
 struct method_body_info
 {
-	method_body_info():hit_count(0),codeStatus(ORIGINAL){}
+	method_body_info():localresultcount(0),hit_count(0),codeStatus(ORIGINAL){}
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -327,6 +327,7 @@ struct method_body_info
 	std::vector<exception_info_abc> exceptions;
 	u30 trait_count;
 	std::vector<traits_info> traits;
+	uint16_t localresultcount;
 	//The hit_count belongs here, since it is used to manipulate the code
 	uint16_t hit_count;
 	//The code status

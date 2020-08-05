@@ -878,11 +878,7 @@ void ABCVm::abc_setlocal(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << asAtomHandler::toDebugString(*obj) );
-	if (i > context->mi->body->local_count)
-	{
-		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
-		return;
-	}
+	assert(i <= context->mi->body->local_count+1+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
 		ASATOM_DECREF(context->locals[i]);

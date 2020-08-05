@@ -568,8 +568,8 @@ void ABCVm::abc_pushcachedconstant(call_context* context)
 void ABCVm::abc_pushcachedslot(call_context* context)
 {
 	uint32_t t = (++(context->exec_pos))->data;
-	assert(t < context->mi->body->localconstantslots.size()+context->mi->body->local_count+1+2);
-	asAtom a = CONTEXT_GETLOCAL(context,t);
+	assert(t < context->mi->body->localconstantslots.size());
+	asAtom a = *(context->localslots[context->mi->body->local_count+1+context->mi->body->localresultcount+t]);
 	LOG_CALL("pushcachedslot "<<t<<" "<<asAtomHandler::toDebugString(a));
 	ASATOM_INCREF(a);
 	RUNTIME_STACK_PUSH(context,a);
@@ -2390,7 +2390,7 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL(_("setProperty_i_lll ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL(_("setProperty_i_lll ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value)<<" "<<instrptr->local_pos1);
 
 	if(asAtomHandler::isNull(obj))
 	{
@@ -2437,12 +2437,8 @@ void ABCVm::abc_setlocal_local(call_context* context)
 	uint32_t i = ((context->exec_pos)++)->data>>OPCODE_SIZE;
 
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	LOG_CALL( _("setLocal_l n ") << i << _(": ") << asAtomHandler::toDebugString(obj) );
-	if (i > context->mi->body->local_count)
-	{
-		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
-		return;
-	}
+	LOG_CALL( _("setLocal_l n ") << i << _(": ") << asAtomHandler::toDebugString(obj) <<" "<<instrptr->local_pos1);
+	assert(i <= context->mi->body->local_count+1+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(obj))
 	{
 		ASATOM_INCREF(obj);
@@ -3008,7 +3004,10 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 			}
 			else
+			{
+				LOG_CALL("getProperty_sll " << *name << ' ' << obj->toDebugString());
 				ASATOM_INCREF(prop);
+			}
 
 		}
 		if(asAtomHandler::isInvalid(prop))
@@ -3322,7 +3321,6 @@ void ABCVm::abc_callFunctionSyntheticMultiArgs_constant(call_context* context)
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
-extern bool incallgrind;
 void ABCVm::abc_callFunctionSyntheticMultiArgs_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
@@ -3875,7 +3873,6 @@ void ABCVm::abc_convert_b_local_localresult(call_context* context)
 }
 void ABCVm::abc_increment_local(call_context* context)
 {
-	//increment
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL("increment_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
 	asAtomHandler::increment(res,context->mi->context->root->getSystemState());
@@ -3884,7 +3881,6 @@ void ABCVm::abc_increment_local(call_context* context)
 }
 void ABCVm::abc_increment_local_localresult(call_context* context)
 {
-	//increment
 	LOG_CALL("increment_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	if (context->exec_pos->local_pos3-1 != context->exec_pos->local_pos1)
@@ -3895,15 +3891,15 @@ void ABCVm::abc_increment_local_localresult(call_context* context)
 }
 void ABCVm::abc_decrement_local(call_context* context)
 {
-	//decrement
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	LOG_CALL("decrement_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
 	asAtomHandler::decrement(res,context->mi->context->root->getSystemState());
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_decrement_local_localresult(call_context* context)
 {
-	//decrement
+	LOG_CALL("decrement_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	if (context->exec_pos->local_pos3-1 != context->exec_pos->local_pos1)
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1));
@@ -5086,7 +5082,7 @@ void ABCVm::abc_increment_i_local(call_context* context)
 }
 void ABCVm::abc_increment_i_local_localresult(call_context* context)
 {
-	LOG_CALL("increment_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1)));
+	LOG_CALL("increment_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),res);
@@ -5203,3 +5199,23 @@ void ABCVm::abc_declocal_i_optimized(call_context* context)
 	LOG_CALL( _("decLocal_i ") << t );
 	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->mi->context->root->getSystemState());
 }
+void ABCVm::abc_dup_local(call_context* context)
+{
+	LOG_CALL("dup_l "<<context->exec_pos->local_pos1<<" "<<(context->exec_pos->local_pos3-1));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASATOM_INCREF(res);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_dup_local_localresult(call_context* context)
+{
+	LOG_CALL("dup_ll "<<context->exec_pos->local_pos1<<" "<<(context->exec_pos->local_pos3-1));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASATOM_INCREF(res);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+

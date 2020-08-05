@@ -1518,15 +1518,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		if(methods[method_body[i].method].body!=NULL)
 			throw ParseException("Duplicated body for function");
 		else
-		{
 			methods[method_body[i].method].body=&method_body[i];
-			methods[method_body[i].method].cc.locals = new asAtom[methods[method_body[i].method].body->local_count+1+2]; // +2, because we need two more elements to store result of optimized operations
-			methods[method_body[i].method].cc.stack = new asAtom[methods[method_body[i].method].body->max_stack+1];
-			methods[method_body[i].method].cc.scope_stack = new asAtom[methods[method_body[i].method].body->max_scope_depth];
-			methods[method_body[i].method].cc.scope_stack_dynamic = new bool[methods[method_body[i].method].body->max_scope_depth];
-			methods[method_body[i].method].cc.max_stackp=methods[method_body[i].method].cc.stack+methods[method_body[i].method].cc.mi->body->max_stack;
-			methods[method_body[i].method].cc.lastlocal = methods[method_body[i].method].cc.locals+methods[method_body[i].method].cc.mi->body->local_count+1+2;
-		}
 	}
 
 	hasRunScriptInit.resize(scripts.size(),false);

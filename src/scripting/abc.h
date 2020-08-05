@@ -672,6 +672,8 @@ private:
 	static void abc_pushnan(call_context* context);
 	static void abc_pop(call_context* context);
 	static void abc_dup(call_context* context);
+	static void abc_dup_local(call_context* context);
+	static void abc_dup_local_localresult(call_context* context);
 	static void abc_swap(call_context* context);
 	static void abc_pushstring(call_context* context);
 	static void abc_pushint(call_context* context);

@@ -3686,6 +3686,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, SystemState *sys, asAtom &v2)
 				}
 				case ATOM_STRINGID:
 					return (v2.uintval>>3) == (a.uintval>>3);
+				case ATOM_INTEGER:
+				case ATOM_UINTEGER:
+					return isEqual(v2,sys,a);
 				default:
 					return isEqual(v2,sys,a);
 			}
@@ -3711,6 +3714,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, SystemState *sys, asAtom &v2)
 				}
 				case ATOM_STRINGID:
 					return toString(a,sys) == toString(v2,sys);
+				case ATOM_INTEGER:
+				case ATOM_UINTEGER:
+					return isEqual(v2,sys,a);
 				default:
 					break;
 			}

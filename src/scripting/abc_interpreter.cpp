@@ -4116,7 +4116,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									{
 										if (canCallFunctionDirect(state.operandlist.back(),name))
 										{
-											if (v && asAtomHandler::is<IFunction>(v->var))
+											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
 											{
 												if (opcode == 0x46)
 													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true);
@@ -4184,7 +4184,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											if (v)
+											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
 												{
@@ -4262,7 +4262,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											uint32_t oppos = state.preloadedcode.size()-1-argcount;
 											if (canCallFunctionDirect((*it),name))
 											{
-												if (v)
+												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
 												{
 													if (asAtomHandler::is<SyntheticFunction>(v->var))
 													{

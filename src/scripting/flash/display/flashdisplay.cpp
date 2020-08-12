@@ -1863,8 +1863,6 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	if (!this->isOnStage())
-		return;
 	std::map<uint32_t,asAtom> m;
 	if (dispatcher == this)
 	{
@@ -1876,6 +1874,8 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			}
 			if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
 			{
+				if (!this->isOnStage())
+					return;
 				if (!this->state.explicit_FP)
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 			}
@@ -1886,6 +1886,8 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		}
 		if (e->type == "enterFrame")
 		{
+			if (!this->isOnStage())
+				return;
 			if (!this->state.explicit_FP)
 			{
 				asAtom func=asAtomHandler::invalidAtom;
@@ -1928,6 +1930,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	actions = clipactions;
 	if (this->actions.AllEventFlags.ClipEventMouseDown ||
 			this->actions.AllEventFlags.ClipEventMouseMove ||
+			this->actions.AllEventFlags.ClipEventPress ||
 			this->actions.AllEventFlags.ClipEventMouseUp)
 	{
 		setMouseEnabled(true);

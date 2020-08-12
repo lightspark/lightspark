@@ -1798,10 +1798,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			clearOperands(state,false,nullptr,checkchanged);
 			break;
 	}
-	while (res && (state.mi->body->localresultcount == 0 || localresultused == state.mi->body->localresultcount))
+	while (res && (localresultused >= state.mi->body->localresultcount))
 	{
 		state.mi->body->localresultcount++;
-		state.localtypes.push_back(restype);
+		state.localtypes.push_back(localresultused == state.mi->body->localresultcount ? restype : nullptr);
 		state.defaultlocaltypes.push_back(nullptr);
 		state.defaultlocaltypescacheable.push_back(true);
 	}
@@ -2102,15 +2102,15 @@ void addCachedSlot(preloadstate& state,method_info* mi, uint32_t localpos, uint3
 	state.preloadedcode.push_back(value);
 	state.operandlist.push_back(operands(OP_CACHED_SLOT,resulttype,value,2,state.preloadedcode.size()-2));
 }
-void setdefaultlocaltype(preloadstate& state,uint32_t t,method_info* mi,Class_base* c)
+void setdefaultlocaltype(preloadstate& state,uint32_t t,Class_base* c)
 {
-	if (c==nullptr)
+	if (c==nullptr && t < state.defaultlocaltypescacheable.size())
 	{
 		state.defaultlocaltypes[t] = nullptr;
 		state.defaultlocaltypescacheable[t]=false;
 		return;
 	}
-	if (t < mi->body->local_count+mi->body->localresultcount && state.defaultlocaltypescacheable[t])
+	if (t < state.defaultlocaltypescacheable.size() && state.defaultlocaltypescacheable[t])
 	{
 		if (state.defaultlocaltypes[t] == nullptr)
 			state.defaultlocaltypes[t] = c;
@@ -2201,9 +2201,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			};
 	Class_base* currenttype=nullptr;
 	memorystream codejumps(mi->body->code.data(), code_len);
+	uint8_t opcode=0;
 	while(!codejumps.atend())
 	{
-		uint8_t opcode = codejumps.readbyte();
+		uint8_t prevopcode=opcode;
+		opcode = codejumps.readbyte();
 		if (simple_getter_opcode_pos != UINT32_MAX && opcode && opcode == simple_getter_opcodes[simple_getter_opcode_pos])
 			++simple_getter_opcode_pos;
 		else
@@ -2308,7 +2310,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				uint32_t t = codejumps.readu30();
 				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,mi,currenttype);
+				setdefaultlocaltype(state,t,currenttype);
 				currenttype=nullptr;
 				break;
 			}
@@ -2317,7 +2319,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd6://setlocal_2
 			case 0xd7://setlocal_3
 				state.unchangedlocals.erase(opcode-0xd4);
-				setdefaultlocaltype(state,opcode-0xd4,mi,currenttype);
+				setdefaultlocaltype(state,opcode-0xd4,currenttype);
 				currenttype=nullptr;
 				break;
 			case 0x92://inclocal
@@ -2325,7 +2327,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				uint32_t t = codejumps.readu30();
 				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,mi,Class<Number>::getRef(function->getSystemState()).getPtr());
+				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
 				currenttype=nullptr;
 				break;
 			}
@@ -2338,7 +2340,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				uint32_t t = codejumps.readu30();
 				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,mi,Class<Integer>::getRef(function->getSystemState()).getPtr());
+				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
 				currenttype=nullptr;
 				break;
 			}
@@ -2368,8 +2370,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			case 0x0f://ifnge
-			case 0x11://iftrue
-			case 0x12://iffalse
 			case 0x13://ifeq
 			case 0x14://ifne
 			case 0x15://iflt
@@ -2381,6 +2381,50 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				state.jumptargets[p1]++;
+				jumppoints.insert(make_pair(p,p1));
+				currenttype=nullptr;
+				break;
+			}
+			case 0x11://iftrue
+			{
+				int32_t p = codejumps.tellg();
+				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				if (p1 > p && prevopcode==0x26) //pushtrue
+				{
+					int32_t nextreachable = p1;
+					// find the first jump target after the current position
+					auto it = state.jumptargets.begin();
+					while (it != state.jumptargets.end() && it->first < nextreachable)
+					{
+						if (it->first > p && it->first <nextreachable)
+							nextreachable = it->first;
+						it++;
+					}
+					unreachabletargets[p] = nextreachable;
+				}
+				state.jumptargets[p1]++;
+				jumppoints.insert(make_pair(p,p1));
+				currenttype=nullptr;
+				break;
+			}
+			case 0x12://iffalse
+			{
+				int32_t p = codejumps.tellg();
+				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				if (p1 > p && prevopcode==0x27) //pushfalse
+				{
+					int32_t nextreachable = p1;
+					// find the first jump target after the current position
+					auto it = state.jumptargets.begin();
+					while (it != state.jumptargets.end() && it->first < nextreachable)
+					{
+						if (it->first > p && it->first <nextreachable)
+							nextreachable = it->first;
+						it++;
+					}
+					unreachabletargets[p] = nextreachable;
+				}
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				currenttype=nullptr;
@@ -2527,6 +2571,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	bool opcode_skipped=false;
 	bool coercereturnvalue=false;
 	auto itcurEx = mi->body->exceptions.begin();
+	opcode=0;
 	while(!code.atend())
 	{
 		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -2535,7 +2580,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			typestack.push_back(typestackentry(nullptr,false));
 			itcurEx++;
 		}
-		uint8_t opcode = code.readbyte();
+		uint8_t prevopcode=opcode;
+		opcode = code.readbyte();
 		//LOG(LOG_INFO,"preload opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<hex<<(int)opcode);
 		if (opcode_skipped)
 			opcode_skipped=false;
@@ -2881,7 +2927,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
 				uint32_t t =code.readu30();
-				multiname* name=mi->context->getMultiname(t,NULL);
+				multiname* name=mi->context->getMultiname(t,nullptr);
 				if (!name || !name->isStatic)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method
@@ -3523,8 +3569,30 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
+				int j = code.reads24();
 				if (state.jumptargets.find(p) == state.jumptargets.end())
 				{
+					// iftrue following pushtrue is always true, so the following code is unreachable
+					if (j > 0 && prevopcode==0x26) //pushtrue
+					{
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						// skip unreachable code
+						while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
+							code.readbyte();
+						auto it = state.jumptargets.find(code.tellg()+1);
+						if (it != state.jumptargets.end() && it->second > 1)
+							state.jumptargets[code.tellg()+1]--;
+						else
+							state.jumptargets.erase(code.tellg()+1);
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						opcode_skipped=true;
+						// remove pushfalse
+						assert(state.operandlist.size() > 0);
+						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
+						clearOperands(state,true,&lastlocalresulttype);
+						break;
+					}
 					if (dup_indicator)
 					{
 						state.operandlist.back().removeArg(state);
@@ -3536,7 +3604,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
-				jumppositions[state.preloadedcode.size()-1] = code.reads24();
+				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -3545,8 +3613,30 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
+				int j = code.reads24();
 				if (state.jumptargets.find(p) == state.jumptargets.end())
 				{
+					// iffalse following pushfalse is always true, so the following code is unreachable
+					if (j > 0 && prevopcode==0x27) //pushfalse
+					{
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						// skip unreachable code
+						while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
+							code.readbyte();
+						auto it = state.jumptargets.find(code.tellg()+1);
+						if (it != state.jumptargets.end() && it->second > 1)
+							state.jumptargets[code.tellg()+1]--;
+						else
+							state.jumptargets.erase(code.tellg()+1);
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						opcode_skipped=true;
+						// remove pushfalse
+						assert(state.operandlist.size() > 0);
+						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
+						clearOperands(state,true,&lastlocalresulttype);
+						break;
+					}
 					if (dup_indicator)
 					{
 						state.operandlist.back().removeArg(state);
@@ -3558,7 +3648,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
-				jumppositions[state.preloadedcode.size()-1] = code.reads24();
+				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -4956,6 +5046,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 		itexc->target = state.oldnewpositions[itexc->target];
 		itexc++;
 	}
+	assert(mi->body->preloadedcode.size()==0);
 	for (auto itc = state.preloadedcode.begin(); itc != state.preloadedcode.end(); itc++)
 	{
 		mi->body->preloadedcode.push_back((*itc).pcode);

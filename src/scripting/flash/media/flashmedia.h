@@ -28,11 +28,10 @@
 #include "backends/netutils.h"
 #include "scripting/flash/display/DisplayObject.h"
 
-class AudioStream;
-
 namespace lightspark
 {
 
+class AudioStream;
 class AudioDecoder;
 class NetStream;
 class StreamCache;

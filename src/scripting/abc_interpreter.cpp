@@ -1480,6 +1480,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				keepchecking=false;
 				break;
 			}
+			case 0x08://kill
 			case 0x82://coerce_a
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -2146,6 +2147,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	std::map<int32_t,int32_t> jumpstartpositions;
 	std::map<int32_t,int32_t> switchpositions;
 	std::map<int32_t,int32_t> switchstartpositions;
+	
+	// this is used in a simple mechanism to detect if kill opcodes can be skipped
+	// we just check if no getlocal opcode occurs after the kill
+	std::set<uint32_t> skippablekills;
 
 	// first pass:
 	// - store all jump target points
@@ -2220,7 +2225,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x04://getsuper
 			case 0x05://setsuper
 			case 0x06://dxns
-			case 0x08://kill
 			case 0x40://newfunction
 			case 0x41://call
 			case 0x42://construct
@@ -2236,7 +2240,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x5f://finddef
 			case 0x60://getlex
 			case 0x61://setproperty
-			case 0x62://getlocal
 			case 0x65://getscopeobject
 			case 0x66://getproperty
 			case 0x68://initproperty
@@ -2248,6 +2251,27 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x86://astype
 			case 0xb2://istype
 				codejumps.readu30();
+				currenttype=nullptr;
+				break;
+			case 0x08://kill
+			{
+				uint32_t t = codejumps.readu30();
+				skippablekills.insert(t);
+				currenttype=nullptr;
+				break;
+			}
+			case 0x62://getlocal
+			{
+				uint32_t t = codejumps.readu30();
+				skippablekills.erase(t);
+				currenttype=nullptr;
+				break;
+			}
+			case 0xd0://getlocal_0
+			case 0xd1://getlocal_1
+			case 0xd2://getlocal_2
+			case 0xd3://getlocal_3
+				skippablekills.erase(opcode-0xd0);
 				currenttype=nullptr;
 				break;
 			case 0x80://coerce
@@ -2777,6 +2801,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x08://kill
+			{
+				int32_t p = code.tellg();
+				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				if (state.jumptargets.find(p) != state.jumptargets.end())
+					state.jumptargets[p+1]++;
+				uint32_t t = code.readu30();
+				if (skippablekills.count(t))
+				{
+					opcode_skipped=true;
+				}
+				else
+				{
+					state.preloadedcode.push_back((uint32_t)opcode);
+					state.oldnewpositions[p] = (int32_t)state.preloadedcode.size();
+					state.preloadedcode.push_back(t);
+				}
+				setOperandModified(state,OP_LOCAL,t);
+				
+				break;
+			}
 			case 0x92://inclocal
 			case 0x94://declocal
 			{
@@ -3322,7 +3366,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETSLOT,opcode,code))
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data |=t<<OPCODE_SIZE;
 				else
+				{
 					state.preloadedcode.push_back(t);
+					clearOperands(state,true,&lastlocalresulttype);
+				}
 				break;
 			}
 			case 0x80://coerce

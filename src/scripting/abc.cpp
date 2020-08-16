@@ -1239,6 +1239,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				tiny_string name = root->getSystemState()->getStringFromUniqueId(getString(td->name));
 				for(size_t i=0;i<m->param_types.size();++i)
 				{
+					ret->templateinstancenames.push_back(getMultiname(m->param_types[i],nullptr));
 					multiname_info* p=&constant_pool.multinames[m->param_types[i]];
 					name += "$";
 					tiny_string nsname;

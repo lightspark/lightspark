@@ -954,8 +954,17 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 	{
 		if (mn->ns.size() >= 1 && mn->ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 		{
-			QName qname(mn->name_s_id,mn->ns[0].nsNameId);
-			typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
+			if (mn->templateinstancenames.size() == 1)
+			{
+				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context);
+				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),instancetype,context->root->applicationDomain).getPtr();
+			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname with "<<mn->templateinstancenames.size()<<" instance types");
+				QName qname(mn->name_s_id,mn->ns[0].nsNameId);
+				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
+			}
 		}
 		if (!typeObject)
 			LOG(LOG_ERROR,"not found:"<<*mn);

@@ -531,15 +531,15 @@ public:
 	static FORCE_INLINE void decrement(asAtom& a,SystemState* sys);
 	static FORCE_INLINE void increment_i(asAtom& a,SystemState* sys);
 	static FORCE_INLINE void decrement_i(asAtom& a,SystemState* sys);
-	static bool add(asAtom& a,asAtom& v2, SystemState *sys);
-	static void addreplace(asAtom& ret, SystemState* sys, asAtom &v1, asAtom &v2);
+	static bool add(asAtom& a,asAtom& v2, SystemState *sys,bool forceint);
+	static void addreplace(asAtom& ret, SystemState* sys, asAtom &v1, asAtom &v2,bool forceint);
 	static FORCE_INLINE void bitnot(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void subtract(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void subtractreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2);
-	static FORCE_INLINE void multiply(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2);
-	static FORCE_INLINE void divide(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void dividereplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2);
+	static FORCE_INLINE void subtract(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
+	static FORCE_INLINE void subtractreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2,bool forceint);
+	static FORCE_INLINE void multiply(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
+	static FORCE_INLINE void multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint);
+	static FORCE_INLINE void divide(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
+	static FORCE_INLINE void dividereplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2,bool forceint);
 	static FORCE_INLINE void modulo(asAtom& a,SystemState* sys,asAtom& v2);
 	static FORCE_INLINE void moduloreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2);
 	static FORCE_INLINE void lshift(asAtom& a,SystemState* sys,asAtom& v1);
@@ -1940,7 +1940,7 @@ FORCE_INLINE void asAtomHandler::bitnot(asAtom& a,SystemState* sys)
 	setInt(a,sys,~i1);
 }
 
-FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
 {
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -1950,7 +1950,7 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2)
 	
 		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
 		int64_t res = num1-num2;
-		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(a,sys,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(a,sys,res);
@@ -1963,10 +1963,13 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2)
 		number_t num1=toNumber(a);
 	
 		LOG_CALL(_("subtract ") << num1 << '-' << num2);
-		setNumber(a,sys,num1-num2);
+		if (forceint)
+			setInt(a,sys,num1-num2);
+		else
+			setNumber(a,sys,num1-num2);
 	}
 }
-FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,const asAtom &v1, const asAtom &v2)
+FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,const asAtom &v1, const asAtom &v2, bool forceint)
 {
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -1977,7 +1980,7 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		LOG_CALL(_("subtractreplaceI ") << num1 << '-' << num2);
 		ASATOM_DECREF(ret);
 		int64_t res = num1-num2;
-		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(ret,sys,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(ret,sys,res);
@@ -1991,12 +1994,18 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 	
 		ASObject* o = getObject(ret);
 		LOG_CALL(_("subtractreplace ")  << num1 << '-' << num2);
-		if (replaceNumber(ret,sys,num1-num2) && o)
+		if (forceint)
+		{
+			setInt(ret,sys,num1-num2);
+			if (o)
+				o->decRef();
+		}
+		else if (replaceNumber(ret,sys,num1-num2) && o)
 			o->decRef();
 	}
 }
 
-FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
 {
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -2006,7 +2015,7 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2)
 	
 		LOG_CALL(_("multiplyI ") << num1 << '*' << num2);
 		int64_t res = num1*num2;
-		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(a,sys,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(a,sys,res);
@@ -2018,11 +2027,14 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2)
 		double num1=toNumber(v2);
 		double num2=toNumber(a);
 		LOG_CALL(_("multiply ")  << num1 << '*' << num2);
-		setNumber(a,sys,num1*num2);
+		if (forceint)
+			setInt(a,sys,num1*num2);
+		else 
+			setNumber(a,sys,num1*num2);
 	}
 }
 
-FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2)
+FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint)
 {
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -2033,7 +2045,8 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		LOG_CALL(_("multiplyreplaceI ") << num1 << '*' << num2);
 		ASATOM_DECREF(ret);
 		int64_t res = num1*num2;
-		if (res > INT32_MIN>>3 && res < INT32_MAX>>3)
+		
+		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(ret,sys,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(ret,sys,res);
@@ -2046,12 +2059,18 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		double num2=toNumber(v1);
 		ASObject* o = getObject(ret);
 		LOG_CALL(_("multiplyreplace ")  << num1 << '*' << num2);
-		if (replaceNumber(ret,sys,num1*num2) && o)
+		if (forceint)
+		{
+			setInt(ret,sys,num1*num2);
+			if (o)
+				o->decRef();
+		}
+		else if (replaceNumber(ret,sys,num1*num2) && o)
 			o->decRef();
 	}
 }
 
-FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
 {
 	double num1=toNumber(a);
 	double num2=toNumber(v2);
@@ -2068,10 +2087,12 @@ FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2)
 			setNumber(a,sys, needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
 		}
 	}
+	else if (forceint)
+		setInt(a,sys,num1/num2);
 	else
 		setNumber(a,sys,num1/num2);
 }
-FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,const asAtom& v1, const asAtom &v2)
+FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint)
 {
 	double num1=toNumber(v1);
 	double num2=toNumber(v2);
@@ -2094,7 +2115,13 @@ FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,cons
 	
 	ASObject* o = getObject(ret);
 	LOG_CALL(_("dividereplace ")  << num1 << '/' << num2);
-	if (replaceNumber(ret,sys,res) && o)
+	if (forceint)
+	{
+		setInt(ret,sys,num1/num2);
+		if (o)
+			o->decRef();
+	}
+	else if (replaceNumber(ret,sys,res) && o)
 		o->decRef();
 	
 }

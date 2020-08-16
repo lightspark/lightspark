@@ -193,6 +193,7 @@ enum OPERANDTYPES {
 #define ABC_OP_CACHED 0x10000000 
 #define ABC_OP_NOTCACHEABLE 0x20000000 
 #define ABC_OP_COERCED 0x40000000 //indicates that the method call doesn't have to coerce the arguments to the expected type
+#define ABC_OP_FORCEINT 0x10000000 // forces the result of the arithmetic operation to be coerced to int
 #define ABC_OP_AVAILABLEBITS 0x0fffffff
 
 struct typed_opcode_handler

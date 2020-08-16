@@ -3970,7 +3970,7 @@ void ABCVm::abc_add_constant_constant(call_context* context)
 {
 	LOG_CALL("add_cc");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::add(res,*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	asAtomHandler::add(res,*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState(),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3978,7 +3978,7 @@ void ABCVm::abc_add_local_constant(call_context* context)
 {
 	LOG_CALL("add_lc");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::add(res,*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState());
+	asAtomHandler::add(res,*context->exec_pos->arg2_constant,context->mi->context->root->getSystemState(),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3986,7 +3986,7 @@ void ABCVm::abc_add_constant_local(call_context* context)
 {
 	LOG_CALL("add_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState(),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -3994,188 +3994,201 @@ void ABCVm::abc_add_local_local(call_context* context)
 {
 	LOG_CALL("add_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState(),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_constant_constant_localresult(call_context* context)
 {
 	LOG_CALL("add_ccl");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_local_constant_localresult(call_context* context)
 {
 	LOG_CALL("add_lcl");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_constant_local_localresult(call_context* context)
 {
 	LOG_CALL("add_cll");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_local_local_localresult(call_context* context)
 {
 	LOG_CALL("add_lll");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_constant_constant(call_context* context)
 {
-	//subtract
+	LOG_CALL("subtract_cc");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_local_constant(call_context* context)
 {
-	//subtract
+	LOG_CALL("subtract_lc");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
+
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_constant_local(call_context* context)
 {
-	//subtract
+	LOG_CALL("subtract_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_local_local(call_context* context)
 {
-	//subtract
+	LOG_CALL("subtract_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::subtract(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_constant_constant_localresult(call_context* context)
 {
-	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	LOG_CALL("subtract_ccl");
+	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_local_constant_localresult(call_context* context)
 {
-	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	LOG_CALL("subtract_lcl");
+	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_constant_local_localresult(call_context* context)
 {
-	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("subtract_cll");
+	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_local_local_localresult(call_context* context)
 {
-	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("subtract_lll");
+	asAtomHandler::subtractreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_constant_constant(call_context* context)
 {
-	//multiply
+	LOG_CALL("multiply_cc");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_local_constant(call_context* context)
 {
-	//multiply
+	LOG_CALL("multiply_lc");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_constant_local(call_context* context)
 {
-	//multiply
+	LOG_CALL("multiply_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_local_local(call_context* context)
 {
-	//multiply
+	LOG_CALL("multiply_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::multiply(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_constant_constant_localresult(call_context* context)
 {
-	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	LOG_CALL("multiply_ccl");
+	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_local_constant_localresult(call_context* context)
 {
-	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	LOG_CALL("multiply_lcl");
+	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_constant_local_localresult(call_context* context)
 {
-	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("multiply_cll");
+	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_local_local_localresult(call_context* context)
 {
-	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("multiply_lll");
+	asAtomHandler::multiplyreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_constant_constant(call_context* context)
 {
-	//divide
+	LOG_CALL("divide_cc");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_local_constant(call_context* context)
 {
-	//divide
+	LOG_CALL("divide_lc");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
+	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_constant_local(call_context* context)
 {
-	//divide
+	LOG_CALL("divide_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_local_local(call_context* context)
 {
-	//divide
+	LOG_CALL("divide_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::divide(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_constant_constant_localresult(call_context* context)
 {
-	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	LOG_CALL("divide_ccl");
+	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_local_constant_localresult(call_context* context)
 {
-	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	LOG_CALL("divide_lcl");
+	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_constant_local_localresult(call_context* context)
 {
-	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("divide_cll");
+	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_divide_local_local_localresult(call_context* context)
 {
-	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("divide_lll");
+	asAtomHandler::dividereplace(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3-1),context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->data & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void ABCVm::abc_modulo_constant_constant(call_context* context)

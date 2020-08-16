@@ -24,6 +24,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
+#include "scripting/toplevel/Vector.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>
@@ -1913,10 +1914,9 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 	return hasoperands;
 }
 
-bool setupInstructionTwoArguments(preloadstate& state,method_info* mi,int operator_start,int opcode,memorystream& code, bool skip_conversion,bool cancollapse,bool checklocalresult, bool resetlocaltypes, uint32_t startcodepos)
+bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opcode,memorystream& code, bool skip_conversion,bool cancollapse,bool checklocalresult, uint32_t startcodepos,Class_base* resulttype = nullptr)
 {
 	bool hasoperands = state.jumptargets.find(startcodepos) == state.jumptargets.end() && state.operandlist.size() >= 2;
-	Class_base* resulttype = nullptr;
 	bool op1isconstant=false;
 	bool op2isconstant=false;
 	if (hasoperands)
@@ -1929,41 +1929,41 @@ bool setupInstructionTwoArguments(preloadstate& state,method_info* mi,int operat
 			(--it)->removeArg(state);// remove arg1
 			it = state.operandlist.end();
 			--it;
-			asAtom* op2 = mi->context->getConstantAtom((it)->type,(it)->index);
+			asAtom* op2 = state.mi->context->getConstantAtom((it)->type,(it)->index);
 			--it;
-			asAtom* op1 = mi->context->getConstantAtom((it)->type,(it)->index);
+			asAtom* op1 = state.mi->context->getConstantAtom((it)->type,(it)->index);
 			asAtom res = *op1;
 			switch (operator_start)
 			{
 				case ABC_OP_OPTIMZED_SUBTRACT:
-					asAtomHandler::subtract(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::subtract(res,state.mi->context->root->getSystemState(),*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_MULTIPLY:
-					asAtomHandler::multiply(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::multiply(res,state.mi->context->root->getSystemState(),*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_DIVIDE:
-					asAtomHandler::divide(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::divide(res,state.mi->context->root->getSystemState(),*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_MODULO:
-					asAtomHandler::modulo(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::modulo(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_LSHIFT:
-					asAtomHandler::lshift(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::lshift(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_RSHIFT:
-					asAtomHandler::rshift(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::rshift(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_URSHIFT:
-					asAtomHandler::urshift(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::urshift(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITAND:
-					asAtomHandler::bit_and(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_and(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITOR:
-					asAtomHandler::bit_or(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_or(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITXOR:
-					asAtomHandler::bit_xor(res,mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_xor(res,state.mi->context->root->getSystemState(),*op2);
 					break;
 				default:
 					LOG(LOG_ERROR,"setupInstructionTwoArguments: trying to collapse invalid opcode:"<<hex<<operator_start);
@@ -1973,11 +1973,11 @@ bool setupInstructionTwoArguments(preloadstate& state,method_info* mi,int operat
 			state.operandlist.pop_back();
 			if (asAtomHandler::isObject(res))
 				asAtomHandler::getObjectNoCheck(res)->setConstant();
-			uint32_t value = mi->context->addCachedConstantAtom(res);
+			uint32_t value = state.mi->context->addCachedConstantAtom(res);
 			state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 			state.preloadedcode.push_back(value);
-			state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,mi->context->root->getSystemState()), value,2,state.preloadedcode.size()-2));
+			state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,state.mi->context->root->getSystemState()), value,2,state.preloadedcode.size()-2));
 			return true;
 		}
 		if (cancollapse)
@@ -2005,35 +2005,45 @@ bool setupInstructionTwoArguments(preloadstate& state,method_info* mi,int operat
 			case ABC_OP_OPTIMZED_ADD:
 				// if both operands are numeric, the result is always a number, so we can skip convert_d opcode
 				skip_conversion = 
-						(op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op1type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()) &&
-						(op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() || op2type == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr());
+						(op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() || op1type == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()) &&
+						(op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() || op2type == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr());
 				if (skip_conversion)
 				{
-					if (op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
-						resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+					if (op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 					else
-						resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
+						resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				}
+				if (code.peekbyte() == 0x73)//convert_i
+				{
+					state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				}
 				break;
 			case ABC_OP_OPTIMZED_MODULO:
-				if (op1type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
-					resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+				if (op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				else
-					resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
+					resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_SUBTRACT:
 			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_DIVIDE:
-				resulttype = Class<Number>::getRef(mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				if (code.peekbyte() == 0x73)//convert_i
+				{
+					state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				}
 				break;
 			case ABC_OP_OPTIMZED_ADD_I:
 			case ABC_OP_OPTIMZED_LSHIFT:
 			case ABC_OP_OPTIMZED_RSHIFT:
 			case ABC_OP_OPTIMZED_BITOR:
-				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
-				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				// operators are always transformed to uint, so we can do that here if the operators are constants
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int=asAtomHandler::toUInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_constant);
@@ -2042,7 +2052,7 @@ bool setupInstructionTwoArguments(preloadstate& state,method_info* mi,int operat
 				break;
 			case ABC_OP_OPTIMZED_BITAND:
 			case ABC_OP_OPTIMZED_BITXOR:
-				resulttype = Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				// operators are always transformed to int, so we can do that here if the operators are constants
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int=asAtomHandler::toInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_constant);
@@ -2163,7 +2173,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	{
 		state.unchangedlocals.insert(i);
 	}
-	
+	if (!function->getMethodInfo()->returnType)
+		function->checkParamTypes();
 	state.localtypes.push_back(function->inClass);
 	state.defaultlocaltypes.push_back(function->inClass);
 	state.defaultlocaltypescacheable.push_back(true);
@@ -4270,7 +4281,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,p)) ||
-									   ((opcode == 0x46 && setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,true,false,nullptr,p,true))))
+									   ((opcode == 0x46 && setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS,opcode,code,true,false,resulttype,p,true))))
 									{
 										state.preloadedcode.push_back(t);
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
@@ -4349,7 +4360,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,true,p))))
+									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,p))))
 									{
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|=(skipcoerce ? ABC_OP_COERCED : 0);
 										state.preloadedcode.push_back(t);
@@ -4577,7 +4588,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 								}
 							}
-							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT) && state.operandlist.back().objtype)
+							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT) && state.operandlist.back().objtype)
 							{
 								if (canCallFunctionDirect(state.operandlist.back(),name))
 								{
@@ -4594,7 +4605,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										break;
 									}
 								}
-
 								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized())
 								{
 									if (state.operandlist.back().objtype->is<Class_inherit>())
@@ -4660,10 +4670,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							break;
 						}
 						case 1:
+						{
+							Class_base* resulttype = nullptr;
+							if (state.operandlist.size() > 1
+									&& state.operandlist[state.operandlist.size()-2].objtype
+									&& dynamic_cast<TemplatedClass<Vector>*>(state.operandlist[state.operandlist.size()-2].objtype))
+							{
+								TemplatedClass<Vector>* cls=state.operandlist[state.operandlist.size()-2].objtype->as<TemplatedClass<Vector>>();
+								resulttype = cls->getTypes().size() > 0 ? (Class_base*)cls->getTypes()[0] : nullptr;;
+							}
 							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT)
 									&& state.operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr())
 							{
-								addname = !setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,false,false,true,true,p);
+								addname = !setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,false,false,true,p,resulttype);
 							}
 							else if (state.operandlist.size() == 0 && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(function->getSystemState()).getPtr())
 							{
@@ -4672,10 +4691,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								addname=false;
 							}
 							else
-								setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,false,false,true,true,p);
+								setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GETPROPERTY,opcode,code,false,false,true,p,resulttype);
 							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-							typestack.push_back(typestackentry(nullptr,false));
+							typestack.push_back(typestackentry(resulttype,false));
 							break;
+						}
 						default:
 							state.preloadedcode.push_back((uint32_t)opcode);
 							clearOperands(state,true,&lastlocalresulttype);
@@ -4696,7 +4716,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x73://convert_i
-				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTI,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
@@ -4756,6 +4776,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xa0://add
+			{
 				removetypestack(typestack,2);
 				if (state.operandlist.size() > 1)
 				{
@@ -4765,86 +4786,122 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						it++;
 						if(it->objtype && it->objtype==Class<Integer>::getRef(function->getSystemState()).getPtr())
 						{
-							setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_ADD_I,0xc5 //add_i
-														 ,code,false,false,true,true,code.tellg());
+							setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD_I,0xc5 //add_i
+														 ,code,false,false,true,code.tellg());
 							typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 							break;
 						}
 					}
 				}
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_ADD,opcode,code,false,false,true,true,code.tellg());
-				typestack.push_back(typestackentry(nullptr,false));
+				Class_base* resulttype = nullptr;
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD,opcode,code,false,false,true,code.tellg()))
+				{
+					if (code.peekbyte()==0x73)//convert_i
+					{
+						state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					}
+				}
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
+			}
 			case 0xa1://subtract
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,true,true,true,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
+			{
+				Class_base* resulttype = nullptr;
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg()))
+				{
+					if (code.peekbyte()==0x73)//convert_i
+					{
+						state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					}
+				}
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
+			}
 			case 0xa2://multiply
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,true,true,true,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
+			{
+				Class_base* resulttype = nullptr;
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg()))
+				{
+					if (code.peekbyte()==0x73)//convert_i
+					{
+						state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					}
+				}
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
+			}
 			case 0xa3://divide
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_DIVIDE,opcode,code,true,true,true,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
+			{
+				Class_base* resulttype = nullptr;
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg()))
+				{
+					if (code.peekbyte()==0x73)//convert_i
+					{
+						state.preloadedcode.back().pcode.data |= ABC_OP_FORCEINT;
+						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					}
+				}
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
+			}
 			case 0xa4://modulo
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_MODULO,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MODULO,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0xa5://lshift
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_LSHIFT,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LSHIFT,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xa6://rshift
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_RSHIFT,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_RSHIFT,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xa7://urshift
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_URSHIFT,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_URSHIFT,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0xa8://bitand
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_BITAND,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_BITAND,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xa9://bitor
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_BITOR,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_BITOR,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xaa://bitxor
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_BITXOR,opcode,code,true,true,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_BITXOR,opcode,code,true,true,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xab://equals
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_EQUALS,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_EQUALS,opcode,code,false,false,true,code.tellg());
 				break;
 			case 0xad://lessthan
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xae://lessequals
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xaf://greaterthan
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xb0://greaterequals
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
@@ -4900,7 +4957,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0xc5://add_i
-				setupInstructionTwoArguments(state,mi,ABC_OP_OPTIMZED_ADD_I,opcode,code,false,false,true,true,code.tellg());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD_I,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;

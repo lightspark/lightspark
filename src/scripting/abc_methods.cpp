@@ -1261,7 +1261,7 @@ void ABCVm::abc_add(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	if (asAtomHandler::add(*pval,*v2,context->mi->context->root->getSystemState()))
+	if (asAtomHandler::add(*pval,*v2,context->mi->context->root->getSystemState(),context->exec_pos->data & ABC_OP_FORCEINT))
 	{
 		ASATOM_DECREF_POINTER(v2);
 		if (o)
@@ -1276,7 +1276,7 @@ void ABCVm::abc_subtract(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::subtract(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::subtract(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->data & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1288,7 +1288,7 @@ void ABCVm::abc_multiply(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::multiply(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::multiply(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->data & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1300,7 +1300,7 @@ void ABCVm::abc_divide(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::divide(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::divide(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->data & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();

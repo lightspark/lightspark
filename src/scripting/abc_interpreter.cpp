@@ -105,7 +105,8 @@ void ABCVm::executeFunction(call_context* context)
 #endif
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution
-		abcfunctions[context->exec_pos->jumpdata.opcode](context);
+		context->exec_pos->func(context);
+		//abcfunctions[context->exec_pos->jumpdata.opcode](context);
 
 		PROF_ACCOUNT_TIME(context->mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 	}
@@ -115,7 +116,7 @@ void ABCVm::executeFunction(call_context* context)
 #undef PROF_IGNORE_TIME
 }
 
-ABCVm::abc_function ABCVm::abcfunctions[]={
+abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction, // 0x00
 	abc_bkpt,
 	abc_nop,
@@ -1522,7 +1523,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xa8://bitand
 			case 0xa9://bitor
 			case 0xaa://bitxor
-				if (localresultused<2 && argsneeded>=2)
+				if (argsneeded>=2)
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -5154,6 +5155,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	for (auto itc = state.preloadedcode.begin(); itc != state.preloadedcode.end(); itc++)
 	{
 		mi->body->preloadedcode.push_back((*itc).pcode);
+		mi->body->preloadedcode[mi->body->preloadedcode.size()-1].func = ABCVm::abcfunctions[itc->pcode.data&0x3ff];
 		// adjust cached local slots to localresultcount
 		if ((*itc).cachedslot1)
 			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1+= mi->body->local_count+1+mi->body->localresultcount;

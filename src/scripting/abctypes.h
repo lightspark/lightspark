@@ -263,8 +263,11 @@ struct method_info_simple
 	std::vector<u30> param_names;
 };
 #define OPCODE_SIZE 10 // number of bits used for opcodes
+typedef void (*abc_function)(struct call_context*);
+
 struct preloadedcodedata
 {
+	abc_function func;
 	union
 	{
 		struct

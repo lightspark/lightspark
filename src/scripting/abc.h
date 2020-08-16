@@ -582,8 +582,6 @@ private:
 	// The base to assign to the next loaded context
 	ATOMIC_INT32(nextNamespaceBase);
 
-	typedef void (*abc_function)(call_context*);
-	
 	static void abc_bkpt(call_context* context);// 0x01
 	static void abc_nop(call_context* context);
 	static void abc_throw(call_context* context);
@@ -1164,8 +1162,8 @@ private:
 
 	static void abc_invalidinstruction(call_context* context);
 
-	static abc_function abcfunctions[];
 public:
+	static abc_function abcfunctions[];
 	call_context* currentCallContext;
 
 	MemoryAccount* vmDataMemory;

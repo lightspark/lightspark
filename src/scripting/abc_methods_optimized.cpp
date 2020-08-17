@@ -1054,7 +1054,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			asAtom o = asAtomHandler::fromObjectNoPrimitive(cacheptr->cacheobj3);
 			LOG_CALL( "callProperty from cache:"<<*name<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(o)<<" "<<coercearguments);
 			if(asAtomHandler::is<IFunction>(o))
-				asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn,coercearguments);
+				asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 			else if(asAtomHandler::is<Class_base>(o))
 			{
 				asAtomHandler::as<Class_base>(o)->generator(ret,args,argsnum);
@@ -1158,7 +1158,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				cacheptr->data &= ~ABC_OP_CACHED;
 			}
 			obj = asAtomHandler::getClosureAtom(o,obj);
-			asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn,coercearguments);
+			asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 			if (!(cacheptr->data & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->isCloned)
 				asAtomHandler::as<IFunction>(o)->decRef();
 		}
@@ -1198,7 +1198,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				if(asAtomHandler::isValid(o))
 				{
 					if(asAtomHandler::is<IFunction>(o))
-						asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn,coercearguments);
+						asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 					else if(asAtomHandler::is<Class_base>(o))
 					{
 						asAtomHandler::as<Class_base>(o)->generator(ret,args,argsnum);
@@ -1230,7 +1230,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					//We now suppress special handling
 					LOG_CALL(_("Proxy::callProperty"));
 					ASATOM_INCREF(oproxy);
-					asAtomHandler::callFunction(oproxy,ret,obj,proxyArgs,argsnum+1,true,needreturn,coercearguments);
+					asAtomHandler::callFunction(oproxy,ret,obj,proxyArgs,argsnum+1,true,needreturn && coercearguments,coercearguments);
 					ASATOM_DECREF(oproxy);
 				}
 				LOG_CALL(_("End of calling proxy custom caller ") << *name);
@@ -1238,7 +1238,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			else if(asAtomHandler::isValid(o))
 			{
 				if(asAtomHandler::is<IFunction>(o))
-					asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn,coercearguments);
+					asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 				else if(asAtomHandler::is<Class_base>(o))
 				{
 					asAtomHandler::as<Class_base>(o)->generator(ret,args,argsnum);

@@ -1512,6 +1512,25 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				lastlocalpos=-1;
 				break;
 			}
+			case 0x4f://callpropvoid
+			case 0x46://callproperty
+			{
+				uint32_t t = code.peeku30FromPosition(pos);
+				uint32_t pos2 = code.skipu30FromPosition(pos);
+				uint32_t argcount = code.peeku30FromPosition(pos2);
+				if (argsneeded && argcount==0 && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
+				{
+					if (b==0x4f) //callpropvoid
+						argsneeded--;
+					pos = code.skipu30FromPosition(pos2);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				else
+					keepchecking=false;
+				lastlocalpos=-1;
+				break;
+			}
 			case 0xa0://add
 			case 0xa1://subtract
 			case 0xa2://multiply
@@ -3127,6 +3146,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										// - variable type is any or void or
 										// - contenttype is subclass of variable type or
 										// - contenttype is numeric and variable type is Number
+										// - contenttype is Number and variable type is Integer and previous opcode was arithmetic with localresult
 										int operator_start = v->isResolved && ((contenttype && contenttype == v->type) || !dynamic_cast<const Class_base*>(v->type)) ? ABC_OP_OPTIMZED_SETSLOT_NOCOERCE : ABC_OP_OPTIMZED_SETSLOT;
 										if (contenttype && v->isResolved && contenttype != v->type && dynamic_cast<const Class_base*>(v->type))
 										{
@@ -3137,7 +3157,39 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													   contenttype == Class<UInteger>::getRef(function->getSystemState()).getPtr()) &&
 													 ( vtype == Class<Number>::getRef(function->getSystemState()).getPtr()))
 												)
+											{
 												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
+											}
+											else if ( contenttype == Class<Number>::getRef(function->getSystemState()).getPtr() &&
+													( vtype == Class<Integer>::getRef(function->getSystemState()).getPtr()))
+											{
+												switch(state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data&0x3ff)
+												{
+													case ABC_OP_OPTIMZED_ADD+4:
+													case ABC_OP_OPTIMZED_ADD+5:
+													case ABC_OP_OPTIMZED_ADD+6:
+													case ABC_OP_OPTIMZED_ADD+7:
+													case ABC_OP_OPTIMZED_SUBTRACT+4:
+													case ABC_OP_OPTIMZED_SUBTRACT+5:
+													case ABC_OP_OPTIMZED_SUBTRACT+6:
+													case ABC_OP_OPTIMZED_SUBTRACT+7:
+													case ABC_OP_OPTIMZED_MULTIPLY+4:
+													case ABC_OP_OPTIMZED_MULTIPLY+5:
+													case ABC_OP_OPTIMZED_MULTIPLY+6:
+													case ABC_OP_OPTIMZED_MULTIPLY+7:
+													case ABC_OP_OPTIMZED_DIVIDE+4:
+													case ABC_OP_OPTIMZED_DIVIDE+5:
+													case ABC_OP_OPTIMZED_DIVIDE+6:
+													case ABC_OP_OPTIMZED_DIVIDE+7:
+													{
+														operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
+														state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|= ABC_OP_FORCEINT;
+														break;
+													}
+													default:
+														break;
+												}
+											}
 										}
 										setupInstructionTwoArgumentsNoResult(state,operator_start,opcode,code);
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data |=v->slotid<<OPCODE_SIZE;
@@ -4108,7 +4160,37 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							|| !typestack.back().obj->is<Class_base>() 
 							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType))))
 					{
-						coercereturnvalue = true;
+						if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+						{
+							switch(state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data&0x3ff)
+							{
+								case ABC_OP_OPTIMZED_ADD+4:
+								case ABC_OP_OPTIMZED_ADD+5:
+								case ABC_OP_OPTIMZED_ADD+6:
+								case ABC_OP_OPTIMZED_ADD+7:
+								case ABC_OP_OPTIMZED_SUBTRACT+4:
+								case ABC_OP_OPTIMZED_SUBTRACT+5:
+								case ABC_OP_OPTIMZED_SUBTRACT+6:
+								case ABC_OP_OPTIMZED_SUBTRACT+7:
+								case ABC_OP_OPTIMZED_MULTIPLY+4:
+								case ABC_OP_OPTIMZED_MULTIPLY+5:
+								case ABC_OP_OPTIMZED_MULTIPLY+6:
+								case ABC_OP_OPTIMZED_MULTIPLY+7:
+								case ABC_OP_OPTIMZED_DIVIDE+4:
+								case ABC_OP_OPTIMZED_DIVIDE+5:
+								case ABC_OP_OPTIMZED_DIVIDE+6:
+								case ABC_OP_OPTIMZED_DIVIDE+7:
+								{
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|= ABC_OP_FORCEINT;
+									break;
+								}
+								default:
+									coercereturnvalue = true;
+									break;
+							}
+						}
+						else
+							coercereturnvalue = true;
 					}
 				}
 				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,p);
@@ -4324,6 +4406,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											SyntheticFunction* f = asAtomHandler::as<SyntheticFunction>(func);
 											if (!f->getMethodInfo()->returnType)
 												f->checkParamTypes();
+											resulttype = f->getReturnType();
 										}
 									}
 									if (opcode == 0x4f && state.operandlist.size() > 1)
@@ -4808,6 +4891,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0xa1://subtract
 			{
+				removetypestack(typestack,2);
 				Class_base* resulttype = nullptr;
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg()))
 				{
@@ -4822,6 +4906,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0xa2://multiply
 			{
+				removetypestack(typestack,2);
 				Class_base* resulttype = nullptr;
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg()))
 				{
@@ -4836,6 +4921,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0xa3://divide
 			{
+				removetypestack(typestack,2);
 				Class_base* resulttype = nullptr;
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg()))
 				{

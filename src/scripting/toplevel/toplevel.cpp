@@ -588,10 +588,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 
 	if(asAtomHandler::isInvalid(ret))
 		asAtomHandler::setUndefined(ret);
-	else
-		coerceresult=true;
 
-	if (coerceresult && mi->needscoerceresult)
+	if (coerceresult || mi->needscoerceresult)
 	{
 		asAtom v = ret;
 		if (mi->returnType->coerce(getSystemState(),ret))

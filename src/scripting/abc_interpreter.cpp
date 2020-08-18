@@ -835,10 +835,10 @@ abc_function ABCVm::abcfunctions[]={
 	abc_declocal_i_optimized, // 0x2a5 ABC_OP_OPTIMZED_DECLOCAL_I
 	abc_dup_local, // 0x2a6 ABC_OP_OPTIMZED_DUP
 	abc_dup_local_localresult,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_dup_increment_local_localresult, // 0x2a8 ABC_OP_OPTIMZED_DUP_INCDEC
+	abc_dup_decrement_local_localresult,
+	abc_dup_increment_i_local_localresult,
+	abc_dup_decrement_i_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1154,6 +1154,7 @@ struct operands
 #define ABC_OP_OPTIMZED_INCLOCAL_I 0x000002a4
 #define ABC_OP_OPTIMZED_DECLOCAL_I 0x000002a5
 #define ABC_OP_OPTIMZED_DUP 0x000002a6
+#define ABC_OP_OPTIMZED_DUP_INCDEC 0x000002a8
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1217,6 +1218,22 @@ void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastloc
 	}
 	if (clear)
 		state.operandlist.clear();
+	state.duplocalresult=false;
+}
+void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlocalresulttype,uint32_t opcount)
+{
+	if (resetlocaltypes)
+	{
+		for (uint32_t i = 0; i < state.mi->body->local_count+state.mi->body->localresultcount; i++)
+		{
+			assert(i < state.defaultlocaltypes.size() && "array out of bounds!"); 
+			state.localtypes[i] = state.defaultlocaltypes[i];
+		}
+	}
+	if (lastlocalresulttype)
+		*lastlocalresulttype=nullptr;
+	for (uint32_t i = 0; i < opcount; i++)
+		state.operandlist.pop_back();
 	state.duplocalresult=false;
 }
 void setOperandModified(preloadstate& state,OPERANDTYPES type, int index)
@@ -1361,13 +1378,24 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x2c://pushstring
 			case 0x31://pushnamespace
-			case 0x62://getlocal
+			case 0x65://getscopeobject
+			case 0x6c://getslot
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				argsneeded++;
 				lastlocalpos=-1;
 				break;
+			case 0x62://getlocal
+			{
+				uint32_t t = code.peeku30FromPosition(pos);
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				argsneeded++;
+				lastlocalpos=t;
+				break;
+			}
 			case 0x60://getlex
 				if (localresultused<2)
 				{
@@ -1590,10 +1618,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				clearOperands(state,false,nullptr,checkchanged);
 			break;
 		}
-		case 0xd4: //setlocal_0
-		case 0xd5: //setlocal_1
-		case 0xd6: //setlocal_2
-		case 0xd7: //setlocal_3
+		case 0xd4://setlocal_0
+		case 0xd5://setlocal_1
+		case 0xd6://setlocal_2
+		case 0xd7://setlocal_3
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
 				code.seekg(pos);
@@ -3545,12 +3573,93 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				else if (state.operandlist.size() > 0)
 				{
-					if ((state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_SLOT))
+					if (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_SLOT)
 					{
 						Class_base* restype = nullptr;
 						if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 							restype=typestack.back().obj->as<Class_base>();
 						operands op = state.operandlist.back();
+						// if this dup is followed by increment/decrement and setlocal, it can be skipped and converted into a single increment/decrement call
+						bool handled = false;
+						uint8_t b = code.peekbyte();
+						uint32_t opcode_optimized=0;
+						uint32_t pos =p+1;
+						uint32_t num=0;
+						switch (b)
+						{
+							case 0x91://increment
+								opcode_optimized=ABC_OP_OPTIMZED_DUP_INCDEC;
+								break;
+							case 0x93://decrement
+								opcode_optimized=ABC_OP_OPTIMZED_DUP_INCDEC+1;
+								break;
+							case 0xc0://increment_i
+								opcode_optimized=ABC_OP_OPTIMZED_DUP_INCDEC+2;
+								break;
+							case 0xc1://decrement_i
+								opcode_optimized=ABC_OP_OPTIMZED_DUP_INCDEC+3;
+								break;
+							default:
+								break;
+						}
+						if (opcode_optimized)
+						{
+							b = code.peekbyteFromPosition(pos);
+							switch (b)
+							{
+								case 0x63://setlocal
+								{
+									num = code.peeku30FromPosition(pos+1);
+									pos = code.skipu30FromPosition(pos+1);
+									handled = true;
+									break;
+								}
+								case 0xd4: //setlocal_0
+								case 0xd5: //setlocal_1
+								case 0xd6: //setlocal_2
+								case 0xd7: //setlocal_3
+									num = b-0xd4;
+									pos++;
+									handled = true;
+									break;
+								default:
+									break;
+							}
+						}
+						if (handled)
+						{
+							op.removeArg(state);
+							state.preloadedcode.push_back(opcode_optimized);
+							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+							state.preloadedcode.back().pcode.local_pos1 = op.index;
+							state.preloadedcode.back().cachedslot1 = op.type == OP_CACHED_SLOT;
+							state.preloadedcode.back().pcode.local_pos2 = num;
+							int localresultused=0;
+							for (auto it = state.operandlist.begin(); it != state.operandlist.end(); it++)
+							{
+								if (it->type != OP_LOCAL)
+									continue;
+								if (uint32_t(it->index) > state.mi->body->local_count) // local result index already used
+								{
+									localresultused++;
+								}
+							}
+							if (localresultused >= state.mi->body->localresultcount)
+							{
+								state.mi->body->localresultcount++;
+								state.localtypes.push_back(localresultused == state.mi->body->localresultcount ? restype : nullptr);
+								state.defaultlocaltypes.push_back(restype);
+								state.defaultlocaltypescacheable.push_back(true);
+							}
+							uint32_t num = state.mi->body->local_count+1+localresultused;
+							state.preloadedcode.back().pcode.local_pos3 = num;
+							code.seekg(pos);
+							removeOperands(state,false,nullptr,1);
+							state.preloadedcode.push_back(state.preloadedcode.back().pcode.local_pos3<<OPCODE_SIZE | 0x62);//getlocal
+							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+							state.operandlist.push_back(operands(OP_LOCAL,restype,num,1,state.preloadedcode.size()-1));
+							break;
+						}
 						// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
 						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),true,false,true);
 						if (op.type == OP_CACHED_SLOT)
@@ -4444,13 +4553,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,p))))
+									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,p,resulttype))))
 									{
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|=(skipcoerce ? ABC_OP_COERCED : 0);
 										state.preloadedcode.push_back(t);
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 									}
-									else if (opcode == 0x46 && checkForLocalResult(state,code,0,nullptr))
+									else if (opcode == 0x46 && checkForLocalResult(state,code,0,resulttype))
 									{
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data=ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_LOCALRESULT| (skipcoerce ? ABC_OP_COERCED : 0);
 										state.preloadedcode.push_back(t);
@@ -4892,7 +5001,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xa1://subtract
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = nullptr;
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg()))
 				{
 					if (code.peekbyte()==0x73)//convert_i
@@ -4907,7 +5016,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xa2://multiply
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = nullptr;
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg()))
 				{
 					if (code.peekbyte()==0x73)//convert_i
@@ -4922,7 +5031,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xa3://divide
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = nullptr;
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg()))
 				{
 					if (code.peekbyte()==0x73)//convert_i

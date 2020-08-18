@@ -673,6 +673,10 @@ private:
 	static void abc_dup(call_context* context);
 	static void abc_dup_local(call_context* context);
 	static void abc_dup_local_localresult(call_context* context);
+	static void abc_dup_increment_local_localresult(call_context* context);
+	static void abc_dup_decrement_local_localresult(call_context* context);
+	static void abc_dup_increment_i_local_localresult(call_context* context);
+	static void abc_dup_decrement_i_local_localresult(call_context* context);
 	static void abc_swap(call_context* context);
 	static void abc_pushstring(call_context* context);
 	static void abc_pushint(call_context* context);

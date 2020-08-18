@@ -5231,4 +5231,51 @@ void ABCVm::abc_dup_local_localresult(call_context* context)
 		o->decRef();
 	++(context->exec_pos);
 }
-
+void ABCVm::abc_dup_increment_local_localresult(call_context* context)
+{
+	LOG_CALL("dup_increment_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos2<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),res);
+	asAtomHandler::increment(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3),res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_dup_decrement_local_localresult(call_context* context)
+{
+	LOG_CALL("dup_decrement_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos2<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),res);
+	asAtomHandler::decrement(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3),res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_dup_increment_i_local_localresult(call_context* context)
+{
+	LOG_CALL("dup_increment_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos2<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),res);
+	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3),res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}
+void ABCVm::abc_dup_decrement_i_local_localresult(call_context* context)
+{
+	LOG_CALL("dup_decrement_i_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos2<<" "<<context->exec_pos->local_pos3<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),res);
+	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->mi->context->root->getSystemState());
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos3),res);
+	if (o)
+		o->decRef();
+	++(context->exec_pos);
+}

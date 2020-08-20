@@ -844,14 +844,14 @@ abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_setPropertyIntegerVector_constant_constant_constant, // 0x2b0 ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_VECTOR
+	abc_setPropertyIntegerVector_constant_local_constant,
+	abc_setPropertyIntegerVector_constant_constant_local,
+	abc_setPropertyIntegerVector_constant_local_local,
+	abc_setPropertyIntegerVector_local_constant_constant,
+	abc_setPropertyIntegerVector_local_local_constant,
+	abc_setPropertyIntegerVector_local_constant_local,
+	abc_setPropertyIntegerVector_local_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1155,6 +1155,7 @@ struct operands
 #define ABC_OP_OPTIMZED_DECLOCAL_I 0x000002a5
 #define ABC_OP_OPTIMZED_DUP 0x000002a6
 #define ABC_OP_OPTIMZED_DUP_INCDEC 0x000002a8
+#define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_VECTOR 0x000002b0
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -2138,6 +2139,41 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			clearOperands(state,false,nullptr);
 	}
 	return hasoperands;
+}
+bool checkmatchingLastObjtype(preloadstate& state, const Class_base* resulttype, Class_base* requiredtype)
+{
+	if (requiredtype == resulttype)
+		return true;
+	if (resulttype== Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
+			(requiredtype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()))
+	{
+		switch(state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data&0x3ff)
+		{
+			case ABC_OP_OPTIMZED_ADD+4:
+			case ABC_OP_OPTIMZED_ADD+5:
+			case ABC_OP_OPTIMZED_ADD+6:
+			case ABC_OP_OPTIMZED_ADD+7:
+			case ABC_OP_OPTIMZED_SUBTRACT+4:
+			case ABC_OP_OPTIMZED_SUBTRACT+5:
+			case ABC_OP_OPTIMZED_SUBTRACT+6:
+			case ABC_OP_OPTIMZED_SUBTRACT+7:
+			case ABC_OP_OPTIMZED_MULTIPLY+4:
+			case ABC_OP_OPTIMZED_MULTIPLY+5:
+			case ABC_OP_OPTIMZED_MULTIPLY+6:
+			case ABC_OP_OPTIMZED_MULTIPLY+7:
+			case ABC_OP_OPTIMZED_DIVIDE+4:
+			case ABC_OP_OPTIMZED_DIVIDE+5:
+			case ABC_OP_OPTIMZED_DIVIDE+6:
+			case ABC_OP_OPTIMZED_DIVIDE+7:
+			{
+				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|= ABC_OP_FORCEINT;
+				return true;
+			}
+			default:
+				break;
+		}
+	}
+	return false;
 }
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code)
 {
@@ -3188,35 +3224,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											{
 												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
 											}
-											else if ( contenttype == Class<Number>::getRef(function->getSystemState()).getPtr() &&
-													( vtype == Class<Integer>::getRef(function->getSystemState()).getPtr()))
+											else if (checkmatchingLastObjtype(state,contenttype,vtype))
 											{
-												switch(state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data&0x3ff)
-												{
-													case ABC_OP_OPTIMZED_ADD+4:
-													case ABC_OP_OPTIMZED_ADD+5:
-													case ABC_OP_OPTIMZED_ADD+6:
-													case ABC_OP_OPTIMZED_ADD+7:
-													case ABC_OP_OPTIMZED_SUBTRACT+4:
-													case ABC_OP_OPTIMZED_SUBTRACT+5:
-													case ABC_OP_OPTIMZED_SUBTRACT+6:
-													case ABC_OP_OPTIMZED_SUBTRACT+7:
-													case ABC_OP_OPTIMZED_MULTIPLY+4:
-													case ABC_OP_OPTIMZED_MULTIPLY+5:
-													case ABC_OP_OPTIMZED_MULTIPLY+6:
-													case ABC_OP_OPTIMZED_MULTIPLY+7:
-													case ABC_OP_OPTIMZED_DIVIDE+4:
-													case ABC_OP_OPTIMZED_DIVIDE+5:
-													case ABC_OP_OPTIMZED_DIVIDE+6:
-													case ABC_OP_OPTIMZED_DIVIDE+7:
-													{
-														operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
-														state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|= ABC_OP_FORCEINT;
-														break;
-													}
-													default:
-														break;
-												}
+												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
 											}
 										}
 										setupInstructionTwoArgumentsNoResult(state,operator_start,opcode,code);
@@ -3250,11 +3260,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						case 1:
 							if (state.operandlist.size() > 2 && (state.operandlist[state.operandlist.size()-2].objtype == Class<Integer>::getRef(function->getSystemState()).getPtr()))
 							{
+								uint32_t startopcode = ABC_OP_OPTIMZED_SETPROPERTY_INTEGER;
+								if (state.operandlist[state.operandlist.size()-3].objtype
+									&& dynamic_cast<TemplatedClass<Vector>*>(state.operandlist[state.operandlist.size()-3].objtype))
+								{
+									TemplatedClass<Vector>* cls=state.operandlist[state.operandlist.size()-3].objtype->as<TemplatedClass<Vector>>();
+									Class_base* vectype = cls->getTypes().size() > 0 ? (Class_base*)cls->getTypes()[0] : nullptr;
+									if (checkmatchingLastObjtype(state,state.operandlist[state.operandlist.size()-1].objtype,vectype))
+									{
+										// use special fast setproperty without coercing for Vector
+										startopcode = ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_VECTOR;
+									}
+								}
 								if (state.operandlist[state.operandlist.size()-3].type == OP_LOCAL || state.operandlist[state.operandlist.size()-3].type == OP_CACHED_SLOT)
 								{
+									startopcode+= 4;
 									int index = state.operandlist[state.operandlist.size()-3].index;
 									bool cachedslot = state.operandlist[state.operandlist.size()-3].type == OP_CACHED_SLOT;
-									setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETPROPERTY_INTEGER+4,opcode,code);
+									setupInstructionTwoArgumentsNoResult(state,startopcode,opcode,code);
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local_pos3=index;
 									state.preloadedcode.at(state.preloadedcode.size()-1).cachedslot3 = cachedslot;
 									state.preloadedcode.push_back(t);
@@ -3266,7 +3289,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								else
 								{
 									asAtom* arg = mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-3].type,state.operandlist[state.operandlist.size()-3].index);
-									setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETPROPERTY_INTEGER+0,opcode,code);
+									setupInstructionTwoArgumentsNoResult(state,startopcode,opcode,code);
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_constant=arg;
 									state.preloadedcode.push_back(t);
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local_pos3 = opcode; // use local_pos3 as indicator for setproperty/initproperty
@@ -4269,37 +4292,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							|| !typestack.back().obj->is<Class_base>() 
 							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType))))
 					{
-						if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
-						{
-							switch(state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data&0x3ff)
-							{
-								case ABC_OP_OPTIMZED_ADD+4:
-								case ABC_OP_OPTIMZED_ADD+5:
-								case ABC_OP_OPTIMZED_ADD+6:
-								case ABC_OP_OPTIMZED_ADD+7:
-								case ABC_OP_OPTIMZED_SUBTRACT+4:
-								case ABC_OP_OPTIMZED_SUBTRACT+5:
-								case ABC_OP_OPTIMZED_SUBTRACT+6:
-								case ABC_OP_OPTIMZED_SUBTRACT+7:
-								case ABC_OP_OPTIMZED_MULTIPLY+4:
-								case ABC_OP_OPTIMZED_MULTIPLY+5:
-								case ABC_OP_OPTIMZED_MULTIPLY+6:
-								case ABC_OP_OPTIMZED_MULTIPLY+7:
-								case ABC_OP_OPTIMZED_DIVIDE+4:
-								case ABC_OP_OPTIMZED_DIVIDE+5:
-								case ABC_OP_OPTIMZED_DIVIDE+6:
-								case ABC_OP_OPTIMZED_DIVIDE+7:
-								{
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|= ABC_OP_FORCEINT;
-									break;
-								}
-								default:
-									coercereturnvalue = true;
-									break;
-							}
-						}
-						else
-							coercereturnvalue = true;
+						coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
 					}
 				}
 				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,p);

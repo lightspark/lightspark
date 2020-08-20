@@ -829,6 +829,14 @@ private:
 	static void abc_setPropertyInteger_local_local_constant(call_context* context);
 	static void abc_setPropertyInteger_local_constant_local(call_context* context);
 	static void abc_setPropertyInteger_local_local_local(call_context* context);
+	static void abc_setPropertyIntegerVector_constant_constant_constant(call_context* context);
+	static void abc_setPropertyIntegerVector_constant_local_constant(call_context* context);
+	static void abc_setPropertyIntegerVector_constant_constant_local(call_context* context);
+	static void abc_setPropertyIntegerVector_constant_local_local(call_context* context);
+	static void abc_setPropertyIntegerVector_local_constant_constant(call_context* context);
+	static void abc_setPropertyIntegerVector_local_local_constant(call_context* context);
+	static void abc_setPropertyIntegerVector_local_constant_local(call_context* context);
+	static void abc_setPropertyIntegerVector_local_local_local(call_context* context);
 	static void abc_getlocal(call_context* context);
 	static void abc_setlocal(call_context* context);
 	static void abc_setlocal_constant(call_context* context);

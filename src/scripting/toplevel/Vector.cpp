@@ -331,7 +331,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 {
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	if (argslen < 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
+		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.every", "1", Integer::toString(argslen));
 	if (!asAtomHandler::is<IFunction>(args[0]))
 		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],th->getSystemState())->getClassName(), "Function");
 	asAtom f = args[0];
@@ -1249,6 +1249,15 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
+}
+
+void Vector::throwRangeError(int index)
+{
+	/* Spec says: one may not set a value with an index more than
+	 * one beyond the current final index. */
+	throwError<RangeError>(kOutOfRangeError,
+				   Integer::toString(index),
+				   Integer::toString(vec.size()));
 }
 
 tiny_string Vector::toString()

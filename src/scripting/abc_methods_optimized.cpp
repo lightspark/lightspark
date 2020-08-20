@@ -24,6 +24,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
+#include "scripting/toplevel/Vector.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>
@@ -2413,6 +2414,212 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
 	++(context->exec_pos);
 }
+
+
+void ABCVm::abc_setPropertyIntegerVector_constant_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_iv_ccc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Vector* o = asAtomHandler::as<Vector>(*obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_iv_clc ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Vector* o = asAtomHandler::as<Vector>(*obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	LOG_CALL(_("setProperty_iv_ccl ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Vector* o = asAtomHandler::as<Vector>(*obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_constant_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom* obj = instrptr->arg3_constant;
+	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	LOG_CALL(_("setProperty_iv_cll ") << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(*obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASATOM_INCREF_POINTER(value);
+	Vector* o = asAtomHandler::as<Vector>(*obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos3);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_iv_lcc ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Vector* o = asAtomHandler::as<Vector>(obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos3);
+	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom* value = instrptr->arg2_constant;
+
+	LOG_CALL(_("setProperty_iv_llc ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	Vector* o = asAtomHandler::as<Vector>(obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_local_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos3);
+	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	LOG_CALL(_("setProperty_iv_lcl ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+
+	if(asAtomHandler::isNull(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASATOM_INCREF_POINTER(value);
+	Vector* o = asAtomHandler::as<Vector>(obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+void ABCVm::abc_setPropertyIntegerVector_local_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos3);
+	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	LOG_CALL(_("setProperty_iv_lll ") << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value)<<" "<<instrptr->local_pos1);
+
+	if(asAtomHandler::isNull(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertNullToObjectError);
+	}
+	if (asAtomHandler::isUndefined(obj))
+	{
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		throwError<TypeError>(kConvertUndefinedToObjectError);
+	}
+
+	ASATOM_INCREF_POINTER(value);
+	Vector* o = asAtomHandler::as<Vector>(obj);
+	o->setVariableByIntegerNoCoerce(index,*value);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_setlocal_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;

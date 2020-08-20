@@ -68,6 +68,32 @@ public:
 	tiny_string toString();
 	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
+	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o)
+	{
+		if (USUALLY_FALSE(index < 0))
+		{
+			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED);
+			return;
+		}
+		if(size_t(index) < vec.size())
+		{
+			if (vec[index].uintval != o.uintval)
+			{
+				ASATOM_DECREF(vec[index]);
+				vec[index] = o;
+			}
+		}
+		else if(!fixed && size_t(index) == vec.size())
+		{
+			vec.push_back( o );
+		}
+		else
+		{
+			throwRangeError(index);
+		}
+	}
+	void throwRangeError(int index);
+	
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;

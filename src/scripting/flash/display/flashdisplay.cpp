@@ -2178,7 +2178,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 //	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	tiny_string url;
 	tiny_string method;
-	ARG_UNPACK_ATOM(url)(method,"GET");
+	ARG_UNPACK_ATOM(url,"")(method,"GET");
 	LOG(LOG_NOT_IMPLEMENTED,"MovieClip.loadMovie not implemented "<<url<<" "<<method);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)

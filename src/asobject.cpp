@@ -1849,6 +1849,30 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			result=true;
 		}
 	}
+	else if (e->type == "rollOver")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "rollOut")
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			result=true;
+		}
+	}
+	else if (e->type == "mouseOver" || e->type == "mouseOut")
+	{
+		// not available in AVM1
+	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"handling avm1 mouse event "<<e->type);
 	return result;

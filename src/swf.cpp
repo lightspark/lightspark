@@ -197,7 +197,7 @@ void SystemState::staticDeinit()
 static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "__AS3__.vec","Class", "http://adobe.com/AS3/2006/builtin","http://www.w3.org/XML/1998/namespace","xml","toString","valueOf","length","constructor",
 									   "_target","this","_root","_parent","_global","super",
 									   "onEnterFrame","onMouseMove","onMouseDown","onMouseUp","onPress","onRelease","onReleaseOutside","onMouseWheel","onLoad",
-									   "object","undefined","boolean","number","string","function"
+									   "object","undefined","boolean","number","string","function","onRollOver","onRollOut"
 									  };
 
 extern uint32_t asClassCount;

@@ -3850,6 +3850,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x12://iffalse
@@ -3894,6 +3895,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x13://ifeq
@@ -3902,6 +3904,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x14://ifne
 				removetypestack(typestack,2);
@@ -3909,6 +3913,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x15://iflt
 				removetypestack(typestack,2);
@@ -3916,6 +3922,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x16://ifle
 				removetypestack(typestack,2);
@@ -3923,6 +3931,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x17://ifgt
 				removetypestack(typestack,2);
@@ -3930,6 +3940,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x18://ifge
 				removetypestack(typestack,2);
@@ -3937,6 +3949,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x19://ifstricteq
 				removetypestack(typestack,2);
@@ -3944,12 +3958,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x1a://ifstrictne
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x1b://lookupswitch
 			{
@@ -3971,6 +3989,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.preloadedcode.push_back(0);
 				}
 				clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x20://pushnull

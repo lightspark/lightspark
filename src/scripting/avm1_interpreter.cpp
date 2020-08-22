@@ -708,7 +708,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else
 						o = clip;
 				}
-				if (o && o->getParent())
+				if (o && o->getParent() && !o->is<RootMovieClip>() && !o->legacy)
 				{
 					o->incRef();
 					o->getParent()->_removeChild(o);
@@ -1463,7 +1463,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject)<<" result:"<<asAtomHandler::toDebugString(ret));
 				PushStack(stack,ret);
 				break;
 			}
@@ -1643,7 +1643,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom a = PeekStack(stack);
 				ASATOM_INCREF(a);
 				uint8_t num = *it++;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)num);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)num<<" "<<asAtomHandler::toDebugString(a));
 				registers[num] = a;
 				break;
 			}
@@ -1914,8 +1914,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom at=PopStack(stack);
 				asAtom au=PopStack(stack);
-				tiny_string target = asAtomHandler::toString(at,clip->getSystemState());
-				tiny_string url = asAtomHandler::toString(au,clip->getSystemState());
 				uint8_t b = *it++;
 				uint8_t method = b&0xc0>>6;
 				bool loadtarget = b&0x02;
@@ -1927,8 +1925,24 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 with LoadVariablesFlag");
 				if (method) //SendVarsMethod
 					LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 with SendVarsMethod");
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL2 "<<url<<" "<<target);
-				clip->getSystemState()->openPageInBrowser(url,target);
+				tiny_string url = asAtomHandler::toString(au,clip->getSystemState());
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL2 "<<url<<" "<<asAtomHandler::toDebugString(at));
+				if (asAtomHandler::is<MovieClip>(at))
+				{
+					asAtom ret = asAtomHandler::invalidAtom;
+					if (url != "")
+						LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 on MovieClip with url:"<<url);
+					else
+					{
+						// it seems that calling ActionGetURL2 with a clip as target and no url unloads the clip
+						MovieClip::AVM1UnloadMovie(ret,clip->getSystemState(),at,nullptr,0);
+					}
+				}
+				else
+				{
+					tiny_string target = asAtomHandler::toString(at,clip->getSystemState());
+					clip->getSystemState()->openPageInBrowser(url,target);
+				}
 				break;
 			}
 			case 0x9b: // ActionDefineFunction

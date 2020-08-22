@@ -327,8 +327,15 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("MOUSE_WHEEL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseWheel"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("MOUSE_MOVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseMove"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("RIGHT_CLICK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rightClick"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RIGHT_MOUSE_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rightMouseDown"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RIGHT_MOUSE_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rightMouseUp"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("ROLL_OVER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rollOver"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("ROLL_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"rollOut"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MIDDLE_CLICK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"middleClick"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MIDDLE_MOUSE_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"middleMouseDown"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("MIDDLE_MOUSE_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"middleMouseUp"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CONTEXT_MENU",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"contextMenu"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("RELEASE_OUTSIDE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"releaseOutside"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,relatedObject);

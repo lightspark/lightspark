@@ -2074,8 +2074,19 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	if (th->getParent())
+	if (th->getParent() && !th->legacy)
+	{
+		if (th->name != BUILTIN_STRINGS::EMPTY)
+		{
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=th->name;
+			m.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			m.isAttribute = false;
+			th->getParent()->deleteVariableByMultiname(m);
+		}
 		th->getParent()->_removeChild(th);
+	}
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 {

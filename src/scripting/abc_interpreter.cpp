@@ -1408,21 +1408,16 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			}
 			case 0x60://getlex
-				if (localresultused<2)
-				{
-					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					argsneeded++;
-					localresultused++;
-					localresultaddedindex.insert(currindex);
-				}
-				else
-					keepchecking=false;
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				argsneeded++;
+				localresultused++;
+				localresultaddedindex.insert(currindex);
 				lastlocalpos=-1;
 				break;
 			case 0x73://convert_i
-				if (restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded || restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1431,7 +1426,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x74://convert_u
-				if (restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded || restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1440,7 +1435,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x75://convert_d
-				if (restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded || restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr())
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1449,7 +1444,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x76://convert_b
-				if (restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()
+				if (argsneeded || restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == 0x11 //iftrue
 						|| code.peekbyteFromPosition(pos) == 0x12 //iffalse
 					)

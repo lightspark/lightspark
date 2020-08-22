@@ -1380,12 +1380,22 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x2c://pushstring
 			case 0x31://pushnamespace
 			case 0x65://getscopeobject
-			case 0x6c://getslot
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				argsneeded++;
 				lastlocalpos=-1;
+				break;
+			case 0x6c://getslot
+				if (argsneeded || state.operandlist.size()>0)
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					lastlocalpos=-1;
+				}
+				else
+					keepchecking=false;
 				break;
 			case 0x62://getlocal
 			{
@@ -1520,8 +1530,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
 				if (argsneeded &&
-					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0 &&
-					(localresultused<2 || !state.unchangedlocals.count(lastlocalpos)))
+					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0 && !state.unchangedlocals.count(lastlocalpos))
 				{
 					// getproperty without runtimeargs following e.g. getlocal may produce local result
 					pos = code.skipu30FromPosition(pos);

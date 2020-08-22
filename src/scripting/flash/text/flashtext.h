@@ -118,6 +118,7 @@ private:
 	_NR<ASString> restrictChars;
 	number_t autosizeposition;
 	tiny_string tagvarname;
+	Mutex invalidatemutex;
 protected:
 	void afterSetLegacyMatrix() override;
 public:

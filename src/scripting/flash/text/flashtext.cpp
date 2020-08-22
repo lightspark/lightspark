@@ -919,6 +919,7 @@ int32_t TextField::getMaxScrollV()
 
 void TextField::updateSizes()
 {
+	Locker l(invalidatemutex);
 	uint32_t w,h,tw,th;
 	w = width;
 	h = height;
@@ -1212,6 +1213,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
+	Locker l(invalidatemutex);
 	int32_t x,y;
 	uint32_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;

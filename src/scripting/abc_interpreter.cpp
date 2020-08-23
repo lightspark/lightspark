@@ -976,6 +976,8 @@ struct preloadstate
 	std::vector<operands> operandlist;
 	std::map<int32_t,int32_t> oldnewpositions;
 	std::map<int32_t,int32_t> jumptargets;
+	// result type from the top of the typestack at start of jump
+	std::map<int32_t,Class_base*> jumptargeteresulttypes;
 	// local variables (arguments and "this" object) that do not change during execution
 	std::set<int32_t> unchangedlocals;
 	std::vector<Class_base*> localtypes;
@@ -2486,6 +2488,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					unreachabletargets[p] = nextreachable;
 				}
+				if (state.jumptargets.count(p1))
+					state.jumptargeteresulttypes.erase(p1);
+				else if (currenttype)
+					state.jumptargeteresulttypes[p1] = currenttype;
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				currenttype=nullptr;
@@ -2506,6 +2512,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				currenttype=nullptr;
@@ -2528,6 +2535,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					unreachabletargets[p] = nextreachable;
 				}
+				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				currenttype=nullptr;
@@ -2550,6 +2558,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					unreachabletargets[p] = nextreachable;
 				}
+				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				currenttype=nullptr;
@@ -2559,12 +2568,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = p+codejumps.reads24();
+				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
 				uint32_t count = codejumps.readu30();
 				for(unsigned int i=0;i<count+1;i++)
 				{
 					p1 = p+codejumps.reads24();
+					state.jumptargeteresulttypes.erase(p1);
 					state.jumptargets[p1]++;
 					jumppoints.insert(make_pair(p,p1));
 				}
@@ -2906,7 +2917,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
+				{
+					state.jumptargeteresulttypes.erase(p+1);
 					state.jumptargets[p+1]++;
+				}
 				uint32_t t = code.readu30();
 				if (skippablekills.count(t))
 				{
@@ -3730,7 +3744,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
+				{
+					state.jumptargeteresulttypes.erase(p+1);
 					state.jumptargets[p+1]++;
+				}
 				opcode_skipped=true;
 				break;
 			}
@@ -3743,7 +3760,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				code.readu30();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
+				{
+					state.jumptargeteresulttypes.erase(code.tellg()+1);
 					state.jumptargets[code.tellg()+1]++;
+				}
 				opcode_skipped=true;
 				break;
 			}
@@ -4306,12 +4326,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (!mi->returnType)
 					function->checkParamTypes();
 				int32_t p = code.tellg();
+				bool checkresulttype=true;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 				{
-					clearOperands(state,true,&lastlocalresulttype);
-					coercereturnvalue = true;
+					Class_base* resulttype = state.jumptargeteresulttypes[p];
+					checkresulttype = resulttype && resulttype == typestack.back().obj;
+					if (!checkresulttype)
+					{
+						clearOperands(state,true,&lastlocalresulttype);
+						coercereturnvalue = true;
+					}
 				}
-				else
+				if (checkresulttype)
 				{
 					if (!typestack.back().obj
 							|| !typestack.back().obj->is<Class_base>() 

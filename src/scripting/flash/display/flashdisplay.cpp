@@ -1048,7 +1048,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
 		if(!ret.isNull())
 		{
-			if (interactiveObjectsOnly && !ret->is<InteractiveObject>())
+			if (interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)
 			{
 				if (this->is<RootMovieClip>())
 					continue;

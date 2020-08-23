@@ -1303,6 +1303,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	{
 		skipjump(state,b,code,pos,false);
 		// check if the next opcode can be skipped
+		//LOG(LOG_ERROR,"checkforlocal skip:"<<argsneeded<<" "<<state.operandlist.size()<<" "<<hex<<(uint32_t)b);
 		switch (b)
 		{
 			case 0x24://pushbyte
@@ -1525,7 +1526,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
 				if (argsneeded &&
-					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0 && !state.unchangedlocals.count(lastlocalpos))
+					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0 && state.unchangedlocals.count(lastlocalpos))
 				{
 					// getproperty without runtimeargs following e.g. getlocal may produce local result
 					pos = code.skipu30FromPosition(pos);
@@ -1551,8 +1552,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				uint32_t t = code.peeku30FromPosition(pos);
 				uint32_t pos2 = code.skipu30FromPosition(pos);
 				uint32_t argcount = code.peeku30FromPosition(pos2);
-				if (argsneeded && argcount==0 && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
+				if ((argsneeded > argcount) && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 				{
+					argsneeded -= argcount;
 					if (b==0x4f) //callpropvoid
 						argsneeded--;
 					pos = code.skipu30FromPosition(pos2);
@@ -1657,7 +1659,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 						res = (argsneeded == 0 && state.operandlist.size()>0) || argsneeded==1;
 						break;
 					default:
-						res = (argcount > argsneeded) && (state.operandlist.size() >= argcount-argsneeded);
+						res = (argcount >= argsneeded) && (state.operandlist.size() >= argcount-argsneeded);
 						break;
 				}
 				if (res)
@@ -4630,7 +4632,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 														it->removeArg(state);
 														oppos = state.preloadedcode.size()-1-argcount;
 														state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
-														clearOperands(state,true,&lastlocalresulttype);
+														removeOperands(state,true,&lastlocalresulttype,argcount+1);
 														if (opcode == 0x46)
 															checkForLocalResult(state,code,2,nullptr,oppos,state.preloadedcode.size()-1);
 														removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
@@ -4645,7 +4647,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 														it->removeArg(state);
 														oppos = state.preloadedcode.size()-1-argcount;
 														state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
-														clearOperands(state,true,&lastlocalresulttype);
+														removeOperands(state,true,&lastlocalresulttype,argcount+1);
 														if (opcode == 0x46)
 															checkForLocalResult(state,code,2,nullptr,oppos,state.preloadedcode.size()-1);
 														removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
@@ -4660,7 +4662,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											oppos = state.preloadedcode.size()-1-argcount;
 											if (it->fillCode(state,1,state.preloadedcode.size()-1,false))
 												state.preloadedcode.at(oppos).pcode.data++;
-											clearOperands(state,true,&lastlocalresulttype);
+											removeOperands(state,true,&lastlocalresulttype,argcount+1);
 											if (opcode == 0x46)
 												checkForLocalResult(state,code,2,nullptr,oppos,state.preloadedcode.size()-1);
 											removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);

@@ -589,7 +589,15 @@ struct variable
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
-	void setVarNoCoerce(asAtom &v, ASObject *obj);
+	FORCE_INLINE void setVarNoCoerce(asAtom &v, ASObject *obj)
+	{
+		if(isrefcounted && asAtomHandler::isObject(var))
+			preparereplacevar(obj);
+		var=v;
+		isrefcounted = true;
+	}
+	void preparereplacevar(ASObject *obj);
+	
 	void setResultType(const Type* t)
 	{
 		isResolved=true;

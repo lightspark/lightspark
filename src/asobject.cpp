@@ -953,17 +953,12 @@ void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 	isrefcounted = _isrefcounted;
 }
 
-void variable::setVarNoCoerce(asAtom &v,ASObject *obj)
+void variable::preparereplacevar(ASObject *obj)
 {
-	if(isrefcounted && asAtomHandler::isObject(var))
-	{
-		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
-		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
-			asAtomHandler::getObject(var)->decActivationCount();
-		ASATOM_DECREF(var);
-	}
-	var=v;
-	isrefcounted = true;
+	LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
+	if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
+		asAtomHandler::getObject(var)->decActivationCount();
+	ASATOM_DECREF(var);
 }
 
 void variables_map::killObjVar(SystemState* sys,const multiname& mname)

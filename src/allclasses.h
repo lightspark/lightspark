@@ -230,6 +230,7 @@ REGISTER_CLASS_NAME(Orientation3D,"flash.geom")
 REGISTER_CLASS_NAME(PerspectiveProjection,"flash.geom")
 
 //Globalization
+REGISTER_CLASS_NAME(Collator,"flash.globalization")
 REGISTER_CLASS_NAME(DateTimeFormatter,"flash.globalization")
 REGISTER_CLASS_NAME(DateTimeStyle,"flash.globalization")
 REGISTER_CLASS_NAME(LastOperationStatus,"flash.globalization")

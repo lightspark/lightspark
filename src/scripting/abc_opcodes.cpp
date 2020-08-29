@@ -255,7 +255,7 @@ int32_t ABCVm::pushShort(intptr_t n)
 void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
 {
 	LOG_CALL("setSlot " << n << " "<< obj<<" " <<obj->toDebugString() << " "<< value->toDebugString()<<" "<<value);
-	obj->setSlot(n,asAtomHandler::fromObject(value));
+	obj->setSlot(n-1,asAtomHandler::fromObject(value));
 	obj->decRef();
 }
 

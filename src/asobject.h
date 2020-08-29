@@ -774,10 +774,10 @@ public:
 	 */
 	FORCE_INLINE bool setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
 	{
-		assert_and_throw(n > 0 && n <= slotcount);
-		if (slots_vars[n-1]->var.uintval != o.uintval)
+		assert_and_throw(n < slotcount);
+		if (slots_vars[n]->var.uintval != o.uintval)
 		{
-			slots_vars[n-1]->setVarNoCoerce(o,obj);
+			slots_vars[n]->setVarNoCoerce(o,obj);
 			return true;
 		}
 		return false;
@@ -1291,15 +1291,15 @@ public:
 
 FORCE_INLINE bool variables_map::setSlot(unsigned int n, asAtom &o, ASObject* obj)
 {
-	assert_and_throw(n > 0 && n <= slotcount);
-	if (slots_vars[n-1]->var.uintval != o.uintval)
+	assert_and_throw(n < slotcount);
+	if (slots_vars[n]->var.uintval != o.uintval)
 	{
-		slots_vars[n-1]->setVar(o,obj);
-		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
+		slots_vars[n]->setVar(o,obj);
+		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
 			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
-		return slots_vars[n-1]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
+		return slots_vars[n]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
-	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n-1]->var))
+	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
 		obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 	return true;
 }

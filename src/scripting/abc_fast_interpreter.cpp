@@ -1046,7 +1046,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 				Global* globalscope = getGlobalScope(context);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				globalscope->setSlot(t,*obj);
+				globalscope->setSlot(t-1,*obj);
 				break;
 			}
 			case 0x70:
@@ -1655,7 +1655,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
 
 				LOG_CALL("setSlotNoCoerce " << t);
-				obj->setSlotNoCoerce(t,*value);
+				obj->setSlotNoCoerce(t-1,*value);
 				obj->decRef();
 				break;
 			}

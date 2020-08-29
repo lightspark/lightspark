@@ -969,7 +969,7 @@ struct preloadedcodebuffer
 	bool cachedslot1;
 	bool cachedslot2;
 	bool cachedslot3;
-	preloadedcodebuffer(uint32_t d):pcode(d),cachedslot1(false),cachedslot2(false),cachedslot3(false){}
+	preloadedcodebuffer(uint32_t d=0):pcode(d),cachedslot1(false),cachedslot2(false),cachedslot3(false){}
 };
 struct preloadstate
 {
@@ -1003,7 +1003,7 @@ struct operands
 		if (codecount)
 			state.preloadedcode.erase(state.preloadedcode.begin()+preloadedcodepos,state.preloadedcode.begin()+preloadedcodepos+codecount);
 	}
-	bool fillCode(preloadstate& state,int pos, int codepos, bool switchopcode)
+	bool fillCode(preloadstate& state,int pos, int codepos, bool switchopcode,int* opcode=nullptr)
 	{
 		switch (type)
 		{
@@ -1018,7 +1018,12 @@ struct operands
 						break;
 				}
 				if (switchopcode)
-					state.preloadedcode[codepos].pcode.data+=1+pos; // increase opcode
+				{
+					if (opcode)
+						*opcode+=1+pos; // increase opcode
+					else
+						state.preloadedcode[codepos].pcode.data+=1+pos; // increase opcode
+				}
 				else
 					return true;
 				break;
@@ -1035,7 +1040,12 @@ struct operands
 						break;
 				}
 				if (switchopcode)
-					state.preloadedcode[codepos].pcode.data+=1+pos; // increase opcode
+				{
+					if (opcode)
+						*opcode+=1+pos; // increase opcode
+					else
+						state.preloadedcode[codepos].pcode.data+=1+pos; // increase opcode
+				}
 				else
 					return true;
 				break;
@@ -1899,9 +1909,10 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 		(--it)->removeArg(state);// remove arg1
 		it = state.operandlist.end();
 		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
-		state.preloadedcode.push_back(operator_start);
-		(--it)->fillCode(state,1,state.preloadedcode.size()-1,true);
-		(--it)->fillCode(state,0,state.preloadedcode.size()-1,true);
+		state.preloadedcode.emplace_back();
+		(--it)->fillCode(state,1,state.preloadedcode.size()-1,true,&operator_start);
+		(--it)->fillCode(state,0,state.preloadedcode.size()-1,true,&operator_start);
+		state.preloadedcode.back().pcode.func = ABCVm::abcfunctions[operator_start];
 		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 		state.operandlist.pop_back();
 		state.operandlist.pop_back();
@@ -3250,7 +3261,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											}
 										}
 										setupInstructionTwoArgumentsNoResult(state,operator_start,opcode,code);
-										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data |=v->slotid<<OPCODE_SIZE;
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =v->slotid-1;
 										ASATOM_DECREF(o);
 										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+2);
 										break;
@@ -3499,10 +3510,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					clearOperands(state,true,&lastlocalresulttype);
 				int32_t t =code.readu30();
 				if (setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETSLOT,opcode,code))
-					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data |=t<<OPCODE_SIZE;
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint=t-1;
 				else
 				{
-					state.preloadedcode.push_back(t);
+					state.preloadedcode.push_back(t-1);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
 				break;
@@ -5402,7 +5413,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	for (auto itc = state.preloadedcode.begin(); itc != state.preloadedcode.end(); itc++)
 	{
 		mi->body->preloadedcode.push_back((*itc).pcode);
-		mi->body->preloadedcode[mi->body->preloadedcode.size()-1].func = ABCVm::abcfunctions[itc->pcode.data&0x3ff];
+		if (!mi->body->preloadedcode[mi->body->preloadedcode.size()-1].func)
+			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].func = ABCVm::abcfunctions[itc->pcode.data&0x3ff];
 		// adjust cached local slots to localresultcount
 		if ((*itc).cachedslot1)
 			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1+= mi->body->getReturnValuePos()+1+mi->body->localresultcount;

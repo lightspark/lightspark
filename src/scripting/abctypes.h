@@ -310,7 +310,7 @@ struct preloadedcodedata
 		int32_t arg3_int;
 		uint32_t arg3_uint;
 	};
-	preloadedcodedata(uint32_t d):data(d),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr){}
+	preloadedcodedata(uint32_t d):func(nullptr),data(d),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr){}
 };
 struct localconstantslot
 {

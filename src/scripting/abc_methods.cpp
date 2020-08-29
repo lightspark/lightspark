@@ -1040,7 +1040,7 @@ void ABCVm::abc_setglobalSlot(call_context* context)
 
 	Global* globalscope = getGlobalScope(context);
 	RUNTIME_STACK_POP_CREATE(context,o);
-	globalscope->setSlot(t,*o);
+	globalscope->setSlot(t-1,*o);
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_s(call_context* context)

@@ -2640,7 +2640,7 @@ void ABCVm::abc_setlocal_local(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	LOG_CALL( _("setLocal_l n ") << i << _(": ") << asAtomHandler::toDebugString(obj) <<" "<<instrptr->local_pos1);
-	assert(i <= context->mi->body->getReturnValuePos()+1+context->mi->body->localresultcount);
+	assert(i <= uint32_t(context->mi->body->getReturnValuePos()+1+context->mi->body->localresultcount));
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(obj))
 	{
 		ASATOM_INCREF(obj);
@@ -3812,9 +3812,9 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 }
 void ABCVm::abc_setslot_constant_constant(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = *context->exec_pos->arg2_constant;
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
 		ASATOM_INCREF(v2);
@@ -3822,9 +3822,9 @@ void ABCVm::abc_setslot_constant_constant(call_context* context)
 }
 void ABCVm::abc_setslot_local_constant(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom v2 = *context->exec_pos->arg2_constant;
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
 		ASATOM_INCREF(v2);
@@ -3832,10 +3832,9 @@ void ABCVm::abc_setslot_local_constant(call_context* context)
 }
 void ABCVm::abc_setslot_constant_local(call_context* context)
 {
-	//setslot
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
 		ASATOM_INCREF(v2);
@@ -3843,9 +3842,9 @@ void ABCVm::abc_setslot_constant_local(call_context* context)
 }
 void ABCVm::abc_setslot_local_local(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlot(t,v2))
 		ASATOM_INCREF(v2);
@@ -3853,9 +3852,9 @@ void ABCVm::abc_setslot_local_local(call_context* context)
 }
 void ABCVm::abc_setslotNoCoerce_constant_constant(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = *context->exec_pos->arg2_constant;
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
 		ASATOM_INCREF(v2);
@@ -3863,9 +3862,9 @@ void ABCVm::abc_setslotNoCoerce_constant_constant(call_context* context)
 }
 void ABCVm::abc_setslotNoCoerce_local_constant(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom v2 = *context->exec_pos->arg2_constant;
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
 		ASATOM_INCREF(v2);
@@ -3873,9 +3872,9 @@ void ABCVm::abc_setslotNoCoerce_local_constant(call_context* context)
 }
 void ABCVm::abc_setslotNoCoerce_constant_local(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = *context->exec_pos->arg1_constant;
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
 		ASATOM_INCREF(v2);
@@ -3883,9 +3882,9 @@ void ABCVm::abc_setslotNoCoerce_constant_local(call_context* context)
 }
 void ABCVm::abc_setslotNoCoerce_local_local(call_context* context)
 {
-	uint32_t t = context->exec_pos->data>>OPCODE_SIZE;
 	asAtom v1 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
+	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
 	if (asAtomHandler::getObject(v1)->setSlotNoCoerce(t,v2))
 		ASATOM_INCREF(v2);

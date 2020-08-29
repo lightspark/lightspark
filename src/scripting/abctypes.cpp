@@ -164,6 +164,7 @@ istream& lightspark::operator>>(istream& in, method_body_info& v)
 {
 	u30 code_length;
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> code_length;
+	v.returnvaluepos=v.local_count+1;
 	v.code.resize(code_length);
 	in.read(&v.code[0],code_length);
 	u30 exception_count;

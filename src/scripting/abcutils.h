@@ -71,15 +71,13 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	uint32_t defaultNamespaceUri;
-	asAtom returnvalue;
-	bool returning;
 	call_context(method_info* _mi):
 		locals(nullptr),stack(nullptr),
 		stackp(nullptr),exec_pos(nullptr),
 		max_stackp(nullptr),
 		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
 		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
-		inClass(nullptr),defaultNamespaceUri(0),returning(false)
+		inClass(nullptr),defaultNamespaceUri(0)
 	{
 	}
 	static void handleError(int errorcode);

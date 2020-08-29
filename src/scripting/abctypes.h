@@ -333,12 +333,14 @@ struct method_body_info
 	uint16_t localresultcount;
 	//The hit_count belongs here, since it is used to manipulate the code
 	uint16_t hit_count;
+	uint16_t returnvaluepos;
 	//The code status
 	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED, PRELOADED };
 	CODE_STATUS codeStatus;
 	// list of local/slot pairs that were optimized away
 	std::vector<localconstantslot> localconstantslots;
 	std::vector<preloadedcodedata> preloadedcode;
+	inline uint16_t getReturnValuePos() const { return returnvaluepos; }
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

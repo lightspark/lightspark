@@ -570,7 +570,7 @@ void ABCVm::abc_pushcachedslot(call_context* context)
 {
 	uint32_t t = (++(context->exec_pos))->data;
 	assert(t < context->mi->body->localconstantslots.size());
-	asAtom a = *(context->localslots[context->mi->body->local_count+1+context->mi->body->localresultcount+t]);
+	asAtom a = *(context->localslots[context->mi->body->getReturnValuePos()+1+context->mi->body->localresultcount+t]);
 	LOG_CALL("pushcachedslot "<<t<<" "<<asAtomHandler::toDebugString(a));
 	ASATOM_INCREF(a);
 	RUNTIME_STACK_PUSH(context,a);
@@ -1513,7 +1513,7 @@ void ABCVm::abc_callpropertyStaticName_local_local(call_context* context)
 	multiname* name=context->exec_pos->cachedmultiname2;
 
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	LOG_CALL( "callProperty_ll " << *name);
+	LOG_CALL( "callProperty_ll " << *name<<" "<<instrptr->local_pos1<<" "<<instrptr->local_pos2<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(*args));
 	asAtom ret=asAtomHandler::invalidAtom;
 	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false,true,(instrptr->data&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
@@ -1663,19 +1663,14 @@ void ABCVm::abc_callpropertyStaticName_local_localresult(call_context* context)
 }
 void ABCVm::abc_returnvalue_constant(call_context* context)
 {
-	//returnvalue
-	asAtomHandler::set(context->returnvalue,*context->exec_pos->arg1_constant);
-	LOG_CALL(_("returnValue_c ") << asAtomHandler::toDebugString(context->returnvalue));
-	context->returning = true;
+	asAtomHandler::set(context->locals[context->mi->body->getReturnValuePos()],*context->exec_pos->arg1_constant);
+	LOG_CALL(_("returnValue_c ") << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }
 void ABCVm::abc_returnvalue_local(call_context* context)
 {
-	//returnvalue
-	asAtomHandler::set(context->returnvalue,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	ASATOM_INCREF(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	LOG_CALL(_("returnValue_l ") << asAtomHandler::toDebugString(context->returnvalue));
-	context->returning = true;
+	asAtomHandler::set(context->locals[context->mi->body->getReturnValuePos()],CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	LOG_CALL(_("returnValue_l ") << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructsuper_constant(call_context* context)
@@ -2627,7 +2622,7 @@ void ABCVm::abc_setlocal_constant(call_context* context)
 
 	asAtom* obj = instrptr->arg1_constant;
 	LOG_CALL( _("setLocal_c n ") << i << _(": ") << asAtomHandler::toDebugString(*obj) );
-	if (i > context->mi->body->local_count)
+	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
@@ -2645,7 +2640,7 @@ void ABCVm::abc_setlocal_local(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	LOG_CALL( _("setLocal_l n ") << i << _(": ") << asAtomHandler::toDebugString(obj) <<" "<<instrptr->local_pos1);
-	assert(i <= context->mi->body->local_count+1+context->mi->body->localresultcount);
+	assert(i <= context->mi->body->getReturnValuePos()+1+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(obj))
 	{
 		ASATOM_INCREF(obj);
@@ -3152,7 +3147,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			&& name->name_i > 0
 			&& (uint32_t)name->name_i < asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->currentsize)
 	{
-		LOG_CALL( _("getProperty_sll ") << name->name_i << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
+		LOG_CALL( _("getProperty_slli ") << name->name_i << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->at_nocheck(CONTEXT_GETLOCAL(context,instrptr->local_pos3-1),name->name_i);
 	}
 	else
@@ -3212,7 +3207,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			}
 			else
 			{
-				LOG_CALL("getProperty_sll " << *name << ' ' << obj->toDebugString());
+				LOG_CALL("getProperty_sll " << *name << ' ' << obj->toDebugString()<<" "<<instrptr->local_pos3-1<<" "<<asAtomHandler::toDebugString(prop));
 				ASATOM_INCREF(prop);
 			}
 
@@ -3233,7 +3228,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	multiname* name=instrptr->cachedmultiname2;
 
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,context->mi->context->root->getSystemState());
-	LOG_CALL( _("getProperty_sll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( _("getProperty_slr ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{

@@ -155,7 +155,7 @@ void ABCVm::abc_iftrue(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	bool cond=asAtomHandler::Boolean_concrete(*v1);
-	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL(_("ifTrue (") << ((cond)?_("taken)"):_("not taken)"))<<" "<<(*context->exec_pos).jumpdata.jump);
 	ASATOM_DECREF_POINTER(v1);
 	if(cond)
 		context->exec_pos += (*context->exec_pos).jumpdata.jump+1;
@@ -633,18 +633,14 @@ void ABCVm::abc_callproperty(call_context* context)
 }
 void ABCVm::abc_returnvoid(call_context* context)
 {
-	//returnvoid
 	LOG_CALL(_("returnVoid"));
-	context->returnvalue = asAtomHandler::invalidAtom;
-	context->returning = true;
+	context->locals[context->mi->body->getReturnValuePos()]= asAtomHandler::undefinedAtom;
 	++(context->exec_pos);
 }
 void ABCVm::abc_returnvalue(call_context* context)
 {
-	//returnvalue
-	RUNTIME_STACK_POP(context,context->returnvalue);
-	LOG_CALL(_("returnValue ") << asAtomHandler::toDebugString(context->returnvalue));
-	context->returning = true;
+	RUNTIME_STACK_POP(context,context->locals[context->mi->body->getReturnValuePos()]);
+	LOG_CALL(_("returnValue ") << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructsuper(call_context* context)
@@ -878,7 +874,7 @@ void ABCVm::abc_setlocal(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
 	LOG_CALL( _("setLocal n ") << i << _(": ") << asAtomHandler::toDebugString(*obj) );
-	assert(i <= context->mi->body->local_count+1+context->mi->body->localresultcount);
+	assert(i <= context->mi->body->getReturnValuePos()+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
 		ASATOM_DECREF(context->locals[i]);
@@ -1625,7 +1621,7 @@ void ABCVm::abc_setlocal_0(call_context* context)
 	unsigned int i=0;
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
-	if (i > context->mi->body->local_count)
+	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
@@ -1645,7 +1641,7 @@ void ABCVm::abc_setlocal_1(call_context* context)
 	++(context->exec_pos);
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
-	if (i > context->mi->body->local_count)
+	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
@@ -1663,7 +1659,7 @@ void ABCVm::abc_setlocal_2(call_context* context)
 	++(context->exec_pos);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	LOG_CALL( _("setLocal ") << i<<" "<<asAtomHandler::toDebugString(*obj));
-	if (i > context->mi->body->local_count)
+	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
@@ -1681,7 +1677,7 @@ void ABCVm::abc_setlocal_3(call_context* context)
 	++(context->exec_pos);
 	LOG_CALL( _("setLocal ") << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
-	if (i > context->mi->body->local_count)
+	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
 		return;
@@ -1731,6 +1727,6 @@ void ABCVm::abc_timestamp(call_context* context)
 }
 void ABCVm::abc_invalidinstruction(call_context* context)
 {
-	LOG(LOG_ERROR,"invalid instruction " << hex << (context->exec_pos)->data << dec);
+	LOG(LOG_ERROR,"invalid instruction " << hex << (context->exec_pos)->jumpdata.opcode << dec);
 	throw ParseException("Not implemented instruction in interpreter");
 }

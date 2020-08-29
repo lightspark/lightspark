@@ -91,8 +91,8 @@ void ABCVm::executeFunction(call_context* context)
 #define PROF_IGNORE_TIME(a) do{ ; } while(0)
 #endif
 
-	//Each case block builds the correct parameters for the interpreter function and call it
-	while(!context->returning)
+	asAtom* ret = &context->locals[context->mi->body->getReturnValuePos()];
+	while(asAtomHandler::isInvalid(*ret))
 	{
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=context->exec_pos- &context->mi->body->preloadedcode.front();
@@ -1202,7 +1202,7 @@ void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastloc
 {
 	if (resetlocaltypes)
 	{
-		for (uint32_t i = 0; i < state.mi->body->local_count+state.mi->body->localresultcount; i++)
+		for (uint32_t i = 0; i < state.mi->body->getReturnValuePos()+state.mi->body->localresultcount; i++)
 		{
 			assert(i < state.defaultlocaltypes.size() && "array out of bounds!"); 
 			state.localtypes[i] = state.defaultlocaltypes[i];
@@ -1227,7 +1227,7 @@ void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlo
 {
 	if (resetlocaltypes)
 	{
-		for (uint32_t i = 0; i < state.mi->body->local_count+state.mi->body->localresultcount; i++)
+		for (uint32_t i = 0; i < state.mi->body->getReturnValuePos()+state.mi->body->localresultcount; i++)
 		{
 			assert(i < state.defaultlocaltypes.size() && "array out of bounds!"); 
 			state.localtypes[i] = state.defaultlocaltypes[i];
@@ -1292,7 +1292,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	{
 		if (it->type != OP_LOCAL)
 			continue;
-		if (uint32_t(it->index) > state.mi->body->local_count) // local result index already used
+		if (uint32_t(it->index) > state.mi->body->getReturnValuePos()) // local result index already used
 		{
 			resultpos++; // use free entry for resultpos
 			localresultused++;
@@ -1668,8 +1668,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				{
 					// set optimized opcode to corresponding opcode with local result 
 					state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-					state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-					state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+					state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+					state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 					break;
 				}
 			}
@@ -1685,8 +1685,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype, state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype, state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1705,8 +1705,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype, state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1729,8 +1729,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1748,8 +1748,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1762,8 +1762,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1788,8 +1788,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1831,8 +1831,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+2+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 				res = true;
 			}
 			else
@@ -1843,8 +1843,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].pcode.data += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->local_count+2+resultpos;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->local_count+1+resultpos,0,0));
+				state.preloadedcode[preloadlocalpos].pcode.local_pos3 = state.mi->body->getReturnValuePos()+1;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos(),0,0));
 				res = true;
 			}
 			else
@@ -2270,7 +2270,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	state.localtypes.push_back(function->inClass);
 	state.defaultlocaltypes.push_back(function->inClass);
 	state.defaultlocaltypescacheable.push_back(true);
-	for (uint32_t i = 1; i < mi->body->local_count; i++)
+	for (uint32_t i = 1; i < mi->body->getReturnValuePos(); i++)
 	{
 		state.localtypes.push_back(nullptr);
 		state.defaultlocaltypes.push_back(nullptr);
@@ -3379,7 +3379,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size()+1;
 				uint32_t value =code.readu30();
-				assert_and_throw(value < mi->body->local_count);
+				assert_and_throw(value < mi->body->getReturnValuePos());
 				uint32_t num = value<<OPCODE_SIZE | opcode;
 				state.preloadedcode.push_back(num);
 				if (state.jumptargets.find(p) != state.jumptargets.end())
@@ -3392,7 +3392,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				uint32_t value =code.readu30();
-				assert_and_throw(value < mi->body->local_count);
+				assert_and_throw(value < mi->body->getReturnValuePos());
 				setOperandModified(state,OP_LOCAL,value);
 				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
 				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.data|=value<<OPCODE_SIZE;
@@ -3682,7 +3682,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								if (it->type != OP_LOCAL)
 									continue;
-								if (uint32_t(it->index) > state.mi->body->local_count) // local result index already used
+								if (uint32_t(it->index) > state.mi->body->getReturnValuePos()) // local result index already used
 								{
 									localresultused++;
 								}
@@ -3694,7 +3694,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								state.defaultlocaltypes.push_back(restype);
 								state.defaultlocaltypescacheable.push_back(true);
 							}
-							uint32_t num = state.mi->body->local_count+1+localresultused;
+							uint32_t num = state.mi->body->getReturnValuePos()+1+localresultused;
 							state.preloadedcode.back().pcode.local_pos3 = num;
 							code.seekg(pos);
 							removeOperands(state,false,nullptr,1);
@@ -4346,7 +4346,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
 					}
 				}
-				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,p);
+				if (state.operandlist.size() > 0 && state.operandlist.back().type == OP_LOCAL && state.operandlist.back().index == (int32_t)mi->body->getReturnValuePos())
+				{
+					// if localresult of previous action is put into returnvalue, we can skip this opcode
+					opcode_skipped=true;
+				}
+				else
+					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,p);
 				// skip unreachable code
 				while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					code.readbyte();
@@ -5124,6 +5130,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0xab://equals
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_EQUALS,opcode,code,false,false,true,code.tellg());
+				removetypestack(typestack,2);
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xad://lessthan
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,false,false,true,code.tellg());
@@ -5397,11 +5405,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 		mi->body->preloadedcode[mi->body->preloadedcode.size()-1].func = ABCVm::abcfunctions[itc->pcode.data&0x3ff];
 		// adjust cached local slots to localresultcount
 		if ((*itc).cachedslot1)
-			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1+= mi->body->local_count+1+mi->body->localresultcount;
+			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos1+= mi->body->getReturnValuePos()+1+mi->body->localresultcount;
 		if ((*itc).cachedslot2)
-			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos2+= mi->body->local_count+1+mi->body->localresultcount;
+			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos2+= mi->body->getReturnValuePos()+1+mi->body->localresultcount;
 		if ((*itc).cachedslot3)
-			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3+= mi->body->local_count+1+mi->body->localresultcount;
+			mi->body->preloadedcode[mi->body->preloadedcode.size()-1].local_pos3+= mi->body->getReturnValuePos()+1+mi->body->localresultcount;
 	}
 }
 

@@ -18,6 +18,7 @@ rconstructor = re.compile('[^/]*ASFUNCTIONBODY[\_ATOM]*\( *([^,]*), *\_construct
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\)\)\)')
 rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
+rclassavm1      = re.compile('.*builtinavm1->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 #the line may start with anything but a comment character
 rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *GETTER_METHOD, *([^ ]*)')
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
@@ -28,7 +29,8 @@ rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 rgetset3 = re.compile('.*REGISTER_GETTER_SETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 rgetsetstatic2 = re.compile('.*REGISTER_GETTER_SETTER_STATIC\([^,]*, *(.*)\)')
-rconst = re.compile('[^/]*->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
+#take c->setVariableAtomByQName(..) but not c->prototype->setVariableByQName(..)
+rconst = re.compile('[^/]*[^prtoye]->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
 rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
 
@@ -79,6 +81,10 @@ for line in f.read().replace("\n","").replace("\t"," ").split(";"):
 		fullname = getFullname(m.group(2),m.group(1))
 		internalToExternal[m.group(3)] = fullname
 		classes.add(fullname)
+	m = rclassavm1.match(line)
+	if m:
+		fullname = getFullname(m.group(2),m.group(1))
+		internalToExternal[m.group(3)] = fullname
 f.close()
 
 #print internalToExternal

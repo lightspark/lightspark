@@ -262,28 +262,11 @@ struct method_info_simple
 	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 };
-#define OPCODE_SIZE 10 // number of bits used for opcodes
 typedef void (*abc_function)(struct call_context*);
 
 struct preloadedcodedata
 {
 	abc_function func;
-	union
-	{
-		struct
-		{
-			// this is used to automatically extract the jump position for a branch (24 bit signed integer)
-#if G_BYTE_ORDER == G_BIG_ENDIAN
-			signed int jump:32-OPCODE_SIZE;
-			uint16_t opcode:OPCODE_SIZE;
-#else
-			uint16_t opcode:OPCODE_SIZE;
-			signed int jump:32-OPCODE_SIZE;
-#endif
-		} jumpdata;
-		int32_t idata;
-		uint32_t data;
-	};
 	union
 	{
 		ASObject* cacheobj1;
@@ -298,6 +281,11 @@ struct preloadedcodedata
 		multiname* cachedmultiname2;
 		variable* cachedvar2;
 		asAtom* arg2_constant;
+		struct
+		{
+			uint16_t pos;
+			uint16_t flags;
+		} local2;
 		uint32_t local_pos2;
 		int32_t arg2_int;
 		uint32_t arg2_uint;
@@ -305,12 +293,17 @@ struct preloadedcodedata
 	union
 	{
 		ASObject* cacheobj3;
+		multiname* cachedmultiname3;
 		asAtom* arg3_constant;
-		uint32_t local_pos3;
+		struct
+		{
+			uint16_t pos;
+			uint16_t flags;
+		} local3;
 		int32_t arg3_int;
 		uint32_t arg3_uint;
 	};
-	preloadedcodedata(uint32_t d):func(nullptr),data(d),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr){}
+	preloadedcodedata():func(nullptr),cacheobj1(nullptr),cacheobj2(nullptr),cacheobj3(nullptr) {}
 };
 struct localconstantslot
 {

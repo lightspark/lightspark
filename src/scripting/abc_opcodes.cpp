@@ -326,12 +326,12 @@ int32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 
 void ABCVm::callProperty(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	callPropIntern(th, n, m, keepReturn, false,NULL);
+	callPropIntern(th, n, m, keepReturn, false,nullptr);
 }
 
 void ABCVm::callPropLex(call_context *th, int n, int m, method_info **called_mi, bool keepReturn)
 {
-	callPropIntern(th, n, m, keepReturn, true,NULL);
+	callPropIntern(th, n, m, keepReturn, true,nullptr);
 }
 
 void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool callproplex,preloadedcodedata* instrptr)
@@ -341,7 +341,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 
 	asAtom obj=asAtomHandler::invalidAtom;
-	if (instrptr && (instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
+	if (instrptr && (instrptr->local3.flags&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		RUNTIME_STACK_POP(th,obj);
 		if (asAtomHandler::isObject(obj) && asAtomHandler::getObjectNoCheck(obj)->getClass() == instrptr->cacheobj1)
@@ -357,8 +357,8 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		{
 			if (instrptr->cacheobj2 && instrptr->cacheobj2->is<Function>() && instrptr->cacheobj2->as<IFunction>()->isCloned)
 				instrptr->cacheobj2->decRef();
-			instrptr->data |= ABC_OP_NOTCACHEABLE;
-			instrptr->data &= ~ABC_OP_CACHED;
+			instrptr->local3.flags |= ABC_OP_NOTCACHEABLE;
+			instrptr->local3.flags &= ~ABC_OP_CACHED;
 		}
 	}
 	
@@ -425,13 +425,13 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		if (canCache 
 				&& instrptr 
 				&& name->isStatic 
-				&& (instrptr->data & ABC_OP_NOTCACHEABLE)==0 
+				&& (instrptr->local3.flags & ABC_OP_NOTCACHEABLE)==0 
 				&& asAtomHandler::canCacheMethod(obj,name)
 				&& asAtomHandler::getObject(o) 
 				&& (asAtomHandler::is<Class_base>(obj) || asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::getClass(obj,th->mi->context->root->getSystemState())))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
-			instrptr->data |= ABC_OP_CACHED;
+			instrptr->local3.flags |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = asAtomHandler::getClass(obj,th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = asAtomHandler::getObject(o);
 			instrptr->cacheobj2->incRef();
@@ -441,7 +441,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<asAtomHandler::toDebugString(obj));
 		obj = asAtomHandler::getClosureAtom(o,obj);
 		callImpl(th, o, obj, args, m, keepReturn);
-		if (!(instrptr->data & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->isCloned)
+		if (!(instrptr->local3.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->isCloned)
 			asAtomHandler::as<IFunction>(o)->decRef();
 	}
 	else
@@ -450,7 +450,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		if(asAtomHandler::is<Proxy>(obj))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			multiname callPropertyName(NULL);
+			multiname callPropertyName(nullptr);
 			callPropertyName.name_type=multiname::NAME_STRING;
 			callPropertyName.name_s_id=th->mi->context->root->getSystemState()->getUniqueStringId("callProperty");
 			callPropertyName.ns.emplace_back(th->mi->context->root->getSystemState(),flash_proxy,NAMESPACE);
@@ -1619,11 +1619,11 @@ bool ABCVm::getLex(call_context* th, int n)
 	multiname* name=th->mi->context->getMultiname(n,NULL);
 	//getlex is specified not to allow runtime multinames
 	assert_and_throw(name->isStatic);
-	return getLex_multiname(th,name,0);
+	return getLex_multiname(th,name,UINT32_MAX);
 }
 bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localresult)
 {
-	LOG_CALL( "getLex"<<(localresult ? "_l:":":") << *name );
+	LOG_CALL( "getLex"<<(localresult!=UINT32_MAX ? "_l:":":") << *name );
 	vector<scope_entry>::reverse_iterator it;
 	// o will be a reference owned by this function (or NULL). At
 	// the end the reference will be handed over to the runtime
@@ -1698,10 +1698,10 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		// TODO can we cache objects found in the scope_stack? 
 		canCache = false;
 	name->resetNameIfObject();
-	if (localresult)
+	if (localresult!= UINT32_MAX)
 	{
-		ASATOM_DECREF(th->locals[localresult-1]);
-		asAtomHandler::set(th->locals[localresult-1],o);
+		ASATOM_DECREF(th->locals[localresult]);
+		asAtomHandler::set(th->locals[localresult],o);
 	}
 	else
 		RUNTIME_STACK_PUSH(th,o);
@@ -1854,9 +1854,9 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 {
 	preloadedcodedata* instrptr = th->exec_pos;
-	uint32_t t = (*(++(th->exec_pos))).data;
+	uint32_t t = th->exec_pos->local3.pos;
 
-	if ((instrptr->data&ABC_OP_CACHED) == ABC_OP_CACHED)
+	if ((instrptr->local3.flags&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
@@ -1890,7 +1890,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			if (asAtomHandler::is<Class_base>(ret) && !hasdynamic)
 			{
 				// put object in cache
-				instrptr->data |= ABC_OP_CACHED;
+				instrptr->local3.flags = ABC_OP_CACHED;
 				instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->mi->context->root->getSystemState());
 				instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 				if (instrptr->cacheobj1->is<IFunction>())
@@ -1947,7 +1947,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		if (!hasdynamic)
 		{
 			// put object in cache
-			instrptr->data |= ABC_OP_CACHED;
+			instrptr->local3.flags = ABC_OP_CACHED;
 			instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->mi->context->root->getSystemState());
 			instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 			if (instrptr->cacheobj1->is<IFunction>())

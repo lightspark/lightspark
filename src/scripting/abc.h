@@ -190,11 +190,10 @@ enum OPERANDTYPES {
 	OP_FALSE=0x0a, OP_TRUE=0x0b, OP_NULL=0x0c, OP_NAN=0x0d,
 	OP_LOCAL=0x10, OP_BYTE=0x20, OP_SHORT=0x30, OP_CACHED_CONSTANT=0x40, OP_CACHED_SLOT=0x80};
 
-#define ABC_OP_CACHED 0x10000000 
-#define ABC_OP_NOTCACHEABLE 0x20000000 
-#define ABC_OP_COERCED 0x40000000 //indicates that the method call doesn't have to coerce the arguments to the expected type
-#define ABC_OP_FORCEINT 0x10000000 // forces the result of the arithmetic operation to be coerced to int
-#define ABC_OP_AVAILABLEBITS 0x0fffffff
+#define ABC_OP_FORCEINT 0x0001 // forces the result of the arithmetic operation to be coerced to int
+#define ABC_OP_CACHED 0x0002
+#define ABC_OP_NOTCACHEABLE 0x0004
+#define ABC_OP_COERCED 0x0008 //indicates that the method call doesn't have to coerce the arguments to the expected type
 
 struct typed_opcode_handler
 {
@@ -1168,9 +1167,6 @@ private:
 	static void abc_increment_i_local_localresult(call_context* context);
 	static void abc_decrement_i_local(call_context* context);
 	static void abc_decrement_i_local_localresult(call_context* context);
-
-	static void abc_callFunctionMultiArgsVoid(call_context* context);
-	static void abc_callFunctionMultiArgs(call_context* context);
 
 	static void abc_invalidinstruction(call_context* context);
 

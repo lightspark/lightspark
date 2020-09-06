@@ -2202,13 +2202,22 @@ void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memoryst
 	state.preloadedcode.back().pcode.arg3_uint=value;
 	state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->root->getSystemState()),value,1,state.preloadedcode.size()-1));
 }
-void addCachedSlot(preloadstate& state,method_info* mi, uint32_t localpos, uint32_t slotid,memorystream& code,Class_base* resulttype)
+void addCachedSlot(preloadstate& state, uint32_t localpos, uint32_t slotid,memorystream& code,Class_base* resulttype)
 {
-	localconstantslot sl;
-	sl.local_pos= localpos;
-	sl.slot_number = slotid;
-	uint32_t value = mi->body->localconstantslots.size();
-	mi->body->localconstantslots.push_back(sl);
+	uint32_t value = 0;
+	for (auto it = state.mi->body->localconstantslots.begin(); it != state.mi->body->localconstantslots.end(); it++)
+	{
+		if (it->local_pos == localpos && it->slot_number == slotid)
+			break;
+		value++;
+	}
+	if (value == state.mi->body->localconstantslots.size())
+	{
+		localconstantslot sl;
+		sl.local_pos= localpos;
+		sl.slot_number = slotid;
+		state.mi->body->localconstantslots.push_back(sl);
+	}
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
 	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 	state.preloadedcode.back().pcode.arg3_uint = value;
@@ -3250,7 +3259,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o),false);
 		
 									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
-									if (v && v->slotid)
+									if (!asAtomHandler::isPrimitive(o) && v && v->slotid)
 									{
 										// we can skip coercing when setting the slot value if
 										// - contenttype is the same as the variable type or
@@ -3476,7 +3485,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								if (obj)
 									resulttype = obj->getSlotType(t);
 							}
-							addCachedSlot(state,mi,it->index,t,code,resulttype);
+							addCachedSlot(state,it->index,t,code,resulttype);
 							typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
@@ -4970,7 +4979,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												state.operandlist.back().removeArg(state);
 												state.operandlist.pop_back();
 												addname = false;
-												addCachedSlot(state,mi,index,v->slotid,code,resulttype);
+												addCachedSlot(state,index,v->slotid,code,resulttype);
 												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
 												break;

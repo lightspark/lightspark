@@ -594,7 +594,7 @@ struct variable
 		if(isrefcounted && asAtomHandler::isObject(var))
 			preparereplacevar(obj);
 		var=v;
-		isrefcounted = true;
+		isrefcounted = asAtomHandler::isObject(v);
 	}
 	void preparereplacevar(ASObject *obj);
 	
@@ -778,7 +778,7 @@ public:
 		if (slots_vars[n]->var.uintval != o.uintval)
 		{
 			slots_vars[n]->setVarNoCoerce(o,obj);
-			return true;
+			return asAtomHandler::isObject(o);
 		}
 		return false;
 	}

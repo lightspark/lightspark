@@ -113,6 +113,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/globalization/lastoperationstatus.cpp
   scripting/flash/globalization/currencyformatter.cpp
   scripting/flash/globalization/numberformatter.cpp
+  scripting/flash/globalization/collator.cpp
   scripting/flash/globalization/collatormode.cpp
   scripting/flash/globalization/datetimenamecontext.cpp
   scripting/flash/globalization/datetimenamestyle.cpp

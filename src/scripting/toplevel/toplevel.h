@@ -171,7 +171,7 @@ protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
-	void destroy();
+	void destroy() override;
 public:
 	asfreelist freelist[2];
 	variables_map borrowedVariables;
@@ -201,17 +201,17 @@ public:
 	inline virtual void setupDeclaredTraits(ASObject *target, bool checkclone=true) { target->traitsInitialized = true; }
 	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	bool hasConstructor() { return constructor != NULL; }
+	bool hasConstructor() { return constructor != nullptr; }
 	Class_base(const QName& name, MemoryAccount* m);
 	//Special constructor for Class_object
 	Class_base(const Class_object*);
 	~Class_base();
-	void finalize();
-	virtual void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)=0;
+	void finalize() override;
+	virtual void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
-	const std::vector<Class_base*>& getInterfaces(bool *alldefined = NULL) const;
+	const std::vector<Class_base*>& getInterfaces(bool *alldefined = nullptr) const;
 	virtual void linkInterface(Class_base* c) const;
 	/*
 	 * Returns true when 'this' is a subclass of 'cls',
@@ -223,34 +223,34 @@ public:
 	tiny_string getName() const;
 	tiny_string toString();
 	virtual void generator(asAtom &ret, asAtom* args, const unsigned int argslen);
-	ASObject *describeType() const;
+	ASObject *describeType() const override;
 	void describeInstance(pugi::xml_node &root, bool istemplate, bool forinstance) const;
-	virtual const Template_base* getTemplate() const { return NULL; }
+	virtual const Template_base* getTemplate() const { return nullptr; }
 	/*
 	 * Converts the given object to an object of this Class_base's type.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	bool coerce(SystemState* sys, asAtom& o) const;
+	bool coerce(SystemState* sys, asAtom& o) const override;
 	
-	void coerceForTemplate(SystemState* sys, asAtom& o) const;
+	void coerceForTemplate(SystemState* sys, asAtom& o) const override;
 
 	void setSuper(_R<Class_base> super_);
-	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = NULL) const DLL_LOCAL
+	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = nullptr) const
 	{
 		return ASObject::findGettableImplConst(getSystemState(), borrowedVariables,name,nsRealId);
 	}
 	
-	variable* findBorrowedSettable(const multiname& name, bool* has_getter=NULL) DLL_LOCAL;
-	variable* findSettableInPrototype(const multiname& name) DLL_LOCAL;
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
-	const multiname* resolveSlotTypeName(uint32_t slotId) const { /*TODO: implement*/ return NULL; }
+	variable* findBorrowedSettable(const multiname& name, bool* has_getter=nullptr);
+	variable* findSettableInPrototype(const multiname& name);
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
+	const multiname* resolveSlotTypeName(uint32_t slotId) const override { /*TODO: implement*/ return nullptr; }
 	bool checkExistingFunction(const multiname& name);
 	void getClassVariableByMultiname(asAtom& ret,const multiname& name);
 	variable* getBorrowedVariableByMultiname(const multiname& name)
 	{
 		return borrowedVariables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DECLARED_TRAIT);
 	}
-	bool isBuiltin() const { return true; }
+	bool isBuiltin() const override { return true; }
 	bool implementsInterfaces() const { return interfaces.size() || interfaces_added.size(); }
 	void removeAllDeclaredProperties();
 };
@@ -466,8 +466,10 @@ protected:
 	/* Function pointer to the C-function implementation with atom arguments */
 	as_atom_function val_atom;
 	
-	// type of the return value;
+	// type of the return value
 	Class_base* returnType;
+	// type of the return value if all arguments are integer
+	Class_base* returnTypeAllArgsInt;
 	Function(Class_base* c,as_atom_function v = nullptr):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone() override
@@ -484,12 +486,14 @@ protected:
 			ret->objfreelist = objfreelist;
 			ret->resetCached();
 			ret->returnType = returnType;
+			ret->returnTypeAllArgsInt = returnTypeAllArgsInt;
 		}
 		return ret;
 	}
 	bool destruct() override
 	{
 		returnType=nullptr;
+		returnTypeAllArgsInt=nullptr;
 		return IFunction::destruct();
 	}
 	
@@ -516,10 +520,8 @@ public:
 		val_atom(ret,getSystemState(),c,nullptr,0);
 		return nullptr;
 	}
-	FORCE_INLINE Class_base* getReturnType() override
-	{
-		return returnType;
-	}
+	Class_base* getReturnType() override;
+	Class_base* getArgumentDependentReturnType(bool allargsint);
 };
 
 /* Special object used as prototype for the Function class
@@ -703,7 +705,7 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=nullptr)
+	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
@@ -713,6 +715,7 @@ public:
 		ret->resetCached();
 		ret->val_atom = v;
 		ret->returnType = returnType;
+		ret->returnTypeAllArgsInt = returnTypeAllArgsInt;
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

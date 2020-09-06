@@ -3152,7 +3152,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (asAtomHandler::is<Class_base>(o))
 					{
 						resulttype = asAtomHandler::as<Class_base>(o);
-						if (asAtomHandler::as<Class_base>(o)->isConstructed())
+						if (asAtomHandler::as<Class_base>(o)->isConstructed() || asAtomHandler::as<Class_base>(o)->isBuiltin())
 						{
 							addCachedConstant(state,mi, o,code);
 							typestack.push_back(typestackentry(resulttype,true));
@@ -4607,6 +4607,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											// function is a class generator, we can use it as the result type
 											resulttype = asAtomHandler::as<Class_base>(func);
+
+											// generator for Integer can be skipped if argument is already an integer
+											if (state.operandlist.size() > 1 && resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
+													&& typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+											{
+												// remove caller
+												auto it = state.operandlist.end();
+												--it;
+												--it;
+												uint32_t c  = it->codecount;
+												it->removeArg(state);
+												state.operandlist.erase(it);
+												state.operandlist.back().preloadedcodepos-=c;
+
+												state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+												removetypestack(typestack,2);
+												typestack.push_back(typestackentry(resulttype,false));
+												break;
+											}
 										}
 										else if (asAtomHandler::is<SyntheticFunction>(func))
 										{
@@ -4696,6 +4715,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (state.operandlist.size() >= argcount)
 									{
 										state.preloadedcode.push_back((uint32_t)(opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS_CACHED));
+										bool allargsint=true;
 										auto it = state.operandlist.rbegin();
 										for(uint32_t i= 0; i < argcount; i++)
 										{
@@ -4703,6 +4723,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											state.preloadedcode.push_back(0);
 											it->fillCode(state,0,state.preloadedcode.size()-1,false);
 											state.preloadedcode.back().pcode.arg2_uint = it->type;
+											if (!it->objtype || it->objtype != Class<Integer>::getRef(function->getSystemState()).getPtr())
+												allargsint=false;
 											it++;
 										}
 										
@@ -4734,6 +4756,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													}
 													else if (asAtomHandler::is<Function>(v->var))
 													{
+														if (opcode == 0x46)
+															resulttype = asAtomHandler::as<Function>(v->var)->getArgumentDependentReturnType(allargsint);
 														state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS);
 														state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
 														if (skipcoerce)

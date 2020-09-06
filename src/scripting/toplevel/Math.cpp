@@ -48,8 +48,8 @@ void Math::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(c->getSystemState(),exp,1),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(c->getSystemState(),floor,1),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(c->getSystemState(),log,1),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),_max,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),_min,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),_max,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),_min,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(c->getSystemState(),pow,2),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(c->getSystemState(),random),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(c->getSystemState(),round,1),NORMAL_METHOD,false);
@@ -79,8 +79,11 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 {
 	double largest = -numeric_limits<double>::infinity();
 
+	bool isint = argslen > 0;
 	for(unsigned int i = 0; i < argslen; i++)
 	{
+		if (!asAtomHandler::isInteger(args[i]))
+			isint = false;
 		double arg = asAtomHandler::toNumber(args[i]);
 		if (std::isnan(arg))
 		{
@@ -92,15 +95,21 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 		else
 			largest = (arg>largest) ? arg : largest;
 	}
-	asAtomHandler::setNumber(ret,sys,largest);
+	if (isint)
+		asAtomHandler::setInt(ret,sys,largest);
+	else
+		asAtomHandler::setNumber(ret,sys,largest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,_min)
 {
 	double smallest = numeric_limits<double>::infinity();
 
+	bool isint = argslen > 0;
 	for(unsigned int i = 0; i < argslen; i++)
 	{
+		if (!asAtomHandler::isInteger(args[i]))
+			isint = false;
 		double arg = asAtomHandler::toNumber(args[i]);
 		if (std::isnan(arg))
 		{
@@ -112,8 +121,10 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 		else
 			smallest = (arg<smallest)? arg : smallest;
 	}
-
-	asAtomHandler::setNumber(ret,sys,smallest);
+	if (isint)
+		asAtomHandler::setInt(ret,sys,smallest);
+	else
+		asAtomHandler::setNumber(ret,sys,smallest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,exp)

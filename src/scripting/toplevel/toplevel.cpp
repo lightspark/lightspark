@@ -728,6 +728,20 @@ bool Function::isEqual(ASObject* r)
 	return (val_atom==f->val_atom);
 }
 
+Class_base *Function::getReturnType()
+{
+	if (!returnType && inClass && this->functionname)
+		LOG(LOG_NOT_IMPLEMENTED,"no returntype given for "<<inClass->toDebugString()<<" "<<getSystemState()->getStringFromUniqueId(this->functionname));
+	return returnType;
+}
+
+Class_base *Function::getArgumentDependentReturnType(bool allargsint)
+{
+	if (!returnType && inClass && this->functionname)
+		LOG(LOG_NOT_IMPLEMENTED,"no arg dependent returntype given for "<<inClass->toDebugString()<<" "<<getSystemState()->getStringFromUniqueId(this->functionname));
+	return allargsint && returnTypeAllArgsInt ? returnTypeAllArgsInt : returnType;
+}
+
 bool Null::isEqual(ASObject* r)
 {
 	switch(r->getObjectType())

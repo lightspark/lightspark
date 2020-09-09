@@ -966,10 +966,11 @@ struct preloadedcodebuffer
 {
 	preloadedcodedata pcode;
 	uint32_t opcode;
+	uint32_t operator_start;
 	bool cachedslot1;
 	bool cachedslot2;
 	bool cachedslot3;
-	preloadedcodebuffer(uint32_t d=0):pcode(),opcode(d),cachedslot1(false),cachedslot2(false),cachedslot3(false){}
+	preloadedcodebuffer(uint32_t d=0):pcode(),opcode(d),operator_start(d),cachedslot1(false),cachedslot2(false),cachedslot3(false){}
 };
 struct preloadstate
 {
@@ -1819,12 +1820,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0xa2://multiply
 		case 0xa3://divide
 		case 0xa4://modulo
-		case 0xa5://lshift
-		case 0xa6://rshift
-		case 0xa7://urshift
-		case 0xa8://bitand
-		case 0xa9://bitor
-		case 0xaa://bitxor
 		case 0xab://equals
 		case 0xad://lessthan
 		case 0xae://lessequals
@@ -1837,6 +1832,32 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x3e://sf64
 			if ((argsneeded==1 || (!argsneeded && state.operandlist.size() > 0)) && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
+				// set optimized opcode to corresponding opcode with local result 
+				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(state,false,nullptr,checkchanged);
+			break;
+		case 0xa5://lshift
+		case 0xa6://rshift
+		case 0xa9://bitor
+		case 0xa8://bitand
+		case 0xaa://bitxor
+		case 0xa7://urshift
+			if ((argsneeded==1 || (!argsneeded && state.operandlist.size() > 0)) && (state.jumptargets.find(pos) == state.jumptargets.end()))
+			{
+				switch (state.preloadedcode[preloadlocalpos].operator_start)
+				{
+					case ABC_OP_OPTIMZED_ADD:
+					case ABC_OP_OPTIMZED_SUBTRACT:
+					case ABC_OP_OPTIMZED_MULTIPLY:
+					case ABC_OP_OPTIMZED_DIVIDE:
+						state.preloadedcode[preloadpos].pcode.local3.flags = ABC_OP_FORCEINT;
+						break;
+				}
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;

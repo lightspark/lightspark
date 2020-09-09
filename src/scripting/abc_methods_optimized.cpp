@@ -4441,7 +4441,7 @@ void ABCVm::abc_urshift_constant_constant(call_context* context)
 	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
 	LOG_CALL("urShift_cc "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4451,7 +4451,7 @@ void ABCVm::abc_urshift_local_constant(call_context* context)
 	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
 	LOG_CALL("urShift_lc "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4461,13 +4461,12 @@ void ABCVm::abc_urshift_constant_local(call_context* context)
 	uint32_t i1=asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2))&0x1f;
 	LOG_CALL("urShift_cl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_urshift_local_local(call_context* context)
 {
-	//urshift
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtomHandler::urshift(res,context->mi->context->root->getSystemState(),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
 	RUNTIME_STACK_PUSH(context,res);
@@ -4479,7 +4478,7 @@ void ABCVm::abc_urshift_constant_constant_localresult(call_context* context)
 	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
 	LOG_CALL("urShift_ccl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	++(context->exec_pos);
@@ -4490,7 +4489,7 @@ void ABCVm::abc_urshift_local_constant_localresult(call_context* context)
 	uint32_t i1=(context->exec_pos->arg2_uint)&0x1f;
 	LOG_CALL("urShift_lcl "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	++(context->exec_pos);
@@ -4501,7 +4500,7 @@ void ABCVm::abc_urshift_constant_local_localresult(call_context* context)
 	uint32_t i1=asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2))&0x1f;
 	LOG_CALL("urShift_cll "<<std::hex<<i2<<_(">>")<<i1<<std::dec);
 	asAtom res;
-	asAtomHandler::setUInt(res,context->mi->context->root->getSystemState(),i2>>i1);
+	asAtomHandler::setInt(res,context->mi->context->root->getSystemState(),i2>>i1);
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	++(context->exec_pos);

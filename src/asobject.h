@@ -519,7 +519,7 @@ public:
 	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
 	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
 	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x3) == ATOM_STRINGID); return a.uintval>>3; }
-	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int32_t val);
+	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int64_t val);
 	static FORCE_INLINE void setUInt(asAtom& a,SystemState* sys, uint32_t val);
 	static void setNumber(asAtom& a,SystemState* sys,number_t val);
 	static bool replaceNumber(asAtom& a,SystemState* sys,number_t val);
@@ -1776,7 +1776,7 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 	return false;
 }
 
-FORCE_INLINE void asAtomHandler::setInt(asAtom& a,SystemState* sys, int32_t val)
+FORCE_INLINE void asAtomHandler::setInt(asAtom& a,SystemState* sys, int64_t val)
 {
 #ifdef LIGHTSPARK_64
 	a.intval = ((int64_t)val<<3)|ATOM_INTEGER;
@@ -1921,14 +1921,14 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
 FORCE_INLINE void asAtomHandler::increment_i(asAtom& a,SystemState* sys)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,(a.intval>>3)+1);
+		setInt(a,sys,int32_t(a.intval>>3)+1);
 	else
 		setInt(a,sys,toInt(a)+1);
 }
 FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a,SystemState* sys)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,(a.intval>>3)-1);
+		setInt(a,sys,int32_t(a.intval>>3)-1);
 	else
 		setInt(a,sys,toInt(a)-1);
 }
@@ -2206,7 +2206,7 @@ FORCE_INLINE void asAtomHandler::urshift(asAtom& a,SystemState* sys,asAtom &v1)
 	uint32_t i2=toUInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
 	LOG_CALL(_("urShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
-	setUInt(a,sys,i2>>i1);
+	setInt(a,sys,i2>>i1);
 }
 FORCE_INLINE void asAtomHandler::bit_and(asAtom& a,SystemState* sys,asAtom &v1)
 {

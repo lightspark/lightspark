@@ -97,7 +97,7 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=context->exec_pos- &context->mi->body->preloadedcode.front();
 #endif
-		//LOG(LOG_INFO,"opcode:"<<(context->stackp-context->stack)<<" "<< hex<<(int)((context->exec_pos->data)&0x3ff));
+		//LOG(LOG_INFO,"stack:"<<(context->stackp-context->stack));
 
 #ifndef NDEBUG
 		uint32_t c = opcodecounter[context->exec_pos->func];
@@ -4285,7 +4285,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				int32_t t2 = code.readu30();
-				state.preloadedcode.back().pcode.arg2_uint=t;
+				state.preloadedcode.back().pcode.arg2_uint=t2;
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+t2+1);
 				break;

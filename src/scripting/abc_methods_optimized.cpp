@@ -2751,7 +2751,13 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 	int index=asAtomHandler::toInt(*arg1);
 	LOG_CALL( _("getPropertyInteger ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index);
+	if (obj->is<Vector>())
+	{
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+		ASATOM_INCREF(prop);
+	}
+	else
+		obj->getVariableByInteger(prop,index);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2766,7 +2772,13 @@ void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_cc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index);
+	if (obj->is<Vector>())
+	{
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+		ASATOM_INCREF(prop);
+	}
+	else
+		obj->getVariableByInteger(prop,index);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2781,7 +2793,13 @@ void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 		obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lc ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index);
+	if (obj->is<Vector>())
+	{
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+		ASATOM_INCREF(prop);
+	}
+	else
+		obj->getVariableByInteger(prop,index);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2796,7 +2814,13 @@ void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_cl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index);
+	if (obj->is<Vector>())
+	{
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+		ASATOM_INCREF(prop);
+	}
+	else
+		obj->getVariableByInteger(prop,index);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2813,7 +2837,13 @@ void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 		obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_ll ") << index <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index);
+	if (obj->is<Vector>())
+	{
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+		ASATOM_INCREF(prop);
+	}
+	else
+		obj->getVariableByInteger(prop,index);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	RUNTIME_STACK_PUSH(context,prop);
@@ -2847,7 +2877,10 @@ void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* cont
 		obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lcl ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if (obj->is<Vector>())
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+	else
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,instrptr->local3.pos));
@@ -2866,7 +2899,10 @@ void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* cont
 		obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->mi->context->root->getSystemState(),true);
 	LOG_CALL( _("getPropertyInteger_cll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if (obj->is<Vector>())
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+	else
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,instrptr->local3.pos));
@@ -2885,7 +2921,10 @@ void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context
 		obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->mi->context->root->getSystemState());
 	LOG_CALL( _("getPropertyInteger_lll ") << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
+	if (obj->is<Vector>())
+		obj->as<Vector>()->getVariableByIntegerDirect(prop,index);
+	else
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,instrptr->local3.pos));

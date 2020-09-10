@@ -97,6 +97,13 @@ public:
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
+	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index)
+	{
+		if (index >=0 && uint32_t(index) < size())
+			ret = vec[index];
+		else
+			getVariableByIntegerIntern(ret,index);
+	}
 	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = nullptr);
 
 	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter) override;

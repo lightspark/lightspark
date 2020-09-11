@@ -515,6 +515,7 @@ public:
 	static uint32_t toStringId(asAtom &a, SystemState *sys);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
 	static bool Boolean_concrete(asAtom& a);
+	static bool Boolean_concrete_object(asAtom& a);
 	static void convert_b(asAtom& a, bool refcounted);
 	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
 	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
@@ -2394,6 +2395,38 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 	}
 	return isLessIntern(a,sys,v2);
 }
+/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
+FORCE_INLINE bool asAtomHandler::Boolean_concrete(asAtom& a)
+{
+	switch(a.uintval&0x7)
+	{
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		{
+			switch (a.uintval&0x70)
+			{
+				case ATOMTYPE_NULL_BIT:
+				case ATOMTYPE_UNDEFINED_BIT:
+					return false;
+				case ATOMTYPE_BOOL_BIT:
+					return (a.uintval&0x80)>>7;
+				default:
+					return false;
+			}
+			break;
+		}
+		case ATOM_NUMBERPTR:
+			return toNumber(a) != 0.0 && !std::isnan(toNumber(a));
+		case ATOM_INTEGER:
+			return (a.intval>>3) != 0;
+		case ATOM_UINTEGER:
+			return (a.uintval>>3) != 0;
+		case ATOM_STRINGID:
+			return (a.uintval>>3) != BUILTIN_STRINGS::EMPTY;
+		default:
+			return Boolean_concrete_object(a);
+	}
+}
+
 FORCE_INLINE bool asAtomHandler::isFunction(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<IFunction>(); }
 FORCE_INLINE bool asAtomHandler::isString(const asAtom& a) { return isStringID(a) || (isObject(a) && getObjectNoCheck(a)->is<ASString>()); }
 FORCE_INLINE bool asAtomHandler::isQName(const asAtom& a) { return getObject(a) && getObjectNoCheck(a)->is<ASQName>(); }

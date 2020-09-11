@@ -3185,37 +3185,10 @@ void asAtomHandler::setFunction(asAtom& a,ASObject *obj, ASObject *closure)
 		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj)|ATOM_OBJECTPTR;
 	}
 }
-/* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
-bool asAtomHandler::Boolean_concrete(asAtom& a)
+bool asAtomHandler::Boolean_concrete_object(asAtom& a)
 {
-	switch(a.uintval&0x7)
-	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-		{
-			switch (a.uintval&0x70)
-			{
-				case ATOMTYPE_NULL_BIT:
-				case ATOMTYPE_UNDEFINED_BIT:
-					return false;
-				case ATOMTYPE_BOOL_BIT:
-					return (a.uintval&0x80)>>7;
-				default:
-					return false;
-			}
-			break;
-		}
-		case ATOM_NUMBERPTR:
-			return toNumber(a) != 0.0 && !std::isnan(toNumber(a));
-		case ATOM_INTEGER:
-			return (a.intval>>3) != 0;
-		case ATOM_UINTEGER:
-			return (a.uintval>>3) != 0;
-		case ATOM_STRINGID:
-			return (a.uintval>>3) != BUILTIN_STRINGS::EMPTY;
-		default:
-			assert(getObject(a));
-			return lightspark::Boolean_concrete(getObject(a));
-	}
+	assert(getObject(a));
+	return lightspark::Boolean_concrete(getObject(a));
 }
 
 void asAtomHandler::setNumber(asAtom& a, SystemState* sys, number_t val)

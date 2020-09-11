@@ -994,11 +994,12 @@ struct operands
 {
 	OPERANDTYPES type;
 	bool modified;
+	bool duparg1;
 	Class_base* objtype;
 	int32_t index;
 	uint32_t codecount;
 	uint32_t preloadedcodepos;
-	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),modified(false),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p) {}
+	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),modified(false),duparg1(false),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p) {}
 	void removeArg(preloadstate& state)
 	{
 		if (codecount)
@@ -1467,13 +1468,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				else
 					keepchecking=false;
 				break;
-			case 0x2a://dup
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				argsneeded++;
-				keepchecking=false;
-				lastlocalpos=-1;
-				break;
 			case 0x20://pushnull
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -1619,6 +1613,18 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	// check if we need to store the result of the operation on stack
 	switch (b)
 	{
+		case 0x2a://dup
+			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(state,false,nullptr,checkchanged);
+			break;
 		case 0x63://setlocal
 		{
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
@@ -2124,9 +2130,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				}
 				break;
 			case ABC_OP_OPTIMZED_ADD_I:
-			case ABC_OP_OPTIMZED_LSHIFT:
 			case ABC_OP_OPTIMZED_RSHIFT:
-			case ABC_OP_OPTIMZED_BITOR:
 				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
@@ -2137,6 +2141,8 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				if (op2isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg2_int=asAtomHandler::toUInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg2_constant);
 				break;
+			case ABC_OP_OPTIMZED_LSHIFT:
+			case ABC_OP_OPTIMZED_BITOR:
 			case ABC_OP_OPTIMZED_BITAND:
 			case ABC_OP_OPTIMZED_BITXOR:
 				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
@@ -3212,7 +3218,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				state.preloadedcode[state.preloadedcode.size()-1].pcode.cachedmultiname2=name;
-				if (!checkForLocalResult(state,code,0,nullptr))
+				if (!checkForLocalResult(state,code,0,resulttype))
 				{
 					// no local result possible, use standard operation
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.func = abc_getlex;
@@ -3450,8 +3456,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->getReturnValuePos());
 				setOperandModified(state,OP_LOCAL,value);
-				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
+				if (state.operandlist.size() && state.operandlist.back().duparg1)
+				{
+					// the argument to set is the argument of a dup, so we just modify the localresult of the dup and skip this opcode
+					state.preloadedcode.at(state.operandlist.back().preloadedcodepos-1).pcode.local3.pos =value;
+					state.preloadedcode.at(state.operandlist.back().preloadedcodepos).pcode.arg3_uint =value;
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					opcode_skipped=true;
+				}
+				else
+				{
+					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
+				}
 				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 					state.localtypes[value]=typestack.back().obj->as<Class_base>();
 				else
@@ -3755,10 +3773,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							state.preloadedcode.back().pcode.arg3_uint = num;
 							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 							state.operandlist.push_back(operands(OP_LOCAL,restype,num,1,state.preloadedcode.size()-1));
+							state.operandlist.back().duparg1=true;
 							break;
 						}
 						// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
-						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),true,false,true);
+						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true);
 						if (op.type == OP_CACHED_SLOT)
 						{
 							state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
@@ -4778,7 +4797,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 														state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 														removeOperands(state,true,&lastlocalresulttype,argcount+1);
 														if (opcode == 0x46)
-															checkForLocalResult(state,code,2,nullptr,oppos,state.preloadedcode.size()-1);
+															checkForLocalResult(state,code,2,resulttype,oppos,state.preloadedcode.size()-1);
 														removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 														if (opcode == 0x46)
 															typestack.push_back(typestackentry(resulttype,false));
@@ -4798,7 +4817,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 														state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 														removeOperands(state,true,&lastlocalresulttype,argcount+1);
 														if (opcode == 0x46)
-															checkForLocalResult(state,code,2,nullptr,oppos,state.preloadedcode.size()-1);
+															checkForLocalResult(state,code,2,resulttype,oppos,state.preloadedcode.size()-1);
 														removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 														if (opcode == 0x46)
 															typestack.push_back(typestackentry(resulttype,false));
@@ -4826,7 +4845,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
 										clearOperands(state,true,&lastlocalresulttype);
 										if (opcode == 0x46)
-											checkForLocalResult(state,code,1,nullptr,state.preloadedcode.size()-1-argcount,state.preloadedcode.size()-1);
+											checkForLocalResult(state,code,1,resulttype,state.preloadedcode.size()-1-argcount,state.preloadedcode.size()-1);
 										removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 										if (opcode == 0x46)
 											typestack.push_back(typestackentry(resulttype,false));
@@ -5472,8 +5491,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				assert_and_throw(uint32_t(opcode-0xd4) < mi->body->local_count);
 				setOperandModified(state,OP_LOCAL,opcode-0xd4);
-				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
+				if (state.operandlist.size() && state.operandlist.back().duparg1)
+				{
+					// the argument to set is the argument of a dup, so we just modify the localresult of the dup and skip this opcode
+					state.preloadedcode.at(state.operandlist.back().preloadedcodepos-1).pcode.local3.pos =(opcode-0xd4);
+					state.preloadedcode.at(state.operandlist.back().preloadedcodepos).pcode.arg3_uint =(opcode-0xd4);
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					opcode_skipped=true;
+				}
+				else
+				{
+					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
+				}
 				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 					state.localtypes[opcode-0xd4]=typestack.back().obj->as<Class_base>();
 				else

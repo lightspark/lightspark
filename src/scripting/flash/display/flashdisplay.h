@@ -129,6 +129,7 @@ public:
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child);
 	void _removeAllChildren();
+	void removeAVM1Listeners() override;
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
@@ -577,9 +578,9 @@ private:
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 
-	CLIPACTIONS actions;
 	std::list<Frame>::iterator currentframeIterator;
 protected:
+	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
@@ -665,6 +666,7 @@ public:
 	uint32_t internalGetHeight() const;
 	uint32_t internalGetWidth() const;
 private:
+	Mutex avm1listenerMutex;
 	void onAlign(const tiny_string&);
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);

@@ -198,6 +198,20 @@ public:
 		ret->setConstructIndicator();
 		return ret;
 	}
+	// constructor that doesn't use the freelist (must be used when not in VM thread)
+	inline static T* getInstanceSNoArgsNoFreelist(SystemState* sys)
+	{
+		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
+		if (!c)
+			c = getClass(sys);
+		T* ret=new (c->memoryAccount) T(c);
+		assert_and_throw(ret);
+		ret->resetCached();
+		ret->setIsInitialized();
+		ret->constructionComplete();
+		ret->setConstructIndicator();
+		return ret;
+	}
 	inline static Class<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;

@@ -1814,7 +1814,7 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 	if (this->SurfaceFilterList.Filters.size())
 	{
 		if (obj->filters.isNull())
-			obj->filters = _MR(Class<Array>::getInstanceSNoArgs(obj->getSystemState()));
+			obj->filters = _MR(Class<Array>::getInstanceSNoArgsNoFreelist(obj->getSystemState()));
 		auto it = this->SurfaceFilterList.Filters.begin();
 		while (it != this->SurfaceFilterList.Filters.end())
 		{

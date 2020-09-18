@@ -708,9 +708,7 @@ public:
 	static Function* getFunction(SystemState* sys,Function::as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		Function*  ret = c->freelist[0].getObjectFromFreeList()->as<Function>();
-		if (!ret)
-			ret=new (c->memoryAccount) Function(c);
+		Function*  ret = new (c->memoryAccount) Function(c);
 		ret->objfreelist = &c->freelist[0];
 		ret->resetCached();
 		ret->val_atom = v;

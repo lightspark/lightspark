@@ -318,6 +318,7 @@ friend class SymbolClassTag;
 friend class ACTIONRECORD;
 private:
 	std::vector<ABCContext*> contexts;
+	std::vector<ASObject*> deletableObjects;
 	SystemState* m_sys;
 	SDL_Thread* t;
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
@@ -1231,6 +1232,7 @@ public:
 	int getEventQueueSize();
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }
+	void addDeletableObject(ASObject *obj);
 
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);

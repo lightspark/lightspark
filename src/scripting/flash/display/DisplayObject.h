@@ -79,7 +79,7 @@ private:
 	DisplayObjectContainer* parent;
 	// pointer to the parent this object was pointing to when an event is handled with this object as the dispatcher
 	// this is used to keep track of refcounting, as the parent may change during handling the event
-	DisplayObjectContainer* eventparent;
+	std::map<Event*,DisplayObjectContainer*> eventparentmap;
 	/* cachedSurface may only be read/written from within the render thread
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
@@ -181,11 +181,12 @@ public:
 	}
 	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
-	
+	virtual void removeAVM1Listeners();
+
 	// used by MorphShapes
 	virtual void checkRatio(uint32_t ratio) {}
-	void onNewEvent() override;
-	void afterHandleEvent() override;
+	void onNewEvent(Event *ev) override;
+	void afterHandleEvent(Event* ev) override;
 	
 	virtual void UpdateVariableBinding(asAtom v) {}
 	

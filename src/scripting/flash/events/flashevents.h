@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,ROOTCONSTRUCTEDEVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -375,9 +375,9 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	// is called when a new event is added to the event queue
-	virtual void onNewEvent(){}
+	virtual void onNewEvent(Event* ev){}
 	// is called after an event was handled by the event queue
-	virtual void afterHandleEvent() {}
+	virtual void afterHandleEvent(Event* ev) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void handleEvent(_R<Event> e);
@@ -531,6 +531,16 @@ public:
 	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,"AdvanceFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return ADVANCE_FRAME; }
 };
+class RootConstructedEvent: public Event
+{
+friend class ABCVm;
+private:
+	_NR<DisplayObject> clip;
+public:
+	RootConstructedEvent(_NR<DisplayObject> m): Event(nullptr,"RootConstructedEvent"),clip(m) {}
+	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
+};
+
 class IdleEvent: public WaitableEvent
 {
 public:

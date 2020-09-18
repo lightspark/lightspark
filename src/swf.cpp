@@ -148,7 +148,8 @@ const URLInfo& RootMovieClip::getBaseURL()
 void SystemState::registerFrameListener(_R<DisplayObject> obj)
 {
 	Locker l(mutexFrameListeners);
-	obj->incRef();
+	if (frameListeners.find(obj) != frameListeners.end())
+		return;
 	frameListeners.insert(obj);
 }
 
@@ -1787,6 +1788,12 @@ void RootMovieClip::constructionComplete()
 {
 	if(isConstructed())
 		return;
+	if (!isVmThread())
+	{
+		this->incRef();
+		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
+		return;
+	}
 	if (this!=getSystemState()->mainClip)
 	{
 		MovieClip::constructionComplete();
@@ -1969,7 +1976,6 @@ void SystemState::tick()
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
 			{
-				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
 			}
 		}
@@ -1989,7 +1995,6 @@ void SystemState::tick()
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
 			{
-				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
 			}
 		}
@@ -2007,7 +2012,6 @@ void SystemState::tick()
 			auto it=frameListeners.begin();
 			for(;it!=frameListeners.end();it++)
 			{
-				(*it)->incRef();
 				getVm(this)->addEvent(*it,e);
 			}
 		}

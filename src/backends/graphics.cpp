@@ -20,6 +20,7 @@
 #include <cassert>
 
 #include "swf.h"
+#include "abc.h"
 #include "backends/graphics.h"
 #include "logger.h"
 #include "exceptions.h"
@@ -1057,7 +1058,12 @@ const TextureChunk& AsyncDrawJob::getTexture()
 
 void AsyncDrawJob::uploadFence()
 {
-	delete this;
+	// ensure that the owner is moved to freelist in vm thread
+	if (getVm(owner->getSystemState()))
+	{
+		owner->incRef();
+		getVm(owner->getSystemState())->addDeletableObject(owner.getPtr());
+	}
 }
 
 void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)

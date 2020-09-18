@@ -97,7 +97,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),eventparent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),flushstep(0),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
@@ -112,7 +112,7 @@ void DisplayObject::finalize()
 	EventDispatcher::finalize();
 	maskOf.reset();
 	parent=nullptr;
-	eventparent =nullptr;
+	eventparentmap.clear();
 	mask.reset();
 	matrix.reset();
 	loaderInfo.reset();
@@ -126,7 +126,7 @@ bool DisplayObject::destruct()
 	// TODO make all DisplayObject derived classes reusable
 	maskOf.reset();
 	parent=nullptr;
-	eventparent =nullptr;
+	eventparentmap.clear();
 	mask.reset();
 	matrix.reset();
 	loaderInfo.reset();
@@ -150,6 +150,8 @@ bool DisplayObject::destruct()
 	legacy=false;
 	cacheAsBitmap=false;
 	name=BUILTIN_STRINGS::EMPTY;
+	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+		ASATOM_DECREF(it->second);
 	avm1variables.clear();
 	variablebindings.clear();
 	avm1functions.clear();
@@ -389,22 +391,27 @@ float DisplayObject::getConcatenatedAlpha() const
 		return parent->getConcatenatedAlpha()*clippedAlpha();
 }
 
-void DisplayObject::onNewEvent()
+void DisplayObject::onNewEvent(Event* ev)
 {
-	eventparent = parent;
-	if (eventparent)
+	Locker locker(spinlock);
+	if (parent && parent->getInDestruction())
+		return;
+	if (parent)
 	{
-		eventparent->incRef();
+		eventparentmap[ev] =parent;
+		parent->incRef();
 	}
 }
 
-void DisplayObject::afterHandleEvent()
+void DisplayObject::afterHandleEvent(Event *ev)
 {
-	if (eventparent)
+	Locker locker(spinlock);
+	auto it = eventparentmap.find(ev);
+	if (it != eventparentmap.end())
 	{
-		eventparent->decRef();
+		it->second->decRef();
+		eventparentmap.erase(it);
 	}
-	eventparent =nullptr;
 }
 
 tiny_string DisplayObject::AVM1GetPath()
@@ -1028,6 +1035,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 
 void DisplayObject::setParent(DisplayObjectContainer *p)
 {
+	Locker locker(spinlock);
 	if(parent!=p)
 	{
 		parent=p;
@@ -1520,6 +1528,14 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 	}
 	return res;
 }
+void DisplayObject::removeAVM1Listeners()
+{
+	getSystemState()->stage->AVM1RemoveMouseListener(this);
+	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	this->incRef();
+	getSystemState()->unregisterFrameListener(_MR(this));
+}
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
@@ -1908,10 +1924,14 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 		tiny_string localname = name.lowercase();
 		uint32_t nameIdOriginal = getSystemState()->getUniqueStringId(name);
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		auto it = avm1variables.find(nameId);
+		if (it != avm1variables.end())
+			ASATOM_DECREF(it->second);
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
 		{
+			ASATOM_INCREF(v);
 			avm1variables[nameId] = v;
 			if (asAtomHandler::is<AVM1Function>(v))
 			{
@@ -1930,6 +1950,9 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 	{
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1).lowercase();
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		auto it = avm1variables.find(nameId);
+		if (it != avm1variables.end())
+			ASATOM_DECREF(it->second);
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
@@ -2069,6 +2092,9 @@ void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj
 }
 void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
 {
+	auto it = avm1variables.find(nameID);
+	if (it != avm1variables.end())
+		ASATOM_DECREF(it->second);
 	if (obj)
 	{
 		obj->incRef();

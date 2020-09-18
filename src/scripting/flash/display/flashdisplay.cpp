@@ -1364,13 +1364,13 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(0),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(0),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	currentframeIterator=frames.end();
@@ -1402,7 +1402,8 @@ bool MovieClip::destruct()
 	frames.emplace_back(Frame());
 	scenes.resize(1);
 	state.reset();
-	
+	actions=nullptr;
+
 	enabled = true;
 	return Sprite::destruct();
 }
@@ -1808,7 +1809,7 @@ void MovieClip::afterLegacyDelete(DisplayObjectContainer *par)
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
-	if (this->actions.AllEventFlags.ClipEventEnterFrame)
+	if (this->actions && this->actions->AllEventFlags.ClipEventEnterFrame)
 	{
 		this->incRef();
 		getSystemState()->unregisterFrameListener(_MR(this));
@@ -1817,13 +1818,16 @@ void MovieClip::afterLegacyDelete(DisplayObjectContainer *par)
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
-	for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
+	if (this->actions)
 	{
-		if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
-				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
+		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 		{
-			std::map<uint32_t,asAtom> m;
-			ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+			if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
+				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
+			{
+				std::map<uint32_t,asAtom> m;
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+			}
 		}
 	}
 	Sprite::AVM1HandleKeyboardEvent(e);
@@ -1841,9 +1845,11 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK,true);
 		if (!dispobj && ((e->type == "click")|| (e->type == "releaseOutside")))
 				return false;
-		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
+		if (this->actions)
 		{
-			if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
+			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
+			{
+				if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
 					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
 					|| (e->type == "click" && it->EventFlags.ClipEventRelease)
 					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
@@ -1852,9 +1858,10 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					)
-			{
-				std::map<uint32_t,asAtom> m;
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				{
+					std::map<uint32_t,asAtom> m;
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				}
 			}
 		}
 		AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
@@ -1866,22 +1873,27 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	std::map<uint32_t,asAtom> m;
 	if (dispatcher == this)
 	{
-		for (auto it = actions.ClipActionRecords.begin(); it != actions.ClipActionRecords.end(); it++)
+		if (this->actions)
 		{
-			if (e->type == "complete" && it->EventFlags.ClipEventLoad)
+			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
-			}
-			if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
-			{
-				if (!this->isOnStage())
-					return;
-				if (!this->state.explicit_FP)
+				if (e->type == "complete" && it->EventFlags.ClipEventLoad)
+				{
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
-			}
-			if (e->type == "load" && it->EventFlags.ClipEventLoad)
-			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				}
+				if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
+				{
+					if (!this->isOnStage())
+						return;
+					if (!this->state.explicit_FP)
+					{
+						ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+					}
+				}
+				if (e->type == "load" && it->EventFlags.ClipEventLoad)
+				{
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				}
 			}
 		}
 		if (e->type == "enterFrame")
@@ -1927,21 +1939,22 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 
 void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 {
-	actions = clipactions;
-	if (this->actions.AllEventFlags.ClipEventMouseDown ||
-			this->actions.AllEventFlags.ClipEventMouseMove ||
-			this->actions.AllEventFlags.ClipEventPress ||
-			this->actions.AllEventFlags.ClipEventMouseUp)
+	actions = &clipactions;
+	if (this->actions->AllEventFlags.ClipEventMouseDown ||
+			this->actions->AllEventFlags.ClipEventMouseMove ||
+			this->actions->AllEventFlags.ClipEventPress ||
+			this->actions->AllEventFlags.ClipEventMouseUp)
 	{
 		setMouseEnabled(true);
 		getSystemState()->stage->AVM1AddMouseListener(this);
 	}
-	if (this->actions.AllEventFlags.ClipEventKeyDown ||
-			this->actions.AllEventFlags.ClipEventKeyUp)
+	if (this->actions->AllEventFlags.ClipEventKeyDown ||
+			this->actions->AllEventFlags.ClipEventKeyUp)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
-	if (this->actions.AllEventFlags.ClipEventLoad)
+
+	if (this->actions->AllEventFlags.ClipEventLoad)
 		getSystemState()->stage->AVM1AddEventListener(this);
-	if (this->actions.AllEventFlags.ClipEventEnterFrame)
+	if (this->actions->AllEventFlags.ClipEventEnterFrame)
 	{
 		this->incRef();
 		getSystemState()->registerFrameListener(_MR(this));
@@ -2618,11 +2631,11 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force)
 		{
 			Locker l(mutexDisplayList);
 			displayListCopy.assign(dynamicDisplayList.begin(),
-					       dynamicDisplayList.end());
+						   dynamicDisplayList.end());
 		}
 		DisplayObject::setOnStage(staged,force);
 		//Notify children
-		//calling DisplayObject::setOnStage may have changed the onStage state of the children, 
+		//calling DisplayObject::setOnStage may have changed the onStage state of the children,
 		//but the addedToStage/removedFromStage event must always be dispatched
 		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
@@ -2703,6 +2716,8 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
+	if (!getSystemState()->mainClip->usesActionScript3)
+		child->removeAVM1Listeners();
 
 	{
 		Locker l(mutexDisplayList);
@@ -2737,7 +2752,9 @@ void DisplayObjectContainer::_removeAllChildren()
 		child->setOnStage(false);
 		child->setParent(nullptr);
 		child->setMask(NullRef);
-		
+		if (!getSystemState()->mainClip->usesActionScript3)
+			child->removeAVM1Listeners();
+
 		//Erase this from the legacy child map (if it is in there)
 		auto it2 = mapLegacyChildToDepth.find(child.getPtr());
 		if (it2 != mapLegacyChildToDepth.end())
@@ -2747,6 +2764,21 @@ void DisplayObjectContainer::_removeAllChildren()
 		}
 		it = dynamicDisplayList.erase(it);
 	}
+}
+
+void DisplayObjectContainer::removeAVM1Listeners()
+{
+	if (getSystemState()->mainClip->usesActionScript3)
+		return;
+	Locker l(mutexDisplayList);
+	auto it=dynamicDisplayList.begin();
+	while (it!=dynamicDisplayList.end())
+	{
+		_R<DisplayObject> child = *it;
+		child->removeAVM1Listeners();
+		it++;
+	}
+	DisplayObject::removeAVM1Listeners();
 }
 
 bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
@@ -3541,7 +3573,9 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			getSystemState()->getInputThread()->lastKeyUp = e->as<KeyboardEvent>()->getSDLKeyCode();
 			getSystemState()->getInputThread()->lastKeyDown = 0;
 		}
+		avm1listenerMutex.lock();
 		vector<_R<ASObject>> tmplisteners = avm1KeyboardListeners;
+		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
@@ -3553,7 +3587,9 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	}
 	else if (e->is<MouseEvent>())
 	{
+		avm1listenerMutex.lock();
 		vector<_R<ASObject>> tmplisteners = avm1MouseListeners;
+		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
@@ -3563,9 +3599,11 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			it++;
 		}
 	}
-	else 
+	else
 	{
+		avm1listenerMutex.lock();
 		vector<_R<ASObject>> tmplisteners = avm1EventListeners;
+		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
@@ -3578,6 +3616,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 
 void Stage::AVM1AddKeyboardListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)
@@ -3589,6 +3628,7 @@ void Stage::AVM1AddKeyboardListener(ASObject *o)
 
 void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)
@@ -3600,6 +3640,7 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 }
 void Stage::AVM1AddMouseListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)
@@ -3611,6 +3652,7 @@ void Stage::AVM1AddMouseListener(ASObject *o)
 
 void Stage::AVM1RemoveMouseListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)
@@ -3622,6 +3664,7 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 }
 void Stage::AVM1AddEventListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)
@@ -3632,6 +3675,7 @@ void Stage::AVM1AddEventListener(ASObject *o)
 }
 void Stage::AVM1RemoveEventListener(ASObject *o)
 {
+	Locker l(avm1listenerMutex);
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
 		if ((*it).getPtr() == o)

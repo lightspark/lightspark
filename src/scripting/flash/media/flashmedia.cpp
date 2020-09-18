@@ -748,7 +748,13 @@ void SoundChannel::jobFence()
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
-	this->decRef();
+	// ensure that this is moved to freelist in vm thread
+	if (getVm(getSystemState()))
+	{
+		getVm(getSystemState())->addDeletableObject(this);
+	}
+	else
+		this->decRef();
 }
 
 void SoundChannel::threadAbort()

@@ -1600,6 +1600,12 @@ void ABCVm::shutdown()
 	}
 }
 
+void ABCVm::addDeletableObject(ASObject *obj)
+{
+	Locker l(event_queue_mutex);
+	deletableObjects.push_back(obj);
+}
+
 void ABCVm::finalize()
 {
 	//The event queue may be not empty if the VM has been been started
@@ -1918,6 +1924,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					m_sys->stage->advanceFrame();
 				break;
 			}
+			case ROOTCONSTRUCTEDEVENT:
+			{
+				RootConstructedEvent* ev=static_cast<RootConstructedEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"RootConstructedEvent");
+				ev->clip->constructionComplete();
+				break;
+			}
 			case IDLE_EVENT:
 			{
 				Locker l(event_queue_mutex);
@@ -1994,7 +2007,7 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 		return false;
 
 	if (!obj.isNull())
-		obj->onNewEvent();
+		obj->onNewEvent(ev.getPtr());
 
 	if (isIdle || force)
 		events_queue.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
@@ -2031,7 +2044,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 		return false;
 	}
 	if (!obj.isNull())
-		obj->onNewEvent();
+		obj->onNewEvent(ev.getPtr());
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 	sem_event_cond.signal();
@@ -2138,7 +2151,7 @@ void ABCVm::handleFrontEvent()
 				)
 			m_sys->flushInvalidationQueue();
 		if (!e.first.isNull())
-			e.first->afterHandleEvent();
+			e.first->afterHandleEvent(e.second.getPtr());
 	}
 	catch(LightsparkException& e)
 	{
@@ -2422,7 +2435,9 @@ int ABCVm::Run(void* d)
 		th->event_queue_mutex.lock();
 		while(th->events_queue.empty() && !th->shuttingdown)
 			th->sem_event_cond.wait(th->event_queue_mutex);
-
+		for (auto it = th->deletableObjects.begin(); it != th->deletableObjects.end(); it++)
+			(*it)->decRef();
+		th->deletableObjects.clear();
 		if(th->shuttingdown)
 		{
 			//If the queue is empty stop immediately

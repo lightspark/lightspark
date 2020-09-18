@@ -60,7 +60,16 @@ public:
 	~ByteArray();
 	//Helper interface for serialization
 	bool peekByte(uint8_t& b);
-	bool readByte(uint8_t& b);
+	FORCE_INLINE bool readByte(uint8_t& b)
+	{
+		if (len <= position)
+		{
+			b=0;
+			return false;
+		}
+		b=bytes[position++];
+		return true;
+	}
 	bool readShort(uint16_t& ret);
 	bool readUnsignedInt(uint32_t& ret);
 	bool readU29(uint32_t& ret);

@@ -625,6 +625,8 @@ ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 	tiny_string command = asAtomHandler::toString(args[0],sys);
 	if(command == "quit")
 	{
+		if (getWorker() && !getWorker()->isPrimordial) // only allow quit from main worker
+			return;
 		sys->setShutdownFlag();
 	}
 }

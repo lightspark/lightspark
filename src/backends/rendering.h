@@ -91,6 +91,14 @@ private:
 	bool coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
+	volatile bool refreshNeeded;
+	Mutex mutexRefreshSurfaces;
+	struct refreshableSurface
+	{
+		IDrawable* drawable;
+		_NR<DisplayObject> displayobject;
+	};
+	std::list<refreshableSurface> surfacesToRefresh;
 public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
@@ -111,7 +119,22 @@ public:
 	void deinit();
 	bool doRender(ThreadProfile *profile=NULL, Chronometer *chronometer=NULL);
 	void generateScreenshot();
-
+	/**
+	 * @brief updates the arguments of a cachedSurface without recreating the texture
+	 * @param d IDrawable containing the new values
+	 * this will be deleted in this method
+	 * @param o target containing the cachedSurface to be updated
+	 */
+	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o)
+	{
+		Locker l(mutexRefreshSurfaces);
+		refreshNeeded=true;
+		refreshableSurface s;
+		s.displayobject = o;
+		s.drawable = d;
+		surfacesToRefresh.push_back(s);
+		event.signal();
+	}
 	/**
 		Allocates a chunk from the shared texture
 	*/
@@ -160,5 +183,5 @@ public:
 
 RenderThread* getRenderThread();
 
-};
+}
 #endif /* BACKENDS_RENDERING_H */

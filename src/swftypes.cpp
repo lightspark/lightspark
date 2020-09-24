@@ -1682,7 +1682,7 @@ FILLSTYLE::FILLSTYLE(uint8_t v):Gradient(v),version(v)
 }
 
 FILLSTYLE::FILLSTYLE(const FILLSTYLE& r):Matrix(r.Matrix),Gradient(r.Gradient),FocalGradient(r.FocalGradient),
-	bitmap(r.bitmap),Color(r.Color),FillStyleType(r.FillStyleType),version(r.version)
+	bitmap(r.bitmap),ShapeBounds(r.ShapeBounds),Color(r.Color),FillStyleType(r.FillStyleType),version(r.version)
 {
 }
 
@@ -1696,6 +1696,7 @@ FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 	Gradient = r.Gradient;
 	FocalGradient = r.FocalGradient;
 	bitmap = r.bitmap;
+	ShapeBounds = r.ShapeBounds;
 	Color = r.Color;
 	FillStyleType = r.FillStyleType;
 	version = r.version;

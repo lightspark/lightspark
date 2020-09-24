@@ -58,7 +58,7 @@ class externalFontRenderer : public IDrawable
 	int32_t externalressource;
 	class EngineData* m_engine;
 public:
-	externalFontRenderer(const TextData &_textData,class EngineData* engine, int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m, bool smoothing);
+	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, bool hm, float a, const std::vector<MaskData>& m, bool smoothing);
 	
 	uint8_t* getPixelBuffer() override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
@@ -90,9 +90,6 @@ protected:
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
 public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
-	uint32_t pixelBuffers[2];
-	uint32_t currentPixelBuffer;
-	intptr_t currentPixelBufferOffset;
 	uint8_t* currentPixelBufPtr;
 	uint32_t pixelBufferWidth;
 	uint32_t pixelBufferHeight;
@@ -167,8 +164,7 @@ public:
 	virtual void FileWriteByteArray(const tiny_string& filename, ByteArray* data);
 	void initGLEW();
 	void resizePixelBuffers(uint32_t w, uint32_t h);
-	void bindCurrentBuffer();
-	
+
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
 	static void hideMouseCursor(SystemState *sys);
@@ -186,6 +182,7 @@ public:
 	virtual uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
 	virtual tiny_string getGLDriverInfo();
 	virtual void exec_glUniform1f(int location,float v0);
+	virtual void exec_glUniform2f(int location,float v0, float v1);
 	virtual void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
 	virtual void exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void* coords, VERTEXBUFFER_FORMAT format);
 	virtual void exec_glEnableVertexAttribArray(uint32_t index);
@@ -196,11 +193,8 @@ public:
 	virtual void exec_glDrawArrays_GL_LINES(int32_t first, int32_t count);
 	virtual void exec_glDisableVertexAttribArray(uint32_t index);
 	virtual void exec_glUniformMatrix4fv(int32_t location,int32_t count, bool transpose,const float* value);
-	virtual void exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer);
 	virtual void exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buffer);
 	virtual void exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer);
-	virtual uint8_t* exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
-	virtual void exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER();
 	virtual void exec_glEnable_GL_TEXTURE_2D();
 	virtual void exec_glEnable_GL_BLEND();
 	virtual void exec_glEnable_GL_DEPTH_TEST();
@@ -250,13 +244,14 @@ public:
 	virtual void exec_glUniform4fv(int32_t location, uint32_t count, float* v0);
 	virtual void exec_glGenTextures(int32_t n,uint32_t* textures);
 	virtual void exec_glViewport(int32_t x,int32_t y,int32_t width,int32_t height);
-	virtual void exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size, const void* data);
 	virtual void exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size, const void* data);
 	virtual void exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size, const void* data);
 	virtual void exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size, const void* data);
 	virtual void exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size, const void* data);
 	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	virtual void exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	virtual void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
@@ -267,10 +262,7 @@ public:
 	virtual void exec_glClear_GL_COLOR_BUFFER_BIT();
 	virtual void exec_glClear(CLEARMASK mask);
 	virtual void exec_glDepthMask(bool flag);
-	virtual void exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param);
-	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param);
-	virtual void exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param);
-	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY);
+	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels);
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 	virtual void exec_glGenerateMipmap_GL_TEXTURE_2D();
 	virtual void exec_glReadPixels(int32_t width, int32_t height,void* buf);
@@ -295,7 +287,7 @@ public:
 	// Text rendering
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, bool smoothing) { return 0; }
-	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,bool smoothing);
+	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms, bool smoothing);
 };
 
 }

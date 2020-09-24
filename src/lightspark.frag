@@ -2,10 +2,12 @@ R"(
 #ifdef GL_ES
 precision highp float;
 #endif
-uniform sampler2D g_tex1, g_tex2;
+uniform sampler2D g_tex1;
+uniform sampler2D g_tex2;
 uniform float yuv;
 uniform float alpha;
 uniform float direct;
+uniform float mask;
 varying vec4 ls_TexCoords[2];
 varying vec4 ls_FrontColor;
 
@@ -15,13 +17,16 @@ const mat3 YUVtoRGB = mat3(1, 1, 1, //First coloumn
 
 void main()
 {
-	//Tranform the value from YUV to RGB
 	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
+	// discard everything that doesn't fit the mask
+	if (mask != 0.0 && texture2D(g_tex2,ls_TexCoords[1].xy).a == 0.0)
+		discard;
 #ifdef GL_ES
 	vbase.rgb = vbase.bgr;
 #endif
 	vbase *= alpha;
 	vec4 val = vbase.bgra-vec4(0,0.5,0.5,0);
+	//Tranform the value from YUV to RGB
 	val.rgb = YUVtoRGB*(val.rgb);
 
 	//Select the right value

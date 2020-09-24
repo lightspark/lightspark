@@ -1863,31 +1863,6 @@ bool ppPluginEngineData::getGLError(uint32_t &errorCode) const
 	return errorCode!=GL_NO_ERROR;
 }
 
-uint8_t *ppPluginEngineData::getCurrentPixBuf() const
-{
-	return currentPixelBufPtr;
-}
-
-uint8_t *ppPluginEngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
-{
-	//TODO See if a more elegant way of handling the non-PBO case can be found.
-	//for now, each frame is uploaded one at a time synchronously to the server
-	if(!currentPixelBufPtr)
-#ifdef _WIN32
-		currentPixelBufPtr = (uint8_t*)_aligned_malloc(w*h*4, 16);
-		if (!currentPixelBufPtr) {
-			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return NULL;
-		}
-#else
-		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
-			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return NULL;
-		}
-#endif
-	return currentPixelBufPtr;
-}
-
 tiny_string ppPluginEngineData::getGLDriverInfo()
 {
 	tiny_string res = "OpenGL Vendor=";
@@ -1904,6 +1879,10 @@ tiny_string ppPluginEngineData::getGLDriverInfo()
 void ppPluginEngineData::exec_glUniform1f(int location, float v0)
 {
 	g_gles2_interface->Uniform1f(instance->m_graphics,location,v0);
+}
+void ppPluginEngineData::exec_glUniform2f(int location, float v0, float v1)
+{
+	g_gles2_interface->Uniform2f(instance->m_graphics,location,v0,v1);
 }
 
 void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
@@ -1964,11 +1943,6 @@ void ppPluginEngineData::exec_glUniformMatrix4fv(int32_t location, int32_t count
 	g_gles2_interface->UniformMatrix4fv(instance->m_graphics,location, count, transpose, value);
 }
 
-void ppPluginEngineData::exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer)
-{
-	// ppapi doesn't know GL_PIXEL_UNPACK_BUFFER
-	//g_gles2_interface->BindBuffer(instance->m_graphics,GL_PIXEL_UNPACK_BUFFER, buffer);
-}
 void ppPluginEngineData::exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buffer)
 {
 	g_gles2_interface->BindBuffer(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER, buffer);
@@ -1976,15 +1950,6 @@ void ppPluginEngineData::exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buff
 void ppPluginEngineData::exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer)
 {
 	g_gles2_interface->BindBuffer(instance->m_graphics,GL_ARRAY_BUFFER, buffer);
-}
-uint8_t* ppPluginEngineData::exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY()
-{
-	// PPAPI has no GLEW
-	return NULL;
-}
-void ppPluginEngineData::exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER()
-{
-	// PPAPI has no GLEW
 }
 
 void ppPluginEngineData::exec_glEnable_GL_TEXTURE_2D()
@@ -2309,11 +2274,6 @@ void ppPluginEngineData::exec_glViewport(int32_t x,int32_t y,int32_t width,int32
 	g_gles2_interface->Viewport(instance->m_graphics,x,y,width,height);
 }
 
-void ppPluginEngineData::exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size,const void* data)
-{
-	// ppapi doesn't know GL_PIXEL_UNPACK_BUFFER
-	//g_gles2_interface->BufferData(instance->m_graphics,GL_PIXEL_UNPACK_BUFFER,size, data,GL_STREAM_DRAW);
-}
 void ppPluginEngineData::exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size,const void* data)
 {
 	g_gles2_interface->BufferData(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER,size, data,GL_STATIC_DRAW);
@@ -2335,10 +2295,17 @@ void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTE
 {
 	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
-
 void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR()
 {
 	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST()
+{
+	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST()
+{
+	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 void ppPluginEngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap)
 {
@@ -2414,34 +2381,9 @@ void ppPluginEngineData::exec_glDepthMask(bool flag)
 	g_gles2_interface->DepthMask(instance->m_graphics,flag);
 }
 
-void ppPluginEngineData::exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param)
+void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels)
 {
-	// PPAPI has no PixelStorei
-	//g_gles2_interface->PixelStorei(instance->m_graphics,GL_UNPACK_ROW_LENGTH,param);
-}
-
-void ppPluginEngineData::exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param)
-{
-	// PPAPI has no PixelStorei
-	//g_gles2_interface->PixelStorei(instance->m_graphics,GL_UNPACK_SKIP_PIXELS,param);
-}
-
-void ppPluginEngineData::exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param)
-{
-	// PPAPI has no PixelStorei
-	//g_gles2_interface->PixelStorei(instance->m_graphics,GL_UNPACK_SKIP_ROWS,param);
-}
-
-void ppPluginEngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels, uint32_t w, uint32_t curX, uint32_t curY)
-{
-	//We need to copy the texture area to a contiguous memory region first,
-	//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
-	uint8_t *gdata = new uint8_t[4*width*height];
-	for(int j=0;j<height;j++) {
-		memcpy(gdata+4*j*width, ((uint8_t *)pixels)+4*w*(j+curY)+4*curX, width*4);
-	}
-	g_gles2_interface->TexSubImage2D(instance->m_graphics,GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
-	delete[] gdata;
+	g_gles2_interface->TexSubImage2D(instance->m_graphics,GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
 void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {

@@ -52,7 +52,7 @@ public:
 	tokensVector tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
-					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>());
+					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>(), const RECT &shapebounds= RECT());
 	static void FromDefineMorphShapeTagToShapeVector(SystemState *sys, DefineMorphShapeTag *tag,
 					 tokensVector& tokens, uint16_t ratio);
 	static void getTextureSize(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> &tokens, int *width, int *height);

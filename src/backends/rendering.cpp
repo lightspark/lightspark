@@ -59,7 +59,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
 	prevUploadJob(nullptr),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),screenshotneeded(false),
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),
 	cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
@@ -107,11 +107,9 @@ void RenderThread::finalizeUpload()
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
 	const TextureChunk& tex=u->getTexture();
-	engineData->bindCurrentBuffer();
 	loadChunkBGRA(tex, w, h, engineData->getCurrentPixBuf());
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 	u->uploadFence();
-	prevUploadJob=NULL;
+	prevUploadJob=nullptr;
 }
 
 void RenderThread::handleUpload()
@@ -121,7 +119,7 @@ void RenderThread::handleUpload()
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
 	engineData->resizePixelBuffers(w,h);
-	
+
 	uint8_t* buf= engineData->switchCurrentPixBuf(w,h);
 	if (!buf)
 	{
@@ -129,11 +127,7 @@ void RenderThread::handleUpload()
 		return;
 	}
 	u->upload(buf, w, h);
-	
-	engineData->exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER();
-	engineData->exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 
-	
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -232,6 +226,18 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 
 	if(prevUploadJob)
 		finalizeUpload();
+	if (refreshNeeded)
+	{
+		Locker l(mutexRefreshSurfaces);
+		auto it = surfacesToRefresh.begin();
+		while (it != surfacesToRefresh.end())
+		{
+			it->displayobject->updateCachedSurface(it->drawable);
+			it = surfacesToRefresh.erase(it);
+		}
+		refreshNeeded=false;
+		renderNeeded=true;
+	}
 
 	if(uploadNeeded)
 	{
@@ -421,8 +427,8 @@ void RenderThread::commonGLDeinit()
 		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
 		delete[] largeTextures[i].bitmap;
 	}
-	engineData->exec_glDeleteBuffers(2,engineData->pixelBuffers);
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
+	engineData->exec_glDeleteTextures(1, &maskTextureID);
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -443,10 +449,6 @@ void RenderThread::commonGLInit(int width, int height)
 	assert(maxTexSize>0);
 	largeTextureSize=min(maxTexSize,2048);
 
-	//Create the PBOs
-	engineData->exec_glGenBuffers(2,engineData->pixelBuffers);
-	
-
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);
 	int tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex1");
@@ -462,16 +464,27 @@ void RenderThread::commonGLInit(int width, int height)
 	alphaUniform =engineData->exec_glGetUniformLocation(gpu_program,"alpha");
 	//The uniform that tells to draw directly using the selected color
 	directUniform =engineData->exec_glGetUniformLocation(gpu_program,"direct");
+	//The uniform that indicates if the object to be rendered has a mask (1) or not (0)
+	maskUniform =engineData->exec_glGetUniformLocation(gpu_program,"mask");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
 
 	fragmentTexScaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"texScale");
+	rotateUniform =engineData->exec_glGetUniformLocation(gpu_program,"rotation");
+	beforeRotateUniform =engineData->exec_glGetUniformLocation(gpu_program,"beforeRotate");
+	afterRotateUniform=engineData->exec_glGetUniformLocation(gpu_program,"afterRotate");
+	startPositionUniform=engineData->exec_glGetUniformLocation(gpu_program,"startPosition");
+	scaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"scale");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
 
 	engineData->exec_glGenTextures(1, &cairoTextureID);
+
+	// create framebuffer for masks
+	maskframebuffer = engineData->exec_glGenFramebuffer();
+	engineData->exec_glGenTextures(1, &maskTextureID);
 
 	if(handleGLErrors())
 	{
@@ -495,6 +508,21 @@ void RenderThread::commonGLResize()
 	lsglTranslatef(offsetX,windowHeight-offsetY,0);
 	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
+
+	// setup mask framebuffer
+	engineData->exec_glActiveTexture_GL_TEXTURE0(1);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(maskTextureID);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(maskTextureID);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
+	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+	engineData->exec_glDisable_GL_DEPTH_TEST();
+	engineData->exec_glDisable_GL_STENCIL_TEST();
 }
 
 void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
@@ -609,6 +637,11 @@ void RenderThread::plotProfilingData()
 	for(;it!=m_sys->profilingData.end();++it)
 		(*it)->plot(1000000/m_sys->mainClip->getFrameRate(),cr);
 	engineData->exec_glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(rotateUniform, 0);
+	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);
+	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
+	engineData->exec_glUniform2f(startPositionUniform,0,0);
+	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
 
 	mapCairoTexture(windowWidth, windowHeight);
 
@@ -693,6 +726,11 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 	}
 
 	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform1f(rotateUniform, 0);
+	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);
+	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
+	engineData->exec_glUniform2f(startPositionUniform,0,0);
+	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
 	mapCairoTexture(windowWidth, windowHeight);
 	engineData->exec_glFlush();
 }
@@ -890,9 +928,9 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 	assert(w && h);
 	Locker l(mutexLargeTexture);
 	//Find the number of blocks needed for the given w and h
-	uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
-	uint32_t blocksH=(h+CHUNKSIZE-1)/CHUNKSIZE;
 	TextureChunk ret(w, h);
+	uint32_t blocksW=(ret.width+CHUNKSIZE-1)/CHUNKSIZE;
+	uint32_t blocksH=(ret.height+CHUNKSIZE-1)/CHUNKSIZE;
 	//Try to find a good place in the available textures
 	uint32_t index=0;
 	for(index=0;index<largeTextures.size();index++)
@@ -935,7 +973,7 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
 	//Fast bailout if the TextureChunk is not valid
-	if(chunk.chunks==NULL)
+	if(chunk.chunks==nullptr)
 		return;
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	//TODO: Detect continuos
@@ -945,21 +983,39 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	assert(h<=((chunk.height+CHUNKSIZE-1)&0xffffff80));
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
-	const uint32_t blocksW=(w+CHUNKSIZE-1)/CHUNKSIZE;
-	engineData->exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(w);
+	const uint32_t blocksW=((w+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL);
+	uint8_t data_clamp[4*CHUNKSIZE*CHUNKSIZE];
 	for(uint32_t i=0;i<numberOfChunks;i++)
 	{
-		uint32_t curX=(i%blocksW)*CHUNKSIZE;
-		uint32_t curY=(i/blocksW)*CHUNKSIZE;
-		uint32_t sizeX=min(int(w-curX),CHUNKSIZE);
-		uint32_t sizeY=min(int(h-curY),CHUNKSIZE);
-		engineData->exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(curX);
-		engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(curY);
+		uint32_t curX=(i%blocksW)*CHUNKSIZE_REAL;
+		uint32_t curY=(i/blocksW)*CHUNKSIZE_REAL;
+		uint32_t sizeX=min(int(w-curX),CHUNKSIZE_REAL)+2;
+		uint32_t sizeY=min(int(h-curY),CHUNKSIZE_REAL)+2;
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*CHUNKSIZE);
-		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data,w,curX,curY);
+
+		// copy chunk data
+		for(uint32_t j=1;j<sizeY-1;j++) {
+			memcpy(data_clamp+4*j*sizeX+4, data+4*w*((j-1)+curY)+4*curX, (sizeX-2)*4);
+		}
+		for (uint32_t j = 0; j < sizeY; j++)
+		{
+			// clamp left border to edge
+			data_clamp[j*sizeX*4  ] = data_clamp[j*sizeX*4+4  ];
+			data_clamp[j*sizeX*4+1] = data_clamp[j*sizeX*4+4+1];
+			data_clamp[j*sizeX*4+2] = data_clamp[j*sizeX*4+4+2];
+			data_clamp[j*sizeX*4+3] = data_clamp[j*sizeX*4+4+3];
+	
+			// clamp right border to edge
+			data_clamp[j*sizeX*4 + (sizeX-1)*4  ] = data_clamp[j*sizeX*4 + (sizeX-2)*4  ];
+			data_clamp[j*sizeX*4 + (sizeX-1)*4+1] = data_clamp[j*sizeX*4 + (sizeX-2)*4+1];
+			data_clamp[j*sizeX*4 + (sizeX-1)*4+2] = data_clamp[j*sizeX*4 + (sizeX-2)*4+2];
+			data_clamp[j*sizeX*4 + (sizeX-1)*4+3] = data_clamp[j*sizeX*4 + (sizeX-2)*4+3];
+		}
+		// clamp top border to edge
+		memcpy(data_clamp, data_clamp+4*sizeX, sizeX*4);
+		// clamp bottom border to edge
+		memcpy(data_clamp+(sizeY-1)*sizeX*4, data_clamp+(sizeY-2)*sizeX*4, sizeX*4);
+		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data_clamp);
 	}
-	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(0);
-	engineData->exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(0);
-	engineData->exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(0);
 }

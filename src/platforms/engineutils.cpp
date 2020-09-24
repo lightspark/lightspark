@@ -48,7 +48,7 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false), currentPixelBuffer(0),currentPixelBufferOffset(0),currentPixelBufPtr(NULL),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),currentPixelBufPtr(nullptr),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
@@ -563,38 +563,27 @@ bool EngineData::getGLError(uint32_t &errorCode) const
 
 uint8_t *EngineData::getCurrentPixBuf() const
 {
-#ifndef ENABLE_GLES2
-	return (uint8_t*)currentPixelBufferOffset;
-#else
 	return currentPixelBufPtr;
-#endif
-	
 }
 
 uint8_t *EngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
 {
-#ifndef ENABLE_GLES2
-	unsigned int nextBuffer = (currentPixelBuffer + 1)%2;
-	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[nextBuffer]);
-	uint8_t* buf=(uint8_t*)exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY();
-	if(!buf)
-		return NULL;
-	uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
-
-	currentPixelBufferOffset=alignedBuf-buf;
-	currentPixelBuffer=nextBuffer;
-	return alignedBuf;
-#else
 	//TODO See if a more elegant way of handling the non-PBO case can be found.
 	//for now, each frame is uploaded one at a time synchronously to the server
 	if(!currentPixelBufPtr)
+#ifdef _WIN32
+		currentPixelBufPtr = (uint8_t*)_aligned_malloc(w*h*4, 16);
+		if (!currentPixelBufPtr) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+			return nullptr;
+		}
+#else
 		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
 			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return NULL;
+			return nullptr;
 		}
 	return currentPixelBufPtr;
 #endif
-	
 }
 
 tiny_string EngineData::getGLDriverInfo()
@@ -615,12 +604,6 @@ void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
 	if(w<=pixelBufferWidth && h<=pixelBufferHeight)
 		return;
 	
-	//Add enough room to realign to 16
-	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[0]);
-	exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
-	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[1]);
-	exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(w*h*4+16, 0);
-	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(0);
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
 	if (currentPixelBufPtr) {
@@ -629,15 +612,14 @@ void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
 	}
 }
 
-void EngineData::bindCurrentBuffer()
-{
-	exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(pixelBuffers[currentPixelBuffer]);
-}
-
-
 void EngineData::exec_glUniform1f(int location,float v0)
 {
 	glUniform1f(location,v0);
+}
+
+void EngineData::exec_glUniform2f(int location,float v0,float v1)
+{
+	glUniform2f(location,v0,v1);
 }
 
 void EngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
@@ -697,12 +679,6 @@ void EngineData::exec_glUniformMatrix4fv(int32_t location,int32_t count, bool tr
 {
 	glUniformMatrix4fv(location, count, transpose, value);
 }
-void EngineData::exec_glBindBuffer_GL_PIXEL_UNPACK_BUFFER(uint32_t buffer)
-{
-#ifndef ENABLE_GLES2
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER,buffer);
-#endif
-}
 void EngineData::exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buffer)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffer);
@@ -710,20 +686,6 @@ void EngineData::exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(uint32_t buffer)
 void EngineData::exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer)
 {
 	glBindBuffer(GL_ARRAY_BUFFER,buffer);
-}
-uint8_t* EngineData::exec_glMapBuffer_GL_PIXEL_UNPACK_BUFFER_GL_WRITE_ONLY()
-{
-#ifndef ENABLE_GLES2
-	return (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-#else
-	return NULL;
-#endif
-}
-void EngineData::exec_glUnmapBuffer_GL_PIXEL_UNPACK_BUFFER()
-{
-#ifndef ENABLE_GLES2
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-#endif
 }
 void EngineData::exec_glEnable_GL_TEXTURE_2D()
 {
@@ -1051,13 +1013,6 @@ void EngineData::exec_glViewport(int32_t x,int32_t y,int32_t width,int32_t heigh
 		LOG(LOG_ERROR,"invalid framebuffer:"<<hex<<code);
 }
 
-void EngineData::exec_glBufferData_GL_PIXEL_UNPACK_BUFFER_GL_STREAM_DRAW(int32_t size,const void* data)
-{
-#ifndef ENABLE_GLES2
-	glBufferData(GL_PIXEL_UNPACK_BUFFER,size, data,GL_STREAM_DRAW);
-#endif
-}
-
 void EngineData::exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size,const void* data)
 {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,size, data,GL_STATIC_DRAW);
@@ -1082,6 +1037,14 @@ void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LIN
 void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR()
 {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 void EngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap)
 {
@@ -1158,35 +1121,9 @@ void EngineData::exec_glDepthMask(bool flag)
 	glDepthMask(flag);
 }
 
-void EngineData::exec_glPixelStorei_GL_UNPACK_ROW_LENGTH(int32_t param)
+void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels)
 {
-	glPixelStorei(GL_UNPACK_ROW_LENGTH,param);
-}
-
-void EngineData::exec_glPixelStorei_GL_UNPACK_SKIP_PIXELS(int32_t param)
-{
-	glPixelStorei(GL_UNPACK_SKIP_PIXELS,param);
-}
-
-void EngineData::exec_glPixelStorei_GL_UNPACK_SKIP_ROWS(int32_t param)
-{
-	glPixelStorei(GL_UNPACK_SKIP_ROWS,param);
-}
-
-void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels, uint32_t w, uint32_t curX, uint32_t curY)
-{
-#ifndef ENABLE_GLES2
 	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
-#else
-	//We need to copy the texture area to a contiguous memory region first,
-	//as GLES2 does not support UNPACK state (skip pixels, skip rows, row_lenght).
-	uint8_t *gdata = new uint8_t[4*width*height];
-	for(int j=0;j<height;j++) {
-		memcpy(gdata+4*j*width, ((uint8_t *)pixels)+4*w*(j+curY)+4*curX, width*4);
-	}
-	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, gdata);
-	delete[] gdata;
-#endif
 }
 void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
@@ -1323,15 +1260,15 @@ int EngineData::audio_getSampleRate()
 	return MIX_DEFAULT_FREQUENCY;
 }
 
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms,bool smoothing)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, bool smoothing)
 {
 	if (hasExternalFontRenderer)
-		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _a, _ms,smoothing);
+		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_hm, _a, _ms,smoothing);
 	return nullptr;
 }
 
-externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<IDrawable::MaskData> &m, bool smoothing)
-	: IDrawable(w, h, x, y, a, m),m_engine(engine)
+externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, bool hm, float a, const std::vector<IDrawable::MaskData> &m, bool smoothing)
+	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys,im,hm, a, m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

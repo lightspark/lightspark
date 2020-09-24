@@ -51,7 +51,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 								  tokensVector& tokens,
 								  const std::list<FILLSTYLE>& fillStyles,
 								  const MATRIX& matrix,
-								  const std::list<LINESTYLE2>& lineStyles)
+								  const std::list<LINESTYLE2>& lineStyles,
+								  const RECT& shapebounds)
 {
 	Vector2 cursor;
 	unsigned int color0=0;
@@ -101,8 +102,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		{
 			if(cur->StateMoveTo)
 			{
-				cursor.x=cur->MoveDeltaX;
-				cursor.y=cur->MoveDeltaY;
+				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
+				cursor.y= cur->MoveDeltaY-shapebounds.Ymin;
 			}
 			if(cur->StateLineStyle)
 			{
@@ -201,7 +202,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q)
 {
-	if(tokens.empty())
+	if(tokens.empty() || owner->skipRender())
 		return;
 	owner->incRef();
 	q->addToInvalidateQueue(_MR(owner));
@@ -209,30 +210,48 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q)
 
 IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
-	int32_t x,y;
+	int32_t x,y,rx,ry;
 	uint32_t width,height;
+	uint32_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	if(!owner->boundsRect(bxmin,bxmax,bymin,bymax))
 	{
 		//No contents, nothing to do
-		return NULL;
+		return nullptr;
 	}
-
 	//Compute the matrix and the masks that are relevant
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
-	owner->computeMasksAndMatrix(target,masks,totalMatrix);
+
+	bool isMask;
+	bool hasMask;
+	
+	owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+
+	width = bxmax-bxmin;
+	height = bymax-bymin;
+	float rotation = owner->getConcatenatedMatrix().getRotation();
+	float xscale = owner->getConcatenatedMatrix().getScaleX();
+	float yscale = owner->getConcatenatedMatrix().getScaleY();
+	MATRIX totalMatrix2;
+	std::vector<IDrawable::MaskData> masks2;
+	owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	// TODO should we combine all colorTransformations up to the root here?
 	ColorTransform* ct = owner->colorTransform.getPtr();
 	if (!ct && owner->getParent())
 		ct = owner->getParent()->colorTransform.getPtr();
 	if(width==0 || height==0)
-		return NULL;
-	return new CairoTokenRenderer(tokens,
-				totalMatrix, x, y, width, height, scaling,
-				owner->getConcatenatedAlpha(), masks,smoothing,
+		return nullptr;
+	return new CairoTokenRenderer(tokens,totalMatrix
+				, x, y, width, height
+				, rx,ry,rwidth,rheight,rotation
+				, xscale, yscale
+				, isMask, hasMask
+				, scaling,owner->getConcatenatedAlpha(), masks,smoothing,
 				ct);
 }
 

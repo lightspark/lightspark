@@ -905,7 +905,7 @@ public:
 	number_t getScaleX() const
 	{
 		number_t ret=sqrt(xx*xx + yx*yx);
-		if(xx>0)
+		if(xx>=0)
 			return ret;
 		else
 			return -ret;
@@ -913,7 +913,7 @@ public:
 	number_t getScaleY() const
 	{
 		number_t ret=sqrt(yy*yy + xy*xy);
-		if(yy>0)
+		if(yy>=0)
 			return ret;
 		else
 			return -ret;
@@ -1001,6 +1001,7 @@ public:
 	GRADIENT Gradient;
 	FOCALGRADIENT FocalGradient;
 	_NR<BitmapContainer> bitmap;
+	RECT ShapeBounds;
 	RGBA Color;
 	FILL_STYLE_TYPE FillStyleType;
 	uint8_t version;

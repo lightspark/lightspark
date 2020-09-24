@@ -973,9 +973,9 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
-		//Skip the drawing of masks
-		if((*it)->isMask() || (*it)->ClipDepth)
-			continue;
+//		//Skip the drawing of masks
+//		if((*it)->isMask() || (*it)->ClipDepth)
+//			continue;
 		if ((*it)->Render(ctxt))
 		{
 			renderingfailed=true;
@@ -2323,6 +2323,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	else
 		o->colorTransform->setProperties(colortransform);
 	o->hasChanged=true;
+	o->needsTextureRecalculation=true;
 	this->hasChanged=true;
 	this->requestInvalidation(getSystemState());
 }
@@ -2339,7 +2340,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 		namedRemovedLegacyChildren[obj->name] = obj;
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
-		multiname objName(NULL);
+		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2435,7 +2436,7 @@ uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()
 }
 void DisplayObjectContainer::checkClipDepth()
 {
-	DisplayObject* clipobj = NULL;
+	DisplayObject* clipobj = nullptr;
 	int depth = 0;
 	for (auto it=mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end(); it++)
 	{
@@ -2443,8 +2444,8 @@ void DisplayObjectContainer::checkClipDepth()
 		depth = it->first;
 		if (obj->ClipDepth)
 		{
-			if (clipobj)
-				clipobj->hasChanged = false; // ensure clipobj is not rendered
+//			if (clipobj)
+//				clipobj->hasChanged = false; // ensure clipobj is not rendered
 			clipobj = obj;
 		}
 		else if (clipobj && clipobj->ClipDepth > depth)
@@ -2455,8 +2456,8 @@ void DisplayObjectContainer::checkClipDepth()
 		else
 			obj->setMask(NullRef);
 	}
-	if (clipobj)
-		clipobj->hasChanged = false; // ensure clipobj is not rendered
+//	if (clipobj)
+//		clipobj->hasChanged = false; // ensure clipobj is not rendered
 }
 
 bool DisplayObjectContainer::destruct()
@@ -3134,12 +3135,23 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 	}
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef)
+bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
+{
+	if (!this->legacy)
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+	xmin=0;
+	xmax=(bounds.Xmax-bounds.Xmin)/20.0;
+	ymin=0;
+	ymax=(bounds.Ymax-bounds.Ymin)/20.0;
+	return true;
+}
+
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromDefineShapeTag(0)
 {
 }
 
-Shape::Shape(Class_base* c, const tokensVector& tokens, float scaling):
-	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, tokens, scaling),graphics(NullRef)
+Shape::Shape(Class_base* c, const tokensVector& tokens, float scaling, uint32_t tagID, const RECT &_bounds):
+	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, tokens, scaling),graphics(NullRef),fromDefineShapeTag(tagID),bounds(_bounds)
 {
 }
 
@@ -3197,6 +3209,7 @@ void MorphShape::checkRatio(uint32_t ratio)
 {
 	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
 	this->hasChanged = true;
+	this->needsTextureRecalculation=true;
 	if (isOnStage())
 		requestInvalidation(getSystemState());
 }
@@ -3969,6 +3982,7 @@ void Bitmap::updatedData()
 	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0))));
 	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, 0))));
 	hasChanged=true;
+	needsTextureRecalculation=true;
 	if(onStage)
 		requestInvalidation(getSystemState());
 }

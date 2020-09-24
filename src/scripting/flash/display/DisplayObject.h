@@ -143,6 +143,7 @@ public:
 	_NR<ColorTransform> colorTransform;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
+	bool needsTextureRecalculation;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
 	ATOMIC_INT32(flushstep);
@@ -150,7 +151,7 @@ public:
 	 * cacheAsBitmap is true also if any filter is used
 	 */
 	bool computeCacheAsBitmap() const;
-	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks,MATRIX& totalMatrix) const;
+	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
@@ -161,7 +162,7 @@ public:
 	DisplayObject(Class_base* c);
 	void finalize() override;
 	bool destruct() override;
-	MATRIX getMatrix() const;
+	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isConstructed() const override { return ACQUIRE_READ(constructed); }
 	/**
 	 * Generate a new IDrawable instance for this object
@@ -171,6 +172,7 @@ public:
 	 */
 	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
 	virtual void requestInvalidation(InvalidateQueue* q);
+	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
@@ -206,6 +208,7 @@ public:
 	bool isVisible() const;
 	bool isLoadedRootObject() const { return isLoadedRoot; }
 	float clippedAlpha() const;
+	float getRotation() const { return rotation; }
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);

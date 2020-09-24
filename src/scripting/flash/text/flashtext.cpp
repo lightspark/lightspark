@@ -275,6 +275,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWordWrap)
 	ARG_UNPACK_ATOM(th->wordWrap);
 	th->setSizeAndPositionFromAutoSize();
 	th->hasChanged=true;
+	th->needsTextureRecalculation=true;
 	if(th->onStage && th->isVisible())
 		th->requestInvalidation(th->getSystemState());
 }
@@ -322,6 +323,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 		th->autoSize = newAutoSize;
 		th->setSizeAndPositionFromAutoSize();
 		th->hasChanged=true;
+		th->needsTextureRecalculation=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 	}
@@ -374,6 +376,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 	{
 		th->width=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;
+		th->needsTextureRecalculation=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(sys);
 		else
@@ -397,6 +400,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 	{
 		th->height=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;
+		th->needsTextureRecalculation=true;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 		else
@@ -868,6 +872,7 @@ void TextField::validateScrollH(int32_t oldValue)
 	if (scrollH > maxScrollH)
 		scrollH = maxScrollH;
 	hasChanged=true;
+	needsTextureRecalculation=true;
 
 	if (onStage && (scrollH != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -881,6 +886,7 @@ void TextField::validateScrollV(int32_t oldValue)
 	else if (scrollV > maxScrollV)
 		scrollV = maxScrollV;
 	hasChanged=true;
+	needsTextureRecalculation=true;
 
 	if (onStage && (scrollV != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -997,6 +1003,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	}
 	updateSizes();
 	hasChanged=true;
+	needsTextureRecalculation=true;
 	textUpdated();
 }
 
@@ -1141,6 +1148,7 @@ void TextField::tick()
 		return;
 	caretblinkstate = !caretblinkstate;
 	hasChanged=true;
+	needsTextureRecalculation=true;
 	
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -1156,6 +1164,7 @@ void TextField::textUpdated()
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
 	hasChanged=true;
+	needsTextureRecalculation=true;
 
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -1214,13 +1223,13 @@ void TextField::defaultEventBehavior(_R<Event> e)
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
 {
 	Locker l(invalidatemutex);
-	int32_t x,y;
-	uint32_t width,height;
+	int32_t x,y,rx,ry;
+	uint32_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
 		//No contents, nothing to do
-		return NULL;
+		return nullptr;
 	}
 
 	RootMovieClip* currentRoot=this->getRoot().getPtr();
@@ -1294,17 +1303,26 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			return TokenContainer::invalidate(target, totalMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
-	computeMasksAndMatrix(target, masks, totalMatrix);
+	bool isMask;
+	bool hasMask;
+	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,hasMask);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+	MATRIX totalMatrix2;
+	owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,hasMask);
+	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	if (text.empty())
 		return nullptr;
 	if(width==0 || height==0)
 		return nullptr;
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->text);
+	float rotation = getConcatenatedMatrix().getRotation();
+	float xscale = getConcatenatedMatrix().getScaleX();
+	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, 1.0f,getConcatenatedAlpha(), masks,smoothing);
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, rx, ry, rwidth, rheight, rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,smoothing);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1312,9 +1330,12 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
 		Currently, the TextField is stretched in case of scaling.
 	*/
-	return new CairoPangoRenderer(*this,
-				totalMatrix, x, y, width, height, 1.0f,
-				getConcatenatedAlpha(), masks,smoothing,caretIndex);
+	return new CairoPangoRenderer(*this,totalMatrix,
+				x, y, width, height,
+				rx,ry,rwidth,rheight,rotation,
+				xscale,yscale,
+				isMask,hasMask,
+				1.0f, getConcatenatedAlpha(), masks,smoothing,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt) const
@@ -1685,6 +1706,15 @@ void StaticText::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
+bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	xmin=0;
+	xmax=(bounds.Xmax-bounds.Xmin)/20.0;
+	ymin=0;
+	ymax=(bounds.Ymax-bounds.Ymin)/20.0;
+	return true;
+}
+
 _NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;

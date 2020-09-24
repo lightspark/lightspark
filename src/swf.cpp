@@ -1166,8 +1166,14 @@ void SystemState::flushInvalidationQueue()
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
-				addJob(new AsyncDrawJob(d,cur,nextflushstep));
+			{
+				if (cur->needsTextureRecalculation)
+					addJob(new AsyncDrawJob(d,cur,nextflushstep));
+				else
+					renderThread->addRefreshableSurface(d,cur);
+			}
 			cur->hasChanged=false;
+			cur->needsTextureRecalculation=false;
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;

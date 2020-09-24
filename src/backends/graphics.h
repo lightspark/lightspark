@@ -20,6 +20,7 @@
 #ifndef BACKENDS_GRAPHICS_H
 #define BACKENDS_GRAPHICS_H 1
 
+#define CHUNKSIZE_REAL 126 // 1 pixel on each side is used for clamping to edge
 #define CHUNKSIZE 128
 
 #include "compat.h"
@@ -54,7 +55,7 @@ private:
 	uint32_t texId;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():chunks(NULL),texId(0),width(0),height(0){}
+	TextureChunk():chunks(nullptr),texId(0),width(0),height(0){}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
@@ -69,12 +70,22 @@ public:
 class CachedSurface
 {
 public:
-	CachedSurface():xOffset(0),yOffset(0),alpha(1.0){}
+	CachedSurface():xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),isMask(false),hasMask(false){}
 	TextureChunk tex;
 	int32_t xOffset;
 	int32_t yOffset;
+	int32_t xOffsetTransformed;
+	int32_t yOffsetTransformed;
+	int32_t widthTransformed;
+	int32_t heightTransformed;
 	float alpha;
+	float rotation;
+	float xscale;
+	float yscale;
+	bool isMask;
+	bool hasMask;
 };
+
 
 class ITextureUploadable
 {
@@ -119,10 +130,23 @@ protected:
 	   The minimal y coordinate for all the points being drawn, in local coordinates
 	*/
 	int32_t yOffset;
+	int32_t xOffsetTransformed;
+	int32_t yOffsetTransformed;
+	int32_t widthTransformed;
+	int32_t heightTransformed;
+	float rotation;
 	float alpha;
+	float xscale;
+	float yscale;
+	bool isMask;
+	bool hasMask;
 public:
-	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y, float a, const std::vector<MaskData>& m):
-		masks(m),width(w),height(h),xOffset(x),yOffset(y),alpha(a){}
+	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y,
+		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
+		float xs, float ys,
+		bool im, bool hm,
+		float a, const std::vector<MaskData>& m):
+		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),alpha(a),xscale(xs),yscale(ys),isMask(im),hasMask(hm) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -137,9 +161,18 @@ public:
 	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const = 0;
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
+	int32_t getWidthTransformed() const { return widthTransformed; }
+	int32_t getHeightTransformed() const { return heightTransformed; }
 	int32_t getXOffset() const { return xOffset; }
 	int32_t getYOffset() const { return yOffset; }
+	int32_t getXOffsetTransformed() const { return xOffsetTransformed; }
+	int32_t getYOffsetTransformed() const { return yOffsetTransformed; }
+	float getRotation() const { return rotation; }
 	float getAlpha() const { return alpha; }
+	float getXScale() const { return xscale; }
+	float getYScale() const { return yscale; }
+	bool getIsMask() const { return isMask; }
+	bool getHasMask() const { return hasMask; }
 };
 
 class AsyncDrawJob: public IThreadJob, public ITextureUploadable
@@ -196,7 +229,11 @@ protected:
 	static void copyRGB15To24(uint32_t& dest, uint8_t* src);
 	static void copyRGB24To24(uint32_t& dest, uint8_t* src);
 public:
-	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& m,bool _smoothing);
+	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
+				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
+				  , float _xs, float _ys
+				  , bool _im, bool _hm
+				  , float _s, float _a, const std::vector<MaskData>& m,bool _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer();
 	/*
@@ -242,7 +279,10 @@ public:
 	*/
 	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-		    float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,
+			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
+			float _xs, float _ys,
+			bool _im, bool _hm,
+		    float _s, float _a, const std::vector<MaskData>& _ms, bool _smoothing,
 			ColorTransform* _ct);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
@@ -320,8 +360,12 @@ class CairoPangoRenderer : public CairoRenderer
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_s,_a,_ms,_smoothing), textData(_textData),caretIndex(_ci) {}
+			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
+			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
+			float _xs, float _ys,
+			bool _im, bool _hm,
+			float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,uint32_t _ci)
+		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,_smoothing), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested
@@ -346,5 +390,5 @@ public:
 	void addToInvalidateQueue(_R<DisplayObject> d);
 };
 
-};
+}
 #endif /* BACKENDS_GRAPHICS_H */

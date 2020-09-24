@@ -1220,11 +1220,16 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	if(tokens.empty())
 		computeCached();
 
-	if(c==NULL)
+	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens);
+	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens,TextBounds);
 	return ret;
+}
+MATRIX DefineTextTag::MapToBounds(const MATRIX &mat)
+{
+	MATRIX m (1,1,0,0,TextBounds.Xmin/20,TextBounds.Ymin/20);
+	return mat.multiplyMatrix(m);
 }
 
 void DefineTextTag::computeCached() const
@@ -1276,6 +1281,8 @@ void DefineTextTag::computeCached() const
 		{
 					curPos.y = TextRecords[i].YOffset;
 		}
+		curPos.x -= TextBounds.Xmin;
+		curPos.y -= TextBounds.Ymin;
 		/*
 		 * In DefineFont3Tags, shape's coordinates are 1024*20 times pixels size,
 		 * in all former DefineFont*Tags, its just 1024 times. We scale everything here
@@ -1302,31 +1309,49 @@ void DefineTextTag::computeCached() const
 	}
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v),tokens(nullptr)
 {
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1),tokens(nullptr)
 {
 	LOG(LOG_TRACE,_("DefineShapeTag"));
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
+DefineShapeTag::~DefineShapeTag()
+{
+	if (tokens)
+		delete tokens;
+}
+
 ASObject *DefineShapeTag::instance(Class_base *c)
 {
-	if(c==NULL)
+	if(c==nullptr)
 	{
 		if (!loadedFrom->usesActionScript3)
 			c=Class<AVM1Shape>::getClass(loadedFrom->getSystemState());
 		else
 			c=Class<Shape>::getClass(loadedFrom->getSystemState());
 	}
-	tokensVector tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory));
-	TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2);
+	if (!tokens)
+	{
+		tokens = new tokensVector(loadedFrom->getSystemState()->tagsMemory);
+		for (auto it = Shapes.FillStyles.FillStyles.begin(); it != Shapes.FillStyles.FillStyles.end(); it++)
+		{
+			it->ShapeBounds = ShapeBounds;
+		}
+		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
+	}
 	Shape* ret= loadedFrom->usesActionScript3 ?
-				new (c->memoryAccount) Shape(c, tokens, 1.0f/20.0f):
-				new (c->memoryAccount) AVM1Shape(c, tokens, 1.0f/20.0f);
+				new (c->memoryAccount) Shape(c, *tokens, 1.0f/20.0f,ShapeId,ShapeBounds):
+				new (c->memoryAccount) AVM1Shape(c, *tokens, 1.0f/20.0f,ShapeId,ShapeBounds);
 	return ret;
+}
+MATRIX DefineShapeTag::MapToBounds(const MATRIX &mat)
+{
+	MATRIX m (1,1,0,0,ShapeBounds.Xmin/20,ShapeBounds.Ymin/20);
+	return mat.multiplyMatrix(m);
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)
@@ -1552,6 +1577,13 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 
 		if(placedTag==nullptr)
 		{
+			// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
+			RootMovieClip* root = parent->getRoot().getPtr();
+			if (root)
+				placedTag=root->dictionaryLookup(CharacterId);
+		}
+		if(placedTag==nullptr)
+		{
 			LOG(LOG_ERROR,"no tag to place:"<<CharacterId);
 			throw RunTimeException("No tag to place");
 		}
@@ -1624,7 +1656,20 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	}
 	else if (PlaceFlagHasMatrix)
 	{
-		parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
+		if(placedTag==nullptr && currchar)
+		{
+			// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
+			RootMovieClip* root = parent->getRoot().getPtr();
+			if (root)
+				placedTag=root->dictionaryLookup(currchar->getTagID());
+		}
+		if (placedTag)
+			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,placedTag->MapToBounds(Matrix));
+		else
+		{
+			LOG(LOG_ERROR,"transformLegacyChild for object without placedTag");
+			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
+		}
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{

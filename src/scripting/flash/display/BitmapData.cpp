@@ -204,6 +204,11 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.tex.height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();
 		surface.yOffset=drawable->getYOffset();
+		surface.widthTransformed=drawable->getWidthTransformed();
+		surface.heightTransformed=drawable->getHeightTransformed();
+		surface.rotation=drawable->getRotation();
+		surface.xscale = drawable->getXScale();
+		surface.yscale = drawable->getYScale();
 		delete drawable;
 	}
 	d->Render(ctxt,true);

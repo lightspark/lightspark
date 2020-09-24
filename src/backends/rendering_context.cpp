@@ -146,20 +146,37 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 			break;
 	}
 }
-
 void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode)
+			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale, bool isMask, bool hasMask)
 {
+	if (isMask)
+	{
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
+		engineData->exec_glClearColor(0,0,0,0);
+		engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+		engineData->exec_glUniform1f(maskUniform, 0);
+	}
+	else
+	{
+		engineData->exec_glUniform1f(maskUniform, hasMask ? 1 : 0);
+	}
 	//Set color mode
 	engineData->exec_glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
 	//Set alpha
 	engineData->exec_glUniform1f(alphaUniform, alpha);
+	// set rotation, scaling and translation
+	// TODO there may be a more elegant way to handle this, but I'm new to shader programming...
+	engineData->exec_glUniform1f(rotateUniform, rotate*M_PI/180.0);
+	engineData->exec_glUniform2f(beforeRotateUniform, float(w)/2.0,float(h)/2.0);
+	engineData->exec_glUniform2f(afterRotateUniform, float(widthtransformed)/2.0,float(heighttransformed)/2.0);
+	engineData->exec_glUniform2f(startPositionUniform, xtransformed,ytransformed);
+	engineData->exec_glUniform2f(scaleUniform, xscale,yscale);
 	//Set matrix
 	setMatrixUniform(LSGL_MODELVIEW);
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
-	uint32_t startX, startY, endX, endY;
+	float startX, startY, endX, endY;
 	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE-1)/CHUNKSIZE)*((chunk.height+CHUNKSIZE-1)/CHUNKSIZE));
 
 	uint32_t curChunk=0;
@@ -170,31 +187,25 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	float *texture_coords = g_newa(float,chunk.getNumberOfChunks()*12);
 	for(uint32_t i=0, k=0;i<chunk.height;i+=CHUNKSIZE)
 	{
-		startY=h*i/chunk.height;
-		endY=min(h*(i+CHUNKSIZE)/chunk.height,h);
-		//Take yOffset into account
-		startY = (y<0)?startY:y+startY;
-		endY = (y<0)?endY:y+endY;
+		startY=float(h*i)/float(chunk.height);
+		endY=min(float(h*(i+CHUNKSIZE))/float(chunk.height),float(h));
 		for(uint32_t j=0;j<chunk.width;j+=CHUNKSIZE)
 		{
-			startX=w*j/chunk.width;
-			endX=min(w*(j+CHUNKSIZE)/chunk.width,w);
-			//Take xOffset into account
-			startX = (x<0)?startX:x+startX;
-			endX = (x<0)?endX:x+endX;
+			startX=float(w*j)/float(chunk.width);
+			endX=min(float(w*(j+CHUNKSIZE))/float(chunk.width),float(w));
 			const uint32_t curChunkId=chunk.chunks[curChunk];
 			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
 			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
 			const uint32_t availX=min(int(chunk.width-j),CHUNKSIZE);
 			const uint32_t availY=min(int(chunk.height-i),CHUNKSIZE);
-			float startU=blockX;
-			startU/=largeTextureSize;
-			float startV=blockY;
-			startV/=largeTextureSize;
-			float endU=blockX+availX;
-			endU/=largeTextureSize;
-			float endV=blockY+availY;
-			endV/=largeTextureSize;
+			float startU=blockX + 1;
+			startU/=float(largeTextureSize);
+			float startV=blockY + 1;
+			startV/=float(largeTextureSize);
+			float endU=blockX+availX - 1;
+			endU/=float(largeTextureSize);
+			float endV=blockY+availY - 1;
+			endV/=float(largeTextureSize);
 
 			//Upper-right triangle of the quad
 			texture_coords[k] = startU;
@@ -241,7 +252,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, curChunk*6);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-	handleGLErrors();
+	if (isMask)
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 }
 
 int GLRenderContext::errorCount = 0;
@@ -332,7 +344,7 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 }
 
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode)
+			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale, bool isMask, bool hasMask)
 {
 	if (alpha != 1.0)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
@@ -347,6 +359,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_matrix_t matrix;
 	//TODO: Support scaling
 	cairo_matrix_init_translate(&matrix, -x, -y);
+	cairo_matrix_rotate(&matrix,rotate);
 	cairo_pattern_set_matrix(chunkPattern, &matrix);
 	cairo_set_source(cr, chunkPattern);
 	cairo_pattern_destroy(chunkPattern);

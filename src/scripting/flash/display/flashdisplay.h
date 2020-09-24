@@ -239,8 +239,7 @@ class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
-		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override
@@ -249,9 +248,12 @@ protected:
 				this->incRef();
 			return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
 		}
+	uint32_t fromDefineShapeTag;
+	RECT bounds;
 public:
 	Shape(Class_base* c);
-	Shape(Class_base* c, const tokensVector& tokens, float scaling);
+	Shape(Class_base* c, const tokensVector& tokens, float scaling, uint32_t tagID, const RECT& _bounds);
+	uint32_t getTagID() const override { return fromDefineShapeTag; }
 	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

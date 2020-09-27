@@ -40,6 +40,7 @@ public:
 	ASFUNCTION_ATOM(setDateTimePattern);
 	ASFUNCTION_ATOM(format);
 	ASFUNCTION_ATOM(formatUTC);
+	ASFUNCTION_ATOM(getAvailableLocaleIDNames);
 	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
 	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);

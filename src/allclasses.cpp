@@ -101,6 +101,7 @@
 #include "scripting/flash/globalization/datetimenamestyle.h"
 #include "scripting/flash/globalization/nationaldigitstype.h"
 #include "scripting/flash/globalization/lastoperationstatus.h"
+#include "scripting/flash/globalization/localeid.h"
 #include "scripting/flash/globalization/currencyformatter.h"
 #include "scripting/flash/globalization/numberformatter.h"
 #include "scripting/flash/globalization/stringtools.h"

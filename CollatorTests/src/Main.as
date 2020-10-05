@@ -20,24 +20,27 @@ package
 		{
 			var list:Array = new Array();
 			
+			var passed = 0;
+			var failed = 0;			
+			
 			list.push(new Word("hello world!", "hello world!", 0, true, false, false)); // 1
 			list.push(new Word("hello world!", "hello world!", 0, true, true, false));  // 2
 			list.push(new Word("hello world!", "hello world!", 0, true, false, true));  // 3
 			list.push(new Word("hello world!", "hello world!", 0, true, true, true));   // 4
 			
-			list.push(new Word("hello world!", "hello world@",-1, 0, false, false)); // 5
-			list.push(new Word("hello world!", "hello world@", -1, 0, true, false)); // 6
+			list.push(new Word("hello w@orld!", "hello w!orld@",-1, false, false, false)); // 5
+			list.push(new Word("hello world!", "hello world@", -1, false, true, false)); // 6
 			list.push(new Word("hello world!", "hello world@", 0, true, false, true));  // 7
 			list.push(new Word("hello world!", "hello world@", 0, true, true, true));   // 8
 			
-			list.push(new Word("hello world!", "hello world@", -1, 0, false, false)); // 9
-			list.push(new Word("hello world!", "hello world@", -1, 0, true, false)); // 10
+			list.push(new Word("hello world!", "hello world@", -1, false, false, false)); // 9
+			list.push(new Word("hello world!", "hello world@", -1, false, true, false)); // 10
 			list.push(new Word("hello world!", "hello world@", 0, true, false, true)); // 11
 			list.push(new Word("hello world!", "hello world@", 0, true, true, true)); // 12
 			
-			list.push(new Word("hello world!", "HELLO WORLD!", -1, 0, false, false)); // 13
+			list.push(new Word("hello world!", "HELLO WORLD!", -1, false, false, false)); // 13
 			list.push(new Word("hello world!", "HELLO WORLD!", 0, true, true, false)); // 14
-			list.push(new Word("hello world!", "HELLO WORLD!", -1, 0, false, true)); // 15
+			list.push(new Word("hello world!", "HELLO WORLD!", -1, false, false, true)); // 15
 			list.push(new Word("hello world!", "HELLO WORLD!", 0, true, true, true)); // 16
 			
 			list.push(new Word("", "", 0, true, false, false)); // 17
@@ -50,8 +53,8 @@ package
 			list.push(new Word(" ", " ", 0, true, false, true)); // 23
 			list.push(new Word(" ", " ", 0, true, true, true)); // 24
 			
-			list.push(new Word("-", " ", -1, 0, false, false)); // 25
-			list.push(new Word("-", " ", -1, 0, true, false)); // 26
+			list.push(new Word("-", " ", -1, false, false, false)); // 25
+			list.push(new Word("-", " ", -1, false, true, false)); // 26
 			list.push(new Word("-", " ", 0, true, false, true)); // 27
 			list.push(new Word("-", " ", 0, true, true, true)); // 28
 			
@@ -71,14 +74,14 @@ package
 			list.push(new Word("カナ", "カナ", 0, true, false, true)); // 39
 			list.push(new Word("カナ", "カナ", 0, true, true, true)); // 40
 			
-			list.push(new Word("OBrian", "O'Brian", -1, 0, false, false)); // 41
-			list.push(new Word("OBrian", "O'Brian", -1, 0, true, false)); // 42
+			list.push(new Word("OBrian", "O'Brian", -1, false, false, false)); // 41
+			list.push(new Word("OBrian", "O'Brian", -1, false, true, false)); // 42
 			list.push(new Word("OBrian", "O'Brian", 0, true, false, true)); // 43
 			list.push(new Word("OBrian", "O'Brian", 0, true, true, true)); // 44
 				
 			
-			list.push(new Word("OBrian", "O Brian", 1, 0, false, false)); // 45
-			list.push(new Word("OBrian", "O Brian", 1, 0, true, false)); // 46
+			list.push(new Word("OBrian", "O Brian", 1, false, false, false)); // 45
+			list.push(new Word("OBrian", "O Brian", 1, false, true, false)); // 46
 			list.push(new Word("OBrian", "O Brian", 0, true, false, true)); // 47
 			list.push(new Word("OBrian", "O Brian", 0, true, true, true)); // 48
 			
@@ -106,12 +109,17 @@ package
 				var result = collator.compare(item.firstWord, item.secondWord)
 				if (result == item.expectedResult1)
 				{
-					trace("Passed");
+					trace(i + ": " + "Passed");
+					passed++;
 				}
 				else
 				{
 					//trace("Failed");
-					trace(i + " " + item.firstWord + ":" + collator.compare(item.firstWord, item.secondWord));
+					trace(i + " " + item.firstWord + ":" + result);
+					trace(item.ignoreCase);
+					trace(item.ignoreSymbols);
+					trace("");
+					failed++;
 				}
 				i++;
 			}
@@ -121,17 +129,89 @@ package
 				collator.ignoreCase = item.ignoreCase;
 				collator.ignoreSymbols = item.ignoreSymbols;
 				var result = collator.equals(item.firstWord, item.secondWord);
+				
 				if (result == item.expectedResult2)
 				{
-					trace("Passed");
+					trace(i + ": " + "Passed");
+					passed++;
+				}
+				else
+				{
+					//trace("Failed");
+					trace(i + ": " + item.firstWord + ":" + result);
+					trace(item.ignoreCase);
+					trace(item.ignoreSymbols);
+					trace("");
+					failed++;
+				}
+				i++;
+			}
+			i = 1;
+			for each (var item in list){
+				var collator:Collator = new Collator("LocaleID.DEFAULT", "matching");
+				collator.ignoreCase = item.ignoreCase;
+				collator.ignoreSymbols = item.ignoreSymbols;
+				var result = collator.compare(item.firstWord, item.secondWord)
+				if (result == item.expectedResult1)
+				{
+					trace(i + ": " + "Passed");
+					passed++;
 				}
 				else
 				{
 					//trace("Failed");
 					trace(i + " " + item.firstWord + ":" + result);
+					trace(item.ignoreCase);
+					trace(item.ignoreSymbols);
+					trace("");
+					failed++;
 				}
 				i++;
 			}
+			i = 1;
+			for each (var item in list){
+				var collator:Collator = new Collator("LocaleID.DEFAULT", "matching");
+				collator.ignoreCase = item.ignoreCase;
+				collator.ignoreSymbols = item.ignoreSymbols;
+				var result = collator.equals(item.firstWord, item.secondWord);
+				
+				if (result == item.expectedResult2)
+				{
+					trace(i + ": " + "Passed");
+					passed++;
+				}
+				else
+				{
+					//trace("Failed");
+					trace(i + ": " + item.firstWord + ":" + result);
+					trace(item.ignoreCase);
+					trace(item.ignoreSymbols);
+					trace("");
+					failed++;
+				}
+				i++;
+			}
+			
+			trace("Passed: " + passed);
+			trace("Failed: " + failed);
+			
+			
+			
+			
+     var sortingCollator:Collator = new Collator("en-US", CollatorMode.SORTING);
+     var words:Array = new  Array("Airplane" , "airplane", "boat", "Boat");
+     words.sort(sortingCollator.compare) == "airplane,Airplane,boat,Boat";
+     trace(words);
+              
+     var matchingCollator:Collator = new Collator("en-US", CollatorMode.MATCHING);
+     if (matchingCollator.equals("Car", "car")) {
+       trace(i++ + ": " + "Passed");
+     }
+     
+
+	 
+	 
+	 
         }		
 	}
 }

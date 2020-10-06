@@ -53,6 +53,7 @@ class ParseThread;
 class PluginManager;
 class RenderThread;
 class SecurityManager;
+class LocaleManager;
 class Tag;
 class ApplicationDomain;
 class ASWorker;
@@ -440,6 +441,7 @@ public:
 	DownloadManager* downloadManager;
 	IntervalManager* intervalManager;
 	SecurityManager* securityManager;
+	LocaleManager* localeManager;
 	ExtScriptObject* extScriptObject;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };

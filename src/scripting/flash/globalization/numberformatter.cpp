@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/globalization/numberformatter.h"
+#include "backends/locale.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include <iomanip>
@@ -37,6 +38,7 @@ void NumberFormatter::sinit(Class_base* c)
 	REGISTER_GETTER(c, requestedLocaleIDName);
 	REGISTER_GETTER_SETTER(c, fractionalDigits);
 	c->setDeclaredMethodByQName("formatNumber","",Class<IFunction>::getFunction(c->getSystemState(),formatNumber),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatNumber),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER(NumberFormatter, actualLocaleIDName);
 ASFUNCTIONBODY_GETTER(NumberFormatter, lastOperationStatus);
@@ -47,48 +49,17 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 {
 	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
-	try
+	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		th->currlocale = std::locale(th->requestedLocaleIDName.raw_buf());
+		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		th->currlocale = std::locale(localeName);
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
 	}
-	catch (std::runtime_error& e)
+	else
 	{
-		uint32_t pos = th->requestedLocaleIDName.find("-");
-		if(pos != tiny_string::npos)
-		{
-			tiny_string r("_");
-			tiny_string l = th->requestedLocaleIDName.replace(pos,1,r);
-			try
-			{
-				// try with "_" instead of "-"
-				th->currlocale = std::locale(l.raw_buf());
-				th->actualLocaleIDName = th->requestedLocaleIDName;
-				th->lastOperationStatus="noError";
-			}
-			catch (std::runtime_error& e)
-			{
-				try
-				{
-					// try appending ".UTF-8"
-					l += ".UTF-8";
-					th->currlocale = std::locale(l.raw_buf());
-					th->actualLocaleIDName = th->requestedLocaleIDName;
-					th->lastOperationStatus="noError";
-				}
-				catch (std::runtime_error& e)
-				{
-					th->lastOperationStatus="usingDefaultWarning";
-					LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
-				}
-			}
-		}
-		else
-		{
-			th->lastOperationStatus="usingDefaultWarning";
-			LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
-		}
+		LOG(LOG_INFO,"unknown locale:"<<th->requestedLocaleIDName);
+		th->lastOperationStatus="usingDefaultWarning";
 	}
 }
 
@@ -104,4 +75,19 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatNumber)
 	ss << std::setprecision(th->fractionalDigits) << std::fixed << value;
 	res = ss.str();
 	ret = asAtomHandler::fromString(sys,res);
+}
+
+
+ASFUNCTIONBODY_ATOM(NumberFormatter,getAvailableLocaleIDNames)
+{
+	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
+	Array* res=Class<Array>::getInstanceSNoArgs(sys);
+	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
+	{
+		tiny_string value = (*it);
+		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+	}
+	th->lastOperationStatus="noError";
+	ret = asAtomHandler::fromObject(res);
 }

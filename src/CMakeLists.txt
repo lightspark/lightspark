@@ -41,6 +41,7 @@ SET(LIBSPARK_SOURCES
   backends/graphics.cpp
   backends/image.cpp
   backends/input.cpp
+  backends/locale.cpp
   backends/netutils.cpp
   backends/rendering.cpp
   backends/rendering_context.cpp
@@ -111,6 +112,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/globalization/datetimeformatter.cpp
   scripting/flash/globalization/datetimestyle.cpp
   scripting/flash/globalization/lastoperationstatus.cpp
+  scripting/flash/globalization/localeid.cpp
   scripting/flash/globalization/currencyformatter.cpp
   scripting/flash/globalization/numberformatter.cpp
   scripting/flash/globalization/collator.cpp

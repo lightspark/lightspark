@@ -136,6 +136,7 @@
 #include "scripting/flash/utils/Timer.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/orientation3d.h"
+#include "scripting/flash/globalization/collator.h"
 #include "scripting/flash/globalization/datetimeformatter.h"
 #include "scripting/flash/globalization/datetimestyle.h"
 #include "scripting/flash/globalization/collator.h"
@@ -144,6 +145,7 @@
 #include "scripting/flash/globalization/datetimenamestyle.h"
 #include "scripting/flash/globalization/nationaldigitstype.h"
 #include "scripting/flash/globalization/lastoperationstatus.h"
+#include "scripting/flash/globalization/localeid.h"
 #include "scripting/flash/globalization/currencyformatter.h"
 #include "scripting/flash/globalization/numberformatter.h"
 #include "scripting/flash/globalization/stringtools.h"
@@ -808,6 +810,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("PrintJobOptions","flash.printing",Class<PrintJobOptions>::getRef(m_sys));
 	builtin->registerBuiltin("PrintJobOrientation","flash.printing",Class<PrintJobOrientation>::getRef(m_sys));
 
+	builtin->registerBuiltin("Collator","flash.globalization",Class<Collator>::getRef(m_sys));
 	builtin->registerBuiltin("StringTools","flash.globalization",Class<StringTools>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeFormatter","flash.globalization",Class<DateTimeFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeStyle","flash.globalization",Class<DateTimeStyle>::getRef(m_sys));
@@ -819,6 +822,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("DateTimeNameContext","flash.globalization",Class<DateTimeNameContext>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeNameStyle","flash.globalization",Class<DateTimeNameStyle>::getRef(m_sys));
 	builtin->registerBuiltin("NationalDigitsType","flash.globalization",Class<NationalDigitsType>::getRef(m_sys));
+	builtin->registerBuiltin("LocaleID","flash.globalization",Class<LocaleID>::getRef(m_sys));
 	
 	builtin->registerBuiltin("ClipboardFormats","flash.desktop",Class<ClipboardFormats>::getRef(m_sys));
 	builtin->registerBuiltin("ClipboardTransferMode","flash.desktop",Class<ClipboardTransferMode>::getRef(m_sys));
@@ -2158,7 +2162,6 @@ void ABCVm::handleFrontEvent()
 		LOG(LOG_ERROR,_("Error in VM ") << e.cause);
 		m_sys->setError(e.cause);
 		/* do not allow any more event to be enqueued */
-		shuttingdown = true;
 		signalEventWaiters();
 	}
 	catch(ASObject*& e)

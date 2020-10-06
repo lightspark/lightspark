@@ -17,30 +17,35 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_GLOBALIZATION_NUMBERFORMATTER_H
-#define SCRIPTING_FLASH_GLOBALIZATION_NUMBERFORMATTER_H 1
+#ifndef SCRIPTING_FLASH_GLOBALIZATION_LOCALEID_H
+#define SCRIPTING_FLASH_GLOBALIZATION_LOCALEID_H 1
 
 #include "asobject.h"
-#include <clocale>
+
+#include <unordered_map>
 
 namespace lightspark
 {
 
-class NumberFormatter : public ASObject
+class LocaleID: public ASObject
 {
 private:
 	std::locale currlocale;
 public:
-	NumberFormatter(Class_base* c);
-	static void sinit(Class_base*);
+	LocaleID(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(formatNumber);
-	ASFUNCTION_ATOM(getAvailableLocaleIDNames);
+	ASFUNCTION_ATOM(determinePreferredLocales);
+	ASFUNCTION_ATOM(getKeysAndValues);
+	ASFUNCTION_ATOM(getLanguage);
+	ASFUNCTION_ATOM(getRegion);
+	ASFUNCTION_ATOM(getScript);
+	ASFUNCTION_ATOM(getVariant);
+	ASFUNCTION_ATOM(isRightToLeft);
+	ASPROPERTY_GETTER(tiny_string, name);
 	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
 	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
-	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
 };
-
 }
-#endif /* SCRIPTING_FLASH_GLOBALIZATION_NUMBERFORMATTER_H */
+#endif /* SCRIPTING_FLASH_GLOBALIZATION_LOCALEID_H */

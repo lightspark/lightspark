@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/globalization/datetimeformatter.h"
+#include "backends/locale.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Date.h"
@@ -39,54 +40,24 @@ void DateTimeFormatter::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setDateTimePattern","",Class<IFunction>::getFunction(c->getSystemState(),setDateTimePattern),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("format","",Class<IFunction>::getFunction(c->getSystemState(),format),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("formatUTC","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName)(th->dateStyle,"long")(th->timeStyle,"long");
-	try
+	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		th->currlocale = std::locale(th->requestedLocaleIDName.raw_buf());
+		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		th->currlocale = std::locale(localeName);
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
 	}
-	catch (std::runtime_error& e)
+	else
 	{
-		uint32_t pos = th->requestedLocaleIDName.find("-");
-		if(pos != tiny_string::npos)
-		{
-			tiny_string r("_");
-			tiny_string l = th->requestedLocaleIDName.replace(pos,1,r);
-			try
-			{
-				// try with "_" instead of "-"
-				th->currlocale = std::locale(l.raw_buf());
-				th->actualLocaleIDName = th->requestedLocaleIDName;
-				th->lastOperationStatus="noError";
-			}
-			catch (std::runtime_error& e)
-			{
-				try
-				{
-					// try appending ".UTF-8"
-					l += ".UTF-8";
-					th->currlocale = std::locale(l.raw_buf());
-					th->actualLocaleIDName = th->requestedLocaleIDName;
-					th->lastOperationStatus="noError";
-				}
-				catch (std::runtime_error& e)
-				{
-					th->lastOperationStatus="usingDefaultWarning";
-					LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
-				}
-			}
-		}
-		else
-		{
-			th->lastOperationStatus="usingDefaultWarning";
-			LOG(LOG_ERROR,"unknown locale:"<<th->requestedLocaleIDName<<" "<<e.what());
-		}
+		LOG(LOG_INFO,"unknown locale:"<<th->requestedLocaleIDName);
+		th->lastOperationStatus="usingDefaultWarning";
 	}
 }
 ASFUNCTIONBODY_GETTER(DateTimeFormatter, actualLocaleIDName);
@@ -132,3 +103,18 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
 	}
 	ret = asAtomHandler::fromString(sys,res);
 }
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getAvailableLocaleIDNames)
+{
+	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
+	Array* res=Class<Array>::getInstanceSNoArgs(sys);
+	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
+	{
+		tiny_string value = (*it);
+		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+	}
+	th->lastOperationStatus="noError";
+	ret = asAtomHandler::fromObject(res);
+}
+

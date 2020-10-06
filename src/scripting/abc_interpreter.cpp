@@ -3913,6 +3913,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
 				int j = code.reads24();
+				int32_t p1 = code.tellg();
 				if (state.jumptargets.find(p) == state.jumptargets.end())
 				{
 					// iftrue following pushtrue is always true, so the following code is unreachable
@@ -3928,13 +3929,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						else
 							state.jumptargets.erase(code.tellg()+1);
 						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-						opcode_skipped=true;
-						// remove pushfalse
-						assert(state.operandlist.size() > 0);
-						state.operandlist.back().removeArg(state);
-						state.operandlist.pop_back();
-						clearOperands(state,true,&lastlocalresulttype);
-						break;
+						if (int(code.tellg())-p1 >= j)
+						{
+							// remove pushtrue
+							opcode_skipped=true;
+							assert(state.operandlist.size() > 0);
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							clearOperands(state,true,&lastlocalresulttype);
+							break;
+						}
 					}
 					if (dup_indicator)
 					{
@@ -3948,7 +3952,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[state.preloadedcode.size()-1] = j;
-				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
@@ -3958,6 +3962,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
 				int j = code.reads24();
+				int32_t p1 = code.tellg();
 				if (state.jumptargets.find(p) == state.jumptargets.end())
 				{
 					// iffalse following pushfalse is always true, so the following code is unreachable
@@ -3973,13 +3978,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						else
 							state.jumptargets.erase(code.tellg()+1);
 						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-						opcode_skipped=true;
-						// remove pushfalse
-						assert(state.operandlist.size() > 0);
-						state.operandlist.back().removeArg(state);
-						state.operandlist.pop_back();
-						clearOperands(state,true,&lastlocalresulttype);
-						break;
+						if (int(code.tellg())-p1 >= j)
+						{
+							// remove pushfalse
+							opcode_skipped=true;
+							assert(state.operandlist.size() > 0);
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							clearOperands(state,true,&lastlocalresulttype);
+							break;
+						}
 					}
 					if (dup_indicator)
 					{
@@ -3993,7 +4001,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
 				jumppositions[state.preloadedcode.size()-1] = j;
-				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
@@ -4658,7 +4666,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											resulttype = asAtomHandler::as<Class_base>(func);
 
 											// generator for Integer can be skipped if argument is already an integer
-											if (state.operandlist.size() > 1 && resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
+											if (state.operandlist.size() > 2 && resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
 													&& typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 											{
 												// remove caller

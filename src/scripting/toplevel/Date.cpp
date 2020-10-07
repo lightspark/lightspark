@@ -872,6 +872,19 @@ tiny_string Date::toString()
 	return toString_priv(false, "%a %b %e %H:%M:%S GMT%z");
 }
 
+tiny_string Date::toFormat(bool utc, tiny_string format)
+{
+	if(nan) 
+		return "Invalid Date";
+	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, format.raw_buf());
+	tiny_string res(fs);
+	//char buf[10];
+	//snprintf(buf,10," %d",(extrayears + g_date_time_get_year(utc? this->datetimeUTC : this->datetime)));
+	//res += buf;
+	//g_free(fs);
+	return res;
+}
+
 tiny_string Date::toString_priv(bool utc, const char* formatstr) const
 {
 	if(nan) 
@@ -1178,7 +1191,7 @@ TRISTATE Date::isLessAtom(asAtom& r)
 
 tiny_string Date::format(const char *fmt, bool utc)
 {
-	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, fmt);
+	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, "%a %b %e %H:%M:%S GMT%z");
 	tiny_string res(fs);
 	g_free(fs);
 	return res;

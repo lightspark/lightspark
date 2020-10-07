@@ -41,12 +41,40 @@ void DateTimeFormatter::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("format","",Class<IFunction>::getFunction(c->getSystemState(),format),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("formatUTC","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDateStyle","",Class<IFunction>::getFunction(c->getSystemState(),getDateStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDateTimePattern","",Class<IFunction>::getFunction(c->getSystemState(),getDateTimePattern),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getFirstWeekday","",Class<IFunction>::getFunction(c->getSystemState(),getFirstWeekday),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMonthNames","",Class<IFunction>::getFunction(c->getSystemState(),getMonthNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTimeStyle","",Class<IFunction>::getFunction(c->getSystemState(),getTimeStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getWeekdayNames","",Class<IFunction>::getFunction(c->getSystemState(),getWeekdayNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setDateTimeStyles","",Class<IFunction>::getFunction(c->getSystemState(),setDateTimeStyles),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName)(th->dateStyle,"long")(th->timeStyle,"long");
+	tiny_string dateStyle, timeStyle;
+	ARG_UNPACK_ATOM(th->requestedLocaleIDName)(dateStyle,"long")(timeStyle,"long");
+
+	if (dateStyle == "long" || dateStyle == "medium" ||
+		dateStyle == "short" || dateStyle == "none")
+	{
+		th->dateStyle = dateStyle;
+	}
+	else
+	{
+		throw Class<ArgumentError>::getInstanceS(sys,"dateStyle value is not valid", kInvalidArgumentError);
+	}
+	if (timeStyle == "long" || timeStyle == "medium" ||
+		timeStyle == "short" || timeStyle == "none")
+	{
+		th->timeStyle = timeStyle;
+	}
+	else
+	{
+		throw Class<ArgumentError>::getInstanceS(sys,"timeStyle value is not valid", kInvalidArgumentError);
+	}
+
 	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
@@ -60,6 +88,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 		th->lastOperationStatus="usingDefaultWarning";
 	}
 }
+
 ASFUNCTIONBODY_GETTER(DateTimeFormatter, actualLocaleIDName);
 ASFUNCTIONBODY_GETTER(DateTimeFormatter, lastOperationStatus);
 ASFUNCTIONBODY_GETTER(DateTimeFormatter, requestedLocaleIDName);
@@ -71,7 +100,6 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimePattern)
 	th->lastOperationStatus="noError";
 }
 
-
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,format)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
@@ -82,10 +110,22 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,format)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.format is not really tested for all formats");
 		std::locale l =  std::locale::global(th->currlocale);
-		res = dt->format(th->pattern.raw_buf(),false);
+		std::string pattern = th->pattern;
+		if (th->dateStyle == "long" ||
+			th->dateStyle == "medium" ||
+			th->dateStyle == "short")
+		{
+			pattern = buildDateTimePattern(th->dateStyle, th->timeStyle);
+		}
+		tiny_string internalPattern = pattern = buildInternalFormat(pattern);
+		ret = asAtomHandler::fromString(sys,dt->toFormat(false, internalPattern));
 		std::locale::global(l);
+		th->lastOperationStatus = "noError";
 	}
-	ret = asAtomHandler::fromString(sys,res);
+	else
+	{
+		ret = asAtomHandler::fromString(sys,"");
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
@@ -96,12 +136,24 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
 	tiny_string res;
 	if (!dt.isNull())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.formatUTC is not really tested for all formats");
+		LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.format is not really tested for all formats");
 		std::locale l =  std::locale::global(th->currlocale);
-		res = dt->format(th->pattern.raw_buf(),true);
+		std::string pattern = th->pattern;
+		if (th->dateStyle == "long" ||
+			th->dateStyle == "medium" ||
+			th->dateStyle == "short")
+		{
+			pattern = buildDateTimePattern(th->dateStyle, th->timeStyle);
+		}
+		tiny_string internalPattern = pattern = buildInternalFormat(pattern);
+		ret = asAtomHandler::fromString(sys,dt->toFormat(true, internalPattern));
 		std::locale::global(l);
+		th->lastOperationStatus = "noError";
 	}
-	ret = asAtomHandler::fromString(sys,res);
+	else
+	{
+		ret = asAtomHandler::fromString(sys,"");
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getAvailableLocaleIDNames)
@@ -118,3 +170,213 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,getAvailableLocaleIDNames)
 	ret = asAtomHandler::fromObject(res);
 }
 
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getDateStyle)
+{
+	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
+	ret = asAtomHandler::fromString(sys,th->dateStyle);
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getDateTimePattern)
+{
+	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
+	ret = asAtomHandler::fromString(sys,th->pattern);
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getFirstWeekday)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.getFirstWeekday is not implemented and always returns 0");
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getMonthNames)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.getMonthNames is not implemented");
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getTimeStyle)
+{
+	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
+	ret = asAtomHandler::fromString(sys,th->timeStyle);
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,getWeekdayNames)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.getWeekdayNames is not implemented");
+}
+
+ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
+{
+	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
+	tiny_string dateStyle, timeStyle;
+	ARG_UNPACK_ATOM(dateStyle)(timeStyle);
+
+	if (dateStyle == "long" || dateStyle == "medium" ||
+		dateStyle == "short" || dateStyle == "none")
+	{
+		th->dateStyle = dateStyle;
+	}
+	else
+	{
+		throw Class<ArgumentError>::getInstanceS(sys,"dateStyle value is not valid", kInvalidArgumentError);
+	}
+	if (timeStyle == "long" || timeStyle == "medium" ||
+		timeStyle == "short" || timeStyle == "none")
+	{
+		th->timeStyle = timeStyle;
+	}
+	else
+	{
+		throw Class<ArgumentError>::getInstanceS(sys,"timeStyle value is not valid", kInvalidArgumentError);
+	}
+}
+
+tiny_string DateTimeFormatter::buildDateTimePattern(tiny_string dateStyle, tiny_string timeStyle)
+{
+	tiny_string pattern;
+	if (timeStyle == "long" || timeStyle == "medium")
+	{
+		pattern = pattern + "YYYY-mm-dd";
+	}
+	else if (dateStyle == "short")
+	{
+		pattern = pattern + "YYYY-mm-dd";
+	}
+
+	if (timeStyle == "long" || timeStyle == "medium")
+	{
+		pattern = pattern + " hh:MM:SS";
+	}
+	else if (timeStyle == "short")
+	{
+		pattern = pattern + " hh:0MM";
+	}
+	return pattern;
+}
+
+std::string DateTimeFormatter::buildInternalFormat(std::string pattern)
+{
+	std::vector<std::string> list;
+	std::string word = "";
+
+	for (std::string::iterator it = pattern.begin(); it != pattern.end(); ++it)
+	{
+		if (word == "")
+		{
+			word.push_back((*it));
+		}
+		else
+		{
+			if (word[0] == (*it))
+			{
+				word.push_back((*it));
+			}
+			else
+			{
+				list.push_back(word);
+				word = (*it);
+			}
+		}
+	}
+	list.push_back(word);
+
+	for (std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it)
+	{
+		std::string item = (*it);
+		if (item == "%")
+		{
+			(*it) = "\%";
+		}
+		else if (item == "yyyy" || item == "yyyyy" || item == "YYYY" || item == "YYYYY")
+		{
+			(*it) = "%Y";
+		}
+		else if (item == "y" || item == "yy")
+		{
+			(*it) = "%y";
+		}
+		else if (item == "M")
+		{
+			(*it) = "%M";
+		}
+		else if (item == "MM")
+		{
+			(*it) = "%M";
+		}
+		else if (item == "MMMM")
+		{
+			(*it) = "%B";}
+
+		else if (item == "d" || item == "D")
+		{
+			(*it) = "%e";
+		}
+		else if (item == "dd" || item == "DD")
+		{
+			(*it) = "%d";
+		}
+		else if (item == "a" || item == "p")
+		{
+			(*it) = "%p"; // or %P
+		}
+		else if (item == "h")
+		{
+			(*it) = "%I";
+		}
+		else if (item == "H" || item == "HH" || item == "hh" || item == "h")
+		{
+			(*it) = "%H";
+		}
+		else if (item == "m" || item == "mm")
+		{
+			(*it) = "%m";
+		}
+		else if (item == "s")
+		{
+			(*it) = "%S"; // Wrong
+		}
+		else if (item == "ss" || item == "SS")
+		{
+			(*it) = "%S";
+		}
+
+		// Todo, convert below
+		/*Q = 2
+		QQ = 02
+		QQQ = Q2
+		QQQQ = second quarter
+		w = 2
+		ww = 02
+		DDD = 002
+		F = 2
+		a = AM
+		p = PM
+		h = 1
+		h = 12
+		hh = 01
+		K = 0
+		K = 11
+		KK = 00
+		k = 1
+		k = 24
+		kk = 01
+		s = 2
+		s = 59
+		S = 2
+		SSS = 235
+		SSSS = 2350
+		SSSSS = 23500
+		z, zz, zzz = PDT
+		z, zz, zzz = PST
+		z, zz, zzz = GMT-0800
+		zzzz = Pacific Daylight Time
+		zzzz = Pacific Standard Time
+		v = PT
+		vvvv = Pacific Time*/
+	}
+
+	std::string output = "";
+	for (std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it)
+	{
+		output += (*it);
+	}
+	return output;
+}

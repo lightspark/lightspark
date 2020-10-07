@@ -36,11 +36,20 @@ private:
 public:
 	DateTimeFormatter(Class_base* c);
 	static void sinit(Class_base*);
+	static tiny_string buildDateTimePattern(tiny_string dateStyle, tiny_string timeStyle);
+	static std::string buildInternalFormat(std::string pattern);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(setDateTimePattern);
 	ASFUNCTION_ATOM(format);
 	ASFUNCTION_ATOM(formatUTC);
 	ASFUNCTION_ATOM(getAvailableLocaleIDNames);
+	ASFUNCTION_ATOM(getDateStyle);
+	ASFUNCTION_ATOM(getDateTimePattern);
+	ASFUNCTION_ATOM(getFirstWeekday);
+	ASFUNCTION_ATOM(getMonthNames);
+	ASFUNCTION_ATOM(getTimeStyle);
+	ASFUNCTION_ATOM(getWeekdayNames);
+	ASFUNCTION_ATOM(setDateTimeStyles);
 	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
 	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);

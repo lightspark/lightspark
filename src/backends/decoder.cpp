@@ -754,6 +754,7 @@ CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
 			return CODEC_ID_MP3;
 		case ADPCM:
 			return CODEC_ID_ADPCM_SWF;
+		case LINEAR_PCM_PLATFORM_ENDIAN:
 		case LINEAR_PCM_LE:
 			return CODEC_ID_PCM_S16LE;
 		case LINEAR_PCM_FLOAT_BE:

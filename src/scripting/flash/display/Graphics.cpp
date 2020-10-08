@@ -686,6 +686,7 @@ void Graphics::dorender(bool closepath)
 			owner->tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(movex, movey))));
 			owner->tokens.filltokens.emplace_back(_MR(new GeomToken(CLEAR_FILL)));
 		}
+		owner->owner->legacy=false;
 		owner->owner->hasChanged=true;
 		owner->owner->needsTextureRecalculation=true;
 		owner->owner->requestInvalidation(getSystemState());

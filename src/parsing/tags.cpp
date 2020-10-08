@@ -1348,7 +1348,7 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 				new (c->memoryAccount) AVM1Shape(c, *tokens, 1.0f/20.0f,ShapeId,ShapeBounds);
 	return ret;
 }
-MATRIX DefineShapeTag::MapToBounds(const MATRIX &mat)
+MATRIX DefineShapeTag::MapToBoundsForButton(const MATRIX &mat)
 {
 	MATRIX m (1,1,0,0,ShapeBounds.Xmin/20,ShapeBounds.Ymin/20);
 	return mat.multiplyMatrix(m);
@@ -2053,7 +2053,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
-			state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
+			state->setLegacyMatrix(dict->MapToBoundsForButton(i->PlaceMatrix));
 			
 			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
@@ -2063,7 +2063,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			if (i->ColorTransform.isfilled())
 				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
 
-			if(states[j] == NULL)
+			if(states[j] == nullptr)
 			{
 				states[j] = state;
 				curDepth[j] = i->PlaceDepth;
@@ -2085,7 +2085,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 	}
 	Class_base* realClass=(c)?c:bindedTo;
 
-	if(realClass==NULL)
+	if(realClass==nullptr)
 	{
 		if (!loadedFrom->usesActionScript3)
 			realClass=Class<AVM1SimpleButton>::getClass(loadedFrom->getSystemState());
@@ -2111,7 +2111,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, Roo
 
 ASObject* DefineVideoStreamTag::instance(Class_base* c)
 {
-	Class_base* classRet = NULL;
+	Class_base* classRet = nullptr;
 	if(c)
 		classRet=c;
 	else if(bindedTo)

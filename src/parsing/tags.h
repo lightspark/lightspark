@@ -83,11 +83,12 @@ public:
 	tiny_string bindingclassname;
 	RootMovieClip* loadedFrom;
 	uint32_t nameID;
-	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(NULL),loadedFrom(root),nameID(UINT32_MAX) { }
+	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(nullptr),loadedFrom(root),nameID(UINT32_MAX) { }
 	TAGTYPE getType() const override { return DICT_TAG; }
 	virtual int getId() const=0;
-	virtual ASObject* instance(Class_base* c=NULL) { return NULL; }
+	virtual ASObject* instance(Class_base* c=nullptr) { return nullptr; }
 	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
+	virtual MATRIX MapToBoundsForButton(const MATRIX& mat) { return MapToBounds(mat); }
 };
 
 /*
@@ -150,7 +151,7 @@ public:
 	~DefineShapeTag();
 	virtual int getId() const{ return ShapeId; }
 	ASObject* instance(Class_base* c=nullptr);
-	MATRIX MapToBounds(const MATRIX& mat) override;
+	MATRIX MapToBoundsForButton(const MATRIX& mat) override;
 };
 
 class DefineShape2Tag: public DefineShapeTag

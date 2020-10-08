@@ -5159,7 +5159,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x76://convert_b
-				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() &&
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end() &&
 						((state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
 						((code.peekbyte() == 0x11 ||  //iftrue
 						  code.peekbyte() == 0x12 )   //iffalse

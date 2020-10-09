@@ -1614,7 +1614,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	switch (b)
 	{
 		case 0x2a://dup
-			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
+			if (!argsneeded && !fromdup && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
 				// set optimized opcode to corresponding opcode with local result 
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;

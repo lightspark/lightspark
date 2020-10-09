@@ -582,8 +582,8 @@ uint8_t *EngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
 			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
 			return nullptr;
 		}
-	return currentPixelBufPtr;
 #endif
+	return currentPixelBufPtr;
 }
 
 tiny_string EngineData::getGLDriverInfo()

@@ -740,7 +740,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				rx, ry, rwidth, rheight,rotation,
 				xflipped,yflipped,
 				isMask,hasMask,
-				1.0f,getConcatenatedAlpha(),masks,smoothing,0);
+				1.0f,getConcatenatedAlpha(),masks,smoothing,bxmin,bymin,0);
 }
 
 bool TextLine::renderImpl(RenderContext& ctxt) const

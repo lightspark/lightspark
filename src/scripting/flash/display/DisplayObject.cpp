@@ -1380,14 +1380,12 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 	while(cur && cur!=target)
 	{
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
-		//Get an IDrawable for all the hierarchy of each mask.
 		if(gatherMasks)
 		{
 			if (!cur->mask.isNull())
 				hasMask=true;
-//			if(cur->maskOf.isNull())
-//				cur->gatherMaskIDrawables(masks);
-//			else
+			if (cur->ClipDepth)
+				isMask=true;
 			if(!cur->maskOf.isNull())
 			{
 				//Stop gathering masks if any level of the hierarchy it's a mask

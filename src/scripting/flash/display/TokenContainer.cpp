@@ -225,7 +225,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 
 	bool isMask;
 	bool hasMask;
-	
 	owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
@@ -251,7 +250,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, rx,ry,rwidth,rheight,rotation
 				, xscale, yscale
 				, isMask, hasMask
-				, scaling,owner->getConcatenatedAlpha(), masks,smoothing,
+				, scaling,owner->getConcatenatedAlpha(), masks,smoothing
+				,bxmin,bymin,
 				ct);
 }
 

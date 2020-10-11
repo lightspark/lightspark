@@ -1335,7 +1335,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				rx,ry,rwidth,rheight,rotation,
 				xscale,yscale,
 				isMask,hasMask,
-				1.0f, getConcatenatedAlpha(), masks,smoothing,caretIndex);
+				1.0f, getConcatenatedAlpha(), masks,smoothing,bxmin,bymin,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt) const

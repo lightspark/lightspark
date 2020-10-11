@@ -223,6 +223,8 @@ protected:
 	  The whole transformation matrix that is applied to the rendered object
 	*/
 	MATRIX matrix;
+	number_t xstart;
+	number_t ystart;
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr, float scalex, float scaley)=0;
@@ -233,7 +235,7 @@ public:
 				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
 				  , float _xs, float _ys
 				  , bool _im, bool _hm
-				  , float _s, float _a, const std::vector<MaskData>& m,bool _smoothing);
+				  , float _s, float _a, const std::vector<MaskData>& m,bool _smoothing,number_t _xstart,number_t _ystart);
 	//IDrawable interface
 	uint8_t* getPixelBuffer();
 	/*
@@ -252,7 +254,7 @@ class CairoTokenRenderer : public CairoRenderer
 {
 private:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform, float scalex, float scaley);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform, float scalex, float scaley);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform, float scalex, float scaley,number_t xstart, number_t ystart);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
@@ -283,6 +285,7 @@ public:
 			float _xs, float _ys,
 			bool _im, bool _hm,
 		    float _s, float _a, const std::vector<MaskData>& _ms, bool _smoothing,
+			number_t _xmin, number_t _ymin,
 			ColorTransform* _ct);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
@@ -364,8 +367,8 @@ public:
 			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
 			bool _im, bool _hm,
-			float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,_smoothing), textData(_textData),caretIndex(_ci) {}
+			float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,number_t _xmin,number_t _ymin,uint32_t _ci)
+		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,_smoothing,_xmin,_ymin), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

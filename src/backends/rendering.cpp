@@ -989,6 +989,8 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	{
 		uint32_t curX=(i%blocksW)*CHUNKSIZE_REAL;
 		uint32_t curY=(i/blocksW)*CHUNKSIZE_REAL;
+		if (curX > w || curY > h)
+			break;
 		uint32_t sizeX=min(int(w-curX),CHUNKSIZE_REAL)+2;
 		uint32_t sizeY=min(int(h-curY),CHUNKSIZE_REAL)+2;
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*CHUNKSIZE);

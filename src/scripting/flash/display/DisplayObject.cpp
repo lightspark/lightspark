@@ -1376,6 +1376,7 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
 	isMask = false;
+	hasMask = false;
 	while(cur && cur!=target)
 	{
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);

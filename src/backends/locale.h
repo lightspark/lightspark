@@ -56,8 +56,8 @@ namespace lightspark
 	class LocaleManager
 	{
 		private:
-			std::unordered_map<std::string, LocaleItem*> locales;
 			std::locale requestedLocale;
+			std::unordered_map<std::string, LocaleItem*> locales;
 		public:
 			LocaleManager();
 			~LocaleManager();

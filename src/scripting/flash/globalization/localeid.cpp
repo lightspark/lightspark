@@ -54,12 +54,12 @@ ASFUNCTIONBODY_ATOM(LocaleID,_constructor)
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
 	std::string locale = th->requestedLocaleIDName;
+	th->name = th->requestedLocaleIDName;
 	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName);
 		th->actualLocaleIDName = th->requestedLocaleIDName;
-		th->name = th->actualLocaleIDName;
 		th->lastOperationStatus="noError";
 	}
 	else
@@ -81,8 +81,42 @@ ASFUNCTIONBODY_ATOM(LocaleID,determinePreferredLocales)
 ASFUNCTIONBODY_ATOM(LocaleID,getKeysAndValues)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"LocaleID.getKeysAndValues is not implemented.");
+	ASObject* object = Class<ASObject>::getInstanceS(th->getSystemState());
+	std::string str(th->name.raw_buf());
+	size_t pos = str.find("@");
+	std::string keyValueDelim("=");
+	std::string itemDelim(";");
+	if (pos != string::npos)
+	{
+		std::size_t current, previous = pos+1;
+		current = str.find(itemDelim);
+		while (current != std::string::npos)
+		{
+			std::string item = str.substr(previous, current - previous);
+			size_t keyValueDelimPos = item.find(keyValueDelim);
+			if (keyValueDelimPos != std::string::npos)
+			{
+				std::string key = item.substr(0, keyValueDelimPos);
+				std::string value = item.substr(keyValueDelimPos+1, item.size());
+				object->setVariableAtomByQName(key,nsNameAndKind(),asAtomHandler::fromString(th->getSystemState(),value),DYNAMIC_TRAIT);
+			}
+			previous = current + 1;
+			current = str.find(itemDelim, previous);
+		}
+		if (previous != std::string::npos)
+		{
+			std::string item = str.substr(previous, str.size());
+			size_t keyValueDelimPos = item.find(keyValueDelim);
+			if (keyValueDelimPos != std::string::npos)
+			{
+				std::string key = item.substr(0, keyValueDelimPos);
+				std::string value = item.substr(keyValueDelimPos+1, item.size());
+				object->setVariableAtomByQName(key,nsNameAndKind(),asAtomHandler::fromString(th->getSystemState(),value),DYNAMIC_TRAIT);
+			}
+		}
+	}
 	th->lastOperationStatus="noError";
+	ret = asAtomHandler::fromObject(object);
 }
 
 ASFUNCTIONBODY_ATOM(LocaleID,getLanguage)

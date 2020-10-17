@@ -1237,7 +1237,7 @@ void DefineTextTag::computeCached() const
 	if(!tokens.empty())
 		return;
 
-	const FontTag* curFont = NULL;
+	const FontTag* curFont = nullptr;
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	FILLSTYLE fs(1);
@@ -1254,11 +1254,9 @@ void DefineTextTag::computeCached() const
 	const int twipsScaling = 1024*20;
 	const int pixelScaling = 1024*20*20;
 
-	// Scale the translation component of TextMatrix. -1 because
-	// removes the unscaled translation first.
+	// Scale the translation component of TextMatrix.
 	MATRIX scaledTextMatrix = TextMatrix;
-	scaledTextMatrix.translate((pixelScaling-1)*TextMatrix.getTranslateX(),
-				   (pixelScaling-1)*TextMatrix.getTranslateY());
+	scaledTextMatrix.translate((TextMatrix.getTranslateX()-TextBounds.Xmin/20) *pixelScaling,(TextMatrix.getTranslateY()-TextBounds.Ymin/20) *pixelScaling);
 
 	for(size_t i=0; i< TextRecords.size();++i)
 	{
@@ -1275,14 +1273,12 @@ void DefineTextTag::computeCached() const
 		}
 		if(TextRecords[i].StyleFlagsHasXOffset)
 		{
-					curPos.x = TextRecords[i].XOffset;
+			curPos.x = TextRecords[i].XOffset;
 		}
 		if(TextRecords[i].StyleFlagsHasYOffset)
 		{
-					curPos.y = TextRecords[i].YOffset;
+			curPos.y = TextRecords[i].YOffset;
 		}
-		curPos.x -= TextBounds.Xmin;
-		curPos.y -= TextBounds.Ymin;
 		/*
 		 * In DefineFont3Tags, shape's coordinates are 1024*20 times pixels size,
 		 * in all former DefineFont*Tags, its just 1024 times. We scale everything here
@@ -1297,9 +1293,9 @@ void DefineTextTag::computeCached() const
 			Vector2 glyphPos = curPos*twipsScaling;
 
 			MATRIX glyphMatrix(scaling, scaling, 0, 0, 
-					   glyphPos.x,
-					   glyphPos.y);
-			
+						glyphPos.x,
+						glyphPos.y);
+
 			//Apply glyphMatrix first, then scaledTextMatrix
 			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
 

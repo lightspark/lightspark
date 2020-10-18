@@ -699,9 +699,9 @@ bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return true;
 }
 
-void TextLine::requestInvalidation(InvalidateQueue* q)
+void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	DisplayObjectContainer::requestInvalidation(q);
+	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	incRef();
 	q->addToInvalidateQueue(_MR(this));
 }
@@ -733,12 +733,10 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 		return nullptr;
 
 	float rotation = getConcatenatedMatrix().getRotation();
-	bool xflipped = totalMatrix.getScaleX()< 0;
-	bool yflipped = totalMatrix.getScaleY()< 0;
 	return new CairoPangoRenderer(*this, totalMatrix,
 				x, y, width, height,
 				rx, ry, rwidth, rheight,rotation,
-				xflipped,yflipped,
+				totalMatrix.getScaleX(),totalMatrix.getScaleY(),
 				isMask,hasMask,
 				1.0f,getConcatenatedAlpha(),masks,smoothing,bxmin,bymin,0);
 }

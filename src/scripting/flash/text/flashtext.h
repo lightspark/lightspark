@@ -95,7 +95,7 @@ private:
 	bool renderImpl(RenderContext& ctxt) const override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing) override;
-	void requestInvalidation(InvalidateQueue* q) override;
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void defaultEventBehavior(_R<Event> e) override;
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height using Pango
@@ -271,7 +271,7 @@ public:
 	StaticText(Class_base* c, const tokensVector& tokens,const RECT& b):
 		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b) {}
 	static void sinit(Class_base* c);
-	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };

@@ -128,7 +128,7 @@ public:
 	DisplayObject* findRemovedLegacyChild(uint32_t name);
 	void eraseRemovedLegacyChild(uint32_t name);
 	void LegacyChildRemoveDeletionMark(int32_t depth);
-	void requestInvalidation(InvalidateQueue* q) override;
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child);
@@ -214,7 +214,7 @@ public:
 	void constructionComplete() override;
 	void finalize() override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
-	void requestInvalidation(InvalidateQueue* q) override;
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
 
 	static void sinit(Class_base* c);
@@ -263,7 +263,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
-	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };
@@ -289,7 +289,7 @@ public:
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void checkRatio(uint32_t ratio) override;
@@ -476,7 +476,7 @@ public:
 	}
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
-	void requestInvalidation(InvalidateQueue* q) override;
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
 };
 
@@ -907,7 +907,7 @@ public:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
-	void requestInvalidation(InvalidateQueue* q) override { TokenContainer::requestInvalidation(q); }
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 };

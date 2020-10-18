@@ -200,11 +200,13 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio);
 }
 
-void TokenContainer::requestInvalidation(InvalidateQueue* q)
+void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	if(tokens.empty() || owner->skipRender())
 		return;
 	owner->incRef();
+	if (forceTextureRefresh)
+		owner->needsTextureRecalculation=true;
 	q->addToInvalidateQueue(_MR(owner));
 }
 

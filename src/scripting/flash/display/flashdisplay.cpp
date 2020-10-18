@@ -959,10 +959,10 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return ret;
 }
 
-void Sprite::requestInvalidation(InvalidateQueue* q)
+void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	DisplayObjectContainer::requestInvalidation(q);
-	TokenContainer::requestInvalidation(q);
+	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
+	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
@@ -2668,7 +2668,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setMouseChildren)
 	th->mouseChildren=asAtomHandler::Boolean_concrete(args[0]);
 }
 
-void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
+void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	DisplayObject::requestInvalidation(q);
 	Locker l(mutexDisplayList);
@@ -2676,7 +2676,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q)
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->hasChanged = true;
-		(*it)->requestInvalidation(q);
+		(*it)->requestInvalidation(q,forceTextureRefresh);
 	}
 }
 
@@ -4386,38 +4386,38 @@ IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initial
 		hitTestState->invalidate(target,initialMatrix,smoothing);
 	return DisplayObjectContainer::invalidate(target, initialMatrix,smoothing);
 }
-void SimpleButton::requestInvalidation(InvalidateQueue* q)
+void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	if (!upState.isNull())
 	{
 		upState->hasChanged = true;
 		if (upState->colorTransform.isNull())
 			upState->colorTransform = this->colorTransform;
-		upState->requestInvalidation(q);
+		upState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!overState.isNull())
 	{
 		overState->hasChanged = true;
 		if (overState->colorTransform.isNull())
 			overState->colorTransform = this->colorTransform;
-		overState->requestInvalidation(q);
+		overState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!downState.isNull())
 	{
 		downState->hasChanged = true;
 		if (downState->colorTransform.isNull())
 			downState->colorTransform = this->colorTransform;
-		downState->requestInvalidation(q);
+		downState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!hitTestState.isNull())
 	{
 		hitTestState->hasChanged = true;
 		if (hitTestState->colorTransform.isNull())
 			hitTestState->colorTransform = this->colorTransform;
-		hitTestState->requestInvalidation(q);
+		hitTestState->requestInvalidation(q,forceTextureRefresh);
 	}
 	
-	DisplayObjectContainer::requestInvalidation(q);
+	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
 uint32_t SimpleButton::getTagID() const

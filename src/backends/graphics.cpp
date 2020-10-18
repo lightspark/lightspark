@@ -556,6 +556,12 @@ uint8_t* CairoRenderer::getPixelBuffer()
 
 	xOffset*=scalex;
 	yOffset*=scaley;
+	xOffsetTransformed*=scalex;
+	yOffsetTransformed*=scaley;
+	xOffset+=offx;
+	yOffset+=offy;
+	xOffsetTransformed+=offx;
+	yOffsetTransformed+=offy;
 	width*=scalex;
 	height*=scaley;
 

@@ -540,7 +540,7 @@ IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initia
 	throw RunTimeException("DisplayObject::invalidate");
 }
 
-void DisplayObject::requestInvalidation(InvalidateQueue* q)
+void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	//Let's invalidate also the mask
 	if(!mask.isNull())

@@ -175,7 +175,7 @@ public:
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
 	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
-	virtual void requestInvalidation(InvalidateQueue* q);
+	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix() const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;

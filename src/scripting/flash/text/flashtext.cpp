@@ -1170,10 +1170,10 @@ void TextField::textUpdated()
 		requestInvalidation(this->getSystemState());
 }
 
-void TextField::requestInvalidation(InvalidateQueue* q)
+void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	if (!tokensEmpty())
-		TokenContainer::requestInvalidation(q);
+		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 	else
 	{
 		incRef();

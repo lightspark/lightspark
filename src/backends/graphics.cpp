@@ -554,17 +554,6 @@ uint8_t* CairoRenderer::getPixelBuffer()
 
 	uint8_t* ret=nullptr;
 
-	xOffset*=scalex;
-	yOffset*=scaley;
-	xOffsetTransformed*=scalex;
-	yOffsetTransformed*=scaley;
-	xOffset+=offx;
-	yOffset+=offy;
-	xOffsetTransformed+=offx;
-	yOffsetTransformed+=offy;
-	width*=scalex;
-	height*=scaley;
-
 	cairo_surface_t* cairoSurface=allocateSurface(ret);
 
 	cairo_t* cr=cairo_create(cairoSurface);

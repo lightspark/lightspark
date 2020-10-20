@@ -1708,10 +1708,10 @@ void StaticText::sinit(Class_base* c)
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	xmin=0;
-	xmax=(bounds.Xmax-bounds.Xmin)/20.0;
-	ymin=0;
-	ymax=(bounds.Ymax-bounds.Ymin)/20.0;
+	xmin=bounds.Xmin/20.0;
+	xmax=bounds.Xmax/20.0;
+	ymin=bounds.Ymin/20.0;
+	ymax=bounds.Ymax/20.0;
 	return true;
 }
 

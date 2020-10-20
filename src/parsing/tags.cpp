@@ -1226,11 +1226,6 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens,TextBounds);
 	return ret;
 }
-MATRIX DefineTextTag::MapToBounds(const MATRIX &mat)
-{
-	MATRIX m (1,1,0,0,TextBounds.Xmin/20,TextBounds.Ymin/20);
-	return mat.multiplyMatrix(m);
-}
 
 void DefineTextTag::computeCached() const
 {

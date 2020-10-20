@@ -22,6 +22,7 @@
 #include "swf.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "parsing/tags.h"
+#include "backends/rendering.h"
 
 using namespace lightspark;
 using namespace std;
@@ -225,6 +226,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
 
+	float scalex;
+	float scaley;
+	int offx,offy;
+	owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth,owner->getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+
 	bool isMask;
 	bool hasMask;
 	owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
@@ -248,8 +254,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	if(width==0 || height==0)
 		return nullptr;
 	return new CairoTokenRenderer(tokens,totalMatrix
-				, x, y, width, height
-				, rx,ry,rwidth,rheight,rotation
+				, x*scalex, y*scaley, width*scalex, height*scaley
+				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
 				, xscale, yscale
 				, isMask, hasMask
 				, scaling,owner->getConcatenatedAlpha(), masks,smoothing

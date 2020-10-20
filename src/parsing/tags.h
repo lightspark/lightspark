@@ -570,7 +570,6 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in,RootMovieClip* root,int v=1);
 	int getId() const { return CharacterId; }
 	ASObject* instance(Class_base* c=nullptr);
-	MATRIX MapToBounds(const MATRIX& mat) override;
 };
 
 class DefineText2Tag: public DefineTextTag

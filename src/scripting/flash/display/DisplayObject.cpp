@@ -1384,7 +1384,7 @@ void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDr
 		{
 			if (!cur->mask.isNull())
 				hasMask=true;
-			if (cur->ClipDepth)
+			if (cur->ClipDepth || !cur->maskOf.isNull())
 				isMask=true;
 			if(!cur->maskOf.isNull())
 			{

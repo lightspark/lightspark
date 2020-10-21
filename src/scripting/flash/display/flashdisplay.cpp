@@ -4978,7 +4978,7 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame();
 		initFrame();
-		if (!getSystemState()->mainClip->usesActionScript3 && !this->is<RootMovieClip>() && !this->inAVM1Attachment)
+		if (!getSystemState()->mainClip->usesActionScript3 && this!=getSystemState()->mainClip && !this->inAVM1Attachment)
 			executeFrameScript();
 	}
 }

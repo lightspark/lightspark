@@ -4529,8 +4529,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
 					clearOperands(state,true,&lastlocalresulttype);
-					state.preloadedcode.push_back(t);
-					state.preloadedcode.push_back(argcount);
+					state.preloadedcode.back().pcode.arg1_uint=t;
+					state.preloadedcode.back().pcode.arg2_uint=argcount;
 					typestack.push_back(typestackentry(nullptr,false));
 				}
 				break;

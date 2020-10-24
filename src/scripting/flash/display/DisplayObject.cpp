@@ -1289,9 +1289,6 @@ void DisplayObject::initFrame()
 
 void DisplayObject::executeFrameScript()
 {
-	// ensure that init event is executed after the first framescript
-	if (!loaderInfo.isNull())
-		loaderInfo->setComplete();
 }
 
 void DisplayObject::constructionComplete()

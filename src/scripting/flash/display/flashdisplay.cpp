@@ -785,6 +785,8 @@ void Loader::setContent(_R<DisplayObject> o)
 	{
 		_addChildAt(o, 0);
 	}
+	if (!o->loaderInfo.isNull())
+		o->loaderInfo->setComplete();
 }
 
 Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),dragged(false),buttonMode(false),useHandCursor(false)

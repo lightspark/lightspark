@@ -1807,8 +1807,6 @@ void RootMovieClip::constructionComplete()
 	if (this!=getSystemState()->mainClip)
 	{
 		MovieClip::constructionComplete();
-		if (this->loaderInfo)
-			this->loaderInfo->setContent(this);
 		return;
 	}
 	MovieClip::constructionComplete();

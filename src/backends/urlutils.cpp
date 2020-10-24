@@ -265,11 +265,11 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 {
 	std::string str = u.raw_buf();
 
-	// absolute URL without protocol, add current protocol
+	// absolute URL without protocol, Adobe seems to default to "http:"
 	if(str.find("//") == 0)
 	{
 		tiny_string s;
-		s = getProtocol()+":"+str;
+		s = "http:"+str;
 		return URLInfo(s);
 	}
 

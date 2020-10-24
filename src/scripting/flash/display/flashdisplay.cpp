@@ -4352,10 +4352,26 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?
 	 */
-	if(dS) dS->initFrame();
-	if(hTS) hTS->initFrame();
-	if(oS) oS->initFrame();
-	if(uS) uS->initFrame();
+	if(dS)
+	{
+		dS->advanceFrame();
+		dS->initFrame();
+	}
+	if(hTS)
+	{
+		hTS->advanceFrame();
+		hTS->initFrame();
+	}
+	if(oS)
+	{
+		oS->advanceFrame();
+		oS->initFrame();
+	}
+	if(uS)
+	{
+		uS->advanceFrame();
+		uS->initFrame();
+	}
 
 	tabEnabled = true;
 }

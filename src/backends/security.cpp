@@ -583,6 +583,10 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
 		return ALLOWED;
 
+	// no need to check if we trust the source
+	if (getSys()->mainClip->getOrigin().getProtocol() == "file" && sandboxType == LOCAL_TRUSTED)
+		return ALLOWED;
+
 	//Streaming from RTMP is always allowed (see
 	//http://forums.adobe.com/thread/422391)
 	if(url.isRTMP())

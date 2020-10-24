@@ -485,7 +485,7 @@ void LoaderThread::execute()
 	}
 	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
-		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)
+		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip && !local_pt.getRootMovie()->hasMainClass)
 		{
 			if (!local_pt.getRootMovie()->usesActionScript3)
 				local_pt.getRootMovie()->setIsInitialized(false);

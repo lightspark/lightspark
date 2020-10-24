@@ -3183,11 +3183,27 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
 						if (var)
+						{
+							if (var->is<Null>())
+							{
+								auto i = mi->context->root->applicationDomain->classesBeingDefined.find(name);
+								if(i != mi->context->root->applicationDomain->classesBeingDefined.end())
+									var = i->second;
+							}
 							o = asAtomHandler::fromObject(var);
+						}
+					}
+					if (asAtomHandler::is<Template_base>(o))
+					{
+						addCachedConstant(state,mi, o,code);
+						typestack.push_back(typestackentry(nullptr,false));
+						break;
 					}
 					if (asAtomHandler::is<Class_base>(o))
 					{
 						resulttype = asAtomHandler::as<Class_base>(o);
+						if (resulttype->is<Class_inherit>())
+							resulttype->as<Class_inherit>()->checkScriptInit();
 						if (asAtomHandler::as<Class_base>(o)->isConstructed() || asAtomHandler::as<Class_base>(o)->isBuiltin())
 						{
 							addCachedConstant(state,mi, o,code);

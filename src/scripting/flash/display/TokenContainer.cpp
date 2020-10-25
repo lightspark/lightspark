@@ -259,7 +259,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, xscale, yscale
 				, isMask, hasMask
 				, scaling,owner->getConcatenatedAlpha(), masks,smoothing
-				,bxmin,bymin,
+				,bxmin*scaling,bymin*scaling,
 				ct);
 }
 

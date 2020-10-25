@@ -3181,17 +3181,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
-						ASObject* var = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
-						if (var)
-						{
-							if (var->is<Null>())
-							{
-								auto i = mi->context->root->applicationDomain->classesBeingDefined.find(name);
-								if(i != mi->context->root->applicationDomain->classesBeingDefined.end())
-									var = i->second;
-							}
-							o = asAtomHandler::fromObject(var);
-						}
+						GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
+						mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt);
 					}
 					if (asAtomHandler::is<Template_base>(o))
 					{

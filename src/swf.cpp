@@ -1812,6 +1812,8 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
+	if (!loaderInfo.isNull())
+		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
 void RootMovieClip::afterConstruction()

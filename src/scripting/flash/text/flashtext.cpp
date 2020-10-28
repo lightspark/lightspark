@@ -1322,7 +1322,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, rx, ry, rwidth, rheight, rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,smoothing);
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, rx, ry, rwidth, rheight, rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,
+																					1.0f,1.0f,1.0f,1.0f,
+																					0.0f,0.0f,0.0f,0.0f,
+																					smoothing);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1335,7 +1338,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				rx,ry,rwidth,rheight,rotation,
 				xscale,yscale,
 				isMask,hasMask,
-				1.0f, getConcatenatedAlpha(), masks,smoothing,bxmin,bymin,caretIndex);
+				1.0f, getConcatenatedAlpha(), masks,
+				1.0f,1.0f,1.0f,1.0f,
+				0.0f,0.0f,0.0f,0.0f,
+				smoothing,bxmin,bymin,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt) const

@@ -10,6 +10,8 @@ uniform float direct;
 uniform float mask;
 varying vec4 ls_TexCoords[2];
 varying vec4 ls_FrontColor;
+uniform vec4 colorTransformMultiply;
+uniform vec4 colorTransformAdd;
 
 const mat3 YUVtoRGB = mat3(1, 1, 1, //First coloumn
 				0, -0.344, 1.772, //Second coloumn
@@ -25,6 +27,8 @@ void main()
 	vbase.rgb = vbase.bgr;
 #endif
 	vbase *= alpha;
+	// add colortransformation
+	vbase = max(min(vbase*colorTransformMultiply+colorTransformAdd,1.0),0.0);
 	vec4 val = vbase.bgra-vec4(0,0.5,0.5,0);
 	//Tranform the value from YUV to RGB
 	val.rgb = YUVtoRGB*(val.rgb);

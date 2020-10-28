@@ -128,7 +128,10 @@ bool Video::renderImpl(RenderContext& ctxt) const
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height,
-			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),0,0,width,height,totalMatrix.getScaleX(),totalMatrix.getScaleY(),false,false);
+			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),0,0,width,height,totalMatrix.getScaleX(),totalMatrix.getScaleY(),
+			1.0f,1.0f,1.0f,1.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			false,false);
 		
 		netStream->unlock();
 		return false;

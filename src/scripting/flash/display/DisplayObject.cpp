@@ -498,6 +498,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 			surface.tex.width, surface.tex.height,
 			surface.alpha, RenderContext::RGB_MODE,
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
+			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
+			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
 			surface.isMask, surface.hasMask);
 	return false;
 }
@@ -562,6 +564,14 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.yscale=d->getYScale();
 	cachedSurface.isMask=d->getIsMask();
 	cachedSurface.hasMask=d->getHasMask();
+	cachedSurface.redMultiplier=d->getRedMultiplier();
+	cachedSurface.greenMultiplier=d->getGreenMultiplier();
+	cachedSurface.blueMultiplier=d->getBlueMultiplier();
+	cachedSurface.alphaMultiplier=d->getAlphaMultiplier();
+	cachedSurface.redOffset=d->getRedOffset();
+	cachedSurface.greenOffset=d->getGreenOffset();
+	cachedSurface.blueOffset=d->getBlueOffset();
+	cachedSurface.alphaOffset=d->getAlphaOffset();
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.

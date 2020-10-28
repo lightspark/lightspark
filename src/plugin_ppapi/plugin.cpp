@@ -1884,6 +1884,10 @@ void ppPluginEngineData::exec_glUniform2f(int location, float v0, float v1)
 {
 	g_gles2_interface->Uniform2f(instance->m_graphics,location,v0,v1);
 }
+void ppPluginEngineData::exec_glUniform4f(int location, float v0, float v1, float v2, float v3)
+{
+	g_gles2_interface->Uniform4f(instance->m_graphics,location,v0,v1,v2,v3);
+}
 
 void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
 {

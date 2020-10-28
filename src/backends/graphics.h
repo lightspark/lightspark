@@ -70,7 +70,9 @@ public:
 class CachedSurface
 {
 public:
-	CachedSurface():xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),isMask(false),hasMask(false){}
+	CachedSurface():xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
+	  , redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
+	  ,isMask(false),hasMask(false){}
 	TextureChunk tex;
 	int32_t xOffset;
 	int32_t yOffset;
@@ -82,6 +84,14 @@ public:
 	float rotation;
 	float xscale;
 	float yscale;
+	float redMultiplier;
+	float greenMultiplier;
+	float blueMultiplier;
+	float alphaMultiplier;
+	float redOffset;
+	float greenOffset;
+	float blueOffset;
+	float alphaOffset;
 	bool isMask;
 	bool hasMask;
 };
@@ -138,6 +148,14 @@ protected:
 	float alpha;
 	float xscale;
 	float yscale;
+	float redMultiplier;
+	float greenMultiplier;
+	float blueMultiplier;
+	float alphaMultiplier;
+	float redOffset;
+	float greenOffset;
+	float blueOffset;
+	float alphaOffset;
 	bool isMask;
 	bool hasMask;
 public:
@@ -145,8 +163,14 @@ public:
 		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
 		float xs, float ys,
 		bool im, bool hm,
-		float a, const std::vector<MaskData>& m):
-		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),alpha(a),xscale(xs),yscale(ys),isMask(im),hasMask(hm) {}
+		float a, const std::vector<MaskData>& m,
+		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
+		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset):
+		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
+		alpha(a),xscale(xs),yscale(ys),
+		redMultiplier(_redMultiplier),greenMultiplier(_greenMultiplier),blueMultiplier(_blueMultiplier),alphaMultiplier(_alphaMultiplier),
+		redOffset(_redOffset),greenOffset(_greenOffset),blueOffset(_blueOffset),alphaOffset(_alphaOffset),
+		isMask(im),hasMask(hm) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -173,6 +197,14 @@ public:
 	float getYScale() const { return yscale; }
 	bool getIsMask() const { return isMask; }
 	bool getHasMask() const { return hasMask; }
+	float getRedMultiplier() const { return redMultiplier; }
+	float getGreenMultiplier() const { return greenMultiplier; }
+	float getBlueMultiplier() const { return blueMultiplier; }
+	float getAlphaMultiplier() const { return alphaMultiplier; }
+	float getRedOffset() const { return redOffset; }
+	float getGreenOffset() const { return greenOffset; }
+	float getBlueOffset() const { return blueOffset; }
+	float getAlphaOffset() const { return alphaOffset; }
 };
 
 class AsyncDrawJob: public IThreadJob, public ITextureUploadable
@@ -235,7 +267,10 @@ public:
 				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
 				  , float _xs, float _ys
 				  , bool _im, bool _hm
-				  , float _s, float _a, const std::vector<MaskData>& m,bool _smoothing,number_t _xstart,number_t _ystart);
+				  , float _s, float _a, const std::vector<MaskData>& m
+				  , float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier
+				  , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
+				  , bool _smoothing,number_t _xstart,number_t _ystart);
 	//IDrawable interface
 	uint8_t* getPixelBuffer();
 	/*
@@ -253,14 +288,13 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
-	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, ColorTransform *colortransform, float scalex, float scaley);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, lightspark::ColorTransform *colortransform, float scalex, float scaley,number_t xstart, number_t ystart);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, float scalex, float scaley, bool isMask);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, float scalex, float scaley, number_t xstart, number_t ystart, bool isMask);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
 	*/
 	const tokensVector tokens;
-	_NR<ColorTransform> colortransform;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
@@ -284,9 +318,11 @@ public:
 			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
 			bool _im, bool _hm,
-		    float _s, float _a, const std::vector<MaskData>& _ms, bool _smoothing,
-			number_t _xmin, number_t _ymin,
-			ColorTransform* _ct);
+			float _s, float _a, const std::vector<MaskData>& _ms,
+			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
+			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
+			bool _smoothing,
+			number_t _xmin, number_t _ymin);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -367,8 +403,14 @@ public:
 			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
 			bool _im, bool _hm,
-			float _s, float _a, const std::vector<MaskData>& _ms,bool _smoothing,number_t _xmin,number_t _ymin,uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,_smoothing,_xmin,_ymin), textData(_textData),caretIndex(_ci) {}
+			float _s, float _a, const std::vector<MaskData>& _ms,
+			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
+			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
+			bool _smoothing,number_t _xmin,number_t _ymin,uint32_t _ci)
+		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,
+						_redMultiplier, _greenMultiplier, _blueMultiplier, _alphaMultiplier,
+						_redOffset, _greenOffset, _blueOffset, _alphaOffset,
+						_smoothing,_xmin,_ymin), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested

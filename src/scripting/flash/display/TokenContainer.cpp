@@ -23,6 +23,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "parsing/tags.h"
 #include "backends/rendering.h"
+#include "scripting/flash/geom/flashgeom.h"
 
 using namespace lightspark;
 using namespace std;
@@ -242,25 +243,49 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	float rotation = owner->getConcatenatedMatrix().getRotation();
 	float xscale = owner->getConcatenatedMatrix().getScaleX();
 	float yscale = owner->getConcatenatedMatrix().getScaleY();
+	float redMultiplier=1.0;
+	float greenMultiplier=1.0;
+	float blueMultiplier=1.0;
+	float alphaMultiplier=1.0;
+	float redOffset=0.0;
+	float greenOffset=0.0;
+	float blueOffset=0.0;
+	float alphaOffset=0.0;
 	MATRIX totalMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-	// TODO should we combine all colorTransformations up to the root here?
 	ColorTransform* ct = owner->colorTransform.getPtr();
-	if (!ct && owner->getParent())
-		ct = owner->getParent()->colorTransform.getPtr();
+	DisplayObjectContainer* p = owner->getParent();
+	while (!ct && p)
+	{
+		ct = p->colorTransform.getPtr();
+		p = p->getParent();
+	}
 	if(width==0 || height==0)
 		return nullptr;
+	if (ct)
+	{
+		redMultiplier=ct->redMultiplier;
+		greenMultiplier=ct->greenMultiplier;
+		blueMultiplier=ct->blueMultiplier;
+		alphaMultiplier=ct->alphaMultiplier;
+		redOffset=ct->redOffset;
+		greenOffset=ct->greenOffset;
+		blueOffset=ct->blueOffset;
+		alphaOffset=ct->alphaOffset;
+	}
 	return new CairoTokenRenderer(tokens,totalMatrix
 				, x*scalex, y*scaley, width*scalex, height*scaley
 				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
 				, xscale, yscale
 				, isMask, hasMask
-				, scaling,owner->getConcatenatedAlpha(), masks,smoothing
-				,bxmin*scaling,bymin*scaling,
-				ct);
+				, scaling,owner->getConcatenatedAlpha(), masks
+				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
+				, redOffset,greenOffset,blueOffset,alphaOffset
+				, smoothing
+				,bxmin*scaling,bymin*scaling);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

@@ -115,6 +115,7 @@ class ColorTransform: public ASObject
 friend class BitmapData;
 friend class DisplayObject;
 friend class AVM1Color;
+friend class TokenContainer;
 protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;

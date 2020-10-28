@@ -224,6 +224,7 @@ public:
 	tiny_string getGLDriverInfo() override;
 	void exec_glUniform1f(int location,float v0) override;
 	void exec_glUniform2f(int location,float v0, float v1) override;
+	void exec_glUniform4f(int location,float v0, float v1, float v2, float v3) override;
 	void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id) override;
 	void exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void* coords, VERTEXBUFFER_FORMAT format) override;
 	void exec_glEnableVertexAttribArray(uint32_t index) override;

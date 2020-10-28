@@ -2325,9 +2325,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	else
 		o->colorTransform->setProperties(colortransform);
 	o->hasChanged=true;
-	o->needsTextureRecalculation=true;
-	this->hasChanged=true;
-	this->requestInvalidation(getSystemState());
+	o->requestInvalidation(getSystemState());
 }
 
 void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)

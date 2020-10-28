@@ -476,6 +476,8 @@ void RenderThread::commonGLInit(int width, int height)
 	afterRotateUniform=engineData->exec_glGetUniformLocation(gpu_program,"afterRotate");
 	startPositionUniform=engineData->exec_glGetUniformLocation(gpu_program,"startPosition");
 	scaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"scale");
+	colortransMultiplyUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformMultiply");
+	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
@@ -642,6 +644,8 @@ void RenderThread::plotProfilingData()
 	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
 	engineData->exec_glUniform2f(startPositionUniform,0,0);
 	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 
 	mapCairoTexture(windowWidth, windowHeight);
 
@@ -731,6 +735,8 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
 	engineData->exec_glUniform2f(startPositionUniform,0,0);
 	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	mapCairoTexture(windowWidth, windowHeight);
 	engineData->exec_glFlush();
 }

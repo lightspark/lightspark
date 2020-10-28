@@ -60,7 +60,10 @@ public:
 		Render a quad of given size using the given chunk
 	*/
 	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode,float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,bool isMask, bool hasMask)=0;
+			float alpha, COLOR_MODE colorMode,float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
+			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			bool isMask, bool hasMask)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
@@ -85,6 +88,8 @@ protected:
 	int afterRotateUniform;
 	int scaleUniform;
 	int maskUniform;
+	int colortransMultiplyUniform;
+	int colortransAddUniform;
 	uint32_t maskframebuffer;
 	uint32_t maskTextureID;
 
@@ -116,7 +121,10 @@ public:
 	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,bool isMask,bool hasMask) override;
+			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
+			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			bool isMask, bool hasMask) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
@@ -142,7 +150,10 @@ public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing);
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,bool isMask,bool hasMask) override;
+			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
+			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			bool isMask, bool hasMask) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map

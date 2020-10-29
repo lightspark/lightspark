@@ -1021,6 +1021,7 @@ void AsyncDrawJob::uploadFence()
 		owner->incRef();
 		getVm(owner->getSystemState())->addDeletableObject(owner.getPtr());
 	}
+	delete this;
 }
 
 void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)

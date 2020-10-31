@@ -205,7 +205,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -575,6 +575,8 @@ void SystemState::systemFinalize()
 	parameters.reset();
 	frameListeners.clear();
 	systemDomain.reset();
+	for(auto it = sharedobjectmap.begin(); it != sharedobjectmap.end(); it++)
+		it->second->doFlush();
 
 	mainClip->decRef();
 	//Free the stage. This should free all objects on the displaylist
@@ -688,16 +690,16 @@ void SystemState::destroy()
 	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be
 	//decRef'ed after this line as it would cause a manager->put()
 	delete currentVm;
-	currentVm = NULL;
+	currentVm = nullptr;
 
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
 	delete timerThread;
-	timerThread=NULL;
+	timerThread=nullptr;
 	delete frameTimerThread;
-	frameTimerThread= NULL;
+	frameTimerThread= nullptr;
 	
 	delete renderThread;
-	renderThread=NULL;
+	renderThread=nullptr;
 	delete inputThread;
 	inputThread=NULL;
 	delete engineData;
@@ -757,6 +759,12 @@ void SystemState::setShutdownFlag()
 	terminated.signal();
 }
 
+void SystemState::setLocalStorageAllowed(bool allowed)
+{
+	localstorageallowed = allowed;
+	getEngineData()->setLocalStorageAllowedMarker(allowed);
+}
+
 float SystemState::getRenderRate()
 {
 	return renderRate;
@@ -804,6 +812,7 @@ void SystemState::EngineCreator::threadAbort()
 void SystemState::delayedCreation(SystemState* sys)
 {
 	sys->audioManager=new AudioManager(sys->engineData);
+	sys->localstorageallowed =sys->getEngineData()->getLocalStorageAllowedMarker();
 	int32_t reqWidth=sys->mainClip->getFrameSize().Xmax/20;
 	int32_t reqHeight=sys->mainClip->getFrameSize().Ymax/20;
 

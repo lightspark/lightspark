@@ -428,6 +428,8 @@ tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, co
 tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 {
 	tiny_string ret;
+	if ((len == UINT32_MAX) || (start+len >= stringSize))
+		len =stringSize-(start+1);
 	assert(start+len < stringSize);
 	if(len+1 > STATIC_SIZE)
 		ret.createBuffer(len+1);

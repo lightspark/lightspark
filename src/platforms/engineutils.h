@@ -83,7 +83,9 @@ private:
 	int32_t contextmenuheight;
 	void openContextMenuIntern(InteractiveObject *dispatcher);
 	ITickJob* sdleventtickjob;
+	std::string getsharedobjectfilename(const tiny_string &name);
 protected:
+	tiny_string sharedObjectDatapath;
 	int32_t contextmenucurrentitem;
 	bool incontextmenu;
 	std::vector<_R<NativeMenuItem>> currentcontextmenuitems;
@@ -134,11 +136,20 @@ public:
 	 */
 	void showWindow(uint32_t w, uint32_t h);
 
+	// local storage handling
+	virtual void setLocalStorageAllowedMarker(bool allowed);
+	virtual bool getLocalStorageAllowedMarker();
+	virtual bool fillSharedObject(const tiny_string& name, ByteArray* data);
+	virtual bool flushSharedObject(const tiny_string& name, ByteArray* data);
+	virtual void removeSharedObject(const tiny_string& name);
+
 	/* must be called within mainLoopThread */
 	virtual void grabFocus()=0;
 	virtual void openPageInBrowser(const tiny_string& url, const tiny_string& window)=0;
 	virtual void setDisplayState(const tiny_string& displaystate);
 	virtual bool inFullScreenMode();
+
+	// context menu handling
 	virtual void openContextMenu();
 	virtual void updateContextMenu(int newselecteditem);
 	virtual void updateContextMenuFromMouse(uint32_t windowID, int mousey);

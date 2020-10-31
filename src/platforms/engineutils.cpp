@@ -31,6 +31,10 @@
 #include "abc.h"
 #include "class.h"
 #include "scripting/flash/events/flashevents.h"
+#include <glib/gstdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -209,8 +213,8 @@ public:
 	}
 	void tickFence() override
 	{
-		delete this;
 		m_engine->resetSDLEventTicker();
+		delete this;
 	}
 };
 
@@ -304,6 +308,80 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 		SDL_ShowWindow(widget);
 	grabFocus();
 	
+}
+
+std::string EngineData::getsharedobjectfilename(const tiny_string& name)
+{
+	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
+	subdir += "sharedObjects";
+	g_mkdir_with_parents(subdir.raw_buf(),0700);
+
+	std::string p = subdir.raw_buf();
+	p += G_DIR_SEPARATOR_S;
+	p += "shared_";
+	p += name.raw_buf();
+	p += ".sol";
+	return p;
+}
+void EngineData::setLocalStorageAllowedMarker(bool allowed)
+{
+	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
+	g_mkdir_with_parents(subdir.raw_buf(),0700);
+
+	std::string p = subdir.raw_buf();
+	p += G_DIR_SEPARATOR_S;
+	p += "localStorageAllowed";
+	if (allowed)
+		g_creat(p.c_str(),0600);
+	else
+		g_unlink(p.c_str());
+}
+bool EngineData::getLocalStorageAllowedMarker()
+{
+	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
+	if (!g_file_test(subdir.raw_buf(),G_FILE_TEST_EXISTS))
+		return false;
+	g_mkdir_with_parents(subdir.raw_buf(),0700);
+
+	std::string p = subdir.raw_buf();
+	p += G_DIR_SEPARATOR_S;
+	p += "localStorageAllowed";
+	return g_file_test(p.c_str(),G_FILE_TEST_EXISTS);
+}
+bool EngineData::fillSharedObject(const tiny_string &name, ByteArray *data)
+{
+	if (!getLocalStorageAllowedMarker())
+		return false;
+	std::string p = getsharedobjectfilename(name);
+	if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
+		return false;
+	GStatBuf st_buf;
+	g_stat(p.c_str(),&st_buf);
+	uint32_t len = st_buf.st_size;
+	std::ifstream file;
+	uint8_t buf[len];
+	file.open(p, std::ios::in|std::ios::binary);
+	file.read((char*)buf,len);
+	data->writeBytes(buf,len);
+	file.close();
+	return true;
+}
+bool EngineData::flushSharedObject(const tiny_string &name, ByteArray *data)
+{
+	if (!getLocalStorageAllowedMarker())
+		return false;
+	std::string p = getsharedobjectfilename(name);
+	std::ofstream file;
+	file.open(p, std::ios::out|std::ios::binary|std::ios::trunc);
+	uint8_t* buf = data->getBuffer(data->getLength(),false);
+	file.write((char*)buf,data->getLength());
+	file.close();
+	return true;
+}
+void EngineData::removeSharedObject(const tiny_string &name)
+{
+	std::string p = getsharedobjectfilename(name);
+	g_unlink(p.c_str());
 }
 
 void EngineData::setDisplayState(const tiny_string &displaystate)
@@ -404,6 +482,12 @@ void EngineData::selectContextMenuItemIntern()
 	if (contextmenucurrentitem >=0)
 	{
 		NativeMenuItem* item = currentcontextmenuitems.at(contextmenucurrentitem).getPtr();
+		if (item->label == "Settings")
+		{
+			item->getSystemState()->getRenderThread()->inSettings=true;
+			closeContextMenu();
+			return;
+		}
 		if (item->label=="Save" ||
 			item->label=="Zoom In" ||
 			item->label=="Zoom Out" ||
@@ -415,8 +499,7 @@ void EngineData::selectContextMenuItemIntern()
 			item->label=="Rewind" ||
 			item->label=="Forward" ||
 			item->label=="Back" ||
-			item->label=="Print" ||
-			item->label=="Settings")
+			item->label=="Print")
 		{
 			closeContextMenu();
 			tiny_string msg("context menu handling not implemented for \"");

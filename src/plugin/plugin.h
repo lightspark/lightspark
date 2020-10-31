@@ -87,16 +87,8 @@ private:
 	int winposy;
 public:
 	SystemState* sys;
-	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
-	{
-		width = w;
-		height = h;
-		mPixels = NULL;
-		inRendering = false;
-		winposx=0;
-		winposy=0;
-	}
-	~PluginEngineData() 
+	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys);
+	~PluginEngineData()
 	{
 		if(inputHandlerId)
 			g_signal_handler_disconnect(widget, inputHandlerId);
@@ -105,7 +97,7 @@ public:
 		if (mPixels)
 			delete[] mPixels;
 	}
-
+	void setupLocalStorage();
 	void stopMainDownload() override;
 	bool isSizable() const override { return false; }
 	uint32_t getWindowForGnash() override;

@@ -107,9 +107,11 @@ public:
 class SharedObject: public EventDispatcher
 {
 private:
-	static std::map<tiny_string, ASObject* > sharedobjectmap;
+	tiny_string name;
+	bool hasData;
 public:
 	SharedObject(Class_base* c);
+	bool doFlush();
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(getLocal);
 	ASFUNCTION_ATOM(getRemote);

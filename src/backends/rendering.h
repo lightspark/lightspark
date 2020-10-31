@@ -102,6 +102,7 @@ private:
 public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
+	volatile bool inSettings;
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**
@@ -170,13 +171,19 @@ public:
 	int directUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
+	void renderSettingsPage();
+	cairo_t *cairoTextureContextSettings;
+	cairo_surface_t *cairoTextureSurfaceSettings;
+	uint8_t *cairoTextureDataSettings;
+	uint32_t cairoTextureIDSettings;
+	cairo_t* getCairoContextSettings(int w, int h);
 
 	cairo_t *cairoTextureContext;
 	cairo_surface_t *cairoTextureSurface;
 	uint8_t *cairoTextureData;
 	uint32_t cairoTextureID;
 	cairo_t* getCairoContext(int w, int h);
-	void mapCairoTexture(int w, int h);
+	void mapCairoTexture(int w, int h, bool forsettings=false);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
 	void waitRendering();
 };

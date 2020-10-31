@@ -197,6 +197,13 @@ public:
 	bool isSizable() const override { return false; }
 	uint32_t getWindowForGnash() override;
 	void runInMainThread(SystemState* sys, void (*func) (SystemState*) ) override;
+
+	// local storage handling
+	void setLocalStorageAllowedMarker(bool allowed) override;
+	bool getLocalStorageAllowedMarker() override;
+	bool fillSharedObject(const tiny_string& name, ByteArray* data) override;
+	bool flushSharedObject(const tiny_string& name, ByteArray* data) override;
+	void removeSharedObject(const tiny_string& name) override;
 	
 	/* must be called within mainLoopThread */
 	SDL_Window* createWidget(uint32_t w,uint32_t h) override;
@@ -204,6 +211,8 @@ public:
 	void grabFocus() override;
 	void setDisplayState(const tiny_string& displaystate) override;
 	bool inFullScreenMode() override;
+
+	// context menu handling
 	void openContextMenu() override;
 	void updateContextMenu(int newselecteditem) override {}
 	void updateContextMenuFromMouse(uint32_t windowID, int mousey) override {}

@@ -1198,7 +1198,7 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 		{
 			ev.type = SDL_MOUSEMOTION;
 			ev.motion.state = g_inputevent_interface->GetModifiers(input_event) & PP_INPUTEVENT_MODIFIER_LEFTBUTTONDOWN ? SDL_PRESSED : SDL_RELEASED;
-			PP_Point p = g_mouseinputevent_interface->GetMovement(input_event);
+			PP_Point p = g_mouseinputevent_interface->GetPosition(input_event);
 			ev.motion.x = p.x;
 			ev.motion.y = p.y;
 			break;
@@ -1759,6 +1759,98 @@ void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemS
 	ue->func=func;
 	ue->sys=sys;
 	g_messageloop_interface->PostWork(this->instance->getMessageLoop(),PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
+}
+
+void ppPluginEngineData::setLocalStorageAllowedMarker(bool allowed)
+{
+	PP_Resource fileref = g_fileref_interface->Create(instance->getFileSystem(),"/localstorageallowed");
+	
+	if (allowed)
+	{
+		PP_Resource file = g_fileio_interface->Create(instance->getppInstance());
+		g_fileio_interface->Open(file,fileref,PP_FILEOPENFLAG_CREATE,PP_BlockUntilComplete());
+		g_fileio_interface->Close(file);
+	}
+	else
+		g_fileref_interface->Delete(fileref,PP_BlockUntilComplete());
+}
+
+bool ppPluginEngineData::getLocalStorageAllowedMarker()
+{
+	PP_Resource fileref = g_fileref_interface->Create(instance->getFileSystem(),"/localstorageallowed");
+	PP_Resource file = g_fileio_interface->Create(instance->getppInstance());
+	bool allowed = g_fileio_interface->Open(file,fileref,PP_FILEOPENFLAG_READ,PP_BlockUntilComplete()) == PP_OK;
+	g_fileio_interface->Close(file);
+	return allowed;
+}
+
+bool ppPluginEngineData::fillSharedObject(const tiny_string &name, ByteArray *data)
+{
+	tiny_string path = "/shared_";
+	path +=name;
+	PP_Resource fileref = g_fileref_interface->Create(instance->getFileSystem(),path.raw_buf());
+	PP_Resource file = g_fileio_interface->Create(instance->getppInstance());
+	int res = g_fileio_interface->Open(file,fileref,PP_FILEOPENFLAG_READ,PP_BlockUntilComplete());
+	LOG(LOG_TRACE,"localstorage opened:"<<res<<" "<<name);
+	if (res==PP_OK)
+	{
+		PP_FileInfo fi;
+		g_fileio_interface->Query(file,&fi,PP_BlockUntilComplete());
+		int offset=0;
+		int toread=fi.size;
+		while (toread>0)
+		{
+			char* d = (char*)data->getBuffer(fi.size,true);
+			int read = g_fileio_interface->Read(file,offset,d,toread,PP_BlockUntilComplete());
+			if (read >= 0)
+			{
+				offset += read;
+				toread -= read;
+			}
+			else
+				LOG(LOG_ERROR,"reading localstorage failed:"<<read<<" "<<offset<<" "<<fi.size);
+		}
+		LOG(LOG_TRACE,"localstorage read:"<<res);
+		return true;
+	}
+	else
+		return false;
+}
+
+bool ppPluginEngineData::flushSharedObject(const tiny_string &name, ByteArray *data)
+{
+	tiny_string path = "/shared_";
+	path +=name;
+	PP_Resource fileref = g_fileref_interface->Create(instance->getFileSystem(),path.raw_buf());
+	PP_Resource file = g_fileio_interface->Create(instance->getppInstance());
+	int res = g_fileio_interface->Open(file,fileref,PP_FILEOPENFLAG_WRITE|PP_FILEOPENFLAG_CREATE|PP_FILEOPENFLAG_TRUNCATE,PP_BlockUntilComplete());
+	LOG(LOG_TRACE,"localstorage opened for writing:"<<res<<" "<<name);
+	if (res==PP_OK)
+	{
+		int offset=0;
+		int towrite=data->getLength();
+		while (towrite>0)
+		{
+			char* d = (char*)data->getBufferNoCheck();
+			int written=g_fileio_interface->Write(file,offset,d,towrite,PP_BlockUntilComplete());
+			if (written >= 0)
+			{
+				offset += written;
+				towrite-=written;
+			}
+			else
+				LOG(LOG_ERROR,"reading localstorage failed:"<<written<<" "<<offset<<" "<<towrite);
+		}
+		LOG(LOG_TRACE,"localstorage flush:"<<res);
+		return true;
+	}
+	else
+		return false;
+}
+
+void ppPluginEngineData::removeSharedObject(const tiny_string &name)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"local storage access for PPAPI");
 }
 
 void ppPluginEngineData::openPageInBrowser(const tiny_string& url, const tiny_string& window)

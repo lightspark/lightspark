@@ -607,8 +607,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 	c->setVariableAtomByQName("PENDING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"pending"),DECLARED_TRAIT);
 }
 
-std::map<tiny_string, ASObject* > SharedObject::sharedobjectmap;
-SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c),hasData(false),client(this),objectEncoding(ObjectEncoding::AMF3)
 {
 	subtype=SUBTYPE_SHAREDOBJECT;
 	data=_MR(new_asobject(c->getSystemState()));
@@ -675,15 +674,34 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 
 	tiny_string fullname = localPath + "|";
 	fullname += name;
-	SharedObject* res = Class<SharedObject>::getInstanceS(sys);
-	std::map<tiny_string, ASObject* >::iterator it = sharedobjectmap.find(fullname);
-	if (it == sharedobjectmap.end())
+	SharedObject* res = nullptr;
+	auto it = sys->sharedobjectmap.find(fullname);
+	if (it == sys->sharedobjectmap.end())
 	{
-		sharedobjectmap.insert(make_pair(fullname,Class<ASObject>::getInstanceS(sys)));
-		it = sharedobjectmap.find(fullname);
+		res = Class<SharedObject>::getInstanceS(sys);
+		res->name=localPath;
+		res->hasData=true;
+		if (sys->localStorageAllowed())
+		{
+			ByteArray* b = Class<ByteArray>::getInstanceS(sys);
+			asAtom a = asAtomHandler::invalidAtom;
+			if (sys->getEngineData()->fillSharedObject(localPath,b))
+			{
+				b->setPosition(0);
+				a = b->readObject();
+			}
+			ASObject* d = nullptr;
+			if (asAtomHandler::isObject(a))
+				d = asAtomHandler::getObjectNoCheck(a);
+			else
+				d = Class<ASObject>::getInstanceS(sys);
+			res->data = _MR(d);
+			b->decRef();
+		}
+		sys->sharedobjectmap.insert(make_pair(fullname,res));
+		it = sys->sharedobjectmap.find(fullname);
 	}
-	it->second->incRef();
-	res->data = _NR<ASObject>(it->second);
+	res = it->second.getPtr();
 	res->incRef();
 	ret = asAtomHandler::fromObject(res);
 }
@@ -693,10 +711,28 @@ ASFUNCTIONBODY_ATOM(SharedObject,getRemote)
 	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getRemote not implemented");
 	asAtomHandler::setUndefined(ret);
 }
-
+bool SharedObject::doFlush()
+{
+	if (hasData && !data.isNull() && getSystemState()->localStorageAllowed())
+	{
+		ByteArray* b = Class<ByteArray>::getInstanceS(getSystemState());
+		b->writeObject(data.getPtr());
+		b->setPosition(0);
+		bool ret = getSystemState()->getEngineData()->flushSharedObject(name,b);
+		b->decRef();
+		return ret;
+	}
+	return true;
+}
 ASFUNCTIONBODY_ATOM(SharedObject,flush)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush not implemented");
+	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
+	int minDiskSpace=0;
+	ARG_UNPACK_ATOM(minDiskSpace,0);
+	if (minDiskSpace != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"SharedOBject.flush: parameter minDiskSpace is ignored");
+	if (!th->doFlush())
+		throwError<ASError>(0,"flushing SharedObject failed");
 	if (!sys->mainClip->usesActionScript3)
 		ret = asAtomHandler::trueAtom;
 	else
@@ -707,11 +743,14 @@ ASFUNCTIONBODY_ATOM(SharedObject,clear)
 {
 	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
 	th->data->destroyContents();
+	th->hasData=false;
+	sys->getEngineData()->removeSharedObject(th->name);
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,close)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.close not implemented");
+	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
+	th->doFlush();
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,connect)
@@ -738,9 +777,16 @@ ASFUNCTIONBODY_ATOM(SharedObject,_setPreventBackup)
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 {
-	/* Get the size of the objects in the sharedobjectmap */
-	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.size not implemented");
-	asAtomHandler::setInt(ret,sys,0);
+	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
+	if (th->data)
+	{
+		ByteArray* b = Class<ByteArray>::getInstanceS(sys);
+		b->writeObject(th->data.getPtr());
+		asAtomHandler::setInt(ret,sys,b->getLength());
+		b->decRef();
+	}
+	else
+		asAtomHandler::setInt(ret,sys,0);
 }
 
 void IDynamicPropertyWriter::linkTraits(Class_base* c)

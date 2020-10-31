@@ -33,7 +33,7 @@ using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr)
+	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
@@ -98,6 +98,7 @@ bool InputThread::worker(SDL_Event *event)
 		}
 		case SDL_MOUSEBUTTONDOWN:
 		{
+			button1pressed=false;
 			if(event->button.button == SDL_BUTTON_LEFT)
 			{
 				//Grab focus, to receive keypresses
@@ -127,13 +128,22 @@ bool InputThread::worker(SDL_Event *event)
 			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
 			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED,event->button.button);
 			ret=true;
+			if (event->button.button == SDL_BUTTON_LEFT)
+				button1pressed=true;
 			break;
 		}
 		case SDL_MOUSEMOTION:
 		{
 			int stageX, stageY;
-			m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
+			if (m_sys->getRenderThread()->inSettings)
+			{
+				stageX=event->motion.x;
+				stageY=event->motion.y;
+			}
+			else
+				m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
 			handleMouseMove(stageX,stageY,SDL_GetModState(),event->motion.state == SDL_PRESSED);
+			button1pressed=false;
 			ret=true;
 			break;
 		}
@@ -221,6 +231,8 @@ bool InputThread::handleContextMenuEvent(SDL_Event *event)
 _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> selected = NullRef;
+	if (m_sys->getRenderThread()->inSettings)
+		return selected;
 	try
 	{
 		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type,true);
@@ -243,7 +255,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 
 void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	if (selected.isNull())
@@ -259,7 +271,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 
 void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
 	if (selected.isNull())
@@ -274,7 +286,7 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 
 void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed, uint8_t button)
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	if (selected.isNull())
@@ -309,11 +321,13 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 
 void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
+	Locker locker(inputDataSpinlock);
 	if(m_sys->currentVm == nullptr)
 		return;
-	Locker locker(inputDataSpinlock);
 	mousePos.x=x;
 	mousePos.y=y;
+	if (m_sys->getRenderThread()->inSettings)
+		return;
 	mutexDragged.lock();
 	// Handle current drag operation
 	if(curDragged)

@@ -21,6 +21,7 @@
 #include "version.h"
 #include "backends/security.h"
 #include "backends/streamcache.h"
+#include "backends/config.h"
 #include "plugin/plugin.h"
 #include "logger.h"
 #include "compat.h"
@@ -715,10 +716,12 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 			dl->parseHeaders(stream->headers, false);
 		}
 	}
-	else if(m_pt==NULL)
+	else if(m_pt==nullptr)
 	{
 		//This is the main file
 		m_sys->mainClip->setOrigin(stream->url);
+		if (m_sys->getEngineData())
+			((PluginEngineData*)m_sys->getEngineData())->setupLocalStorage();
 		m_sys->parseParametersFromURL(m_sys->mainClip->getOrigin());
 		*stype=NP_NORMAL;
 		//Let's get the cookies now, they might be useful
@@ -749,13 +752,13 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
 {
-	assert(stream->notifyData==NULL);
+	assert(stream->notifyData==nullptr);
 	m_sys->setDownloadedPath(lightspark::tiny_string(fname,true));
 }
 
@@ -979,6 +982,35 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 	}
 #endif
 	return 0;
+}
+
+PluginEngineData::PluginEngineData(nsPluginInstance *i, uint32_t w, uint32_t h, SystemState *_sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
+{
+	width = w;
+	height = h;
+	mPixels = nullptr;
+	inRendering = false;
+	winposx=0;
+	winposy=0;
+	if (sys->mainClip->getOrigin().isValid())
+		setupLocalStorage();
+}
+
+void PluginEngineData::setupLocalStorage()
+{
+	std::string filename = sys->mainClip->getOrigin().getPathDirectory();
+	std::replace(filename.begin(),filename.end(),'/',G_DIR_SEPARATOR);
+	filename+= G_DIR_SEPARATOR;
+	filename += sys->mainClip->getOrigin().getPathFile();
+	std::string filedatapath = sys->mainClip->getOrigin().getHostname() + G_DIR_SEPARATOR_S;
+	filedatapath += filename;
+	std::replace(filedatapath.begin(),filedatapath.end(),':','_');
+	std::replace(filedatapath.begin(),filedatapath.end(),'.','_');
+	sharedObjectDatapath = Config::getConfig()->getCacheDirectory();
+	sharedObjectDatapath += G_DIR_SEPARATOR;
+	sharedObjectDatapath += "data";
+	sharedObjectDatapath += G_DIR_SEPARATOR;
+	sharedObjectDatapath += filedatapath;
 }
 
 void PluginEngineData::stopMainDownload()

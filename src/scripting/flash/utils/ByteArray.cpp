@@ -469,6 +469,22 @@ bool ByteArray::readBytes(uint32_t offset, uint32_t length,uint8_t* ret)
 	return true;
 }
 
+asAtom ByteArray::readObject()
+{
+	asAtom ret = asAtomHandler::nullAtom;
+	Amf3Deserializer d(this);
+	try
+	{
+		ret=d.readObject();
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,"Exception caught while parsing AMF3: " << e.cause);
+		//TODO: throw AS exception
+	}
+	return ret;
+}
+
 void ByteArray::writeUTF(const tiny_string& str)
 {
 	getBuffer(position+str.numBytes()+2,true);
@@ -932,19 +948,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 		return;
 		//throwError<EOFError>(kEOFError);
 	}
-	//assert_and_throw(th->objectEncoding==ObjectEncoding::AMF3);
-	Amf3Deserializer d(th);
-	try
-	{
-		ret=d.readObject();
-		th->unlock();
-	}
-	catch(LightsparkException& e)
-	{
-		th->unlock();
-		LOG(LOG_ERROR,"Exception caught while parsing AMF3: " << e.cause);
-		//TODO: throw AS exception
-	}
+	ret = th->readObject();
+	th->unlock();
 
 	if(asAtomHandler::isInvalid(ret))
 	{

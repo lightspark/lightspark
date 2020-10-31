@@ -81,6 +81,7 @@ private:
 	bool handleContextMenuEvent(SDL_Event* event);
 	Mutex inputDataSpinlock;
 	Vector2 mousePos;
+	bool button1pressed;
 public:
 	InputThread(SystemState* s);
 	~InputThread();
@@ -95,6 +96,16 @@ public:
 	{
 		Locker locker(inputDataSpinlock);
 		return mousePos;
+	}
+	bool getLeftButtonPressed()
+	{
+		Locker locker(mutexListeners);
+		if (button1pressed)
+		{
+			button1pressed=false;
+			return true;
+		}
+		return false;
 	}
 	bool handleEvent(SDL_Event *event)
 	{

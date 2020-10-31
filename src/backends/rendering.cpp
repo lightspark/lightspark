@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "parsing/textfile.h"
 #include "backends/rendering.h"
+#include "backends/input.h"
 #include "compat.h"
 #include <sstream>
 #include <unistd.h>
@@ -59,8 +60,8 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
 	prevUploadJob(nullptr),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),
-	cairoTextureContext(nullptr)
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),inSettings(false),
+	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
 #ifdef _WIN32
@@ -257,6 +258,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		{
 			// stage3d rendering is needed, so we ignore the flushsteps
 			coreRendering();
+			if (inSettings)
+				renderSettingsPage();
 			engineData->exec_glFlush();
 			if (screenshotneeded)
 				generateScreenshot();
@@ -270,6 +273,11 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		{
 			if(m_sys->currentflushstep > m_sys->nextflushstep)
 			{
+				if (inSettings)
+				{
+					renderSettingsPage();
+					engineData->DoSwapBuffers();
+				}
 				if (screenshotneeded)
 					generateScreenshot();
 				// no changes since last rendering, so we don't need to do anything
@@ -289,6 +297,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			}
 		}
 	}
+	if (inSettings)
+		renderSettingsPage();
 	if (screenshotneeded)
 		generateScreenshot();
 	engineData->DoSwapBuffers();
@@ -299,6 +309,101 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if (m_sys->currentflushstep==0)
 		m_sys->currentflushstep++;
 	return true;
+}
+void RenderThread::renderSettingsPage()
+{
+	lsglLoadIdentity();
+	lsglScalef(1.0f,-1.0f,1);
+	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+
+	setMatrixUniform(LSGL_MODELVIEW);
+
+	float bordercolor = 0.3;
+	float backgroundcolor = 0.7;
+	float buttonbackgroundcolor = 0.9;
+	float selectedbackgroundcolor = 0.5;
+	float textcolor = 0.0;
+
+	int width=210;
+	int height=136;
+	Vector2 mousepos = m_sys->getInputThread()->getMousePos();
+	int startposx = (windowWidth-width)/2;
+	int startposy = (windowHeight-height)/2;
+	cairo_t *cr = getCairoContextSettings(width, height);
+
+	cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_antialias(cr,CAIRO_ANTIALIAS_DEFAULT);
+	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+	cairo_set_line_width(cr, 2);
+	cairo_rectangle(cr, 1, 1, width-2, height-2);
+	cairo_stroke(cr);
+
+	// close button
+	int buttonwidth=50;
+	int buttonheight=20;
+	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+	cairo_set_line_width(cr, 2);
+	cairo_rectangle(cr, width-buttonwidth-10, 15, buttonwidth, buttonheight);
+	cairo_stroke(cr);
+	if (mousepos.x > startposx + (width-buttonwidth-10) && mousepos.x < startposx +(width-10) &&
+		mousepos.y > startposy + (height-buttonheight-15) && mousepos.y < startposy +(height-15))
+	{
+		if (m_sys->getInputThread()->getLeftButtonPressed())
+		{
+			inSettings=false;
+			m_sys->currentflushstep = m_sys->nextflushstep; // force core rendering
+		}
+		cairo_set_source_rgb (cr, selectedbackgroundcolor, selectedbackgroundcolor, selectedbackgroundcolor);
+	}
+	else
+		cairo_set_source_rgb (cr, buttonbackgroundcolor, buttonbackgroundcolor,buttonbackgroundcolor);
+	cairo_set_line_width(cr, 1);
+	cairo_rectangle(cr, width-buttonwidth-10+1, 15+1, buttonwidth-2, buttonheight-2);
+	cairo_fill(cr);
+
+	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
+	renderText(cr, "close",width-50,20);
+
+	// local storage checkbox
+	int checkboxwidth=20;
+	int checkboxheight=20;
+	if (mousepos.x > startposx + (width-checkboxwidth-10) && mousepos.x < startposx +(width-10) &&
+		mousepos.y > startposy + (10) && mousepos.y < startposy +(checkboxheight+10))
+	{
+		if (m_sys->getInputThread()->getLeftButtonPressed())
+		{
+			m_sys->setLocalStorageAllowed(!m_sys->localStorageAllowed());
+		}
+	}
+	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+	cairo_set_line_width(cr, 2);
+	cairo_rectangle(cr, width-checkboxwidth-10, height-checkboxheight-10, checkboxwidth, checkboxheight);
+	cairo_stroke(cr);
+	if (m_sys->localStorageAllowed())
+	{
+		cairo_set_source_rgb (cr, 0, 1.0, 0);
+		cairo_set_line_width(cr, 5);
+		cairo_move_to(cr, width-checkboxwidth-12, height-checkboxheight/2-10);
+		cairo_line_to(cr, width-checkboxwidth/2-10, height-checkboxheight-10);
+		cairo_line_to(cr, width-10, height-8);
+		cairo_stroke(cr);
+	}
+	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
+	renderText(cr, "allow local storage",10,height-25);
+
+	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform1f(rotateUniform, 0);
+	engineData->exec_glUniform2f(beforeRotateUniform, width,height);
+	engineData->exec_glUniform2f(afterRotateUniform, width,height);
+	engineData->exec_glUniform2f(startPositionUniform,(windowWidth-width)/2, (windowHeight-height)/2);
+	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	mapCairoTexture(width, height,true);
+	engineData->exec_glFlush();
 }
 void RenderThread::generateScreenshot()
 {
@@ -428,6 +533,7 @@ void RenderThread::commonGLDeinit()
 		delete[] largeTextures[i].bitmap;
 	}
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
+	engineData->exec_glDeleteTextures(1, &cairoTextureIDSettings);
 	engineData->exec_glDeleteTextures(1, &maskTextureID);
 }
 
@@ -483,6 +589,7 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glEnable_GL_TEXTURE_2D();
 
 	engineData->exec_glGenTextures(1, &cairoTextureID);
+	engineData->exec_glGenTextures(1, &cairoTextureIDSettings);
 
 	// create framebuffer for masks
 	maskframebuffer = engineData->exec_glGenFramebuffer();
@@ -502,6 +609,11 @@ void RenderThread::commonGLResize()
 	{
 		cairo_destroy(cairoTextureContext);
 		cairoTextureContext=nullptr;
+	}
+	if (cairoTextureContextSettings)
+	{
+		cairo_destroy(cairoTextureContextSettings);
+		cairoTextureContextSettings=nullptr;
 	}
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
@@ -562,6 +674,18 @@ cairo_t* RenderThread::getCairoContext(int w, int h)
 	}
 	return cairoTextureContext;
 }
+cairo_t* RenderThread::getCairoContextSettings(int w, int h)
+{
+	if (!cairoTextureContextSettings) {
+		cairoTextureDataSettings = new uint8_t[w*h*4];
+		cairoTextureSurfaceSettings = cairo_image_surface_create_for_data(cairoTextureDataSettings, CAIRO_FORMAT_ARGB32, w, h, w*4);
+		cairoTextureContextSettings = cairo_create(cairoTextureSurfaceSettings);
+
+		cairo_select_font_face (cairoTextureContextSettings, fontPath.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+		cairo_set_font_size(cairoTextureContextSettings, 11);
+	}
+	return cairoTextureContextSettings;
+}
 
 //Render strings using Cairo's 'toy' text API
 void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
@@ -579,14 +703,14 @@ void RenderThread::waitRendering()
 }
 
 //Send the texture drawn by Cairo to the GPU
-void RenderThread::mapCairoTexture(int w, int h)
+void RenderThread::mapCairoTexture(int w, int h,bool forsettings)
 {
 	engineData->exec_glEnable_GL_TEXTURE_2D();
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(cairoTextureID);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(forsettings ? cairoTextureIDSettings : cairoTextureID);
 
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, cairoTextureData,true);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, forsettings ? cairoTextureDataSettings : cairoTextureData,true);
 
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};

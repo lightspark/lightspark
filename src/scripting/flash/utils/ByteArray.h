@@ -76,6 +76,7 @@ public:
 	bool readUTF(tiny_string& ret);
 	bool readUTFBytes(uint32_t length,tiny_string& ret);
 	bool readBytes(uint32_t offset, uint32_t length, uint8_t* ret);
+	asAtom readObject();
 	FORCE_INLINE void writeByte(uint8_t b)
 	{
 		getBuffer(position+1,true);

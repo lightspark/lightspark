@@ -197,6 +197,7 @@ private:
 	bool error;
 	bool shutdown;
 	bool firsttick;
+	bool localstorageallowed;
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;
@@ -321,6 +322,9 @@ public:
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const DLL_PUBLIC;
 	void setShutdownFlag() DLL_PUBLIC;
+	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
+	bool localStorageAllowed() const { return localstorageallowed; }
+	void setLocalStorageAllowed(bool allowed);
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }

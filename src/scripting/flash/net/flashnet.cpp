@@ -698,7 +698,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 			res->data = _MR(d);
 			b->decRef();
 		}
-		sys->sharedobjectmap.insert(make_pair(fullname,res));
+		sys->sharedobjectmap.insert(make_pair(fullname,_MR(res)));
 		it = sys->sharedobjectmap.find(fullname);
 	}
 	res = it->second.getPtr();

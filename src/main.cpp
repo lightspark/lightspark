@@ -478,9 +478,10 @@ int main(int argc, char* argv[])
 		sys->setCookies(HTTPcookie);
 
 	// create path for shared object local storage
-	gchar* filename = g_canonicalize_filename(fileName,nullptr);
+	char absolutepath[PATH_MAX];
+	realpath(fileName,absolutepath);
 	tiny_string homedir(g_get_home_dir());
-	tiny_string filedatapath = filename;
+	tiny_string filedatapath = absolutepath;
 	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir
 		filedatapath = filedatapath.substr_bytes(homedir.numBytes(),UINT32_MAX);
 	tiny_string sharedobjectdatapath = Config::getConfig()->getCacheDirectory();

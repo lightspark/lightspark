@@ -29,6 +29,12 @@
 #include "flash/utils/ByteArray.h"
 #include <sys/stat.h>
 
+#ifdef __MINGW32__
+    #ifndef PATH_MAX
+    #define PATH_MAX _MAX_PATH
+    #endif
+    #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
+#endif
 using namespace std;
 using namespace lightspark;
 

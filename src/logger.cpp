@@ -18,10 +18,14 @@
 **************************************************************************/
 
 #include <fstream>
+#include <string>
 #include "logger.h"
 #include "threading.h"
-
+#include <sys/syscall.h> 
+#include <unistd.h> 
 using namespace lightspark;
+
+
 
 static Mutex logmutex;
 LOG_LEVEL Log::log_level=LOG_INFO;
@@ -45,8 +49,29 @@ Log::~Log()
 {
 	if(valid)
 	{
+		std::string sTimestamp;
+    	char acTimestamp[256];
+
+    	struct timeval tv;
+    	struct tm *tm;
+
+    	gettimeofday(&tv, NULL);
+
+    	tm = localtime(&tv.tv_sec);
+
+    	sprintf(acTimestamp, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+            tm->tm_year + 1900,
+            tm->tm_mon + 1,
+            tm->tm_mday,
+            tm->tm_hour,
+            tm->tm_min,
+            tm->tm_sec,
+            (int) (tv.tv_usec / 1000)
+        );
+
+    	sTimestamp = acTimestamp;
 		Locker l(logmutex);
-		std::cerr << level_names[cur_level] << ": " << message.str();
+		std::cerr << sTimestamp << ": "<< level_names[cur_level] << ": " << message.str();
 	}
 }
 

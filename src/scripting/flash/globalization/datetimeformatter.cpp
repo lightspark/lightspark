@@ -97,6 +97,8 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimePattern)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	ARG_UNPACK_ATOM(th->pattern);
+	th->dateStyle = "custom";
+	th->timeStyle = "custom";
 	th->lastOperationStatus="noError";
 }
 
@@ -111,14 +113,17 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,format)
 		LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.format is not really tested for all formats");
 		std::locale l =  std::locale::global(th->currlocale);
 		std::string pattern = th->pattern;
-		if (th->dateStyle == "long" ||
-			th->dateStyle == "medium" ||
-			th->dateStyle == "short")
+		if (th->dateStyle != "custom")
 		{
 			pattern = buildDateTimePattern(th->dateStyle, th->timeStyle);
 		}
 		tiny_string internalPattern = pattern = buildInternalFormat(pattern);
-		ret = asAtomHandler::fromString(sys,dt->toFormat(false, internalPattern));
+		tiny_string value = dt->toFormat(true, internalPattern);
+		if (value.startsWith(" "))
+		{
+			value = value.substr(1,value.numBytes());
+		}
+		ret = asAtomHandler::fromString(sys,value);
 		std::locale::global(l);
 		th->lastOperationStatus = "noError";
 	}
@@ -139,14 +144,18 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
 		LOG(LOG_NOT_IMPLEMENTED,"DateTimeFormatter.format is not really tested for all formats");
 		std::locale l =  std::locale::global(th->currlocale);
 		std::string pattern = th->pattern;
-		if (th->dateStyle == "long" ||
-			th->dateStyle == "medium" ||
-			th->dateStyle == "short")
+
+		if (th->dateStyle != "custom")
 		{
 			pattern = buildDateTimePattern(th->dateStyle, th->timeStyle);
 		}
 		tiny_string internalPattern = pattern = buildInternalFormat(pattern);
-		ret = asAtomHandler::fromString(sys,dt->toFormat(true, internalPattern));
+		tiny_string value = dt->toFormat(true, internalPattern);	
+		if (value.startsWith(" "))
+		{
+			value = value.substr(1,value.numBytes());
+		}
+		ret = asAtomHandler::fromString(sys,value);
 		std::locale::global(l);
 		th->lastOperationStatus = "noError";
 	}
@@ -234,20 +243,20 @@ tiny_string DateTimeFormatter::buildDateTimePattern(tiny_string dateStyle, tiny_
 	tiny_string pattern;
 	if (timeStyle == "long" || timeStyle == "medium")
 	{
-		pattern = pattern + "YYYY-mm-dd";
+		pattern = pattern + "YYYY-mm-dd p";
 	}
 	else if (dateStyle == "short")
 	{
-		pattern = pattern + "YYYY-mm-dd";
+		pattern = pattern + "YYYY-mm-dd p";
 	}
 
 	if (timeStyle == "long" || timeStyle == "medium")
 	{
-		pattern = pattern + " hh:MM:SS";
+		pattern = pattern + " hh:MM:ss";
 	}
 	else if (timeStyle == "short")
 	{
-		pattern = pattern + " hh:0MM";
+		pattern = pattern + " hh:MM";
 	}
 	return pattern;
 }
@@ -278,99 +287,153 @@ std::string DateTimeFormatter::buildInternalFormat(std::string pattern)
 	}
 	list.push_back(word);
 
+	bool quatation = false;
+
 	for (std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it)
 	{
 		std::string item = (*it);
-		if (item == "%")
+
+		if (item == "'")
 		{
-			(*it) = "\%";
+			(*it) = "";
+			quatation = !quatation;
 		}
-		else if (item == "yyyy" || item == "yyyyy" || item == "YYYY" || item == "YYYYY")
+		else if (quatation)
 		{
-			(*it) = "%Y";
+			// Do nothing here as we don't convert literal strings
 		}
-		else if (item == "y" || item == "yy")
+		else if (item == "%")
 		{
-			(*it) = "%y";
+			(*it) = "%%";
+		}
+		else if (item == "yyyy" || item == "yyyyy" || item == "YYYY" || item == "YYYYY" || item == "y" || item == "yy")
+		{
+			(*it) = "%y";	// Not correct but will do, returns something like "98"
 		}
 		else if (item == "M")
 		{
-			(*it) = "%M";
+			(*it) = "%m";	// Not correct but will do, value is padded with 0
 		}
 		else if (item == "MM")
 		{
-			(*it) = "%M";
+			(*it) = "%m";
 		}
-		else if (item == "MMMM")
+		else if (item == "MMM")
 		{
-			(*it) = "%B";}
-
-		else if (item == "d" || item == "D")
+			(*it) = "%b";
+		}
+		else if (item == "MMMM" || item == "MMMMM")
+		{
+			(*it) = "%B";
+		}
+		else if (item == "d")
 		{
 			(*it) = "%e";
 		}
-		else if (item == "dd" || item == "DD")
+		else if (item == "dd")
 		{
 			(*it) = "%d";
 		}
 		else if (item == "a" || item == "p")
 		{
-			(*it) = "%p"; // or %P
+			(*it) = "%p";
 		}
-		else if (item == "h")
+		else if (item == "H" || item == "HH"|| item == "HHH")
 		{
-			(*it) = "%I";
-		}
-		else if (item == "H" || item == "HH" || item == "hh" || item == "h")
-		{
-			(*it) = "%H";
+			(*it) = "%H";	// Not correct but will do, value is padded with 0
 		}
 		else if (item == "m" || item == "mm")
 		{
-			(*it) = "%m";
+			(*it) = "%M";	// Not correct but will do, value is padded with 0
 		}
 		else if (item == "s")
 		{
-			(*it) = "%S"; // Wrong
+			(*it) = "%S";
 		}
-		else if (item == "ss" || item == "SS")
+		else if (item == "ss")
 		{
 			(*it) = "%S";
 		}
+		else if (item == "E" || item == "EE" || item == "EEE")
+		{
+			(*it) = "%a";
+		}
+		else if (item == "EEEE" || item == "EEEEE")
+		{
+			(*it) = "%A";
+		}
+		else if (item == "h")
+		{
+			(*it) = "%l"; // Not correct but will do, value is padded with 0
+		}
+		else if (item == "hh" || item == "hhh")
+		{
+			(*it) = "%I";
+		}
+		else if (item == "K")
+		{
+			(*it) = "%l";
+		}
+		else if (item == "KK")
+		{
+			(*it) = "%I";
+		}
+		else if (item == "k")
+		{
+			(*it) = "%k";
+		}
+		else if (item == "kk")
+		{
+			(*it) = "%H";
+		}
+		else if (item == "G" ||item == "GG" || item == "GGG" || item == "GGGG" || item == "GGGGG")
+		{
+			// Do nothing. Not supported.
+		}
+		else
+		{
+			// Specifiers below are empty in Flash even though
+			// AS3 documentation says the opposite
+			std::vector<std::string> unusedTokens;
+			unusedTokens.push_back("S");
+			unusedTokens.push_back("SS");
+			unusedTokens.push_back("SSS");
+			unusedTokens.push_back("SSSS");
+			unusedTokens.push_back("SSSSS");
+			unusedTokens.push_back("Z");
+			unusedTokens.push_back("ZZ");
+			unusedTokens.push_back("ZZZ");
+			unusedTokens.push_back("ZZZZ");
+			unusedTokens.push_back("z");
+			unusedTokens.push_back("zz");
+			unusedTokens.push_back("zzz");
+			unusedTokens.push_back("zzzz");
+			unusedTokens.push_back("F");
+			unusedTokens.push_back("Q");
+			unusedTokens.push_back("QQ");
+			unusedTokens.push_back("QQQ");
+			unusedTokens.push_back("vvvv");
+			unusedTokens.push_back("v");
+			unusedTokens.push_back("Q");
+			unusedTokens.push_back("QQ");
+			unusedTokens.push_back("QQQ");
+			unusedTokens.push_back("QQQQ");
+			unusedTokens.push_back("w");
+			unusedTokens.push_back("ww");
+			unusedTokens.push_back("W");
+			unusedTokens.push_back("WW");
+			unusedTokens.push_back("D");
+			unusedTokens.push_back("DD");
+			unusedTokens.push_back("DDD");
 
-		// Todo, convert below
-		/*Q = 2
-		QQ = 02
-		QQQ = Q2
-		QQQQ = second quarter
-		w = 2
-		ww = 02
-		DDD = 002
-		F = 2
-		a = AM
-		p = PM
-		h = 1
-		h = 12
-		hh = 01
-		K = 0
-		K = 11
-		KK = 00
-		k = 1
-		k = 24
-		kk = 01
-		s = 2
-		s = 59
-		S = 2
-		SSS = 235
-		SSSS = 2350
-		SSSSS = 23500
-		z, zz, zzz = PDT
-		z, zz, zzz = PST
-		z, zz, zzz = GMT-0800
-		zzzz = Pacific Daylight Time
-		zzzz = Pacific Standard Time
-		v = PT
-		vvvv = Pacific Time*/
+			for (std::vector<std::string>::iterator t = unusedTokens.begin(); t != unusedTokens.end(); ++t)
+			{
+				if (item == (*t))
+				{
+					(*it) = "";
+				}
+			}
+		}
 	}
 
 	std::string output = "";

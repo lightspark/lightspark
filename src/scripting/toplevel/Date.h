@@ -117,6 +117,8 @@ public:
 	ASFUNCTION_ATOM(toLocaleDateString);
 	ASFUNCTION_ATOM(toLocaleTimeString);
 
+	int getYear();
+
 	
 	void MakeDateFromMilliseconds(int64_t ms);
 	bool isEqual(ASObject* r);

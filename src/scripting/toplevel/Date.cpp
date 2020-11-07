@@ -872,16 +872,18 @@ tiny_string Date::toString()
 	return toString_priv(false, "%a %b %e %H:%M:%S GMT%z");
 }
 
+int Date::getYear()
+{
+	return this->extrayears + g_date_time_get_year(this->datetime);
+}
+
 tiny_string Date::toFormat(bool utc, tiny_string format)
 {
 	if(nan) 
 		return "Invalid Date";
 	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, format.raw_buf());
 	tiny_string res(fs);
-	//char buf[10];
-	//snprintf(buf,10," %d",(extrayears + g_date_time_get_year(utc? this->datetimeUTC : this->datetime)));
-	//res += buf;
-	//g_free(fs);
+	//g_free(fs); // Should free here but it breaks system
 	return res;
 }
 

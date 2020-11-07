@@ -998,11 +998,15 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	namedRemovedLegacyChildren.clear();
 }
 
-void DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
+bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 {
 	auto it = legacyChildrenMarkedForDeletion.find(depth);
 	if (it != legacyChildrenMarkedForDeletion.end())
+	{
 		legacyChildrenMarkedForDeletion.erase(it);
+		return true;
+	}
+	return false;
 }
 
 DisplayObject *DisplayObjectContainer::findRemovedLegacyChild(uint32_t name)

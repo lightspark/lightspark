@@ -193,17 +193,19 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		DisplayObject* target=(*it).getPtr();
 		//Get the drawable from each of the added objects
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
-		if(drawable==NULL)
+		if(drawable==nullptr)
 			continue;
 
 		//Compute the matrix for this object
-		uint8_t* buf=drawable->getPixelBuffer();
+		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY());
 		//Construct a CachedSurface using the data
 		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
 		surface.tex.width=drawable->getWidth();
 		surface.tex.height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();
 		surface.yOffset=drawable->getYOffset();
+		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
+		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
 		surface.widthTransformed=drawable->getWidthTransformed();
 		surface.heightTransformed=drawable->getHeightTransformed();
 		surface.rotation=drawable->getRotation();

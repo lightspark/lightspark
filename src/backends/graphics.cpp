@@ -515,16 +515,10 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false,scalex, scaley,xstart,ystart,isMask);
 }
 
-uint8_t* CairoRenderer::getPixelBuffer()
+uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley)
 {
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
-
-	SystemState* sys = getSys();
-	float scalex;
-	float scaley;
-	int offx,offy;
-	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 	uint8_t* ret=nullptr;
 
@@ -556,7 +550,7 @@ uint8_t* CairoRenderer::getPixelBuffer()
 		if(masks[i].maskMode != SOFT_MASK)
 			continue;
 		//TODO: this may be optimized if needed
-		uint8_t* maskData = masks[i].m->getPixelBuffer();
+		uint8_t* maskData = masks[i].m->getPixelBuffer(scalex,scaley);
 		if(maskData==nullptr)
 			continue;
 
@@ -947,7 +941,13 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
-	surfaceBytes=drawable->getPixelBuffer();
+	SystemState* sys = owner->getSystemState();
+	float scalex;
+	float scaley;
+	int offx,offy;
+	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+
+	surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
 	if(surfaceBytes)
 		uploadNeeded=true;
 }

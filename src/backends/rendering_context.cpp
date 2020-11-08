@@ -364,15 +364,18 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_surface_destroy(chunkSurface);
 	cairo_pattern_set_filter(chunkPattern, CAIRO_FILTER_BILINEAR);
 	cairo_pattern_set_extend(chunkPattern, CAIRO_EXTEND_NONE);
+	cairo_save(cr);
 	cairo_matrix_t matrix;
-	//TODO: Support scaling
-	cairo_matrix_init_translate(&matrix, -x, -y);
-	cairo_matrix_rotate(&matrix,rotate);
-	cairo_pattern_set_matrix(chunkPattern, &matrix);
+	cairo_matrix_init_translate(&matrix,xtransformed,ytransformed);
+	cairo_matrix_scale(&matrix, xscale, yscale);
+	cairo_matrix_rotate(&matrix,rotate*M_PI/180.0);
+	cairo_set_matrix(cr,&matrix);
+
 	cairo_set_source(cr, chunkPattern);
 	cairo_pattern_destroy(chunkPattern);
-	cairo_rectangle(cr, x, y, w, h);
+	cairo_rectangle(cr, 0, 0, w, h);
 	cairo_fill(cr);
+	cairo_restore(cr);
 }
 
 const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const

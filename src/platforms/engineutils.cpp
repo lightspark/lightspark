@@ -1368,7 +1368,7 @@ externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }
 
-uint8_t *externalFontRenderer::getPixelBuffer()
+uint8_t *externalFontRenderer::getPixelBuffer(float scalex, float scaley)
 {
 	return m_engine->getFontPixelBuffer(externalressource,this->width,this->height);
 }

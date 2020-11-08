@@ -117,11 +117,15 @@ public:
 	ASFUNCTION_ATOM(toLocaleDateString);
 	ASFUNCTION_ATOM(toLocaleTimeString);
 
+	int getYear();
+
+	
 	void MakeDateFromMilliseconds(int64_t ms);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	TRISTATE isLessAtom(asAtom& r);
 	
+	tiny_string toFormat(bool utc, tiny_string format);
 	tiny_string format(const char* fmt, bool utc);
 	tiny_string toString();
 	//Serialization interface

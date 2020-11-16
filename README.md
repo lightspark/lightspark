@@ -53,7 +53,7 @@ If JIT compilation using llvm is enabled (this is disabled by default), you also
 
 If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in mind that it will replace the Adobe Flash plugin, as only one Flash plugin is allowed in Chromium.
 
-There are two ways of building Lightspark. You can use the included script, by running `./build`. or for a debug build, run `./build -d`. You can also do it manually, with the following commands:
+There are two ways of building Lightspark. You can use the included script, by running `./build.sh`. or for a debug build, run `./build.sh -d`. You can also do it manually, with the following commands:
 
 ```bash
 cd lightspark
@@ -66,7 +66,7 @@ sudo make install
 
 The ``CMAKE_BUILD_TYPE`` options are: Debug LeanDebug Release RelWithDebInfo Profile
 
-If you run into issues building Lightspark, firstly try deleting the contents of `obj`, and run `./build` file again. If you continue to have issues, please [let us know](https://github.com/lightspark/lightspark/issues).
+If you run into issues building Lightspark, firstly try deleting the contents of `obj`, and run `./build.sh` file again. If you continue to have issues, please [let us know](https://github.com/lightspark/lightspark/issues).
 
 Usage
 ---------

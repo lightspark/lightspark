@@ -335,6 +335,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
 	builtinavm1->registerBuiltin("clearInterval","",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
 
+	builtinavm1->registerBuiltin("object","",Class<ASObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Color","",Class<AVM1Color>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Mouse","",Class<AVM1Mouse>::getRef(m_sys));

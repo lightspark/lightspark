@@ -4913,8 +4913,15 @@ void MovieClip::executeFrameScript()
 /* This is run in vm's thread context */
 void DisplayObjectContainer::advanceFrame()
 {
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	// elements of the dynamicDisplayList may be removed during advanceFrame() calls,
+	// so we create a temporary list containing all elements
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
 		(*it)->advanceFrame();
 }
 

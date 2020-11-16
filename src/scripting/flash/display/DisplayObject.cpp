@@ -2132,7 +2132,11 @@ void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
 {
 	auto it = avm1variables.find(nameID);
 	if (it != avm1variables.end())
+	{
+		if (obj && asAtomHandler::isObject(it->second) && asAtomHandler::getObjectNoCheck(it->second) == obj.getPtr())
+			return; // function is already set
 		ASATOM_DECREF(it->second);
+	}
 	if (obj)
 	{
 		obj->incRef();

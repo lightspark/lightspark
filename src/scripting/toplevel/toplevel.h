@@ -488,6 +488,7 @@ protected:
 			ret->returnType = returnType;
 			ret->returnTypeAllArgsInt = returnTypeAllArgsInt;
 		}
+		ret->subtype = this->subtype;
 		return ret;
 	}
 	bool destruct() override
@@ -577,6 +578,7 @@ protected:
 			ret->func_scope = func_scope;
 			ret->functionname = functionname;
 		}
+		ret->subtype = this->subtype;
 		ret->objfreelist = &getClass()->freelist[1];
 		return ret;
 	}

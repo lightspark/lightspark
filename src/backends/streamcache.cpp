@@ -26,6 +26,7 @@
 #include "logger.h"
 #include "netutils.h"
 #include "swf.h"
+#include <SDL2/SDL.h>
 
 using namespace std;
 using namespace lightspark;
@@ -524,4 +525,52 @@ streamsize FileStreamCache::Reader::xsgetn(char* s, streamsize n)
 	}
 
 	return read;
+}
+
+streamsize lsfilereader::xsgetn(char *s, streamsize n)
+{
+	return SDL_RWread(filehandler,s,1,n);
+}
+
+streampos lsfilereader::seekoff(streamoff off, ios_base::seekdir way, ios_base::openmode which)
+{
+	if (!filehandler)
+	{
+		LOG(LOG_ERROR,"lsfilereader without file");
+		return streampos(streamoff(-1));
+	}
+	switch (way)
+	{
+		case ios_base::beg:
+			return SDL_RWseek(filehandler,off,RW_SEEK_SET);
+		case ios_base::cur:
+			return SDL_RWseek(filehandler,off,RW_SEEK_CUR);
+		case ios_base::end:
+			return SDL_RWseek(filehandler,off,RW_SEEK_END);
+		default:
+			LOG(LOG_ERROR,"unhandled value in lsfilereader.seekoff:"<<way);
+			return streampos(streamoff(-1));
+	}
+}
+
+streampos lsfilereader::seekpos(streampos pos, ios_base::openmode)
+{
+	if (!filehandler)
+	{
+		LOG(LOG_ERROR,"lsfilereader without file");
+		return streampos(streamoff(-1));
+	}
+	return SDL_RWseek(filehandler,pos,RW_SEEK_SET);
+}
+
+lsfilereader::lsfilereader(const char *filepath)
+{
+	filehandler = SDL_RWFromFile(filepath, "rb");
+}
+
+lsfilereader::~lsfilereader()
+{
+	if (filehandler)
+		SDL_RWclose(filehandler);
+	filehandler=nullptr;
 }

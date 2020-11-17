@@ -28,6 +28,7 @@
 #include <SDL2/SDL.h>
 #include "flash/utils/ByteArray.h"
 #include <sys/stat.h>
+#include "parsing/streams.h"
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX
@@ -245,13 +246,13 @@ public:
 
 int main(int argc, char* argv[])
 {
-	char* fileName=NULL;
-	char* url=NULL;
-	char* paramsFileName=NULL;
+	char* fileName=nullptr;
+	char* url=nullptr;
+	char* paramsFileName=nullptr;
 #ifdef PROFILING_SUPPORT
-	char* profilingFileName=NULL;
+	char* profilingFileName=nullptr;
 #endif
-	char *HTTPcookie=NULL;
+	char *HTTPcookie=nullptr;
 	SecurityManager::SANDBOXTYPE sandboxType=SecurityManager::LOCAL_WITH_FILE;
 	bool useInterpreter=true;
 	bool useFastInterpreter=false;
@@ -280,7 +281,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 
@@ -303,7 +304,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 
@@ -315,7 +316,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 			paramsFileName=argv[i];
@@ -339,7 +340,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 			if(strncmp(argv[i], "remote", 6) == 0)
@@ -370,7 +371,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 			HTTPcookie=argv[i];
@@ -380,14 +381,14 @@ int main(int argc, char* argv[])
 			//No options flag, so set the swf file name
 			if(fileName) //If already set, exit in error status
 			{
-				fileName=NULL;
+				fileName=nullptr;
 				break;
 			}
 			fileName=argv[i];
 		}
 	}
 
-	if(fileName==NULL)
+	if(fileName==nullptr)
 	{
 		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
 			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi]" <<
@@ -406,7 +407,8 @@ int main(int argc, char* argv[])
 	}
 
 	Log::setLogLevel(log_level);
-	ifstream f(fileName, ios::in|ios::binary);
+	lsfilereader r(fileName);
+	istream f(&r);
 	f.seekg(0, ios::end);
 	uint32_t fileSize=f.tellg();
 	f.seekg(0, ios::beg);

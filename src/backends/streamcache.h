@@ -29,6 +29,8 @@
 #include "smartrefs.h"
 #include "compat.h"
 
+struct SDL_RWops;
+
 namespace lightspark
 {
 
@@ -199,6 +201,21 @@ public:
 	// Use an existing file as cache. Must be called before append().
 	void useExistingFile(const tiny_string& filename);
 	void openForWriting() override;
+};
+
+// simple wrapper to use SDL_RWops as input for istream
+// to let SDL deal with unicode filenames on windows
+class DLL_PUBLIC lsfilereader: public std::filebuf
+{
+private:
+	SDL_RWops* filehandler;
+protected:
+	std::streamsize xsgetn(char* s, std::streamsize n) override;
+	std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which) override;
+	std::streampos seekpos(std::streampos pos, std::ios_base::openmode) override;
+public:
+	lsfilereader(const char* filepath);
+	~lsfilereader();
 };
 
 }

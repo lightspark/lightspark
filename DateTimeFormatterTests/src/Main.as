@@ -19,7 +19,10 @@ package
 			var locale = "en-US";
 			
 			var date:Date = new Date(2020, 10, 20, 1, 2, 3);
-			var date2:Date = new Date(1970, 1, 1, 23, 59, 59);
+			var date2:Date = new Date(1999, 1, 1, 23, 59, 59);
+			
+			trace(date);
+			trace(date2);
 
 			var longDf:DateTimeFormatter = new DateTimeFormatter(locale, DateTimeStyle.LONG, DateTimeStyle.LONG);
 			var mediumDf:DateTimeFormatter = new DateTimeFormatter(locale, DateTimeStyle.MEDIUM, DateTimeStyle.MEDIUM);
@@ -212,7 +215,8 @@ package
 				else
 				{
 					trace("Failed");
-					trace(key + ": " + dtf.format(date));
+					trace(key + ": Got" + ": " + dtf.format(date) + " expected: " + value);
+					trace("");
 				}
 			}
 			
@@ -222,10 +226,10 @@ package
 			tests["GGG"] = "A.D.";
 			tests["GGGG"] = "A.D.";
 			tests["GGGGG"] = "A.D.";
-			tests["y"] = "1970";
-			tests["yy"] = "70";
-			tests["yyyy"] = "1970";
-			tests["yyyyy"] = "1970";
+			tests["y"] = "1999";
+			tests["yy"] = "99";
+			tests["yyyy"] = "1999";
+			tests["yyyyy"] = "1999";
 			tests["M"] = "2";
 			tests["MM"] = "02";
 			tests["MMM"] = "Feb";
@@ -233,10 +237,10 @@ package
 			tests["MMMMM"] = "February";
 			tests["d"] = "1";
 			tests["dd"] = "01";
-			tests["E"] = "Sun";
-			tests["EE"] = "Sun";
-			tests["EEEE"] = "Sunday";
-			tests["EEEEE"] = "Sunday";
+			tests["E"] = "Mon";
+			tests["EE"] = "Mon";
+			tests["EEEE"] = "Monday";
+			tests["EEEEE"] = "Monday";
 			tests["Q"] = "";
 			tests["QQ"] = "";
 			tests["QQQ"] = "";
@@ -280,7 +284,7 @@ package
 			tests["v"] = "";
 			tests["vvvv"] = "";
 			tests[""] = "";
-			tests[" "] = "";
+			//tests[" "] = "";
 			tests["-"] = "-";
 			tests["/"] = "/";
 			//tests[":"] = ":";
@@ -300,7 +304,8 @@ package
 				else
 				{
 					trace("Failed");
-					trace(key + ": " + dtf.format(date2));
+					trace(key + ": Got" + ": " + dtf.format(date2) + " expected: " + value);
+					trace("");
 				}
 			}
 		}	

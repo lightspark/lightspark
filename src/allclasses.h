@@ -343,6 +343,7 @@ REGISTER_CLASS_NAME(WorkerState,"flash.system")
 REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
 REGISTER_CLASS_NAME(IMEConversionMode,"flash.system")
 REGISTER_CLASS_NAME(TouchscreenType,"flash.system")
+REGISTER_CLASS_NAME(JPEGLoaderContext,"flash.system")
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")

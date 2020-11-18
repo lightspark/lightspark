@@ -82,6 +82,7 @@
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdatertype.h"
 #include "scripting/flash/system/touchscreentype.h"
+#include "scripting/flash/system/jpegloadercontext.h"
 #include "scripting/flash/sensors/flashsensors.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/flash/utils/ByteArray.h"

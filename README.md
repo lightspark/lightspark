@@ -57,8 +57,8 @@ There are two ways of building Lightspark. You can use the included script, by r
 
 ```bash
 cd lightspark
-mkdir obj
-cd obj
+mkdir build
+cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 sudo make install

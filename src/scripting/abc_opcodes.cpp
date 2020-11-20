@@ -3097,6 +3097,29 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 			if(proto==functionProto)
 				return true;
 		}
+		if (value->is<DisplayObject>())
+		{
+			AVM1Function* constr =type->getSystemState()->mainClip->AVM1getClassConstructor(value->as<DisplayObject>()->getTagID());
+			bool res = type== constr;
+			if (!res)
+			{
+				ASObject* pr = constr->prototype.getPtr();
+				while (pr)
+				{
+					if (pr == functionProto)
+						return true;
+					pr=pr->getprop_prototype();
+				}
+			}
+			return type== type->getSystemState()->mainClip->AVM1getClassConstructor(value->as<DisplayObject>()->getTagID());
+		}
+		proto = value->getprop_prototype();
+		while(proto)
+		{
+			if(proto==functionProto)
+				return true;
+			proto=proto->getprop_prototype();
+		}
 		return false;
 	}
 

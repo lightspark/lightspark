@@ -29,6 +29,7 @@
 #include "threading.h"
 #include "scripting/abcutils.h"
 #include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Error.h"
 #include "memory_support.h"
 
@@ -109,24 +110,24 @@ template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<c
 class Any: public Type
 {
 public:
-	bool coerce(SystemState* sys,asAtom& o) const { return false; }
-	void coerceForTemplate(SystemState* sys, asAtom& o) const {}
+	bool coerce(SystemState* sys,asAtom& o) const override { return false; }
+	void coerceForTemplate(SystemState* sys, asAtom& o) const override {}
 	virtual ~Any() {}
 	tiny_string getName() const { return "any"; }
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return CANNOT_BIND; }
-	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND; }
+	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const { return true; }
 };
 
 class Void: public Type
 {
 public:
-	bool coerce(SystemState* sys,asAtom& o) const { return false; }
-	void coerceForTemplate(SystemState* sys, asAtom& o) const { }
+	bool coerce(SystemState* sys,asAtom& o) const override { return false; }
+	void coerceForTemplate(SystemState* sys, asAtom& o) const override { }
 	virtual ~Void() {}
-	tiny_string getName() const { return "void"; }
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const { return NOT_BINDED; }
-	const multiname* resolveSlotTypeName(uint32_t slotId) const { return NULL; }
+	tiny_string getName() const override { return "void"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return NOT_BINDED; }
+	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const { return true; }
 };
 
@@ -139,13 +140,13 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	bool coerce(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
-	void coerceForTemplate(SystemState* sys,asAtom& o) const { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	bool coerce(SystemState* sys,asAtom& o) const override { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	void coerceForTemplate(SystemState* sys,asAtom& o) const override { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
-	tiny_string getName() const { return "activation"; }
-	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const;
-	const multiname* resolveSlotTypeName(uint32_t slotId) const;
-	bool isBuiltin() const { return true; }
+	tiny_string getName() const override { return "activation"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
+	const multiname* resolveSlotTypeName(uint32_t slotId) const override;
+	bool isBuiltin() const override { return true; }
 };
 
 class Prototype;
@@ -272,15 +273,15 @@ class Class_object: public Class_base
 private:
 	//Invoke the special constructor that will set the super to Object
 	Class_object():Class_base(this){}
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass) override
 	{
 		throw RunTimeException("Class_object::getInstance");
 	}
-	void buildInstanceTraits(ASObject* o) const
+	void buildInstanceTraits(ASObject* o) const override
 	{
 //		throw RunTimeException("Class_object::buildInstanceTraits");
 	}
-	void finalize()
+	void finalize() override
 	{
 		//Remove the cyclic reference to itself
 		setClass(NULL);
@@ -331,10 +332,10 @@ class ObjectPrototype: public ASObject, public Prototype
 {
 public:
 	ObjectPrototype(Class_base* c);
-	inline void finalize() { prevPrototype.reset(); }
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr);
-	bool isEqual(ASObject* r);
+	inline void finalize() override { prevPrototype.reset(); }
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	bool isEqual(ASObject* r) override;
 };
 
 /* Special object used as constructor property for classes
@@ -348,10 +349,19 @@ public:
 	ObjectConstructor(Class_base* c,uint32_t length);
 	void incRef() { getClass()->incRef(); }
 	void decRef() { getClass()->decRef(); }
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
-	bool isEqual(ASObject* r);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	bool isEqual(ASObject* r) override;
 };
 
+class ArrayPrototype: public Array, public Prototype
+{
+public:
+	ArrayPrototype(Class_base* c);
+	inline void finalize() override { prevPrototype.reset(); }
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	bool isEqual(ASObject* r) override;
+};
 
 class Activation_object: public ASObject
 {
@@ -385,7 +395,7 @@ public:
 	_NR<ASObject> functionPrototype;
 	void finalize() { functionPrototype.reset(); }
 
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
 };
 
 /*
@@ -413,8 +423,8 @@ public:
 	bool isCloned;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != nullptr; }
-	bool isConstructed() const { return constructIndicator; }
-	inline bool destruct() 
+	bool isConstructed() const override { return constructIndicator; }
+	inline bool destruct() override
 	{
 		inClass=nullptr;
 		isStatic=false;
@@ -447,7 +457,7 @@ public:
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
 	virtual Class_base* getReturnType() =0;
-	std::string toDebugString();
+	std::string toDebugString() override;
 };
 
 /*
@@ -644,7 +654,9 @@ class AVM1Function : public IFunction
 	friend class Class_base;
 protected:
 	DisplayObject* clip;
+	Activation_object* activationobject;
 	AVM1context context;
+	asAtom superobj;
 	std::vector<uint8_t> actionlist;
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
@@ -658,13 +670,14 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
-		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
-		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal) 
+	AVM1Function(Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
+		:IFunction(c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
+		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
 	{
 		if (ctx)
 			context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 		context.keepLocals=true;
+		superobj = asAtomHandler::invalidAtom;
 	}
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone() override
@@ -673,19 +686,27 @@ protected:
 		return nullptr;
 	}
 public:
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, asAtom* super=nullptr)
 	{
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,super? super : &superobj);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target) override
 	{
 		asAtom obj = asAtomHandler::fromObject(target);
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&superobj);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType() override
 	{
 		return nullptr;
+	}
+	FORCE_INLINE Activation_object* getActivationObject() const
+	{
+		return activationobject;
+	}
+	FORCE_INLINE void setSuper(asAtom s)
+	{
+		superobj.uintval = s.uintval;
 	}
 };
 
@@ -745,10 +766,10 @@ public:
 		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(SystemState* sys,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
+	static AVM1Function* getAVM1Function(SystemState* sys,DisplayObject* clip,Activation_object* act, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(c, clip, act,ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;

@@ -297,6 +297,17 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		if (asAtomHandler::isInvalid(func))
 		{
 			ASObject* pr = oref->getprop_prototype();
+			if (!pr)
+			{
+				multiname m2(nullptr);
+				m2.name_type=multiname::NAME_STRING;
+				m2.isAttribute = false;
+				m2.name_s_id= BUILTIN_STRINGS::STRING_PROTO;
+				asAtom p= asAtomHandler::invalidAtom;
+				oref->getVariableByMultiname(p,m2);
+				if (asAtomHandler::isObject(p))
+					pr = asAtomHandler::getObjectNoCheck(p);
+			}
 			if (pr)
 				pr->getVariableByMultiname(func,m);
 		}

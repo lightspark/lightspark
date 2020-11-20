@@ -46,6 +46,7 @@ enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MA
 					   ,STRING_AVM1_TARGET,STRING_THIS,STRING_AVM1_ROOT,STRING_AVM1_PARENT,STRING_AVM1_GLOBAL,STRING_SUPER
 					   ,STRING_ONENTERFRAME,STRING_ONMOUSEMOVE,STRING_ONMOUSEDOWN,STRING_ONMOUSEUP,STRING_ONPRESS,STRING_ONRELEASE,STRING_ONRELEASEOUTSIDE,STRING_ONMOUSEWHEEL, STRING_ONLOAD
 					   ,STRING_OBJECT,STRING_UNDEFINED,STRING_BOOLEAN,STRING_NUMBER,STRING_STRING,STRING_FUNCTION_LOWERCASE,STRING_ONROLLOVER,STRING_ONROLLOUT
+					   ,STRING_PROTO
 					   ,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
@@ -1493,7 +1494,7 @@ public:
 		frameadvanced = false;
 	}
 };
-
+class Activation_object;
 class ACTIONRECORD
 {
 public:
@@ -1501,7 +1502,7 @@ public:
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
 	static void executeActions(DisplayObject* clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, union asAtom> &scopevariables, asAtom *result = nullptr, asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0, const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(), const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
-			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false,AVM1Function *caller = nullptr, AVM1Function *callee = nullptr);
+			bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false, AVM1Function *caller = nullptr, AVM1Function *callee = nullptr, Activation_object *actobj=nullptr, asAtom* superobj=nullptr);
 };
 class BUTTONCONDACTION
 {

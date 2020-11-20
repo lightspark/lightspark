@@ -52,6 +52,7 @@ bool Array::destruct()
 void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->prototype = _MNR((Prototype*)new (c->memoryAccount) ArrayPrototype(c));
 	c->isReusable = true;
 	c->setVariableAtomByQName("CASEINSENSITIVE",nsNameAndKind(),asAtomHandler::fromUInt(CASEINSENSITIVE),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("DESCENDING",nsNameAndKind(),asAtomHandler::fromUInt(DESCENDING),CONSTANT_TRAIT);
@@ -86,7 +87,8 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("insertAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertAt,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeAt",AS3,Class<IFunction>::getFunction(c->getSystemState(),removeAt,1),NORMAL_METHOD,true);
 
-	c->prototype->setVariableAtomByQName("length",nsNameAndKind(),asAtomHandler::fromUInt(0),CONSTANT_TRAIT);
+	c->prototype->getObj()->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength),GETTER_METHOD,false);
+	c->prototype->getObj()->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_setLength),SETTER_METHOD,false);
 	c->prototype->setVariableByQName("concat","",Class<IFunction>::getFunction(c->getSystemState(),_concat,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("every","",Class<IFunction>::getFunction(c->getSystemState(),every,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("filter","",Class<IFunction>::getFunction(c->getSystemState(),filter,1),DYNAMIC_TRAIT);
@@ -1618,7 +1620,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 	{
 		//Check prototype chain
 		Prototype* proto = this->getClass()->prototype.getPtr();
-		while(proto)
+		while(proto && proto->getObj() != this)
 		{
 			GET_VARIABLE_RESULT res = proto->getObj()->getVariableByMultiname(ret,name, opt);
 			if(asAtomHandler::isValid(ret))

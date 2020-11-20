@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	assert_and_throw(argslen<=2);
 
 	asAtom newObj=asAtomHandler::invalidAtom;
-	asAtom* newArgs=NULL;
+	asAtom* newArgs=nullptr;
 	int newArgsLen=0;
 	if(th->closure_this)
 		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
@@ -187,7 +187,14 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 		{
 			//get the current global object
 			call_context* cc = getVm(th->getSystemState())->currentCallContext;
-			if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
+			if (!cc)
+			{
+				if (argslen == 0)
+					newObj=asAtomHandler::nullAtom;
+				else
+					newObj=args[0];
+			}
+			else if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
 				newObj = cc->parent_scope_stack->scope[0].object;
 			else
 			{
@@ -224,7 +231,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	/* This function never changes the 'this' pointer of a method closure */
 	IFunction* th=static_cast<IFunction*>(asAtomHandler::getObject(obj));
 	asAtom newObj=asAtomHandler::invalidAtom;
-	asAtom* newArgs=NULL;
+	asAtom* newArgs=nullptr;
 	uint32_t newArgsLen=0;
 	if(th->closure_this)
 		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
@@ -234,7 +241,14 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		{
 			//get the current global object
 			call_context* cc = getVm(th->getSystemState())->currentCallContext;
-			if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
+			if (!cc)
+			{
+				if (argslen == 0)
+					newObj=asAtomHandler::nullAtom;
+				else
+					newObj=args[0];
+			}
+			else if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
 				newObj = cc->parent_scope_stack->scope[0].object;
 			else
 			{
@@ -2791,18 +2805,35 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 	ARG_UNPACK_ATOM(o)(names)(set_true)(set_false,0);
 	if (o.isNull())
 		throwError<ArgumentError>(kInvalidArgumentError,Integer::toString(0));
-	std::list<tiny_string> namelist = names.split((uint32_t)',');
-	auto it = namelist.begin();
+	std::list<uint32_t> nameIDlist;
+	if (asAtomHandler::isNull(args[1]))
 	{
-		multiname name(NULL);
+		for (uint32_t i = 0; i < o->numVariables(); i++)
+		{
+			nameIDlist.push_back(o->getNameAt(i));
+		}
+	}
+	else
+	{
+		std::list<tiny_string> namelist = names.split((uint32_t)',');
+		for (auto it = namelist.begin();it != namelist.end(); it++)
+		{
+			nameIDlist.push_back(sys->getUniqueStringId(*it));
+		}
+	}
+	for (auto it = nameIDlist.begin();it != nameIDlist.end(); it++)
+	{
+		if ((*it) == BUILTIN_STRINGS::PROTOTYPE || (*it)==BUILTIN_STRINGS::STRING_PROTO)
+			continue;
+		multiname name(nullptr);
 		name.name_type=multiname::NAME_STRING;
-		name.name_s_id=sys->getUniqueStringId(*it);
+		name.name_s_id=*it;
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.isAttribute=false;
-		if (set_true & 0x01) // dontEnum
-			asAtomHandler::toObject(obj,sys)->setIsEnumerable(name, false);
 		if (set_false & 0x01) // dontEnum
-			asAtomHandler::toObject(obj,sys)->setIsEnumerable(name, true);
+			o->setIsEnumerable(name, true);
+		if (set_true & 0x01) // dontEnum
+			o->setIsEnumerable(name, false);
 	}
 	if (set_true & ~0x0001)
 		LOG(LOG_NOT_IMPLEMENTED,"AVM1_ASSetPropFlags with set_true flags "<<hex<<set_true);
@@ -3060,11 +3091,40 @@ multiname *ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom
 	return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 }
 
-
 ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c,T_OBJECT,SUBTYPE_OBJECTCONSTRUCTOR),_length(length)
 {
 	Class<ASObject>::getRef(c->getSystemState())->prototype->incRef();
 	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
+}
+
+ArrayPrototype::ArrayPrototype(Class_base* c) : Array(c)
+{
+	traitsInitialized = true;
+	constructIndicator = true;
+	constructorCallComplete = true;
+	obj = this;
+}
+bool ArrayPrototype::isEqual(ASObject* r)
+{
+	if (r->is<ArrayPrototype>())
+		return this->getClass() == r->getClass();
+	return ASObject::isEqual(r);
+}
+
+GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	GET_VARIABLE_RESULT res = Array::getVariableByMultiname(ret,name,opt);
+	if(asAtomHandler::isValid(ret) || prevPrototype.isNull())
+		return res;
+
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
+}
+
+multiname *ArrayPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+{
+	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
+		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
+	return Array::setVariableByMultiname(name, o, allowConst,alreadyset);
 }
 
 GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)

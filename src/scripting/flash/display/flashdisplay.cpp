@@ -1981,6 +1981,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginGradientFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_getter_useHandCursor),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_setter_useHandCursor),SETTER_METHOD,true);
@@ -2067,7 +2068,19 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	if (toAdd->is<MovieClip>())
+	{
+		// call constructor here to avoid recursive construction
+		AVM1Function* constr = sys->mainClip->AVM1getClassConstructor(toAdd->getTagID());
+		if (constr)
+		{
+			toAdd->setprop_prototype(constr->prototype);
+			asAtom constrret = asAtomHandler::invalidAtom;
+			asAtom newobj = asAtomHandler::fromObjectNoPrimitive(toAdd);
+			constr->call(&constrret,&newobj,nullptr,0);
+		}
 		toAdd->as<MovieClip>()->inAVM1Attachment=false;
+	}
+	toAdd->incRef();
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
@@ -2088,6 +2101,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
 	toAdd->constructionComplete();
+	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
@@ -2145,6 +2159,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	
 	Graphics::beginFill(ret,sys,o,args,argslen);
 }
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginGradientFill)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	Graphics* g = th->getGraphics().getPtr();
+	asAtom o = asAtomHandler::fromObject(g);
+	Graphics::beginGradientFill(ret,sys,o,args,argslen);
+}
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
@@ -2183,6 +2204,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
+	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
@@ -4753,6 +4775,8 @@ multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name,
 			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
 			if (!obj->legacy)
 			{
+				if (v->var.uintval == o.uintval)
+					return nullptr;
 				obj->incRef();
 				_removeChild(obj);
 			}
@@ -5021,7 +5045,7 @@ void MovieClip::afterConstruction()
 		this->incRef();
 		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (!getSystemState()->mainClip->usesActionScript3 && !this->inAVM1Attachment)
 	{
 		AVM1Function* constr = getSystemState()->mainClip->AVM1getClassConstructor(fromDefineSpriteTag);
 		if (constr)

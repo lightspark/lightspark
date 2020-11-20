@@ -520,7 +520,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(varcount && Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
+	if(Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
 		return true;
 
 	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=NULL)
@@ -584,7 +584,6 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	else
 	{
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
-		++varcount;
 	}
 	obj->isenumerable = isEnumerable;
 	switch(type)
@@ -653,7 +652,6 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 	else
 	{
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
-		++varcount;
 	}
 	obj->isenumerable = isEnumerable;
 	switch(type)
@@ -681,7 +679,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 
 bool ASObject::deleteVariableByMultiname(const multiname& name)
 {
-	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT) : nullptr;
+	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	
 	if(obj==nullptr)
 	{
@@ -709,7 +707,6 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 
 	//Now kill the variable
 	Variables.killObjVar(getSystemState(),name);
-	--varcount;
 	return true;
 }
 
@@ -814,9 +811,7 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
 				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind())));
 			obj = &inserted->second;
-			++varcount;
 		}
-		
 	}
 	// it seems that instance traits are changed into declared traits if they are overwritten in class objects
 	// see tamarin test as3/Definitions/FunctionAccessors/GetSetStatic
@@ -903,7 +898,6 @@ variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind&
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
 	obj->setVar(o,this,isRefcounted);
 	obj->isenumerable=isEnumerable;
-	++varcount;
 	return obj;
 }
 
@@ -912,7 +906,6 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 {
 	check();
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
-	++varcount;
 }
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
@@ -945,7 +938,7 @@ void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 	if(isrefcounted && asAtomHandler::getObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
-		if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
+		if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
 			asAtomHandler::getObject(var)->decActivationCount();
 		ASATOM_DECREF(var);
 	}
@@ -956,7 +949,7 @@ void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 void variable::preparereplacevar(ASObject *obj)
 {
 	LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
-	if (obj->is<Activation_object>() && asAtomHandler::is<SyntheticFunction>(var))
+	if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
 		asAtomHandler::getObject(var)->decActivationCount();
 	ASATOM_DECREF(var);
 }
@@ -1294,12 +1287,7 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 
 bool ASObject::cloneInstance(ASObject *target)
 {
-	if (Variables.cloneInstance(target->Variables))
-	{
-		target->varcount = this->varcount;
-		return true;
-	}
-	return false;
+	return Variables.cloneInstance(target->Variables);
 }
 
 void ASObject::checkFunctionScope(ASObject* o)
@@ -1371,7 +1359,7 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name)
 variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t *nsRealID, bool *isborrowed, bool considerdynamic)
 {
 	//Get from the current object without considering borrowed properties
-	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,name.hasEmptyNS || considerdynamic ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID):NULL;
+	variable* obj=Variables.findObjVar(getSystemState(),name,name.hasEmptyNS || considerdynamic ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1420,7 +1408,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
-	variable* obj=varcount ? Variables.findObjVar(getSystemState(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId):NULL;
+	variable* obj=Variables.findObjVar(getSystemState(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1428,6 +1416,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
 			obj=nullptr;
 	}
+	else if (opt & DONT_CHECK_CLASS)
+		return res;
 
 	if(!obj)
 	{
@@ -1617,7 +1607,7 @@ void variables_map::dumpVariables()
 			default:
 				assert(false);
 		}
-		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<<
+		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
 			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid);
 	}
@@ -1691,7 +1681,7 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 	LOG(LOG_INFO,"countall:"<<c);
 }
 #endif
-ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : NULL),Variables((c)?c->memoryAccount:NULL),varcount(0),classdef(c),proxyMultiName(NULL),sys(c?c->sys:NULL),
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : nullptr),Variables((c)?c->memoryAccount:nullptr),classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),
 	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1706,7 +1696,7 @@ ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->getSystemState()->singleworker && o.classdef->isReusable ? o.classdef->freelist : NULL),Variables((o.classdef)?o.classdef->memoryAccount:NULL),varcount(0),classdef(NULL),proxyMultiName(NULL),sys(o.classdef? o.classdef->sys : NULL),
+ASObject::ASObject(const ASObject& o):objfreelist(o.classdef && o.classdef->getSystemState()->singleworker && o.classdef->isReusable ? o.classdef->freelist : nullptr),Variables((o.classdef)?o.classdef->memoryAccount:nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),
 	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -1965,7 +1955,7 @@ uint32_t variables_map::getNameAt(unsigned int index) const
 
 unsigned int ASObject::numVariables() const
 {
-	return varcount;
+	return Variables.size();
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -2419,6 +2409,11 @@ ASObject* ASObject::getprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	if (var)
+		return asAtomHandler::toObject(var->var,getSystemState());
+	if (!getSystemState()->mainClip->usesActionScript3)
+		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	return var ? asAtomHandler::toObject(var->var,getSystemState()) : nullptr;
 }
 
@@ -2427,13 +2422,13 @@ ASObject* ASObject::getprop_prototype()
  * 'prototype' is usually DYNAMIC_TRAIT, but on Class_base
  * it is a DECLARED_TRAIT, which is gettable only
  */
-void ASObject::setprop_prototype(_NR<ASObject>& o)
+void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
 {
-	ASObject* obj = o.getPtr();
+	ASObject* obj = prototype.getPtr();
 
-	multiname prototypeName(NULL);
+	multiname prototypeName(nullptr);
 	prototypeName.name_type=multiname::NAME_STRING;
-	prototypeName.name_s_id=getSystemState()->getUniqueStringId("prototype");
+	prototypeName.name_s_id=nameID;
 	prototypeName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
@@ -2444,8 +2439,8 @@ void ASObject::setprop_prototype(_NR<ASObject>& o)
 	if(!ret)
 	{
 		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
-		++varcount;
 	}
+	ret->isenumerable=false;
 	if(asAtomHandler::isValid(ret->setter))
 	{
 		asAtom arg1= asAtomHandler::fromObject(obj);

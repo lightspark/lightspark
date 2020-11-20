@@ -390,6 +390,8 @@ void ABCVm::registerClassesAVM1()
 		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Point","flash.geom",Class<Point>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
 	m_sys->avm1global=builtinavm1;
 }

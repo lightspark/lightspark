@@ -23,6 +23,7 @@ Makefile
 
 CMakeCache.txt
 obj/
+build/
 version.h
 
 # SWF files

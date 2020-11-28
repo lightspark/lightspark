@@ -354,6 +354,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("NetConnection","",Class<NetConnection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
+	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));
 
 	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
 	{

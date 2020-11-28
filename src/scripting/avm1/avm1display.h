@@ -101,6 +101,17 @@ public:
 	ASFUNCTION_ATOM(setTransform);
 };
 
+class AVM1Broadcaster: public ASObject
+{
+public:
+	AVM1Broadcaster(Class_base* c):ASObject(c) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(initialize);
+	ASFUNCTION_ATOM(broadcastMessage);
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
+};
+
 }
 
 #endif // SCRIPTING_AVM1_AVM1DISPLAY_H

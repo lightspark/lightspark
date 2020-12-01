@@ -289,29 +289,29 @@ package
 				trace("key: ", key + " value: " + keysAndValues[ key ]);
 			}
 			
-			var localeNames:Array = ["ar-SA", "EN_us", "en-US-POSIX", "zh-CH", "zh-TW", "zh-Hans", "zh-CH@collation=pinyin;calendar=chinese;currency=RMB"];
+			var localeNames:Array = [
+				"zh-CH@collation=pinyin;calendar=chinese;currency=RMB",
+				"zh-CH@collation=pinyin;calendar=chinese;currency=RMB;",
+				"zh-CH@collation=",
+				"zh-CH@collation",
+				"zh-CH@",
+				"zh-CH@=",
+				"zh-CH@=bob",
+				"zh-CH@collation=pinyin;calendar=chinese;currency=RMB;bob=bob"
+			];
             
             for ( var i:int = 0; i < localeNames.length; i++ ) 
             {
                 var locID:LocaleID = new LocaleID( localeNames[i] as String );
-                
-                
-                
-                trace("name:     " + locID.name);
-                trace("language: " + locID.getLanguage() + "; status: "  + locID.lastOperationStatus);
-                trace("script:   " + locID.getScript()  +  "; status: "  + locID.lastOperationStatus);
-                trace("region:   " + locID.getRegion()  +  "; status: "  + locID.lastOperationStatus);
-                trace("variant:  " + locID.getVariant()  + "; status: "  + locID.lastOperationStatus);
-                trace("isRightToLeft: ", locID.isRightToLeft(), "; status: "  + locID.lastOperationStatus);
-                
+                				
                 var keysAndValues:Object = locID.getKeysAndValues();
                 var key:String;
                 for (key in keysAndValues)
                 {
                     trace("key: ", key + " value: " + keysAndValues[ key ]);
                 }
-                trace( "Last Operation Status after getKeysAndValues(): " + locID.lastOperationStatus);
+                trace("");
             }
 		}
 	}
-}
+}98

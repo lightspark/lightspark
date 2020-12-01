@@ -35,11 +35,24 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(formatNumber);
+	ASFUNCTION_ATOM(formatInt);
+	ASFUNCTION_ATOM(formatUint);
+	ASFUNCTION_ATOM(parse);
+	ASFUNCTION_ATOM(parseNumber);
 	ASFUNCTION_ATOM(getAvailableLocaleIDNames);
 	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
 	ASPROPERTY_GETTER(tiny_string, lastOperationStatus);
 	ASPROPERTY_GETTER(tiny_string, requestedLocaleIDName);
 	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
+	ASPROPERTY_GETTER_SETTER(tiny_string, decimalSeparator);
+	ASPROPERTY_GETTER_SETTER(uint32_t, digitsType);
+	ASPROPERTY_GETTER_SETTER(int32_t, groupingPattern);
+	ASPROPERTY_GETTER_SETTER(tiny_string, groupingSeparator);
+	ASPROPERTY_GETTER_SETTER(bool, leadingZero);
+	ASPROPERTY_GETTER_SETTER(uint32_t, negativeNumberFormat);
+	ASPROPERTY_GETTER_SETTER(tiny_string, negativeSymbol);
+	ASPROPERTY_GETTER_SETTER(bool, trailingZeros);
+	ASPROPERTY_GETTER_SETTER(bool, useGrouping);
 };
 
 }

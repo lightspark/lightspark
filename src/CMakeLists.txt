@@ -153,6 +153,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/system/securitypanel.cpp
   scripting/flash/system/systemupdatertype.cpp
   scripting/flash/system/touchscreentype.cpp
+  scripting/flash/system/ime.cpp
   scripting/flash/system/jpegloadercontext.cpp
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp

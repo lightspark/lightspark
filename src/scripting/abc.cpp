@@ -170,6 +170,7 @@
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdatertype.h"
 #include "scripting/flash/system/touchscreentype.h"
+#include "scripting/flash/system/ime.h"
 #include "scripting/flash/system/jpegloadercontext.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/flash/errors/flasherrors.h"
@@ -760,6 +761,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SecurityPanel","flash.system",Class<SecurityPanel>::getRef(m_sys));
 	builtin->registerBuiltin("SystemUpdaterType","flash.system",Class<SystemUpdaterType>::getRef(m_sys));
 	builtin->registerBuiltin("TouchscreenType","flash.system",Class<TouchscreenType>::getRef(m_sys));
+	builtin->registerBuiltin("IME","flash.system",Class<IME>::getRef(m_sys));
 	builtin->registerBuiltin("JPEGLoaderContext","flash.system",Class<JPEGLoaderContext>::getRef(m_sys));
 
 	builtin->registerBuiltin("AudioDecoder","flash.media",Class<MediaAudioDecoder>::getRef(m_sys));

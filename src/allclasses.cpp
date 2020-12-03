@@ -122,6 +122,7 @@
 #include "scripting/flash/media/stagevideoavailabilityreason.h"
 #include "scripting/flash/media/videodecoder.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/ui/Keyboard.h"

@@ -175,6 +175,7 @@
 #include "scripting/flash/system/jpegloadercontext.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/ui/Keyboard.h"
@@ -570,6 +571,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef(m_sys));
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef(m_sys));
+	builtin->registerBuiltin("CSMSettings","flash.text",Class<CSMSettings>::getRef(m_sys));
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef(m_sys));
 	builtin->registerBuiltin("FontStyle","flash.text",Class<FontStyle>::getRef(m_sys));
 	builtin->registerBuiltin("FontType","flash.text",Class<FontType>::getRef(m_sys));

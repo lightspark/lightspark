@@ -350,6 +350,7 @@ REGISTER_CLASS_NAME(JPEGLoaderContext,"flash.system")
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")
 REGISTER_CLASS_NAME(AntiAliasType,"flash.text")
+REGISTER_CLASS_NAME(CSMSettings,"flash.text")
 REGISTER_CLASS_NAME(FontStyle,"flash.text")
 REGISTER_CLASS_NAME(FontType,"flash.text")
 REGISTER_CLASS_NAME(GridFitType,"flash.text")

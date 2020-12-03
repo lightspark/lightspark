@@ -156,6 +156,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/system/touchscreentype.cpp
   scripting/flash/system/ime.cpp
   scripting/flash/system/jpegloadercontext.cpp
+  scripting/flash/text/csmsettings.cpp
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp

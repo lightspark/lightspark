@@ -245,6 +245,7 @@ REGISTER_CLASS_NAME(NationalDigitsType,"flash.globalization")
 
 //Media
 REGISTER_CLASS_NAME(AudioOutputChangeReason,"flash.media")
+REGISTER_CLASS_NAME(AVNetworkingParams,"flash.media")
 REGISTER_CLASS_NAME(H264Level,"flash.media")
 REGISTER_CLASS_NAME(H264Profile,"flash.media")
 REGISTER_CLASS_NAME(MicrophoneEnhancedMode,"flash.media")

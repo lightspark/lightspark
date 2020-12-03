@@ -111,6 +111,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/media/audiodecoder.h"
 #include "scripting/flash/media/audiooutputchangereason.h"
+#include "scripting/flash/media/avnetworkingparams.h"
 #include "scripting/flash/media/h264level.h"
 #include "scripting/flash/media/h264profile.h"
 #include "scripting/flash/media/avtagdata.h"

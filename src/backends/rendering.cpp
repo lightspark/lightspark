@@ -25,6 +25,7 @@
 #include "compat.h"
 #include <sstream>
 #include <unistd.h>
+#include "backends/security.h"
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -367,9 +368,11 @@ void RenderThread::renderSettingsPage()
 	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
 	renderText(cr, "close",width-50,20);
 
-	// local storage checkbox
+	int yPos = 25;
 	int checkboxwidth=20;
 	int checkboxheight=20;
+
+	// local storage checkbox
 	if (mousepos.x > startposx + (width-checkboxwidth-10) && mousepos.x < startposx +(width-10) &&
 		mousepos.y > startposy + (10) && mousepos.y < startposy +(checkboxheight+10))
 	{
@@ -392,7 +395,45 @@ void RenderThread::renderSettingsPage()
 		cairo_stroke(cr);
 	}
 	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
-	renderText(cr, "allow local storage",10,height-25);
+	renderText(cr, "Allow local storage",10,height-yPos);
+
+	yPos = 55;
+
+	// networking checkbox
+	if (mousepos.x > startposx + (width-checkboxwidth-10) && mousepos.x < startposx +(width-10) &&
+		mousepos.y > startposy + (10) && mousepos.y < startposy +(checkboxheight+yPos-10))
+	{
+		//SecurityManager::LOCAL_WITH_NETWORK
+		bool networkingOn = m_sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_NETWORK;
+		if (m_sys->getInputThread()->getLeftButtonPressed())
+		{
+			if (networkingOn)
+			{
+				m_sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
+			}
+			else
+			{
+				m_sys->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_FILE);
+			}
+		}
+	}
+	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
+	cairo_set_line_width(cr, 2);
+	cairo_rectangle(cr, width-checkboxwidth-10, height-50-10, checkboxwidth, checkboxheight);
+	cairo_stroke(cr);
+
+	if (m_sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_NETWORK)
+	{
+		cairo_set_source_rgb (cr, 0, 1.0, 0);
+		cairo_set_line_width(cr, 5);
+		cairo_move_to(cr, width-checkboxwidth-12, height-yPos/2-10);
+		cairo_line_to(cr, width-checkboxwidth/2-10, height-yPos-10);
+		cairo_line_to(cr, width-10, height-8);
+		cairo_stroke(cr);
+	}
+
+	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
+	renderText(cr, "Allow networking",10,height-yPos);
 
 	engineData->exec_glUniform1f(alphaUniform, 1);
 	engineData->exec_glUniform1f(rotateUniform, 0);

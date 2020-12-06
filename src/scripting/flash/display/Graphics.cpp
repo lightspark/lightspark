@@ -979,8 +979,52 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
-		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+	if (sys->mainClip->usesActionScript3)
+	{
+		ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
+				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+	}
+	else
+	{
+		_NR<ASObject> mat;
+		ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (mat, NullRef)
+				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+		if (!mat.isNull())
+		{
+			if (mat->is<Matrix>())
+				matrix = _MR(mat->as<Matrix>());
+			else 
+			{
+				multiname m(nullptr);
+				m.name_type = multiname::NAME_STRING;
+				m.name_s_id = sys->getUniqueStringId("matrixType");
+				asAtom a=asAtomHandler::invalidAtom;
+				mat->getVariableByMultiname(a,m);
+				if (asAtomHandler::toString(a,sys) != "box")
+					LOG(LOG_NOT_IMPLEMENTED,"beginGradientFill with Object as Matrix and matrixType "<<asAtomHandler::toDebugString(a));
+				else
+				{
+					matrix = _MR(Class<Matrix>::getInstanceSNoArgs(sys));
+					m.name_s_id = sys->getUniqueStringId("x");
+					asAtom x=asAtomHandler::invalidAtom;
+					mat->getVariableByMultiname(x,m);
+					m.name_s_id = sys->getUniqueStringId("y");
+					asAtom y=asAtomHandler::invalidAtom;
+					mat->getVariableByMultiname(y,m);
+					m.name_s_id = sys->getUniqueStringId("w");
+					asAtom w=asAtomHandler::invalidAtom;
+					mat->getVariableByMultiname(w,m);
+					m.name_s_id = sys->getUniqueStringId("h");
+					asAtom h=asAtomHandler::invalidAtom;
+					mat->getVariableByMultiname(h,m);
+					m.name_s_id = sys->getUniqueStringId("r");
+					asAtom r=asAtomHandler::invalidAtom;
+					mat->getVariableByMultiname(r,m);
+					matrix->_createBox(asAtomHandler::toNumber(w), asAtomHandler::toNumber(h), asAtomHandler::toNumber(r), asAtomHandler::toNumber(x), asAtomHandler::toNumber(y));
+				}
+			}
+		}
+	}
 
 	//Work around for bug in YouTube player of July 13 2011
 	if (!ratiosParam->is<Array>())

@@ -75,6 +75,9 @@ ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 	if (sys->mainClip->usesActionScript3)
 		ARG_UNPACK_ATOM(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
 	else
-		ARG_UNPACK_ATOM(th->label)(th->callbackfunction)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	{
+		// contrary to spec constructors without label and callbackfunction are allowed
+		ARG_UNPACK_ATOM(th->label,"")(th->callbackfunction,NullRef)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
+	}
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 }

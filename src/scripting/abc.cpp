@@ -1927,6 +1927,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
 				assert(!ev->clip.isNull());
 				ev->clip->executeFrameScript();
+				if (ev->clip == m_sys->stage)
+					m_sys->swapAsyncDrawJobQueue();
 				break;
 			}
 			case ADVANCE_FRAME:

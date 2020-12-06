@@ -46,6 +46,7 @@
 #include "scripting/avm1/avm1text.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/audio.h"
+#include "backends/rendering.h"
 
 #undef RGB
 
@@ -1318,13 +1319,6 @@ DefineShapeTag::~DefineShapeTag()
 
 ASObject *DefineShapeTag::instance(Class_base *c)
 {
-	if(c==nullptr)
-	{
-		if (!loadedFrom->usesActionScript3)
-			c=Class<AVM1Shape>::getClass(loadedFrom->getSystemState());
-		else
-			c=Class<Shape>::getClass(loadedFrom->getSystemState());
-	}
 	if (!tokens)
 	{
 		tokens = new tokensVector(loadedFrom->getSystemState()->tagsMemory);
@@ -1334,15 +1328,31 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 		}
 		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}
-	Shape* ret= loadedFrom->usesActionScript3 ?
-				new (c->memoryAccount) Shape(c, *tokens, 1.0f/20.0f,ShapeId,ShapeBounds):
-				new (c->memoryAccount) AVM1Shape(c, *tokens, 1.0f/20.0f,ShapeId,ShapeBounds);
+	Shape* ret=nullptr;
+	if(c==nullptr)
+	{
+		ret= loadedFrom->usesActionScript3 ?
+					Class<Shape>::getInstanceSNoArgs(loadedFrom->getSystemState()):
+					Class<AVM1Shape>::getInstanceSNoArgs(loadedFrom->getSystemState());
+	}
+	else
+	{
+		ret= loadedFrom->usesActionScript3 ?
+					 new (c->memoryAccount) Shape(c):
+					new (c->memoryAccount) AVM1Shape(c);
+	}
+	ret->setupShape(this, 1.0f/20.0f);
 	return ret;
 }
 MATRIX DefineShapeTag::MapToBoundsForButton(const MATRIX &mat)
 {
 	MATRIX m (1,1,0,0,ShapeBounds.Xmin/20,ShapeBounds.Ymin/20);
 	return mat.multiplyMatrix(m);
+}
+
+void DefineShapeTag::resizeCompleted()
+{
+	this->chunk.makeEmpty();
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)

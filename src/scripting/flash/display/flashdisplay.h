@@ -40,6 +40,7 @@ namespace lightspark
 
 class RootMovieClip;
 class DisplayListTag;
+class DefineShapeTag;
 class AVM1ActionTag;
 class AVM1InitActionTag;
 class DefineButtonTag;
@@ -246,26 +247,21 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override
-		{
-			if (interactiveObjectsOnly)
-				this->incRef();
-			return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
-		}
-	uint32_t fromDefineShapeTag;
-	RECT bounds;
+	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	
+	DefineShapeTag* fromTag;
 public:
 	Shape(Class_base* c);
-	Shape(Class_base* c, const tokensVector& tokens, float scaling, uint32_t tagID, const RECT& _bounds);
-	uint32_t getTagID() const override { return fromDefineShapeTag; }
-	void finalize() override;
+	Shape(Class_base* c, float scaling, DefineShapeTag *tag);
+	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
+	uint32_t getTagID() const override;
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
-	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 };
 
 class DefineMorphShapeTag;

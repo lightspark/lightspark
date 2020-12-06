@@ -208,7 +208,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		return;
 	owner->incRef();
 	if (forceTextureRefresh)
-		owner->needsTextureRecalculation=true;
+		owner->setNeedsTextureRecalculation();
 	q->addToInvalidateQueue(_MR(owner));
 }
 
@@ -234,8 +234,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 
 	bool isMask;
 	bool hasMask;
-	owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
-	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	if (target)
+	{
+		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 
 	width = bxmax-bxmin;
@@ -253,8 +256,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	float alphaOffset=0.0;
 	MATRIX totalMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
-	owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
-	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	if (target)
+	{
+		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	ColorTransform* ct = owner->colorTransform.getPtr();
 	DisplayObjectContainer* p = owner->getParent();

@@ -89,6 +89,7 @@ public:
 	virtual ASObject* instance(Class_base* c=nullptr) { return nullptr; }
 	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
 	virtual MATRIX MapToBoundsForButton(const MATRIX& mat) { return MapToBounds(mat); }
+	virtual void resizeCompleted() {}
 };
 
 /*
@@ -140,11 +141,13 @@ public:
 
 class DefineShapeTag: public DictionaryTag
 {
+friend class Shape;
 protected:
 	UI16_SWF ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
 	tokensVector* tokens;
+	TextureChunk chunk;
 	DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root);
 public:
 	DefineShapeTag(RECORDHEADER h,std::istream& in, RootMovieClip* root);
@@ -152,6 +155,7 @@ public:
 	virtual int getId() const{ return ShapeId; }
 	ASObject* instance(Class_base* c=nullptr);
 	MATRIX MapToBoundsForButton(const MATRIX& mat) override;
+	void resizeCompleted() override;
 };
 
 class DefineShape2Tag: public DefineShapeTag

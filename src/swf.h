@@ -113,6 +113,7 @@ public:
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
 	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
+	void resizeCompleted();
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
@@ -268,6 +269,10 @@ private:
 	   The lock for the invalidate queue
 	*/
 	Mutex invalidateQueueLock;
+	
+	Mutex drawjobLock;
+	std::unordered_set<AsyncDrawJob*> drawJobsNew;
+	std::unordered_set<AsyncDrawJob*> drawJobsPending;
 #ifdef PROFILING_SUPPORT
 	/*
 	   Output file for the profiling data
@@ -465,10 +470,10 @@ public:
 	void unregisterFrameListener(_R<DisplayObject> clip);
 
 	//Invalidation queue management
-	int32_t currentflushstep;
-	int32_t nextflushstep;
 	void addToInvalidateQueue(_R<DisplayObject> d) override;
 	void flushInvalidationQueue();
+	void AsyncDrawJobCompleted(AsyncDrawJob* j);
+	void swapAsyncDrawJobQueue();
 
 	//Resize support
 	void resizeCompleted();

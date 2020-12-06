@@ -48,7 +48,7 @@ class AVM1Shape: public Shape
 {
 public:
 	AVM1Shape(Class_base* c):Shape(c){}
-	AVM1Shape(Class_base* c, const tokensVector& tokens, float scaling,uint32_t tagID,const RECT& _bounds):Shape(c,tokens,scaling,tagID,_bounds) {}
+	AVM1Shape(Class_base* c, float scaling, DefineShapeTag* tag):Shape(c,scaling,tag) {}
 	static void sinit(Class_base* c);
 };
 

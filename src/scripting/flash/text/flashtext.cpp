@@ -275,7 +275,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWordWrap)
 	ARG_UNPACK_ATOM(th->wordWrap);
 	th->setSizeAndPositionFromAutoSize();
 	th->hasChanged=true;
-	th->needsTextureRecalculation=true;
+	th->setNeedsTextureRecalculation();
 	if(th->onStage && th->isVisible())
 		th->requestInvalidation(th->getSystemState());
 }
@@ -323,7 +323,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 		th->autoSize = newAutoSize;
 		th->setSizeAndPositionFromAutoSize();
 		th->hasChanged=true;
-		th->needsTextureRecalculation=true;
+		th->setNeedsTextureRecalculation();
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 	}
@@ -376,7 +376,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 	{
 		th->width=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;
-		th->needsTextureRecalculation=true;
+		th->setNeedsTextureRecalculation();
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(sys);
 		else
@@ -400,7 +400,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 	{
 		th->height=asAtomHandler::toUInt(args[0]);
 		th->hasChanged=true;
-		th->needsTextureRecalculation=true;
+		th->setNeedsTextureRecalculation();
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(th->getSystemState());
 		else
@@ -872,7 +872,7 @@ void TextField::validateScrollH(int32_t oldValue)
 	if (scrollH > maxScrollH)
 		scrollH = maxScrollH;
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 
 	if (onStage && (scrollH != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -886,7 +886,7 @@ void TextField::validateScrollV(int32_t oldValue)
 	else if (scrollV > maxScrollV)
 		scrollV = maxScrollV;
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 
 	if (onStage && (scrollV != oldValue) && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -1003,7 +1003,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	}
 	updateSizes();
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 	textUpdated();
 }
 
@@ -1148,7 +1148,7 @@ void TextField::tick()
 		return;
 	caretblinkstate = !caretblinkstate;
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 	
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
@@ -1164,7 +1164,7 @@ void TextField::textUpdated()
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());

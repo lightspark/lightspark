@@ -70,10 +70,15 @@ public:
 class CachedSurface
 {
 public:
-	CachedSurface():xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
+	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
 	  , redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-	  ,isMask(false),hasMask(false){}
-	TextureChunk tex;
+	  ,isMask(false),hasMask(false),isChunkOwner(true){}
+	~CachedSurface()
+	{
+		if (isChunkOwner && tex)
+			delete tex;
+	}
+	TextureChunk* tex;
 	int32_t xOffset;
 	int32_t yOffset;
 	int32_t xOffsetTransformed;
@@ -94,6 +99,7 @@ public:
 	float alphaOffset;
 	bool isMask;
 	bool hasMask;
+	bool isChunkOwner;
 };
 
 
@@ -225,7 +231,7 @@ public:
 	 * @param d IDrawable to be rendered asynchronously. The pointer is now
 	 * owned by this instance
 	 */
-	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o,int32_t flushstep);
+	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o);
 	~AsyncDrawJob();
 	//IThreadJob interface
 	void execute();

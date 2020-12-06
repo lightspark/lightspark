@@ -103,6 +103,7 @@ public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
 	volatile bool inSettings;
+	volatile bool canrender;
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**

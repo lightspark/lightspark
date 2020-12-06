@@ -97,8 +97,9 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 }
 
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),needsTextureRecalculation(true),legacy(false),flushstep(0),cacheAsBitmap(false),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
+	needsTextureRecalculation(true),textureRecalculationSkippable(false),onStage(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -120,6 +121,9 @@ void DisplayObject::finalize()
 	accessibilityProperties.reset();
 	hasChanged = true;
 	needsTextureRecalculation=true;
+	if (!cachedSurface.isChunkOwner)
+		cachedSurface.tex=nullptr;
+	cachedSurface.isChunkOwner=true;
 }
 
 bool DisplayObject::destruct()
@@ -157,7 +161,9 @@ bool DisplayObject::destruct()
 	avm1variables.clear();
 	variablebindings.clear();
 	avm1functions.clear();
-	flushstep=0;
+	if (!cachedSurface.isChunkOwner)
+		cachedSurface.tex=nullptr;
+	cachedSurface.isChunkOwner=true;
 	return EventDispatcher::destruct();
 }
 
@@ -350,7 +356,7 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	if(mustInvalidate && onStage)
 	{
 		hasChanged=true;
-		needsTextureRecalculation=true;
+//		needsTextureRecalculation=true;
 		requestInvalidation(getSystemState());
 	}
 }
@@ -473,13 +479,12 @@ bool DisplayObject::skipRender() const
 bool DisplayObject::defaultRender(RenderContext& ctxt) const
 {
 	// TODO: use scrollRect
-
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
-	if(!surface.tex.isValid() || flushstep == getSystemState()->currentflushstep)
-		return flushstep == getSystemState()->currentflushstep;
-	if (surface.tex.width == 0 || surface.tex.height == 0)
+	if(!surface.tex || !surface.tex->isValid())
+		return true;
+	if (surface.tex->width == 0 || surface.tex->height == 0)
 		return true;
 	
 	AS_BLENDMODE bl = this->blendMode;
@@ -494,8 +499,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 	}
 	ctxt.setProperties(bl);
 	ctxt.lsglLoadIdentity();
-	ctxt.renderTextured(surface.tex, surface.xOffset,surface.yOffset,
-			surface.tex.width, surface.tex.height,
+	ctxt.renderTextured(*surface.tex, surface.xOffset,surface.yOffset,
+			surface.tex->width, surface.tex->height,
 			surface.alpha, RenderContext::RGB_MODE,
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
@@ -1127,7 +1132,12 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setVisible)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	assert_and_throw(argslen==1);
-	th->visible=asAtomHandler::Boolean_concrete(args[0]);
+	bool newval = asAtomHandler::Boolean_concrete(args[0]);
+	if (newval != th->visible)
+	{
+		th->visible=newval;
+		th->requestInvalidation(sys);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getVisible)
@@ -1312,10 +1322,19 @@ void DisplayObject::afterConstruction()
 		this->incRef();
 		loaderInfo->objectHasLoaded(_MR(this));
 	}
-	hasChanged=true;
+//	hasChanged=true;
+//	needsTextureRecalculation=true;
+//	if(onStage)
+//		requestInvalidation(getSystemState());
+}
+
+void DisplayObject::setNeedsTextureRecalculation(bool skippable)
+{
+	textureRecalculationSkippable=!needsTextureRecalculation && skippable;
 	needsTextureRecalculation=true;
-	if(onStage)
-		requestInvalidation(getSystemState());
+	if (!cachedSurface.isChunkOwner)
+		cachedSurface.tex=nullptr;
+	cachedSurface.isChunkOwner=true;
 }
 
 void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const

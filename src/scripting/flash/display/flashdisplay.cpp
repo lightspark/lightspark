@@ -3163,33 +3163,59 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 
 bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
 {
-	if (!this->legacy)
+	if (!this->legacy || (fromTag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-	xmin=bounds.Xmin/20.0;
-	xmax=bounds.Xmax/20.0;
-	ymin=bounds.Ymin/20.0;
-	ymax=bounds.Ymax/20.0;
+	xmin=fromTag->ShapeBounds.Xmin/20.0;
+	xmax=fromTag->ShapeBounds.Xmax/20.0;
+	ymin=fromTag->ShapeBounds.Ymin/20.0;
+	ymax=fromTag->ShapeBounds.Ymax/20.0;
 	return true;
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromDefineShapeTag(0)
+_NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+{
+	if (interactiveObjectsOnly)
+		this->incRef();
+	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
+}
+
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromTag(nullptr)
 {
 }
 
-Shape::Shape(Class_base* c, const tokensVector& tokens, float scaling, uint32_t tagID, const RECT &_bounds):
-	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, tokens, scaling),graphics(NullRef),fromDefineShapeTag(tagID),bounds(_bounds)
+Shape::Shape(Class_base* c, float scaling, DefineShapeTag* tag):
+	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
 {
 }
 
-void Shape::finalize()
+void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
-	DisplayObject::finalize();
+	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
+	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
+	fromTag = tag;
+	cachedSurface.isChunkOwner=false;
+	cachedSurface.tex=&tag->chunk;
+	if (tag->chunk.isValid()) // Shape texture was already created, so we don't have to redo it
+		resetNeedsTextureRecalculation();
+	scaling=_scaling;
+}
+
+uint32_t Shape::getTagID() const 
+{
+	return fromTag ? fromTag->getId() : UINT32_MAX; 
+}
+
+bool Shape::destruct()
+{
 	graphics.reset();
+	fromTag=nullptr;
+	return 	DisplayObject::destruct();
 }
 
 void Shape::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
 }
 
@@ -3197,9 +3223,14 @@ void Shape::buildTraits(ASObject* o)
 {
 }
 
+IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+{
+	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+}
+
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
 {
-	DisplayObject::_constructor(ret,sys,obj,NULL,0);
+	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
@@ -3211,7 +3242,7 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(NULL)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(nullptr)
 {
 	scaling = 1.0f/20.0f;
 }
@@ -3235,7 +3266,7 @@ void MorphShape::checkRatio(uint32_t ratio)
 {
 	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
 	this->hasChanged = true;
-	this->needsTextureRecalculation=true;
+	this->setNeedsTextureRecalculation(ratio != 0 && ratio != 65535);
 	if (isOnStage())
 		requestInvalidation(getSystemState());
 }
@@ -4008,7 +4039,7 @@ void Bitmap::updatedData()
 	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0))));
 	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, 0))));
 	hasChanged=true;
-	needsTextureRecalculation=true;
+	setNeedsTextureRecalculation();
 	if(onStage)
 		requestInvalidation(getSystemState());
 }

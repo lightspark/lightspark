@@ -927,14 +927,13 @@ void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yO
 	assert(false);
 }
 
-AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o,int32_t flushstep):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false)
+AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false)
 {
-	o->flushstep = flushstep;
 }
 
 AsyncDrawJob::~AsyncDrawJob()
 {
-	owner->flushstep = 0;
+	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
 	delete[] surfaceBytes;
 }
@@ -962,7 +961,10 @@ void AsyncDrawJob::jobFence()
 	//If the data must be uploaded (there were no errors) the Job add itself to the upload queue.
 	//Otherwise it destroys itself
 	if(uploadNeeded)
+	{
+		uploadNeeded=false;
 		owner->getSystemState()->getRenderThread()->addUploadJob(this);
+	}
 	else
 		delete this;
 }
@@ -971,7 +973,6 @@ void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
 	assert(surfaceBytes);
 	memcpy(data, surfaceBytes, w*h*4);
-	owner->flushstep = 0;
 }
 
 void AsyncDrawJob::sizeNeeded(uint32_t& w, uint32_t& h) const
@@ -988,8 +989,13 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	uint32_t width=drawable->getWidth();
 	uint32_t height=drawable->getHeight();
 	//Verify that the texture is large enough
-	if(!surface.tex.resizeIfLargeEnough(width, height))
-		surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
+	if (!surface.tex)
+	{
+		surface.tex=new TextureChunk();
+		surface.isChunkOwner=true;
+	}
+	if(!surface.tex->resizeIfLargeEnough(width, height))
+		*surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
 	surface.xOffset=drawable->getXOffset();
 	surface.yOffset=drawable->getYOffset();
 	surface.xOffsetTransformed=drawable->getXOffsetTransformed();
@@ -1010,7 +1016,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	surface.greenOffset=drawable->getGreenOffset();
 	surface.blueOffset=drawable->getBlueOffset();
 	surface.alphaOffset=drawable->getAlphaOffset();
-	return surface.tex;
+	return *surface.tex;
 }
 
 void AsyncDrawJob::uploadFence()

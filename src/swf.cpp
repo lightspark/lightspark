@@ -213,7 +213,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),singleworker(true),
-	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),currentflushstep(1),nextflushstep(0),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
+	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),isinitialized(false)
 {
 	//Forge the builtin strings
@@ -1166,12 +1166,6 @@ void SystemState::flushInvalidationQueue()
 {
 	Locker l(invalidateQueueLock);
 	_NR<DisplayObject> cur=invalidateQueueHead;
-	if (!cur.isNull())
-	{
-		nextflushstep++;
-		if (nextflushstep==0)
-			nextflushstep++;
-	}
 	while(!cur.isNull())
 	{
 		if(cur->isOnStage() && cur->hasChanged)
@@ -1181,13 +1175,20 @@ void SystemState::flushInvalidationQueue()
 			//render it and upload it to GPU
 			if(d)
 			{
-				if (cur->needsTextureRecalculation)
-					addJob(new AsyncDrawJob(d,cur,nextflushstep));
+				if (cur->getNeedsTextureRecalculation())
+				{
+					drawjobLock.lock();
+					AsyncDrawJob* j = new AsyncDrawJob(d,cur);
+					if (!cur->getTextureRecalculationSkippable())
+						drawJobsNew.insert(j);
+					addJob(j);
+					drawjobLock.unlock();
+				}
 				else
 					renderThread->addRefreshableSurface(d,cur);
 			}
 			cur->hasChanged=false;
-			cur->needsTextureRecalculation=false;
+			cur->resetNeedsTextureRecalculation();
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;
@@ -1196,6 +1197,23 @@ void SystemState::flushInvalidationQueue()
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
 }
+void SystemState::AsyncDrawJobCompleted(AsyncDrawJob *j)
+{
+	drawjobLock.lock();
+	drawJobsNew.erase(j);
+	drawJobsPending.erase(j);
+	drawjobLock.unlock();
+}
+void SystemState::swapAsyncDrawJobQueue()
+{
+	drawjobLock.lock();
+	drawJobsPending.insert(drawJobsNew.begin(),drawJobsNew.end());
+	drawJobsNew.clear();
+	if (getRenderThread())
+		getRenderThread()->canrender = drawJobsPending.empty();
+	drawjobLock.unlock();
+}
+
 
 #ifdef PROFILING_SUPPORT
 void SystemState::setProfilingOutput(const tiny_string& t)
@@ -1887,6 +1905,12 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 	return it->second;
 }
 
+void RootMovieClip::resizeCompleted()
+{
+	for(auto it=dictionary.begin();it!=dictionary.end();++it)
+		it->second->resizeCompleted();
+}
+
 _NR<RootMovieClip> RootMovieClip::getRoot()
 {
 	this->incRef();
@@ -2050,6 +2074,7 @@ void SystemState::tickFence()
 
 void SystemState::resizeCompleted()
 {
+	mainClip->resizeCompleted();
 	stage->hasChanged=true;
 	stage->requestInvalidation(this,true);
 	

@@ -200,8 +200,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY());
 		//Construct a CachedSurface using the data
 		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
-		surface.tex.width=drawable->getWidth();
-		surface.tex.height=drawable->getHeight();
+		surface.tex->width=drawable->getWidth();
+		surface.tex->height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();
 		surface.yOffset=drawable->getYOffset();
 		surface.xOffsetTransformed=drawable->getXOffsetTransformed();

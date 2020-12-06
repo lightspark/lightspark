@@ -60,7 +60,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
 	prevUploadJob(nullptr),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),inSettings(false),
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),inSettings(false),canrender(false),
 	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,_("RenderThread this=") << this);
@@ -191,11 +191,12 @@ int RenderThread::worker(void* d)
 	//Keep addUploadJob from enqueueing
 	th->status=TERMINATED;
 	//Fence existing jobs
-	Locker l(th->mutexUploadJobs);
+	th->mutexUploadJobs.lock();
 	if(th->prevUploadJob)
 		th->prevUploadJob->uploadFence();
 	for(auto i=th->uploadJobs.begin(); i != th->uploadJobs.end(); ++i)
 		(*i)->uploadFence();
+	th->mutexUploadJobs.unlock();
 	return 0;
 }
 bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
@@ -256,7 +257,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	{
 		if (m_sys->stage->renderStage3D())
 		{
-			// stage3d rendering is needed, so we ignore the flushsteps
+			// stage3d rendering is always needed, so we ignore canrender
 			coreRendering();
 			if (inSettings)
 				renderSettingsPage();
@@ -271,8 +272,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		}
 		else
 		{
-			if(m_sys->currentflushstep > m_sys->nextflushstep)
+			if(!canrender)
 			{
+				// there are still drawjobs pending, so we don't render the stage
 				if (inSettings)
 				{
 					renderSettingsPage();
@@ -280,18 +282,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				}
 				if (screenshotneeded)
 					generateScreenshot();
-				// no changes since last rendering, so we don't need to do anything
 				renderNeeded=false;
 				return true;
 			}
-			m_sys->currentflushstep = m_sys->nextflushstep;
 			if(!m_sys->isOnError())
 			{
-				if (coreRendering())
-				{
-					renderNeeded=false;
-					return true;
-				}
+				coreRendering();
 				//Call glFlush to offload work on the GPU
 				engineData->exec_glFlush();
 			}
@@ -304,10 +300,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	engineData->DoSwapBuffers();
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
+	canrender=false;
 	renderNeeded=false;
-	m_sys->currentflushstep++;
-	if (m_sys->currentflushstep==0)
-		m_sys->currentflushstep++;
 	return true;
 }
 void RenderThread::renderSettingsPage()
@@ -354,7 +348,6 @@ void RenderThread::renderSettingsPage()
 		if (m_sys->getInputThread()->getLeftButtonPressed())
 		{
 			inSettings=false;
-			m_sys->currentflushstep = m_sys->nextflushstep; // force core rendering
 		}
 		cairo_set_source_rgb (cr, selectedbackgroundcolor, selectedbackgroundcolor, selectedbackgroundcolor);
 	}
@@ -867,25 +860,28 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 
 void RenderThread::addUploadJob(ITextureUploadable* u)
 {
-	Locker l(mutexUploadJobs);
+	mutexUploadJobs.lock();
 	if(m_sys->isShuttingDown() || status!=STARTED)
 	{
 		u->uploadFence();
+		mutexUploadJobs.unlock();
 		return;
 	}
 	uploadJobs.push_back(u);
 	uploadNeeded=true;
+	mutexUploadJobs.unlock();
 	event.signal();
 }
 
 ITextureUploadable* RenderThread::getUploadJob()
 {
-	Locker l(mutexUploadJobs);
+	mutexUploadJobs.lock();
 	assert(!uploadJobs.empty());
 	ITextureUploadable* ret=uploadJobs.front();
 	uploadJobs.pop_front();
 	if(uploadJobs.empty())
 		uploadNeeded=false;
+	mutexUploadJobs.unlock();
 	return ret;
 }
 
@@ -893,8 +889,6 @@ void RenderThread::draw(bool force)
 {
 	if(renderNeeded && !force) //A rendering is already queued
 		return;
-	if (force)
-		m_sys->currentflushstep = m_sys->nextflushstep;
 	renderNeeded=true;
 	event.signal();
 

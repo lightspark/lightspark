@@ -46,6 +46,7 @@ friend class Transform;
 friend class ParseThread;
 friend class Loader;
 friend class TextField;
+friend class Shape;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, // point is over the object
@@ -91,6 +92,8 @@ private:
 	void setMatrix(_NR<Matrix> m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
+	bool needsTextureRecalculation;
+	bool textureRecalculationSkippable;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
 	std::map<uint32_t,asAtom> avm1variables;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
@@ -145,12 +148,15 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	_NR<ColorTransform> colorTransform;
+	void setNeedsTextureRecalculation(bool skippable=false);
+	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
+	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
+	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
+	
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
-	bool needsTextureRecalculation;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
-	ATOMIC_INT32(flushstep);
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */

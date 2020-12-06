@@ -85,7 +85,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->hasChanged = false;
 	th->owner->tokens.clear();
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->needsTextureRecalculation=true;
+	th->owner->owner->setNeedsTextureRecalculation();
 	th->owner->owner->requestInvalidation(sys);
 }
 
@@ -688,7 +688,7 @@ void Graphics::dorender(bool closepath)
 		}
 		owner->owner->legacy=false;
 		owner->owner->hasChanged=true;
-		owner->owner->needsTextureRecalculation=true;
+		owner->owner->setNeedsTextureRecalculation();
 		owner->owner->requestInvalidation(getSystemState());
 		hasChanged = false;
 	}

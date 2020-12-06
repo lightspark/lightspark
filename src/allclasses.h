@@ -363,6 +363,7 @@ REGISTER_CLASS_NAME(TextFormat,"flash.text")
 REGISTER_CLASS_NAME(TextFormatAlign,"flash.text")
 REGISTER_CLASS_NAME(TextInteractionMode,"flash.text")
 REGISTER_CLASS_NAME(TextLineMetrics,"flash.text")
+REGISTER_CLASS_NAME(TextRenderer,"flash.text")
 REGISTER_CLASS_NAME(StaticText,"flash.text")
 REGISTER_CLASS_NAME(StyleSheet,"flash.text")
 

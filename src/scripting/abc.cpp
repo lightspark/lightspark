@@ -178,6 +178,7 @@
 #include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/text/textrenderer.h"
 #include "scripting/flash/ui/Keyboard.h"
 #include "scripting/flash/ui/Mouse.h"
 #include "scripting/flash/ui/Multitouch.h"
@@ -589,6 +590,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef(m_sys));
 	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef(m_sys));
 	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef(m_sys));
+	builtin->registerBuiltin("TextRenderer","flash.text",Class<StaticText>::getRef(m_sys));
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef(m_sys));
 
 	builtin->registerBuiltin("BreakOpportunity","flash.text.engine",Class<BreakOpportunity>::getRef(m_sys));

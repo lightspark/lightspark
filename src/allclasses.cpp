@@ -125,6 +125,7 @@
 #include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/text/textrenderer.h"
 #include "scripting/flash/ui/Keyboard.h"
 #include "scripting/flash/ui/Mouse.h"
 #include "scripting/flash/ui/Multitouch.h"

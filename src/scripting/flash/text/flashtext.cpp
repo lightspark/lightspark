@@ -462,7 +462,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getTextFormat)
 
 	format->color= asAtomHandler::fromUInt(th->textColor.toUInt());
 	format->font = th->font;
-	format->size = th->fontSize;
+	format->size = asAtomHandler::fromUInt(th->fontSize);
 
 	LOG(LOG_NOT_IMPLEMENTED, "getTextFormat is not fully implemeted");
 
@@ -480,7 +480,11 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 
 	if(beginIndex!=-1 || endIndex!=-1)
 		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with beginIndex or endIndex");
-
+	if (tf.isNull())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with textformat null");
+		return;
+	}
 	if(!asAtomHandler::isNull(tf->color))
 		th->textColor = asAtomHandler::toUInt(tf->color);
 	bool updatesizes = false;
@@ -491,13 +495,16 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 		th->font = tf->font;
 		th->fontID = UINT32_MAX;
 	}
-	if (th->fontSize != (uint32_t)tf->size)
+	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size))
 	{
-		th->fontSize = tf->size;
+		th->fontSize = asAtomHandler::toUInt(tf->size);
 		updatesizes = true;
 	}
 	if (updatesizes)
+	{
 		th->updateSizes();
+		th->setSizeAndPositionFromAutoSize();
+	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");
 }
@@ -526,7 +533,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 		th->font = tf->font;
 		th->fontID = UINT32_MAX;
 	}
-	th->fontSize = tf->size;
+	if (!asAtomHandler::isNull(tf->size))
+		th->fontSize = asAtomHandler::toUInt(tf->size);
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
 }
 
@@ -1576,7 +1584,7 @@ bool TextFormat::destruct()
 	url="";
 	target="";
 	font="";
-	size=12;
+	size=asAtomHandler::nullAtom;
 	return destructIntern();
 }
 
@@ -1584,7 +1592,7 @@ ASFUNCTIONBODY_ATOM(TextFormat,_constructor)
 {
 	TextFormat* th=asAtomHandler::as<TextFormat>(obj);
 	ARG_UNPACK_ATOM (th->font, "")
-		(th->size, 12)
+		(th->size,asAtomHandler::nullAtom)
 		(th->color,asAtomHandler::nullAtom)
 		(th->bold,asAtomHandler::nullAtom)
 		(th->italic,asAtomHandler::nullAtom)

@@ -2439,7 +2439,19 @@ void RootMovieClip::registerEmbeddedFont(const tiny_string fontname, FontTag *ta
 	{
 		auto it = embeddedfonts.find(fontname);
 		if (it == embeddedfonts.end())
+		{
 			embeddedfonts[fontname] = tag;
+			// it seems that adobe allows fontnames to be lowercased and stripped of spaces and numbers
+			tiny_string tmp = fontname.lowercase();
+			tiny_string fontnamenormalized;
+			for (auto it = tmp.begin();it != tmp.end(); it++)
+			{
+				if (*it == ' ' || (*it >= '0' &&  *it <= '9'))
+					continue;
+				fontnamenormalized += *it;
+			}
+			embeddedfonts[fontnamenormalized] = tag;
+		}
 	}
 	embeddedfontsByID[tag->getId()] = tag;
 }
@@ -2449,14 +2461,17 @@ FontTag *RootMovieClip::getEmbeddedFont(const tiny_string fontname) const
 	auto it = embeddedfonts.find(fontname);
 	if (it != embeddedfonts.end())
 		return it->second;
-	return NULL;
+	it = embeddedfonts.find(fontname.lowercase());
+	if (it != embeddedfonts.end())
+		return it->second;
+	return nullptr;
 }
 FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 {
 	auto it = embeddedfontsByID.find(fontID);
 	if (it != embeddedfontsByID.end())
 		return it->second;
-	return NULL;
+	return nullptr;
 }
 
 void RootMovieClip::setupAVM1RootMovie()

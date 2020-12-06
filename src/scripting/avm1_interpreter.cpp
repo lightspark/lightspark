@@ -1549,7 +1549,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else if (asAtomHandler::is<Class_base>(scriptobject))
 					{
 						Class_base* cls = asAtomHandler::as<Class_base>(scriptobject);
-						cls->handleConstruction(scopestack[0],args,numargs,true);
+						if (!asAtomHandler::getObjectNoCheck(scopestack[0])->isConstructed())
+							cls->handleConstruction(scopestack[0],args,numargs,true);
 						LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod from class done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 					}
 					else if (asAtomHandler::isObject(scriptobject))
@@ -1573,7 +1574,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							else if (asAtomHandler::is<Class_base>(constr))
 							{
 								Class_base* cls = asAtomHandler::as<Class_base>(constr);
-								cls->handleConstruction(scopestack[0],args,numargs,true);
+								if (!asAtomHandler::getObjectNoCheck(scopestack[0])->isConstructed())
+									cls->handleConstruction(scopestack[0],args,numargs,true);
 								LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod constructor from class done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 							}
 						}

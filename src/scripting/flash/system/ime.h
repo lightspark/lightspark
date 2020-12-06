@@ -31,7 +31,6 @@ public:
 	IME(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 
-	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(compositionAbandoned);
 	ASFUNCTION_ATOM(compositionSelectionChanged);
 	ASFUNCTION_ATOM(doConversion);

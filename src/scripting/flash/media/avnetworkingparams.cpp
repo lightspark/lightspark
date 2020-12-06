@@ -28,7 +28,7 @@ void AVNetworkingParams::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
 
-    REGISTER_GETTER_SETTER(c,appendRandomQueryParameter);
+	REGISTER_GETTER_SETTER(c,appendRandomQueryParameter);
 	REGISTER_GETTER_SETTER(c,forceNativeNetworking);
 	REGISTER_GETTER_SETTER(c,networkDownVerificationUrl);
 	REGISTER_GETTER_SETTER(c,readSetCookieHeader);

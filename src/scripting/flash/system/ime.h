@@ -31,17 +31,17 @@ public:
 	IME(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 
-    ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(compositionAbandoned);
 	ASFUNCTION_ATOM(compositionSelectionChanged);
 	ASFUNCTION_ATOM(doConversion);
-    ASFUNCTION_ATOM(setCompositionString);
+	ASFUNCTION_ATOM(setCompositionString);
 
-    ASFUNCTION_ATOM(_getConversionMode);
+	ASFUNCTION_ATOM(_getConversionMode);
 	ASFUNCTION_ATOM(_setConversionMode);
-    ASFUNCTION_ATOM(_getEnabled);
+	ASFUNCTION_ATOM(_getEnabled);
 	ASFUNCTION_ATOM(_setEnabled);
-    ASFUNCTION_ATOM(_getIsSupported);
+	ASFUNCTION_ATOM(_getIsSupported);
 	ASFUNCTION_ATOM(_setIsSupported);
 };
 

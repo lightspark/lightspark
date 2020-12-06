@@ -30,12 +30,12 @@ class AVNetworkingParams: public ASObject
 public:
 	AVNetworkingParams(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-    ASFUNCTION_ATOM(_constructor);
-    ASPROPERTY_GETTER_SETTER(tiny_string,appendRandomQueryParameter);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(tiny_string,appendRandomQueryParameter);
 	ASPROPERTY_GETTER_SETTER(bool,forceNativeNetworking);
 	ASPROPERTY_GETTER_SETTER(tiny_string,networkDownVerificationUrl);
 	ASPROPERTY_GETTER_SETTER(bool,readSetCookieHeader);
-    ASPROPERTY_GETTER_SETTER(bool,useCookieHeaderForAllRequests);
+	ASPROPERTY_GETTER_SETTER(bool,useCookieHeaderForAllRequests);
 };
 
 }

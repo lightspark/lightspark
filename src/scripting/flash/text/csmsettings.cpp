@@ -28,14 +28,14 @@ void CSMSettings::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
 
-    REGISTER_GETTER_SETTER(c,fontSize);
+	REGISTER_GETTER_SETTER(c,fontSize);
 	REGISTER_GETTER_SETTER(c,insideCutoff);
 	REGISTER_GETTER_SETTER(c,outsideCutoff);
 }
 
 ASFUNCTIONBODY_ATOM(CSMSettings,_constructor)
 {
-    CSMSettings* th =asAtomHandler::as<CSMSettings>(obj);
+	CSMSettings* th =asAtomHandler::as<CSMSettings>(obj);
 	ARG_UNPACK_ATOM(th->fontSize)(th->insideCutoff)(th->outsideCutoff);
 }
 

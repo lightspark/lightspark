@@ -30,8 +30,8 @@ class CSMSettings: public ASObject
 public:
 	CSMSettings(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
-    ASFUNCTION_ATOM(_constructor);
-    ASPROPERTY_GETTER_SETTER(number_t,fontSize);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t,fontSize);
 	ASPROPERTY_GETTER_SETTER(number_t ,insideCutoff);
 	ASPROPERTY_GETTER_SETTER(number_t,outsideCutoff);
 };

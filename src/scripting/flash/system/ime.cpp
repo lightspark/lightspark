@@ -28,23 +28,19 @@ void IME::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
 
-    
-    c->setDeclaredMethodByQName("conversionMode","",Class<IFunction>::getFunction(c->getSystemState(),_getConversionMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("conversionMode","",Class<IFunction>::getFunction(c->getSystemState(),_getConversionMode),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("conversionMode","",Class<IFunction>::getFunction(c->getSystemState(),_setConversionMode),SETTER_METHOD,false);
 
-	
-    c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_getEnabled),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_getEnabled),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_setEnabled),SETTER_METHOD,false);
 
-	
-    c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getIsSupported),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getIsSupported),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_setIsSupported),SETTER_METHOD,false);
 
-
-    c->setDeclaredMethodByQName("compositionAbandoned","",Class<IFunction>::getFunction(c->getSystemState(),compositionAbandoned),NORMAL_METHOD,true);
-    c->setDeclaredMethodByQName("compositionSelectionChanged","",Class<IFunction>::getFunction(c->getSystemState(),compositionSelectionChanged),NORMAL_METHOD,true);
-    c->setDeclaredMethodByQName("doConversion","",Class<IFunction>::getFunction(c->getSystemState(),doConversion),NORMAL_METHOD,true);
-    c->setDeclaredMethodByQName("setCompositionString","",Class<IFunction>::getFunction(c->getSystemState(),setCompositionString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compositionAbandoned","",Class<IFunction>::getFunction(c->getSystemState(),compositionAbandoned),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compositionSelectionChanged","",Class<IFunction>::getFunction(c->getSystemState(),compositionSelectionChanged),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("doConversion","",Class<IFunction>::getFunction(c->getSystemState(),doConversion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setCompositionString","",Class<IFunction>::getFunction(c->getSystemState(),setCompositionString),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(IME,_constructor)
@@ -54,50 +50,50 @@ ASFUNCTIONBODY_ATOM(IME,_constructor)
 
 ASFUNCTIONBODY_ATOM(IME,compositionAbandoned)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,compositionSelectionChanged)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,doConversion)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,setCompositionString)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,_getConversionMode)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 ASFUNCTIONBODY_ATOM(IME,_setConversionMode)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,_getEnabled)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
-    asAtomHandler::setBool(ret,false);
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(IME,_setEnabled)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(IME,_getIsSupported)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
-    asAtomHandler::setBool(ret,false);
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	asAtomHandler::setBool(ret,false);
 }
 
 ASFUNCTIONBODY_ATOM(IME,_setIsSupported)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"IME.compositionAbandoned is not implemented");
 }

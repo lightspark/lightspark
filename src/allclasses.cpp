@@ -80,6 +80,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"
+#include "scripting/flash/system/systemupdater.h"
 #include "scripting/flash/system/systemupdatertype.h"
 #include "scripting/flash/system/touchscreentype.h"
 #include "scripting/flash/system/ime.h"

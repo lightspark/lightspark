@@ -28,11 +28,21 @@ void TextRenderer::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 
+	c->setDeclaredMethodByQName("setAdvancedAntiAliasingTable","",Class<IFunction>::getFunction(c->getSystemState(),_setAdvancedAntiAliasingTable),GETTER_METHOD,false);
+
     c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayMode),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayMode),SETTER_METHOD,false);
 
     c->setDeclaredMethodByQName("maxLevel","",Class<IFunction>::getFunction(c->getSystemState(),_getMaxLevel),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("maxLevel","",Class<IFunction>::getFunction(c->getSystemState(),_setMaxLevel),SETTER_METHOD,false);
+}
+
+ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.setAdvancedAntiAliasingTable is a stub");
+	tiny_string fontName, colorType;
+	_NR<Array> advancedAntiAliasingTable;
+	ARG_UNPACK_ATOM(fontName)(colorType)(advancedAntiAliasingTable);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_getDisplayMode)
@@ -53,7 +63,7 @@ ASFUNCTIONBODY_ATOM(TextRenderer,_getMaxLevel)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode does not change quality level of anti-aliasing");
     TextRenderer* th = asAtomHandler::as<TextRenderer>(obj);
-    //ret = asAtomHandler::fromInt(sys,th->maxLevel);
+    ret = asAtomHandler::fromUInt(th->maxLevel);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setMaxLevel)

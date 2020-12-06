@@ -152,6 +152,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/system/flashsystem.cpp
   scripting/flash/system/messagechannelstate.cpp
   scripting/flash/system/securitypanel.cpp
+  scripting/flash/system/systemupdater.cpp
   scripting/flash/system/systemupdatertype.cpp
   scripting/flash/system/touchscreentype.cpp
   scripting/flash/system/ime.cpp

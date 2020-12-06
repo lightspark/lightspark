@@ -37,6 +37,7 @@ public:
 	ASFUNCTION_ATOM(_setDisplayMode);
     ASFUNCTION_ATOM(_getMaxLevel);
 	ASFUNCTION_ATOM(_setMaxLevel);
+	ASFUNCTION_ATOM(_setAdvancedAntiAliasingTable);
 };
 
 }

@@ -245,6 +245,7 @@ REGISTER_CLASS_NAME(NationalDigitsType,"flash.globalization")
 
 //Media
 REGISTER_CLASS_NAME(AudioOutputChangeReason,"flash.media")
+REGISTER_CLASS_NAME(AVNetworkingParams,"flash.media")
 REGISTER_CLASS_NAME(H264Level,"flash.media")
 REGISTER_CLASS_NAME(H264Profile,"flash.media")
 REGISTER_CLASS_NAME(MicrophoneEnhancedMode,"flash.media")
@@ -343,11 +344,13 @@ REGISTER_CLASS_NAME(WorkerState,"flash.system")
 REGISTER_CLASS_NAME(ImageDecodingPolicy,"flash.system")
 REGISTER_CLASS_NAME(IMEConversionMode,"flash.system")
 REGISTER_CLASS_NAME(TouchscreenType,"flash.system")
+REGISTER_CLASS_NAME(IME,"flash.system")
 REGISTER_CLASS_NAME(JPEGLoaderContext,"flash.system")
 
 //Text
 REGISTER_CLASS_NAME2(ASFont,"Font","flash.text")
 REGISTER_CLASS_NAME(AntiAliasType,"flash.text")
+REGISTER_CLASS_NAME(CSMSettings,"flash.text")
 REGISTER_CLASS_NAME(FontStyle,"flash.text")
 REGISTER_CLASS_NAME(FontType,"flash.text")
 REGISTER_CLASS_NAME(GridFitType,"flash.text")

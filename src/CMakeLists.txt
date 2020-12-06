@@ -123,6 +123,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/flashmedia.cpp
   scripting/flash/media/audiodecoder.cpp
   scripting/flash/media/audiooutputchangereason.cpp
+  scripting/flash/media/avnetworkingparams.cpp
   scripting/flash/media/avtagdata.cpp
   scripting/flash/media/h264level.cpp
   scripting/flash/media/h264profile.cpp
@@ -153,7 +154,9 @@ SET(LIBSPARK_SOURCES
   scripting/flash/system/securitypanel.cpp
   scripting/flash/system/systemupdatertype.cpp
   scripting/flash/system/touchscreentype.cpp
+  scripting/flash/system/ime.cpp
   scripting/flash/system/jpegloadercontext.cpp
+  scripting/flash/text/csmsettings.cpp
   scripting/flash/text/flashtext.cpp
   scripting/flash/text/flashtextengine.cpp
   scripting/flash/utils/flashutils.cpp

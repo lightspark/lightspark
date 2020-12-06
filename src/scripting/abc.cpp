@@ -153,6 +153,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/media/audiodecoder.h"
 #include "scripting/flash/media/audiooutputchangereason.h"
+#include "scripting/flash/media/avnetworkingparams.h"
 #include "scripting/flash/media/h264level.h"
 #include "scripting/flash/media/h264profile.h"
 #include "scripting/flash/media/microphoneenhancedmode.h"
@@ -170,9 +171,11 @@
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdatertype.h"
 #include "scripting/flash/system/touchscreentype.h"
+#include "scripting/flash/system/ime.h"
 #include "scripting/flash/system/jpegloadercontext.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/ui/Keyboard.h"
@@ -571,6 +574,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("ShaderFilter","flash.filters",Class<ShaderFilter>::getRef(m_sys));
 
 	builtin->registerBuiltin("AntiAliasType","flash.text",Class<AntiAliasType>::getRef(m_sys));
+	builtin->registerBuiltin("CSMSettings","flash.text",Class<CSMSettings>::getRef(m_sys));
 	builtin->registerBuiltin("Font","flash.text",Class<ASFont>::getRef(m_sys));
 	builtin->registerBuiltin("FontStyle","flash.text",Class<FontStyle>::getRef(m_sys));
 	builtin->registerBuiltin("FontType","flash.text",Class<FontType>::getRef(m_sys));
@@ -763,10 +767,12 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("SecurityPanel","flash.system",Class<SecurityPanel>::getRef(m_sys));
 	builtin->registerBuiltin("SystemUpdaterType","flash.system",Class<SystemUpdaterType>::getRef(m_sys));
 	builtin->registerBuiltin("TouchscreenType","flash.system",Class<TouchscreenType>::getRef(m_sys));
+	builtin->registerBuiltin("IME","flash.system",Class<IME>::getRef(m_sys));
 	builtin->registerBuiltin("JPEGLoaderContext","flash.system",Class<JPEGLoaderContext>::getRef(m_sys));
 
 	builtin->registerBuiltin("AudioDecoder","flash.media",Class<MediaAudioDecoder>::getRef(m_sys));
 	builtin->registerBuiltin("AudioOutputChangeReason","flash.media",Class<AudioOutputChangeReason>::getRef(m_sys));
+    builtin->registerBuiltin("AVNetworkingParams","flash.media",Class<AVNetworkingParams>::getRef(m_sys));
 	builtin->registerBuiltin("H264Level","flash.media",Class<H264Level>::getRef(m_sys));
 	builtin->registerBuiltin("H264Profile","flash.media",Class<H264Profile>::getRef(m_sys));
 	builtin->registerBuiltin("MicrophoneEnhancedMode","flash.media",Class<MicrophoneEnhancedMode>::getRef(m_sys));

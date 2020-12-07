@@ -1191,12 +1191,13 @@ void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bo
 		if (!hastargets)
 		{
 			// skip unreachable code
-			pos = p+j; 
+			pos = p+j;
 			auto it = state.jumptargets.find(p+j+1);
 			if (it != state.jumptargets.end() && it->second > 1)
 				state.jumptargets[p+j+1]--;
 			else
 				state.jumptargets.erase(p+j+1);
+			state.oldnewpositions[p+j] = (int32_t)state.preloadedcode.size();
 			b = code.peekbyteFromPosition(pos);
 			if (jumpInCode)
 			{
@@ -1792,6 +1793,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x73://convert_i
 		case 0x74://convert_u
 		case 0x75://convert_d
+		case 0x76://convert_b
 		case 0xc0://increment_i
 		case 0xc1://decrement_i
 		case 0x35://li8
@@ -3909,7 +3911,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					// skip complete jump
 					for (int32_t i = 0; i < j; i++)
 						code.readbyte();
-					state.jumptargets.erase(code.tellg()+1);
+					auto it = state.jumptargets.find(p+j+1);
+					if (it != state.jumptargets.end() && it->second > 1)
+						state.jumptargets[p+j+1]--;
+					else
+						state.jumptargets.erase(p+j+1);
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					opcode_skipped=true;
 				}

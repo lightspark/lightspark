@@ -734,10 +734,11 @@ bool ByteArray::readU29(uint32_t& ret)
 		}
 		else
 		{
+			ret <<=1;
 			ret |= tmp;
-			//Sign extend
-			if(tmp&0x80)
-				ret|=0xe0000000;
+//			//Sign extend
+//			if(tmp&0x80)
+//				ret|=0xe0000000;
 		}
 	}
 	return true;

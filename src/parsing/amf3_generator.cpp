@@ -573,8 +573,10 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case amf0_xml_document_marker:
 				return parseXML(objMap, false);
 			case amf0_typed_object_marker:
-				LOG(LOG_ERROR,"unimplemented marker " << (uint32_t)marker);
-				throw UnsupportedException("unimplemented marker");
+			{
+				tiny_string class_name = parseStringAMF0();
+				return parseObjectAMF0(stringMap,objMap,traitsMap,class_name);
+			}
 			case amf0_avmplus_object_marker:
 				input->setCurrentObjectEncoding(ObjectEncoding::AMF3);
 				return parseValue(stringMap, objMap, traitsMap);
@@ -608,7 +610,7 @@ asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 	if(!input->readUnsignedInt(count))
 		throw ParseException("Not enough data to parse AMF3 array");
 
-	asAtom ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret=asAtomHandler::fromObject(Class<Array>::getInstanceS(input->getSystemState()));
 
 	//Read name, value pairs
 	while(true)
@@ -652,9 +654,20 @@ asAtom Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMa
 
 asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const
+			std::vector<TraitsRef>& traitsMap, const tiny_string &clsname) const
 {
-	asAtom ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
+	asAtom ret = asAtomHandler::invalidAtom;
+	if (clsname == "")
+		ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
+	else
+	{
+		asAtom tmp = asAtomHandler::invalidAtom;
+		asAtom cls = asAtomHandler::invalidAtom;
+		asAtom args = asAtomHandler::fromString(input->getSystemState(),clsname);
+		getDefinitionByName(cls,input->getSystemState(),tmp,&args,1);
+		assert_and_throw(asAtomHandler::isValid(cls));
+		asAtomHandler::getObjectNoCheck(cls)->as<Class_base>()->getInstance(ret,true,nullptr,0);
+	}
 
 	while (true)
 	{
@@ -670,7 +683,15 @@ asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
 		ASATOM_INCREF(value);
 
-		asAtomHandler::getObject(ret)->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
+		if (clsname == "")
+			asAtomHandler::getObjectNoCheck(ret)->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
+		else
+		{
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_STRING;
+			m.name_s_id = input->getSystemState()->getUniqueStringId(varName);
+			asAtomHandler::getObjectNoCheck(ret)->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+		}
 	}
 	return ret;
 }

@@ -1598,7 +1598,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		DisplayObject *toAdd = nullptr;
 		if(PlaceFlagHasName)
 		{
-			// check if an obect with this name was already created and removed earlier
+			// check if an object with this name was already created and removed earlier
 			nameID = NameID;
 			toAdd = parent->findRemovedLegacyChild(nameID);
 			if (toAdd && toAdd->getTagID() != CharacterId)
@@ -1676,7 +1676,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
-	if (!inskipping && exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
 		currchar->name = nameID;
 		currchar->incRef();

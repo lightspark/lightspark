@@ -4838,6 +4838,8 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
  * This is called in vm's thread context */
 void MovieClip::declareFrame()
 {
+	if (state.frameadvanced)
+		return;
 	/* Go through the list of frames.
 	 * If our next_FP is after our current,
 	 * we construct all frames from current

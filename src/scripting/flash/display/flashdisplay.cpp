@@ -1474,6 +1474,8 @@ void MovieClip::checkFrameScriptToExecute()
 	{
 		frameScriptToExecute=state.FP;
 	}
+	if (state.FP == 0)
+		currentframeIterator= frames.begin();
 }
 
 /* Return global frame index for frame i (zero-based) in a scene

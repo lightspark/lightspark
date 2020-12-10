@@ -2426,7 +2426,17 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 	mapLegacyChildToDepth.insert(make_pair(obj,depth));
 	obj->afterLegacyInsert();
 }
-
+DisplayObject *DisplayObjectContainer::findLegacyChildByTagID(uint32_t tagid)
+{
+	auto it = mapLegacyChildToDepth.begin();
+	while (it != mapLegacyChildToDepth.end())
+	{
+		if (it->first->getTagID() == tagid)
+			return it->first;
+		it++;
+	}
+	return nullptr;
+}
 int DisplayObjectContainer::findLegacyChildDepth(DisplayObject *obj)
 {
 	auto it = mapLegacyChildToDepth.find(obj);

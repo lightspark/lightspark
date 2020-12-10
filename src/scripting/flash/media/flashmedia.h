@@ -36,6 +36,7 @@ class AudioDecoder;
 class NetStream;
 class StreamCache;
 class SoundChannel;
+class DefineVideoStreamTag;
 
 class Sound: public EventDispatcher, public ILoadable
 {
@@ -133,12 +134,17 @@ private:
 	_NR<NetStream> netStream;
 	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
+	VideoDecoder* embeddedVideoDecoder;
+	DefineVideoStreamTag* videotag;
+	uint32_t embeddedframesbuffered;
 public:
-	Video(Class_base* c, uint32_t w=320, uint32_t h=240);
-	void finalize() override;
+	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
+	bool destruct() override;
+	void setVideoFrame(uint32_t FrameNum,uint8_t* framedata,uint32_t numbytes);
+	void checkRatio(uint32_t ratio) override;
+	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getVideoWidth);
 	ASFUNCTION_ATOM(_getVideoHeight);

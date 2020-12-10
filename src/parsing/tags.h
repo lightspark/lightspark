@@ -704,7 +704,7 @@ public:
 	std::vector<u32> FrameNum;
 	std::vector<STRING> FrameLabel;
 	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
-	void execute(RootMovieClip* root) const;
+	void execute(RootMovieClip* root) const override;
 };
 
 class DefineFontNameTag: public Tag
@@ -721,6 +721,7 @@ public:
 
 class DefineVideoStreamTag: public DictionaryTag
 {
+friend class Video;
 private:
 	UI16_SWF CharacterID;
 	UI16_SWF NumFrames;
@@ -729,13 +730,23 @@ private:
 	UB VideoFlagsReserved;
 	UB VideoFlagsDeblocking;
 	UB VideoFlagsSmoothing;
-	UI8 CodecID;
+	UI8 VideoCodecID;
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	int getId() const{ return CharacterID; }
-	ASObject* instance(Class_base* c=NULL);
+	int getId() const override { return CharacterID; }
+	ASObject* instance(Class_base* c=nullptr) override;
 };
-
+class VideoFrameTag: public DisplayListTag
+{
+private:
+	UI16_SWF StreamID;
+	UI16_SWF FrameNum;
+	uint8_t* framedata;
+	uint32_t numbytes;
+public:
+	VideoFrameTag(RECORDHEADER h, std::istream& in);
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+};
 class MetadataTag: public Tag
 {
 private:

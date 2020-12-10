@@ -31,7 +31,7 @@ class AVM1Video: public Video
 {
 public:
 	AVM1Video(Class_base* c):Video(c){}
-	AVM1Video(Class_base* c, uint32_t w, uint32_t h):Video(c,w,h) {}
+	AVM1Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag* v):Video(c,w,h,v) {}
 	static void sinit(Class_base* c);
 };
 

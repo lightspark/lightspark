@@ -224,6 +224,9 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 			case 60:
 				ret=new DefineVideoStreamTag(h,f,root);
 				break;
+			case 61:
+				ret=new VideoFrameTag(h,f);
+				break;
 			case 63:
 				ret=new DebugIDTag(h,f);
 				break;
@@ -2111,7 +2114,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, Roo
 	UB(4,bs);
 	VideoFlagsDeblocking=UB(3,bs);
 	VideoFlagsSmoothing=UB(1,bs);
-	in >> CodecID;
+	in >> VideoCodecID;;
 }
 
 ASObject* DefineVideoStreamTag::instance(Class_base* c)
@@ -2127,9 +2130,9 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c)
 		classRet=Class<Video>::getClass(loadedFrom->getSystemState());
 
 	if (!loadedFrom->usesActionScript3)
-		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height);
+		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height,this);
 	else
-		return new (classRet->memoryAccount) Video(classRet, Width, Height);
+		return new (classRet->memoryAccount) Video(classRet, Width, Height,this);
 }
 
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovieClip* root):DictionaryTag(h,root)
@@ -2709,5 +2712,29 @@ AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
 	{
 		bytes = new uint8_t[numbytes];
 		in.read((char*)bytes,numbytes);
+	}
+}
+VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
+{
+	in >> StreamID >> FrameNum;
+	numbytes = h.getLength()-4;
+	if (numbytes)
+	{
+		framedata = new uint8_t[numbytes];
+		in.read((char*)framedata,numbytes);
+	}
+}
+
+void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
+{
+	if (inskipping)
+		return;
+	DisplayObject* d = parent->findLegacyChildByTagID(StreamID);
+	if (d && d->is<Video>())
+		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes);
+	else
+	{
+		LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
+		parent->dumpDisplayList();
 	}
 }

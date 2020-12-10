@@ -44,6 +44,7 @@ extern "C"
 #define CODEC_ID_H264 AV_CODEC_ID_H264
 #define CODEC_ID_FLV1 AV_CODEC_ID_FLV1
 #define CODEC_ID_VP6F AV_CODEC_ID_VP6F
+#define CODEC_ID_VP6A AV_CODEC_ID_VP6A
 #define CODEC_ID_AAC AV_CODEC_ID_AAC
 #define CODEC_ID_MP3 AV_CODEC_ID_MP3
 #define CODEC_ID_PCM_S16LE AV_CODEC_ID_PCM_S16LE
@@ -62,7 +63,7 @@ extern "C"
 namespace lightspark
 {
 
-enum LS_VIDEO_CODEC { H264=0, H263, VP6 };
+enum LS_VIDEO_CODEC { H264=0, H263, VP6, VP6A };
 // "Audio coding formats" from Chapter 11 in SWF documentation (except for LINEAR_PCM_FLOAT_BE)
 enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10, LINEAR_PCM_FLOAT_BE = 100 };
 
@@ -105,7 +106,7 @@ public:
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
-	virtual void skipUntil(uint32_t time)=0;
+	virtual uint32_t skipUntil(uint32_t time)=0;
 	virtual void skipAll()=0;
 	uint32_t getWidth()
 	{
@@ -146,22 +147,23 @@ class NullVideoDecoder: public VideoDecoder
 public:
 	NullVideoDecoder() {status=VALID;}
 	~NullVideoDecoder() { while(fenceCount); }
-	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint){}
-	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
-	bool discardFrame(){return false;}
-	void skipUntil(uint32_t time){}
-	void skipAll(){}
-	void setFlushing()
+	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint) override {}
+	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time) override {return false;}
+	bool discardFrame() override {return false;}
+	uint32_t skipUntil(uint32_t time) override { return 0;}
+	void skipAll() override {}
+	void setFlushing() override
 	{
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const override
 	{
 	}
 };
 
 #ifdef ENABLE_LIBAVCODEC
+#define FFMPEGVIDEODECODERBUFFERSIZE 80
 class FFMpegVideoDecoder: public VideoDecoder
 {
 private:
@@ -172,7 +174,7 @@ private:
 	public:
 		uint8_t* ch[3];
 		uint32_t time;
-		YUVBuffer():time(0){ch[0]=NULL;ch[1]=NULL;ch[2]=NULL;}
+		YUVBuffer():time(0){ch[0]=nullptr;ch[1]=nullptr;ch[2]=nullptr;}
 		~YUVBuffer()
 		{
 			if(ch[0])
@@ -194,7 +196,7 @@ private:
 	bool ownedContext;
 	uint32_t curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,80> buffers;
+	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> buffers;
 	Mutex mutex;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
@@ -216,12 +218,12 @@ public:
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
 	bool decodePacket(AVPacket* pkt, uint32_t time);
-	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint);
-	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
-	bool discardFrame();
-	void skipUntil(uint32_t time);
-	void skipAll();
-	void setFlushing()
+	void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint) override;
+	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time) override;
+	bool discardFrame() override;
+	uint32_t skipUntil(uint32_t time) override;
+	void skipAll() override;
+	void setFlushing() override
 	{
 		flushing=true;
 		if(buffers.isEmpty())
@@ -231,7 +233,7 @@ public:
 		}
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
 };
 #endif
 

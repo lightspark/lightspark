@@ -147,6 +147,7 @@ public:
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(int32_t depth);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
+	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
 	uint32_t getMaxLegacyChildDepth();

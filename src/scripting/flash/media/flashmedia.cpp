@@ -63,6 +63,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_constructor)
 void Video::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoWidth),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),Video::_getWidth),GETTER_METHOD,true);
@@ -78,20 +79,91 @@ void Video::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(Video, deblocking);
 ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
 
-void Video::buildTraits(ASObject* o)
+bool Video::destruct()
 {
-}
-
-void Video::finalize()
-{
-	DisplayObject::finalize();
+	if (embeddedVideoDecoder)
+	{
+		embeddedVideoDecoder->setFlushing();
+		embeddedVideoDecoder->skipAll();
+		delete embeddedVideoDecoder;
+		embeddedVideoDecoder=nullptr;
+	}
 	netStream.reset();
+	return DisplayObject::destruct();
 }
 
-Video::Video(Class_base* c, uint32_t w, uint32_t h)
+Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
-	  netStream(NullRef),deblocking(0),smoothing(false)
+	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),embeddedVideoDecoder(nullptr),videotag(v),embeddedframesbuffered(0)
 {
+	subtype=SUBTYPE_VIDEO;
+}
+
+void Video::setVideoFrame(uint32_t FrameNum, uint8_t *framedata, uint32_t numbytes)
+{
+	if (getSystemState()->isShuttingDown())
+		return;
+	Locker l(mutex);
+	if (videotag == nullptr)
+	{
+		LOG(LOG_ERROR,"setting embedded video frame without DefineVideoStreamTag, ignored");
+		return;
+	}
+#ifdef ENABLE_LIBAVCODEC
+	if (embeddedVideoDecoder==nullptr)
+	{
+		LS_VIDEO_CODEC lscodec;
+		switch (videotag->VideoCodecID)
+		{
+			case 2:
+				lscodec = LS_VIDEO_CODEC::H263;
+				break;
+			case 3:
+				LOG(LOG_ERROR,"video codec SCREEN not implemented for embedded video");
+				return;
+			case 4:
+				lscodec = LS_VIDEO_CODEC::VP6;
+				break;
+			case 5:
+				lscodec = LS_VIDEO_CODEC::VP6A;
+				break;
+			default:
+				LOG(LOG_ERROR,"invalid video codec id for embedded video:"<<videotag->VideoCodecID);
+				return;
+		}
+		embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,getSystemState()->mainClip->getFrameRate());
+	}
+	if (embeddedframesbuffered == FFMPEGVIDEODECODERBUFFERSIZE)
+	{
+		embeddedVideoDecoder->discardFrame();
+		embeddedframesbuffered--;
+	}
+	if (embeddedVideoDecoder->decodeData(framedata,numbytes, FrameNum+1))
+		embeddedframesbuffered++;
+#endif
+}
+
+void Video::checkRatio(uint32_t ratio)
+{
+	Locker l(mutex);
+	if (embeddedVideoDecoder==nullptr)
+		return;
+	uint32_t skipped = embeddedVideoDecoder->skipUntil(ratio);
+	if (embeddedframesbuffered > skipped)
+		embeddedframesbuffered-=skipped;
+	else
+		embeddedframesbuffered=0;
+	embeddedVideoDecoder->waitForFencing();
+	getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
+	this->setNeedsTextureRecalculation(true);
+	this->hasChanged=true;
+	if (videotag->NumFrames == ratio+1)
+		embeddedVideoDecoder->setFlushing();
+}
+
+uint32_t Video::getTagID() const
+{
+	return videotag ? uint32_t(videotag->CharacterID) : UINT32_MAX;
 }
 
 Video::~Video()
@@ -112,28 +184,46 @@ bool Video::renderImpl(RenderContext& ctxt) const
 		return false;
 	}
 
+	bool valid=false;
 	if(!netStream.isNull() && netStream->lockIfReady())
 	{
-		//All operations here should be non blocking
 		//Get size
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
-
+		valid=true;
+	}
+	if (embeddedVideoDecoder)
+	{
+		videoWidth=videotag->Width;
+		videoHeight=videotag->Height;
+		valid=true;
+	}
+	if (valid)
+	{
+		//All operations here should be non blocking
 		ctxt.setProperties(this->getBlendMode());
 		const MATRIX totalMatrix=getConcatenatedMatrix();
 		float m[16];
 		totalMatrix.get4DMatrix(m);
 		ctxt.lsglLoadMatrixf(m);
+	
+		float scalex;
+		float scaley;
+		int offx,offy;
+		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
-		ctxt.renderTextured(netStream->getTexture(), 0, 0, width, height,
-			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),0,0,width,height,totalMatrix.getScaleX(),totalMatrix.getScaleY(),
+		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
+			0, 0, width*scalex, height*scaley,
+			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),
+			totalMatrix.getTranslateX()*scalex,totalMatrix.getTranslateY()*scaley,width*scalex,height*scaley,
+			1.0f,1.0f,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,
 			false,false);
-		
-		netStream->unlock();
+		if (!embeddedVideoDecoder)
+			netStream->unlock();
 		return false;
 	}
 	return true;

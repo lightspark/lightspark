@@ -1482,6 +1482,7 @@ public:
 	bool explicit_FP;
 	bool creatingframe;
 	bool frameadvanced;
+	bool avm1ScriptExecutedAfterStop;
 	RunState();
 	inline void reset()
 	{
@@ -1492,6 +1493,7 @@ public:
 		explicit_FP = false;
 		creatingframe = false;
 		frameadvanced = false;
+		avm1ScriptExecutedAfterStop=false;
 	}
 };
 class Activation_object;

@@ -469,13 +469,32 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						m.name_s_id=asAtomHandler::toStringId(name,clip->getSystemState());
 						actobj->getVariableByMultiname(res,m);
 					}
-					if (asAtomHandler::isInvalid(res))
+				}
+				if (asAtomHandler::isInvalid(res))
+				{
+					if (asAtomHandler::isObject(scopestack[0]))
 					{
-						if (!s.startsWith("/") && !s.startsWith(":"))
-							res = originalclip->AVM1GetVariable(s);
-						else
-							res = clip->AVM1GetVariable(s);
+						ASObject* o =asAtomHandler::getObjectNoCheck(scopestack[0]);
+						multiname m(nullptr);
+						m.name_type=multiname::NAME_STRING;
+						m.isAttribute = false;
+						m.name_s_id=asAtomHandler::toStringId(name,clip->getSystemState());
+						o->getVariableByMultiname(res,m);
 					}
+				}
+				if (asAtomHandler::isInvalid(res) && !scopevariables.empty())
+				{
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s);
+					auto it = scopevariables.find(nameID);
+					if (it != scopevariables.end())
+						res = it->second;
+				}
+				if (asAtomHandler::isInvalid(res))
+				{
+					if (!s.startsWith("/") && !s.startsWith(":"))
+						res = originalclip->AVM1GetVariable(s);
+					else
+						res = clip->AVM1GetVariable(s);
 				}
 				if (asAtomHandler::isInvalid(res))
 				{
@@ -506,13 +525,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							o = asAtomHandler::toObject(r,clip->getSystemState());
 						}
 					}
-				}
-				if (asAtomHandler::isInvalid(res) && !scopevariables.empty())
-				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s);
-					auto it = scopevariables.find(nameID);
-					if (it != scopevariables.end())
-						res = it->second;
 				}
 				if (asAtomHandler::isInvalid(res))
 					asAtomHandler::setUndefined(res);

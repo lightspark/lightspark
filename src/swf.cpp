@@ -1850,8 +1850,6 @@ void RootMovieClip::afterConstruction()
 		this->setOnStage(true,true);
 	DisplayObject::afterConstruction();
 	checkFrameScriptToExecute();
-	if (!this->usesActionScript3 && this==getSystemState()->mainClip)
-		executeFrameScript();// ensure that the scripts on the first frame of the main clip are executed before any script in the children
 }
 void RootMovieClip::revertFrame()
 {

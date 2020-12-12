@@ -554,7 +554,7 @@ protected:
 	 * It cannot be implemented as std::vector, because then reallocation
 	 * would break concurrent access.
 	 */
-	std::list<Frame> frames;
+	std::vector<Frame> frames;
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
 	void addAvm1ActionToFrame(AVM1ActionTag* t);
@@ -584,8 +584,6 @@ private:
 	uint32_t frameScriptToExecute;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
-
-	std::list<Frame>::iterator currentframeIterator;
 protected:
 	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */

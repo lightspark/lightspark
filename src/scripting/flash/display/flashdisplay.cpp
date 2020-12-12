@@ -1373,13 +1373,12 @@ void MovieClip::buildTraits(ASObject* o)
 MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
-	currentframeIterator=frames.end();
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false)
+  ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
-	currentframeIterator=frames.end();
 	//For sprites totalFrames_unreliable is the actual frame count
 	//For the root movie, it's the frame count from the header
 }
@@ -1387,7 +1386,6 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpri
 bool MovieClip::destruct()
 {
 	frames.clear();
-	currentframeIterator=frames.end();
 	setFramesLoaded(0);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
@@ -1474,8 +1472,6 @@ void MovieClip::checkFrameScriptToExecute()
 	{
 		frameScriptToExecute=state.FP;
 	}
-	if (state.FP == 0)
-		currentframeIterator= frames.begin();
 }
 
 /* Return global frame index for frame i (zero-based) in a scene
@@ -1518,7 +1514,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,swapDepths)
 ASFUNCTIONBODY_ATOM(MovieClip,stop)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	th->state.stop_FP=true;
+	if (!th->state.stop_FP)
+	{
+		th->state.stop_FP=true;
+		th->state.avm1ScriptExecutedAfterStop=false;
+	}
 	th->state.next_FP=th->state.FP;
 }
 
@@ -1526,6 +1526,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->state.stop_FP=false;
+	th->state.avm1ScriptExecutedAfterStop=false;
 }
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
@@ -1574,6 +1575,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
+	state.avm1ScriptExecutedAfterStop=false;
 	if (inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
@@ -1613,6 +1615,7 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 			advance = false;
 		}
 		state.stop_FP = stop;
+		state.avm1ScriptExecutedAfterStop=false;
 	}
 	if (advance) 
 		advanceFrame();
@@ -4794,6 +4797,8 @@ void DisplayObjectContainer::initFrame()
 
 void DisplayObjectContainer::executeFrameScript()
 {
+	// I've not found any documentation about the order of script execution in AVM1 but it seems they are executed top down
+	DisplayObject::executeFrameScript();
 	// elements of the dynamicDisplayList may be removed during executeFrameScript() calls,
 	// so we create a temporary list containing all elements
 	std::vector < _R<DisplayObject> > tmplist;
@@ -4804,7 +4809,6 @@ void DisplayObjectContainer::executeFrameScript()
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->executeFrameScript();
-	DisplayObject::executeFrameScript();
 }
 
 multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
@@ -4898,19 +4902,15 @@ void MovieClip::declareFrame()
 	bool newFrame = (int)state.FP != state.last_FP;
 	if (newFrame ||!state.frameadvanced)
 	{
-		if (newFrame)
-			currentframeIterator=frames.end();
 		if(getFramesLoaded())
 		{
-			std::list<Frame>::iterator iter=frames.begin();
+			auto iter=frames.begin();
 			for(uint32_t i=0;i<=state.FP;i++)
 			{
 				if((int)state.FP < state.last_FP || (int)i > state.last_FP)
 				{
 					iter->execute(this,i!=state.FP);
 				}
-				if (!getSystemState()->mainClip->usesActionScript3 && i==state.FP && newFrame)
-					currentframeIterator= iter;
 				++iter;
 			}
 		}
@@ -4958,10 +4958,13 @@ void MovieClip::executeFrameScript()
 		(*itbind).second->UpdateVariableBinding(v);
 		itbind++;
 	}
-	if (currentframeIterator != frames.end())
+	if (!getSystemState()->mainClip->usesActionScript3)
 	{
-		currentframeIterator->AVM1executeActions(this);
-		currentframeIterator = frames.end();
+		uint32_t currFP = state.FP;
+		if (!state.stop_FP || !state.avm1ScriptExecutedAfterStop)
+			frames[state.FP].AVM1executeActions(this);
+		if (state.stop_FP && currFP == state.FP)
+			state.avm1ScriptExecutedAfterStop=true;
 	}
 
 	if (frameScriptToExecute != UINT32_MAX)
@@ -5083,7 +5086,7 @@ void MovieClip::afterConstruction()
 {
 	// execute framescript of frame 0 after construction is completed
 	// only if state.FP was not changed during construction
-	if((currentframeIterator != frames.end() || frameScripts.count(0)) && state.FP == 0)
+	if(frameScripts.count(0) && state.FP == 0)
 	{
 		if (frameScripts.count(0))
 			frameScriptToExecute = 0;
@@ -5113,6 +5116,7 @@ void MovieClip::resetLegacyState()
 	state.explicit_FP=false;
 	state.creatingframe=false;
 	state.frameadvanced=false;
+	state.avm1ScriptExecutedAfterStop=false;
 }
 
 Frame *MovieClip::getCurrentFrame()

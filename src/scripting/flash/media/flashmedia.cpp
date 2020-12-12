@@ -85,7 +85,7 @@ bool Video::destruct()
 	{
 		embeddedVideoDecoder->setFlushing();
 		embeddedVideoDecoder->skipAll();
-		delete embeddedVideoDecoder;
+		embeddedVideoDecoder->markForDestruction();
 		embeddedVideoDecoder=nullptr;
 	}
 	netStream.reset();

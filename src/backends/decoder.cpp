@@ -88,6 +88,13 @@ void VideoDecoder::uploadFence()
 {
 	assert(fenceCount);
 	ATOMIC_DECREMENT(fenceCount);
+	if (markedForDeletion && fenceCount==0)
+		delete this;
+}
+
+void VideoDecoder::markForDestruction()
+{
+	markedForDeletion=true;
 }
 
 void VideoDecoder::waitForFencing()

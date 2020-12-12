@@ -101,7 +101,7 @@ public:
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false){}
+	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
 	virtual ~VideoDecoder(){}
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
@@ -127,6 +127,7 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	const TextureChunk& getTexture();
 	void uploadFence();
+	void markForDestruction();
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;
@@ -140,6 +141,7 @@ protected:
 	LS_VIDEO_CODEC videoCodec;
 private:
 	bool resizeGLBuffers;
+	bool markedForDeletion;
 };
 
 class NullVideoDecoder: public VideoDecoder

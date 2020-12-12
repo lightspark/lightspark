@@ -554,7 +554,7 @@ protected:
 	 * It cannot be implemented as std::vector, because then reallocation
 	 * would break concurrent access.
 	 */
-	std::vector<Frame> frames;
+	std::list<Frame> frames;
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
 	void addAvm1ActionToFrame(AVM1ActionTag* t);

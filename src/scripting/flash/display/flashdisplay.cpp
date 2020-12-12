@@ -4962,7 +4962,12 @@ void MovieClip::executeFrameScript()
 	{
 		uint32_t currFP = state.FP;
 		if (!state.stop_FP || !state.avm1ScriptExecutedAfterStop)
-			frames[state.FP].AVM1executeActions(this);
+		{
+			auto iter=frames.begin();
+			for(uint32_t i=0;i<state.FP;i++)
+				++iter;
+			iter->AVM1executeActions(this);
+		}
 		if (state.stop_FP && currFP == state.FP)
 			state.avm1ScriptExecutedAfterStop=true;
 	}
@@ -4974,7 +4979,7 @@ void MovieClip::executeFrameScript()
 		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
-		asAtomHandler::callFunction(frameScripts[f],v,obj,NULL,0,false);
+		asAtomHandler::callFunction(frameScripts[f],v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
 		inExecuteFramescript = false;
 	}

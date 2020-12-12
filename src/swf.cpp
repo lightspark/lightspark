@@ -1194,6 +1194,7 @@ void SystemState::flushInvalidationQueue()
 		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
+	renderThread->signalSurfaceRefresh();
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
 }

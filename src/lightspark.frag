@@ -29,6 +29,8 @@ void main()
 	vbase *= alpha;
 	// add colortransformation
 	vbase = max(min(vbase*colorTransformMultiply+colorTransformAdd,1.0),0.0);
+	// premultiply alpha as it may have changed in colorTramsform
+	vbase.rgb *= vbase.a;
 	vec4 val = vbase.bgra-vec4(0,0.5,0.5,0);
 	//Tranform the value from YUV to RGB
 	val.rgb = YUVtoRGB*(val.rgb);

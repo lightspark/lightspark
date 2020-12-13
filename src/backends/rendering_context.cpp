@@ -175,7 +175,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glUniform2f(startPositionUniform, xtransformed,ytransformed);
 	engineData->exec_glUniform2f(scaleUniform, xscale,yscale);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier);
-	engineData->exec_glUniform4f(colortransAddUniform, redOffset,greenOffset,blueOffset,alphaOffset);
+	engineData->exec_glUniform4f(colortransAddUniform, redOffset/255.0,greenOffset/255.0,blueOffset/255.0,alphaOffset/255.0);
 	//Set matrix
 	setMatrixUniform(LSGL_MODELVIEW);
 

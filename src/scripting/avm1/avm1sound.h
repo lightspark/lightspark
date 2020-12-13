@@ -35,6 +35,7 @@ public:
 	AVM1Sound(Class_base* c):Sound(c){}
 	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(c,soundData,format,duration_in_ms) {}
 	static void sinit(Class_base* c);
+	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 
 	ASFUNCTION_ATOM(avm1constructor);
 	ASFUNCTION_ATOM(attachSound);

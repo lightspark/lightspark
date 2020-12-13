@@ -1567,15 +1567,15 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
 	uint32_t nameID = 0;
 	DisplayObject* currchar=nullptr;
-	if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth))
-	{
-		parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
-		exists = false;
-	}
 	if (exists)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
+		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth) && currchar->getTagID() != CharacterId)
+		{
+			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
+			exists = false;
+		}
 	}
 	bool newInstance = false;
 	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))

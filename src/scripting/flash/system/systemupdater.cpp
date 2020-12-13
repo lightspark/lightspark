@@ -33,15 +33,15 @@ void SystemUpdater::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(SystemUpdater,_constructor)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter is not implemented");
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(SystemUpdater,cancel)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.cancel is not implemented");
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater.cancel is not implemented");
 }
 
 ASFUNCTIONBODY_ATOM(SystemUpdater,update)
 {
-    LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.update is not implemented");
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater.update is not implemented");
 }

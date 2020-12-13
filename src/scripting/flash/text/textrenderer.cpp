@@ -28,7 +28,7 @@ void TextRenderer::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 
-	c->setDeclaredMethodByQName("setAdvancedAntiAliasingTable","",Class<IFunction>::getFunction(c->getSystemState(),_setAdvancedAntiAliasingTable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("setAdvancedAntiAliasingTable","",Class<IFunction>::getFunction(c->getSystemState(),_setAdvancedAntiAliasingTable),NORMAL_METHOD,false);
 
     c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayMode),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayMode),SETTER_METHOD,false);
@@ -39,7 +39,7 @@ void TextRenderer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.setAdvancedAntiAliasingTable is a stub");
+	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.setAdvancedAntiAliasingTable is not implemented");
 	tiny_string fontName, colorType;
 	_NR<Array> advancedAntiAliasingTable;
 	ARG_UNPACK_ATOM(fontName)(colorType)(advancedAntiAliasingTable);
@@ -47,28 +47,27 @@ ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_getDisplayMode)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode does not change rendering of anti-aliasing");
-    TextRenderer* th = asAtomHandler::as<TextRenderer>(obj);
-    ret = asAtomHandler::fromString(sys,th->displayMode);
+    LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode is not fully implemented and always returns \"default\"");
+	ret = asAtomHandler::fromString(sys,"default"); // "default" is default value
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setDisplayMode)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode does not change rendering of anti-aliasing");
-    TextRenderer* th = asAtomHandler::as<TextRenderer>(obj);
-    ARG_UNPACK_ATOM(th->displayMode);
+	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode is not implemented");
+	tiny_string displayMode;
+	ARG_UNPACK_ATOM(displayMode);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_getMaxLevel)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode does not change quality level of anti-aliasing");
-    TextRenderer* th = asAtomHandler::as<TextRenderer>(obj);
-    ret = asAtomHandler::fromUInt(th->maxLevel);
+    LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.maxLevel is not fully implemented and always returns 4");
+	uint32_t maxLevel = 4;	// 4 is default value
+	ret = asAtomHandler::fromUInt(maxLevel);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setMaxLevel)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode does not change quality level of anti-aliasing");
-    TextRenderer* th = asAtomHandler::as<TextRenderer>(obj);
-    ARG_UNPACK_ATOM(th->maxLevel);
+	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.maxLevel is not implemented");
+	uint32_t maxLevel;
+    ARG_UNPACK_ATOM(maxLevel);
 }

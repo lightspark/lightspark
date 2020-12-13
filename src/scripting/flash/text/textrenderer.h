@@ -27,9 +27,6 @@ namespace lightspark
 
 class TextRenderer: public ASObject
 {
-private:
-    tiny_string displayMode;
-    uint32_t maxLevel;
 public:
 	TextRenderer(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);

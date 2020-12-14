@@ -1083,7 +1083,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
@@ -1112,7 +1112,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject>, number_t x, number_t 
 			else if (!isHittable(type))
 			{
 				//Hit ignored due to a disabled HIT_TYPE
-				ret.reset();
+				ret = last;
 			}
 		}
 	}
@@ -3191,7 +3191,9 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 {
 	if (interactiveObjectsOnly)
 		this->incRef();
-	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x,y, type); 
+	number_t xmin, xmax, ymin, ymax;
+	boundsRect(xmin, xmax, ymin, ymax);
+	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x-xmin,y-ymin, type);
 }
 
 Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromTag(nullptr)

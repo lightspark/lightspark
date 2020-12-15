@@ -12,12 +12,27 @@ package
 	{
 		
 		public function Main() 
-		{
-			TextRenderer.antiAliasType = "advanced";
-			TextRenderer.antiAliasType = "normal";
-			TextRenderer.displayMode = "default";
-			TextRenderer.displayMode = "crt";
-			TextRenderer.displayMode = "lcd";
+		{		
+			trace(TextRenderer.displayMode);
+			
+			if (TextRenderer.displayMode == "lcd")
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			
+			TextRenderer.maxLevel = 4;
+			if (TextRenderer.maxLevel == 4)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
 			
 			var advancedAntiAliasingTable:Array = new Array();
 			advancedAntiAliasingTable.push(new flash.text.CSMSettings(2, 2, 2));

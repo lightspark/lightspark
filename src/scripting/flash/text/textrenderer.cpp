@@ -40,9 +40,9 @@ void TextRenderer::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.setAdvancedAntiAliasingTable is not implemented");
-	tiny_string fontName, colorType;
+	tiny_string fontName, fontStyle, colorType;
 	_NR<Array> advancedAntiAliasingTable;
-	ARG_UNPACK_ATOM(fontName)(colorType)(advancedAntiAliasingTable);
+	ARG_UNPACK_ATOM(fontName)(fontStyle)(colorType)(advancedAntiAliasingTable);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_getDisplayMode)

@@ -591,7 +591,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef(m_sys));
 	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef(m_sys));
 	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef(m_sys));
-	builtin->registerBuiltin("TextRenderer","flash.text",Class<StaticText>::getRef(m_sys));
+	builtin->registerBuiltin("TextRenderer","flash.text",Class<TextRenderer>::getRef(m_sys));
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef(m_sys));
 
 	builtin->registerBuiltin("BreakOpportunity","flash.text.engine",Class<BreakOpportunity>::getRef(m_sys));

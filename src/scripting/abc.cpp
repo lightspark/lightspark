@@ -167,6 +167,7 @@
 #include "scripting/flash/net/netgroupreplicationstrategy.h"
 #include "scripting/flash/net/netgroupsendmode.h"
 #include "scripting/flash/net/netgroupsendresult.h"
+#include "scripting/flash/security/certificatestatus.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdater.h"
@@ -753,6 +754,8 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("NewObjectSample","flash.sampler",Class<NewObjectSample>::getRef(m_sys));
 	builtin->registerBuiltin("Sample","flash.sampler",Class<Sample>::getRef(m_sys));
 	builtin->registerBuiltin("StackFrame","flash.sampler",Class<StackFrame>::getRef(m_sys));
+
+	builtin->registerBuiltin("CertificateStatus","flash.security",Class<CertificateStatus>::getRef(m_sys));
 
 	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(m_sys,fscommand)));
 	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));

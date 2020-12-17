@@ -77,6 +77,7 @@
 #include "scripting/flash/net/NetStreamPlayTransitions.h"
 #include "scripting/flash/printing/flashprinting.h"
 #include "scripting/flash/sampler/flashsampler.h"
+#include "scripting/flash/security/certificatestatus.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"

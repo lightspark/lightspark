@@ -17,20 +17,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H
-#define SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H 1
+#include "scripting/flash/system/systemupdater.h"
+#include "scripting/class.h"
+#include "scripting/argconv.h"
+#include <iomanip>
 
-#include "asobject.h"
+using namespace lightspark;
 
-namespace lightspark
+void SystemUpdater::sinit(Class_base* c)
 {
-
-class SystemUpdaterType: public ASObject
-{
-public:
-	SystemUpdaterType(Class_base* c):ASObject(c){}
-	static void sinit(Class_base* c);
-};
-
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
+	c->setDeclaredMethodByQName("cancel","",Class<IFunction>::getFunction(c->getSystemState(),cancel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("update","",Class<IFunction>::getFunction(c->getSystemState(),update),NORMAL_METHOD,true);
 }
-#endif /* SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H */
+
+ASFUNCTIONBODY_ATOM(SystemUpdater,_constructor)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater is not implemented");
+}
+
+ASFUNCTIONBODY_ATOM(SystemUpdater,cancel)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater.cancel is not implemented");
+}
+
+ASFUNCTIONBODY_ATOM(SystemUpdater,update)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"SystemUpdater.update is not implemented");
+}

@@ -17,20 +17,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H
-#define SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H 1
+#ifndef SCRIPTING_FLASH_MEDIA_TEXTRENDERER_H
+#define SCRIPTING_FLASH_MEDIA_TEXTRENDERER_H 1
 
 #include "asobject.h"
 
 namespace lightspark
 {
 
-class SystemUpdaterType: public ASObject
+class TextRenderer: public ASObject
 {
 public:
-	SystemUpdaterType(Class_base* c):ASObject(c){}
+	TextRenderer(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
+    ASFUNCTION_ATOM(_getDisplayMode);
+	ASFUNCTION_ATOM(_setDisplayMode);
+    ASFUNCTION_ATOM(_getMaxLevel);
+	ASFUNCTION_ATOM(_setMaxLevel);
+	ASFUNCTION_ATOM(_setAdvancedAntiAliasingTable);
 };
 
 }
-#endif /* SCRIPTING_FLASH_SYSTEM_SYSTEMUPDATERTYPE_H */
+#endif /* SCRIPTING_FLASH_MEDIA_TEXTRENDERER_H */

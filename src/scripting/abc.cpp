@@ -169,6 +169,7 @@
 #include "scripting/flash/net/netgroupsendresult.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"
+#include "scripting/flash/system/systemupdater.h"
 #include "scripting/flash/system/systemupdatertype.h"
 #include "scripting/flash/system/touchscreentype.h"
 #include "scripting/flash/system/ime.h"
@@ -178,6 +179,7 @@
 #include "scripting/flash/text/csmsettings.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/text/flashtextengine.h"
+#include "scripting/flash/text/textrenderer.h"
 #include "scripting/flash/ui/Keyboard.h"
 #include "scripting/flash/ui/Mouse.h"
 #include "scripting/flash/ui/Multitouch.h"
@@ -589,6 +591,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("TextFormatAlign","flash.text",Class<TextFormatAlign>::getRef(m_sys));
 	builtin->registerBuiltin("TextLineMetrics","flash.text",Class<TextLineMetrics>::getRef(m_sys));
 	builtin->registerBuiltin("TextInteractionMode","flash.text",Class<TextInteractionMode>::getRef(m_sys));
+	builtin->registerBuiltin("TextRenderer","flash.text",Class<TextRenderer>::getRef(m_sys));
 	builtin->registerBuiltin("StaticText","flash.text",Class<StaticText>::getRef(m_sys));
 
 	builtin->registerBuiltin("BreakOpportunity","flash.text.engine",Class<BreakOpportunity>::getRef(m_sys));
@@ -765,6 +768,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("IMEConversionMode","flash.system",Class<IMEConversionMode>::getRef(m_sys));
 	builtin->registerBuiltin("MessageChannelState","flash.system",Class<MessageChannelState>::getRef(m_sys));
 	builtin->registerBuiltin("SecurityPanel","flash.system",Class<SecurityPanel>::getRef(m_sys));
+        builtin->registerBuiltin("SystemUpdater","flash.system",Class<SystemUpdater>::getRef(m_sys));
 	builtin->registerBuiltin("SystemUpdaterType","flash.system",Class<SystemUpdaterType>::getRef(m_sys));
 	builtin->registerBuiltin("TouchscreenType","flash.system",Class<TouchscreenType>::getRef(m_sys));
 	builtin->registerBuiltin("IME","flash.system",Class<IME>::getRef(m_sys));

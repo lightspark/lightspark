@@ -242,6 +242,7 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	const TextureChunk& getTexture();
 	void uploadFence();
+	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 
 /**

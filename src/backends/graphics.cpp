@@ -935,7 +935,8 @@ AsyncDrawJob::~AsyncDrawJob()
 {
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
-	delete[] surfaceBytes;
+	if (surfaceBytes)
+		delete[] surfaceBytes;
 }
 
 void AsyncDrawJob::execute()
@@ -946,14 +947,15 @@ void AsyncDrawJob::execute()
 	int offx,offy;
 	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
-	surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
-	if(surfaceBytes)
+	if(!threadAborting)
+		surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
+	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
 }
 
 void AsyncDrawJob::threadAbort()
 {
-	//Nothing special to be done
+	uploadNeeded=false;
 }
 
 void AsyncDrawJob::jobFence()

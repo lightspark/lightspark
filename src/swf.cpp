@@ -1180,7 +1180,29 @@ void SystemState::flushInvalidationQueue()
 					drawjobLock.lock();
 					AsyncDrawJob* j = new AsyncDrawJob(d,cur);
 					if (!cur->getTextureRecalculationSkippable())
+					{
+						for (auto it = drawJobsPending.begin(); it != drawJobsPending.end(); it++)
+						{
+							if ((*it)->getOwner() == cur.getPtr())
+							{
+								// older drawjob currently running for this DisplayObject, abort it
+								(*it)->threadAborting=true;
+								drawJobsPending.erase(it);
+								break;
+							}
+						}
+						for (auto it = drawJobsNew.begin(); it != drawJobsNew.end(); it++)
+						{
+							if ((*it)->getOwner() == cur.getPtr())
+							{
+								// older drawjob currently running for this DisplayObject, abort it
+								(*it)->threadAborting=true;
+								drawJobsNew.erase(it);
+								break;
+							}
+						}
 						drawJobsNew.insert(j);
+					}
 					addJob(j);
 					drawjobLock.unlock();
 				}

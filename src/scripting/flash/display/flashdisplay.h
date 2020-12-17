@@ -578,7 +578,6 @@ private:
 	uint32_t getCurrentScene() const;
 	const Scene_data *getScene(const tiny_string &sceneName) const;
 	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
-	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	std::map<uint32_t,asAtom > frameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
@@ -591,6 +590,7 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 	void checkFrameScriptToExecute();
 public:
+	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete() override;
 	void afterConstruction() override;
 	void resetLegacyState() override;

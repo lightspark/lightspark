@@ -2360,6 +2360,44 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(a);
 				break;
 			}
+			case 0x8d: // ActionWaitForFrame2
+			{
+				uint32_t skipcount= (*it);
+				it++;
+				asAtom a = PopStack(stack);
+				if (!clip->is<MovieClip>())
+				{
+					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionWaitForFrame2 "<<clip->toDebugString());
+					ASATOM_DECREF(a);
+					break;
+				}
+				uint32_t frame=0;
+				if (asAtomHandler::isString(a))
+				{
+					tiny_string s = asAtomHandler::toString(a,clip->getSystemState());
+					frame = clip->as<MovieClip>()->getFrameIdByLabel(s,"");
+				}
+				else
+				{
+					frame = asAtomHandler::toUInt(a);
+				}
+				if (clip->as<MovieClip>()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
+				{
+					// frame not yet loaded, skip actions
+					while (skipcount && it != actionlist.end())
+					{
+						it++;
+						if (*it > 0x80)
+						{
+							uint32_t c = uint32_t(*it++) | ((*it++)<<8);
+							it+=c;
+						}
+						skipcount--;
+					}
+				}
+				ASATOM_DECREF(a);
+				break;
+			}
 			case 0x14: // ActionStringLength
 			case 0x29: // ActionStringLess
 			case 0x31: // ActionMBStringLength
@@ -2368,7 +2406,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x35: // ActionMBStringExtract
 			case 0x36: // ActionMBCharToAscii
 			case 0x37: // ActionMBAsciiToChar
-			case 0x8d: // ActionWaitForFrame2
 				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF4 DoActionTag "<<hex<<(int)opcode);
 				if(opcode >= 0x80)
 				{

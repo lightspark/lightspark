@@ -29,6 +29,7 @@
 namespace lightspark
 {
 class Array;
+class DefineEditTextTag;
 
 class AntiAliasType : public ASObject
 {
@@ -119,10 +120,11 @@ private:
 	number_t autosizeposition;
 	tiny_string tagvarname;
 	Mutex invalidatemutex;
+	DefineEditTextTag* tag;
 protected:
 	void afterSetLegacyMatrix() override;
 public:
-	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="");
+	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
 	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -136,6 +138,7 @@ public:
 	void textInputChanged(const tiny_string& newtext) override;
 	void tick() override;
 	void tickFence() override {}
+	uint32_t getTagID() const override;
 	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
@@ -261,19 +264,21 @@ class StaticText: public DisplayObject, public TokenContainer
 private:
 	ASFUNCTION_ATOM(_getText);
 	RECT bounds;
+	uint32_t tagID;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory) {}
-	StaticText(Class_base* c, const tokensVector& tokens,const RECT& b):
-		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b) {}
+	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory),tagID(UINT32_MAX) {}
+	StaticText(Class_base* c, const tokensVector& tokens,const RECT& b,uint32_t _tagID):
+		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	uint32_t getTagID() const override { return tagID; }
 };
 
 class FontStyle: public ASObject

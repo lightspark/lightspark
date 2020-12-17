@@ -448,8 +448,8 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 	//TODO: check
 	assert_and_throw(bindedTo==NULL);
 	TextField* ret= loadedFrom->usesActionScript3 ? 
-					new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName) :
-					new (c->memoryAccount) AVM1TextField(c, textData, !NoSelect, ReadOnly,VariableName);
+					new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName,this) :
+					new (c->memoryAccount) AVM1TextField(c, textData, !NoSelect, ReadOnly,VariableName,this);
 	if (HTML)
 		ret->setHtmlText((const char*)InitialText);
 	return ret;
@@ -1227,7 +1227,7 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens,TextBounds);
+	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens,TextBounds,this->getId());
 	return ret;
 }
 

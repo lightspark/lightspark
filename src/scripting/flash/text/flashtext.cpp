@@ -116,10 +116,10 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	LOG(LOG_NOT_IMPLEMENTED,"Font.hasGlyphs always returns true for not embedded fonts:"<<text<<" "<<th->fontName<<" "<<th->fontStyle<<" "<<th->fontType);
 	asAtomHandler::setBool(ret,true);
 }
-TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname)
+TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),alwaysShowSelection(false),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
@@ -1160,6 +1160,11 @@ void TextField::tick()
 	
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
+}
+
+uint32_t TextField::getTagID() const
+{
+	return tag ? tag->getId() : UINT32_MAX;
 }
 
 void TextField::textUpdated()

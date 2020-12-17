@@ -31,8 +31,8 @@ namespace lightspark
 class AVM1TextField: public TextField
 {
 public:
-	AVM1TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="")
-		:TextField(c,textData,_selectable,readOnly,varname)
+	AVM1TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr)
+		:TextField(c,textData,_selectable,readOnly,varname,_tag)
 	{}
 	static void sinit(Class_base* c);
 };

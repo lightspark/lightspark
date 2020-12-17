@@ -3193,6 +3193,12 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 		this->incRef();
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
+	xmin = (xmin+this->getMatrix().getTranslateX())*this->getMatrix().getScaleX();
+	ymin = (ymin+this->getMatrix().getTranslateY())*this->getMatrix().getScaleY();
+	xmax = (xmax+this->getMatrix().getTranslateX())*this->getMatrix().getScaleX();
+	ymax = (ymax+this->getMatrix().getTranslateY())*this->getMatrix().getScaleY();
+	if (x<xmin || x>xmax || y<ymin || y>ymax)
+		return NullRef;
 	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x-xmin,y-ymin, type);
 }
 

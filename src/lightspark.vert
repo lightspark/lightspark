@@ -22,8 +22,8 @@ void main()
 	// Transforming The Vertex
 	vec2 st = ls_Vertex;
 	st -= beforeRotate;
-	st *= rotate2d( rotation );
 	st *= scale;
+	st *= rotate2d( rotation );
 	st += afterRotate;
 	st += startPosition;
 	gl_Position=ls_ProjectionMatrix * ls_ModelViewMatrix * vec4(st,0,1);

@@ -837,6 +837,13 @@ number_t Point::lenImpl(number_t x, number_t y)
 	return sqrt(x*x + y*y);
 }
 
+bool Point::destruct()
+{
+	x=0;
+	y=0;
+	return ASObject::destruct();
+}
+
 number_t Point::len() const
 {
 	return lenImpl(x, y);

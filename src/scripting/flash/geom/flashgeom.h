@@ -84,6 +84,7 @@ private:
 	static number_t lenImpl(number_t x, number_t y);
 public:
 	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

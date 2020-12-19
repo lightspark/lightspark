@@ -542,11 +542,11 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
 	//Viewport setup is left for GLResize	
 
-	//Get the maximum allowed texture size, up to 2048
+	//Get the maximum allowed texture size, up to 8192
 	int maxTexSize;
 	engineData->exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(&maxTexSize);
 	assert(maxTexSize>0);
-	largeTextureSize=min(maxTexSize,2048);
+	largeTextureSize=min(maxTexSize,8192);
 
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);

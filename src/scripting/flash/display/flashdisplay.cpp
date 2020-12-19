@@ -975,14 +975,7 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
-//		//Skip the drawing of masks
-//		if((*it)->isMask() || (*it)->ClipDepth)
-//			continue;
-		if ((*it)->Render(ctxt))
-		{
-			renderingfailed=true;
-			break;
-		}
+		(*it)->Render(ctxt);
 	}
 	return renderingfailed;
 }
@@ -1586,7 +1579,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+	else if (state.creatingframe // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+			 || !getSystemState()->mainClip->usesActionScript3)
 		advanceFrame();
 }
 

@@ -4666,6 +4666,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									break;
 								case 1:
 								{
+									bool isIntGenerator=false;
 									if (typestack.size() > 1 &&
 											typestack[typestack.size()-2].obj != nullptr &&
 											(typestack[typestack.size()-2].obj->is<Global>() ||
@@ -4677,24 +4678,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											// function is a class generator, we can use it as the result type
 											resulttype = asAtomHandler::as<Class_base>(func);
-
-											// generator for Integer can be skipped if argument is already an integer
 											if (state.operandlist.size() > 2 && resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
 													&& typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 											{
-												// remove caller
-												auto it = state.operandlist.end();
-												--it;
-												--it;
-												uint32_t c  = it->codecount;
-												it->removeArg(state);
-												state.operandlist.erase(it);
-												state.operandlist.back().preloadedcodepos-=c;
-
-												state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-												removetypestack(typestack,2);
-												typestack.push_back(typestackentry(resulttype,false));
-												break;
+												isIntGenerator=true;
 											}
 										}
 										else if (asAtomHandler::is<SyntheticFunction>(func))
@@ -4743,6 +4730,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
 									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,p,resulttype))))
 									{
+										// generator for Integer can be skipped if argument is already an integer and the result will be used as local result
+										if (state.operandlist.size()>1 && isIntGenerator)
+										{
+											// remove caller
+											state.preloadedcode.pop_back();
+											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+											break;
+										}
 										state.preloadedcode.push_back(0);
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 										state.preloadedcode.push_back(0);

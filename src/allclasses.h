@@ -325,6 +325,9 @@ REGISTER_CLASS_NAME(NewObjectSample,"flash.sampler")
 REGISTER_CLASS_NAME(Sample,"flash.sampler")
 REGISTER_CLASS_NAME(StackFrame,"flash.sampler")
 
+// Security
+REGISTER_CLASS_NAME(CertificateStatus, "flash.security")
+
 //Sensors
 REGISTER_CLASS_NAME(Accelerometer,"flash.sensors")
 

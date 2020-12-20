@@ -334,25 +334,27 @@ void TextField::setSizeAndPositionFromAutoSize()
 	if (autoSize == AS_NONE)
 		return;
 
+	switch (autoSize)
+	{
+		case AS_RIGHT:
+			autosizeposition = width-textWidth;
+			break;
+		case AS_CENTER:
+			autosizeposition = (width - textWidth)/2.0;
+			break;
+		default:
+			autosizeposition = 0;
+			break;
+	}
 	if (!wordWrap)
 	{
-		switch (autoSize)
-		{
-			case AS_RIGHT:
-				autosizeposition = width-textWidth;
-				break;
-			case AS_CENTER:
-				autosizeposition = (width - textWidth)/2.0;
-				break;
-			default:
-				autosizeposition = 0;
-				break;
-		}
 		if (width < textWidth)
 			width = textWidth;
 		if (height < textHeight)
 			height = textHeight;
 	}
+	else
+		height = textHeight;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
@@ -504,6 +506,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	{
 		th->updateSizes();
 		th->setSizeAndPositionFromAutoSize();
+		th->hasChanged=true;
+		th->setNeedsTextureRecalculation();
 	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"setTextFormat does not read all fields of TextFormat");
@@ -964,7 +968,8 @@ void TextField::updateSizes()
 	//width = w; //TODO: check the case when w,h == 0
 	textWidth=tw;
 	//height = h;
-	textHeight=th;
+	//textHeight=th;
+	textHeight=fontSize+leading; // textheight seems to be independent of the text actually rendered
 }
 
 tiny_string TextField::toHtmlText()

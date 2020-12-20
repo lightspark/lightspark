@@ -1102,12 +1102,18 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 void SystemState::setRenderRate(float rate)
 {
 	Locker l(rootMutex);
-	if(renderRate>=rate)
+	if(renderRate==rate)
 		return;
 	
-	//The requested rate is higher, let's reschedule the job
+	//The requested rate is different than the current rate, let's reschedule the job
 	renderRate=rate;
 	startRenderTicks();
+
+	if (this->mainClip && this->mainClip->isConstructed())
+	{
+		removeJob(this);
+		addTick(1000/renderRate,this);
+	}
 }
 
 void SystemState::addJob(IThreadJob* j)
@@ -1136,7 +1142,10 @@ void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 
 void SystemState::removeJob(ITickJob* job)
 {
-	timerThread->removeJob(job);
+	if (job == this)
+		timerThread->removeJob_noLock(job);
+	else
+		timerThread->removeJob(job);
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
@@ -1811,7 +1820,11 @@ lightspark::RECT RootMovieClip::getFrameSize() const
 
 void RootMovieClip::setFrameRate(float f)
 {
-	frameRate=f;
+	if (frameRate != f)
+	{
+		frameRate=f;
+		getSystemState()->setRenderRate(frameRate);
+	}
 }
 
 float RootMovieClip::getFrameRate() const

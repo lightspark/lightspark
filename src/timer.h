@@ -90,6 +90,7 @@ public:
 	 * wait until it is done.
 	 */
 	void removeJob(ITickJob* job);
+	void removeJob_noLock(ITickJob* job);
 };
 
 class Chronometer

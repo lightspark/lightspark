@@ -202,6 +202,10 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 void TimerThread::removeJob(ITickJob* job)
 {
 	Locker l(mutex);
+	removeJob_noLock(job);
+}
+void TimerThread::removeJob_noLock(ITickJob* job)
+{
 
 	/* See if that job is currently pending */
 	list<TimingEvent*>::iterator it=pendingEvents.begin();

@@ -3183,8 +3183,6 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 
 _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
-	if (interactiveObjectsOnly)
-		this->incRef();
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
 	xmin = (xmin+this->getMatrix().getTranslateX())*this->getMatrix().getScaleX();
@@ -3193,7 +3191,9 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 	ymax = (ymax+this->getMatrix().getTranslateY())*this->getMatrix().getScaleY();
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
-	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? _NR<DisplayObject>(this) : last,x-xmin,y-ymin, type);
+	if (!interactiveObjectsOnly)
+		this->incRef();
+	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
 }
 
 Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromTag(nullptr)

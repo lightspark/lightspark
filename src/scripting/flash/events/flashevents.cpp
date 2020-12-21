@@ -1098,23 +1098,18 @@ ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(nullptr, "
 {
 }
 
-AVM1InitActionEvent::AVM1InitActionEvent(DefineSpriteTag* s, std::vector<uint8_t> a, uint32_t p, _NR<MovieClip> c):Event(nullptr, "AVM1InitActionEvent"),sprite(s),actions(a),startactionpos(p),clip(c)
+AVM1InitActionEvent::AVM1InitActionEvent(RootMovieClip* r,  _NR<MovieClip> c):Event(nullptr, "AVM1InitActionEvent"),root(r),clip(c)
 {
 }
 void AVM1InitActionEvent::finalize()
 {
-	sprite = nullptr;
-	actions.clear();
-	startactionpos=0;
+	root = nullptr;
 	clip.reset();
 	Event::finalize();
 }
 void AVM1InitActionEvent::executeActions()
 {
-	std::map<uint32_t,asAtom> m;
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
-	ACTIONRECORD::executeActions(clip.getPtr(),sprite->getAVM1Context(),actions,startactionpos,m);
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
+	root->AVM1checkInitActions(clip.getPtr());
 }
 
 ShutdownEvent::ShutdownEvent():Event(NULL, "shutdownEvent")

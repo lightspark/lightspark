@@ -166,6 +166,7 @@ RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDoma
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
 	ret->constructIndicator = true;
 	ret->constructorCallComplete = true;
+	ret->loadedFrom=ret;
 	return ret;
 }
 
@@ -1530,7 +1531,7 @@ void ParseThread::parseSWF(UI8 ver)
 	}
 
 	objectSpinlock.lock();
-	RootMovieClip* root=NULL;
+	RootMovieClip* root=nullptr;
 	if(parsedObject.isNull())
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
@@ -1585,9 +1586,9 @@ void ParseThread::parseSWF(UI8 ver)
 				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
+			root->usesActionScript3 = fat ? fat->ActionScript3 : root->version>9;
 			if(root == root->getSystemState()->mainClip)
 			{
-				root->usesActionScript3 = fat ? fat->ActionScript3 : root->version>9;
 				root->getSystemState()->needsAVM2(!usegnash || root->usesActionScript3);
 				if(usegnash && fat && !fat->ActionScript3)
 				{
@@ -1601,8 +1602,6 @@ void ParseThread::parseSWF(UI8 ver)
 					LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
 				}
 			}
-			else
-				root->usesActionScript3 = root->getSystemState()->mainClip->usesActionScript3;
 		}
 		else if(root == root->getSystemState()->mainClip)
 		{
@@ -2513,7 +2512,11 @@ FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
 void RootMovieClip::setupAVM1RootMovie()
 {
 	if (!usesActionScript3)
+	{
 		this->classdef = Class<AVM1MovieClip>::getRef(getSystemState()).getPtr();
+		if (!getSystemState()->avm1global)
+			getVm(getSystemState())->registerClassesAVM1();
+	}
 }
 
 bool RootMovieClip::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)
@@ -2538,4 +2541,20 @@ AVM1Function* RootMovieClip::AVM1getClassConstructor(uint32_t spriteID)
 	if (it == avm1ClassConstructors.end())
 		return nullptr;
 	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
+}
+
+void RootMovieClip::AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag *tag)
+{
+	avm1InitActionTags[spriteID] = tag;
+}
+void RootMovieClip::AVM1checkInitActions(MovieClip* sprite)
+{
+	if (!sprite)
+		return;
+	auto it = avm1InitActionTags.find(sprite->getTagID());
+	if (it != avm1InitActionTags.end())
+	{
+		it->second->executeDirect(sprite);
+		avm1InitActionTags.erase(it);
+	}
 }

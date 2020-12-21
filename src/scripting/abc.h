@@ -325,7 +325,6 @@ private:
 	STATUS status;
 	bool isIdle;
 
-	void registerClassesAVM1();
 	void registerClassesToplevel(Global* builtin);
 	void registerClasses();
 
@@ -1201,6 +1200,7 @@ public:
 	*/
 	void start() DLL_PUBLIC;
 	void finalize();
+	void registerClassesAVM1();
 	static int Run(void* d);
 	static void executeFunction(call_context* context);
 #ifndef NDEBUG

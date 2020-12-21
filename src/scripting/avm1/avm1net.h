@@ -33,5 +33,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class AVM1LocalConnection: public LocalConnection
+{
+public:
+	AVM1LocalConnection(Class_base* c):LocalConnection(c){}
+	static void sinit(Class_base* c);
+};
+
 }
 #endif // SCRIPTING_AVM1_AVM1NET_H

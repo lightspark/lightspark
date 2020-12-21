@@ -152,7 +152,8 @@ public:
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
 	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
-	
+	// this may differ from the main clip if this instance was generated from a loaded swf, not from the main clip
+	RootMovieClip* loadedFrom;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
 	// this is set to true for DisplayObjects that are placed from a tag
@@ -226,6 +227,7 @@ public:
 	virtual void declareFrame() {}
 	virtual void initFrame();
 	virtual void executeFrameScript();
+	virtual bool needsActionScript3() const;
 	Vector2f getLocalMousePos();
 	Vector2f getXY();
 	void setX(number_t x);
@@ -293,6 +295,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_setScaleY);
 	ASFUNCTION_ATOM(AVM1_getParent);
 	ASFUNCTION_ATOM(AVM1_getRoot);
+	ASFUNCTION_ATOM(AVM1_getURL);
 	ASFUNCTION_ATOM(AVM1_hitTest);
 	ASFUNCTION_ATOM(AVM1_localToGlobal);
 	ASFUNCTION_ATOM(AVM1_globalToLocal);

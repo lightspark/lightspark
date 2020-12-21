@@ -568,6 +568,8 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,false);
+	spr->loadedFrom=this->loadedFrom;
+	spr->loadedFrom->AVM1checkInitActions(spr);
 	return spr;
 }
 
@@ -1637,6 +1639,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 		toAdd->legacy = true;
+		toAdd->loadedFrom=placedTag->loadedFrom;
 
 		setProperties(toAdd, parent);
 
@@ -1975,7 +1978,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 	
 	int realactionoffset = (((int)in.tellg())-pos);
 	len -= realactionoffset;
-	int datatagskipbytes = Header.getHeaderSize()+realactionoffset + 2 + (version > 1 ? 3 : 0);
+	int datatagskipbytes = Header.getHeaderSize()+realactionoffset + 2 + (version > 1 ? 1 : 0);
 	if (root->usesActionScript3)
 	{
 		// ignore actions when using ActionScript3
@@ -2108,7 +2111,6 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root)
 {
-	LOG(LOG_INFO,"DefineVideoStreamTag");
 	in >> CharacterID >> NumFrames >> Width >> Height;
 	BitStream bs(in);
 	UB(4,bs);
@@ -2295,7 +2297,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (inskipping) // it seems that StartSoundTags are not executed if we are skipping the frame due to a gotoframe action
 		return;
 	DefineSoundTag *soundTag = \
-		dynamic_cast<DefineSoundTag *>(parent->getSystemState()->mainClip->dictionaryLookup(SoundId));
+		dynamic_cast<DefineSoundTag *>(parent->loadedFrom->dictionaryLookup(SoundId));
 
 	if (!soundTag)
 		return;
@@ -2608,7 +2610,7 @@ void SoundStreamHeadTag::setSoundChannel(Sprite *spr,bool autoplay)
 	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getSystemState(),
 								SoundData,
 								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1),autoplay);
-	spr->setSound(schannel);
+	spr->setSound(schannel,true);
 }
 
 
@@ -2690,6 +2692,7 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 	}
 	s >> SpriteId;
 	s.read((char*)actions.data()+startactionpos,Header.getLength()-2);
+	root->AVM1registerInitActionTag(SpriteId,this);
 }
 
 void AVM1InitActionTag::execute(RootMovieClip *root) const
@@ -2702,7 +2705,22 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		return;
 	}
 	MovieClip* o = sprite->instance(nullptr)->as<MovieClip>();
-	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) AVM1InitActionEvent(sprite,actions,startactionpos,_MR(o))));
+	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) AVM1InitActionEvent(root,_MR(o))));
+}
+
+void AVM1InitActionTag::executeDirect(MovieClip* clip) const
+{
+	DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(clip->loadedFrom->dictionaryLookup(SpriteId));
+	if (!sprite)
+	{
+		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
+		return;
+	}
+	clip->incRef();
+	std::map<uint32_t,asAtom> m;
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
+	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,m);
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
 }
 
 AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)

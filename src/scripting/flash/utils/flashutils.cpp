@@ -281,7 +281,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	asAtom func = args[0];
 	uint32_t delayarg = 1;
 	asAtom o = asAtomHandler::nullAtom;
-	if (!asAtomHandler::isFunction(args[0]) && !sys->mainClip->usesActionScript3) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
+	if (!asAtomHandler::isFunction(args[0])) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
 	{
 		assert_and_throw(argslen >= 3);
 		
@@ -313,7 +313,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		}
 		assert_and_throw (asAtomHandler::isFunction(func));
 	}
-	if (sys->mainClip->usesActionScript3)
+	if (!asAtomHandler::is<AVM1Function>(func))
 		o = asAtomHandler::getClosureAtom(func);
 	else
 	{

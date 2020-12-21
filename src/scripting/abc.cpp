@@ -330,13 +330,10 @@ void ABCVm::registerClassesAVM1()
 
 	registerClassesToplevel(builtinavm1);
 
-	if (!m_sys->mainClip->usesActionScript3)
-	{
-		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
-		Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),DYNAMIC_TRAIT);
-		Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),NORMAL_METHOD,false);
-		Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),DYNAMIC_TRAIT);
-	}
+	Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),NORMAL_METHOD,true);
+	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("addProperty","",Class<IFunction>::getFunction(m_sys,ASObject::addProperty),DYNAMIC_TRAIT);
+	Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),NORMAL_METHOD,false);
+	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("registerClass","",Class<IFunction>::getFunction(m_sys,ASObject::registerClass),DYNAMIC_TRAIT);
 
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
 	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
@@ -362,8 +359,9 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
 	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));
+	builtinavm1->registerBuiltin("LocalConnection","",Class<AVM1LocalConnection>::getRef(m_sys));
 
-	if (m_sys->getSwfVersion() >= 8 && !m_sys->mainClip->usesActionScript3)
+	if (m_sys->getSwfVersion() >= 8)
 	{
 		ASObject* systempackage = Class<ASObject>::getInstanceS(m_sys);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);

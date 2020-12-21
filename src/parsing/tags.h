@@ -137,6 +137,7 @@ public:
 	TAGTYPE getType() const override { return AVM1INITACTION_TAG; }
 	void execute(RootMovieClip* root) const override;
 	bool empty() { return actions.empty(); }
+	void executeDirect(MovieClip *clip) const;
 };
 
 class DefineShapeTag: public DictionaryTag

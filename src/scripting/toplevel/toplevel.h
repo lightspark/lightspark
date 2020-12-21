@@ -708,6 +708,10 @@ public:
 	{
 		superobj.uintval = s.uintval;
 	}
+	FORCE_INLINE DisplayObject* getClip() const
+	{
+		return clip;
+	}
 };
 
 /*

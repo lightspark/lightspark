@@ -99,7 +99,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),hasChanged(true),legacy(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -119,6 +119,7 @@ void DisplayObject::finalize()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
 	if (!cachedSurface.isChunkOwner)
@@ -137,6 +138,7 @@ bool DisplayObject::destruct()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
 	tx=0;
@@ -1311,6 +1313,11 @@ void DisplayObject::executeFrameScript()
 {
 }
 
+bool DisplayObject::needsActionScript3() const
+{
+	return this->loadedFrom->usesActionScript3;
+}
+
 void DisplayObject::constructionComplete()
 {
 	RELEASE_WRITE(constructed,true);
@@ -1530,7 +1537,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset);
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (!needsActionScript3())
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
@@ -1639,8 +1646,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
 {
-	sys->mainClip->incRef();
-	ret = asAtomHandler::fromObject(sys->mainClip);
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	th->loadedFrom->incRef();
+	ret = asAtomHandler::fromObject(th->loadedFrom);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getURL)
+{
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	ret = asAtomHandler::fromString(sys,th->loadedFrom->getOrigin().getURL());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 {
@@ -1876,6 +1889,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_parent","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getParent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_root","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getRoot),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_url","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hittest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
@@ -1901,7 +1915,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 		return this;
 	if (path =="_root")
 	{
-		return getSystemState()->mainClip;
+		return loadedFrom;
 	}
 	if (path.startsWith("/"))
 	{
@@ -1968,7 +1982,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 	if (name.startsWith("/"))
 	{
 		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
-		MovieClip* root = getSystemState()->mainClip;
+		MovieClip* root = loadedFrom;
 		if (root)
 			root->AVM1SetVariable(newpath,v);
 		else
@@ -2032,7 +2046,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
-		if (getSystemState()->mainClip->version > 4 && getSystemState()->avm1global)
+		if (loadedFrom->version > 4 && getSystemState()->avm1global)
 		{
 			// first check for class names
 			asAtom ret=asAtomHandler::invalidAtom;
@@ -2077,7 +2091,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 		}
 	}
 
-	if (getSystemState()->mainClip->version > 4)
+	if (loadedFrom->version > 4)
 	{
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
@@ -2085,7 +2099,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 		m.isAttribute = false;
 		getVariableByMultiname(ret,m);
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			getSystemState()->mainClip->getVariableByMultiname(ret,m);
+			loadedFrom->getVariableByMultiname(ret,m);
 	}
 	return ret;
 }

@@ -485,12 +485,10 @@ class AVM1InitActionEvent: public Event
 {
 friend class ABCVm;
 private:
-	DefineSpriteTag* sprite;
-	std::vector<uint8_t> actions;
-	uint32_t startactionpos;
+	RootMovieClip* root;
 	_NR<MovieClip> clip;
 public:
-	AVM1InitActionEvent(DefineSpriteTag* s,std::vector<uint8_t> a, uint32_t p, _NR<MovieClip> c);
+	AVM1InitActionEvent(RootMovieClip* r, _NR<MovieClip> c);
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return AVM1INITACTION_EVENT; }
 	void executeActions();

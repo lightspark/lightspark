@@ -365,6 +365,11 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
+		if (th == sys->mainClip->loaderInfo.getPtr())
+		{
+			asAtomHandler::setInt(ret,sys,sys->mainClip->getNominalWidth());
+			return;
+		}
 		asAtomHandler::setInt(ret,sys,0);
 		return;
 	}
@@ -385,6 +390,11 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
+		if (th == sys->mainClip->loaderInfo.getPtr())
+		{
+			asAtomHandler::setInt(ret,sys,sys->mainClip->getNominalHeight());
+			return;
+		}
 		asAtomHandler::setInt(ret,sys,0);
 		return;
 	}
@@ -789,7 +799,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),dragged(false),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -803,6 +813,7 @@ bool Sprite::destruct()
 	dragged = false;
 	buttonMode = false;
 	useHandCursor = false;
+	streamingsound=false;
 	tokens.clear();
 	return DisplayObjectContainer::destruct();
 }
@@ -1121,9 +1132,10 @@ void Sprite::resetToStart()
 	}
 }
 
-void Sprite::setSound(SoundChannel *s)
+void Sprite::setSound(SoundChannel *s,bool forstreaming)
 {
 	sound = _MR(s);
+	streamingsound = forstreaming;
 }
 
 void Sprite::appendSound(unsigned char *buf, int len)
@@ -1134,7 +1146,7 @@ void Sprite::appendSound(unsigned char *buf, int len)
 
 void Sprite::checkSound()
 {
-	if (sound && !sound->isPlaying())
+	if (sound && !sound->isPlaying() && streamingsound)
 		sound->play();
 }
 
@@ -1363,12 +1375,12 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),inExecuteFramescript(false),inAVM1Attachment(false)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false),inAVM1Attachment(false)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
@@ -1390,6 +1402,7 @@ bool MovieClip::destruct()
 	
 	fromDefineSpriteTag = UINT32_MAX;
 	frameScriptToExecute = UINT32_MAX;
+	lastratio=0;
 	totalFrames_unreliable = 1;
 	inExecuteFramescript=false;
 
@@ -1527,7 +1540,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	uint32_t next_FP;
 	tiny_string sceneName;
 	assert_and_throw(argslen==1 || argslen==2);
-	if(argslen==2 && getSystemState()->mainClip->usesActionScript3)
+	if(argslen==2 && needsActionScript3())
 	{
 		sceneName = asAtomHandler::toString(args[1],getSystemState());
 	}
@@ -1580,7 +1593,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
 	else if (state.creatingframe // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-			 || !getSystemState()->mainClip->usesActionScript3)
+			 || !needsActionScript3())
 		advanceFrame();
 }
 
@@ -2032,7 +2045,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
 	int Depth = asAtomHandler::toInt(args[2]);
 	uint32_t nameId = asAtomHandler::toStringId(args[1],sys);
-	DictionaryTag* placedTag = sys->mainClip->dictionaryLookupByName(asAtomHandler::toStringId(args[0],sys));
+	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],sys));
 	if (!placedTag)
 	{
 		ret=asAtomHandler::undefinedAtom;
@@ -2069,7 +2082,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	if (toAdd->is<MovieClip>())
 	{
 		// call constructor here to avoid recursive construction
-		AVM1Function* constr = sys->mainClip->AVM1getClassConstructor(toAdd->getTagID());
+		AVM1Function* constr = th->loadedFrom->AVM1getClassConstructor(toAdd->getTagID());
 		if (constr)
 		{
 			toAdd->setprop_prototype(constr->prototype);
@@ -2085,7 +2098,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	if (argslen != 2)
+	if (argslen < 2)
 		throw RunTimeException("AVM1: invalid number of arguments for CreateEmptyMovieClip");
 	int Depth = asAtomHandler::toInt(args[1]);
 	uint32_t nameId = asAtomHandler::toStringId(args[0],sys);
@@ -2369,7 +2382,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,getSystemState()->mainClip->usesActionScript3 ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
 		
 	}
 
@@ -2752,7 +2765,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (!needsActionScript3())
 		child->removeAVM1Listeners();
 
 	{
@@ -2788,7 +2801,7 @@ void DisplayObjectContainer::_removeAllChildren()
 		child->setOnStage(false);
 		child->setParent(nullptr);
 		child->setMask(NullRef);
-		if (!getSystemState()->mainClip->usesActionScript3)
+		if (!needsActionScript3())
 			child->removeAVM1Listeners();
 
 		//Erase this from the legacy child map (if it is in there)
@@ -2804,7 +2817,7 @@ void DisplayObjectContainer::_removeAllChildren()
 
 void DisplayObjectContainer::removeAVM1Listeners()
 {
-	if (getSystemState()->mainClip->usesActionScript3)
+	if (needsActionScript3())
 		return;
 	Locker l(mutexDisplayList);
 	auto it=dynamicDisplayList.begin();
@@ -3359,13 +3372,13 @@ void Stage::onDisplayState(const tiny_string&)
 	}
 	if (!getSystemState()->allowFullscreen && displayState == "fullScreen")
 	{
-		if (getSystemState()->mainClip->usesActionScript3)
+		if (needsActionScript3())
 			throwError<SecurityError>(kInvalidParamError);
 		return;
 	}
 	if (!getSystemState()->allowFullscreenInteractive && displayState == "fullScreenInteractive")
 	{
-		if (getSystemState()->mainClip->usesActionScript3)
+		if (needsActionScript3())
 			throwError<SecurityError>(kInvalidParamError);
 		return;
 	}
@@ -4960,7 +4973,7 @@ void MovieClip::executeFrameScript()
 		(*itbind).second->UpdateVariableBinding(v);
 		itbind++;
 	}
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (!needsActionScript3())
 	{
 		uint32_t currFP = state.FP;
 		if (!state.stop_FP || !state.avm1ScriptExecutedAfterStop)
@@ -4987,6 +5000,17 @@ void MovieClip::executeFrameScript()
 	}
 	Sprite::executeFrameScript();
 	state.explicit_FP=false;
+}
+
+void MovieClip::checkRatio(uint32_t ratio)
+{
+	// according to http://wahlers.com.br/claus/blog/hacking-swf-2-placeobject-and-ratio/
+	// if the ratio value is different from the previous ratio value for this MovieClip, this clip is resetted to frame 0
+	if (ratio != 0 && ratio != lastratio)
+	{
+		this->state.next_FP=0;
+	}
+	lastratio=ratio;
 }
 
 /* This is run in vm's thread context */
@@ -5027,9 +5051,9 @@ void MovieClip::advanceFrame()
 	 * 1b. or it is a DefineSpriteTag
 	 * 2. and is exported as a subclass of MovieClip (see bindedTo)
 	 */
-	if((!this->is<RootMovieClip>() && fromDefineSpriteTag==UINT32_MAX)
+	if(!this->is<RootMovieClip>() && (fromDefineSpriteTag==UINT32_MAX
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
-		   && (getSystemState()->mainClip->usesActionScript3 || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState())))))
+		   && (needsActionScript3() || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))))
 	{
 		if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 			DisplayObjectContainer::advanceFrame();
@@ -5084,7 +5108,7 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame();
 		initFrame();
-		if (!getSystemState()->mainClip->usesActionScript3 && this!=getSystemState()->mainClip && !this->inAVM1Attachment)
+		if (!needsActionScript3() && this!=getSystemState()->mainClip && !this->inAVM1Attachment)
 			executeFrameScript();
 	}
 }
@@ -5100,9 +5124,9 @@ void MovieClip::afterConstruction()
 		this->incRef();
 		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	if (!getSystemState()->mainClip->usesActionScript3 && !this->inAVM1Attachment)
+	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)
 	{
-		AVM1Function* constr = getSystemState()->mainClip->AVM1getClassConstructor(fromDefineSpriteTag);
+		AVM1Function* constr = this->loadedFrom->AVM1getClassConstructor(fromDefineSpriteTag);
 		if (constr)
 		{
 			setprop_prototype(constr->prototype);

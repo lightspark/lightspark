@@ -75,7 +75,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	if(th->clip)
 	{
 		th->soundChannel->incRef();
-		th->clip->setSound(th->soundChannel.getPtr());
+		th->clip->setSound(th->soundChannel.getPtr(),false);
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)

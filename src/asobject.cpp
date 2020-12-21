@@ -1275,7 +1275,15 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 	ARG_UNPACK_ATOM(name)(theClassConstructor);
 	if (name.empty())
 		return;
-	ret = asAtomHandler::fromBool(sys->mainClip->AVM1registerTagClass(name,theClassConstructor));
+	if (!theClassConstructor.isNull())
+	{
+		RootMovieClip* root = nullptr;
+		if (theClassConstructor->is<AVM1Function>())
+			root = theClassConstructor->as<AVM1Function>()->getClip()->loadedFrom;
+		if (!root)
+			root = sys->mainClip;
+		ret = asAtomHandler::fromBool(root->AVM1registerTagClass(name,theClassConstructor));
+	}
 }
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
@@ -3038,8 +3046,8 @@ bool asAtomHandler::add(asAtom& a,asAtom &v2, SystemState* sys,bool forceint)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,sys->mainClip->version);
-				number_t num2=AVM1toNumber(val2p,sys->mainClip->version);
+				number_t num1=AVM1toNumber(val1p,sys->mainClip->usesActionScript3);
+				number_t num2=AVM1toNumber(val2p,sys->mainClip->usesActionScript3);
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				if (forceint)
@@ -3151,8 +3159,8 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,sys->mainClip->version);
-				number_t num2=AVM1toNumber(val2p,sys->mainClip->version);
+				number_t num1=AVM1toNumber(val1p,sys->mainClip->usesActionScript3);
+				number_t num2=AVM1toNumber(val2p,sys->mainClip->usesActionScript3);
 				LOG_CALL("addN " << num1 << '+' << num2);
 				ASObject* o = getObject(ret);
 				if (forceint)

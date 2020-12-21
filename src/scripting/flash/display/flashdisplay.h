@@ -438,6 +438,7 @@ private:
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
 	_NR<SoundChannel> sound;
+	bool streamingsound;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
@@ -453,7 +454,7 @@ protected:
 public:
 	bool dragged;
 	Sprite(Class_base* c);
-	void setSound(SoundChannel* s);
+	void setSound(SoundChannel* s, bool forstreaming);
 	void appendSound(unsigned char* buf, int len);
 	bool destruct() override;
 	static void sinit(Class_base* c);
@@ -581,6 +582,7 @@ private:
 	std::map<uint32_t,asAtom > frameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
+	uint32_t lastratio;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 protected:
@@ -630,6 +632,7 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
+	void checkRatio(uint32_t ratio) override;
 
 	void afterLegacyInsert() override;
 	void afterLegacyDelete(DisplayObjectContainer* par) override;

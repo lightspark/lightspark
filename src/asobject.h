@@ -504,7 +504,7 @@ public:
 	static asAtom asTypelate(asAtom& a, asAtom& b);
 	static bool isTypelate(asAtom& a,ASObject* type);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
-	static FORCE_INLINE number_t AVM1toNumber(asAtom& a,int swfversion);
+	static FORCE_INLINE number_t AVM1toNumber(asAtom& a,bool usesActionScript3);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a);
 	static FORCE_INLINE int32_t toInt(const asAtom& a);
 	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
@@ -1573,7 +1573,7 @@ FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 			return getObjectNoCheck(a)->toNumber();
 	}
 }
-FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a,int swfversion)
+FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a,bool usesActionScript3)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1582,7 +1582,7 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a,int swfversion)
 		case ATOM_UINTEGER:
 			return a.uintval>>3;
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : (a.uintval&ATOMTYPE_UNDEFINED_BIT) && swfversion >= 7 ? numeric_limits<double>::quiet_NaN() : 0;
+			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : (a.uintval&ATOMTYPE_UNDEFINED_BIT) && usesActionScript3 ? numeric_limits<double>::quiet_NaN() : 0;
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(getSys(),a.uintval>>3);

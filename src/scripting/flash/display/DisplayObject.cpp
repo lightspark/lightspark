@@ -317,7 +317,11 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 		Locker locker(spinlock);
 		if (matrix.isNull())
 			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
-		if(matrix->matrix!=m)
+		if(m.getTranslateX() != tx ||
+			m.getTranslateY() != ty ||
+			m.getScaleX() != sx ||
+			m.getScaleY() != sy ||
+			m.getRotation() != rotation)
 		{
 			matrix->matrix=m;
 			extractValuesFromMatrix();

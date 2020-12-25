@@ -1054,8 +1054,15 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		this->incRef();
-		ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
+		if (!this->is<RootMovieClip>())
+		{
+			this->incRef();
+			ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
+		}
+		else
+		{
+			ret=(*j)->hitTest(NullRef, localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
+		}
 		if(!ret.isNull())
 		{
 			if (interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)

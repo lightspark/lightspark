@@ -420,7 +420,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable "<<asAtomHandler::toDebugString(name));
 				tiny_string s = asAtomHandler::toString(name,clip->getSystemState());
-				ASATOM_DECREF(name);
 				asAtom res=asAtomHandler::invalidAtom;
 				if (s=="this")
 				{
@@ -529,6 +528,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (asAtomHandler::isInvalid(res))
 					asAtomHandler::setUndefined(res);
+				ASATOM_DECREF(name);
 				ASATOM_INCREF(res);
 				PushStack(stack,res);
 				break;
@@ -652,7 +652,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						case 15:// url
 							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getRoot()->getOrigin().getURL());
 							break;
-						case 16:// quality
+						case 19:// quality
 							DisplayObject::AVM1_getQuality(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 20:// xmouse
@@ -735,12 +735,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						case 13:// name
 							DisplayObject::_setter_name(ret,clip->getSystemState(),obj,&value,1);
 							break;
-						case 16:// quality
-							DisplayObject::AVM1_setQuality(ret,clip->getSystemState(),obj,&value,1);
-							break;
 						case 17:// focusrect
 							if (asAtomHandler::is<InteractiveObject>(obj))
 								InteractiveObject::_setter_focusRect(ret,clip->getSystemState(),obj,&value,1);
+							break;
+						case 19:// quality
+							DisplayObject::AVM1_setQuality(ret,clip->getSystemState(),obj,&value,1);
 							break;
 						default:
 							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<asAtomHandler::toInt(index));

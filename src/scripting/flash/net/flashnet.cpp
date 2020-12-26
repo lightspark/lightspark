@@ -778,7 +778,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,_setPreventBackup)
 ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 {
 	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
-	if (th->data)
+	if (th->data && th->data->numVariables())
 	{
 		ByteArray* b = Class<ByteArray>::getInstanceS(sys);
 		b->writeObject(th->data.getPtr());

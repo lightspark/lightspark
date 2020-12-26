@@ -138,6 +138,7 @@ bool DisplayObject::destruct()
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	colorTransform.reset();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;

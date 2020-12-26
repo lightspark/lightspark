@@ -326,6 +326,8 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 
 void ABCVm::registerClassesAVM1()
 {
+	if (m_sys->avm1global)
+		return;
 	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0);
 
 	registerClassesToplevel(builtinavm1);
@@ -422,7 +424,6 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef(m_sys));
 	builtin->registerBuiltin("QName","",Class<ASQName>::getRef(m_sys));
 	builtin->registerBuiltin("uint","",Class<UInteger>::getRef(m_sys));
-	builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys)));
 	builtin->registerBuiltin("Error","",Class<ASError>::getRef(m_sys));
 	builtin->registerBuiltin("SecurityError","",Class<SecurityError>::getRef(m_sys));
 	builtin->registerBuiltin("ArgumentError","",Class<ArgumentError>::getRef(m_sys));
@@ -437,6 +438,7 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef(m_sys));
 	if (m_sys->mainClip->usesActionScript3)
 	{
+		builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys)));
 		builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
 		builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
 	}

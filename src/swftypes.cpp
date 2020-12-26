@@ -1435,10 +1435,6 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventUnload not handled");
 	if (v.ClipEventDragOver)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOver not handled");
-	if (v.ClipEventRollOut)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOut not handled");
-	if (v.ClipEventRollOver)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventRollOver not handled");
 	if (v.ClipEventData)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventData not handled");
 	if (v.ClipEventKeyPress)

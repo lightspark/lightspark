@@ -1599,8 +1599,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		this->incRef();
 		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
-	else if (state.creatingframe // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-			 || !needsActionScript3())
+	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		advanceFrame();
 }
 
@@ -1867,10 +1866,11 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		number_t x,y,xg,yg;
 		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 		this->globalToLocal(xg,yg,x,y);
-		_NR<DisplayObject> dispobj=hitTest(NullRef,x,y, DisplayObject::MOUSE_CLICK,true);
+		this->incRef();
+		_NR<DisplayObject> dispobj=hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true);
 		if (!dispobj && ((e->type == "click")|| (e->type == "releaseOutside")))
-				return false;
-		if (this->actions)
+			return false;
+		if (dispobj && this->actions)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
@@ -1967,6 +1967,8 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	actions = &clipactions;
 	if (this->actions->AllEventFlags.ClipEventMouseDown ||
 			this->actions->AllEventFlags.ClipEventMouseMove ||
+			this->actions->AllEventFlags.ClipEventRollOver ||
+			this->actions->AllEventFlags.ClipEventRollOut ||
 			this->actions->AllEventFlags.ClipEventPress ||
 			this->actions->AllEventFlags.ClipEventMouseUp)
 	{

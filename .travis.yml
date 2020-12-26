@@ -158,8 +158,7 @@ matrix:
                  libsdl2-mixer-dev
                  libgnutls28-dev
                  liblzma-dev && cd /root/src && cmake . && make'
-    - name: Ubuntu 16.04
-    - name: Debug Build (Ubuntu 16.04) 
+    - name: Debug Build (Ubuntu 16.04)
       script: cmake -DCMAKE_BUILD_TYPE=Debug . && make
     - name: Clang 8.0
       env:
@@ -176,43 +175,6 @@ matrix:
             - cmake
             - nasm
             - clang-8
-            - libcurl4-gnutls-dev
-            - libedit-dev
-            - zlib1g-dev
-            - libgl1-mesa-dev
-            - libpcre3-dev
-            - libavutil-dev
-            - libx11-dev
-            - libglu1-mesa-dev
-            - libglew-dev
-            - libavcodec-dev
-            - libavformat-dev
-            - libavresample-dev
-            - libcairo2-dev
-            - libpango1.0-dev
-            - libpng-dev
-            - libjpeg-dev
-            - librtmp-dev
-            - libsdl2-dev
-            - libsdl2-mixer-dev
-            - libgnutls28-dev
-            - liblzma-dev
-    - name: Clang Nightly
-      allow_failures: true
-      env:
-        - MATRIX_EVAL="CC=clang CXX=clang++"
-      before_install:
-        - eval "${MATRIX_EVAL}"
-      addons:
-        apt:
-          sources:
-            - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
-              key_url: 'https://keyserver.ubuntu.com/pks/lookup?search=0x15CF4D18AF4F7421&op=get'
-          packages:
-            - curl
-            - cmake
-            - nasm
-            - clang
             - libcurl4-gnutls-dev
             - libedit-dev
             - zlib1g-dev

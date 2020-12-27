@@ -1648,6 +1648,8 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			canCache = false;
 
 		asAtom prop=asAtomHandler::invalidAtom;
+		if (s->is<Null>()) // avoid exception
+			continue;
 		s->getVariableByMultiname(prop,*name, opt);
 		if(asAtomHandler::isValid(prop))
 		{

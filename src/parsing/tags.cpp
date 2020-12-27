@@ -1530,7 +1530,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	assert_and_throw(obj && PlaceFlagHasCharacter);
 
 	//TODO: move these three attributes in PlaceInfo
-	if(PlaceFlagHasColorTransform && ColorTransformWithAlpha.isfilled())
+	if(PlaceFlagHasColorTransform)
 	{
 		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
 	}
@@ -2071,8 +2071,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
 				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList "<<this->getId());
-			if (i->ColorTransform.isfilled())
-				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
+			state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
 
 			if(states[j] == nullptr)
 			{
@@ -2751,8 +2750,5 @@ void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (d && d->is<Video>())
 		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes);
 	else
-	{
 		LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
-		parent->dumpDisplayList();
-	}
 }

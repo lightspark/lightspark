@@ -1210,14 +1210,14 @@ void TextField::defaultEventBehavior(_R<Event> e)
 		uint32_t modifiers = ev->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
 		if (modifiers == KMOD_NONE)
 		{
-			tiny_string newtext = this->text;
 			switch (ev->getKeyCode())
 			{
 				case AS3KEYCODE_BACKSPACE:
 					if (!this->text.empty() && caretIndex > 0)
 					{
 						caretIndex--;
-						newtext=this->text.replace(caretIndex,1,"");
+						this->text.replace(caretIndex,1,"");
+						textUpdated();
 					}
 					break;
 				case AS3KEYCODE_LEFT:
@@ -1231,7 +1231,6 @@ void TextField::defaultEventBehavior(_R<Event> e)
 				default:
 					break;
 			}
-			this->updateText(newtext);
 		}
 		else
 			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getCharCode());
@@ -1303,7 +1302,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			}
 			else
 			{
-				tw -= autosizeposition;
+				tw += autosizeposition;
 				tw /=scaling;
 			}
 			LINESTYLE2 linestyle(0xff);
@@ -1315,10 +1314,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(tw, (bymax-bymin)/scaling-ypadding))));
 			tokens.stroketokens.emplace_back(_MR(new GeomToken(CLEAR_STROKE)));
 		}
-		uint32_t tokencount = tokens.size();
 		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,autosizeposition);
-		if (tokencount < tokens.size())
-			return TokenContainer::invalidate(target, totalMatrix,smoothing);
+		return TokenContainer::invalidate(target, totalMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
@@ -1330,8 +1327,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,hasMask);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-	if (text.empty())
-		return nullptr;
+	if (this->type != ET_EDITABLE)
+	{
+		if (text.empty())
+			return nullptr;
+	}
 	if(width==0 || height==0)
 		return nullptr;
 	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)

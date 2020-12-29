@@ -1745,6 +1745,8 @@ _NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, 
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
+		if (interactiveObjectsOnly)
+			return last;
 		incRef();
 		return _MNR(this);
 	}

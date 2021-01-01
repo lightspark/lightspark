@@ -302,6 +302,7 @@ private:
 	Mutex mainsignalMutex;
 	Cond mainsignalCond;
 	void systemFinalize();
+	std::map<tiny_string, Class_base *> classnamemap;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -550,6 +551,7 @@ public:
 	Mutex initializedMutex;
 	Cond initializedCond;
 	void waitInitialized();
+	void getClassInstanceByName(asAtom &ret, const tiny_string& clsname);
 };
 
 class ParseThread: public IThreadJob

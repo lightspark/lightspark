@@ -2333,6 +2333,25 @@ void SystemState::waitInitialized()
 	}
 }
 
+void SystemState::getClassInstanceByName(asAtom& ret, const tiny_string &clsname)
+{
+	Class_base* c= nullptr;
+	auto it = classnamemap.find(clsname);
+	if (it == classnamemap.end())
+	{
+		asAtom cls = asAtomHandler::invalidAtom;
+		asAtom tmp = asAtomHandler::invalidAtom;
+		asAtom args = asAtomHandler::fromString(this,clsname);
+		getDefinitionByName(cls,this,tmp,&args,1);
+		assert_and_throw(asAtomHandler::isValid(cls));
+		c = asAtomHandler::getObjectNoCheck(cls)->as<Class_base>();
+		classnamemap[clsname]=c;
+	}
+	else
+		c = it->second;
+	c->getInstance(ret,true,nullptr,0);
+}
+
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

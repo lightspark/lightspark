@@ -105,9 +105,7 @@ private:
 	asAtom parseDictionary(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;
-	asAtom parseByteArray(std::vector<tiny_string>& stringMap,
-			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+	asAtom parseByteArray(std::vector<asAtom>& objMap) const;
 	asAtom parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
 			std::vector<TraitsRef>& traitsMap) const;

@@ -315,9 +315,7 @@ asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
 	return asAtomHandler::fromObject(ret);
 }
 
-asAtom Amf3Deserializer::parseByteArray(std::vector<tiny_string>& stringMap,
-			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const
+asAtom Amf3Deserializer::parseByteArray(std::vector<asAtom>& objMap) const
 {
 	uint32_t bytearrayRef;
 	if(!input->readU29(bytearrayRef))
@@ -527,7 +525,7 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case xml_marker:
 				return parseXML(objMap, false);
 			case byte_array_marker:
-				return parseByteArray(stringMap, objMap, traitsMap);
+				return parseByteArray(objMap);
 			case vector_int_marker:
 			case vector_uint_marker:
 			case vector_double_marker:
@@ -575,7 +573,7 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 			case amf0_typed_object_marker:
 			{
 				tiny_string class_name = parseStringAMF0();
-				return parseObjectAMF0(stringMap,objMap,traitsMap,class_name);
+				return parseObjectAMF0(stringMap,objMap,traitsMap, class_name);
 			}
 			case amf0_avmplus_object_marker:
 				input->setCurrentObjectEncoding(ObjectEncoding::AMF3);
@@ -654,19 +652,15 @@ asAtom Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMa
 
 asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap, const tiny_string &clsname) const
+			std::vector<TraitsRef>& traitsMap,
+			const tiny_string &clsname) const
 {
 	asAtom ret = asAtomHandler::invalidAtom;
 	if (clsname == "")
 		ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getSystemState()));
 	else
 	{
-		asAtom tmp = asAtomHandler::invalidAtom;
-		asAtom cls = asAtomHandler::invalidAtom;
-		asAtom args = asAtomHandler::fromString(input->getSystemState(),clsname);
-		getDefinitionByName(cls,input->getSystemState(),tmp,&args,1);
-		assert_and_throw(asAtomHandler::isValid(cls));
-		asAtomHandler::getObjectNoCheck(cls)->as<Class_base>()->getInstance(ret,true,nullptr,0);
+		input->getSystemState()->getClassInstanceByName(ret,clsname);
 	}
 
 	while (true)

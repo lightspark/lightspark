@@ -74,7 +74,7 @@ public:
 	Global* getLastGlobalScope() const  { return globalScopes.back(); }
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
 	bool findTargetByMultiname(const multiname& name, ASObject*& target);
-	void getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target);
+	GET_VARIABLE_RESULT getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target);
 	void getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target);
 
 	/*

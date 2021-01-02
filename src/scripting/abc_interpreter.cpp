@@ -1951,9 +1951,9 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 	}
 	return hasoperands;
 }
-bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opcode,memorystream& code,bool constantsallowed, bool useargument_for_skip, Class_base* resulttype, uint32_t startcodepos, bool checkforlocalresult, bool addchanged=false,bool fromdup=false)
+bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opcode,memorystream& code,bool constantsallowed, bool useargument_for_skip, Class_base* resulttype, uint32_t startcodepos, bool checkforlocalresult, bool addchanged=false,bool fromdup=false, bool checkoperands=true)
 {
-	bool hasoperands = state.jumptargets.find(startcodepos) == state.jumptargets.end() && state.operandlist.size() >= 1 && (constantsallowed || state.operandlist.back().type == OP_LOCAL|| state.operandlist.back().type == OP_CACHED_SLOT);
+	bool hasoperands = !checkoperands || (state.jumptargets.find(startcodepos) == state.jumptargets.end() && state.operandlist.size() >= 1 && (constantsallowed || state.operandlist.back().type == OP_LOCAL|| state.operandlist.back().type == OP_CACHED_SLOT));
 	Class_base* skiptype = resulttype;
 	if (hasoperands)
 	{
@@ -3146,13 +3146,82 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (function->isStatic)
 					{
 						variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
-						if (v && v->kind == TRAIT_KIND::CONSTANT_TRAIT)
+						if (v)
 						{
-							addCachedConstant(state,mi, v->var,code);
-							if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
-								resulttype = (Class_base*)v->type;
-							typestack.push_back(typestackentry(resulttype,false));
-							break;
+							if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
+							{
+								addCachedConstant(state,mi, v->var,code);
+								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
+									resulttype = (Class_base*)v->type;
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
+							else if (v->kind==DECLARED_TRAIT)
+							{
+								// property is static variable from class
+								resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(function->inClass);
+								addCachedConstant(state,state.mi,clAtom,code);
+								// convert to getprop on class
+								setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
+						}
+					}
+					else
+					{
+						bool isborrowed = false;
+						variable* v = nullptr;
+						Class_base* cls = function->inClass;
+						do
+						{
+							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed);
+							if (!v)
+								cls = cls->super.getPtr();
+						}
+						while (!v && cls && cls->isSealed);
+						if (v && asAtomHandler::isValid(v->setter) && cls->is<Class_inherit>() && cls->as<Class_inherit>()->hasoverriddenmethod(name))
+							v=nullptr;
+						if (v)
+						{
+							if ((isborrowed || v->kind == INSTANCE_TRAIT) && asAtomHandler::isValid(v->getter))
+							{
+								// property is getter from class
+								resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+								state.preloadedcode.push_back((uint32_t)0xd0);
+								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
+								if (function->inClass->isInterfaceMethod(*name))
+								{
+									// convert to getprop on local[0]
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								}
+								else
+								{
+									// convert to callprop on local[0] (this) with 0 args
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,0x46,code,true, false,resulttype,p,true,false,false,false);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
+								}
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
+							else if (!isborrowed && v->kind==DECLARED_TRAIT)
+							{
+								// property is static variable from class
+								resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(cls);
+								addCachedConstant(state,state.mi,clAtom,code);
+								// convert to getprop on class
+								setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
 						}
 					}
 					if ((simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
@@ -3185,6 +3254,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
 						mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt);
+					}
+					if(asAtomHandler::isInvalid(o))
+					{
+						ASObject* target = nullptr;
+						r = mi->context->root->applicationDomain->getVariableAndTargetByMultiname(o,*name,target);
 					}
 					if (asAtomHandler::is<Template_base>(o))
 					{

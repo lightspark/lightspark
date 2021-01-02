@@ -381,24 +381,26 @@ bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& 
 }
 
 
-void ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target)
+GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target)
 {
+	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF);
+		res = globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF);
 		if(asAtomHandler::isValid(ret))
 		{
 			target=globalScopes[i];
 			// No incRef, return a reference borrowed from globalScopes
-			return;
+			return res;
 		}
 	}
 	if(!parentDomain.isNull())
 	{
-		parentDomain->getVariableAndTargetByMultiname(ret,name, target);
+		res = parentDomain->getVariableAndTargetByMultiname(ret,name, target);
 		if(asAtomHandler::isValid(ret))
-			return;
+			return res;
 	}
+	return res;
 }
 void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target)
 {

@@ -1871,11 +1871,10 @@ void ppPluginEngineData::grabFocus()
 {
 }
 
-void ppPluginEngineData::setDisplayState(const tiny_string &displaystate)
+void ppPluginEngineData::setDisplayState(const tiny_string &displaystate, SystemState *sys)
 {
 	g_flashfullscreen_interface->SetFullscreen(this->instance->getppInstance(),displaystate.startsWith("fullScreen") ? PP_TRUE : PP_FALSE);
 }
-
 bool ppPluginEngineData::inFullScreenMode()
 {
 	return g_flashfullscreen_interface->IsFullscreen(this->instance->getppInstance()) == PP_TRUE;

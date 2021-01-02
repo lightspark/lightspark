@@ -2197,7 +2197,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1GetNextHighestDepth)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,sys,th->getMaxLegacyChildDepth()+1);
+	uint32_t n = th->getMaxLegacyChildDepth();
+	asAtomHandler::setUInt(ret,sys,n == UINT32_MAX ? 0 : n+1);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 {
@@ -2482,14 +2483,14 @@ void DisplayObjectContainer::purgeLegacyChildren()
 uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()
 {
 	auto it = mapDepthToLegacyChild.begin();
-	int32_t max =0;
+	int32_t max =-1;
 	while (it !=mapDepthToLegacyChild.end())
 	{
 		if (it->first > max)
 			max = it->first;
 		it++;
 	}
-	return max;
+	return max >= 0 ? max : UINT32_MAX;
 }
 void DisplayObjectContainer::checkClipDepth()
 {
@@ -3392,7 +3393,7 @@ void Stage::onDisplayState(const tiny_string&)
 		return;
 	}
 	LOG(LOG_NOT_IMPLEMENTED,"setting display state does not check for the security sandbox!");
-	getSystemState()->getEngineData()->setDisplayState(displayState);
+	getSystemState()->getEngineData()->setDisplayState(displayState,getSystemState());
 }
 
 void Stage::onAlign(const tiny_string& /*oldValue*/)
@@ -3608,7 +3609,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 	if (oldScaleMode != sys->scaleMode)
 	{
 		RenderThread* rt=sys->getRenderThread();
-		rt->requestResize(rt->windowWidth, rt->windowHeight, true);
+		rt->requestResize(UINT32_MAX, UINT32_MAX, true);
 	}
 }
 
@@ -3720,6 +3721,30 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			(*it)->AVM1HandleEvent(dispatcher, e);
 			it++;
 		}
+		if (!avm1ResizeListeners.empty() && dispatcher==this && e->type=="resize")
+		{
+			avm1listenerMutex.lock();
+			vector<_R<ASObject>> tmplisteners = avm1ResizeListeners;
+			avm1listenerMutex.unlock();
+			// eventhandlers may change the listener list, so we work on a copy
+			auto it = tmplisteners.rbegin();
+			while (it != tmplisteners.rend())
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				m.name_s_id=getSystemState()->getUniqueStringId("onResize");
+				(*it)->getVariableByMultiname(func,m);
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				}
+				it++;
+			}
+		}
 	}
 }
 
@@ -3793,6 +3818,33 @@ void Stage::AVM1RemoveEventListener(ASObject *o)
 			break;
 		}
 	}
+}
+
+void Stage::AVM1AddResizeListener(ASObject *o)
+{
+	Locker l(avm1listenerMutex);
+	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
+	{
+		if ((*it).getPtr() == o)
+			return;
+	}
+	o->incRef();
+	avm1ResizeListeners.push_back(_MR(o));
+}
+
+bool Stage::AVM1RemoveResizeListener(ASObject *o)
+{
+	Locker l(avm1listenerMutex);
+	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
+	{
+		if ((*it).getPtr() == o)
+		{
+			avm1ResizeListeners.erase(it);
+			// it's not mentioned in the specs but I assume we return true if we found the listener object
+			return true;
+		}
+	}
+	return false;
 }
 
 

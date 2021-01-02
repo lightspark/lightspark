@@ -116,7 +116,7 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 				{
 					case SDL_WINDOWEVENT_RESIZED:
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
-						if (sys && sys->getRenderThread())
+						if (sys && (!sys->getEngineData() || !sys->getEngineData()->inFullScreenMode()) &&  sys->getRenderThread())
 							sys->getRenderThread()->requestResize(event->window.data1,event->window.data2,false);
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
@@ -384,7 +384,7 @@ void EngineData::removeSharedObject(const tiny_string &name)
 	g_unlink(p.c_str());
 }
 
-void EngineData::setDisplayState(const tiny_string &displaystate)
+void EngineData::setDisplayState(const tiny_string &displaystate,SystemState* sys)
 {
 	if (!this->widget)
 	{
@@ -392,6 +392,9 @@ void EngineData::setDisplayState(const tiny_string &displaystate)
 		return;
 	}
 	SDL_SetWindowFullscreen(widget, displaystate.startsWith("fullScreen") ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+	int w,h;
+	SDL_GetWindowSize(widget,&w,&h);
+	sys->getRenderThread()->requestResize(w,h,true);
 }
 
 bool EngineData::inFullScreenMode()

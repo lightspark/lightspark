@@ -103,7 +103,7 @@ public:
 	uint32_t getWindowForGnash() override;
 	/* must be called within mainLoopThread */
 	SDL_Window* createWidget(uint32_t w,uint32_t h) override;
-	void setDisplayState(const tiny_string& displaystate) override;
+	void setDisplayState(const tiny_string& displaystate,SystemState* sys) override;
 	
 	/* must be called within mainLoopThread */
 	void grabFocus() override;

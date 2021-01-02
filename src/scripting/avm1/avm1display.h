@@ -68,6 +68,10 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getDisplayState);
 	ASFUNCTION_ATOM(_setDisplayState);
+	ASFUNCTION_ATOM(getAlign);
+	ASFUNCTION_ATOM(setAlign);
+	ASFUNCTION_ATOM(addResizeListener);
+	ASFUNCTION_ATOM(removeResizeListener);
 };
 
 class AVM1MovieClipLoader: public Loader

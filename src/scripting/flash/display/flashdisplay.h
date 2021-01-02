@@ -676,7 +676,6 @@ public:
 	uint32_t internalGetWidth() const;
 private:
 	Mutex avm1listenerMutex;
-	void onAlign(const tiny_string&);
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS
@@ -690,10 +689,12 @@ private:
 	vector<_R<ASObject>> avm1KeyboardListeners;
 	vector<_R<ASObject>> avm1MouseListeners;
 	vector<_R<ASObject>> avm1EventListeners;
+	vector<_R<ASObject>> avm1ResizeListeners;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
+	void onAlign(const tiny_string&);
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
@@ -748,6 +749,8 @@ public:
 	void AVM1RemoveMouseListener(ASObject* o);
 	void AVM1AddEventListener(ASObject *o);
 	void AVM1RemoveEventListener(ASObject *o);
+	void AVM1AddResizeListener(ASObject *o);
+	bool AVM1RemoveResizeListener(ASObject *o);
 };
 
 class StageScaleMode: public ASObject

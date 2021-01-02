@@ -101,12 +101,18 @@ void AVM1SimpleButton::sinit(Class_base* c)
 
 void AVM1Stage::sinit(Class_base* c)
 {
-	Stage::sinit(c);
-	DisplayObject::AVM1SetupMethods(c);
+	// in AVM1 Stage is no DisplayObject and all methods/properties are static
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayState),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayState),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleMode),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),getAlign),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),setAlign),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addResizeListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeResizeListener),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
 {
@@ -116,6 +122,28 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,_setDisplayState)
 {
 	ARG_UNPACK_ATOM(sys->stage->displayState);
 	sys->stage->onDisplayState(sys->stage->displayState);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,getAlign)
+{
+	ret = asAtomHandler::fromString(sys,sys->stage->align);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,setAlign)
+{
+	tiny_string oldalign=sys->stage->align;
+	ARG_UNPACK_ATOM(sys->stage->align);
+	sys->stage->onAlign(oldalign);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,addResizeListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM(listener,NullRef);
+	sys->stage->AVM1AddResizeListener(listener.getPtr());
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
+{
+	_NR<ASObject> listener;
+	ARG_UNPACK_ATOM(listener,NullRef);
+	ret = asAtomHandler::fromBool(sys->stage->AVM1RemoveResizeListener(listener.getPtr()));
 }
 
 

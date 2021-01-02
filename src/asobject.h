@@ -1667,7 +1667,6 @@ FORCE_INLINE void asAtomHandler::applyProxyProperty(asAtom& a,SystemState* sys,m
 		case ATOM_NUMBERPTR:
 		case ATOM_U_INTEGERPTR:
 			break;
-		case ATOM_STRINGPTR:
 		case ATOM_STRINGID:
 			break; // no need to create string, as it won't have a proxyMultiName
 		default:

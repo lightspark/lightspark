@@ -1900,6 +1900,21 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 	}
 }
 
+bool Class_base::isInterfaceMethod(const multiname& name)
+{
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = name.name_s_id;
+	const std::vector<Class_base*> interfaces = getInterfaces();
+	for(unsigned int i=0;i<interfaces.size();i++)
+	{
+		variable* v = interfaces[i]->borrowedVariables.findObjVar(getSystemState(),m,DECLARED_TRAIT);
+		if (v)
+			return true;
+	}
+	return false;
+}
+
 void Class_base::removeAllDeclaredProperties()
 {
 	Variables.removeAllDeclaredProperties();

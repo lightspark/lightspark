@@ -253,6 +253,7 @@ public:
 	}
 	bool isBuiltin() const override { return true; }
 	bool implementsInterfaces() const { return interfaces.size() || interfaces_added.size(); }
+	bool isInterfaceMethod(const multiname &name);
 	void removeAllDeclaredProperties();
 };
 

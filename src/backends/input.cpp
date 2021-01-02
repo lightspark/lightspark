@@ -431,7 +431,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 {
 	if (m_sys->getEngineData()->inFullScreenMode() && keyevent->keysym.sym == SDLK_ESCAPE)
 	{
-		m_sys->getEngineData()->setDisplayState("normal");
+		m_sys->getEngineData()->setDisplayState("normal",m_sys);
 		return true;
 	}
 	if (keyevent->keysym.sym == SDLK_MENU)
@@ -465,7 +465,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			break;
 		case SDLK_f:
 			handled = true;
-			m_sys->getEngineData()->setDisplayState(m_sys->getEngineData()->inFullScreenMode() ? "normal" : "fullScreen");
+			m_sys->getEngineData()->setDisplayState(m_sys->getEngineData()->inFullScreenMode() ? "normal" : "fullScreen",m_sys);
 			break;
 		case SDLK_p:
 			handled = true;

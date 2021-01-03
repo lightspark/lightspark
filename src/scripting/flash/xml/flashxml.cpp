@@ -123,7 +123,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 	auto it = th->node.begin();
 	for(;it!=th->node.end();++it)
 	{
-		if(it->type()!=pugi::node_pcdata) {
+		if(it->type()!=pugi::node_pcdata && it->type()!=pugi::node_declaration) {
 			res->push(asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(sys,th->root, *it)));
 		}
 	}
@@ -384,7 +384,6 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 {
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
 	assert_and_throw(argslen==0);
-	assert(th->node==NULL);
 	pugi::xml_node newNode=th->rootNode;
 	th->incRef();
 	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));

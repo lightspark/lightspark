@@ -217,7 +217,8 @@ bool Video::renderImpl(RenderContext& ctxt) const
 		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
 			0, 0, width*scalex, height*scaley,
 			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),
-			totalMatrix.getTranslateX()*scalex,totalMatrix.getTranslateY()*scaley,width*scalex,height*scaley,
+			0, 0, // transformed position is already set through lsglLoadMatrixf above
+			width*scalex,height*scaley,
 			1.0f,1.0f,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,

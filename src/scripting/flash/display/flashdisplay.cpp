@@ -2214,7 +2214,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 
 	BitmapData* data = asAtomHandler::as<BitmapData>(args[0]);
 	data->incRef();
-	Bitmap* toAdd = Class<Bitmap>::getInstanceS(sys,_MR(data));
+	Bitmap* toAdd = Class<AVM1Bitmap>::getInstanceS(sys,_MR(data));
 	if (argslen > 2)
 		toAdd->pixelSnapping = asAtomHandler::toString(args[2],sys);
 	if (argslen > 3)

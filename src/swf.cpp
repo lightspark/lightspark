@@ -1758,7 +1758,11 @@ void ParseThread::parseBitmap()
 	_NR<LoaderInfo> li;
 	li=loader->getContentLoaderInfo();
 
-	_NR<Bitmap> tmp=_MNR(Class<Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));
+	_NR<Bitmap> tmp;
+	if (loader->needsActionScript3())
+		tmp = _MNR(Class<Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));
+	else
+		tmp = _MNR(Class<AVM1Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));
 	{
 		Locker l(objectSpinlock);
 		parsedObject=tmp;

@@ -26,6 +26,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/display/BitmapData.h"
 
 namespace lightspark
 {
@@ -114,6 +115,14 @@ public:
 	ASFUNCTION_ATOM(broadcastMessage);
 	ASFUNCTION_ATOM(addListener);
 	ASFUNCTION_ATOM(removeListener);
+};
+
+class AVM1Bitmap: public Bitmap
+{
+public:
+	AVM1Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN):Bitmap(c,li,s,type) {}
+	AVM1Bitmap(Class_base* c, _R<BitmapData> data):Bitmap(c,data) {}
+	static void sinit(Class_base* c);
 };
 
 }

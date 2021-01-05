@@ -1183,11 +1183,23 @@ ASObject* BitmapTag::instance(Class_base* c)
 	if(!realClass)
 		return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 
-	if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
+	if (loadedFrom->usesActionScript3)
 	{
-		BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
-		Bitmap* bitmapRet=new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
-		return bitmapRet;
+		if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
+		{
+			BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
+			Bitmap* bitmapRet= new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
+			return bitmapRet;
+		}
+	}
+	else
+	{
+		if(realClass->isSubClass(Class<AVM1Bitmap>::getClass(realClass->getSystemState())))
+		{
+			BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
+			Bitmap* bitmapRet= new (realClass->memoryAccount) AVM1Bitmap(realClass,_MR(ret));
+			return bitmapRet;
+		}
 	}
 
 	if(realClass->isSubClass(Class<BitmapData>::getClass(realClass->getSystemState())))
@@ -1618,7 +1630,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
 			if (instance->is<BitmapData>())
-				toAdd =Class<Bitmap>::getInstanceS(instance->getSystemState(),_R<BitmapData>(instance->as<BitmapData>()));
+				toAdd = parent->loadedFrom->usesActionScript3 ?
+							Class<Bitmap>::getInstanceS(instance->getSystemState(),_R<BitmapData>(instance->as<BitmapData>())) :
+							Class<AVM1Bitmap>::getInstanceS(instance->getSystemState(),_R<BitmapData>(instance->as<BitmapData>()));
 			else
 				toAdd=dynamic_cast<DisplayObject*>(instance);
 			if(!toAdd && instance)

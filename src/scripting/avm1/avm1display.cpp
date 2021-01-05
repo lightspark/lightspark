@@ -610,3 +610,9 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 		}
 	}
 }
+
+void AVM1Bitmap::sinit(Class_base *c)
+{
+	Bitmap::sinit(c);
+	DisplayObject::AVM1SetupMethods(c);
+}

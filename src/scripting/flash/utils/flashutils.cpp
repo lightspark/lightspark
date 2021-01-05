@@ -317,12 +317,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		o = asAtomHandler::getClosureAtom(func);
 	else
 	{
-		if (argslen > paramstart)
-		{
-			o = args[paramstart];
-			paramstart++;
-		}
-		else
+		if (argslen <= paramstart)
 		{
 			// it seems that adobe uses the ObjectReference as "this" for the callback if no argument array is present
 			if (!asAtomHandler::isFunction(args[0]))

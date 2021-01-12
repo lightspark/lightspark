@@ -1871,6 +1871,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 		DisplayObjectContainer::swapChildren(ret,sys,obj,newargs,2);
 	}
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getDepth)
+{
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	int r=0;
+	if (th->getParent())
+		r=th->getParent()->findLegacyChildDepth(th);
+	ret = asAtomHandler::fromInt(r);
+}
 
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
@@ -1909,6 +1917,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_alpha","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setAlpha),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_swapDepths),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getDepth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setMask","",Class<IFunction>::getFunction(c->getSystemState(),_setMask),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_getTransform),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);

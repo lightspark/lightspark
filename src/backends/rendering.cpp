@@ -648,8 +648,12 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	}
 	if (w != UINT32_MAX)
 		newWidth=w;
+	else
+		newWidth=windowWidth;
 	if (h != UINT32_MAX)
 		newHeight=h;
+	else
+		newHeight=windowHeight;
 	resizeNeeded=true;
 	m_sys->stage->incRef();
 	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys,"resize")));

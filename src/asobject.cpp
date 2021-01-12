@@ -3328,6 +3328,8 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a,SystemState *sys, asAtom &v2)
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
+				case ATOM_STRINGID:
+					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 				{
 					switch (v2.uintval&0x70)

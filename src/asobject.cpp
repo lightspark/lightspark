@@ -725,7 +725,7 @@ variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const 
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
-		if(sys->mainClip->usesActionScript3 && (!(asAtomHandler::isValid(ret->setter) || asAtomHandler::isValid(ret->var))))
+		if(!(asAtomHandler::isValid(ret->setter) || asAtomHandler::isValid(ret->var)))
 		{
 			ret=nullptr;
 			if(has_getter)
@@ -768,6 +768,9 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 		{
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
+		// no setter and dynamic variables are allowed, so we force creation of a dynamic variable
+		if (obj && asAtomHandler::isInvalid(obj->setter))
+			obj=nullptr;
 	}
 
 	//Do not set variables in prototype chain. Still have to do

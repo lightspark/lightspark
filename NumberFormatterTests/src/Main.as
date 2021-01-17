@@ -3,6 +3,7 @@ package
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.globalization.NumberFormatter;
+	import flash.globalization.NumberParseResult;
 	
 	/**
 	 * ...
@@ -10,10 +11,11 @@ package
 	 */
 	public class Main extends Sprite 
 	{
-		
+	
 		public function Main() 
 		{
 			runDefaultTests();
+			runParse();
 			runDecimalSeporatorTests();
 			runDigitsTypeTests();
 			runFractionalDigitsTests();
@@ -32,61 +34,40 @@ package
 			
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4(-1, "-1.00"));
+			formatIntList.push(new TestData4(-9999, "-9,999.00"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
 			
-			if (nf.formatInt(-1) == "-1.00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -185,61 +166,40 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.decimalSeparator = "#";
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1#00")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1#00"));
+			formatIntList.push(new TestData4(9999, "9,999#00"));
+			formatIntList.push(new TestData4(-1, "-1#00"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999#00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(-9999, "-9,999#00"));
+			formatUIntList.push(new TestData5(1, "1#00"));
+			formatUIntList.push(new TestData5(9999, "9,999#00"));
 			
-			if (nf.formatInt(-1) == "-1#00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999#00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1#00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999#00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -443,62 +403,42 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.fractionalDigits = 3;
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.000")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(-9999, "-9,999#00"));
+			formatIntList.push(new TestData4(1, "9,999.000"));
+			formatIntList.push(new TestData4(9999, "9,999#00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.000")
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.000"));
+			formatUIntList.push(new TestData5(9999, "9999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(-1) == "-1.000")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999.000")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.000")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.000")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
-			}
 			
 			// Format number tests
 			var formatNumberList:Array = new Array();
@@ -599,61 +539,41 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.groupingPattern = "3;2;*";
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
 			
-			if (nf.formatInt(-1) == "-1.00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -905,61 +825,44 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.leadingZero = true;
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			var nf:NumberFormatter = new NumberFormatter("en_US");
+			nf.groupingPattern = "3;2;*";
+			
+			
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
 			
-			if (nf.formatInt(-1) == "-1.00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -1058,61 +961,40 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.negativeNumberFormat = 2;
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
 			
-			if (nf.formatInt(-1) == "- 1.00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "- 9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -1211,62 +1093,40 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.negativeSymbol = "#";
 			
-			// Format int tests
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.00"));
+			formatIntList.push(new TestData4( -9999, "-9,999.000"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
-			}
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
 			
-			if (nf.formatInt(-1) == "-1.00")
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
-			
-			if (nf.formatInt(-9999) == "-9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
 			// Format number tests
@@ -1365,62 +1225,43 @@ package
 			var nf:NumberFormatter = new NumberFormatter("en_US");
 			nf.trailingZeros = true;
 			
-			// Format int tests
-			if (nf.formatInt(1) == "1.00")
+			var formatIntList:Array = new Array();
+			formatIntList.push(new TestData4(1, "1.00"));
+			formatIntList.push(new TestData4(9999, "9,999.00"));
+			formatIntList.push(new TestData4(-1, "-1.00"));
+			formatIntList.push(new TestData4(-9999, "-9,999.00"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(1));
+				var result = nf.formatInt(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(9999) == "9,999.00")
+			var formatUIntList:Array = new Array();
+			formatUIntList.push(new TestData5(1, "1.00"));
+			formatUIntList.push(new TestData5(9999, "9,999.00"));
+			
+			for each (var item in formatNumberList)
 			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(9999));
+				var result = nf.formatUint(item.value);
+				if (result == item.expected)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed. Got: " + result + ", expected: " + item.expected);
+				}
 			}
 			
-			if (nf.formatInt(-1) == "-1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-1));
-			}
 			
-			if (nf.formatInt(-9999) == "-9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatInt(-9999));
-			}
-			
-			// Format UInt tests
-			
-			if (nf.formatUint(1) == "1.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(1));
-			}
-			
-			if (nf.formatUint(9999) == "9,999.00")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed: " + nf.formatUint(9999));
-			}
 			
 			// Format number tests
 			var formatNumberList:Array = new Array();
@@ -1670,6 +1511,59 @@ package
 			else
 			{
 				trace("Failed: " + nf.formatUint(9999));
+			}
+		}
+		
+		private function runParse()
+		{
+			trace("Parse tests");
+			var list:Array = new Array();
+			list.push(new ParseResult("(123)", 0, -123, 0, 5));
+			list.push(new ParseResult("( 123 )",1, 123, 2, 5));
+			list.push(new ParseResult("-123", 3, 123, 1, 4));
+			list.push(new ParseResult("- 123", 4, 123, 2, 5));
+			list.push(new ParseResult("123-",  5, 123, 0, 3));
+			list.push(new ParseResult("123 -", 6, 123, 0, 3));
+			
+			list.push(new ParseResult("1,56 mètre", 1, 156, 0, 4));
+			list.push(new ParseResult("1,56 meter", 1, 156, 0, 4));
+			
+			list.push(new ParseResult("word 1000 word", 1, 1000, 5, 9));
+			list.push(new ParseResult("word 1000", 1, 1000, 5, 9));
+			list.push(new ParseResult("1000 word", 1, 1000, 0, 4));
+			list.push(new ParseResult(" word ", 1, NaN, 2147483647, 2147483647));
+			
+			
+			// TODO
+			list.push(new ParseResult("word 1000 word", 1, 1, 5, 9));
+			list.push(new ParseResult("word 1000", 1, 1, 5, 9));
+			list.push(new ParseResult("1000 word", 1, 1, 0, 4));
+			list.push(new ParseResult(" word ", 1, 1, 1, 4));
+			
+			
+			list.push(new ParseResult("word 1000 word", 1, 1, 5, 9));
+			list.push(new ParseResult("word 1000", 1, 1, 5, 9));
+			list.push(new ParseResult("1000 word", 1, 1, 0, 4));
+			list.push(new ParseResult(" word ", 1, 1, 1, 4));
+			
+			
+			
+			
+			for each (var item:ParseResult in list)
+			{
+				var nf:NumberFormatter = new NumberFormatter("en_US");
+				nf.negativeNumberFormat = item.negativeNumberFormat;
+				
+				var result:NumberParseResult = nf.parse(item.input);
+				
+				if (result.value == item.expectedResult && result.startIndex == item.expectedStartIndex && result.endIndex == item.expectedEndIndex)
+				{
+					trace("Passed");
+				}
+				else
+				{
+					trace("Failed: value:" + result.value + ", startIndex:" + result.startIndex + ", endIndex:" + result.endIndex);
+				}
 			}
 		}
 	}

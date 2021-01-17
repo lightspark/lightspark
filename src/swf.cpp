@@ -2577,7 +2577,9 @@ void RootMovieClip::AVM1checkInitActions(MovieClip* sprite)
 	auto it = avm1InitActionTags.find(sprite->getTagID());
 	if (it != avm1InitActionTags.end())
 	{
-		it->second->executeDirect(sprite);
+		AVM1InitActionTag* t = it->second;
+		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
 		avm1InitActionTags.erase(it);
+		t->executeDirect(sprite);
 	}
 }

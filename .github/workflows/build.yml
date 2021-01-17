@@ -1,0 +1,216 @@
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  compilers:
+    name: Compiler Compatibility / ${{ matrix.cc }}
+    runs-on: ubuntu-20.04
+    continue-on-error: true
+    env:
+      CC: ${{ matrix.cc }}
+      CFLAGS: -std=c11
+      CXXFLAGS: -std=c++11
+    strategy:
+      matrix:
+        cc: [clang-8, clang-10, clang-11, gcc-7, gcc-9, gcc-10]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        sudo `which apt || which apt-get` update
+        sudo `which apt || which apt-get` install \
+          curl \
+          cmake \
+          nasm \
+          $CC \
+          gettext \
+          libcurl4-gnutls-dev \
+          libedit-dev \
+          zlib1g-dev \
+          libgl1-mesa-dev \
+          libpcre3-dev \
+          libavutil-dev \
+          libx11-dev \
+          libglu1-mesa-dev \
+          libglew-dev \
+          libavcodec-dev \
+          libavformat-dev \
+          libavresample-dev \
+          libcairo2-dev \
+          libpango1.0-dev \
+          libpng-dev \
+          libjpeg-dev \
+          librtmp-dev \
+          libsdl2-dev \
+          libsdl2-mixer-dev \
+          libgnutls28-dev \
+          liblzma-dev
+
+    - name: Run Build
+      run: |
+        export CXX=`echo $CC | sed -e 's/clang/clang++/;s/gcc/g++/'`
+        ./build.sh debug
+
+  linux:
+    name: Linux / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        sudo `which apt || which apt-get` update
+        sudo `which apt || which apt-get` install \
+          curl \
+          cmake \
+          nasm \
+          gettext \
+          libcurl4-gnutls-dev \
+          libedit-dev \
+          zlib1g-dev \
+          libgl1-mesa-dev \
+          libpcre3-dev \
+          libavutil-dev \
+          libx11-dev \
+          libglu1-mesa-dev \
+          libglew-dev \
+          libavcodec-dev \
+          libavformat-dev \
+          libavresample-dev \
+          libcairo2-dev \
+          libpango1.0-dev \
+          libpng-dev \
+          libjpeg-dev \
+          librtmp-dev \
+          libsdl2-dev \
+          libsdl2-mixer-dev \
+          libgnutls28-dev \
+          liblzma-dev
+
+    - name: Run Build
+      run: ./build.sh
+
+  mxe64:
+    name: Windows 64-bit (MXE Cross Build)
+    runs-on: ubuntu-18.04
+    continue-on-error: false
+    env:
+      CFLAGS: -std=c11
+      CXXFLAGS: -std=c++11
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MXE Repository to Apt
+      uses: myci-actions/add-deb-repo@4
+      with:
+        repo: deb http://pkg.mxe.cc/repos/apt bionic main
+        repo-name: mxe
+        keys: C6BF758A33A3A276
+        key-server: keyserver.ubuntu.com
+
+    - name: Install MXE Build Environment
+      run: |
+        sudo apt update
+        sudo apt install \
+          nasm \
+          libtool \
+          libtool-bin \
+          gperf \
+          lzip \
+          p7zip-full \
+          intltool \
+          mxe-x86-64-w64-mingw32.static-cc \
+          mxe-x86-64-w64-mingw32.static-cairo \
+          mxe-x86-64-w64-mingw32.static-pango \
+          mxe-x86-64-w64-mingw32.static-jpeg \
+          mxe-x86-64-w64-mingw32.static-glew \
+          mxe-x86-64-w64-mingw32.static-freetype \
+          mxe-x86-64-w64-mingw32.static-curl \
+          mxe-x86-64-w64-mingw32.static-librtmp \
+          mxe-x86-64-w64-mingw32.static-ffmpeg \
+          mxe-x86-64-w64-mingw32.static-sdl2-mixer
+        echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+
+    - name: Configure MXE for NSIS Installer Builds
+      run: |
+        (cd /usr/lib/mxe/ \
+        && sudo make settings.mk \
+        && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
+        && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
+        && sudo make nsis)
+
+    - name: Run MXE Build
+      run: |
+        x86_64-w64-mingw32.static-cmake .
+        make
+        sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+        make package
+
+  mxe32:
+    name: Windows 32-bit (MXE Cross Build)
+    runs-on: ubuntu-18.04
+    continue-on-error: false
+    env:
+      CFLAGS: -std=c11
+      CXXFLAGS: -std=c++11
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MXE Repository to Apt
+      uses: myci-actions/add-deb-repo@4
+      with:
+        repo: deb http://pkg.mxe.cc/repos/apt bionic main
+        repo-name: mxe
+        keys: C6BF758A33A3A276
+        key-server: keyserver.ubuntu.com
+
+    - name: Install MXE Build Environment
+      run: |
+        sudo apt update
+        sudo apt install \
+          nasm \
+          libtool \
+          libtool-bin \
+          gperf \
+          lzip \
+          p7zip-full \
+          intltool \
+          mxe-i686-w64-mingw32.static-cc \
+          mxe-i686-w64-mingw32.static-cairo \
+          mxe-i686-w64-mingw32.static-pango \
+          mxe-i686-w64-mingw32.static-jpeg \
+          mxe-i686-w64-mingw32.static-glew \
+          mxe-i686-w64-mingw32.static-freetype \
+          mxe-i686-w64-mingw32.static-curl \
+          mxe-i686-w64-mingw32.static-librtmp \
+          mxe-i686-w64-mingw32.static-ffmpeg \
+          mxe-i686-w64-mingw32.static-sdl2-mixer
+        echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+
+    - name: Configure MXE for NSIS Installer Builds
+      run: |
+        (cd /usr/lib/mxe/ \
+        && sudo make settings.mk \
+        && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
+        && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
+        && sudo make nsis)
+
+    - name: Run MXE Build
+      run: |
+        i686-w64-mingw32.static-cmake .
+        make
+        sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+        make package

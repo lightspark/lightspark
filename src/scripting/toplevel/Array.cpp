@@ -984,8 +984,13 @@ number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d
 	assert(asAtomHandler::isFunction(comparator));
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtom obj = asAtomHandler::getClosureAtom(comparator);
-	// don't coerce the result, as it may be an int that would loose it's sign through coercion
-	asAtomHandler::callFunction(comparator,ret,obj, objs, 2,false,false);
+	if (asAtomHandler::is<AVM1Function>(comparator))
+		asAtomHandler::as<AVM1Function>(comparator)->call(&ret,&obj,objs,1);
+	else
+	{
+		// don't coerce the result, as it may be an int that would loose it's sign through coercion
+		asAtomHandler::callFunction(comparator,ret,obj, objs, 2,false,false);
+	}
 	assert_and_throw(asAtomHandler::isValid(ret));
 	return asAtomHandler::toNumber(ret);
 }

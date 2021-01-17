@@ -1142,14 +1142,22 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (f)
 				{
 					ASObject* pr = f->getprop_prototype();
+					ASObject* o = nullptr;
 					if (pr)
 					{
 						pr->incRef();
 						_NR<ASObject> proto = _MR(pr);
-						ret = asAtomHandler::fromObject(new_functionObject(proto));
+						o = new_functionObject(proto);
+						o->setprop_prototype(proto);
+						o->setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
 					}
 					else
-						ret = asAtomHandler::fromObject(new_functionObject(f->prototype));
+					{
+						o = new_functionObject(f->prototype);
+						o->setprop_prototype(f->prototype);
+						o->setprop_prototype(f->prototype,BUILTIN_STRINGS::STRING_PROTO);
+					}
+					ret = asAtomHandler::fromObject(o);
 					f->call(nullptr,&ret, args,numargs,callee);
 				}
 				else
@@ -1166,7 +1174,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					else if (asAtomHandler::is<AVM1Function>(cls))
 					{
-						ret = asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<AVM1Function>(cls)->prototype));
+						ASObject* o = new_functionObject(asAtomHandler::as<AVM1Function>(cls)->prototype);
+						o->setprop_prototype(asAtomHandler::as<AVM1Function>(cls)->prototype);
+						o->setprop_prototype(asAtomHandler::as<AVM1Function>(cls)->prototype,BUILTIN_STRINGS::STRING_PROTO);
+						ret = asAtomHandler::fromObject(o);
 						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs,callee);
 					}
 					else
@@ -1487,6 +1498,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							_NR<ASObject> p = _MR(protobj);
 							o->setprop_prototype(p);
 							o->setprop_prototype(p,BUILTIN_STRINGS::STRING_PROTO);
+							if (o->is<AVM1Function>())
+							{
+								protobj->incRef();
+								o->as<AVM1Function>()->prototype = p;
+							}
 						}
 						else
 							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember no prototype found for "<<asAtomHandler::toDebugString(scriptobject));
@@ -2287,7 +2303,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				int32_t skip = int16_t((*it++) | ((*it++)<<8));
 				asAtom a = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIf "<<asAtomHandler::toDebugString(a)<<" "<<skip);
-				if (asAtomHandler::toInt(a))
+				if (asAtomHandler::AVM1toBool(a))
 				{
 					if (skip < 0 && it-actionlist.begin() < -skip)
 					{

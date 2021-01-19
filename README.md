@@ -3,7 +3,7 @@ Lightspark
 
 ![GitHub release](https://img.shields.io/github/release/lightspark/lightspark.svg)
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/lightspark/lightspark.svg)
-[![Travis Status](https://img.shields.io/travis/com/lightspark/lightspark/master.svg?label=master%20branch)](https://travis-ci.com/lightspark/lightspark)
+[![Github Actions Status](https://img.shields.io/github/workflow/status/lightspark/lightspark/ci/master)](https://github.com/lightspark/lightspark/actions)
 
 Lightspark is an open source Flash player implementation for playing files in the SWF format. Lightspark can run as a web browser plugin or as a standalone application.
 
@@ -37,7 +37,7 @@ The following tools are also required:
 To install these, run the following command(s):
 ### Ubuntu (tested on 19.10):
 ```
-sudo apt install git gcc nasm cmake libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+sudo apt install git gcc nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
 ### Fedora (tested on 31):

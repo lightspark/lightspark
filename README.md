@@ -73,7 +73,7 @@ Usage
 
 ### Browser plugin
 
-Firefox plugin path and Firefox should show it in the about:plugins list and in the Tools -> Add-ons -> Plugins window.
+Copy the file `liblightspark.so` to your Firefox plugin path (usually `~/.mozilla/plugins`), creating the directory if necessary. Close and re-open Firefox. It should then appear in the about:plugins list and in the Tools -> Add-ons -> Plugins window.
 
 Lightspark registers itself as the plugin for application/x-shockwave-flash and for application/x-lightspark, so it should be recognisable in the about:plugins page. Its description string is ``Shockwave Flash 12.1 r<current version>``. The current version is now "r710".
 

@@ -3194,7 +3194,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								state.preloadedcode.push_back((uint32_t)0xd0);
 								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
-								if (function->inClass->isInterfaceMethod(*name))
+								if (function->inClass->isInterfaceMethod(*name) ||
+									(function->inClass->is<Class_inherit>() && function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)))
 								{
 									// convert to getprop on local[0]
 									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);

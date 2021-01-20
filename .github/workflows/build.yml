@@ -156,8 +156,6 @@ jobs:
       run: |
         x86_64-w64-mingw32.static-cmake .
         make
-        sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
-        make package
 
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
@@ -212,5 +210,3 @@ jobs:
       run: |
         i686-w64-mingw32.static-cmake .
         make
-        sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
-        make package

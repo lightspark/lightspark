@@ -40,12 +40,12 @@ To install these, run the following command(s):
 sudo apt install git gcc nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
-### Fedora (tested on 31):
+### Fedora (tested on 33):
 RPMFusion is required and will be enabled as part of this process.
 
 ```
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-sudo dnf install nasm cmake make g++ xz-devel pango-devel SDL2-devel SDL2_mixer-devel libcurl-devel librtmp-devel ffmpeg-devel mesa-libGL-devel glew-devel libjpeg-turbo-devel
+sudo dnf builddep lightspark
 ```
 If you want commands for a distro not listed here, please [create an issue](https://github.com/lightspark/lightspark/issues) if it doesn't already exist.
 

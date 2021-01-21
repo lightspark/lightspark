@@ -203,16 +203,10 @@ SET(PPAPI_PLUGIN_DIRECTORY "${LIBDIR}/PepperFlash" CACHE STRING "Directory to in
 SET(MANUAL_DIRECTORY "share/man" CACHE STRING "Directory to install manual to (UNIX only)")
 SET(ENABLE_SSE2 TRUE CACHE BOOL "Enable use of SSE2 asm instructions (x86/x86_64 only)")
 
-# Try to detect where we should install the plugin to, as Firefox version 62+ uses a different directory
-# Unset it first in case we've changed browsers or something between builds
-UNSET(PLUGIN_DIRECTORY CACHE)
 IF(UNIX)
-  EXECUTE_PROCESS(COMMAND firefox --version COMMAND grep -Eo "[0-9]+" COMMAND head -n 1 OUTPUT_VARIABLE FIREFOX_MAJOR_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-  MESSAGE(STATUS "Firefox version ${FIREFOX_MAJOR_VERSION} detected")
-ENDIF()
-IF(FIREFOX_MAJOR_VERSION GREATER 62)
-  SET(PLUGIN_DIRECTORY "$ENV{HOME}/.mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
-ELSEIF(ENABLE_DEBIAN_ALTERNATIVES OR WIN33)
+  # Absolute path to avoid CMAKE_INSTALL_PREFIX putting plugin somewhere Firefox won't see it
+  SET(PLUGIN_DIRECTORY "/usr/${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+ELSEIF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
 ELSE()
   SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")

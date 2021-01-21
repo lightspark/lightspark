@@ -1473,7 +1473,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				argsneeded++;
-				if (b==0x80)//coerce
+				if (b==0x80 //coerce
+					&& (state.jumptargets.find(pos) == state.jumptargets.end()))
 				{
 					uint32_t t = code.peeku30FromPosition(pos);
 					multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);

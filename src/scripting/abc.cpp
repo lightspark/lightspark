@@ -1797,6 +1797,14 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
+	// ensure that keyboard events are also handled for the stage
+	if (event->is<KeyboardEvent>() && !dispatcher->is<Stage>())
+	{
+		dispatcher->getSystemState()->stage->incRef();
+		event->currentTarget=_MR(dispatcher->getSystemState()->stage);
+		dispatcher->getSystemState()->stage->handleEvent(event);
+		event->currentTarget=NullRef;
+	}
 	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
 	{
 		dispatcher->incRef();

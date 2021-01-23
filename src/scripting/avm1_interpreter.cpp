@@ -165,7 +165,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		{
 			ASATOM_INCREF(args[i]);
 			tiny_string s = clip->getSystemState()->getStringFromUniqueId(paramnames[i]).lowercase();
-			clip->AVM1SetVariable(s,args[i]);
+			clip->AVM1SetVariable(s,args[i],false);
 		}
 		if (paramregisternumbers[i] != 0)
 		{

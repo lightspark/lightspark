@@ -1989,7 +1989,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 	return nullptr;
 }
 
-void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
+void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 {
 	if (name.empty())
 		return;
@@ -2025,10 +2025,13 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v)
 				avm1functions[nameIdOriginal] = _MR(f);
 			}
 		}
-		multiname objName(NULL);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=nameIdOriginal;
-		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
+		if (setMember)
+		{
+			multiname objName(NULL);
+			objName.name_type=multiname::NAME_STRING;
+			objName.name_s_id=nameIdOriginal;
+			setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
+		}
 		AVM1UpdateVariableBindings(nameId,v);
 	}
 	else if (pos == 0)

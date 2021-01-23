@@ -310,7 +310,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_getDepth);
 	static void AVM1SetupMethods(Class_base* c);
 	DisplayObject* AVM1GetClipFromPath(tiny_string& path);
-	void AVM1SetVariable(tiny_string& name, asAtom v);
+	void AVM1SetVariable(tiny_string& name, asAtom v, bool setMember=true);
 	asAtom AVM1GetVariable(const tiny_string &name);
 	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
 	asAtom getVariableBindingValue(const tiny_string &name) override;

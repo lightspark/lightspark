@@ -350,7 +350,7 @@ public:
 		autoSize(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false) {}
 	uint32_t width;
 	uint32_t height;
-	uint32_t leading;
+	int32_t leading;
 	uint32_t textWidth;
 	uint32_t textHeight;
 	tiny_string text;

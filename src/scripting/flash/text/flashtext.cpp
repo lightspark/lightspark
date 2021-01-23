@@ -969,7 +969,7 @@ void TextField::updateSizes()
 	textWidth=tw;
 	//height = h;
 	//textHeight=th;
-	textHeight=fontSize+leading; // textheight seems to be independent of the text actually rendered
+	textHeight=fontSize+(leading > 0 ? leading : -leading); // textheight seems to be independent of the text actually rendered
 }
 
 tiny_string TextField::toHtmlText()

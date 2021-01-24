@@ -4523,7 +4523,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						coercereturnvalue = true;
 					}
 				}
-				if (checkresulttype)
+				if (checkresulttype && dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
 				{
 					if (!typestack.back().obj
 							|| !typestack.back().obj->is<Class_base>() 

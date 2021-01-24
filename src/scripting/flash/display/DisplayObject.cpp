@@ -1179,7 +1179,7 @@ _NR<RootMovieClip> DisplayObject::getRoot()
 
 _NR<Stage> DisplayObject::getStage()
 {
-	if(!parent)
+	if(!parent || !this->onStage)
 		return NullRef;
 
 	return parent->getStage();

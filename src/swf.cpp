@@ -1958,6 +1958,8 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 
 _NR<Stage> RootMovieClip::getStage()
 {
+	if (!this->onStage)
+		return NullRef;
 	getSystemState()->stage->incRef();
 	return _MR(getSystemState()->stage);
 }

@@ -1519,11 +1519,40 @@ package
 			trace("Parse tests");
 			var list:Array = new Array();
 			list.push(new ParseResult("(123)", 0, -123, 0, 5));
-			list.push(new ParseResult("( 123 )",1, 123, 2, 5));
+			list.push(new ParseResult("(123)", 1, -123, 0, 5));
+			list.push(new ParseResult("(123)", 2, -123, 0, 5));
+			list.push(new ParseResult("(123)", 3, -123, 0, 5));
+			list.push(new ParseResult("(123)", 4, -123, 0, 5));
+			
+			list.push(new ParseResult("( 123 )", 0, 123, 2, 5));
+			list.push(new ParseResult("( 123 )", 1, 123, 2, 5));
+			list.push(new ParseResult("( 123 )", 2, 123, 2, 5));
+			list.push(new ParseResult("( 123 )", 3, 123, 2, 5));
+			list.push(new ParseResult("( 123 )", 4, 123, 2, 5));
+			
+			list.push(new ParseResult("-123", 0, 123, 1, 4));
+			list.push(new ParseResult("-123", 1, 123, 1, 4));
+			list.push(new ParseResult("-123", 2, 123, 1, 4));
 			list.push(new ParseResult("-123", 3, 123, 1, 4));
+			list.push(new ParseResult("-123", 4, 123, 1, 4));
+			
+			list.push(new ParseResult("- 123", 0, 123, 2, 5));
+			list.push(new ParseResult("- 123", 1, 123, 2, 5));
+			list.push(new ParseResult("- 123", 2, 123, 2, 5));
+			list.push(new ParseResult("- 123", 3, 123, 2, 5));
 			list.push(new ParseResult("- 123", 4, 123, 2, 5));
-			list.push(new ParseResult("123-",  5, 123, 0, 3));
-			list.push(new ParseResult("123 -", 6, 123, 0, 3));
+			
+			list.push(new ParseResult("123-",  0, 123, 0, 3));
+			list.push(new ParseResult("123-",  1, 123, 0, 3));
+			list.push(new ParseResult("123-",  2, 123, 0, 3));
+			list.push(new ParseResult("123-",  3, 123, 0, 3));
+			list.push(new ParseResult("123-",  4, 123, 0, 3));
+			
+			list.push(new ParseResult("123 -", 0, 123, 0, 3));
+			list.push(new ParseResult("123 -", 1, 123, 0, 3));
+			list.push(new ParseResult("123 -", 2, 123, 0, 3));
+			list.push(new ParseResult("123 -", 3, 123, 0, 3));
+			list.push(new ParseResult("123 -", 4, 123, 0, 3));
 			
 			list.push(new ParseResult("1,56 mètre", 1, 156, 0, 4));
 			list.push(new ParseResult("1,56 meter", 1, 156, 0, 4));
@@ -1563,6 +1592,7 @@ package
 				else
 				{
 					trace("Failed: value:" + result.value + ", startIndex:" + result.startIndex + ", endIndex:" + result.endIndex);
+					trace("Expected: value:" + item.expectedResult + ", startIndex:" + item.expectedStartIndex + ", endIndex:" + item.expectedEndIndex);
 				}
 			}
 		}

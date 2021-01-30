@@ -3259,8 +3259,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
-						ASObject* target = nullptr;
-						r = mi->context->root->applicationDomain->getVariableAndTargetByMultiname(o,*name,target);
+						ASObject* cls = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+						if (cls)
+							o = asAtomHandler::fromObject(cls);
 					}
 					if (asAtomHandler::is<Template_base>(o))
 					{

@@ -1879,14 +1879,13 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
+	this->setOnStage(true,true);
 	if (!loaderInfo.isNull())
 		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
 void RootMovieClip::afterConstruction()
 {
-	if (this==getSystemState()->mainClip)
-		this->setOnStage(true,true);
 	DisplayObject::afterConstruction();
 	checkFrameScriptToExecute();
 }
@@ -1958,8 +1957,6 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 
 _NR<Stage> RootMovieClip::getStage()
 {
-	if (!this->onStage)
-		return NullRef;
 	getSystemState()->stage->incRef();
 	return _MR(getSystemState()->stage);
 }

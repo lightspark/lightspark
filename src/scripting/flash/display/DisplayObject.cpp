@@ -601,6 +601,7 @@ void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, nu
 
 void DisplayObject::setOnStage(bool staged, bool force)
 {
+	bool changed = false;
 	//TODO: When removing from stage released the cachedTex
 	if(staged!=onStage)
 	{
@@ -613,9 +614,9 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		}
 		if(getVm(getSystemState())==nullptr)
 			return;
-		force = true;
+		changed = true;
 	}
-	if (force)
+	if (force || changed)
 	{
 		/*NOTE: By tests we can assert that added/addedToStage is dispatched
 		  immediately when addChild is called. On the other hand setOnStage may
@@ -627,12 +628,12 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(onStage==true)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
-			if(isVmThread())
+			if(!force && isVmThread())
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{
 				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),e);
+				getVm(getSystemState())->prependEvent(_MR(this),e);
 			}
 		}
 		else if(onStage==false)

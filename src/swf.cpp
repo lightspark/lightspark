@@ -1757,7 +1757,20 @@ void ParseThread::parseBitmap()
 {
 	_NR<LoaderInfo> li;
 	li=loader->getContentLoaderInfo();
-
+	switch (fileType)
+	{
+		case FILE_TYPE::FT_PNG:
+			li->contentType = "image/png";
+			break;
+		case FILE_TYPE::FT_JPEG:
+			li->contentType = "image/jpeg";
+			break;
+		case FILE_TYPE::FT_GIF:
+			li->contentType = "image/gif";
+			break;
+		default:
+			break;
+	}
 	_NR<Bitmap> tmp;
 	if (loader->needsActionScript3())
 		tmp = _MNR(Class<Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));

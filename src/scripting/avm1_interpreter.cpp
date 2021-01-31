@@ -1019,7 +1019,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (context->keepLocals)
 				{
 					tiny_string s =asAtomHandler::toString(name,clip->getSystemState()).lowercase();
-					clip->AVM1SetVariable(s,value);
+					clip->AVM1SetVariable(s,value,false);
 				}
 				else
 				{

@@ -457,6 +457,7 @@ public:
 	Sprite(Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
+	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

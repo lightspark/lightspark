@@ -588,12 +588,18 @@ class DefineSpriteTag: public DictionaryTag, public FrameContainer
 private:
 	UI16_SWF SpriteID;
 	UI16_SWF FrameCount;
+	uint32_t soundstartframe;
 public:
 	SoundStreamHeadTag* soundheadtag;
 	DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~DefineSpriteTag();
 	virtual int getId() const { return SpriteID; }
 	virtual ASObject* instance(Class_base* c=nullptr);
+	void setSoundStartFrame(uint32_t frame) 
+	{
+		if (soundstartframe == UINT32_MAX)
+			soundstartframe=frame;
+	}
 };
 
 class ProtectTag: public ControlTag

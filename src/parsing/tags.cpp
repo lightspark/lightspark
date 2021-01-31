@@ -464,6 +464,7 @@ MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
 {
 	soundheadtag=nullptr;
+	soundstartframe=UINT32_MAX;
 	in >> SpriteID >> FrameCount;
 
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
@@ -568,6 +569,8 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr,false);
+	if (soundstartframe != UINT32_MAX)
+		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
 	spr->loadedFrom->AVM1checkInitActions(spr);
 	return spr;
@@ -2637,6 +2640,7 @@ SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootM
 		if (!sprite->soundheadtag)
 			throw ParseException("SoundStreamBlock tag without SoundStreamHeadTag.");
 		decodeSoundBlock(sprite->soundheadtag->SoundData.getPtr(),(LS_AUDIO_CODEC)sprite->soundheadtag->StreamSoundCompression,inData,len);
+		sprite->setSoundStartFrame(sprite->getFramesLoaded());
 	}
 	else if (root)
 		root->appendSound(inData,len, root->getFramesLoaded());

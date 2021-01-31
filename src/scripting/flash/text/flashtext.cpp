@@ -478,7 +478,15 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	int beginIndex;
 	int endIndex;
 
-	ARG_UNPACK_ATOM(tf)(beginIndex, -1)(endIndex, -1);
+	if (th->loadedFrom->usesActionScript3 || argslen == 1)
+		ARG_UNPACK_ATOM(tf)(beginIndex, -1)(endIndex, -1);
+	else
+	{
+		if (argslen == 2)
+			ARG_UNPACK_ATOM(beginIndex)(tf)(endIndex, -1);
+		else
+			ARG_UNPACK_ATOM(beginIndex)(endIndex)(tf);
+	}
 
 	if(beginIndex!=-1 || endIndex!=-1)
 		LOG(LOG_NOT_IMPLEMENTED,"setTextFormat with beginIndex or endIndex");

@@ -28,4 +28,5 @@ void AVM1TextField::sinit(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
 	TextField::sinit(c);
+	c->setDeclaredMethodByQName("setNewTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setDefaultTextFormat),NORMAL_METHOD,true);
 }

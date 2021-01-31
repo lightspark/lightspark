@@ -4889,22 +4889,23 @@ void DisplayObjectContainer::executeFrameScript()
 
 multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
-	if (asAtomHandler::is<DisplayObject>(o))
-	{
-		// it seems that setting a new value for a named existing dynamic child removes the child from the display list
-		variable* v = findVariableByMultiname(name,this->getClass());
-		if (v && v->kind == TRAIT_KIND::DYNAMIC_TRAIT && asAtomHandler::is<DisplayObject>(v->var))
-		{
-			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
-			if (!obj->legacy)
-			{
-				if (v->var.uintval == o.uintval)
-					return nullptr;
-				obj->incRef();
-				_removeChild(obj);
-			}
-		}
-	}
+// TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
+//	if (asAtomHandler::is<DisplayObject>(o))
+//	{
+//		// it seems that setting a new value for a named existing dynamic child removes the child from the display list
+//		variable* v = findVariableByMultiname(name,this->getClass());
+//		if (v && v->kind == TRAIT_KIND::DYNAMIC_TRAIT && asAtomHandler::is<DisplayObject>(v->var))
+//		{
+//			DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
+//			if (!obj->legacy)
+//			{
+//				if (v->var.uintval == o.uintval)
+//					return nullptr;
+//				obj->incRef();
+//				_removeChild(obj);
+//			}
+//		}
+//	}
 	return InteractiveObject::setVariableByMultiname(name,o,allowConst,alreadyset);
 }
 

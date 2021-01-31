@@ -2639,7 +2639,7 @@ SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootM
 		decodeSoundBlock(sprite->soundheadtag->SoundData.getPtr(),(LS_AUDIO_CODEC)sprite->soundheadtag->StreamSoundCompression,inData,len);
 	}
 	else if (root)
-		root->appendSound(inData,len);
+		root->appendSound(inData,len, root->getFramesLoaded());
 	delete[] inData;
 }
 void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len)
@@ -2751,7 +2751,8 @@ VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 	numbytes = h.getLength()-4;
 	if (numbytes)
 	{
-		framedata = new uint8_t[numbytes];
+		framedata = new uint8_t[numbytes+AV_INPUT_BUFFER_PADDING_SIZE];
+		memset(framedata+numbytes,0,AV_INPUT_BUFFER_PADDING_SIZE);
 		in.read((char*)framedata,numbytes);
 	}
 }
@@ -2762,7 +2763,7 @@ void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
 		return;
 	DisplayObject* d = parent->findLegacyChildByTagID(StreamID);
 	if (d && d->is<Video>())
-		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes);
+		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes+AV_INPUT_BUFFER_PADDING_SIZE);
 	else
 		LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
 }

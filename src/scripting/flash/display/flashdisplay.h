@@ -438,6 +438,7 @@ private:
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
 	_NR<SoundChannel> sound;
+	uint32_t soundstartframe;
 	bool streamingsound;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
@@ -448,14 +449,14 @@ protected:
 	bool renderImpl(RenderContext& ctxt) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
-	void checkSound();// start sound streaming if it is not already playing
+	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
 	void stopSound();
 	void markSoundFinished();
 public:
 	bool dragged;
 	Sprite(Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
-	void appendSound(unsigned char* buf, int len);
+	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

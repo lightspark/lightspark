@@ -799,7 +799,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -1145,15 +1145,17 @@ void Sprite::setSound(SoundChannel *s,bool forstreaming)
 	streamingsound = forstreaming;
 }
 
-void Sprite::appendSound(unsigned char *buf, int len)
+void Sprite::appendSound(unsigned char *buf, int len, uint32_t frame)
 {
 	if (sound)
 		sound->appendStreamBlock(buf,len);
+	if (soundstartframe == UINT32_MAX)
+		soundstartframe=frame;
 }
 
-void Sprite::checkSound()
+void Sprite::checkSound(uint32_t frame)
 {
-	if (sound && !sound->isPlaying() && streamingsound)
+	if (sound && !sound->isPlaying() && streamingsound && soundstartframe==frame)
 		sound->play();
 }
 
@@ -5099,7 +5101,7 @@ void MovieClip::advanceFrame()
 	if (state.stop_FP)
 		stopSound();
 	else
-		checkSound();
+		checkSound(state.next_FP);
 	state.creatingframe=true;
 	if (frameScriptToExecute != UINT32_MAX)
 	{

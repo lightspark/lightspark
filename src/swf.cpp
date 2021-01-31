@@ -1850,11 +1850,11 @@ float RootMovieClip::getFrameRate() const
 
 void RootMovieClip::commitFrame(bool another)
 {
-	checkSound();
 	setFramesLoaded(frames.size());
 
 	if(another)
 		frames.push_back(Frame());
+	checkSound(frames.size());
 
 	if(getFramesLoaded()==1 && frameRate!=0)
 	{

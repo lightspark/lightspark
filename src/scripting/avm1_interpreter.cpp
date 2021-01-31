@@ -492,7 +492,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::isInvalid(res))
 				{
 					if (!s.startsWith("/") && !s.startsWith(":"))
-						res = originalclip->AVM1GetVariable(s);
+					{
+						// first look for member of clip
+						multiname m(nullptr);
+						m.name_type=multiname::NAME_STRING;
+						m.name_s_id=asAtomHandler::toStringId(name,clip->getSystemState());
+						m.isAttribute = false;
+						originalclip->getVariableByMultiname(res,m);
+						if (asAtomHandler::isInvalid(res))
+							res = originalclip->AVM1GetVariable(s);
+					}
 					else
 						res = clip->AVM1GetVariable(s);
 				}

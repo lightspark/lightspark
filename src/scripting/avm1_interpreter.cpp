@@ -632,6 +632,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						case 3:// xscale
 							DisplayObject::_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
+						case 4:// currentframe
+							if (o->is<MovieClip>())
+								MovieClip::_getCurrentFrame(ret,clip->getSystemState(),obj,nullptr,0);
+							break;
 						case 5:// totalframes
 							if (o->is<MovieClip>())
 								MovieClip::_getTotalFrames(ret,clip->getSystemState(),obj,nullptr,0);
@@ -1459,6 +1463,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 							break;
 					}
+				}
+				if (asAtomHandler::isInvalid(ret))
+				{
+					if (o->is<DisplayObject>())
+						ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,clip->getSystemState()));
 				}
 				if (asAtomHandler::isInvalid(ret))
 					asAtomHandler::setUndefined(ret);

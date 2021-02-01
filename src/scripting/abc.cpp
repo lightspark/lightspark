@@ -363,13 +363,16 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));
 	builtinavm1->registerBuiltin("LocalConnection","",Class<AVM1LocalConnection>::getRef(m_sys));
 
-	if (m_sys->getSwfVersion() >= 8)
+	if (m_sys->getSwfVersion() >= 6)
 	{
 		ASObject* systempackage = Class<ASObject>::getInstanceS(m_sys);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
 		
 		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
-
+		systempackage->setVariableByQName("capabilities","System",Class<Capabilities>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+	}
+	if (m_sys->getSwfVersion() >= 8)
+	{
 		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys);
 		builtinavm1->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
 

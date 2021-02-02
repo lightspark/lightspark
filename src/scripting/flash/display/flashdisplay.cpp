@@ -1621,7 +1621,8 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 		frame = 0;
 	state.next_FP = frame;
 	state.explicit_FP = true;
-	bool advance = true;
+	// no need to advance if we stop at current frame
+	bool advance = !stop || state.next_FP != state.FP;
 	if (switchplaystate)
 	{
 		if (!stop && state.stop_FP)

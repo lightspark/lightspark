@@ -2000,6 +2000,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("unloadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1UnloadMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("duplicateMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1DuplicateMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1MoveTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,true);
@@ -2144,6 +2145,46 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 		}
 		th->getParent()->_removeChild(th);
 	}
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	if (argslen < 2)
+		throw RunTimeException("AVM1: invalid number of arguments for DuplicateMovieClip");
+	if (!th->getParent())
+	{
+		LOG(LOG_ERROR,"calling DuplicateMovieClip on clip without parent");
+		ret = asAtomHandler::undefinedAtom;
+		return;
+	}
+	int Depth = asAtomHandler::toInt(args[1]);
+	uint32_t nameId = asAtomHandler::toStringId(args[0],sys);
+	AVM1MovieClip* toAdd=nullptr;
+	DefineSpriteTag* tag = (DefineSpriteTag*)th->loadedFrom->dictionaryLookup(th->getTagID());
+	if (tag)
+		toAdd=Class<AVM1MovieClip>::getInstanceS(sys,*tag,th->getTagID(),nameId);
+	else
+		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(sys);
+	toAdd->setLegacyMatrix(th->getMatrix());
+	toAdd->name = nameId;
+	toAdd->setMouseEnabled(false);
+	toAdd->tokens.filltokens = th->tokens.filltokens;
+	toAdd->tokens.stroketokens = th->tokens.stroketokens;
+	if (argslen > 2)
+	{
+		ASObject* initobj = asAtomHandler::toObject(args[2],sys);
+		initobj->copyValues(toAdd);
+	}
+	if(th->getParent()->hasLegacyChildAt(Depth))
+	{
+		th->getParent()->deleteLegacyChildAt(Depth);
+		th->getParent()->insertLegacyChildAt(Depth,toAdd);
+	}
+	else
+		th->getParent()->insertLegacyChildAt(Depth,toAdd);
+	toAdd->constructionComplete();
+	toAdd->incRef();
+	ret=asAtomHandler::fromObject(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 {
